@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<components>
+  <component name="NullableNotNullManager">
+    <option name="myDefaultNullable" value="javax.annotation.Nullable"/>
+    <option name="myDefaultNotNull" value="javax.annotation.Nonnull"/>
+    <option name="myNullables">
+      <value>
+        <list size="1">
+          <item index="0" class="java.lang.String" itemvalue="javax.annotation.Nullable"/>
+        </list>
+      </value>
+    </option>
+    <option name="myNotNulls">
+      <value>
+        <list size="1">
+          <item index="0" class="java.lang.String" itemvalue="javax.annotation.Nonnull"/>
+        </list>
+      </value>
+    </option>
+  </component>
+  <component name="InspectionProjectProfileManager">
+    <profile version="1.0">
+      <option name="myName" value="Project Default"/>
+      <inspection_tool class="NullableProblems" enabled="false" level="WARNING"
+                       enabled_by_default="false">
+        <scope name="Production" level="WARNING" enabled="true">
+          <option name="REPORT_NULLABLE_METHOD_OVERRIDES_NOTNULL" value="true"/>
+          <option name="REPORT_NOT_ANNOTATED_METHOD_OVERRIDES_NOTNULL" value="true"/>
+          <option name="REPORT_NOTNULL_PARAMETER_OVERRIDES_NULLABLE" value="true"/>
+          <option name="REPORT_NOT_ANNOTATED_PARAMETER_OVERRIDES_NOTNULL" value="true"/>
+          <option name="REPORT_NOT_ANNOTATED_GETTER" value="true"/>
+          <option name="REPORT_NOT_ANNOTATED_SETTER_PARAMETER" value="true"/>
+          <option name="REPORT_ANNOTATION_NOT_PROPAGATED_TO_OVERRIDERS" value="true"/>
+          <option name="REPORT_NULLS_PASSED_TO_NON_ANNOTATED_METHOD" value="true"/>
+        </scope>
+      </inspection_tool>
+      <inspection_tool class="WeakerAccess" enabled="false" level="WARNING"
+                       enabled_by_default="false">
+        <option name="SUGGEST_PACKAGE_LOCAL_FOR_MEMBERS" value="true"/>
+        <option name="SUGGEST_PACKAGE_LOCAL_FOR_TOP_CLASSES" value="true"/>
+        <option name="SUGGEST_PRIVATE_FOR_INNERS" value="false"/>
+      </inspection_tool>
+    </profile>
+    <option name="PROJECT_PROFILE" value="Project Default"/>
+    <option name="USE_PROJECT_PROFILE" value="true"/>
+    <version value="1.0"/>
+  </component>
+  <component name="JavaProjectCodeInsightSettings">
+    <excluded-names>
+      <name>sun</name>
+      <name>com.sun</name>
+      <name>netscape</name>
+      <name>java.awt</name>
+      <name>jdk</name>
+      <name>oracle</name>
+      <name>javafx</name>
+      <name>apple</name>
+      <name>java.awt</name>
+      <name>javax.swing</name>
+    </excluded-names>
+  </component>
+  <component name="ProjectCodeStyleSettingsManager">
+    <option name="PER_PROJECT_SETTINGS">
+      <value>
+        <option name="OTHER_INDENT_OPTIONS">
+          <value>
+            <option name="INDENT_SIZE" value="4"/>
+            <option name="CONTINUATION_INDENT_SIZE" value="8"/>
+            <option name="TAB_SIZE" value="4"/>
+            <option name="USE_TAB_CHARACTER" value="false"/>
+            <option name="SMART_TABS" value="false"/>
+            <option name="LABEL_INDENT_SIZE" value="0"/>
+            <option name="LABEL_INDENT_ABSOLUTE" value="false"/>
+            <option name="USE_RELATIVE_INDENTS" value="false"/>
+          </value>
+        </option>
+        <option name="CLASS_COUNT_TO_USE_IMPORT_ON_DEMAND" value="999"/>
+        <option name="NAMES_COUNT_TO_USE_IMPORT_ON_DEMAND" value="999"/>
+        <option name="IMPORT_LAYOUT_TABLE">
+          <value>
+            <package name="com.apple" withSubpackages="true" static="false"/>
+            <emptyLine/>
+            <package name="" withSubpackages="true" static="false"/>
+            <emptyLine/>
+            <package name="java" withSubpackages="true" static="false"/>
+            <emptyLine/>
+            <package name="javax" withSubpackages="true" static="false"/>
+            <emptyLine/>
+            <package name="" withSubpackages="true" static="true"/>
+          </value>
+        </option>
+        <XML>
+          <option name="XML_LEGACY_SETTINGS_IMPORTED" value="true"/>
+        </XML>
+        <codeStyleSettings language="JAVA">
+          <indentOptions>
+            <option name="INDENT_SIZE" value="4"/>
+            <option name="CONTINUATION_INDENT_SIZE" value="8"/>
+            <option name="TAB_SIZE" value="4"/>
+          </indentOptions>
+        </codeStyleSettings>
+        <codeStyleSettings language="XML">
+          <indentOptions>
+            <option name="INDENT_SIZE" value="4"/>
+            <option name="CONTINUATION_INDENT_SIZE" value="8"/>
+            <option name="TAB_SIZE" value="4"/>
+          </indentOptions>
+        </codeStyleSettings>
+      </value>
+    </option>
+    <option name="USE_PER_PROJECT_SETTINGS" value="true"/>
+  </component>
+</components>

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE module PUBLIC
+    "-//Puppy Crawl//DTD Check Configuration 1.3//EN"
+    "http://www.puppycrawl.com/dtds/configuration_1_3.dtd">
+
+<!-- See https://connectme.apple.com/docs/DOC-363302 for a human-readable version -->
+<module name="Checker">
+  <property name="charset" value="UTF-8"/>
+
+  <!-- General formatting -->
+  <module name="FileTabCharacter"/>
+  <module name="RegexpSingleline">
+    <property name="format" value="\s+$"/>
+    <property name="message" value="trailing whitespace"/>
+  </module>
+  <!-- Prohibit consecutive empty lines (except the lines after package/import) -->
+  <module name="RegexpMultiline">
+    <property name="format" value="\n *(?!package )(?!import )[^\n]+\n{3,}"/>
+    <property name="message" value="two or more consecutive empty lines"/>
+  </module>
+  <module name="NewlineAtEndOfFile"/>
+
+  <module name="TreeWalker">
+    <!-- Files -->
+    <module name="OneTopLevelClass"/>
+    <module name="OuterTypeFilename"/>
+
+    <!-- Imports -->
+    <module name="AvoidStarImport"/>
+    <module name="UnusedImports">
+      <property name="processJavadoc" value="true"/>
+    </module>
+    <module name="CustomImportOrder">
+      <property name="thirdPartyPackageRegExp" value=".*"/>
+      <property name="specialImportsRegExp" value="com.apple"/>
+      <property name="sortImportsInGroupAlphabetically" value="true"/>
+      <property name="separateLineBetweenGroups" value="true"/>
+      <property name="customImportOrderRules"
+                value="SPECIAL_IMPORTS###THIRD_PARTY_PACKAGE###STANDARD_JAVA_PACKAGE###STATIC"/>
+    </module>
+
+    <!-- Modifiers -->
+    <module name="ModifierOrder"/>
+    <module name="RedundantModifier"/>
+
+    <!-- Whitespace -->
+    <module name="GenericWhitespace"/>
+    <module name="EmptyForInitializerPad"/>
+    <module name="EmptyForIteratorPad"/>
+    <module name="MethodParamPad"/>
+    <module name="ParenPad"/>
+    <module name="TypecastParenPad"/>
+    <module name="NoWhitespaceBefore"/>
+    <module name="NoWhitespaceAfter"/>
+    <module name="WhitespaceAround">
+      <property name="allowEmptyConstructors" value="true"/>
+      <property name="allowEmptyMethods" value="true"/>
+      <property name="allowEmptyTypes" value="true"/>
+      <property name="allowEmptyLoops" value="true"/>
+    </module>
+    <module name="WhitespaceAfter"/>
+    <module name="SingleSpaceSeparator"/>
+
+    <!-- Blocks -->
+    <module name="NeedBraces">
+      <property name="allowSingleLineStatement" value="true"/>
+    </module>
+    <module name="LeftCurly"/>
+    <module name="RightCurly">
+      <property name="tokens" value="LITERAL_TRY, LITERAL_CATCH, LITERAL_FINALLY"/>
+    </module>
+    <module name="AvoidNestedBlocks">
+      <property name="allowInSwitchCase" value="true"/>
+    </module>
+
+    <!-- Javadocs -->
+    <module name="JavadocMethod">
+      <property name="scope" value="public"/>
+      <property name="allowUndeclaredRTE" value="true"/>
+      <property name="allowMissingParamTags" value="true"/>
+      <property name="allowMissingThrowsTags" value="true"/>
+      <property name="allowMissingReturnTag" value="true"/>
+      <property name="allowMissingPropertyJavadoc" value="true"/>
+    </module>
+    <module name="NonEmptyAtclauseDescription"/>
+    <module name="AtclauseOrder"/>
+    <module name="JavadocStyle">
+      <property name="scope" value="public"/>
+      <property name="tokens"
+                value="ANNOTATION_DEF, ANNOTATION_FIELD_DEF, CLASS_DEF, CTOR_DEF, ENUM_DEF, INTERFACE_DEF, METHOD_DEF"/>
+    </module>
+
+    <!-- Misc -->
+    <module name="UpperEll"/>
+    <module name="ArrayTypeStyle"/>
+    <module name="EmptyStatement"/>
+  </module>
+</module>
