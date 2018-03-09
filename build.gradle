@@ -6,6 +6,7 @@ repositories {
 
 apply plugin: "groovy"
 apply plugin: "idea"
+apply plugin: "maven-publish"
 
 dependencies {
   compile gradleApi()
@@ -13,4 +14,44 @@ dependencies {
   compile "org.asciidoctor:asciidoctor-gradle-plugin:1.5.7"
   compile "gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.14.0"
   compile "gradle.plugin.com.github.spotbugs:spotbugs-gradle-plugin:1.6.1"
+}
+
+jar {
+  manifest {
+    attributes "Built-JDK": System.getProperty("java.version"),
+            "Specification-Title": project.name,
+            "Specification-Version": "${->project.version}",
+            "Specification-Vendor": "Apple Inc.",
+            "Implementation-Title": project.name,
+            "Implementation-Version": "${->project.version}",
+            "Implementation-Vendor": "Apple Inc.",
+            "Automatic-Module-Name": "io.${project.name.replace("-", ".")}"
+  }
+}
+
+publishing {
+  publications {
+    mavenJava(MavenPublication) {
+      // publish jars, sources and docs
+      from components.java
+    }
+  }
+}
+
+task('package', dependsOn: assemble)
+
+def versionString = version.toString()
+
+if (0 == repositories.size()) {
+  repositories {
+    jcenter()
+  }
+} else {
+  if (!versionString.endsWith("-apple")) {
+    version += "-apple"
+  }
+}
+
+if (!hasProperty('releaseBuild') && !versionString.endsWith("-SNAPSHOT")) {
+  version += "-SNAPSHOT"
 }
