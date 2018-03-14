@@ -1,0 +1,18 @@
+buildscript {
+  if (!repositories) {
+    repositories {
+      jcenter()
+    }
+  }
+  
+  dependencies {
+    classpath "io.servicetalk:servicetalk-gradle-build:+"
+  }
+}
+
+apply plugin: "servicetalk-build"
+
+dependencies {
+  compile "org.reactivestreams:reactive-streams:$reactiveStreamsVersion"
+  compile "io.servicetalk:servicetalk-annotations:0.1.0"
+}
