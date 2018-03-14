@@ -1,80 +1,156 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE module PUBLIC
     "-//Puppy Crawl//DTD Check Configuration 1.3//EN"
-    "http://www.puppycrawl.com/dtds/configuration_1_3.dtd">
+    "http://checkstyle.sourceforge.net/dtds/configuration_1_3.dtd">
 
-<!-- See https://connectme.apple.com/docs/DOC-363302 for a human-readable version -->
 <module name="Checker">
   <property name="charset" value="UTF-8"/>
 
+  <module name="SuppressionFilter">
+    <property name="file" value="${config_loc}/global-suppressions.xml"/>
+    <property name="optional" value="false"/>
+  </module>
+  <module name="SuppressionFilter">
+    <property name="file" value="${config_loc}/local-suppressions.xml"/>
+    <property name="optional" value="true"/>
+  </module>
+
+  <!-- Prohibit trailing whitespace -->
+  <module name="RegexpSingleline">
+    <property name="id" value="TrailingWhitespace"/>
+    <property name="format" value="\s+$"/>
+    <property name="message" value="Trailing whitespace"/>
+  </module>
+  <!-- Prohibit an empty line before '}' -->
+  <module name="RegexpMultiline">
+    <property name="id" value="EmptyLineBeforeBlockClose"/>
+    <property name="format" value="\n\n\s*\}[^\n]{0,10}\n"/>
+    <property name="message" value="An empty line at the end of the code block"/>
+  </module>
+  <!-- Prohibit multiple empty lines at the end of file -->
+  <module name="RegexpMultiline">
+    <property name="id" value="MoreThanOneNewlineAtEndOfFile"/>
+    <property name="format" value="\n{2,}\z"/>
+    <property name="message" value="More than one new line at the end of file"/>
+  </module>
+
   <!-- General formatting -->
   <module name="FileTabCharacter"/>
-  <module name="RegexpSingleline">
-    <property name="format" value="\s+$"/>
-    <property name="message" value="trailing whitespace"/>
+  <module name="NewlineAtEndOfFile">
+    <property name="lineSeparator" value="lf"/>
   </module>
-  <!-- Prohibit consecutive empty lines (except the lines after package/import) -->
-  <module name="RegexpMultiline">
-    <property name="format" value="\n *(?!package )(?!import )[^\n]+\n{3,}"/>
-    <property name="message" value="two or more consecutive empty lines"/>
-  </module>
-  <module name="NewlineAtEndOfFile"/>
+  <module name="UniqueProperties"/>
 
   <module name="TreeWalker">
-    <!-- Files -->
+    <!-- Prohibit calls to print to the console -->
+    <module name="RegexpSinglelineJava">
+      <property name="id" value="ConsolePrint"/>
+      <property name="format" value="System\.(out)|(err)\.print(ln)?"/>
+      <property name="message" value="Call to print to the console. Remove it or add to the suppressions.xml"/>
+      <property name="ignoreComments" value="true"/>
+    </module>
+    <!-- Prohibit comparing this with null (i.e. this == null and this != null) -->
+    <module name="DescendantToken">
+      <property name="tokens" value="EQUAL,NOT_EQUAL"/>
+      <property name="limitedTokens" value="LITERAL_THIS,LITERAL_NULL"/>
+      <property name="maximumNumber" value="1"/>
+      <property name="maximumDepth" value="1"/>
+      <property name="sumTokenCounts" value="true"/>
+      <property name="maximumMessage" value="Comparing this with null (i.e. this == null and this != null)"/>
+    </module>
+    <!-- Assert statement may have side effects -->
+    <module name="DescendantToken">
+      <property name="tokens" value="LITERAL_ASSERT"/>
+      <property name="limitedTokens" value="ASSIGN,DEC, INC, POST_DEC, POST_INC, PLUS_ASSIGN, MINUS_ASSIGN,
+                                            STAR_ASSIGN, DIV_ASSIGN, MOD_ASSIGN, BSR_ASSIGN, SR_ASSIGN,
+                                            SL_ASSIGN, BAND_ASSIGN, BXOR_ASSIGN, BOR_ASSIGN"/>
+      <property name="maximumNumber" value="0"/>
+      <property name="maximumMessage" value="Assert statement may have side effects"/>
+    </module>
+    <!-- Prohibit a return statement from within a finally block -->
+    <module name="DescendantToken">
+      <property name="tokens" value="LITERAL_FINALLY"/>
+      <property name="limitedTokens" value="LITERAL_RETURN"/>
+      <property name="maximumNumber" value="0"/>
+      <property name="maximumMessage" value="A return statement from within a finally block"/>
+    </module>
+
+    <!-- Annotations -->
+    <module name="MissingDeprecated"/>
+    <module name="MissingOverride"/>
+    <module name="PackageAnnotation"/>
+
+    <!-- Class Design -->
+    <module name="FinalClass"/>
+    <module name="HideUtilityClassConstructor"/>
+    <module name="InterfaceIsType"/>
     <module name="OneTopLevelClass"/>
-    <module name="OuterTypeFilename"/>
+    <module name="VisibilityModifier">
+      <property name="packageAllowed" value="true"/>
+      <property name="protectedAllowed" value="true"/>
+      <property name="allowPublicFinalFields" value="true"/>
+    </module>
 
     <!-- Imports -->
     <module name="AvoidStarImport"/>
     <module name="UnusedImports">
-      <property name="processJavadoc" value="true"/>
     </module>
     <module name="CustomImportOrder">
       <property name="thirdPartyPackageRegExp" value=".*"/>
       <property name="specialImportsRegExp" value="com.apple"/>
       <property name="sortImportsInGroupAlphabetically" value="true"/>
-      <property name="separateLineBetweenGroups" value="true"/>
       <property name="customImportOrderRules"
                 value="SPECIAL_IMPORTS###THIRD_PARTY_PACKAGE###STANDARD_JAVA_PACKAGE###STATIC"/>
     </module>
+    <module name="RedundantImport"/>
 
     <!-- Modifiers -->
     <module name="ModifierOrder"/>
     <module name="RedundantModifier"/>
 
     <!-- Whitespace -->
-    <module name="GenericWhitespace"/>
     <module name="EmptyForInitializerPad"/>
     <module name="EmptyForIteratorPad"/>
+    <module name="EmptyLineSeparator">
+      <property name="allowMultipleEmptyLines" value="false"/>
+      <property name="allowMultipleEmptyLinesInsideClassMembers" value="false"/>
+      <property name="tokens" value="PACKAGE_DEF, IMPORT, CLASS_DEF, ENUM_DEF, INTERFACE_DEF,
+                                     CTOR_DEF, METHOD_DEF, STATIC_INIT, INSTANCE_INIT"/>
+    </module>
+    <module name="GenericWhitespace"/>
     <module name="MethodParamPad"/>
-    <module name="ParenPad"/>
-    <module name="TypecastParenPad"/>
-    <module name="NoWhitespaceBefore"/>
+    <module name="NoLineWrap"/>
     <module name="NoWhitespaceAfter"/>
+    <module name="NoWhitespaceBefore"/>
+    <module name="OperatorWrap">
+      <property name="tokens" value="ASSIGN, DIV_ASSIGN, PLUS_ASSIGN, MINUS_ASSIGN, STAR_ASSIGN, MOD_ASSIGN, SR_ASSIGN,
+                                     BSR_ASSIGN, SL_ASSIGN, BXOR_ASSIGN, BOR_ASSIGN, BAND_ASSIGN, QUESTION"/>
+      <property name="option" value="eol"/>
+    </module>
+    <module name="ParenPad"/>
+    <module name="SingleSpaceSeparator"/>
+    <module name="TypecastParenPad"/>
+    <module name="WhitespaceAfter"/>
     <module name="WhitespaceAround">
       <property name="allowEmptyConstructors" value="true"/>
-      <property name="allowEmptyMethods" value="true"/>
-      <property name="allowEmptyTypes" value="true"/>
-      <property name="allowEmptyLoops" value="true"/>
     </module>
-    <module name="WhitespaceAfter"/>
-    <module name="SingleSpaceSeparator"/>
 
-    <!-- Blocks -->
-    <module name="NeedBraces">
-      <property name="allowSingleLineStatement" value="true"/>
-    </module>
+    <!-- Block Checks -->
+    <module name="NeedBraces"/>
     <module name="LeftCurly"/>
-    <module name="RightCurly">
-      <property name="tokens" value="LITERAL_TRY, LITERAL_CATCH, LITERAL_FINALLY"/>
-    </module>
+    <module name="RightCurly"/>
     <module name="AvoidNestedBlocks">
       <property name="allowInSwitchCase" value="true"/>
     </module>
+    <module name="EmptyBlock">
+      <property name="option" value="text"/>
+    </module>
+    <module name="EmptyCatchBlock"/>
 
     <!-- Javadocs -->
+    <module name="AtclauseOrder"/>
     <module name="JavadocMethod">
+      <property name="id" value="JavadocMethodMain"/>
       <property name="scope" value="public"/>
       <property name="allowUndeclaredRTE" value="true"/>
       <property name="allowMissingParamTags" value="true"/>
@@ -82,17 +158,93 @@
       <property name="allowMissingReturnTag" value="true"/>
       <property name="allowMissingPropertyJavadoc" value="true"/>
     </module>
+    <module name="JavadocMethod">
+      <property name="id" value="JavadocMethodTest"/>
+      <property name="scope" value="public"/>
+      <property name="allowUndeclaredRTE" value="true"/>
+      <property name="allowMissingParamTags" value="true"/>
+      <property name="allowMissingThrowsTags" value="true"/>
+      <property name="allowMissingReturnTag" value="true"/>
+      <property name="allowMissingPropertyJavadoc" value="true"/>
+      <property name="allowMissingJavadoc" value="true"/>
+    </module>
     <module name="NonEmptyAtclauseDescription"/>
-    <module name="AtclauseOrder"/>
     <module name="JavadocStyle">
       <property name="scope" value="public"/>
-      <property name="tokens"
-                value="ANNOTATION_DEF, ANNOTATION_FIELD_DEF, CLASS_DEF, CTOR_DEF, ENUM_DEF, INTERFACE_DEF, METHOD_DEF"/>
+      <property name="tokens" value="ANNOTATION_DEF, ANNOTATION_FIELD_DEF, CLASS_DEF,
+                                     CTOR_DEF, ENUM_DEF, INTERFACE_DEF, METHOD_DEF"/>
+    </module>
+    <module name="SingleLineJavadoc"/>
+    <module name="RegexpSinglelineJava">
+      <property name="format" value="^\s*\*\s*@author"/>
+      <property name="ignoreCase" value="true"/>
+      <property name="message" value="Javadoc has illegal @author tag"/>
     </module>
 
-    <!-- Misc -->
-    <module name="UpperEll"/>
+    <!-- Miscellaneous -->
     <module name="ArrayTypeStyle"/>
+    <module name="CommentsIndentation"/>
+    <module name="OuterTypeFilename"/>
+    <module name="UncommentedMain"/>
+    <module name="UpperEll"/>
+
+    <!-- Coding -->
+    <module name="ArrayTrailingComma"/>
+    <module name="CovariantEquals"/>
+    <module name="DeclarationOrder">
+      <property name="ignoreModifiers" value="true"/>
+    </module>
+    <module name="DefaultComesLast"/>
     <module name="EmptyStatement"/>
+    <module name="EqualsAvoidNull"/>
+    <module name="EqualsHashCode"/>
+    <module name="ExplicitInitialization"/>
+    <module name="FallThrough"/>
+    <module name="IllegalInstantiation">
+      <property name="id" value="IllegalInstantiationOfPrimitives"/>
+      <property name="classes" value="java.lang.Boolean, java.lang.Byte, java.lang.Character, java.lang.Integer,
+                                      java.lang.Long, java.lang.Float, java.lang.Double"/>
+    </module>
+    <module name="IllegalInstantiation">
+      <property name="id" value="IllegalInstantiationOfString"/>
+      <property name="classes" value="java.lang.String"/>
+    </module>
+    <module name="IllegalThrows"/>
+    <module name="IllegalType">
+      <property name="ignoredMethodNames" value=""/>
+      <property name="memberModifiers" value="LITERAL_PUBLIC, LITERAL_PROTECTED"/>
+      <property name="illegalClassNames" value="java.util.HashSet, java.util.LinkedHashSet, java.util.TreeSet,
+                                                java.util.HashMap, java.util.LinkedHashMap, java.util.TreeMap,
+                                                java.util.ArrayList, java.util.LinkedList, java.util.ArrayDeque,
+                                                java.util.Vector, java.util.Hashtable"/>
+    </module>
+    <module name="MissingSwitchDefault"/>
+    <module name="ModifiedControlVariable"/>
+    <module name="NoClone"/>
+    <module name="NoFinalizer"/>
+    <module name="OneStatementPerLine"/>
+    <module name="PackageDeclaration"/>
+    <module name="SimplifyBooleanExpression"/>
+    <module name="SimplifyBooleanReturn"/>
+    <module name="StringLiteralEquality"/>
+    <module name="SuperClone"/>
+    <module name="SuperFinalize"/>
+
+    <!-- Naming Conventions -->
+    <module name="ConstantName">
+      <property name="applyToPrivate" value="false"/>
+      <property name="applyToPackage" value="false"/>
+    </module>
+    <module name="LocalFinalVariableName"/>
+    <module name="LocalVariableName">
+      <property name="allowOneCharVarInForLoop" value="true"/>
+    </module>
+    <module name="MemberName"/>
+    <module name="MethodName"/>
+    <module name="PackageName"/>
+    <module name="ParameterName"/>
+    <module name="StaticVariableName"/>
+    <module name="TypeName"/>
+
   </module>
 </module>

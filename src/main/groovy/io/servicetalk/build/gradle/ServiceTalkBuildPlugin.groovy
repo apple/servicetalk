@@ -271,30 +271,41 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
     }
   }
 
+  private static File copyResourcesToTempFolder(String buildDir, String folder, String... resources) {
+    def tmpDir = new File(buildDir, folder)
+    tmpDir.mkdirs()
+    tmpDir.deleteOnExit()
+
+    resources.each {
+      def resourceContent = getClass().getResource(folder + File.separator + it).text
+      writeToFile(resourceContent, tmpDir, it)
+    }
+
+    return tmpDir
+  }
+
+  private static void writeToFile(String content, File folder, String fileName) {
+    def file = new File(folder, fileName)
+    file.createNewFile()
+    file.deleteOnExit()
+    file.write(content)
+  }
+
   private static void applyQualityPlugins(Project project) {
     project.configure(project) {
       apply plugin: "checkstyle"
       apply plugin: "pmd"
       apply plugin: "com.github.spotbugs"
 
+      File checkstyleLocalSuppressionsFile = file("$rootDir/gradle/checkstyle/suppressions.xml")
       checkstyle {
         toolVersion = "8.8"
-        config = resources.text.fromString(getClass().getResourceAsStream("checkstyle/checkstyle.xml").text)
-        sourceSets = [sourceSets.main, sourceSets.test]
-      }
+        configDir = copyResourcesToTempFolder("$project.buildDir", "checkstyle",
+            "checkstyle.xml", "global-suppressions.xml")
 
-      checkstyleMain {
-        // Required by some of the checks
-        // https://discuss.gradle.org/t/checkstyle-not-getting-compiled-classes-on-classpath-in-1-0-milestone-6/2353/10
-        classpath += configurations.compile
-      }
-
-      checkstyleTest {
-        // Required by some of the checks
-        // https://discuss.gradle.org/t/checkstyle-not-getting-compiled-classes-on-classpath-in-1-0-milestone-6/2353/10
-        classpath += configurations.compile
-
-        config = resources.text.fromString(getClass().getResourceAsStream("checkstyle/checkstyle-test.xml").text)
+        if (checkstyleLocalSuppressionsFile.exists()) {
+          writeToFile(checkstyleLocalSuppressionsFile.text, configDir, "local-suppressions.xml")
+        }
       }
 
       pmd {
