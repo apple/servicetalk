@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -186,6 +186,9 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
         header = null
         headerURI = getClass().getResource("license/HEADER.txt").toURI()
         strictCheck = true
+        mapping {
+          java='SLASHSTAR_STYLE'
+        }
       }
     }
   }
