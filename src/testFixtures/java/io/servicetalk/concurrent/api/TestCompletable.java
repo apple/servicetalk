@@ -1,0 +1,108 @@
+/**
+ * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.servicetalk.concurrent.api;
+
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.internal.TerminalNotification;
+
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+import javax.annotation.Nullable;
+
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+public class TestCompletable extends Completable implements Completable.Subscriber {
+    private final Queue<Subscriber> subscribers = new ConcurrentLinkedQueue<>();
+    private final DynamicCompositeCancellable dynamicCancellable = new MapDynamicCompositeCancellable();
+    private final boolean invokeListenerPostCancel;
+    @Nullable private TerminalNotification terminalNotification;
+
+    public TestCompletable(boolean invokeListenerPostCancel) {
+        this.invokeListenerPostCancel = invokeListenerPostCancel;
+    }
+
+    public TestCompletable() {
+        this(false);
+    }
+
+    @Override
+    public synchronized void handleSubscribe(Subscriber subscriber) {
+        subscribers.add(subscriber);
+        subscriber.onSubscribe(() -> {
+            if (!invokeListenerPostCancel) {
+                subscribers.remove(subscriber);
+            }
+            dynamicCancellable.cancel();
+        });
+        if (terminalNotification != null) {
+            subscribers.remove(subscriber);
+            terminalNotification.terminate(subscriber);
+        }
+    }
+
+    @Override
+    public void onSubscribe(Cancellable cancellable) {
+        dynamicCancellable.add(cancellable);
+    }
+
+    @Override
+    public synchronized void onComplete() {
+        for (Subscriber subscriber : subscribers) {
+            subscriber.onComplete();
+        }
+        subscribers.clear();
+        terminalNotification = complete();
+    }
+
+    @Override
+    public synchronized void onError(Throwable t) {
+        for (Subscriber subscriber : subscribers) {
+            subscriber.onError(t);
+        }
+        subscribers.clear();
+        terminalNotification = TerminalNotification.error(t);
+    }
+
+    public boolean isCancelled() {
+        return dynamicCancellable.isCancelled();
+    }
+
+    public TestCompletable verifyListenCalled() {
+        assertThat("Listen not called.", subscribers, hasSize(greaterThan(0)));
+        return this;
+    }
+
+    public TestCompletable verifyListenNotCalled() {
+        assertThat("Listen called.", subscribers, hasSize(0));
+        return this;
+    }
+
+    public TestCompletable verifyCancelled() {
+        assertTrue("Subscriber did not cancel.", isCancelled());
+        return this;
+    }
+
+    public TestCompletable verifyNotCancelled() {
+        assertFalse("Subscriber cancelled.", isCancelled());
+        return this;
+    }
+}
