@@ -34,21 +34,29 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
     applyIdeaPlugin project
     applyEclipsePlugin project
 
-    project.subprojects {
-      applyJavaPlugin it
-      applyIdeaPlugin it
-      applyEclipsePlugin it
-      applyLicensePlugin it
-      applyCommonPlugins it
-      applyQualityPlugins it
-
-      // TODO apply japicmp plugin
-
-      configureSubProject it
-
-      // TODO allow subprojects to opt-in test fixtures
-      configureTestFixtures it
+    if (project.subprojects) {
+      project.subprojects {
+        configureJavaProject it
+      }
+    } else {
+      configureJavaProject project
     }
+  }
+
+  private static void configureJavaProject(Project project) {
+    applyJavaPlugin project
+    applyIdeaPlugin project
+    applyEclipsePlugin project
+    applyLicensePlugin project
+    applyCommonPlugins project
+    applyQualityPlugins project
+
+    // TODO apply japicmp plugin
+
+    configureSubProject project
+
+    // TODO allow subprojects to opt-in test fixtures
+    configureTestFixtures project
   }
 
   private static void configureProperties(Project project) {
@@ -66,6 +74,8 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
           nettyVersion = nettyStableVersion
           nettyTcnativeVersion = nettyTcnativeStableVersion
         }
+
+        jsr305Version = "3.0.2"
 
         log4jVersion = "2.10.0"
         slf4jVersion = "1.7.25"
@@ -329,6 +339,7 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
       sourceCompatibility = 1.8
 
       dependencies {
+        compile "com.google.code.findbugs:jsr305:$jsr305Version"
         compile "org.slf4j:slf4j-api:$slf4jVersion"
 
         testCompile "junit:junit:$junitVersion"
