@@ -1,0 +1,107 @@
+/**
+ * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.servicetalk.transport.netty.internal;
+
+import io.netty.channel.FileRegion;
+import io.servicetalk.transport.netty.internal.Connection.RequestNSupplier;
+
+import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtection;
+import static io.servicetalk.transport.netty.internal.OverlappingCapacityAwareSupplier.SizeEstimator.defaultEstimator;
+import static java.util.Objects.requireNonNull;
+
+/**
+ * An implementation of {@link RequestNSupplier} that stores the last seen write buffer capacity as
+ * provided by {@link #getRequestNFor(long)} and only fills any increase in capacity in a subsequent call to {@link #getRequestNFor(long)}.
+ */
+abstract class OverlappingCapacityAwareSupplier implements RequestNSupplier {
+
+    private final SizeEstimator sizeEstimator;
+    private long lastSeenCapacity;
+    private long outstandingRequested;
+
+    protected OverlappingCapacityAwareSupplier() {
+        this(defaultEstimator());
+    }
+
+    protected OverlappingCapacityAwareSupplier(SizeEstimator sizeEstimator) {
+        this.sizeEstimator = requireNonNull(sizeEstimator);
+    }
+
+    @Override
+    public final void onItemWrite(Object written, long writeBufferCapacityBeforeWrite, long writeBufferCapacityAfterWrite) {
+        if (outstandingRequested > 0) {
+            outstandingRequested--;
+        }
+        long size = sizeEstimator.estimateSize(written, writeBufferCapacityBeforeWrite, writeBufferCapacityAfterWrite);
+        if (size <= 0) {
+            return;
+        }
+        recordSize(written, size);
+    }
+
+    @Override
+    public final long getRequestNFor(long writeBufferCapacityInBytes) {
+        assert writeBufferCapacityInBytes >= 0 : "Write buffer capacity must be non-negative.";
+        long capacityToFill = outstandingRequested == 0 ? writeBufferCapacityInBytes : writeBufferCapacityInBytes - lastSeenCapacity;
+        lastSeenCapacity = writeBufferCapacityInBytes;
+        // Request the number of items that can fill the extra write buffer capacity since last requested.
+        long toRequest = 0;
+        if (capacityToFill > 0) {
+            toRequest = getRequestNForCapacity(capacityToFill);
+            outstandingRequested = addWithOverflowProtection(outstandingRequested, toRequest);
+        }
+        return toRequest;
+    }
+
+    protected abstract void recordSize(Object written, long sizeInBytes);
+
+    protected abstract long getRequestNForCapacity(long capacityToFill);
+
+    /**
+     * An object size estimator based on write buffer capacity before and after an item write.
+     */
+    @FunctionalInterface
+    public interface SizeEstimator {
+
+        /**
+         * Given the write buffer capacity before an after the write of an item, estimate the size of the item.
+         *<p>
+         * Write buffer capacity may not correctly reflect size of the object written.
+         * Hence capacity before may not necessarily be more than capacity after write.
+         *
+         * @param written Item written.
+         * @param writeBufferCapacityBeforeWrite Write buffer capacity before writing this item.
+         * @param writeBufferCapacityAfterWrite Write buffer capacity after writing this item.
+         *
+         * @return Estimated size of the item.
+         */
+        long estimateSize(Object written, long writeBufferCapacityBeforeWrite, long writeBufferCapacityAfterWrite);
+
+        /**
+         * Returns the default {@link SizeEstimator} to use.
+         *
+         * @return The default {@link SizeEstimator} to use.
+         */
+        static SizeEstimator defaultEstimator() {
+            return (written, before, after) -> {
+                if (written instanceof FileRegion) {
+                    return ((FileRegion) written).count();
+                }
+                return before > after ? before - after : 0;
+            };
+        }
+    }
+}
