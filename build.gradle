@@ -1,0 +1,24 @@
+buildscript {
+  if (!repositories) {
+    repositories {
+      jcenter()
+    }
+  }
+  
+  dependencies {
+    classpath "io.servicetalk:servicetalk-gradle-build:+"
+  }
+}
+
+apply plugin: "servicetalk-build"
+
+dependencies {
+  compile "io.servicetalk:servicetalk-concurrent-context:0.1.0"
+  compile "org.apache.logging.log4j:log4j-core:$log4jVersion"
+
+  testCompile "io.servicetalk:servicetalk-test-resources:0.1.0"
+}
+
+test {
+    jvmArgs '-Dlog4j2.threadContextMap=io.servicetalk.concurrent.context.log4j2.ServiceTalkThreadContextMap'
+}
