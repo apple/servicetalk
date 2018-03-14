@@ -34,6 +34,13 @@
     <property name="message" value="More than one new line at the end of file"/>
   </module>
 
+  <!-- Require an empty line after package declaration -->
+  <module name="RegexpMultiline">
+    <property name="id" value="RequireEmptyLineAfterPackage"/>
+    <property name="format" value="\npackage [^\n]*;\n[^\n]"/>
+    <property name="message" value="An empty line after the package declaration"/>
+  </module>
+
   <!-- General formatting -->
   <module name="FileTabCharacter"/>
   <module name="NewlineAtEndOfFile">
@@ -114,7 +121,7 @@
     <module name="EmptyLineSeparator">
       <property name="allowMultipleEmptyLines" value="false"/>
       <property name="allowMultipleEmptyLinesInsideClassMembers" value="false"/>
-      <property name="tokens" value="PACKAGE_DEF, IMPORT, CLASS_DEF, ENUM_DEF, INTERFACE_DEF,
+      <property name="tokens" value="IMPORT, CLASS_DEF, ENUM_DEF, INTERFACE_DEF,
                                      CTOR_DEF, METHOD_DEF, STATIC_INIT, INSTANCE_INIT"/>
     </module>
     <module name="GenericWhitespace"/>
