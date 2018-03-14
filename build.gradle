@@ -1,0 +1,33 @@
+buildscript {
+  if (!repositories) {
+    repositories {
+      jcenter()
+    }
+  }
+  
+  dependencies {
+    classpath "io.servicetalk:servicetalk-gradle-build:+"
+  }
+}
+
+apply plugin: "servicetalk-build"
+
+dependencies {
+  compile "io.netty:netty-resolver-dns:$nettyVersion"
+  compile "io.servicetalk:servicetalk-annotations:0.1.0"
+  compile "io.servicetalk:servicetalk-concurrent-api:0.1.0"
+  compile "io.servicetalk:servicetalk-client-internal:0.1.0"
+  compile "io.servicetalk:servicetalk-transport-netty-internal:0.1.0"
+
+  testCompile "org.mockito:mockito-core:$mockitoCoreVersion"
+  testCompile "io.servicetalk:servicetalk-test-resources:0.1.0"
+  testCompile group: "io.servicetalk", name: "servicetalk-concurrent-internal", version: "0.1.0", configuration: "testFixturesRuntime"
+  testCompile group: "io.servicetalk", name: "servicetalk-client-internal", version: "0.1.0", configuration: "testFixturesRuntime"
+
+  testFixturesCompile ("org.apache.directory.server:apacheds-protocol-dns:$apacheDirectoryServerVersion") {
+    // We need to use commons-lang 2.6 to be able to run the tests with java9
+    // See https://github.com/apache/bookkeeper/issues/385
+    exclude group: "commons-lang", module: "commons-lang"
+  }
+  testFixturesCompile "commons-lang:commons-lang:$commonsLangVersion"
+}
