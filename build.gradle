@@ -1,0 +1,31 @@
+buildscript {
+  if (!repositories) {
+    repositories {
+      jcenter()
+    }
+  }
+  
+  dependencies {
+    classpath "io.servicetalk:servicetalk-gradle-build:+"
+  }
+}
+
+apply plugin: "servicetalk-build"
+
+dependencies {
+  compile "org.jctools:jctools-core:$jcToolsVersion"
+  compile "io.servicetalk:servicetalk-annotations:0.1.0"
+  compile "io.servicetalk:servicetalk-transport-netty-internal:0.1.0"
+  compile "io.servicetalk:servicetalk-client-api:0.1.0"
+
+  testCompile "org.mockito:mockito-core:$mockitoCoreVersion"
+  testCompile "io.servicetalk:servicetalk-test-resources:0.1.0"
+  testCompile group: "io.servicetalk", name: "servicetalk-concurrent-api", version: "0.1.0", configuration: "testFixturesRuntime"
+  testCompile group: "io.servicetalk", name: "servicetalk-concurrent-internal", version: "0.1.0", configuration: "testFixturesRuntime"
+
+  testFixturesCompile group: 'io.netty', name: 'netty-transport-native-kqueue', version: "$nettyVersion", classifier: 'osx-x86_64'
+  testFixturesCompile group: 'io.netty', name: 'netty-transport-native-epoll', version: "$nettyVersion", classifier: 'linux-x86_64'
+  testFixturesCompile "junit:junit:$junitVersion"
+  testFixturesCompile "org.hamcrest:hamcrest-library:$hamcrestVersion"
+  testFixturesCompile "org.mockito:mockito-core:$mockitoCoreVersion"
+}
