@@ -1,0 +1,27 @@
+buildscript {
+  if (!repositories) {
+    repositories {
+      jcenter()
+    }
+  }
+  
+  dependencies {
+    classpath "io.servicetalk:servicetalk-gradle-build:+"
+  }
+}
+
+apply plugin: "servicetalk-build"
+
+dependencies {
+  compile "io.servicetalk:servicetalk-annotations:0.1.0"
+  compile "io.servicetalk:servicetalk-concurrent-api:0.1.0"
+  compile "io.servicetalk:servicetalk-concurrent-context:0.1.0"
+  compile "io.servicetalk:servicetalk-transport-api:0.1.0"
+  compile "io.netty:netty-handler:$nettyVersion"
+  compile "io.netty:netty-transport-native-epoll:$nettyVersion:linux-x86_64"
+  compile "io.netty:netty-transport-native-kqueue:$nettyVersion:osx-x86_64"
+
+  testCompile "org.mockito:mockito-core:$mockitoCoreVersion"
+  testCompile "io.servicetalk:servicetalk-test-resources:0.1.0"
+  testCompile group: "io.servicetalk", name: "servicetalk-concurrent-api", version: "0.1.0", configuration: "testFixturesRuntime"
+}
