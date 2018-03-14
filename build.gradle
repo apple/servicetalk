@@ -14,6 +14,7 @@ apply plugin: "servicetalk-build"
 
 dependencies {
   compile "io.servicetalk:servicetalk-annotations:0.1.0"
+  compile "io.servicetalk:servicetalk-buffer-netty:0.1.0"
   compile "io.servicetalk:servicetalk-client-api:0.1.0"
   compile "io.servicetalk:servicetalk-client-internal:0.1.0"
   compile "io.servicetalk:servicetalk-redis-internal:0.1.0"
