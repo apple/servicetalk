@@ -13,13 +13,5 @@ buildscript {
 apply plugin: "servicetalk-build"
 
 dependencies {
-  compile "io.servicetalk:servicetalk-concurrent-context:0.1.0"
-  compile "org.apache.logging.log4j:log4j-core:$log4jVersion"
-  compile "com.apple.cie:service-talk-extensions-log4j2-mdc:1.20.0"
-
-  testCompile "io.servicetalk:servicetalk-test-resources:0.1.0"
-}
-
-test {
-    jvmArgs '-Dlog4j2.threadContextMap=io.servicetalk.concurrent.context.log4j2.ServiceTalkThreadContextMap'
+  compile "io.servicetalk:servicetalk-log4j2-mdc-internal:0.1.0"
 }
