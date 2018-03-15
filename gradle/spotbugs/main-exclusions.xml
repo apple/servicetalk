@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Intentional name of Publisher same as reactivestreams Publisher -->
+    <Match>
+        <Or>
+            <Class name="io.servicetalk.concurrent.api.Publisher"/>
+            <Class name="io.servicetalk.concurrent.api.Single"/>
+            <Class name="io.servicetalk.concurrent.api.Completable"/>
+        </Or>
+        <Bug pattern="NM_SAME_SIMPLE_NAME_AS_INTERFACE"/>
+    </Match>
+</FindBugsFilter>
