@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+   <!-- Implementing Map.Entry allows us to avoid object allocation on each iteration. Also this class is internal at the moment. -->
+    <Match>
+        <Class name="io.servicetalk.http.netty.ReadOnlyHttpHeaders$ReadOnlyIterator"/>
+        <Bug pattern="PZ_DONT_REUSE_ENTRY_OBJECTS_IN_ITERATORS"/>
+    </Match>
+
+    <!-- If we don't override equals in this way we won't be able to use equality comparison with other ServiceTalk HttpHeaders. -->
+    <Match>
+        <Class name="io.servicetalk.http.netty.ServiceTalkToNettyHttpHeaders"/>
+        <Method name="equals"/>
+        <Bug pattern="EQ_CHECK_FOR_OPERAND_NOT_COMPATIBLE_WITH_THIS"/>
+    </Match>
+</FindBugsFilter>
