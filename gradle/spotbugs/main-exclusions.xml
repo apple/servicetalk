@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- FindBugs is confused by unusual equals patterns -->
+    <Match>
+        <Or>
+            <Class name="io.servicetalk.transport.netty.AbstractNettyIoExecutor"/>
+            <Class name="io.servicetalk.transport.netty.NettyIoExecutorGroup"/>
+        </Or>
+        <Method name="equals"/>
+        <Bug pattern="EQ_CHECK_FOR_OPERAND_NOT_COMPATIBLE_WITH_THIS"/>
+    </Match>
+</FindBugsFilter>
