@@ -47,11 +47,14 @@ public class ReadOnlyTcpServerConfig {
     protected IoExecutorGroup group;
     protected int backlog = NetUtil.SOMAXCONN;
     protected BufferAllocator allocator = DEFAULT.getAllocator();
-    @Nullable protected SslContext sslContext;
+    @Nullable
+    protected SslContext sslContext;
     protected long idleTimeoutMs;
     protected long gracefulCloseTimeMs = 10000;
-    @Nullable protected DomainNameMapping<SslContext> mappings;
-    @Nullable protected WireLogInitializer wireLogger = GLOBAL_WIRE_LOGGER;
+    @Nullable
+    protected DomainNameMapping<SslContext> mappings;
+    @Nullable
+    protected WireLogInitializer wireLogger = GLOBAL_WIRE_LOGGER;
 
     /**
      * New instance.

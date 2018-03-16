@@ -60,7 +60,8 @@ public final class TcpConnector<Read, Write> {
     private final ReadOnlyTcpClientConfig config;
     private final ChannelInitializer channelInitializer;
     private final Supplier<Predicate<Read>> terminalItemPredicate;
-    @Nullable private final SocketAddress local;
+    @Nullable
+    private final SocketAddress local;
 
     /**
      * New instance.

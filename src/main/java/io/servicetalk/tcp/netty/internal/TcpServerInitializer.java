@@ -139,8 +139,9 @@ public final class TcpServerInitializer {
         bs.group(eventLoopGroup);
         bs.channel(BuilderUtils.serverChannel(eventLoopGroup, bindAddressClass));
 
-        for (@SuppressWarnings("rawtypes") Map.Entry<ChannelOption, Object> opt: config.getOptions().entrySet()) {
-            @SuppressWarnings("unchecked") ChannelOption<Object> option = opt.getKey();
+        for (@SuppressWarnings("rawtypes") Map.Entry<ChannelOption, Object> opt : config.getOptions().entrySet()) {
+            @SuppressWarnings("unchecked")
+            ChannelOption<Object> option = opt.getKey();
             bs.childOption(option, opt.getValue());
         }
 

@@ -41,10 +41,13 @@ public class ReadOnlyTcpClientConfig {
     @SuppressWarnings("rawtypes")
     protected final Map<ChannelOption, Object> optionMap;
     protected BufferAllocator allocator = DEFAULT.getAllocator();
-    @Nullable protected SslContext sslContext;
-    @Nullable protected String hostnameVerificationAlgorithm;
+    @Nullable
+    protected SslContext sslContext;
+    @Nullable
+    protected String hostnameVerificationAlgorithm;
     protected long idleTimeoutMs;
-    @Nullable protected WireLogInitializer wireLogger = GLOBAL_WIRE_LOGGER;
+    @Nullable
+    protected WireLogInitializer wireLogger = GLOBAL_WIRE_LOGGER;
 
     /**
      * New instance.
