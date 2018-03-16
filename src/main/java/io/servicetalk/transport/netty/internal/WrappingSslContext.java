@@ -24,7 +24,8 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SSLEngine;
 
 final class WrappingSslContext extends DelegatingSslContext {
-    private @Nullable final String[] protocols;
+    @Nullable
+    private final String[] protocols;
 
     WrappingSslContext(SslContext context, @Nullable List<String> protocols) {
         super(context);

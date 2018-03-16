@@ -74,7 +74,8 @@ final class WriteStreamSubscriber implements org.reactivestreams.Subscriber<Obje
      */
     @Nullable
     private ChannelPromise lastWritePromise;
-    @SuppressWarnings("unused") @Nullable
+    @SuppressWarnings("unused")
+    @Nullable
     private volatile Subscription subscription;
     @SuppressWarnings("unused")
     private volatile long requested;

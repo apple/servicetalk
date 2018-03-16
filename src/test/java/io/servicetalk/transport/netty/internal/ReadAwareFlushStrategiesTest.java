@@ -29,7 +29,8 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class ReadAwareFlushStrategiesTest {
 
-    @Rule public final MockedSubscriberRule<String> sourceSub = new MockedSubscriberRule<>();
+    @Rule
+    public final MockedSubscriberRule<String> sourceSub = new MockedSubscriberRule<>();
 
     private Runnable flushListener;
     private TestPublisher<String> source;

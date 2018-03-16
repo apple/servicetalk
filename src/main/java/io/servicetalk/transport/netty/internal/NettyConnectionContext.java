@@ -45,7 +45,8 @@ public final class NettyConnectionContext implements ConnectionContext {
     private final BufferAllocator allocator;
     private final NettyChannelListenableAsyncCloseable close;
     private final Channel channel;
-    @Nullable private volatile SSLSession sslSession;
+    @Nullable
+    private volatile SSLSession sslSession;
 
     /**
      * New instance.

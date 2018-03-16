@@ -70,7 +70,8 @@ public abstract class AbstractWriteTest {
 
     static final class WriteInfo {
 
-        @Nullable private final ChannelFuture future;
+        @Nullable
+        private final ChannelFuture future;
         private final long writeCapacityBefore;
         private final long writeCapacityAfter;
         private final String msg;

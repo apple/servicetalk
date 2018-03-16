@@ -127,7 +127,8 @@ public final class BuilderUtils {
      * @param address      the filedescriptor to wrap.
      * @return the class that should be used for bootstrapping
      */
-    @Nullable public static Channel socketChannel(EventLoopGroup group, FileDescriptorSocketAddress address) {
+    @Nullable
+    public static Channel socketChannel(EventLoopGroup group, FileDescriptorSocketAddress address) {
         if (useEpoll(group)) {
             return new EpollSocketChannel(address.getValue());
         }

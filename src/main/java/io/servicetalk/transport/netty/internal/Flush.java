@@ -61,7 +61,8 @@ public final class Flush {
         private final Subscriber<? super T> subscriber;
         private final ChannelOutboundInvoker channel;
         private final EventExecutor eventLoop;
-        @Nullable private Cancellable flushCancellable;
+        @Nullable
+        private Cancellable flushCancellable;
         private volatile boolean enqueueFlush;
 
         FlushSubscriber(FlushSignals flushSignals, Subscriber<? super T> subscriber, Channel channel) {

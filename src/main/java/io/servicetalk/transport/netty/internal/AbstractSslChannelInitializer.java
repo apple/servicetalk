@@ -35,7 +35,8 @@ public abstract class AbstractSslChannelInitializer implements ChannelInitialize
     public ConnectionContext init(Channel channel, ConnectionContext context) {
         final NettyConnectionContext nettyServiceContext = (NettyConnectionContext) context;
         ChannelPipeline pipeline = channel.pipeline();
-        @Nullable SslHandler sslHandler = addNettySslHandler(channel, context);
+        @Nullable
+        SslHandler sslHandler = addNettySslHandler(channel, context);
         pipeline.addLast(new SslSessionExtractor(nettyServiceContext, sslHandler));
         return nettyServiceContext;
     }

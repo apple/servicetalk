@@ -58,7 +58,8 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
     private final WriteQueue<Resp> writeQueue;
     private final int maxPendingRequests;
 
-    @SuppressWarnings("unused") private volatile int pendingRequestsCount;
+    @SuppressWarnings("unused")
+    private volatile int pendingRequestsCount;
 
     /**
      * New instance.
@@ -278,7 +279,8 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
 
         final Completable write;
         final Completable.Subscriber readReadyListener;
-        @Nullable final Predicate<Resp> terminalMsgPredicate;
+        @Nullable
+        final Predicate<Resp> terminalMsgPredicate;
 
         Task(Completable write, Completable.Subscriber readReadyListener, @Nullable Predicate<Resp> terminalMsgPredicate) {
             this.write = requireNonNull(write);
@@ -294,7 +296,8 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
         private final Task<Resp> requestTask;
         private final WriteQueue<Resp> writeQueue;
 
-        @SuppressWarnings("unused") private volatile int postTaskTerminationCalled;
+        @SuppressWarnings("unused")
+        private volatile int postTaskTerminationCalled;
 
         WriteSourceSubscriber(Task<Resp> requestTask, WriteQueue<Resp> writeQueue) {
             this.requestTask = requestTask;

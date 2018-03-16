@@ -34,7 +34,8 @@ public abstract class SequentialTaskQueue<T> {
     private static final AtomicIntegerFieldUpdater<SequentialTaskQueue> lockUpdater =
             AtomicIntegerFieldUpdater.newUpdater(SequentialTaskQueue.class, "lock");
 
-    @SuppressWarnings("unused") private volatile int lock;
+    @SuppressWarnings("unused")
+    private volatile int lock;
     private final Queue<T> queue;
     /**
      * This is used to protect against re-entry resulting in stack overflow. It must be created per object and cannot be

@@ -38,7 +38,8 @@ public abstract class AbstractChannelReadHandler<T> extends ChannelInboundHandle
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractChannelReadHandler.class);
 
-    @Nullable private NettyChannelPublisher<T> publisher;
+    @Nullable
+    private NettyChannelPublisher<T> publisher;
     private final Predicate<T> isTerminal;
 
     /**
@@ -94,7 +95,8 @@ public abstract class AbstractChannelReadHandler<T> extends ChannelInboundHandle
 
     @Override
     public final void channelRead(ChannelHandlerContext ctx, Object msg) {
-        @SuppressWarnings("unchecked") T t = (T) msg;
+        @SuppressWarnings("unchecked")
+        T t = (T) msg;
         assert publisher != null;
         publisher.channelRead(t);
         ctx.fireChannelRead(msg);

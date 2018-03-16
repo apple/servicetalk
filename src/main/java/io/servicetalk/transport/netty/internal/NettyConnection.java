@@ -70,7 +70,8 @@ public final class NettyConnection<Read, Write> implements Connection<Read, Writ
     private volatile WritableListener writableListener = PLACE_HOLDER_WRITABLE_LISTENER;
 
     private volatile boolean readInProgress;
-    @Nullable private volatile ReadAwareFlushStrategyHolder<Write> readAwareFlushStrategyHolder;
+    @Nullable
+    private volatile ReadAwareFlushStrategyHolder<Write> readAwareFlushStrategyHolder;
 
     private final BooleanSupplier readInProgressSupplier = () -> readInProgress;
     private final Channel channel;

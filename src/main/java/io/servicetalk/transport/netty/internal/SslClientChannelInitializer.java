@@ -33,7 +33,8 @@ import static java.util.Objects.requireNonNull;
  */
 public class SslClientChannelInitializer extends AbstractSslChannelInitializer {
 
-    @Nullable private final String hostnameVerificationAlgorithm;
+    @Nullable
+    private final String hostnameVerificationAlgorithm;
     private final SslContext sslContext;
 
     /**

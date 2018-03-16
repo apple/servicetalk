@@ -56,9 +56,12 @@ import static org.mockito.Mockito.when;
 public class NettyConnectionTest {
 
     private TestPublisher<Buffer> publisher;
-    @Rule public final MockedCompletableListenerRule writeListener = new MockedCompletableListenerRule();
-    @Rule public final MockedCompletableListenerRule secondWriteListener = new MockedCompletableListenerRule();
-    @Rule public final MockedSubscriberRule<Buffer> subscriberRule = new MockedSubscriberRule<>();
+    @Rule
+    public final MockedCompletableListenerRule writeListener = new MockedCompletableListenerRule();
+    @Rule
+    public final MockedCompletableListenerRule secondWriteListener = new MockedCompletableListenerRule();
+    @Rule
+    public final MockedSubscriberRule<Buffer> subscriberRule = new MockedSubscriberRule<>();
 
     private BufferAllocator allocator;
     private EmbeddedChannel channel;

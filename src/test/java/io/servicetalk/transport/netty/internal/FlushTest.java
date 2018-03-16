@@ -37,8 +37,10 @@ import static org.mockito.Mockito.when;
 
 public class FlushTest {
 
-    @Rule public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
-    @Rule public final PublisherRule<String> source = new PublisherRule<>();
+    @Rule
+    public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
+    @Rule
+    public final PublisherRule<String> source = new PublisherRule<>();
 
     private FlushStrategyHolder.FlushSignals flushSignals;
     private Channel channel;

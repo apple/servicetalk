@@ -52,7 +52,9 @@ final class FlushOnReadCompleteStrategy implements FlushStrategy {
 
         private static final AtomicReferenceFieldUpdater<ReadAwareFlushStrategyHolderImpl, ReadAwareSubscriber> subscriberUpdater =
                 AtomicReferenceFieldUpdater.newUpdater(ReadAwareFlushStrategyHolderImpl.class, ReadAwareSubscriber.class, "subscriber");
-        @Nullable @SuppressWarnings("unused") private volatile ReadAwareSubscriber<T> subscriber;
+        @Nullable
+        @SuppressWarnings("unused")
+        private volatile ReadAwareSubscriber<T> subscriber;
 
         private volatile BooleanSupplier readInProgressSupplier = () -> false;
 
@@ -107,7 +109,8 @@ final class FlushOnReadCompleteStrategy implements FlushStrategy {
         private final Subscriber<? super T> subscriber;
         private final FlushStrategyHolder.FlushSignals signals;
         private final int maxPendingWrites;
-        @SuppressWarnings("unused") private volatile int unflushedCount;
+        @SuppressWarnings("unused")
+        private volatile int unflushedCount;
 
         ReadAwareSubscriber(ReadAwareFlushStrategyHolderImpl<T> strategy, Subscriber<? super T> subscriber,
                             FlushStrategyHolder.FlushSignals signals, int maxPendingWrites) {

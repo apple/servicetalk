@@ -174,7 +174,8 @@ public class NettyChannelPublisherTest {
         fireChannelRead(1);
         subscriber.verifyItems(1);
 
-        @SuppressWarnings("unchecked") org.reactivestreams.Subscriber<Integer> sub2 = mock(org.reactivestreams.Subscriber.class);
+        @SuppressWarnings("unchecked")
+        org.reactivestreams.Subscriber<Integer> sub2 = mock(org.reactivestreams.Subscriber.class);
         publisher.subscribe(sub2);
         verify(sub2).onSubscribe(any(Subscription.class));
         verify(sub2).onError(any(IllegalStateException.class));
@@ -323,7 +324,8 @@ public class NettyChannelPublisherTest {
         channel.close().await();
         subscriber.subscribe(publisher);
         subscriber.verifyFailure(ClosedChannelException.class);
-        @SuppressWarnings("unchecked") org.reactivestreams.Subscriber<Integer> mock = Mockito.mock(org.reactivestreams.Subscriber.class);
+        @SuppressWarnings("unchecked")
+        org.reactivestreams.Subscriber<Integer> mock = Mockito.mock(org.reactivestreams.Subscriber.class);
         publisher.subscribe(mock);
         verify(mock).onSubscribe(any());
         verify(mock).onError(any(ClosedChannelException.class));
@@ -428,7 +430,7 @@ public class NettyChannelPublisherTest {
             @Override
             public void onComplete() {
                 try {
-                   fail();
+                    fail();
                 } catch (AssertionError e) {
                     assertErrorRef.compareAndSet(null, e);
                 }

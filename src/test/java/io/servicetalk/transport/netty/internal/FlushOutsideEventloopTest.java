@@ -30,7 +30,8 @@ import static org.hamcrest.Matchers.is;
 
 public class FlushOutsideEventloopTest extends AbstractOutOfEventloopTest {
 
-    @Rule public final MockedSubscriberRule<Integer> subscriber = new MockedSubscriberRule<>();
+    @Rule
+    public final MockedSubscriberRule<Integer> subscriber = new MockedSubscriberRule<>();
 
     private TestPublisher<Integer> src;
     private FlushSignals signals;

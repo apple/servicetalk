@@ -29,8 +29,10 @@ import javax.annotation.Nullable;
  */
 public class SslServerChannelInitializer extends AbstractSslChannelInitializer {
 
-    @Nullable private final DomainNameMapping<SslContext> domainNameMapping;
-    @Nullable private final SslContext sslContext;
+    @Nullable
+    private final DomainNameMapping<SslContext> domainNameMapping;
+    @Nullable
+    private final SslContext sslContext;
 
     /**
      * New instance.

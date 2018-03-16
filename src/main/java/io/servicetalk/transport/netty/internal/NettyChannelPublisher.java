@@ -46,9 +46,12 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
     private long requestCount;
     private boolean requested;
     private boolean inProcessPending;
-    @Nullable private Subscriber<? super T> subscriber;
-    @Nullable private Queue<Object> pending;
-    @Nullable private Throwable fatalError;
+    @Nullable
+    private Subscriber<? super T> subscriber;
+    @Nullable
+    private Queue<Object> pending;
+    @Nullable
+    private Throwable fatalError;
 
     private final Channel channel;
     private final EventLoop eventLoop;
@@ -181,7 +184,8 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
 
     private boolean emit(Subscriber<? super T> target, Object next) {
         requestCount--;
-        @SuppressWarnings("unchecked") T t = (T) next;
+        @SuppressWarnings("unchecked")
+        T t = (T) next;
         /*
          * In case when this Publisher is converted to a Single (with isLast always returning true),
          * it should be possible for us to cancel the Subscription inside onNext.
