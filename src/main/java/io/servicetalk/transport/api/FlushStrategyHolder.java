@@ -74,7 +74,9 @@ public interface FlushStrategyHolder<T> {
         private static final AtomicReferenceFieldUpdater<FlushSignals, Runnable> listenerUpdater =
                 AtomicReferenceFieldUpdater.newUpdater(FlushSignals.class, Runnable.class, "listener");
 
-        @SuppressWarnings("unused") @Nullable private volatile Runnable listener;
+        @SuppressWarnings("unused")
+        @Nullable
+        private volatile Runnable listener;
 
         /**
          * Register a {@link Runnable} that will be invoked whenever a flush is signaled by {@link #signalFlush()}.<p>

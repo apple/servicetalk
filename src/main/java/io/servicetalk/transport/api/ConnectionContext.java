@@ -51,7 +51,8 @@ public interface ConnectionContext extends ListenableAsyncCloseable {
      *
      * @return The {@link SSLSession} if SSL/TLS is enabled, or {@code null} otherwise.
      */
-    @Nullable SSLSession getSslSession();
+    @Nullable
+    SSLSession getSslSession();
 
     /**
      * Get the {@link IoExecutor} that is used to handle the IO for the connection.

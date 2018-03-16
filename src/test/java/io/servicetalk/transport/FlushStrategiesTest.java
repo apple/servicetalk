@@ -30,7 +30,8 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class FlushStrategiesTest {
 
-    @Rule public final MockedSubscriberRule<String> sourceSub = new MockedSubscriberRule<>();
+    @Rule
+    public final MockedSubscriberRule<String> sourceSub = new MockedSubscriberRule<>();
 
     private Runnable flushListener;
     private TestPublisher<String> durationSource;

@@ -75,10 +75,13 @@ final class BatchFlush implements FlushStrategy {
 
         @Nullable
         private volatile Subscription durationSubscription;
-        @SuppressWarnings("unused") private volatile int unflushedCount;
-        @SuppressWarnings("unused") private volatile int subscriberState;
+        @SuppressWarnings("unused")
+        private volatile int unflushedCount;
+        @SuppressWarnings("unused")
+        private volatile int subscriberState;
         @Nullable
-        @SuppressWarnings("unused") private volatile TerminalNotification terminalNotification;
+        @SuppressWarnings("unused")
+        private volatile TerminalNotification terminalNotification;
 
         MultiSourceBatchSubscriber(Subscriber<? super T> subscriber, Publisher<?> durationBoundaries, FlushStrategyHolder.FlushSignals signals,
                                    int batchSize) {
