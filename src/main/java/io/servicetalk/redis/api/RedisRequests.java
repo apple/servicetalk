@@ -140,7 +140,8 @@ public final class RedisRequests {
      * @see <a href="https://redis.io/topics/protocol#sending-commands-to-a-redis-server">Sending commands to a Redis Server</a>
      */
     public static RedisRequest newRequest(final Array<CompleteRequestRedisData> content) {
-        @SuppressWarnings("unchecked") final List<CompleteRequestRedisData> data = (List<CompleteRequestRedisData>) content.getListValue();
+        @SuppressWarnings("unchecked")
+        final List<CompleteRequestRedisData> data = (List<CompleteRequestRedisData>) content.getListValue();
         final Command command = (Command) data.get(0);
 
         final RequestRedisData[] stanzaAndArgs = data.toArray(new RequestRedisData[data.size() + 1]);
