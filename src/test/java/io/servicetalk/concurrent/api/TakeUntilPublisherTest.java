@@ -22,8 +22,10 @@ import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEP
 
 public class TakeUntilPublisherTest {
 
-    @Rule public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
-    @Rule public final PublisherRule<String> publisher = new PublisherRule<>();
+    @Rule
+    public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
+    @Rule
+    public final PublisherRule<String> publisher = new PublisherRule<>();
 
     @Test
     public void testUntilComplete() throws Exception {

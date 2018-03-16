@@ -34,11 +34,13 @@ final class MapDynamicCompositeCancellable implements DynamicCompositeCancellabl
 
     private static final AtomicIntegerFieldUpdater<MapDynamicCompositeCancellable> cancelledUpdater =
             AtomicIntegerFieldUpdater.newUpdater(MapDynamicCompositeCancellable.class, "cancelled");
-    @SuppressWarnings("unused") private volatile int cancelled;
+    @SuppressWarnings("unused")
+    private volatile int cancelled;
 
     private static final AtomicIntegerFieldUpdater<MapDynamicCompositeCancellable> drainingUpdater =
             AtomicIntegerFieldUpdater.newUpdater(MapDynamicCompositeCancellable.class, "draining");
-    @SuppressWarnings("unused") private volatile int draining;
+    @SuppressWarnings("unused")
+    private volatile int draining;
 
     private final ConcurrentMap<Cancellable, Cancellable> cancellables;
 

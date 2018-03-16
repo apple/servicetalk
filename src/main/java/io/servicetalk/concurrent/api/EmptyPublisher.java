@@ -21,7 +21,9 @@ import org.reactivestreams.Subscriber;
 final class EmptyPublisher extends Publisher {
     static final EmptyPublisher INSTANCE = new EmptyPublisher();
 
-    private EmptyPublisher() { }
+    private EmptyPublisher() {
+        // singleton
+    }
 
     @Override
     protected void handleSubscribe(Subscriber subscriber) {

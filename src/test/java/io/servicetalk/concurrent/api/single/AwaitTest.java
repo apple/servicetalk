@@ -36,8 +36,10 @@ import static org.hamcrest.Matchers.is;
 
 public class AwaitTest {
 
-    @Rule public final ExpectedException thrown = ExpectedException.none();
-    @Rule public final MockedSingleListenerRule rule = new MockedSingleListenerRule();
+    @Rule
+    public final ExpectedException thrown = ExpectedException.none();
+    @Rule
+    public final MockedSingleListenerRule rule = new MockedSingleListenerRule();
 
     @Test
     public void testFailure() throws Throwable {

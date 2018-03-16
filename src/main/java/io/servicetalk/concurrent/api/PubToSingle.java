@@ -43,8 +43,10 @@ final class PubToSingle<T> extends Single<T> {
     @Override
     protected void handleSubscribe(Subscriber<? super T> subscriber) {
         source.subscribe(new org.reactivestreams.Subscriber<T>() {
-            @Nullable private Subscription subscription;
+            @Nullable
+            private Subscription subscription;
             private boolean done;
+
             @Override
             public void onSubscribe(Subscription s) {
                 if (checkDuplicateSubscription(subscription, s)) {

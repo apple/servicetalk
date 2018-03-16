@@ -58,8 +58,10 @@ import static org.junit.Assume.assumeTrue;
 public final class DefaultExecutorTest {
 
     private static final int UNBOUNDED = -1;
-    @Rule public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
-    @Rule public final ExpectedException expected = ExpectedException.none();
+    @Rule
+    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
+    @Rule
+    public final ExpectedException expected = ExpectedException.none();
 
     private final Executor executor;
     private final String name;
@@ -183,7 +185,8 @@ public final class DefaultExecutorTest {
         private static final Runnable NOOP_TASK = () -> { };
         private final CountDownLatch started = new CountDownLatch(1);
         private final CountDownLatch done = new CountDownLatch(1);
-        @Nullable private volatile TerminalNotification terminalNotification;
+        @Nullable
+        private volatile TerminalNotification terminalNotification;
         private final Runnable actualTask;
 
         Task() {

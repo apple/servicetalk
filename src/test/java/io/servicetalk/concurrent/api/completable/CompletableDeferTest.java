@@ -35,7 +35,8 @@ public class CompletableDeferTest {
 
     @Before
     public void setUp() throws Exception {
-        @SuppressWarnings("unchecked") Supplier<Completable> mock = mock(Supplier.class);
+        @SuppressWarnings("unchecked")
+        Supplier<Completable> mock = mock(Supplier.class);
         when(mock.get()).thenReturn(completed());
         factory = mock;
     }

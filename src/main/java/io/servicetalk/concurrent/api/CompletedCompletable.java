@@ -20,7 +20,9 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 final class CompletedCompletable extends Completable {
     static final CompletedCompletable INSTANCE = new CompletedCompletable();
 
-    private CompletedCompletable() { }
+    private CompletedCompletable() {
+        // singleton
+    }
 
     @Override
     protected void handleSubscribe(Subscriber subscriber) {

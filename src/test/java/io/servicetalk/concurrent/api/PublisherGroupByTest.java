@@ -49,7 +49,8 @@ import static org.mockito.Mockito.verify;
 public class PublisherGroupByTest {
 
     private TestPublisher<Integer> source;
-    @Rule public final MockedSubscriberRule<Boolean> subscriber = new MockedSubscriberRule<>();
+    @Rule
+    public final MockedSubscriberRule<Boolean> subscriber = new MockedSubscriberRule<>();
 
     @Before
     public void setUp() throws Exception {
@@ -404,7 +405,8 @@ public class PublisherGroupByTest {
 
     @Test
     public void testPendingGroupsQueueBreach() throws Exception {
-        @SuppressWarnings("unchecked") Subscriber<Publisher.Group<Integer, Integer>> subscriber = mock(Subscriber.class);
+        @SuppressWarnings("unchecked")
+        Subscriber<Publisher.Group<Integer, Integer>> subscriber = mock(Subscriber.class);
         source.groupBy(integer -> integer, 16).subscribe(subscriber);
         ArgumentCaptor<Subscription> subscriptionCaptor = forClass(Subscription.class);
         verify(subscriber).onSubscribe(subscriptionCaptor.capture());

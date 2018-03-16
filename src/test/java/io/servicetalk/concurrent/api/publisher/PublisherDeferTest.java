@@ -50,7 +50,8 @@ public class PublisherDeferTest {
     }
 
     private static void subscribeAndVerify(Publisher<Integer> source) {
-        @SuppressWarnings("unchecked") Subscriber<Integer> subscriber = mock(Subscriber.class);
+        @SuppressWarnings("unchecked")
+        Subscriber<Integer> subscriber = mock(Subscriber.class);
         source.subscribe(subscriber);
         verify(subscriber).onSubscribe(any());
         verify(subscriber).onComplete();

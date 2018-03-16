@@ -34,7 +34,8 @@ public class TestCompletable extends Completable implements Completable.Subscrib
     private final Queue<Subscriber> subscribers = new ConcurrentLinkedQueue<>();
     private final DynamicCompositeCancellable dynamicCancellable = new MapDynamicCompositeCancellable();
     private final boolean invokeListenerPostCancel;
-    @Nullable private TerminalNotification terminalNotification;
+    @Nullable
+    private TerminalNotification terminalNotification;
 
     public TestCompletable(boolean invokeListenerPostCancel) {
         this.invokeListenerPostCancel = invokeListenerPostCancel;

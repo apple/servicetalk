@@ -25,7 +25,8 @@ import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEP
 
 public class CompletableAndThenCompletableTest {
 
-    @Rule public final MockedCompletableListenerRule listener = new MockedCompletableListenerRule();
+    @Rule
+    public final MockedCompletableListenerRule listener = new MockedCompletableListenerRule();
 
     private TestCompletable source;
     private TestCompletable next;

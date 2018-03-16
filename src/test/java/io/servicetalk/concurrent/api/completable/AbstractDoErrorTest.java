@@ -33,7 +33,8 @@ public abstract class AbstractDoErrorTest {
 
     @Test
     public void testError() {
-        @SuppressWarnings("unchecked") Consumer<Throwable> onError = Mockito.mock(Consumer.class);
+        @SuppressWarnings("unchecked")
+        Consumer<Throwable> onError = Mockito.mock(Consumer.class);
         listener.listen(doError(Completable.error(DELIBERATE_EXCEPTION), onError));
         verify(onError).accept(DELIBERATE_EXCEPTION);
     }

@@ -29,8 +29,10 @@ import static java.util.Objects.requireNonNull;
  */
 final class MergeCompletable extends Completable {
     private final Completable original;
-    @Nullable private final Completable[] others;
-    @Nullable private final Completable onlyOther;
+    @Nullable
+    private final Completable[] others;
+    @Nullable
+    private final Completable onlyOther;
     private final boolean delayError;
 
     /**

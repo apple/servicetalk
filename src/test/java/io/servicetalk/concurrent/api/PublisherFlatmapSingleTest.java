@@ -371,6 +371,7 @@ public class PublisherFlatmapSingleTest {
                                                                                    1, false);
         pub.subscribe(new Subscriber<String>() {
             private Subscription subscription;
+
             @Override
             public void onSubscribe(Subscription s) {
                 subscription = s;

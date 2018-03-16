@@ -192,8 +192,10 @@ public final class PublisherGroupByConcurrencyTest {
     private static final class GroupSubscriber implements Subscriber<Integer>, Subscription {
 
         private final Queue<Integer> nexts = new ConcurrentLinkedQueue<>();
-        @Nullable private volatile Subscription subscription;
-        @Nullable private volatile TerminalNotification terminalNotification;
+        @Nullable
+        private volatile Subscription subscription;
+        @Nullable
+        private volatile TerminalNotification terminalNotification;
 
         @Override
         public void onSubscribe(Subscription s) {

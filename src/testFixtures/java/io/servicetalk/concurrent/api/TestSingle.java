@@ -35,7 +35,8 @@ public class TestSingle<T> extends Single<T> implements Single.Subscriber<T> {
     private final DynamicCompositeCancellable dynamicCancellable = new MapDynamicCompositeCancellable();
     private final boolean invokeListenerPostCancel;
     private final boolean cacheResults;
-    @Nullable private Object cachedResult;
+    @Nullable
+    private Object cachedResult;
 
     public TestSingle() {
         this(false);

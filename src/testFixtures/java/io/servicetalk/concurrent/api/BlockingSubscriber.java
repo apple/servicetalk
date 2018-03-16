@@ -47,7 +47,8 @@ import static org.hamcrest.Matchers.notNullValue;
  */
 public final class BlockingSubscriber<T> implements Subscriber<T> {
 
-    @Nullable private Subscription s;
+    @Nullable
+    private Subscription s;
 
     private final BlockingQueue<Result> awaitingResults = new LinkedBlockingQueue<>();
     private final ConcurrentLinkedQueue<T> received = new ConcurrentLinkedQueue<>();

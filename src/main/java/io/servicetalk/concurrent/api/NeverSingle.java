@@ -20,7 +20,9 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 final class NeverSingle extends Single {
     static final NeverSingle INSTANCE = new NeverSingle();
 
-    private NeverSingle() { }
+    private NeverSingle() {
+        // singleton
+    }
 
     @Override
     public void handleSubscribe(Subscriber subscriber) {

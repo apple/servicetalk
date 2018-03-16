@@ -27,8 +27,10 @@ import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEP
 
 public class PubToSingleTest {
 
-    @Rule public final MockedSingleListenerRule<String> listenerRule = new MockedSingleListenerRule<>();
-    @Rule public final PublisherRule<String> publisher = new PublisherRule<>();
+    @Rule
+    public final MockedSingleListenerRule<String> listenerRule = new MockedSingleListenerRule<>();
+    @Rule
+    public final PublisherRule<String> publisher = new PublisherRule<>();
 
     @Test
     public void testSuccess() throws Exception {

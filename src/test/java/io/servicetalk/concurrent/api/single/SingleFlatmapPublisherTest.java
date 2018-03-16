@@ -31,7 +31,8 @@ import static org.hamcrest.Matchers.is;
 
 public final class SingleFlatmapPublisherTest {
 
-    @Rule public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
+    @Rule
+    public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
     private TestPublisher<String> publisher = new TestPublisher<>();
     private TestSingle<String> single;
 

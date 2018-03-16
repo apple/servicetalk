@@ -59,12 +59,19 @@ final class MulticastUtils {
                 AtomicLongFieldUpdater.newUpdater(IndividualMulticastSubscriber.class, "sourceEmitted");
 
         private boolean terminatedPrematurely;
-        @SuppressWarnings("unused") private volatile int subscriberState;
-        @SuppressWarnings("unused") private volatile long requested;
-        @SuppressWarnings("unused") private volatile long sourceRequested;
-        @SuppressWarnings("unused") private volatile long sourceEmitted;
-        @SuppressWarnings("unused") @Nullable volatile Subscriber<? super T> target;
-        @Nullable private volatile SpscQueue<T> subscriberQueue;
+        @SuppressWarnings("unused")
+        private volatile int subscriberState;
+        @SuppressWarnings("unused")
+        private volatile long requested;
+        @SuppressWarnings("unused")
+        private volatile long sourceRequested;
+        @SuppressWarnings("unused")
+        private volatile long sourceEmitted;
+        @SuppressWarnings("unused")
+        @Nullable
+        volatile Subscriber<? super T> target;
+        @Nullable
+        private volatile SpscQueue<T> subscriberQueue;
         private final int maxQueueSize;
 
         IndividualMulticastSubscriber(int maxQueueSize) {
@@ -406,7 +413,8 @@ final class MulticastUtils {
                         return -totalDrainCount;
                     }
 
-                    @SuppressWarnings("unchecked") final T t = (T) (next == NULL_TOKEN ? null : next);
+                    @SuppressWarnings("unchecked")
+                    final T t = (T) (next == NULL_TOKEN ? null : next);
                     ++i;
                     // We should always keep the queue count accurate because otherwise if there is re-entry we may
                     // throw an exception due to the queue being full, but there should be at least 1 space remaining.

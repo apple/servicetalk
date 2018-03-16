@@ -25,7 +25,8 @@ import static org.junit.Assert.assertSame;
 
 public final class ResumePublisherTest {
 
-    @Rule public final MockedSubscriberRule<Integer> subscriber = new MockedSubscriberRule<>();
+    @Rule
+    public final MockedSubscriberRule<Integer> subscriber = new MockedSubscriberRule<>();
 
     private TestPublisher<Integer> first;
     private TestPublisher<Integer> second;

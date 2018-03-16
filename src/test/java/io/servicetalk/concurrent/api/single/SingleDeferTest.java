@@ -49,7 +49,8 @@ public class SingleDeferTest {
     }
 
     private static void listenAndVerify(Single<Integer> source) {
-        @SuppressWarnings("unchecked") Single.Subscriber<Integer> subscriber = mock(Single.Subscriber.class);
+        @SuppressWarnings("unchecked")
+        Single.Subscriber<Integer> subscriber = mock(Single.Subscriber.class);
         source.subscribe(subscriber);
         verify(subscriber).onSubscribe(any());
         verify(subscriber).onSuccess(1);

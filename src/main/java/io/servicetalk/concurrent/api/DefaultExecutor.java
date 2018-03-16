@@ -165,6 +165,7 @@ final class DefaultExecutor implements Executor {
         if (jdkExecutor instanceof ExecutorService) {
             return new InternalExecutor() {
                 private final ExecutorService service = (ExecutorService) jdkExecutor;
+
                 @Override
                 public void run() {
                     service.shutdown();

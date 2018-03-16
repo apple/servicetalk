@@ -154,7 +154,8 @@ public final class ConcurrentUtilsTest {
 
         private static final AtomicIntegerFieldUpdater<QueueHolder> drainingUpdater =
                 newUpdater(QueueHolder.class, "draining");
-        @SuppressWarnings("unused") private volatile int draining;
+        @SuppressWarnings("unused")
+        private volatile int draining;
 
         private final Queue<Integer> q = new ConcurrentLinkedQueue<>();
 

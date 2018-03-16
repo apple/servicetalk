@@ -86,7 +86,8 @@ abstract class AbstractPublisherGroupBy<Key, T> extends Publisher<Publisher.Grou
         private volatile int subscriberState;
         @Nullable
         private volatile Subscription subscription;
-        @SuppressWarnings("unused") @Nullable
+        @SuppressWarnings("unused")
+        @Nullable
         private volatile SpscQueue<Publisher.Group<Key, T>> groupQueue;
         private final Subscriber<? super Publisher.Group<Key, T>> target;
         private final Map<Key, GroupSink<Key, T>> groups;

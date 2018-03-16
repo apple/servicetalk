@@ -20,7 +20,9 @@ import io.servicetalk.concurrent.api.Publisher;
 
 final class TckUtils {
 
-    private TckUtils() { }
+    private TckUtils() {
+        // no instances
+    }
 
     /**
      * Creates a new {@link Publisher} that will emit {@code numElements}.

@@ -27,7 +27,8 @@ import static io.servicetalk.concurrent.api.Single.success;
 
 public final class SingleFlatmapSingleTest {
 
-    @Rule public final MockedSingleListenerRule<String> listener = new MockedSingleListenerRule<>();
+    @Rule
+    public final MockedSingleListenerRule<String> listener = new MockedSingleListenerRule<>();
     private TestSingle<String> first;
     private TestSingle<String> second;
 

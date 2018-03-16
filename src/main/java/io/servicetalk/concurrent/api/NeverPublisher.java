@@ -21,7 +21,9 @@ import org.reactivestreams.Subscriber;
 final class NeverPublisher extends Publisher {
     static final NeverPublisher INSTANCE = new NeverPublisher();
 
-    private NeverPublisher() { }
+    private NeverPublisher() {
+        // singleton
+    }
 
     @Override
     protected void handleSubscribe(Subscriber subscriber) {

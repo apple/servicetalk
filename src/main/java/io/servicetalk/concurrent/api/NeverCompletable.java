@@ -20,7 +20,9 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 final class NeverCompletable extends Completable {
     static final NeverCompletable INSTANCE = new NeverCompletable();
 
-    private NeverCompletable() { }
+    private NeverCompletable() {
+        // singleton
+    }
 
     @Override
     protected void handleSubscribe(Subscriber subscriber) {

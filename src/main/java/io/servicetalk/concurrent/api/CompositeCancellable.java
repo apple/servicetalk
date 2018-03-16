@@ -27,9 +27,12 @@ import static java.util.Objects.requireNonNull;
  * A {@link Cancellable} that cancels multiple {@link Cancellable} instances when it is cancelled.
  */
 final class CompositeCancellable implements Cancellable {
-    @Nullable private final Cancellable[] others;
-    @Nullable private final Cancellable first;
-    @Nullable private final Cancellable second;
+    @Nullable
+    private final Cancellable[] others;
+    @Nullable
+    private final Cancellable first;
+    @Nullable
+    private final Cancellable second;
     @SuppressWarnings("unused")
     private volatile int cancelled;
 

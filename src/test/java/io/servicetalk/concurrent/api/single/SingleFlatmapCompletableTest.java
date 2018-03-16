@@ -30,7 +30,8 @@ import static io.servicetalk.concurrent.api.Single.success;
 
 public final class SingleFlatmapCompletableTest {
 
-    @Rule public final MockedCompletableListenerRule listener = new MockedCompletableListenerRule();
+    @Rule
+    public final MockedCompletableListenerRule listener = new MockedCompletableListenerRule();
     private TestSingle<String> single;
     private TestCompletable completable;
 

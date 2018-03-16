@@ -49,7 +49,8 @@ final class FilterPublisher<T> extends Publisher<T> {
     @Override
     public void handleSubscribe(Subscriber<? super T> subscriber) {
         source.subscribe(new Subscriber<T>() {
-            @Nullable private Subscription subscription;
+            @Nullable
+            private Subscription subscription;
 
             @Override
             public void onSubscribe(Subscription s) {

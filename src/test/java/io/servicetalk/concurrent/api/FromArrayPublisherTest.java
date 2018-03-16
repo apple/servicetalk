@@ -37,7 +37,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public final class FromArrayPublisherTest {
 
-    @Rule public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
+    @Rule
+    public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
 
     @Test
     public void testRequestAllValues() throws Exception {

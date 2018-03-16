@@ -27,7 +27,8 @@ public final class Notification<T> {
     private static final Notification<Void> CANCEL = new Notification<>(Type.OnCancel, null);
 
     private final Type type;
-    @Nullable private final T data;
+    @Nullable
+    private final T data;
 
     private Notification(Type type, @Nullable T data) {
         this.type = type;

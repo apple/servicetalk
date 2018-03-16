@@ -89,14 +89,25 @@ final class PublisherFlatmapSingle<T, R> extends Publisher<R> {
         private static final AtomicReferenceFieldUpdater<FlatmapSubscriber, TerminalNotification> terminalNotificationUpdater =
                 newUpdater(FlatmapSubscriber.class, TerminalNotification.class, "terminalNotification");
 
-        @SuppressWarnings("unused") @Nullable private volatile CompositeException delayedError;
-        @SuppressWarnings("unused") private volatile int emitting;
-        @SuppressWarnings("unused") private volatile long requested;
-        @SuppressWarnings("unused") private volatile long sourceEmitted;
-        @SuppressWarnings("unused") private volatile long sourceRequested;
-        @SuppressWarnings("unused") private volatile int active; // Number of currently active Singles.
-        @SuppressWarnings("unused") @Nullable private volatile Subscription subscription;
-        @SuppressWarnings("unused") @Nullable private volatile TerminalNotification terminalNotification;
+        @SuppressWarnings("unused")
+        @Nullable
+        private volatile CompositeException delayedError;
+        @SuppressWarnings("unused")
+        private volatile int emitting;
+        @SuppressWarnings("unused")
+        private volatile long requested;
+        @SuppressWarnings("unused")
+        private volatile long sourceEmitted;
+        @SuppressWarnings("unused")
+        private volatile long sourceRequested;
+        @SuppressWarnings("unused")
+        private volatile int active; // Number of currently active Singles.
+        @SuppressWarnings("unused")
+        @Nullable
+        private volatile Subscription subscription;
+        @SuppressWarnings("unused")
+        @Nullable
+        private volatile TerminalNotification terminalNotification;
         /**
          * This variable is only accessed within the "emitting lock" so we rely upon this to provide visibility to
          * other threads.
@@ -110,7 +121,7 @@ final class PublisherFlatmapSingle<T, R> extends Publisher<R> {
 
         /*
          * An indicator in the pending queue that a Single terminated with error.
-        */
+         */
         private static final Object SINGLE_ERROR = new Object();
 
         FlatmapSubscriber(PublisherFlatmapSingle<T, R> source, org.reactivestreams.Subscriber<? super R> target) {
@@ -273,7 +284,8 @@ final class PublisherFlatmapSingle<T, R> extends Publisher<R> {
                     terminalNotification.terminate(target);
                 }
             } else {
-                @SuppressWarnings("unchecked") final R r = (R) (item == NULL_TOKEN ? null : item);
+                @SuppressWarnings("unchecked")
+                final R r = (R) (item == NULL_TOKEN ? null : item);
                 target.onNext(r);
             }
         }

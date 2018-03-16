@@ -32,7 +32,8 @@ final class CompositeException extends RuntimeException {
 
     private static final AtomicIntegerFieldUpdater<CompositeException> drainingUpdater =
             AtomicIntegerFieldUpdater.newUpdater(CompositeException.class, "draining");
-    @SuppressWarnings("unused") private volatile int draining;
+    @SuppressWarnings("unused")
+    private volatile int draining;
 
     /**
      * New instance.

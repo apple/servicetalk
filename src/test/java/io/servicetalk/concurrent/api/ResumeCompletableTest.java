@@ -25,7 +25,8 @@ import static org.junit.Assert.assertSame;
 
 public final class ResumeCompletableTest {
 
-    @Rule public final MockedCompletableListenerRule listener = new MockedCompletableListenerRule();
+    @Rule
+    public final MockedCompletableListenerRule listener = new MockedCompletableListenerRule();
 
     private TestCompletable first;
     private TestCompletable second;

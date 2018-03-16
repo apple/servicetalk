@@ -22,9 +22,12 @@ import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEP
 
 public class ConcatPublisherTest {
 
-    @Rule public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
-    @Rule public final PublisherRule<String> first = new PublisherRule<>();
-    @Rule public final PublisherRule<String> second = new PublisherRule<>();
+    @Rule
+    public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
+    @Rule
+    public final PublisherRule<String> first = new PublisherRule<>();
+    @Rule
+    public final PublisherRule<String> second = new PublisherRule<>();
 
     @Test
     public void testEnoughRequests() throws Exception {

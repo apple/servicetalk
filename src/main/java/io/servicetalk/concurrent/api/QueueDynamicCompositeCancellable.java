@@ -28,11 +28,13 @@ import static io.servicetalk.concurrent.internal.ConcurrentUtils.drainSingleCons
 final class QueueDynamicCompositeCancellable implements DynamicCompositeCancellable {
     private static final AtomicIntegerFieldUpdater<QueueDynamicCompositeCancellable> cancelledUpdater =
             AtomicIntegerFieldUpdater.newUpdater(QueueDynamicCompositeCancellable.class, "cancelled");
-    @SuppressWarnings("unused") private volatile int cancelled;
+    @SuppressWarnings("unused")
+    private volatile int cancelled;
 
     private static final AtomicIntegerFieldUpdater<QueueDynamicCompositeCancellable> drainingUpdater =
             AtomicIntegerFieldUpdater.newUpdater(QueueDynamicCompositeCancellable.class, "draining");
-    @SuppressWarnings("unused") private volatile int draining;
+    @SuppressWarnings("unused")
+    private volatile int draining;
 
     // TODO(scott): consider using a MPSC queue from JCTools once remove is supported.
     // https://github.com/JCTools/JCTools/pull/193#issuecomment-329958251

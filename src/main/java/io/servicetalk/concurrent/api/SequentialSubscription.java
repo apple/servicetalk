@@ -62,11 +62,17 @@ final class SequentialSubscription implements Subscription, Cancellable {
      */
     private long sourceRequested;
 
-    @SuppressWarnings("unused") private volatile Subscription current;
-    @SuppressWarnings({"unused", "FieldCanBeLocal"}) private volatile int processing;
-    @SuppressWarnings("unused") private volatile long requested;
-    @SuppressWarnings("unused") private volatile long received;
-    @SuppressWarnings("unused") @Nullable private volatile Subscription pendingSwitch;
+    @SuppressWarnings("unused")
+    private volatile Subscription current;
+    @SuppressWarnings({"unused", "FieldCanBeLocal"})
+    private volatile int processing;
+    @SuppressWarnings("unused")
+    private volatile long requested;
+    @SuppressWarnings("unused")
+    private volatile long received;
+    @SuppressWarnings("unused")
+    @Nullable
+    private volatile Subscription pendingSwitch;
 
     /**
      * New instance.

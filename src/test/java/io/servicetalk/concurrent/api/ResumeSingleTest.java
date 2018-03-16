@@ -25,7 +25,8 @@ import static org.junit.Assert.assertSame;
 
 public final class ResumeSingleTest {
 
-    @Rule public final MockedSingleListenerRule<Integer> listener = new MockedSingleListenerRule<>();
+    @Rule
+    public final MockedSingleListenerRule<Integer> listener = new MockedSingleListenerRule<>();
 
     private TestSingle<Integer> first;
     private TestSingle<Integer> second;

@@ -85,6 +85,7 @@ public class ReduceSingleTest {
         final RuntimeException testException = new RuntimeException("fake exception");
         listenerRule.listen(publisherRule.getPublisher().reduce(() -> "", new BiFunction<String, String, String>() {
             private int callNumber;
+
             @Override
             public String apply(String o, String s) {
                 if (++callNumber == 2) {
