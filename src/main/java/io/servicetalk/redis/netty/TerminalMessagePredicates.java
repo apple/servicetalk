@@ -67,6 +67,7 @@ final class TerminalMessagePredicates {
 
     private static final StatelessPredicate PUB_SUB_PREDICATE = new StatelessPredicate(ZERO::equals);
     private static final StatelessPredicate MONITOR_PREDICATE = new StatelessPredicate(o -> false);
+
     private static final class StatelessPredicate implements TerminalMessagePredicate {
 
         private final Predicate<Object> delegate;

@@ -193,7 +193,9 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
         // Volatile for visibility, accessed from sendPing()
         volatile boolean subscribed;
 
-        @SuppressWarnings("unused") private volatile int closed;
+        @SuppressWarnings("unused")
+        private volatile int closed;
+
         WriteQueue(int maxPendingWrites, int initialQueueCapacity) {
             super(initialQueueCapacity, maxPendingWrites);
             this.maxPendingWrites = maxPendingWrites;

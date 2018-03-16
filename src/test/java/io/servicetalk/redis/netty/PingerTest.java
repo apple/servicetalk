@@ -77,9 +77,12 @@ public class PingerTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout(1, TimeUnit.MINUTES);
 
-    @Nullable private static IoExecutorGroup group;
-    @Nullable private static ReadOnlyRedisClientConfig config;
-    @Nullable private static InetSocketAddress serverAddress;
+    @Nullable
+    private static IoExecutorGroup group;
+    @Nullable
+    private static ReadOnlyRedisClientConfig config;
+    @Nullable
+    private static InetSocketAddress serverAddress;
 
     @BeforeClass
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")

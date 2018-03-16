@@ -65,7 +65,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
     /**
      This is only used within the Writer while writing a request on the connection.
      Since, Write guarantees sequential access and visibility, we do not need this field to be volatile/atomic.
-    */
+     */
     @Nullable
     private RedisProtocolSupport.Command potentiallyConflictingCommand;
 
@@ -74,8 +74,9 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
      as QUIT response will only be read from the pipelined connection once the previous command has completed.
      NOTE that this is a limitation of pipelining that the responses are read sequentially.
      In such cases, we do not issue a QUIT from closeAsync.
-    */
-    @SuppressWarnings("unused") private volatile int skipQuitWhenClosed;
+     */
+    @SuppressWarnings("unused")
+    private volatile int skipQuitWhenClosed;
 
     @SuppressWarnings("unchecked")
     private PipelinedRedisConnection(Connection<RedisData, ByteBuf> connection, ReadOnlyRedisClientConfig roConfig) {

@@ -119,8 +119,10 @@ final class SubscribedChannelReadStream extends Publisher<SubscribedChannelReadS
 
         private final KeyType keyType;
         private final MessageType messageType;
-        @Nullable private final String channel;
-        @Nullable private final String pattern;
+        @Nullable
+        private final String channel;
+        @Nullable
+        private final String pattern;
 
         private final CompleteRedisData data;
 
@@ -222,16 +224,23 @@ final class SubscribedChannelReadStream extends Publisher<SubscribedChannelReadS
         private final Subscriber<? super PubSubChannelMessage> target;
         private final BufferAllocator allocator;
 
-        @Nullable private ConcurrentSubscription subscription;
+        @Nullable
+        private ConcurrentSubscription subscription;
 
         // Current message aggregation state
         private int msgArraySize;
-        @Nullable private PubSubChannelMessage.KeyType currentKeyType;
-        @Nullable private PubSubChannelMessage.MessageType currentMessageType;
-        @Nullable private String currentChannelName;
-        @Nullable private String currentPatternName;
-        @Nullable private RedisData.CompleteRedisData currentMessageData;
-        @Nullable private Buffer currentDataBuffer;
+        @Nullable
+        private PubSubChannelMessage.KeyType currentKeyType;
+        @Nullable
+        private PubSubChannelMessage.MessageType currentMessageType;
+        @Nullable
+        private String currentChannelName;
+        @Nullable
+        private String currentPatternName;
+        @Nullable
+        private RedisData.CompleteRedisData currentMessageData;
+        @Nullable
+        private Buffer currentDataBuffer;
 
         AggregatingSubscriber(Subscriber<? super PubSubChannelMessage> target, BufferAllocator allocator) {
             this.target = target;

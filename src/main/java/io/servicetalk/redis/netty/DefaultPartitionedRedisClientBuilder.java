@@ -290,6 +290,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress> implements Pa
                                             newGroup.getPublisher().filter(new Predicate<PartitionedEvent<ResolvedAddress>>() {
                                                 // Use a mutable Count to avoid boxing-unboxing and put on each call.
                                                 private final Map<ResolvedAddress, MutableInteger> addressesToCount = new HashMap<>();
+
                                                 @Override
                                                 public boolean test(PartitionedEvent<ResolvedAddress> evt) {
                                                     MutableInteger count = addressesToCount.computeIfAbsent(evt.getAddress(), addr -> new MutableInteger());

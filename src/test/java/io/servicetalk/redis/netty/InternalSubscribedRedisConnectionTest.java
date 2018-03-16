@@ -67,9 +67,12 @@ public class InternalSubscribedRedisConnectionTest {
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout(30, SECONDS);
 
-    @Nullable private static IoExecutorGroup group;
-    @Nullable private static DefaultRedisConnectionBuilder<InetSocketAddress> builder;
-    @Nullable private static InetSocketAddress redisAddress;
+    @Nullable
+    private static IoExecutorGroup group;
+    @Nullable
+    private static DefaultRedisConnectionBuilder<InetSocketAddress> builder;
+    @Nullable
+    private static InetSocketAddress redisAddress;
 
     @BeforeClass
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
@@ -142,7 +145,8 @@ public class InternalSubscribedRedisConnectionTest {
 
     private static <T> Subscription subscribeToResponse(Publisher<T> response, Queue<Object> notifications) throws InterruptedException {
         final BlockingQueue<Subscription> subscriptionExchanger = new LinkedBlockingQueue<>(1);
-        @SuppressWarnings("unchecked") Subscriber<T> responseSubscriber = mock(Subscriber.class);
+        @SuppressWarnings("unchecked")
+        Subscriber<T> responseSubscriber = mock(Subscriber.class);
         doAnswer(invocation -> {
             subscriptionExchanger.put(invocation.getArgument(0));
             return null;

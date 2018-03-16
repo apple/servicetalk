@@ -98,9 +98,12 @@ final class ReadStreamSplitter {
     private final Connection<RedisData, ByteBuf> connection;
     private final Function<RedisRequest, Completable> unsubscribeWriter;
 
-    @SuppressWarnings("unused") private volatile int pendingGroupRequested;
-    @SuppressWarnings("unused") private volatile int state;
-    @Nullable private volatile Subscription groupSubscription;
+    @SuppressWarnings("unused")
+    private volatile int pendingGroupRequested;
+    @SuppressWarnings("unused")
+    private volatile int state;
+    @Nullable
+    private volatile Subscription groupSubscription;
 
     ReadStreamSplitter(Connection<RedisData, ByteBuf> connection, int maxConcurrentRequests, int maxBufferPerGroup, Function<RedisRequest, Completable> unsubscribeWriter) {
         this.connection = requireNonNull(connection);

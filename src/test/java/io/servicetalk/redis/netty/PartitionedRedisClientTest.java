@@ -83,6 +83,7 @@ public class PartitionedRedisClientTest {
     private static final Key<Boolean> MASTER_KEY = Key.newKeyWithDebugToString("master");
     private static final Key<Integer> SHARD_KEY = Key.newKeyWithDebugToString("shard");
     private static final Map<String, Integer> keyToShardMap;
+
     static {
         Map<String, Integer> localMap = new HashMap<>();
         localMap.put("key1", 0);
@@ -311,6 +312,7 @@ public class PartitionedRedisClientTest {
     private void sendServiceDiscoveryEvent(boolean available, PartitionAttributes partitionAddress) {
         serviceDiscoveryPublisher.sendItems(new PartitionedEvent<InetSocketAddress>() {
             private final InetSocketAddress address = new InetSocketAddress(redisHost, redisPort);
+
             @Override
             public PartitionAttributes getPartitionAddress() {
                 return partitionAddress;

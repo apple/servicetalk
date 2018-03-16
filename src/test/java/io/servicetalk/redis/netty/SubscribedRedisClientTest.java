@@ -511,8 +511,10 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         private final CountDownLatch subscribed;
         private final CountDownLatch dataReceived;
         private final CountDownLatch termReceived;
-        @Nullable private volatile Subscription subscription;
-        @Nullable private volatile TerminalNotification notification;
+        @Nullable
+        private volatile Subscription subscription;
+        @Nullable
+        private volatile TerminalNotification notification;
 
         PingSubscriber() {
             subscribed = new CountDownLatch(1);
