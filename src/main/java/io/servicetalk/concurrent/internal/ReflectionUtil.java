@@ -24,7 +24,9 @@ import javax.annotation.Nullable;
  */
 final class ReflectionUtil {
 
-    private ReflectionUtil() { }
+    private ReflectionUtil() {
+        // no instances
+    }
 
     /**
      * Try to call {@link AccessibleObject#setAccessible(boolean)} but will catch any {@link SecurityException} and

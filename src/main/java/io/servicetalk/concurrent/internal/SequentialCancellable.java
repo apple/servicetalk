@@ -33,7 +33,9 @@ public class SequentialCancellable implements Cancellable {
 
     private static final AtomicReferenceFieldUpdater<SequentialCancellable, Cancellable> currentUpdater =
             newUpdater(SequentialCancellable.class, Cancellable.class, "current");
-    @SuppressWarnings("unused") @Nullable private volatile Cancellable current;
+    @SuppressWarnings("unused")
+    @Nullable
+    private volatile Cancellable current;
 
     /**
      * Create a new instance with no current {@link Cancellable}.

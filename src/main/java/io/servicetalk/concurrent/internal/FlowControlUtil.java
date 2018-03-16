@@ -20,7 +20,9 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 public final class FlowControlUtil {
 
-    private FlowControlUtil() { } // no instantiation
+    private FlowControlUtil() {
+        // no instances
+    }
 
     /**
      * Adds two integer and saturate to {@code Integer.MAX_VALUE} / {@code Integer.MIN_VALUE} if overflow happens.

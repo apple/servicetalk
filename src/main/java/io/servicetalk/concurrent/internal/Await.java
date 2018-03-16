@@ -178,8 +178,11 @@ public final class Await {
 
     private abstract static class ResultProvider<T> {
 
-        @Nullable private T result;
-        @Nullable private Throwable cause;
+        @Nullable
+        private T result;
+        @Nullable
+        private Throwable cause;
+
         private final AtomicReference<Cancellable> cancellable = new AtomicReference<>();
         private final AtomicBoolean terminated = new AtomicBoolean();
         private final CountDownLatch latch = new CountDownLatch(1);

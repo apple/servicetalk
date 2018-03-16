@@ -40,7 +40,8 @@ final class PlatformDependent0 {
     private static final String DISABLE_UNSAFE_PROPERTY = "io.servicetalk.noUnsafe";
 
     private static final boolean isExplicitNoUnsafe = isExplicitNoUnsafe();
-    @Nullable static final Unsafe UNSAFE;
+    @Nullable
+    static final Unsafe UNSAFE;
 
     static {
         Unsafe unsafe;

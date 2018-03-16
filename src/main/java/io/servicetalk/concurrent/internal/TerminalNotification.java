@@ -28,7 +28,8 @@ public final class TerminalNotification {
 
     private static final TerminalNotification COMPLETE = new TerminalNotification();
 
-    @Nullable private final Throwable cause;
+    @Nullable
+    private final Throwable cause;
 
     /**
      * New instance.
