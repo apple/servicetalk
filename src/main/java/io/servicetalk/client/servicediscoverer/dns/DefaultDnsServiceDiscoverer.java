@@ -87,7 +87,8 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
     private final CompletableProcessor closeCompletable = new CompletableProcessor();
     private final Map<String, List<DiscoverEntry>> registerMap = new HashMap<>(8);
     private final IoExecutor executor;
-    @Nullable private final BiIntFunction<Throwable, Completable> retryStrategy;
+    @Nullable
+    private final BiIntFunction<Throwable, Completable> retryStrategy;
     private final DnsNameResolver resolver;
     private boolean closed;
 
