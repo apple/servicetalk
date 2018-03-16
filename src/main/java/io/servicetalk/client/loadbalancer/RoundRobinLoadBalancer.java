@@ -260,8 +260,10 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
 
     private static class Host<Addr, C extends ListenableAsyncCloseable> implements AsyncCloseable {
 
-        @Nullable final Addr address;
-        @Nullable final Queue<C> connections;
+        @Nullable
+        final Addr address;
+        @Nullable
+        final Queue<C> connections;
         private volatile boolean removed;
 
         Host() {
@@ -317,6 +319,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
     }
 
     private static final class MutableAddressHost<Addr, C extends ListenableAsyncCloseable> extends Host<Addr, C> {
-        @Nullable Addr mutableAddress;
+        @Nullable
+        Addr mutableAddress;
     }
 }
