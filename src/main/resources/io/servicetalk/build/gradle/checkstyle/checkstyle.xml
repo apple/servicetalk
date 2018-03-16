@@ -83,6 +83,9 @@
     </module>
 
     <!-- Annotations -->
+    <module name="AnnotationLocation">
+      <property name="allowSamelineSingleParameterlessAnnotation" value="false"/>
+    </module>
     <module name="MissingDeprecated"/>
     <module name="MissingOverride"/>
     <module name="PackageAnnotation"/>
