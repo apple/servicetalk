@@ -4,7 +4,7 @@ buildscript {
       jcenter()
     }
   }
-  
+
   dependencies {
     classpath "io.servicetalk:servicetalk-gradle-build:+"
   }
@@ -13,5 +13,5 @@ buildscript {
 apply plugin: "servicetalk-build"
 
 dependencies {
-  compile "io.servicetalk:servicetalk-log4j2-mdc-internal:0.1.0"
+  compile "io.servicetalk:servicetalk-log4j2-mdc-internal:0.1.0-SNAPSHOT"
 }
