@@ -4,7 +4,7 @@ buildscript {
       jcenter()
     }
   }
-  
+
   dependencies {
     classpath "io.servicetalk:servicetalk-gradle-build:+"
   }
@@ -13,10 +13,10 @@ buildscript {
 apply plugin: "servicetalk-build"
 
 dependencies {
-  compile "io.servicetalk:servicetalk-annotations:0.1.0"
-  compile "io.servicetalk:servicetalk-buffer-api:0.1.0"
+  compile "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
+  compile "io.servicetalk:servicetalk-buffer-api:0.1.0-SNAPSHOT"
   compile "io.netty:netty-buffer:$nettyVersion"
 
   testCompile "org.mockito:mockito-core:$mockitoCoreVersion"
-  testCompile "io.servicetalk:servicetalk-test-resources:0.1.0"
+  testCompile "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
 }
