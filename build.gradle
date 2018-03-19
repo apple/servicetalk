@@ -14,11 +14,11 @@ apply plugin: "servicetalk-build"
 
 dependencies {
   compile "org.jctools:jctools-core:$jcToolsVersion"
-  compile "io.servicetalk:servicetalk-annotations:0.1.0"
-  compile "io.servicetalk:servicetalk-concurrent:0.1.0"
+  compile "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
+  compile "io.servicetalk:servicetalk-concurrent:0.1.0-SNAPSHOT"
 
   testCompile "org.mockito:mockito-core:$mockitoCoreVersion"
-  testCompile "io.servicetalk:servicetalk-test-resources:0.1.0"
+  testCompile "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
 
   testFixturesCompile "junit:junit:$junitVersion"
   testFixturesCompile "org.hamcrest:hamcrest-library:$hamcrestVersion"
