@@ -14,5 +14,5 @@ apply plugin: "servicetalk-build"
 
 dependencies {
   compile "org.reactivestreams:reactive-streams:$reactiveStreamsVersion"
-  compile "io.servicetalk:servicetalk-annotations:0.1.0"
+  compile "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
 }
