@@ -4,7 +4,7 @@ buildscript {
       jcenter()
     }
   }
-  
+
   dependencies {
     classpath "io.servicetalk:servicetalk-gradle-build:+"
   }
@@ -13,6 +13,6 @@ buildscript {
 apply plugin: "servicetalk-build"
 
 dependencies {
-  compile "io.servicetalk:servicetalk-concurrent-context:0.1.0"
+  compile "io.servicetalk:servicetalk-concurrent-context:0.1.0-SNAPSHOT"
   compile "io.reactivex.rxjava2:rxjava:2.1.2"
 }
