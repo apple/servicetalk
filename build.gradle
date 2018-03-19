@@ -13,5 +13,5 @@ buildscript {
 apply plugin: "servicetalk-build"
 
 dependencies {
-  compile "io.servicetalk:servicetalk-annotations:0.1.0"
+  compile "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
 }
