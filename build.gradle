@@ -18,6 +18,6 @@ dependencies {
 
   testCompile "org.mockito:mockito-core:$mockitoCoreVersion"
   testCompile "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
-  testCompile group: "io.servicetalk", name: "servicetalk-concurrent-api", version: "0.1.0", configuration: "testFixturesRuntime"
-  testCompile group: "io.servicetalk", name: "servicetalk-concurrent-internal", version: "0.1.0", configuration: "testFixturesRuntime"
+  testCompile group: "io.servicetalk", name: "servicetalk-concurrent-api", version: "0.1.0-SNAPSHOT", configuration: "testFixturesRuntime"
+  testCompile group: "io.servicetalk", name: "servicetalk-concurrent-internal", version: "0.1.0-SNAPSHOT", configuration: "testFixturesRuntime"
 }
