@@ -16,7 +16,9 @@ dependencies {
   compile "io.netty:netty-resolver-dns:$nettyVersion"
   compile "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
   compile "io.servicetalk:servicetalk-concurrent-api:0.1.0-SNAPSHOT"
+  compile "io.servicetalk:servicetalk-client-api:0.1.0-SNAPSHOT"
   compile "io.servicetalk:servicetalk-client-internal:0.1.0-SNAPSHOT"
+  compile "io.servicetalk:servicetalk-transport-netty:0.1.0-SNAPSHOT"
   compile "io.servicetalk:servicetalk-transport-netty-internal:0.1.0-SNAPSHOT"
 
   testCompile "org.mockito:mockito-core:$mockitoCoreVersion"
