@@ -33,3 +33,4 @@ npm-debug.log
 
 # Generic
 .ignore
+/fileTemplates
