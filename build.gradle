@@ -15,6 +15,9 @@ apply plugin: "servicetalk-build"
 dependencies {
   compile "org.jctools:jctools-core:$jcToolsVersion"
   compile "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
+  compile "io.servicetalk:servicetalk-buffer-netty:0.1.0-SNAPSHOT"
+  compile "io.servicetalk:servicetalk-transport-api:0.1.0-SNAPSHOT"
+  compile "io.servicetalk:servicetalk-transport-netty:0.1.0-SNAPSHOT"
   compile "io.servicetalk:servicetalk-transport-netty-internal:0.1.0-SNAPSHOT"
   compile "io.servicetalk:servicetalk-client-api:0.1.0-SNAPSHOT"
 
