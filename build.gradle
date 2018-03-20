@@ -38,6 +38,22 @@ publishing {
   }
 }
 
+idea {
+  module {
+    iml {
+      withXml {
+        // Without this, gradle/intellij sees .java files and makes it a source directory instead of a resource
+        // directory. This then causes building in intellijto fail when it tries to compile the template .java files.
+        for (def sourceFolder : it.asNode().component.content.sourceFolder) {
+          if (sourceFolder.@url.endsWith("/resources")) {
+            sourceFolder.@type = "java-resource"
+          }
+        }
+      }
+    }
+  }
+}
+
 task('package', dependsOn: assemble)
 
 def versionString = version.toString()

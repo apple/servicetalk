@@ -15,6 +15,8 @@
  */
 package io.servicetalk.build.gradle
 
+import org.gradle.api.GradleScriptException
+import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.XmlProvider
@@ -146,10 +148,27 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
 
       if (project.parent == null) {
         idea.project.languageLevel = "1.8"
+        idea.project.targetBytecodeVersion = JavaVersion.VERSION_1_8
         idea.project.ipr.withXml { XmlProvider provider ->
           def xmlProject = provider.asNode()
           def xmlComponents = new XmlParser().parse(getClass().getResourceAsStream("idea/components.xml"))
           xmlComponents.children().each { xmlProject.append it }
+        }
+        // This runs for every module, but the files are written to the correct location, but multiple times.
+        idea.project.ipr {
+          def resources = ["fileTemplates/includes/License.java",
+                   "fileTemplates/internal/AnnotationType.java",
+                   "fileTemplates/internal/Class.java",
+                   "fileTemplates/internal/Enum.java",
+                   "fileTemplates/internal/Interface.java",
+                   "fileTemplates/internal/package-info.java"]
+
+          // This is a bit of a hack. It depends on running gradle from the directory that you want to use as the
+          // IntelliJ IDEA project dir.
+          def folder = new File(".").canonicalFile
+          for (def resource : resources) {
+            copyResource("idea/" + resource, folder, resource)
+          }
         }
       }
     }
@@ -280,18 +299,25 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
     tmpDir.deleteOnExit()
 
     resources.each {
-      def resourceContent = getClass().getResource(folder + File.separator + it).text
-      writeToFile(resourceContent, tmpDir, it)
+      copyResource(folder + File.separator + it, tmpDir, it)
     }
 
     return tmpDir
   }
 
-  private static void writeToFile(String content, File folder, String fileName) {
+  private static File copyResource(String resourceSourcePath, File destinationFolder, String destinationFilename) {
+    def content = ServiceTalkBuildPlugin.class.getResource(resourceSourcePath).text
+    return writeToFile(content, destinationFolder, destinationFilename)
+  }
+
+  private static File writeToFile(String content, File folder, String fileName) {
     def file = new File(folder, fileName)
+    if (!file.parentFile.exists() && !file.parentFile.mkdirs()) {
+      throw new IOException("Unable to create directory: " + file.parentFile)
+    }
     file.createNewFile()
-    file.deleteOnExit()
     file.write(content)
+    return file
   }
 
   private static void applyQualityPlugins(Project project) {
