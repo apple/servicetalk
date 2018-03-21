@@ -13,18 +13,6 @@ buildscript {
 apply plugin: "servicetalk-build"
 
 dependencies {
-  compile "org.jctools:jctools-core:$jcToolsVersion"
   compile "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
-  compile "io.servicetalk:servicetalk-loadbalancer:0.1.0-SNAPSHOT"
-  compile "io.servicetalk:servicetalk-client-internal:0.1.0-SNAPSHOT"
-
-  testCompile "org.mockito:mockito-core:$mockitoCoreVersion"
-  testCompile "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
-  testCompile "io.servicetalk:servicetalk-dns-discovery-netty:0.1.0-SNAPSHOT"
-  testCompile group: "io.servicetalk", name: "servicetalk-concurrent-api", version: "0.1.0-SNAPSHOT", configuration: "testFixturesRuntime"
-  testCompile group: "io.servicetalk", name: "servicetalk-concurrent-internal", version: "0.1.0-SNAPSHOT", configuration: "testFixturesRuntime"
-
-  testFixturesCompile "junit:junit:$junitVersion"
-  testFixturesCompile "org.hamcrest:hamcrest-library:$hamcrestVersion"
-  testFixturesCompile "org.mockito:mockito-core:$mockitoCoreVersion"
+  compile "io.servicetalk:servicetalk-buffer-api:0.1.0-SNAPSHOT"
 }
