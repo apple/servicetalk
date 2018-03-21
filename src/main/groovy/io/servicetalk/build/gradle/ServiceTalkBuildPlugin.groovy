@@ -20,13 +20,21 @@ import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.XmlProvider
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.tasks.Exec
+import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.javadoc.Javadoc
 import org.gradle.plugins.ide.eclipse.EclipsePlugin
 import org.gradle.plugins.ide.idea.IdeaPlugin
+
+import static io.servicetalk.build.gradle.ProjectUtils.addManifestAttributes
+import static io.servicetalk.build.gradle.ProjectUtils.createJavadocJarTask
+import static io.servicetalk.build.gradle.ProjectUtils.createSourcesJarTask
+import static io.servicetalk.build.gradle.ProjectUtils.generateMavenDependencies
+import static io.servicetalk.build.gradle.ProjectUtils.getOrCreateNode
 
 class ServiceTalkBuildPlugin implements Plugin<Project> {
   void apply(Project project) {
@@ -217,31 +225,15 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
       apply plugin: "maven-publish"
 
       jar {
-        manifest {
-          attributes "Built-JDK": System.getProperty("java.version"),
-              "Specification-Title": project.name,
-              "Specification-Version": "${-> project.version}",
-              "Specification-Vendor": "Apple Inc.",
-              "Implementation-Title": project.name,
-              "Implementation-Version": "${-> project.version}",
-              "Implementation-Vendor": "Apple Inc.",
-              "Automatic-Module-Name": "io.${project.name.replace("-", ".")}"
-        }
+        addManifestAttributes(project, manifest)
       }
 
       javadoc {
         options.noQualifiers "all"
       }
 
-      project.task("sourcesJar", type: Jar, dependsOn: classes) {
-        classifier = "sources"
-        from sourceSets.main.allSource
-      }
-
-      project.task("javadocJar", type: Jar, dependsOn: javadoc) {
-        classifier = "javadoc"
-        from javadoc.destinationDir
-      }
+      def sourcesJar = createSourcesJarTask(project, sourceSets.main)
+      def javadocJar = createJavadocJarTask(project, sourceSets.main)
 
       artifacts {
         archives sourcesJar
@@ -398,28 +390,62 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
 
   private static void configureTestFixtures(Project project) {
     project.configure(project) {
+      File testFixturesFolder = file("$projectDir/src/testFixtures")
+      if (!testFixturesFolder.exists()) {
+        return
+      }
+
       SourceSetContainer projectSourceSets = project.sourceSets
-      def testFixturesSourceSet = projectSourceSets.create("testFixtures") {
+      SourceSet testFixturesSourceSet = projectSourceSets.create("testFixtures") {
         compileClasspath += projectSourceSets["main"].output
         runtimeClasspath += projectSourceSets["main"].output
       }
 
       project.task("testFixturesJar", type: Jar) {
         appendix = "testFixtures"
+        addManifestAttributes(project, manifest)
         from testFixturesSourceSet.output
       }
 
       // for project dependencies
       project.artifacts.add("testFixturesRuntime", testFixturesJar)
 
-      sourceSets.test.compileClasspath += testFixturesSourceSet.output
-      sourceSets.test.runtimeClasspath += testFixturesSourceSet.output
+      projectSourceSets.test.compileClasspath += testFixturesSourceSet.output
+      projectSourceSets.test.runtimeClasspath += testFixturesSourceSet.output
 
       project.dependencies {
         testFixturesCompile project.configurations["compile"]
         testFixturesRuntime project.configurations["runtime"]
         testCompile project.configurations["testFixturesCompile"]
         testRuntime project.configurations["testFixturesRuntime"]
+      }
+
+      def sourcesJar = createSourcesJarTask(project, testFixturesSourceSet)
+      def javadocJar = createJavadocJarTask(project, testFixturesSourceSet)
+
+      publishing {
+        publications {
+          testFixtures(MavenPublication) {
+            artifactId = "$testFixturesJar.baseName-$testFixturesJar.appendix"
+            artifact(testFixturesJar)
+            artifact(sourcesJar)
+            artifact(javadocJar)
+            pom.withXml { provider ->
+              Node dependenciesNode = getOrCreateNode(provider.asNode(), "dependencies")
+              Configuration testFixturesCompileConfig = project.configurations["testFixturesCompile"]
+              Configuration testFixturesRuntimeConfig = project.configurations["testFixturesRuntime"]
+              def mainPub = findByName("mavenJava")
+              dependenciesNode.append(generateMavenDependencies(
+                  [project.dependencies.create("$mainPub.groupId:$mainPub.artifactId:$mainPub.version")], "compile").first())
+              for (depNode in generateMavenDependencies(testFixturesCompileConfig.allDependencies, "compile")) {
+                dependenciesNode.append(depNode)
+              }
+              for (depNode in generateMavenDependencies(testFixturesRuntimeConfig.allDependencies - testFixturesCompileConfig.allDependencies, "runtime")) {
+                dependenciesNode.append(depNode)
+              }
+            }
+          }
+        }
       }
 
       project.plugins.withType(IdeaPlugin) {

@@ -1,0 +1,85 @@
+package io.servicetalk.build.gradle
+
+import org.gradle.api.Project
+import org.gradle.api.Task
+import org.gradle.api.artifacts.Dependency
+import org.gradle.api.java.archives.Manifest
+import org.gradle.api.plugins.JavaBasePlugin
+import org.gradle.api.tasks.SourceSet
+import org.gradle.api.tasks.bundling.Jar
+import org.gradle.api.tasks.javadoc.Javadoc
+
+class ProjectUtils {
+
+  static void addManifestAttributes(Project project, Manifest manifest) {
+    manifest.attributes("Built-JDK": System.getProperty("java.version"),
+        "Specification-Title": project.name,
+        "Specification-Version": "${-> project.version}",
+        "Specification-Vendor": "Apple Inc.",
+        "Implementation-Title": project.name,
+        "Implementation-Version": "${-> project.version}",
+        "Implementation-Vendor": "Apple Inc.",
+        "Automatic-Module-Name": "io.${project.name.replace("-", ".")}"
+    )
+  }
+
+  private static <T extends Task> T createTask(Project project, String name, @DelegatesTo.Target Class<T> type,
+                                               @DelegatesTo(strategy = 1, genericTypeIndex = 0) Closure<?> config) {
+    project.task(name, type: type, config)
+  }
+
+  static Jar createSourcesJarTask(Project project, SourceSet sourceSet) {
+    return createTask(project, sourceSet.getTaskName(null, "sourcesJar"), Jar) {
+      description = "Assembles a Jar archive containing the $sourceSet.name sources."
+      group = JavaBasePlugin.DOCUMENTATION_GROUP
+      appendix = sourceSet.name == "main" ? null : sourceSet.name
+      classifier = "sources"
+      addManifestAttributes(project, manifest)
+      from sourceSet.allSource
+    }
+  }
+
+  static Jar createJavadocJarTask(Project project, SourceSet sourceSet) {
+    def javadocTaskName = sourceSet.getTaskName(null, "javadoc")
+    def javadocTask = project.tasks.findByName(javadocTaskName)
+    if (!javadocTask) {
+      javadocTask = createTask(project, javadocTaskName, Javadoc) {
+        description = "Generates Javadoc API documentation for the $sourceSet.name source code."
+        group = JavaBasePlugin.DOCUMENTATION_GROUP
+        classpath = sourceSet.output + sourceSet.compileClasspath
+        source = sourceSet.allJava
+        conventionMapping.destinationDir = { project.file("$project.docsDir/$javadocTaskName") }
+        conventionMapping.title = { "$project.name $project.version $sourceSet.name API" as String }
+      }
+    }
+
+    return createTask(project, sourceSet.getTaskName(null, "javadocJar"), Jar) {
+      description = "Assembles a Jar archive containing the $sourceSet.name Javadoc."
+      group = JavaBasePlugin.DOCUMENTATION_GROUP
+      appendix = sourceSet.name == "main" ? null : sourceSet.name
+      classifier = "javadoc"
+      addManifestAttributes(project, manifest)
+      from javadocTask
+    }
+  }
+
+  static Node getOrCreateNode(Node parentNode, String tag) {
+    def component = parentNode[tag].find { true }
+    if (!component) {
+      component = parentNode.appendNode(tag)
+    }
+    component
+  }
+
+  static List<Node> generateMavenDependencies(Iterable<Dependency> dependencies, String theScope) {
+    def builder = NodeBuilder.newInstance()
+    dependencies.collect { dep ->
+      builder.dependency {
+        groupId(dep.group)
+        artifactId(dep.name)
+        version(dep.version)
+        scope(theScope)
+      }
+    }
+  }
+}
