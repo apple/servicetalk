@@ -25,11 +25,10 @@ dependencies {
   testCompile "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
   testCompile "io.servicetalk:servicetalk-concurrent-internal-testFixtures:0.1.0-SNAPSHOT"
   testCompile "io.servicetalk:servicetalk-client-internal-testFixtures:0.1.0-SNAPSHOT"
-
-  testFixturesCompile ("org.apache.directory.server:apacheds-protocol-dns:$apacheDirectoryServerVersion") {
+  testCompile ("org.apache.directory.server:apacheds-protocol-dns:$apacheDirectoryServerVersion") {
     // We need to use commons-lang 2.6 to be able to run the tests with java9
     // See https://github.com/apache/bookkeeper/issues/385
     exclude group: "commons-lang", module: "commons-lang"
   }
-  testFixturesCompile "commons-lang:commons-lang:$commonsLangVersion"
+  testCompile "commons-lang:commons-lang:$commonsLangVersion"
 }
