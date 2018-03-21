@@ -17,5 +17,5 @@ dependencies {
   compile "io.servicetalk:servicetalk-concurrent-api:0.1.0-SNAPSHOT"
 
   testCompile "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
-  testCompile group: "io.servicetalk", name: "servicetalk-concurrent-internal", version: "0.1.0-SNAPSHOT", configuration: "testFixturesRuntime"
+  testCompile "io.servicetalk:servicetalk-concurrent-internal-testFixtures:0.1.0-SNAPSHOT"
 }
