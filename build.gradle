@@ -6,7 +6,7 @@ buildscript {
   }
   
   dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-build:+"
+    classpath "io.servicetalk:servicetalk-gradle-build:0.1.0-SNAPSHOT"
   }
 }
 
