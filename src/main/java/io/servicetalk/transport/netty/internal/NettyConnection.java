@@ -26,7 +26,6 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.FlushStrategy;
 import io.servicetalk.transport.api.FlushStrategyHolder;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.netty.NettyFutureCompletable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

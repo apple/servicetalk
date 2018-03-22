@@ -16,7 +16,10 @@ dependencies {
   compile "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
   compile "io.servicetalk:servicetalk-concurrent-api:0.1.0-SNAPSHOT"
   compile "io.servicetalk:servicetalk-buffer-netty:0.1.0-SNAPSHOT"
-  compile "io.servicetalk:servicetalk-transport-netty:0.1.0-SNAPSHOT"
+  compile "io.servicetalk:servicetalk-transport-api:0.1.0-SNAPSHOT"
+  compile "io.netty:netty-handler:$nettyVersion"
+  compile "io.netty:netty-transport-native-epoll:$nettyVersion:linux-x86_64"
+  compile "io.netty:netty-transport-native-kqueue:$nettyVersion:osx-x86_64"
 
   testCompile "org.mockito:mockito-core:$mockitoCoreVersion"
   testCompile "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"

@@ -25,7 +25,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.netty.NettyFutureCompletable;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

@@ -23,7 +23,6 @@ import io.servicetalk.concurrent.api.QueueFullException;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.netty.NettyFutureCompletable;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
