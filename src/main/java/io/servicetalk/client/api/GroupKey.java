@@ -15,7 +15,7 @@
  */
 package io.servicetalk.client.api;
 
-import io.servicetalk.transport.api.IoExecutorGroup;
+import io.servicetalk.transport.api.IoExecutor;
 
 /**
  * Identifies a client within a group of clients, and provides enough information to create a client if non exist.
@@ -31,8 +31,8 @@ public interface GroupKey<Address> {
     Address getAddress();
 
     /**
-     * Get the {@link IoExecutorGroup} to use when looking for or creating a new client.
-     * @return the {@link IoExecutorGroup} to use when looking for or creating a new client.
+     * Get the {@link IoExecutor} to use when looking for or creating a new client.
+     * @return the {@link IoExecutor} to use when looking for or creating a new client.
      */
-    IoExecutorGroup getIoExecutorGroup();
+    IoExecutor getIoExecutor();
 }
