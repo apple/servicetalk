@@ -26,10 +26,10 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.NettyIoExecutor;
-import io.servicetalk.transport.netty.NettyIoExecutorGroup;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
+import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
+import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 import io.servicetalk.transport.netty.internal.NettyServerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +40,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
+import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.wrapEventLoop;
 import static io.servicetalk.transport.netty.internal.NettyConnectionContext.newContext;
 import static java.util.Objects.requireNonNull;
 
@@ -59,7 +60,11 @@ public final class TcpServerInitializer {
      */
     public TcpServerInitializer(ReadOnlyTcpServerConfig config) {
         this.config = config;
-        eventLoopGroup = NettyIoExecutorGroup.toGroup(requireNonNull(config.getIoExecutorGroup()));
+        NettyIoExecutor ioExecutor = config.getIoExecutor();
+        if (!(ioExecutor instanceof EventLoopAwareNettyIoExecutor)) {
+            throw new IllegalArgumentException("Incompatible NettyIoExecutor: " + ioExecutor + ". Not aware of netty eventloops.");
+        }
+        eventLoopGroup = ((EventLoopAwareNettyIoExecutor) ioExecutor).getEventLoopGroup();
     }
 
     /**
@@ -102,7 +107,7 @@ public final class TcpServerInitializer {
             @Override
             protected void initChannel(Channel channel) {
                 try {
-                    ConnectionContext context = newContext(channel, new NettyIoExecutor(channel.eventLoop()), config.getAllocator(), channelInitializer);
+                    ConnectionContext context = newContext(channel, wrapEventLoop(channel.eventLoop()), config.getAllocator(), channelInitializer);
                     //TODO 3.x: Use filter result.
                     contextFilter.filter(context);
                 } catch (Exception cause) {

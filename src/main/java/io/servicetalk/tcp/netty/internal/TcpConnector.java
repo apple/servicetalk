@@ -34,7 +34,9 @@ import io.servicetalk.transport.api.IoExecutorGroup;
 import io.servicetalk.transport.netty.internal.AbstractChannelReadHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.Connection;
+import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 import io.servicetalk.transport.netty.internal.NettyConnection;
+import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
 import java.net.SocketAddress;
 import java.util.Map;
@@ -43,9 +45,9 @@ import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.transport.netty.NettyIoExecutor.toEventLoop;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
+import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static io.servicetalk.transport.netty.internal.NettyConnectionContext.newContext;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -94,20 +96,38 @@ public final class TcpConnector<Read, Write> {
      * @param ioExecutorGroup Determines which {@link IoExecutor} should be used for the connection.
      * @param remote address to connect.
      * @return {@link Single} that contains the {@link ConnectionContext} for the connection.
+     *
+     * @deprecated Use {@link #connect(NettyIoExecutor, Object)}.
      */
+    @Deprecated
     public Single<Connection<Read, Write>> connect(IoExecutorGroup ioExecutorGroup, Object remote) {
         requireNonNull(ioExecutorGroup);
+        if (ioExecutorGroup instanceof NettyIoExecutor) {
+            return connect((NettyIoExecutor) ioExecutorGroup, remote);
+        }
+        throw new IllegalArgumentException("Incompatible IoExecutorGroup: " + ioExecutorGroup + ". Not a netty based IoExecutor.");
+    }
+
+    /**
+     * Connects to the passed {@code remote} address, resolving the address, if required.
+     *
+     * @param executor Determines which {@link NettyIoExecutor} should be used for the connection.
+     * @param remote address to connect.
+     * @return {@link Single} that contains the {@link ConnectionContext} for the connection.
+     */
+    public Single<Connection<Read, Write>> connect(NettyIoExecutor executor, Object remote) {
+        EventLoopAwareNettyIoExecutor eventLoopAwareNettyIoExecutor = toEventLoopAwareNettyIoExecutor(executor);
         requireNonNull(remote);
         return new Single<Connection<Read, Write>>() {
             @Override
             protected void handleSubscribe(Subscriber<? super Connection<Read, Write>> subscriber) {
-                connectFutureToListener(connect0(remote, ioExecutorGroup.next(), subscriber), subscriber, remote);
+                connectFutureToListener(connect0(remote, eventLoopAwareNettyIoExecutor, subscriber), subscriber, remote);
             }
         };
     }
 
-    private ChannelFuture connect0(Object resolvedAddress, IoExecutor executor, Single.Subscriber<? super Connection<Read, Write>> subscriber) {
-        EventLoop loop = toEventLoop(executor);
+    private ChannelFuture connect0(Object resolvedAddress, EventLoopAwareNettyIoExecutor executor, Single.Subscriber<? super Connection<Read, Write>> subscriber) {
+        EventLoop loop = executor.getEventLoopGroup().next();
 
         // We have to subscribe before any possibility that we complete the single, so subscribe now and hookup the cancellable after we get the future.
         final SequentialCancellable cancellable = new SequentialCancellable();

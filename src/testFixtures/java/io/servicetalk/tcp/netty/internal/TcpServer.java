@@ -29,6 +29,7 @@ import io.servicetalk.transport.netty.internal.BufferHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.NettyConnection;
+import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,9 +51,19 @@ public final class TcpServer {
     /**
      * New instance with default configuration.
      * @param ioExecutorGroup Determines the {@link IoExecutor} for new connections.
+     * @deprecated Use {@link #TcpServer(NettyIoExecutor)}.
      */
+    @Deprecated
     public TcpServer(IoExecutorGroup ioExecutorGroup) {
         this(new TcpServerConfig(false, ioExecutorGroup));
+    }
+
+    /**
+     * New instance with default configuration.
+     * @param executor {@link NettyIoExecutor} to use for this server.
+     */
+    public TcpServer(NettyIoExecutor executor) {
+        this(new TcpServerConfig(false, executor));
     }
 
     /**

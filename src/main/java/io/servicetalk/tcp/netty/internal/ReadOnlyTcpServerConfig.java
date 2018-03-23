@@ -23,6 +23,7 @@ import io.netty.util.NetUtil;
 import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.transport.api.IoExecutorGroup;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
+import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 import io.servicetalk.transport.netty.internal.WireLogInitializer;
 
 import java.util.HashMap;
@@ -34,6 +35,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT;
 import static io.servicetalk.transport.netty.internal.WireLogInitializer.GLOBAL_WIRE_LOGGER;
 import static java.util.Collections.unmodifiableMap;
+import static java.util.Objects.requireNonNull;
 
 /**
  Read only view of {@link TcpServerConfig}.
@@ -44,7 +46,7 @@ public class ReadOnlyTcpServerConfig {
     protected final boolean autoRead;
     @SuppressWarnings("rawtypes")
     protected final Map<ChannelOption, Object> optionMap;
-    protected IoExecutorGroup group;
+    protected NettyIoExecutor executor;
     protected int backlog = NetUtil.SOMAXCONN;
     protected BufferAllocator allocator = DEFAULT.getAllocator();
     @Nullable
@@ -61,9 +63,22 @@ public class ReadOnlyTcpServerConfig {
      *
      * @param autoRead If the channels accepted by the server will have auto-read enabled.
      * @param group {@link IoExecutorGroup} to use for the server.
+     *
+     * @deprecated Use {@link #ReadOnlyTcpServerConfig(boolean, NettyIoExecutor)}
      */
+    @Deprecated
     public ReadOnlyTcpServerConfig(IoExecutorGroup group, boolean autoRead) {
-        this.group = group;
+        this(autoRead, verifyIoExecutorGroup(group));
+    }
+
+    /**
+     * New instance.
+     *
+     * @param executor {@link NettyIoExecutor} to use for the server.
+     * @param autoRead If the channels accepted by the server will have auto-read enabled.
+     */
+    public ReadOnlyTcpServerConfig(boolean autoRead, NettyIoExecutor executor) {
+        this.executor = executor;
         this.autoRead = autoRead;
         optionMap = new LinkedHashMap<>();
     }
@@ -76,7 +91,7 @@ public class ReadOnlyTcpServerConfig {
     ReadOnlyTcpServerConfig(TcpServerConfig from) {
         autoRead = from.autoRead;
         optionMap = unmodifiableMap(new HashMap<>(from.optionMap));
-        group = from.group;
+        executor = from.executor;
         backlog = from.backlog;
         allocator = from.allocator;
         sslContext = from.sslContext;
@@ -133,9 +148,20 @@ public class ReadOnlyTcpServerConfig {
      * Returns the {@link IoExecutorGroup}.
      *
      * @return {@link IoExecutorGroup}.
+     * @deprecated Use {@link #getIoExecutor()}
      */
+    @Deprecated
     public IoExecutorGroup getIoExecutorGroup() {
-        return group;
+        return executor;
+    }
+
+    /**
+     * Returns the {@link NettyIoExecutor}.
+     *
+     * @return {@link NettyIoExecutor}.
+     */
+    public NettyIoExecutor getIoExecutor() {
+        return executor;
     }
 
     /**
@@ -181,5 +207,13 @@ public class ReadOnlyTcpServerConfig {
     @Nullable
     public WireLogInitializer getWireLogger() {
         return wireLogger;
+    }
+
+    private static NettyIoExecutor verifyIoExecutorGroup(IoExecutorGroup group) {
+        requireNonNull(group);
+        if (!(group instanceof NettyIoExecutor)) {
+            throw new IllegalArgumentException("Incompatible IoExecutorGroup: " + group + ". Not a netty based IoExecutor.");
+        }
+        return (NettyIoExecutor) group;
     }
 }

@@ -19,10 +19,10 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.servicetalk.buffer.Buffer;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.transport.api.IoExecutorGroup;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.NettyIoExecutors;
 import io.servicetalk.transport.netty.internal.Connection;
+import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -52,7 +52,7 @@ public final class TcpConnectorTest {
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
 
-    private static IoExecutorGroup group;
+    private static NettyIoExecutor executor;
 
     private int serverPort;
     private ServerContext serverContext;
@@ -60,20 +60,20 @@ public final class TcpConnectorTest {
 
     @BeforeClass
     public static void beforeClass() {
-        group = NettyIoExecutors.createGroup();
+        executor = (NettyIoExecutor) NettyIoExecutors.createExecutor();
     }
 
     @AfterClass
     public static void afterClass() {
-        group.closeAsync();
+        executor.closeAsync().subscribe();
     }
 
     @Before
     public void setUp() throws Exception {
-        TcpServer server = new TcpServer(group);
+        TcpServer server = new TcpServer(executor);
         serverContext = server.start(0, conn -> conn.write(conn.read(), defaultFlushStrategy()));
         serverPort = TcpServer.getServerPort(serverContext);
-        client = new TcpClient(group);
+        client = new TcpClient(executor);
     }
 
     @After
@@ -139,7 +139,7 @@ public final class TcpConnectorTest {
             return context;
 
         }, () -> v -> true);
-        Connection<Buffer, Buffer> connection = awaitIndefinitely(connector.connect(group, serverContext.getListenAddress()));
+        Connection<Buffer, Buffer> connection = awaitIndefinitely(connector.connect(executor, serverContext.getListenAddress()));
         assert connection != null;
         awaitIndefinitely(connection.closeAsync());
 

@@ -34,6 +34,7 @@ import io.servicetalk.transport.api.IoExecutorGroup;
 import io.servicetalk.transport.netty.internal.BufferHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.Connection;
+import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -54,12 +55,14 @@ public final class TcpClient {
 
     private final TcpConnector<Buffer, Buffer> connector;
     private final ReadOnlyTcpClientConfig roConfig;
-    private final IoExecutorGroup ioExecutorGroup;
+    private final NettyIoExecutor executor;
 
     /**
      * New instance with default configuration.
      * @param ioExecutorGroup Determines which {@link IoExecutor} should be used when connections are made.
+     * @deprecated Use {@link #TcpClient(NettyIoExecutor, TcpClientConfig)}.
      */
+    @Deprecated
     public TcpClient(IoExecutorGroup ioExecutorGroup) {
         this(ioExecutorGroup, defaultConfig());
     }
@@ -68,9 +71,28 @@ public final class TcpClient {
      * New instance.
      * @param ioExecutorGroup Determines which {@link IoExecutor} should be used when connections are made.
      * @param config for the client.
+     * @deprecated Use {@link #TcpClient(NettyIoExecutor, TcpClientConfig)}.
      */
+    @Deprecated
     public TcpClient(IoExecutorGroup ioExecutorGroup, TcpClientConfig config) {
-        this.ioExecutorGroup = requireNonNull(ioExecutorGroup);
+        this(verifyIoExecutorGroupType(ioExecutorGroup), config);
+    }
+
+    /**
+     * New instance.
+     * @param executor {@link NettyIoExecutor} for this client.
+     */
+    public TcpClient(NettyIoExecutor executor) {
+        this(executor, defaultConfig());
+    }
+
+    /**
+     * New instance.
+     * @param executor {@link NettyIoExecutor} for this client.
+     * @param config for the client.
+     */
+    public TcpClient(NettyIoExecutor executor, TcpClientConfig config) {
+        this.executor = requireNonNull(executor);
         roConfig = config.asReadOnly();
         ChannelInitializer initializer = new TcpClientChannelInitializer(roConfig);
         initializer = initializer.andThen((channel, context) -> {
@@ -101,7 +123,7 @@ public final class TcpClient {
      */
     public Connection<Buffer, Buffer> connectBlocking(SocketAddress address) throws ExecutionException, InterruptedException {
         //noinspection ConstantConditions
-        return awaitIndefinitely(connector.connect(ioExecutorGroup, address));
+        return awaitIndefinitely(connector.connect(executor, address));
     }
 
     /**
@@ -113,7 +135,7 @@ public final class TcpClient {
      * @throws InterruptedException If interrupted while waiting for connect to complete.
      */
     public Connection<Buffer, Buffer> connectWithFdBlocking(SocketAddress address) throws ExecutionException, InterruptedException {
-        assumeTrue(ioExecutorGroup.isFileDescriptorSocketAddressSupported());
+        assumeTrue(executor.isFileDescriptorSocketAddressSupported());
         assumeTrue(Epoll.isAvailable() || KQueue.isAvailable());
 
         final Class<? extends Channel> channelClass;
@@ -161,5 +183,13 @@ public final class TcpClient {
         // To test coverage of options.
         config.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
         return config;
+    }
+
+    private static NettyIoExecutor verifyIoExecutorGroupType(IoExecutorGroup group) {
+        requireNonNull(group);
+        if (!(group instanceof NettyIoExecutor)) {
+            throw new IllegalArgumentException("Incompatible IoExecutorGroup: " + group + ". Not a netty based IoExecutor.");
+        }
+        return (NettyIoExecutor) group;
     }
 }

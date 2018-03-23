@@ -23,6 +23,7 @@ import io.servicetalk.transport.api.IoExecutorGroup;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
+import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 import io.servicetalk.transport.netty.internal.WireLogInitializer;
 
 import java.io.InputStream;
@@ -45,9 +46,21 @@ public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
      *
      * @param autoRead If the channels accepted by the server will have auto-read enabled.
      * @param group {@link IoExecutorGroup} to use for the server.
+     * @deprecated Use {@link #TcpServerConfig(boolean, NettyIoExecutor)}.
      */
+    @Deprecated
     public TcpServerConfig(boolean autoRead, IoExecutorGroup group) {
         super(group, autoRead);
+    }
+
+    /**
+     * New instance.
+     *
+     * @param autoRead If the channels accepted by the server will have auto-read enabled.
+     * @param executor {@link NettyIoExecutor} to use for the server.
+     */
+    public TcpServerConfig(boolean autoRead, NettyIoExecutor executor) {
+        super(autoRead, executor);
     }
 
     /**
@@ -88,16 +101,6 @@ public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
      */
     public TcpServerConfig setAllocator(BufferAllocator allocator) {
         this.allocator = requireNonNull(allocator);
-        return this;
-    }
-
-    /**
-     * Specify the {@link IoExecutorGroup} used to obtain the threads to handle the I/O.
-     * @param group the group to use.
-     * @return this.
-     */
-    public TcpServerConfig setIoExecutorGroup(IoExecutorGroup group) {
-        this.group = requireNonNull(group);
         return this;
     }
 
