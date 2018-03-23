@@ -16,8 +16,9 @@
 package io.servicetalk.transport.netty;
 
 import io.netty.channel.EventLoop;
-import io.netty.util.internal.StringUtil;
 import io.servicetalk.transport.api.IoExecutor;
+
+import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 
 /**
  * {@link IoExecutor} implementation which delegates to an {@link EventLoop}.
@@ -37,11 +38,6 @@ public final class NettyIoExecutor extends AbstractNettyIoExecutor<EventLoop> {
      * @return the {@link EventLoop}.
      */
     public static EventLoop toEventLoop(IoExecutor executor) {
-        try {
-            return ((NettyIoExecutor) executor).executor;
-        } catch (ClassCastException cause) {
-            throw new IllegalArgumentException("unsupported executor type: " + StringUtil.simpleClassName(executor) +
-                    " (expected: derived from " + StringUtil.simpleClassName(EventLoop.class), cause);
-        }
+        return toEventLoopAwareNettyIoExecutor(executor).getEventLoopGroup().next();
     }
 }

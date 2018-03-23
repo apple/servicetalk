@@ -16,13 +16,15 @@
 package io.servicetalk.transport.netty;
 
 import io.netty.channel.EventLoopGroup;
-import io.netty.util.internal.StringUtil;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.IoExecutorGroup;
+import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link IoExecutorGroup} that wraps a {@link EventLoopGroup}.
@@ -87,11 +89,10 @@ public final class NettyIoExecutorGroup implements IoExecutorGroup {
      * @return the {@link EventLoopGroup}.
      */
     public static EventLoopGroup toGroup(IoExecutorGroup group) {
-        try {
-            return group instanceof NettyIoExecutorGroup ? ((NettyIoExecutorGroup) group).group : ((NettyIoExecutor) group).executor;
-        } catch (Throwable cause) {
-            throw new IllegalArgumentException("unsupported executor type: " + StringUtil.simpleClassName(group) +
-                    " (expected: wrapper of " + StringUtil.simpleClassName(EventLoopGroup.class), cause);
+        requireNonNull(group);
+        if (group instanceof EventLoopAwareNettyIoExecutor) {
+            return ((EventLoopAwareNettyIoExecutor) group).getEventLoopGroup();
         }
+        throw new IllegalArgumentException("Incompatible IoExecutorGroup: " + group + ". Not a netty based IoExecutor.");
     }
 }

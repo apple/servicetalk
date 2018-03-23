@@ -15,14 +15,12 @@
  */
 package io.servicetalk.transport.netty;
 
-import io.netty.channel.epoll.Epoll;
-import io.netty.channel.epoll.EpollEventLoopGroup;
-import io.netty.channel.kqueue.KQueue;
-import io.netty.channel.kqueue.KQueueEventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.IoExecutorGroup;
 
 import java.util.concurrent.ThreadFactory;
+
+import static java.lang.Runtime.getRuntime;
 
 /**
  * Factory methods to create {@link IoExecutorGroup}s using netty as the transport.
@@ -40,11 +38,12 @@ public final class NettyIoExecutors {
      * @param threadFactory the {@link ThreadFactory} to use. If possible you should use an instance of {@link IoThreadFactory} as
      *                      allows internal optimizations.
      * @return group the created {@link IoExecutorGroup}
+     *
+     * @deprecated Use {@link #createExecutor(int, ThreadFactory)}
      */
+    @Deprecated
     public static IoExecutorGroup createGroup(int ioThreads, ThreadFactory threadFactory) {
-        return new NettyIoExecutorGroup(Epoll.isAvailable() ? new EpollEventLoopGroup(ioThreads, threadFactory) :
-                KQueue.isAvailable() ? new KQueueEventLoopGroup(ioThreads, threadFactory) :
-                        new NioEventLoopGroup(ioThreads, threadFactory));
+        return createExecutor(ioThreads, threadFactory);
     }
 
     /**
@@ -52,9 +51,12 @@ public final class NettyIoExecutors {
      *
      * @param ioThreads number of threads
      * @return group the created {@link IoExecutorGroup}
+     *
+     * @deprecated Use {@link #createExecutor(int)}
      */
+    @Deprecated
     public static IoExecutorGroup createGroup(int ioThreads) {
-        return createGroup(ioThreads, new IoThreadFactory(NettyIoExecutorGroup.class.getSimpleName()));
+        return createExecutor(ioThreads);
     }
 
     /**
@@ -62,8 +64,43 @@ public final class NettyIoExecutors {
      * ({@code Runtime.getRuntime().availableProcessors() * 2}).
      *
      * @return group the created {@link IoExecutorGroup}
+     *
+     * @deprecated Use {@link #createExecutor()}
      */
+    @Deprecated
     public static IoExecutorGroup createGroup() {
-        return createGroup(Runtime.getRuntime().availableProcessors() * 2);
+        return createExecutor();
+    }
+
+    /**
+     * Creates a new {@link IoExecutor} with the specified number of {@code ioThreads}.
+     *
+     * @param ioThreads number of threads
+     * @param threadFactory the {@link ThreadFactory} to use. If possible you should use an instance of {@link IoThreadFactory} as
+     *                      it allows internal optimizations.
+     * @return The created {@link IoExecutor}
+     */
+    public static IoExecutor createExecutor(int ioThreads, ThreadFactory threadFactory) {
+        return io.servicetalk.transport.netty.internal.NettyIoExecutors.createExecutor(ioThreads, threadFactory);
+    }
+
+    /**
+     * Creates a new {@link IoExecutor} with the specified number of {@code ioThreads}.
+     *
+     * @param ioThreads number of threads
+     * @return The created {@link IoExecutor}
+     */
+    public static IoExecutor createExecutor(int ioThreads) {
+        return createExecutor(ioThreads, new IoThreadFactory(NettyIoExecutor.class.getSimpleName()));
+    }
+
+    /**
+     * Creates a new {@link IoExecutor} with the default number of {@code ioThreads}
+     * ({@code Runtime.getRuntime().availableProcessors() * 2}).
+     *
+     * @return The created {@link IoExecutor}
+     */
+    public static IoExecutor createExecutor() {
+        return createExecutor(getRuntime().availableProcessors() * 2);
     }
 }
