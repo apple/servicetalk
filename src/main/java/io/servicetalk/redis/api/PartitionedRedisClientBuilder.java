@@ -18,7 +18,7 @@ package io.servicetalk.redis.api;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.partition.PartitionedEvent;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.transport.api.IoExecutorGroup;
+import io.servicetalk.transport.api.IoExecutor;
 
 /**
  * A builder of {@link PartitionedRedisClient} objects.
@@ -28,10 +28,10 @@ public interface PartitionedRedisClientBuilder<ResolvedAddress> {
     /**
      * Build a new {@link PartitionedRedisClient}.
      *
-     * @param ioExecutorGroup The {@link IoExecutorGroup} to use for I/O.
+     * @param executor The {@link IoExecutor} to use for I/O.
      * @param addressEventStream A stream of events (typically from a {@link ServiceDiscoverer#discover(Object)}) that
      *                           provides the addresses used to create new {@link RedisConnection}s.
      * @return A new {@link PartitionedRedisClient}.
      */
-    PartitionedRedisClient build(IoExecutorGroup ioExecutorGroup, Publisher<PartitionedEvent<ResolvedAddress>> addressEventStream);
+    PartitionedRedisClient build(IoExecutor executor, Publisher<PartitionedEvent<ResolvedAddress>> addressEventStream);
 }

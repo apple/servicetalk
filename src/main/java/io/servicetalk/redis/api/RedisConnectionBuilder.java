@@ -19,7 +19,7 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.IoExecutorGroup;
+import io.servicetalk.transport.api.IoExecutor;
 
 /**
  * A builder for {@link RedisConnection} objects.
@@ -29,19 +29,19 @@ public interface RedisConnectionBuilder<ResolvedAddress> {
     /**
      * Create a new {@link RedisConnection}.
      *
-     * @param ioExecutorGroup {@link IoExecutorGroup} to use for the connections.
+     * @param executor {@link IoExecutor} to use for the connections.
      * @param resolvedAddress a resolved address to use when connecting.
      * @return A single that will complete with the {@link RedisConnection}.
      */
-    Single<RedisConnection> build(IoExecutorGroup ioExecutorGroup, ResolvedAddress resolvedAddress);
+    Single<RedisConnection> build(IoExecutor executor, ResolvedAddress resolvedAddress);
 
     /**
      * Convert this {@link RedisConnectionBuilder} to a {@link ConnectionFactory}. This can be useful to take advantage
      * of connection filters targeted at the {@link ConnectionFactory} API.
-     * @param ioExecutorGroup {@link IoExecutorGroup} to use for the connections.
-     * @return A {@link ConnectionFactory} that will use the {@link #build(IoExecutorGroup, Object)} method to create new {@link RedisConnection} objects.
+     * @param executor {@link IoExecutor} to use for the connections.
+     * @return A {@link ConnectionFactory} that will use the {@link #build(IoExecutor, Object)} method to create new {@link RedisConnection} objects.
      */
-    default ConnectionFactory<ResolvedAddress, RedisConnection> asConnectionFactory(IoExecutorGroup ioExecutorGroup) {
+    default ConnectionFactory<ResolvedAddress, RedisConnection> asConnectionFactory(IoExecutor executor) {
         return new ConnectionFactory<ResolvedAddress, RedisConnection>() {
             private final CompletableProcessor onClose = new CompletableProcessor();
             private final Completable closeAsync = new Completable() {
@@ -53,7 +53,7 @@ public interface RedisConnectionBuilder<ResolvedAddress> {
             };
             @Override
             public Single<RedisConnection> newConnection(ResolvedAddress resolvedAddress) {
-                return build(ioExecutorGroup, resolvedAddress);
+                return build(executor, resolvedAddress);
             }
 
             @Override

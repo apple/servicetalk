@@ -18,7 +18,7 @@ package io.servicetalk.redis.api;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscoverer.Event;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.transport.api.IoExecutorGroup;
+import io.servicetalk.transport.api.IoExecutor;
 
 /**
  * A builder of {@link RedisClient} objects.
@@ -30,10 +30,10 @@ public interface RedisClientBuilder<ResolvedAddress, EventType extends Event<Res
     /**
      * Build a new {@link RedisClient}.
      *
-     * @param ioExecutorGroup The {@link IoExecutorGroup} to use for I/O.
+     * @param executor The {@link IoExecutor} to use for I/O.
      * @param addressEventStream A stream of events (typically from a {@link ServiceDiscoverer#discover(Object)}) that
      *                           provides the addresses used to create new {@link RedisConnection}s.
      * @return A new {@link RedisClient}.
      */
-    RedisClient build(IoExecutorGroup ioExecutorGroup, Publisher<EventType> addressEventStream);
+    RedisClient build(IoExecutor executor, Publisher<EventType> addressEventStream);
 }
