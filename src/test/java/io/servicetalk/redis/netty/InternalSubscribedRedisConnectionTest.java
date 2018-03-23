@@ -25,8 +25,7 @@ import io.servicetalk.redis.api.RedisCommander;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisRequest;
-import io.servicetalk.transport.api.IoExecutorGroup;
-import io.servicetalk.transport.netty.NettyIoExecutors;
+import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -51,6 +50,8 @@ import static io.servicetalk.redis.api.RedisProtocolSupport.Command.SUBSCRIBE;
 import static io.servicetalk.redis.netty.DefaultRedisConnectionBuilder.forPipeline;
 import static io.servicetalk.redis.netty.RedisTestUtils.randomStringOfLength;
 import static io.servicetalk.transport.api.FlushStrategy.defaultFlushStrategy;
+import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -68,7 +69,7 @@ public class InternalSubscribedRedisConnectionTest {
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout(30, SECONDS);
 
     @Nullable
-    private static IoExecutorGroup group;
+    private static NettyIoExecutor executor;
     @Nullable
     private static DefaultRedisConnectionBuilder<InetSocketAddress> builder;
     @Nullable
@@ -82,28 +83,28 @@ public class InternalSubscribedRedisConnectionTest {
         int redisPort = Integer.parseInt(tmpRedisPort);
         String redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
         redisAddress = InetSocketAddress.createUnresolved(redisHost, redisPort);
-        group = NettyIoExecutors.createGroup();
+        executor = toNettyIoExecutor(createExecutor());
         builder = DefaultRedisConnectionBuilder.<InetSocketAddress>forSubscribe()
                 .setPingPeriod(Duration.ofSeconds(1)).setIdleConnectionTimeout(Duration.ofSeconds(2));
     }
 
     @AfterClass
     public static void tearDown() {
-        if (group != null) {
-            group.closeAsync(0, 0, SECONDS).subscribe();
+        if (executor != null) {
+            executor.closeAsync(0, 0, SECONDS).subscribe();
         }
     }
 
     @Test
     public void testWriteCancelAndClose() throws ExecutionException, InterruptedException {
-        assert builder != null && redisAddress != null && group != null;
+        assert builder != null && redisAddress != null && executor != null;
 
         TestPublisher<RedisData.RequestRedisData> requestContent = new TestPublisher<>();
         requestContent.sendOnSubscribe();
         CountDownLatch requestStreamCancelled = new CountDownLatch(1);
         RedisRequest mockRequest = newMockRequest(requestContent.doBeforeCancel(requestStreamCancelled::countDown));
 
-        RedisConnection connection = awaitIndefinitely(builder.build(group, redisAddress));
+        RedisConnection connection = awaitIndefinitely(builder.build(executor, redisAddress));
         assert connection != null;
 
         Subscription subscription = subscribeToResponse(connection.request(mockRequest), new ConcurrentLinkedQueue<>());
@@ -115,9 +116,9 @@ public class InternalSubscribedRedisConnectionTest {
 
     @Test
     public void testReadCancelAndClose() throws ExecutionException, InterruptedException {
-        assert builder != null && redisAddress != null && group != null;
+        assert builder != null && redisAddress != null && executor != null;
 
-        RedisConnection connection = awaitIndefinitely(builder.build(group, redisAddress));
+        RedisConnection connection = awaitIndefinitely(builder.build(executor, redisAddress));
         assert connection != null;
         RedisCommander commander = connection.asCommander();
 
@@ -129,7 +130,7 @@ public class InternalSubscribedRedisConnectionTest {
         LinkedBlockingQueue<Object> notifications = new LinkedBlockingQueue<>();
         Subscription subscription = subscribeToResponse(subscribeResponse, notifications);
         subscription.request(1);
-        RedisConnection publishConnection = awaitIndefinitely(forPipeline().build(group, redisAddress));
+        RedisConnection publishConnection = awaitIndefinitely(forPipeline().build(executor, redisAddress));
         assert publishConnection != null;
 
         awaitIndefinitely(publishConnection.asCommander().publish(channelToSubscribe, randomStringOfLength(32)));

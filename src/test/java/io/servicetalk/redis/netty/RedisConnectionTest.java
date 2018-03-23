@@ -282,7 +282,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
     private static void rawConnectionToCommanderWithFilterDoesNotThrowClassCast(boolean monitor) throws ExecutionException, InterruptedException {
         RedisConnection rawConnection =
                 awaitIndefinitely(DefaultRedisConnectionBuilder.<InetSocketAddress>forPipeline()
-                        .build(group, new InetSocketAddress(redisHost, redisPort)));
+                        .build(executor, new InetSocketAddress(redisHost, redisPort)));
         try {
             final AtomicBoolean requestCalled = new AtomicBoolean();
             final AtomicBoolean closeCalled = new AtomicBoolean();

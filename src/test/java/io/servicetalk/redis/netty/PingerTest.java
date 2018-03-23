@@ -31,10 +31,9 @@ import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
-import io.servicetalk.transport.api.IoExecutorGroup;
-import io.servicetalk.transport.netty.NettyIoExecutors;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.Connection;
+import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -62,6 +61,8 @@ import static io.servicetalk.redis.api.RedisProtocolSupport.Command.SUBSCRIBE;
 import static io.servicetalk.redis.netty.InternalSubscribedRedisConnection.newSubscribedConnection;
 import static io.servicetalk.redis.netty.PipelinedRedisConnection.newPipelinedConnection;
 import static io.servicetalk.redis.netty.RedisTestUtils.randomStringOfLength;
+import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
 import static java.lang.Long.MAX_VALUE;
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -78,7 +79,7 @@ public class PingerTest {
     public final Timeout timeout = new ServiceTalkTestTimeout(1, TimeUnit.MINUTES);
 
     @Nullable
-    private static IoExecutorGroup group;
+    private static NettyIoExecutor executor;
     @Nullable
     private static ReadOnlyRedisClientConfig config;
     @Nullable
@@ -93,14 +94,14 @@ public class PingerTest {
         String redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
         serverAddress = new InetSocketAddress(redisHost, redisPort);
 
-        group = NettyIoExecutors.createGroup();
+        executor = toNettyIoExecutor(createExecutor());
         config = new RedisClientConfig(new TcpClientConfig(false)).setPingPeriod(PING_PERIOD).setMaxPipelinedRequests(10).asReadOnly();
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
-        if (group != null) {
-            awaitIndefinitely(group.closeAsync());
+        if (executor != null) {
+            awaitIndefinitely(executor.closeAsync());
         }
     }
 
@@ -192,7 +193,7 @@ public class PingerTest {
 
     private static Single<Connection<RedisData, ByteBuf>> connect(Queue<Object> commandsWritten) {
         assert config != null;
-        assert group != null;
+        assert executor != null;
         assert serverAddress != null;
 
         final ReadOnlyTcpClientConfig roTcpConfig = config.getTcpClientConfig();
@@ -229,6 +230,6 @@ public class PingerTest {
                 });
 
         final TcpConnector<RedisData, ByteBuf> connector = new TcpConnector<>(roTcpConfig, initializer, () -> o -> false);
-        return connector.connect(group, serverAddress);
+        return connector.connect(executor, serverAddress);
     }
 }

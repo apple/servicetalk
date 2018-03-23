@@ -45,7 +45,7 @@ import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.redis.netty.DefaultRedisClientBuilder.DefaultRedisClient;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
-import io.servicetalk.transport.api.IoExecutorGroup;
+import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -235,14 +235,14 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress> implements Pa
     }
 
     @Override
-    public PartitionedRedisClient build(IoExecutorGroup ioExecutorGroup, Publisher<PartitionedEvent<ResolvedAddress>> addressEventStream) {
-        return build(ioExecutorGroup, addressEventStream, requireNonNull(redisPartitionAttributesBuilderFactory));
+    public PartitionedRedisClient build(IoExecutor executor, Publisher<PartitionedEvent<ResolvedAddress>> addressEventStream) {
+        return build(executor, addressEventStream, requireNonNull(redisPartitionAttributesBuilderFactory));
     }
 
-    protected PartitionedRedisClient build(IoExecutorGroup ioExecutorGroup,
+    protected PartitionedRedisClient build(IoExecutor executor,
                                            Publisher<PartitionedEvent<ResolvedAddress>> addressEventStream,
                                            Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFactory) {
-        return new DefaultPartitionedRedisClient<>(ioExecutorGroup, addressEventStream, clientFilterFunction, config, connectionFilterFunction, loadBalancerFactory,
+        return new DefaultPartitionedRedisClient<>(executor, addressEventStream, clientFilterFunction, config, connectionFilterFunction, loadBalancerFactory,
                 requireNonNull(redisPartitionAttributesBuilderFactory), partitionMapFactory.newPartitionMap(Partition::new), serviceDiscoveryMaxQueueSize);
     }
 
@@ -252,7 +252,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress> implements Pa
         private final PartitionMap<Partition> partitionMap;
         private final BufferAllocator allocator;
 
-        DefaultPartitionedRedisClient(IoExecutorGroup ioExecutorGroup,
+        DefaultPartitionedRedisClient(IoExecutor executor,
                                       Publisher<PartitionedEvent<ResolvedAddress>> addressEventStream,
                                       Function<RedisClient, RedisClient> clientFilterFactory,
                                       RedisClientConfig config,
@@ -286,7 +286,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress> implements Pa
                         public void onNext(Group<Partition, PartitionedEvent<ResolvedAddress>> newGroup) {
                             final Partition partition = newGroup.getKey();
                             partition.setClient(
-                                    redisClientBuilder.build(ioExecutorGroup,
+                                    redisClientBuilder.build(executor,
                                             newGroup.getPublisher().filter(new Predicate<PartitionedEvent<ResolvedAddress>>() {
                                                 // Use a mutable Count to avoid boxing-unboxing and put on each call.
                                                 private final Map<ResolvedAddress, MutableInteger> addressesToCount = new HashMap<>();

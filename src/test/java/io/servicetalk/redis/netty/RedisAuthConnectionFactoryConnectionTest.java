@@ -23,8 +23,7 @@ import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisException;
 import io.servicetalk.redis.utils.RedisAuthConnectionFactory;
 import io.servicetalk.redis.utils.RedisAuthorizationException;
-import io.servicetalk.transport.api.IoExecutorGroup;
-import io.servicetalk.transport.netty.NettyIoExecutors;
+import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,6 +36,8 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -53,19 +54,19 @@ public class RedisAuthConnectionFactoryConnectionTest {
     private static final String CORRECT_PASSWORD = "password";
 
     @Nullable
-    private IoExecutorGroup group;
+    private NettyIoExecutor executor;
     @Nullable
     private Single<RedisConnection> connectionSingle;
 
     @After
     public void cleanup() throws Exception {
         if (connectionSingle != null) {
-            assert group != null;
+            assert executor != null;
             awaitIndefinitely(connectionSingle
                     .flatmap(connection -> connection.closeAsync().onErrorResume(cause -> completed()).toSingle(connection))
                     .ignoreResult()
                     .onErrorResume(cause -> completed())
-                    .andThen(group.closeAsync(0, 0, SECONDS)));
+                    .andThen(executor.closeAsync(0, 0, SECONDS)));
         }
     }
 
@@ -117,12 +118,12 @@ public class RedisAuthConnectionFactoryConnectionTest {
 
         redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
 
-        group = NettyIoExecutors.createGroup();
+        executor = toNettyIoExecutor(createExecutor());
 
         connectionSingle = new RedisAuthConnectionFactory<>(
                 DefaultRedisConnectionBuilder.<InetSocketAddress>forPipeline()
                         .setMaxPipelinedRequests(10)
-                        .asConnectionFactory(group),
+                        .asConnectionFactory(executor),
                 ctx -> ctx.getAllocator().fromAscii(password))
                 .newConnection(new InetSocketAddress(redisHost, redisPort));
         connectionConsumer.accept(connectionSingle);

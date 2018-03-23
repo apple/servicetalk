@@ -29,7 +29,7 @@ import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
-import io.servicetalk.transport.api.IoExecutorGroup;
+import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
 
 import java.io.InputStream;
@@ -167,8 +167,8 @@ public final class DefaultRedisClientBuilder<ResolvedAddress> implements RedisCl
     }
 
     @Override
-    public RedisClient build(IoExecutorGroup ioExecutorGroup, Publisher<Event<ResolvedAddress>> addressEventStream) {
-        return new DefaultRedisClient<>(ioExecutorGroup, config.asReadOnly(), addressEventStream, connectionFilterFunction, loadBalancerFactory);
+    public RedisClient build(IoExecutor executor, Publisher<Event<ResolvedAddress>> addressEventStream) {
+        return new DefaultRedisClient<>(executor, config.asReadOnly(), addressEventStream, connectionFilterFunction, loadBalancerFactory);
     }
 
     static final class DefaultRedisClient<ResolvedAddress, EventType extends Event<ResolvedAddress>> extends RedisClient {
@@ -176,7 +176,7 @@ public final class DefaultRedisClientBuilder<ResolvedAddress> implements RedisCl
         private final LoadBalancer<RedisConnection> subscribeLb;
         private final LoadBalancer<RedisConnection> pipelineLb;
 
-        DefaultRedisClient(IoExecutorGroup ioExecutorGroup,
+        DefaultRedisClient(IoExecutor ioExecutorGroup,
                            ReadOnlyRedisClientConfig roConfig,
                            Publisher<EventType> addressEventStream,
                            Function<RedisConnection, RedisConnection> connectionFilter,

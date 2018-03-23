@@ -36,8 +36,7 @@ import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisPartitionAttributesBuilder;
 import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisRequest;
-import io.servicetalk.transport.api.IoExecutorGroup;
-import io.servicetalk.transport.netty.NettyIoExecutors;
+import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -59,6 +58,8 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.INFO;
 import static io.servicetalk.redis.api.RedisProtocolSupport.CommandFlag.WRITE;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
+import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.time.Duration.ofSeconds;
 import static java.util.Comparator.comparingInt;
@@ -95,7 +96,7 @@ public class PartitionedRedisClientTest {
         keyToShardMap = Collections.unmodifiableMap(localMap);
     }
 
-    private IoExecutorGroup group;
+    private NettyIoExecutor executor;
     private static final String redisPortString = System.getenv("REDIS_PORT");
     private static final int redisPort = redisPortString == null || redisPortString.isEmpty() ? -1 : Integer.parseInt(redisPortString);
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
@@ -108,7 +109,7 @@ public class PartitionedRedisClientTest {
     public void startClient() throws Exception {
         assumeThat(redisPortString, not(isEmptyOrNullString()));
 
-        group = NettyIoExecutors.createGroup();
+        executor = toNettyIoExecutor(createExecutor());
 
         partitionAttributesBuilderFactory = command -> {
             final PartitionAttributesBuilder partitionAttributesBuilder;
@@ -147,7 +148,7 @@ public class PartitionedRedisClientTest {
                 partitionAttributesBuilderFactory)
                 .setMaxPipelinedRequests(10)
                 .setPingPeriod(ofSeconds(1))
-                .build(group, serviceDiscoveryPublisher.getPublisher());
+                .build(executor, serviceDiscoveryPublisher.getPublisher());
 
         sendHost1ServiceDiscoveryEvent(true);
 
@@ -170,7 +171,7 @@ public class PartitionedRedisClientTest {
             return;
         }
 
-        awaitIndefinitely(client.closeAsync().andThen(group.closeAsync(0, 0, SECONDS)));
+        awaitIndefinitely(client.closeAsync().andThen(executor.closeAsync(0, 0, SECONDS)));
     }
 
     @Test

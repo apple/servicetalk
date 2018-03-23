@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.api.RedisConnection;
-import io.servicetalk.transport.api.IoExecutorGroup;
+import io.servicetalk.transport.api.IoExecutor;
 
 import java.util.function.Function;
 
@@ -32,7 +32,7 @@ final class DefaultRedisConnectionFactory<ResolvedAddress> implements Connection
 
     private final CompletableProcessor onClose = new CompletableProcessor();
     private final ReadOnlyRedisClientConfig config;
-    private final IoExecutorGroup ioExecutorGroup;
+    private final IoExecutor executor;
     private final boolean forSubscribe;
     private final Function<RedisConnection, RedisConnection> connectionFilterFactory;
     private final Completable closeAsync = new Completable() {
@@ -43,17 +43,17 @@ final class DefaultRedisConnectionFactory<ResolvedAddress> implements Connection
         }
     };
 
-    DefaultRedisConnectionFactory(ReadOnlyRedisClientConfig config, IoExecutorGroup ioExecutorGroup, boolean forSubscribe,
+    DefaultRedisConnectionFactory(ReadOnlyRedisClientConfig config, IoExecutor executor, boolean forSubscribe,
                                   Function<RedisConnection, RedisConnection> connectionFilterFactory) {
         this.config = config;
-        this.ioExecutorGroup = ioExecutorGroup;
+        this.executor = executor;
         this.forSubscribe = forSubscribe;
         this.connectionFilterFactory = connectionFilterFactory;
     }
 
     @Override
     public Single<LoadBalancedRedisConnection> newConnection(ResolvedAddress address) {
-        return (forSubscribe ? buildForSubscribe(ioExecutorGroup, address, config) : buildForPipelined(ioExecutorGroup, address, config))
+        return (forSubscribe ? buildForSubscribe(executor, address, config) : buildForPipelined(executor, address, config))
                 .map(this::newConnection);
     }
 

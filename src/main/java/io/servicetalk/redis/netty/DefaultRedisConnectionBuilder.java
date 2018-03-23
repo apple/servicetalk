@@ -25,9 +25,11 @@ import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
-import io.servicetalk.transport.api.IoExecutorGroup;
+import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
+import io.servicetalk.transport.netty.internal.NettyIoExecutor;
+import io.servicetalk.transport.netty.internal.NettyIoExecutors;
 
 import java.io.InputStream;
 import java.net.SocketOption;
@@ -164,13 +166,14 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
     }
 
     @Override
-    public Single<RedisConnection> build(final IoExecutorGroup ioExecutorGroup, final ResolvedAddress resolvedAddress) {
+    public Single<RedisConnection> build(final IoExecutor executor, final ResolvedAddress resolvedAddress) {
         final ReadOnlyRedisClientConfig roConfig = config.asReadOnly();
-        return (forSubscribe ? buildForSubscribe(ioExecutorGroup, resolvedAddress, roConfig) : buildForPipelined(ioExecutorGroup, resolvedAddress, roConfig))
+        return (forSubscribe ? buildForSubscribe(executor, resolvedAddress, roConfig) : buildForPipelined(executor, resolvedAddress, roConfig))
                 .map(MaxPendingRequestsEnforcingRedisConnection::new);
     }
 
-    static <ResolvedAddress> Single<RedisConnection> buildForSubscribe(IoExecutorGroup ioExecutorGroup, ResolvedAddress resolvedAddress, ReadOnlyRedisClientConfig roConfig) {
+    static <ResolvedAddress> Single<RedisConnection> buildForSubscribe(IoExecutor executor, ResolvedAddress resolvedAddress, ReadOnlyRedisClientConfig roConfig) {
+        NettyIoExecutor nettyIoExecutor = NettyIoExecutors.toNettyIoExecutor(executor);
         return new Single<RedisConnection>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super RedisConnection> subscriber) {
@@ -179,14 +182,15 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
                         .andThen(new RedisClientChannelInitializer());
 
                 final TcpConnector<RedisData, ByteBuf> connector = new TcpConnector<>(roTcpConfig, initializer, () -> o -> false);
-                connector.connect(ioExecutorGroup, resolvedAddress)
+                connector.connect(nettyIoExecutor, resolvedAddress)
                         .map(conn -> addFilters(newSubscribedConnection(conn, roConfig), roConfig))
                         .subscribe(subscriber);
             }
         };
     }
 
-    static <ResolvedAddress> Single<RedisConnection> buildForPipelined(IoExecutorGroup ioExecutorGroup, ResolvedAddress resolvedAddress, ReadOnlyRedisClientConfig roConfig) {
+    static <ResolvedAddress> Single<RedisConnection> buildForPipelined(IoExecutor executor, ResolvedAddress resolvedAddress, ReadOnlyRedisClientConfig roConfig) {
+        NettyIoExecutor nettyIoExecutor = NettyIoExecutors.toNettyIoExecutor(executor);
         return new Single<RedisConnection>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super RedisConnection> subscriber) {
@@ -195,7 +199,7 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
                         .andThen(new RedisClientChannelInitializer());
 
                 final TcpConnector<RedisData, ByteBuf> connector = new TcpConnector<>(roTcpConfig, initializer, () -> o -> false);
-                connector.connect(ioExecutorGroup, resolvedAddress)
+                connector.connect(nettyIoExecutor, resolvedAddress)
                         .map(conn -> addFilters(newPipelinedConnection(conn, roConfig), roConfig))
                         .subscribe(subscriber);
             }
