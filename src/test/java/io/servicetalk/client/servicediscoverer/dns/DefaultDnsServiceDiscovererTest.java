@@ -19,8 +19,7 @@ import io.servicetalk.client.api.ServiceDiscoverer.Event;
 import io.servicetalk.client.servicediscoverer.ServiceDiscovererTestSubscriber;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.transport.api.IoExecutorGroup;
-import io.servicetalk.transport.netty.NettyIoExecutors;
+import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -44,6 +43,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -55,13 +56,13 @@ public class DefaultDnsServiceDiscovererTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    private static IoExecutorGroup group;
+    private static NettyIoExecutor executor;
     private static TestDnsServer dnsServer;
     private DefaultDnsServiceDiscoverer discoverer;
 
     @BeforeClass
     public static void beforeClass() throws IOException {
-        group = NettyIoExecutors.createGroup();
+        executor = toNettyIoExecutor(createExecutor());
         dnsServer = new TestDnsServer(new HashSet<>(Arrays.asList("apple.com", "servicetalk.io")));
         dnsServer.start();
     }
@@ -69,12 +70,12 @@ public class DefaultDnsServiceDiscovererTest {
     @AfterClass
     public static void afterClass() throws InterruptedException, ExecutionException {
         dnsServer.stop();
-        awaitIndefinitely(group.closeAsync());
+        awaitIndefinitely(executor.closeAsync());
     }
 
     @Before
     public void setup() {
-        discoverer = new DefaultDnsServiceDiscoverer.Builder(group.next())
+        discoverer = new DefaultDnsServiceDiscoverer.Builder(executor.next())
                 .setDnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_ONLY)
                 .setOptResourceEnabled(false)
                 .setDnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(new SingletonDnsServerAddresses(dnsServer.localAddress())))
@@ -90,7 +91,7 @@ public class DefaultDnsServiceDiscovererTest {
     @Test
     public void testRetry() throws InterruptedException {
         AtomicInteger retryStrategyCalledCount = new AtomicInteger();
-        discoverer = new DefaultDnsServiceDiscoverer.Builder(group.next())
+        discoverer = new DefaultDnsServiceDiscoverer.Builder(executor.next())
                 .setDnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_ONLY)
                 .setOptResourceEnabled(false)
                 .setDnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(new SingletonDnsServerAddresses(dnsServer.localAddress())))

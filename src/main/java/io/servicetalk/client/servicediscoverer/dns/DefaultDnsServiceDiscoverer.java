@@ -30,7 +30,6 @@ import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.netty.NettyIoExecutor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
@@ -51,6 +50,7 @@ import static io.servicetalk.client.internal.ServiceDiscovererUtils.calculateDif
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChannel;
+import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.function.Function.identity;
@@ -198,7 +198,7 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
                                         @Nullable DnsServerAddressStreamProvider dnsServerAddressStreamProvider) {
         this.executor = executor;
         this.retryStrategy = retryStrategy;
-        EventLoop eventLoop = NettyIoExecutor.toEventLoop(executor);
+        EventLoop eventLoop = toEventLoopAwareNettyIoExecutor(executor).getEventLoopGroup().next();
         DnsNameResolverBuilder builder = new DnsNameResolverBuilder(eventLoop)
                 // TODO(scott): handle the TTL in our custom cache implementation.
                 .ttl(minTTL, Integer.MAX_VALUE)
