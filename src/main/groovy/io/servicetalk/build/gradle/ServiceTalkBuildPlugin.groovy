@@ -150,7 +150,7 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
     }
   }
 
-  private static void applyIdeaPlugin(Project project) {
+  public static void applyIdeaPlugin(Project project) {
     project.configure(project) {
       apply plugin: "idea"
 
@@ -188,7 +188,7 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
     }
   }
 
-  private static void applyEclipsePlugin(Project project) {
+  public static void applyEclipsePlugin(Project project) {
     project.configure(project) {
       apply plugin: "eclipse"
 
