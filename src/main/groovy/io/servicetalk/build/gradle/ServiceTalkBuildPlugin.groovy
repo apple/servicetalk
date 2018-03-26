@@ -324,7 +324,7 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
       }
 
       pmd {
-        toolVersion = "6.1.0"
+        toolVersion = "6.2.0"
         sourceSets = [sourceSets.main, sourceSets.test]
         ruleSets = []
         ruleSetConfig = resources.text.fromString(getClass().getResourceAsStream("pmd/basic.xml").text)
