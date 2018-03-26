@@ -30,10 +30,13 @@ import org.gradle.plugins.ide.eclipse.EclipsePlugin
 import org.gradle.plugins.ide.idea.IdeaPlugin
 
 import static io.servicetalk.build.gradle.ProjectUtils.addManifestAttributes
+import static io.servicetalk.build.gradle.ProjectUtils.appendNodes
+import static io.servicetalk.build.gradle.ProjectUtils.copyResource
 import static io.servicetalk.build.gradle.ProjectUtils.createJavadocJarTask
 import static io.servicetalk.build.gradle.ProjectUtils.createSourcesJarTask
 import static io.servicetalk.build.gradle.ProjectUtils.generateMavenDependencies
 import static io.servicetalk.build.gradle.ProjectUtils.getOrCreateNode
+import static io.servicetalk.build.gradle.ProjectUtils.writeToFile
 
 class ServiceTalkBuildPlugin implements Plugin<Project> {
   void apply(Project project) {
@@ -288,54 +291,36 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
     }
   }
 
-  private static File copyResourcesToTempFolder(String buildDir, String folder, String... resources) {
-    def tmpDir = new File(buildDir, folder)
-    tmpDir.mkdirs()
-    tmpDir.deleteOnExit()
-
-    resources.each {
-      copyResource(folder + File.separator + it, tmpDir, it)
-    }
-
-    return tmpDir
-  }
-
-  private static File copyResource(String resourceSourcePath, File destinationFolder, String destinationFilename) {
-    def content = ServiceTalkBuildPlugin.class.getResource(resourceSourcePath).text
-    return writeToFile(content, destinationFolder, destinationFilename)
-  }
-
-  private static File writeToFile(String content, File folder, String fileName) {
-    def file = new File(folder, fileName)
-    if (!file.parentFile.exists() && !file.parentFile.mkdirs()) {
-      throw new IOException("Unable to create directory: " + file.parentFile)
-    }
-    file.createNewFile()
-    file.write(content)
-    return file
-  }
-
-  private static appendNodes(XmlProvider provider, InputStream resource) {
-    def xmlProject = provider.asNode()
-    def xmlComponents = new XmlParser().parse(resource)
-    xmlComponents.children().each { xmlProject.append it }
-  }
-
   private static void applyQualityPlugins(Project project) {
     project.configure(project) {
+
       apply plugin: "checkstyle"
       apply plugin: "pmd"
       apply plugin: "com.github.spotbugs"
 
-      File checkstyleLocalSuppressionsFile = file("$rootDir/gradle/checkstyle/suppressions.xml")
       checkstyle {
         toolVersion = "8.8"
-        configDir = copyResourcesToTempFolder("$project.buildDir", "checkstyle",
-            "checkstyle.xml", "global-suppressions.xml")
+        configDir = file("$buildDir/checkstyle")
+      }
 
-        if (checkstyleLocalSuppressionsFile.exists()) {
-          writeToFile(checkstyleLocalSuppressionsFile.text, configDir, "local-suppressions.xml")
+      project.task("checkstyleConfig") {
+        mustRunAfter clean
+
+        doLast {
+          copyResource("checkstyle/checkstyle.xml", checkstyle.configDir, "checkstyle.xml")
+          copyResource("checkstyle/global-suppressions.xml", checkstyle.configDir, "global-suppressions.xml")
+
+          File checkstyleLocalSuppressionsFile = file("$rootDir/gradle/checkstyle/suppressions.xml")
+          if (checkstyleLocalSuppressionsFile.exists()) {
+            writeToFile(checkstyleLocalSuppressionsFile.text, checkstyle.configDir, "local-suppressions.xml")
+          }
         }
+      }
+
+      tasks.checkstyleMain.dependsOn checkstyleConfig
+      tasks.checkstyleTest.dependsOn checkstyleConfig
+      tasks.matching { it.name == "checkstyleTestFixtures" }.all {
+        it.dependsOn checkstyleConfig
       }
 
       pmd {

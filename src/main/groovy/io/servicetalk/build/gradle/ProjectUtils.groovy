@@ -2,6 +2,7 @@ package io.servicetalk.build.gradle
 
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.XmlProvider
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.java.archives.Manifest
 import org.gradle.api.plugins.JavaBasePlugin
@@ -81,5 +82,26 @@ class ProjectUtils {
         scope(theScope)
       }
     }
+  }
+
+  static File copyResource(String resourceSourcePath, File destinationFolder, String destinationFilename) {
+    def content = ServiceTalkBuildPlugin.class.getResource(resourceSourcePath).text
+    return writeToFile(content, destinationFolder, destinationFilename)
+  }
+
+  static File writeToFile(String content, File folder, String fileName) {
+    def file = new File(folder, fileName)
+    if (!file.parentFile.exists() && !file.parentFile.mkdirs()) {
+      throw new IOException("Unable to create directory: " + file.parentFile)
+    }
+    file.createNewFile()
+    file.write(content)
+    return file
+  }
+
+  static appendNodes(XmlProvider provider, InputStream resource) {
+    def xmlProject = provider.asNode()
+    def xmlComponents = new XmlParser().parse(resource)
+    xmlComponents.children().each { xmlProject.append it }
   }
 }
