@@ -1,0 +1,62 @@
+plugins {
+  id "io.spring.dependency-management" version "1.0.4.RELEASE"
+}
+
+apply plugin: "maven-publish"
+
+dependencyManagement {
+  imports {
+    mavenBom "io.netty:netty-bom:$nettyVersion"
+  }
+  dependencies {
+    dependency "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    dependency "com.google.code.findbugs:jsr305:$jsr305Version"
+    dependency "io.reactivex.rxjava2:rxjava:$rxJavaVersion"
+    dependency "org.jctools:jctools-core:$jcToolsVersion"
+    dependency "org.reactivestreams:reactive-streams:$reactiveStreamsVersion"
+    dependency "org.slf4j:slf4j-api:$slf4jVersion"
+
+    // Testing
+    dependency "junit:junit:$junitVersion"
+    dependency "org.hamcrest:hamcrest-library:$hamcrestVersion"
+    dependency "org.mockito:mockito-core:$mockitoCoreVersion"
+    dependency "org.reactivestreams:reactive-streams-tck:$reactiveStreamsVersion"
+    dependency "org.testng:testng:$testngVersion"
+
+    // Testing Support
+    dependency "commons-lang:commons-lang:$commonsLangVersion"
+    dependency ("org.apache.directory.server:apacheds-protocol-dns:$apacheDirectoryServerVersion") {
+      // We need to use commons-lang 2.6 to be able to run tests with java9
+      // See https://github.com/apache/bookkeeper/issues/385
+      exclude "commons-logging:commons-logging"
+    }
+    dependency "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    dependency "org.apache.logging.log4j:log4j-core:$log4jVersion"
+  }
+}
+
+publishing {
+  publications {
+    maven(MavenPublication) {
+    }
+  }
+}
+
+def versionString = version.toString()
+
+if (0 == repositories.size()) {
+  repositories {
+    jcenter()
+  }
+}
+else {
+  task('package') // NOOP
+  task('check')   // NOOP
+  if (!versionString.endsWith("-apple")) {
+    version += "-apple"
+  }
+}
+
+if (!hasProperty('releaseBuild') && !versionString.endsWith("-SNAPSHOT")) {
+  version += "-SNAPSHOT"
+}
