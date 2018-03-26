@@ -4,17 +4,14 @@
     "http://checkstyle.sourceforge.net/dtds/suppressions_1_2.dtd">
 
 <suppressions>
-  <!-- main -->
-  <suppress id="JavadocMethodTest" files=".*[\\/]src[\\/]main[\\/].*"/>
-
   <!-- test -->
-  <suppress id="JavadocMethodMain" files=".*[\\/]src[\\/]test[\\/].*"/>
   <suppress id="ConsolePrint" files=".*[\\/]src[\\/]test[\\/].*"/>
   <suppress id="IllegalInstantiationOfString" files=".*[\\/]src[\\/]test[\\/].*"/>
   <suppress checks="IllegalThrows" files=".*[\\/]src[\\/]test[\\/].*"/>
   <suppress checks="MethodName" files=".*[\\/]src[\\/]test[\\/].*"/>
+  <suppress checks="JavadocMethod" files=".*[\\/]src[\\/]test[\\/].*"/>
 
   <!-- testFixtures -->
-  <suppress id="JavadocMethodMain" files=".*[\\/]src[\\/]testFixtures[\\/].*"/>
   <suppress id="ConsolePrint" files=".*[\\/]src[\\/]testFixtures[\\/].*"/>
+  <suppress checks="JavadocMethod" files=".*[\\/]src[\\/]testFixtures[\\/].*"/>
 </suppressions>
