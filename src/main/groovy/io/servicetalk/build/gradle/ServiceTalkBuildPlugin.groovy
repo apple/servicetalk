@@ -15,7 +15,6 @@
  */
 package io.servicetalk.build.gradle
 
-import org.gradle.api.GradleScriptException
 import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -41,10 +40,11 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
     configureProperties project
 
     applyDocPlugins project
-    applyIdeaPlugin project
-    applyEclipsePlugin project
 
     if (project.subprojects) {
+      applyIdeaPlugin project
+      applyEclipsePlugin project
+
       project.subprojects {
         configureJavaProject it
       }
@@ -157,11 +157,14 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
       if (project.parent == null) {
         idea.project.languageLevel = "1.8"
         idea.project.targetBytecodeVersion = JavaVersion.VERSION_1_8
+
         idea.project.ipr.withXml { XmlProvider provider ->
-          def xmlProject = provider.asNode()
-          def xmlComponents = new XmlParser().parse(getClass().getResourceAsStream("idea/components.xml"))
-          xmlComponents.children().each { xmlProject.append it }
+          appendNodes(provider, getClass().getResourceAsStream("idea/ipr-components.xml"))
         }
+        idea.workspace.iws.withXml { XmlProvider provider ->
+          appendNodes(provider, getClass().getResourceAsStream("idea/iws-components.xml"))
+        }
+
         // This runs for every module, but the files are written to the correct location, but multiple times.
         idea.project.ipr {
           def resources = ["fileTemplates/includes/License.java",
@@ -310,6 +313,12 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
     file.createNewFile()
     file.write(content)
     return file
+  }
+
+  private static appendNodes(XmlProvider provider, InputStream resource) {
+    def xmlProject = provider.asNode()
+    def xmlComponents = new XmlParser().parse(resource)
+    xmlComponents.children().each { xmlProject.append it }
   }
 
   private static void applyQualityPlugins(Project project) {
