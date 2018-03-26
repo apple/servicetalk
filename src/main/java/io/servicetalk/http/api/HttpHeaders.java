@@ -128,8 +128,8 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
     boolean isEmpty();
 
     /**
-     * Returns a {@link Set} of all header getNames in this object. The returned {@link Set} cannot be modified.
-     * @return a {@link Set} of all header getNames in this object. The returned {@link Set} cannot be modified.
+     * Returns a {@link Set} of all header names in this object. The returned {@link Set} cannot be modified.
+     * @return a {@link Set} of all header names in this object. The returned {@link Set} cannot be modified.
      */
     Set<? extends CharSequence> getNames();
 
@@ -174,7 +174,7 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
     HttpHeaders add(CharSequence name, CharSequence... values);
 
     /**
-     * Adds all header getNames and values of {@code headers} to this object.
+     * Adds all header names and values of {@code headers} to this object.
      *
      * @param headers The headers to add.
      * @return {@code this}
