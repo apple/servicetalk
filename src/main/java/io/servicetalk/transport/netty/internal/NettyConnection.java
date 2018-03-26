@@ -25,7 +25,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.FlushStrategy;
 import io.servicetalk.transport.api.FlushStrategyHolder;
-import io.servicetalk.transport.api.IoExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +41,7 @@ import static io.netty.util.ReferenceCountUtil.release;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
 import static io.servicetalk.transport.netty.internal.Flush.composeFlushes;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
@@ -271,8 +271,8 @@ public final class NettyConnection<Read, Write> implements Connection<Read, Writ
     }
 
     @Override
-    public IoExecutor getIoExecutor() {
-        return context.getIoExecutor();
+    public NettyIoExecutor getIoExecutor() {
+        return toNettyIoExecutor(context.getIoExecutor());
     }
 
     @Override

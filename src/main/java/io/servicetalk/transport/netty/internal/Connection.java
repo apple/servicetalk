@@ -39,6 +39,9 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
  */
 public interface Connection<Read, Write> extends ConnectionContext {
 
+    @Override
+    NettyIoExecutor getIoExecutor();
+
     /**
      * Returns {@link Publisher} that emits all items as read from this connection.
      *
