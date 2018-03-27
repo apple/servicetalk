@@ -21,8 +21,10 @@ dependencies {
   api "io.servicetalk:servicetalk-client-api:0.1.0-SNAPSHOT"
   api "org.slf4j:slf4j-api"
 
-  testImplementation "org.mockito:mockito-core"
   testImplementation "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
   testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:0.1.0-SNAPSHOT"
   testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:0.1.0-SNAPSHOT"
+  testImplementation "junit:junit"
+  testImplementation "org.hamcrest:hamcrest-library"
+  testImplementation "org.mockito:mockito-core"
 }
