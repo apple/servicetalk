@@ -15,13 +15,14 @@
  */
 package io.servicetalk.buffer.netty;
 
+import io.servicetalk.buffer.Buffer;
+import io.servicetalk.buffer.BufferAllocator;
+import io.servicetalk.buffer.EmptyBuffer;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
-import io.servicetalk.buffer.Buffer;
-import io.servicetalk.buffer.BufferAllocator;
-import io.servicetalk.buffer.EmptyBuffer;
 
 import javax.annotation.Nullable;
 

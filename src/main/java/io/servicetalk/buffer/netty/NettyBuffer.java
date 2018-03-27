@@ -15,10 +15,11 @@
  */
 package io.servicetalk.buffer.netty;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
 import io.servicetalk.buffer.Buffer;
 import io.servicetalk.buffer.ByteProcessor;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 
 import java.io.IOException;
 import java.io.InputStream;

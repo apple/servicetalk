@@ -15,8 +15,9 @@
  */
 package io.servicetalk.buffer.netty;
 
-import io.netty.buffer.ByteBuf;
 import io.servicetalk.buffer.Buffer;
+
+import io.netty.buffer.ByteBuf;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;

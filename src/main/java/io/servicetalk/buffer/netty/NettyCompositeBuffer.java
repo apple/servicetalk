@@ -15,9 +15,10 @@
  */
 package io.servicetalk.buffer.netty;
 
-import io.netty.buffer.CompositeByteBuf;
 import io.servicetalk.buffer.Buffer;
 import io.servicetalk.buffer.CompositeBuffer;
+
+import io.netty.buffer.CompositeByteBuf;
 
 import java.nio.ByteBuffer;
 

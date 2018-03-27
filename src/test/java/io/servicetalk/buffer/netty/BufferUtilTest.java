@@ -16,6 +16,7 @@
 package io.servicetalk.buffer.netty;
 
 import io.servicetalk.buffer.Buffer;
+
 import org.junit.Test;
 
 import static io.servicetalk.buffer.EmptyBuffer.EMPTY_BUFFER;

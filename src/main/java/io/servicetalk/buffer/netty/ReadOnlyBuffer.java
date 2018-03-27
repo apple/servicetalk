@@ -15,8 +15,9 @@
  */
 package io.servicetalk.buffer.netty;
 
-import io.netty.buffer.ByteBuf;
 import io.servicetalk.buffer.Buffer;
+
+import io.netty.buffer.ByteBuf;
 
 import java.io.InputStream;
 import java.nio.ByteBuffer;
