@@ -24,10 +24,12 @@ dependencies {
   api "io.servicetalk:servicetalk-transport-netty:0.1.0-SNAPSHOT"
   api "io.servicetalk:servicetalk-transport-netty-internal:0.1.0-SNAPSHOT"
 
-  testImplementation "org.mockito:mockito-core"
+  testImplementation "commons-lang:commons-lang"
+  testImplementation "org.hamcrest:hamcrest-library"
   testImplementation "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
   testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:0.1.0-SNAPSHOT"
   testImplementation "io.servicetalk:servicetalk-client-internal-testFixtures:0.1.0-SNAPSHOT"
+  testImplementation "junit:junit"
   testImplementation "org.apache.directory.server:apacheds-protocol-dns"
-  testImplementation "commons-lang:commons-lang"
+  testImplementation "org.mockito:mockito-core"
 }
