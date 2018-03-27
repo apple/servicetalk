@@ -1,1 +1,2 @@
+enableFeaturePreview("IMPROVED_POM_SUPPORT")
 rootProject.name = "servicetalk-redis-api"
