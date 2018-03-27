@@ -17,7 +17,6 @@ package io.servicetalk.client.api.partition;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
-
 import javax.annotation.Nullable;
 
 import static java.lang.Integer.compare;

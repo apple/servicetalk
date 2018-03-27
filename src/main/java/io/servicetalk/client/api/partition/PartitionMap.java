@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 import java.util.List;
-
 import javax.annotation.Nullable;
 
 /**
