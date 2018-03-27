@@ -21,6 +21,7 @@ import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
+
 import org.junit.Test;
 
 import java.util.List;

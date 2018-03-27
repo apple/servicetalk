@@ -19,6 +19,7 @@ import io.servicetalk.client.api.partition.DuplicateAttributeException;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionAttributes.Key;
 import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
+
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

@@ -16,6 +16,7 @@
 package io.servicetalk.client.servicediscoverer;
 
 import io.servicetalk.client.api.ServiceDiscoverer.Event;
+
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 

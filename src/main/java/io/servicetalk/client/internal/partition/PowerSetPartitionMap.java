@@ -31,7 +31,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Function;
 import java.util.function.IntFunction;
-
 import javax.annotation.Nullable;
 
 import static java.lang.Integer.bitCount;
