@@ -139,7 +139,7 @@ public final class TcpServerInitializer {
     @SuppressWarnings("deprecation")
     private void configure(ServerBootstrap bs, @Nullable EventLoopGroup eventLoopGroup, Class<? extends SocketAddress> bindAddressClass) {
         if (eventLoopGroup == null) {
-            throw new IllegalStateException("IoExecutorGroup must be specified before building");
+            throw new IllegalStateException("IoExecutor must be specified before building");
         }
         bs.group(eventLoopGroup);
         bs.channel(BuilderUtils.serverChannel(eventLoopGroup, bindAddressClass));

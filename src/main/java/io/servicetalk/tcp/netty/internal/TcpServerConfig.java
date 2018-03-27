@@ -19,7 +19,6 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.util.DomainMappingBuilder;
 import io.servicetalk.buffer.BufferAllocator;
-import io.servicetalk.transport.api.IoExecutorGroup;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
@@ -40,18 +39,6 @@ import static java.util.Objects.requireNonNull;
  * Configuration for TCP based servers. <p>Internal use only.</p>
  */
 public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
-
-    /**
-     * New instance.
-     *
-     * @param autoRead If the channels accepted by the server will have auto-read enabled.
-     * @param group {@link IoExecutorGroup} to use for the server.
-     * @deprecated Use {@link #TcpServerConfig(boolean, NettyIoExecutor)}.
-     */
-    @Deprecated
-    public TcpServerConfig(boolean autoRead, IoExecutorGroup group) {
-        super(group, autoRead);
-    }
 
     /**
      * New instance.

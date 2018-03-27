@@ -29,8 +29,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.FileDescriptorSocketAddress;
-import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.IoExecutorGroup;
 import io.servicetalk.transport.netty.internal.AbstractChannelReadHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.Connection;
@@ -88,24 +86,6 @@ public final class TcpConnector<Read, Write> {
      */
     public TcpConnector(ReadOnlyTcpClientConfig config, ChannelInitializer channelInitializer, Supplier<Predicate<Read>> terminalItemPredicate) {
         this(config, channelInitializer, terminalItemPredicate, null);
-    }
-
-    /**
-     * Connects to the passed {@code remote} address, resolving the address, if required.
-     *
-     * @param ioExecutorGroup Determines which {@link IoExecutor} should be used for the connection.
-     * @param remote address to connect.
-     * @return {@link Single} that contains the {@link ConnectionContext} for the connection.
-     *
-     * @deprecated Use {@link #connect(NettyIoExecutor, Object)}.
-     */
-    @Deprecated
-    public Single<Connection<Read, Write>> connect(IoExecutorGroup ioExecutorGroup, Object remote) {
-        requireNonNull(ioExecutorGroup);
-        if (ioExecutorGroup instanceof NettyIoExecutor) {
-            return connect((NettyIoExecutor) ioExecutorGroup, remote);
-        }
-        throw new IllegalArgumentException("Incompatible IoExecutorGroup: " + ioExecutorGroup + ". Not a netty based IoExecutor.");
     }
 
     /**

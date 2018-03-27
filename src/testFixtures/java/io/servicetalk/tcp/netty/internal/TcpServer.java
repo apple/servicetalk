@@ -21,8 +21,6 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ContextFilter;
-import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.IoExecutorGroup;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.AbstractChannelReadHandler;
 import io.servicetalk.transport.netty.internal.BufferHandler;
@@ -47,16 +45,6 @@ public final class TcpServer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TcpServer.class);
     private final ReadOnlyTcpServerConfig config;
-
-    /**
-     * New instance with default configuration.
-     * @param ioExecutorGroup Determines the {@link IoExecutor} for new connections.
-     * @deprecated Use {@link #TcpServer(NettyIoExecutor)}.
-     */
-    @Deprecated
-    public TcpServer(IoExecutorGroup ioExecutorGroup) {
-        this(new TcpServerConfig(false, ioExecutorGroup));
-    }
 
     /**
      * New instance with default configuration.

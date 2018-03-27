@@ -29,8 +29,6 @@ import io.netty.channel.kqueue.KQueueSocketChannel;
 import io.netty.channel.unix.UnixChannel;
 import io.servicetalk.buffer.Buffer;
 import io.servicetalk.transport.api.FileDescriptorSocketAddress;
-import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.IoExecutorGroup;
 import io.servicetalk.transport.netty.internal.BufferHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.Connection;
@@ -56,27 +54,6 @@ public final class TcpClient {
     private final TcpConnector<Buffer, Buffer> connector;
     private final ReadOnlyTcpClientConfig roConfig;
     private final NettyIoExecutor executor;
-
-    /**
-     * New instance with default configuration.
-     * @param ioExecutorGroup Determines which {@link IoExecutor} should be used when connections are made.
-     * @deprecated Use {@link #TcpClient(NettyIoExecutor, TcpClientConfig)}.
-     */
-    @Deprecated
-    public TcpClient(IoExecutorGroup ioExecutorGroup) {
-        this(ioExecutorGroup, defaultConfig());
-    }
-
-    /**
-     * New instance.
-     * @param ioExecutorGroup Determines which {@link IoExecutor} should be used when connections are made.
-     * @param config for the client.
-     * @deprecated Use {@link #TcpClient(NettyIoExecutor, TcpClientConfig)}.
-     */
-    @Deprecated
-    public TcpClient(IoExecutorGroup ioExecutorGroup, TcpClientConfig config) {
-        this(verifyIoExecutorGroupType(ioExecutorGroup), config);
-    }
 
     /**
      * New instance.
@@ -183,13 +160,5 @@ public final class TcpClient {
         // To test coverage of options.
         config.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
         return config;
-    }
-
-    private static NettyIoExecutor verifyIoExecutorGroupType(IoExecutorGroup group) {
-        requireNonNull(group);
-        if (!(group instanceof NettyIoExecutor)) {
-            throw new IllegalArgumentException("Incompatible IoExecutorGroup: " + group + ". Not a netty based IoExecutor.");
-        }
-        return (NettyIoExecutor) group;
     }
 }
