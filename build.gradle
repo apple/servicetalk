@@ -13,22 +13,26 @@ buildscript {
 apply plugin: "servicetalk-build"
 
 dependencies {
-  compile "org.jctools:jctools-core:$jcToolsVersion"
-  compile "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
-  compile "io.servicetalk:servicetalk-buffer-netty:0.1.0-SNAPSHOT"
-  compile "io.servicetalk:servicetalk-transport-api:0.1.0-SNAPSHOT"
-  compile "io.servicetalk:servicetalk-transport-netty:0.1.0-SNAPSHOT"
-  compile "io.servicetalk:servicetalk-transport-netty-internal:0.1.0-SNAPSHOT"
-  compile "io.servicetalk:servicetalk-client-api:0.1.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-bom:0.1.0-SNAPSHOT"
 
-  testCompile "org.mockito:mockito-core:$mockitoCoreVersion"
-  testCompile "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
-  testCompile "io.servicetalk:servicetalk-concurrent-api-testFixtures:0.1.0-SNAPSHOT"
-  testCompile "io.servicetalk:servicetalk-concurrent-internal-testFixtures:0.1.0-SNAPSHOT"
+  api "com.google.code.findbugs:jsr305"
+  api "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-buffer-netty:0.1.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-transport-api:0.1.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-transport-netty:0.1.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-transport-netty-internal:0.1.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-client-api:0.1.0-SNAPSHOT"
+  api "org.jctools:jctools-core"
+  api "org.slf4j:slf4j-api"
 
-  testFixturesCompile group: 'io.netty', name: 'netty-transport-native-kqueue', version: "$nettyVersion", classifier: 'osx-x86_64'
-  testFixturesCompile group: 'io.netty', name: 'netty-transport-native-epoll', version: "$nettyVersion", classifier: 'linux-x86_64'
-  testFixturesCompile "junit:junit:$junitVersion"
-  testFixturesCompile "org.hamcrest:hamcrest-library:$hamcrestVersion"
-  testFixturesCompile "org.mockito:mockito-core:$mockitoCoreVersion"
+  testImplementation "org.mockito:mockito-core"
+  testImplementation "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
+  testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:0.1.0-SNAPSHOT"
+  testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:0.1.0-SNAPSHOT"
+
+  testFixturesImplementation group: "io.netty", name: "netty-transport-native-kqueue", classifier: "osx-x86_64"
+  testFixturesImplementation group: "io.netty", name: "netty-transport-native-epoll", classifier: "linux-x86_64"
+  testFixturesImplementation "junit:junit"
+  testFixturesImplementation "org.hamcrest:hamcrest-library"
+  testFixturesImplementation "org.mockito:mockito-core"
 }
