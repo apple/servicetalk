@@ -16,33 +16,42 @@
 package io.servicetalk.transport.api;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 /**
  * {@link Executor} that handles IO.
  */
-public interface IoExecutor extends IoExecutorGroup, Executor {
+public interface IoExecutor extends ListenableAsyncCloseable {
 
     /**
-     * Returns {@code true} if the calling thread is the same as the thread that powers this {@link IoExecutor}.
-     * @return {@code true} if calling thread is io thread.
+     * Determine if <a href="https://en.wikipedia.org/wiki/Unix_domain_socket">Unix Domain Sockets</a> are supported.
+     * @return {@code true} if <a href="https://en.wikipedia.org/wiki/Unix_domain_socket">Unix Domain Sockets</a> are supported.
      */
-    boolean inIoThread();
+    boolean isUnixDomainSocketSupported();
 
     /**
-     * Run as soon as possible and notify the {@link Completable}.
-     * @return a {@link Completable} that is notified once run.
+     * Determine if fd addresses are supported.
+     * @return {@code true} if supported
      */
-    Completable immediate();
+    boolean isFileDescriptorSocketAddressSupported();
 
     /**
-     * Schedule a timer that is run after the given delay and notify the {@link Completable}.
-     *
-     * @param delay the amount of time to wait.
-     * @param unit the unit to use.
-     * @return a {@link Completable} that is notified once the timer fired.
+     * Signals this object should be closed with a delay.
+     * @param quietPeriod the object will not accept new work within this time duration.
+     * @param timeout     the maximum amount of time to wait until this object is closed
+     *                    regardless if new work was submitted during the quiet period.
+     * @param unit        the unit of {@code quietPeriod} and {@code timeout}.
+     * @return a future that will complete when this object is closed.
      */
-    Completable timer(long delay, TimeUnit unit);
+    Completable closeAsync(long quietPeriod, long timeout, TimeUnit unit);
+
+    @Override
+    default Completable closeAsync() {
+        return closeAsync(2, 15, SECONDS);
+    }
 }
