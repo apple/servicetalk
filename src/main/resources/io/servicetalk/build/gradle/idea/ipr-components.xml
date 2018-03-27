@@ -62,6 +62,10 @@
   <component name="ProjectCodeStyleSettingsManager">
     <option name="PER_PROJECT_SETTINGS">
       <value>
+        <GroovyCodeStyleSettings>
+          <option name="CLASS_COUNT_TO_USE_IMPORT_ON_DEMAND" value="999"/>
+          <option name="NAMES_COUNT_TO_USE_IMPORT_ON_DEMAND" value="999"/>
+        </GroovyCodeStyleSettings>
         <option name="OTHER_INDENT_OPTIONS">
           <value>
             <option name="INDENT_SIZE" value="4"/>
