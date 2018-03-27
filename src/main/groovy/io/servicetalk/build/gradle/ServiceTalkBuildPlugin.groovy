@@ -40,8 +40,6 @@ import static io.servicetalk.build.gradle.ProjectUtils.writeToFile
 
 class ServiceTalkBuildPlugin implements Plugin<Project> {
   void apply(Project project) {
-    configureProperties project
-
     applyDocPlugins project
 
     if (project.subprojects) {
@@ -70,47 +68,6 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
 
     // TODO allow subprojects to opt-in test fixtures
     configureTestFixtures project
-  }
-
-  private static void configureProperties(Project project) {
-    project.configure(project) {
-      ext {
-        nettyStableVersion = "4.1.22.Final"
-        nettySnapshotVersion = "4.1.23.Final-SNAPSHOT"
-        nettyTcnativeStableVersion = "2.0.7.Final"
-        nettyTcnativeSnapshotVersion = "2.0.8.Final-SNAPSHOT"
-
-        if (Boolean.valueOf(System.getenv("USE_NETTY_SNAPSHOT")) || Boolean.valueOf(System.getProperty("useNettySnapshot"))) {
-          nettyVersion = nettySnapshotVersion
-          nettyTcnativeVersion = nettyTcnativeSnapshotVersion
-        } else {
-          nettyVersion = nettyStableVersion
-          nettyTcnativeVersion = nettyTcnativeStableVersion
-        }
-
-        jsr305Version = "3.0.2"
-
-        log4jVersion = "2.10.0"
-        slf4jVersion = "1.7.25"
-
-        junitVersion = "4.12"
-        testngVersion = "5.14.10"
-        hamcrestVersion = "1.3"
-        mockitoCoreVersion = "2.13.0"
-
-        reactiveStreamsVersion = "1.0.2"
-        jcToolsVersion = "2.1.1"
-        jacksonVersion = "2.9.3"
-
-        // Used for testing DNS ServiceDiscoverer
-        apacheDirectoryServerVersion = "1.5.7"
-        commonsLangVersion = "2.6"
-
-        // Necessary for the japicmp.gradle script to check API/ABI compatibility against previous artificats.
-        baselineAPIGroup = "io.servicetalk"
-        baselineAPIVersion = "0.1.0-apple-SNAPSHOT"
-      }
-    }
   }
 
   private static void applyDocPlugins(Project project) {
@@ -146,7 +103,7 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
 
   private static void applyJavaPlugin(Project project) {
     project.configure(project) {
-      apply plugin: "java"
+      apply plugin: "java-library"
     }
   }
 
@@ -220,7 +177,7 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
         headerURI = getClass().getResource("license/HEADER.txt").toURI()
         strictCheck = true
         mapping {
-          java='SLASHSTAR_STYLE'
+          java = 'SLASHSTAR_STYLE'
         }
       }
     }
@@ -364,16 +321,6 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
     project.configure(project) {
       sourceCompatibility = 1.8
 
-      dependencies {
-        compile "com.google.code.findbugs:jsr305:$jsr305Version"
-        compile "org.slf4j:slf4j-api:$slf4jVersion"
-
-        testCompile "junit:junit:$junitVersion"
-        testCompile "org.hamcrest:hamcrest-library:$hamcrestVersion"
-        testRuntime "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
-        testRuntime "org.apache.logging.log4j:log4j-core:$log4jVersion"
-      }
-
       test {
         testLogging.showStandardStreams = true
 
@@ -402,16 +349,16 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
       }
 
       // for project dependencies
-      project.artifacts.add("testFixturesRuntime", testFixturesJar)
+      project.artifacts.add("testFixturesRuntimeOnly", testFixturesJar)
 
       projectSourceSets.test.compileClasspath += testFixturesSourceSet.output
       projectSourceSets.test.runtimeClasspath += testFixturesSourceSet.output
 
       project.dependencies {
-        testFixturesCompile project.configurations["compile"]
-        testFixturesRuntime project.configurations["runtime"]
-        testCompile project.configurations["testFixturesCompile"]
-        testRuntime project.configurations["testFixturesRuntime"]
+        testFixturesImplementation project.configurations["implementation"]
+        testFixturesRuntimeOnly project.configurations["runtime"]
+        testImplementation project.configurations["testFixturesImplementation"]
+        testRuntimeOnly project.configurations["testFixturesRuntimeOnly"]
       }
 
       def sourcesJar = createSourcesJarTask(project, testFixturesSourceSet)
