@@ -18,7 +18,6 @@ package io.servicetalk.transport.netty.internal;
 import io.netty.channel.EventLoopGroup;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.internal.SequentialCancellable;
 
 import java.util.concurrent.TimeUnit;
 
@@ -53,40 +52,6 @@ abstract class AbstracttNettyIoExecutor<T extends EventLoopGroup> implements Net
     @Override
     public boolean isFileDescriptorSocketAddressSupported() {
         return NativeTransportUtil.isFileDescriptorSocketAddressSupported(eventLoop);
-    }
-
-    /**
-     * @deprecated Use {@link #executeOnEventloop(Runnable)}
-     */
-    @Deprecated
-    @Override
-    public Completable immediate() {
-        return new Completable() {
-            @Override
-            protected void handleSubscribe(Subscriber subscriber) {
-                SequentialCancellable cancellable = new SequentialCancellable();
-                subscriber.onSubscribe(cancellable);
-                cancellable.setNextCancellable(executeOnEventloop(subscriber::onComplete));
-            }
-        };
-    }
-
-    /**
-     * @deprecated Use {@link #scheduleOnEventloop(long, TimeUnit)}
-     */
-    @Deprecated
-    @Override
-    public Completable timer(long delay, TimeUnit unit) {
-        return scheduleOnEventloop(delay, unit);
-    }
-
-    /**
-     * @deprecated Use {@link #executeOnEventloop(Runnable)}
-     */
-    @Deprecated
-    @Override
-    public void execute(Runnable command) {
-        executeOnEventloop(command);
     }
 
     @Override

@@ -37,9 +37,4 @@ final class EventLoopGroupIoExecutor extends AbstracttNettyIoExecutor<EventLoopG
     public EventLoopAwareNettyIoExecutor next() {
         return new EventLoopIoExecutor(eventLoop.next(), interruptOnCancel);
     }
-
-    @Override
-    public boolean inIoThread() {
-        return isCurrentThreadEventLoop();
-    }
 }

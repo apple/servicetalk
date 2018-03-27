@@ -38,13 +38,4 @@ final class EventLoopIoExecutor extends AbstracttNettyIoExecutor<EventLoop> impl
     public EventLoopAwareNettyIoExecutor next() {
         return this;
     }
-
-    /**
-     * @deprecated Use {@link #isCurrentThreadEventLoop()}
-     */
-    @Deprecated
-    @Override
-    public boolean inIoThread() {
-        return isCurrentThreadEventLoop();
-    }
 }
