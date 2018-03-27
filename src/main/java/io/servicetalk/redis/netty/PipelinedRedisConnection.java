@@ -80,7 +80,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
 
     @SuppressWarnings("unchecked")
     private PipelinedRedisConnection(Connection<RedisData, ByteBuf> connection, ReadOnlyRedisClientConfig roConfig) {
-        super(durationNanos -> connection.getIoExecutor().timer(durationNanos, TimeUnit.NANOSECONDS), roConfig);
+        super(durationNanos -> connection.getIoExecutor().scheduleOnEventloop(durationNanos, TimeUnit.NANOSECONDS), roConfig);
         this.connection = new DefaultPipelinedConnection<>(connection, maxPendingRequests);
         rawConnection = connection;
     }

@@ -27,7 +27,7 @@ import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisData.BulkStringChunk;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.utils.RetryingRedisClient;
-import io.servicetalk.transport.netty.internal.NettyIoExecutor;
+import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -47,7 +47,7 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.INFO;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
-import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
+import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
@@ -69,7 +69,7 @@ public abstract class BaseRedisClientTest {
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
 
-    static NettyIoExecutor executor;
+    static EventLoopAwareNettyIoExecutor executor;
     static int redisPort;
     static String redisHost;
 
@@ -89,7 +89,7 @@ public abstract class BaseRedisClientTest {
 
         redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
 
-        executor = toNettyIoExecutor(createExecutor());
+        executor = toEventLoopAwareNettyIoExecutor(createExecutor());
         serviceDiscoverer = new DefaultDnsServiceDiscoverer.Builder(executor.next()).build().toHostAndPortDiscoverer();
         client = new RetryingRedisClient(
                 new DefaultRedisClientBuilder<InetSocketAddress>((eventPublisher, connectionFactory) -> new RoundRobinLoadBalancer<>(eventPublisher, connectionFactory, comparingInt(Object::hashCode)))
@@ -97,7 +97,7 @@ public abstract class BaseRedisClientTest {
                         .setIdleConnectionTimeout(ofSeconds(2))
                         .setPingPeriod(ofSeconds(PING_PERIOD_SECONDS))
                         .build(executor, serviceDiscoverer.discover(new DefaultHostAndPort(redisHost, redisPort))),
-                retryWithExponentialBackoff(10, cause -> cause instanceof RetryableException, ofMillis(10), backoffNanos -> executor.next().timer(backoffNanos, NANOSECONDS)));
+                retryWithExponentialBackoff(10, cause -> cause instanceof RetryableException, ofMillis(10), backoffNanos -> executor.next().scheduleOnEventloop(backoffNanos, NANOSECONDS)));
 
         final String serverInfo = awaitIndefinitely(
                 client.request(newRequest(INFO, new CompleteBulkString(buf("SERVER"))))

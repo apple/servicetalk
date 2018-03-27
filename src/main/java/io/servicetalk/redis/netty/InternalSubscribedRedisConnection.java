@@ -65,7 +65,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
     private final WriteQueue writeQueue;
 
     private InternalSubscribedRedisConnection(Connection<RedisData, ByteBuf> connection, ReadOnlyRedisClientConfig roConfig, int initialQueueCapacity, int maxBufferPerGroup) {
-        super(durationNanos -> connection.getIoExecutor().timer(durationNanos, TimeUnit.NANOSECONDS), roConfig);
+        super(durationNanos -> connection.getIoExecutor().scheduleOnEventloop(durationNanos, TimeUnit.NANOSECONDS), roConfig);
         this.connection = connection;
         writeQueue = new WriteQueue(maxPendingRequests, initialQueueCapacity);
         this.readStreamSplitter = new ReadStreamSplitter(connection, maxPendingRequests, maxBufferPerGroup,
