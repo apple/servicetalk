@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.netty.HeaderUtils.DEFAULT_HEADER_FILTER;

@@ -15,9 +15,10 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.HttpHeaders;
+
 import io.netty.util.AsciiString;
 import io.netty.util.ByteProcessor;
-import io.servicetalk.http.api.HttpHeaders;
 
 import java.util.Iterator;
 import java.util.Map;

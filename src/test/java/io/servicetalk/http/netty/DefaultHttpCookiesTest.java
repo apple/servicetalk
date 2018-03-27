@@ -15,17 +15,17 @@
  */
 package io.servicetalk.http.netty;
 
-import io.netty.util.AsciiString;
 import io.servicetalk.http.api.HttpCookie;
 import io.servicetalk.http.api.HttpCookies;
 import io.servicetalk.http.api.HttpHeaders;
+
+import io.netty.util.AsciiString;
 import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
-
 import javax.annotation.Nullable;
 
 import static org.junit.Assert.assertEquals;

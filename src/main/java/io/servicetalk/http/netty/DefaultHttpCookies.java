@@ -15,14 +15,14 @@
  */
 package io.servicetalk.http.netty;
 
-import io.netty.util.AsciiString;
-import io.netty.util.NetUtil;
 import io.servicetalk.http.api.HttpCookie;
 import io.servicetalk.http.api.HttpCookies;
 import io.servicetalk.http.api.HttpHeaders;
 
-import java.util.Iterator;
+import io.netty.util.AsciiString;
+import io.netty.util.NetUtil;
 
+import java.util.Iterator;
 import javax.annotation.Nullable;
 
 import static io.netty.util.AsciiString.contentEqualsIgnoreCase;

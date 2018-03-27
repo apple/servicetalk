@@ -15,9 +15,10 @@
  */
 package io.servicetalk.http.netty;
 
-import io.netty.util.AsciiString;
 import io.servicetalk.http.api.HttpCookies;
 import io.servicetalk.http.api.HttpHeaders;
+
+import io.netty.util.AsciiString;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -25,7 +26,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.function.BiFunction;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.netty.HeaderUtils.DEFAULT_HEADER_FILTER;

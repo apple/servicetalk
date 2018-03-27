@@ -15,8 +15,9 @@
  */
 package io.servicetalk.http.netty;
 
-import io.netty.util.AsciiString;
 import io.servicetalk.http.api.HttpHeaders;
+
+import io.netty.util.AsciiString;
 import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;

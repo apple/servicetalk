@@ -15,14 +15,15 @@
  */
 package io.servicetalk.http.netty;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
-import io.netty.handler.codec.http.DefaultHttpContent;
-import io.netty.handler.codec.http.HttpContent;
 import io.servicetalk.buffer.Buffer;
 import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.buffer.netty.BufferUtil;
 import io.servicetalk.http.api.HttpPayloadChunk;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
+import io.netty.handler.codec.http.DefaultHttpContent;
+import io.netty.handler.codec.http.HttpContent;
 
 class DefaultHttpPayloadChunk implements HttpPayloadChunk {
 

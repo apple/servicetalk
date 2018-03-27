@@ -15,16 +15,16 @@
  */
 package io.servicetalk.http.netty;
 
-import io.netty.util.AsciiString;
-import io.netty.util.internal.PlatformDependent;
 import io.servicetalk.http.api.HttpCookies;
 import io.servicetalk.http.api.HttpHeaders;
+
+import io.netty.util.AsciiString;
+import io.netty.util.internal.PlatformDependent;
 
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
-
 import javax.annotation.Nullable;
 
 import static io.netty.util.AsciiString.contentEquals;

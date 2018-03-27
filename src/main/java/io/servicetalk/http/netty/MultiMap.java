@@ -24,7 +24,6 @@ import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.function.BiPredicate;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.netty.HeaderUtils.HASH_CODE_SEED;
