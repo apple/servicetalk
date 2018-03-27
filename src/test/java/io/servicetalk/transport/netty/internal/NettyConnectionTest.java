@@ -15,8 +15,6 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.netty.channel.ChannelOutboundBuffer;
-import io.netty.channel.embedded.EmbeddedChannel;
 import io.servicetalk.buffer.Buffer;
 import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
@@ -25,6 +23,9 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.transport.api.ConnectionContext;
+
+import io.netty.channel.ChannelOutboundBuffer;
+import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

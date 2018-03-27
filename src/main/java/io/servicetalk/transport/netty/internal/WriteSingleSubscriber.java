@@ -15,14 +15,14 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.netty.channel.ChannelOutboundInvoker;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import io.netty.channel.ChannelOutboundInvoker;
 
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
 final class WriteSingleSubscriber implements Single.Subscriber<Object>, NettyConnection.WritableListener {

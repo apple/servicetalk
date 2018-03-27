@@ -15,10 +15,11 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.concurrent.api.Completable;
+
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.logging.LoggingHandler;
-import io.servicetalk.concurrent.api.Completable;
 import org.junit.After;
 import org.junit.Before;
 

@@ -15,18 +15,18 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.concurrent.api.Publisher;
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.ReferenceCounted;
-import io.servicetalk.concurrent.api.Publisher;
 import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.function.Predicate;
-
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;

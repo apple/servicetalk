@@ -15,8 +15,9 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.netty.channel.Channel;
 import io.servicetalk.transport.api.ConnectionContext;
+
+import io.netty.channel.Channel;
 
 /**
  * Configures a {@link Channel}.

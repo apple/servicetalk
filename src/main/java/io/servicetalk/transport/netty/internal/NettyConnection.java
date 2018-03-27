@@ -15,9 +15,6 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandler;
 import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -25,6 +22,10 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.FlushStrategy;
 import io.servicetalk.transport.api.FlushStrategyHolder;
+
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +34,6 @@ import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
-
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 

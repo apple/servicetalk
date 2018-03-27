@@ -15,12 +15,13 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.buffer.BufferAllocator;
+import io.servicetalk.buffer.netty.BufferAllocators;
+
 import io.netty.buffer.Unpooled;
 import io.netty.channel.EventLoop;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
-import io.servicetalk.buffer.BufferAllocator;
-import io.servicetalk.buffer.netty.BufferAllocators;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

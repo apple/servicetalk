@@ -15,9 +15,10 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.netty.channel.EventLoopGroup;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
+
+import io.netty.channel.EventLoopGroup;
 
 import java.util.concurrent.TimeUnit;
 

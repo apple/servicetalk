@@ -15,12 +15,13 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.transport.api.ConnectionContext;
+
 import io.netty.channel.Channel;
 import io.netty.handler.ssl.SniHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.util.DomainNameMapping;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import javax.annotation.Nullable;
 

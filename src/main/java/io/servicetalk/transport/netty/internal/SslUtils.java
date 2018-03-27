@@ -15,6 +15,8 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.transport.api.SslConfig;
+
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.handler.ssl.ApplicationProtocolConfig;
 import io.netty.handler.ssl.SslContext;
@@ -22,11 +24,9 @@ import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.SslProvider;
 import io.netty.util.NetUtil;
 import io.netty.util.ReferenceCountUtil;
-import io.servicetalk.transport.api.SslConfig;
 
 import java.net.InetSocketAddress;
 import java.util.Collections;
-
 import javax.annotation.Nullable;
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SSLEngine;

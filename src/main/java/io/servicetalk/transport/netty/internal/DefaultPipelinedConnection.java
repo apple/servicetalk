@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.transport.api.FlushStrategy;
 import io.servicetalk.transport.api.IoExecutor;
+
 import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +33,6 @@ import java.net.SocketAddress;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 

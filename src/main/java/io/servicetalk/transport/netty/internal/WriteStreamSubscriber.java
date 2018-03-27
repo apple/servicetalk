@@ -15,20 +15,20 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelPromise;
-import io.netty.util.concurrent.EventExecutor;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.EmptySubscription;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
+
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelPromise;
+import io.netty.util.concurrent.EventExecutor;
 import org.reactivestreams.Subscription;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;

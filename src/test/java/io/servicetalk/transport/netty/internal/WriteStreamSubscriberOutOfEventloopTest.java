@@ -15,10 +15,11 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.netty.channel.EventLoop;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
+
+import io.netty.channel.EventLoop;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;

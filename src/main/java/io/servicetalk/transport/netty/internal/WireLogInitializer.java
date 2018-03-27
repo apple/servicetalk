@@ -15,10 +15,11 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.transport.api.ConnectionContext;
+
 import io.netty.channel.Channel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import io.servicetalk.transport.api.ConnectionContext;
 
 /**
  * A {@link ChannelInitializer} that enables wire-logging for all channels.

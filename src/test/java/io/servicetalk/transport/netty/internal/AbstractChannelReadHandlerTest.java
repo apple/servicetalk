@@ -15,14 +15,15 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;

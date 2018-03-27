@@ -15,11 +15,12 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.buffer.BufferAllocator;
+
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoop;
 import io.netty.util.ReferenceCounted;
-import io.servicetalk.buffer.BufferAllocator;
 
 import static io.netty.util.ReferenceCountUtil.release;
 import static io.netty.util.ReferenceCountUtil.safeRelease;

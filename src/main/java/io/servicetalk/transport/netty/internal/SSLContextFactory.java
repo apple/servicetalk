@@ -15,13 +15,13 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.transport.api.SslConfig;
+
 import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
-import io.servicetalk.transport.api.SslConfig;
 
 import java.io.InputStream;
-
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLException;
 

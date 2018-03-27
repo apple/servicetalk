@@ -15,8 +15,9 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.netty.channel.FileRegion;
 import io.servicetalk.transport.netty.internal.Connection.RequestNSupplier;
+
+import io.netty.channel.FileRegion;
 
 import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtection;
 import static io.servicetalk.transport.netty.internal.OverlappingCapacityAwareSupplier.SizeEstimator.defaultEstimator;

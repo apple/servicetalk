@@ -18,13 +18,13 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.FlushStrategy;
 import io.servicetalk.transport.api.FlushStrategyHolder;
+
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BooleanSupplier;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;

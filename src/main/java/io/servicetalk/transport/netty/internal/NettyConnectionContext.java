@@ -15,18 +15,18 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.netty.channel.Channel;
-import io.netty.util.AttributeKey;
 import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.IoExecutor;
+
+import io.netty.channel.Channel;
+import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.util.NoSuchElementException;
-
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 

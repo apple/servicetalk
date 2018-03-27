@@ -15,6 +15,8 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
@@ -23,7 +25,6 @@ import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.local.LocalChannel;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;

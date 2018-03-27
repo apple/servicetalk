@@ -15,12 +15,13 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelOutboundInvoker;
-import io.netty.util.concurrent.EventExecutor;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.FlushStrategyHolder.FlushSignals;
+
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelOutboundInvoker;
+import io.netty.util.concurrent.EventExecutor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 

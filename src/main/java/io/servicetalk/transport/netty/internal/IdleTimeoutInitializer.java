@@ -15,12 +15,13 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.transport.api.ConnectionContext;
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
-import io.servicetalk.transport.api.ConnectionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

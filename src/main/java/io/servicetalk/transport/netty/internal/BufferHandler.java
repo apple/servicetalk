@@ -15,15 +15,16 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.buffer.Buffer;
+import io.servicetalk.buffer.BufferAllocator;
+import io.servicetalk.buffer.BufferHolder;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoop;
-import io.servicetalk.buffer.Buffer;
-import io.servicetalk.buffer.BufferAllocator;
-import io.servicetalk.buffer.BufferHolder;
 
 import static io.servicetalk.buffer.netty.BufferUtil.extractByteBufOrCreate;
 import static io.servicetalk.buffer.netty.BufferUtil.newBufferFrom;

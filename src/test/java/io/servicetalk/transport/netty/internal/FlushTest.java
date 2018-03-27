@@ -15,12 +15,13 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.netty.channel.Channel;
-import io.netty.channel.EventLoop;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.transport.api.FlushStrategyHolder;
+
+import io.netty.channel.Channel;
+import io.netty.channel.EventLoop;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

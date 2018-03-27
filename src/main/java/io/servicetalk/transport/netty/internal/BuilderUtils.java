@@ -15,6 +15,9 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.transport.api.FileDescriptorSocketAddress;
+import io.servicetalk.transport.api.ServiceTalkSocketOptions;
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoop;
@@ -39,8 +42,6 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.channel.unix.DomainSocketAddress;
 import io.netty.util.NetUtil;
-import io.servicetalk.transport.api.FileDescriptorSocketAddress;
-import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -51,7 +52,6 @@ import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
 import java.util.Map;
-
 import javax.annotation.Nullable;
 
 /**

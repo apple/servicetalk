@@ -15,8 +15,9 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.netty.util.concurrent.Future;
 import io.servicetalk.concurrent.api.Completable;
+
+import io.netty.util.concurrent.Future;
 
 import java.util.function.Supplier;
 

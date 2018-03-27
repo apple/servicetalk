@@ -15,8 +15,9 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.netty.channel.EventLoop;
 import io.servicetalk.transport.api.IoExecutor;
+
+import io.netty.channel.EventLoop;
 
 import static java.util.Objects.requireNonNull;
 

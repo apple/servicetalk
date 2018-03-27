@@ -19,7 +19,6 @@ import io.netty.handler.ssl.DelegatingSslContext;
 import io.netty.handler.ssl.SslContext;
 
 import java.util.List;
-
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLEngine;
 

@@ -15,14 +15,14 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.transport.api.ConnectionContext;
+
 import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.netty.internal.SslUtils.newHandler;

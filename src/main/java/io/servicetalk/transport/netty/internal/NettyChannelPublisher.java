@@ -15,12 +15,13 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.internal.TerminalNotification;
+
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoop;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.ReferenceCounted;
-import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.internal.TerminalNotification;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
@@ -28,7 +29,6 @@ import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.function.Predicate;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;

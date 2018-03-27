@@ -15,12 +15,13 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.transport.api.IoExecutor;
+
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.kqueue.KQueue;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.servicetalk.transport.api.IoExecutor;
 
 import java.util.concurrent.ThreadFactory;
 

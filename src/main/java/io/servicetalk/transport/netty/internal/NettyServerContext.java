@@ -15,9 +15,10 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.netty.channel.Channel;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.transport.api.ServerContext;
+
+import io.netty.channel.Channel;
 
 import java.net.SocketAddress;
 

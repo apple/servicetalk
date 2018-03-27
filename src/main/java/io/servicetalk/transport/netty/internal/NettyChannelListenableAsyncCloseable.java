@@ -15,13 +15,14 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.CompletableProcessor;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.socket.SocketChannel;
-import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
-import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
