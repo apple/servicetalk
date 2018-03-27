@@ -15,11 +15,6 @@
  */
 package io.servicetalk.client.servicediscoverer.dns;
 
-import io.netty.channel.EventLoop;
-import io.netty.resolver.ResolvedAddressTypes;
-import io.netty.resolver.dns.DnsNameResolver;
-import io.netty.resolver.dns.DnsNameResolverBuilder;
-import io.netty.util.concurrent.Future;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.internal.HostAndPort;
@@ -31,6 +26,12 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
+
+import io.netty.channel.EventLoop;
+import io.netty.resolver.ResolvedAddressTypes;
+import io.netty.resolver.dns.DnsNameResolver;
+import io.netty.resolver.dns.DnsNameResolverBuilder;
+import io.netty.util.concurrent.Future;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
@@ -44,7 +45,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.internal.ServiceDiscovererUtils.calculateDifference;

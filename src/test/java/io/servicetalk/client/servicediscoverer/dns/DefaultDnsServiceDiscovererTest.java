@@ -20,6 +20,7 @@ import io.servicetalk.client.servicediscoverer.ServiceDiscovererTestSubscriber;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
