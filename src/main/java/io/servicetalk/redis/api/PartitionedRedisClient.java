@@ -26,7 +26,6 @@ import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
-
 import javax.annotation.Nullable;
 
 /**

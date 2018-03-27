@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.RandomAccess;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.success;

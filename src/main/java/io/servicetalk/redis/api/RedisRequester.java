@@ -28,7 +28,6 @@ import io.servicetalk.redis.internal.RedisUtils.ListWithBuffersCoercedToCharSequ
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.error;

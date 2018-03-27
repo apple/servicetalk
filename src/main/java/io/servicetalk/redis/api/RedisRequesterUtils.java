@@ -17,6 +17,7 @@ package io.servicetalk.redis.api;
 
 import io.servicetalk.buffer.Buffer;
 import io.servicetalk.concurrent.api.Single;
+
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +26,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferUtil.maxUtf8Bytes;
