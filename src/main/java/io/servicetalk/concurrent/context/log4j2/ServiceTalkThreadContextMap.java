@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.context.log4j2;
 import io.servicetalk.concurrent.context.AsyncContext;
 import io.servicetalk.concurrent.context.AsyncContextMap;
 import io.servicetalk.concurrent.context.AsyncContextMap.Key;
+
 import org.apache.logging.log4j.spi.CleanableThreadContextMap;
 import org.apache.logging.log4j.util.BiConsumer;
 import org.apache.logging.log4j.util.ReadOnlyStringMap;
@@ -27,7 +28,6 @@ import org.apache.logging.log4j.util.TriConsumer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import javax.annotation.Nullable;
 
 import static java.util.Collections.unmodifiableMap;

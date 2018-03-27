@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.context.log4j2;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.context.ConcurrentPlugins;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
