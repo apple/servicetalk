@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import java.util.Iterator;
-
 import javax.annotation.Nullable;
 
 import static java.util.Collections.emptyIterator;
