@@ -30,6 +30,7 @@ import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
@@ -86,7 +87,7 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
 
     private final CompletableProcessor closeCompletable = new CompletableProcessor();
     private final Map<String, List<DiscoverEntry>> registerMap = new HashMap<>(8);
-    private final IoExecutor executor;
+    private final EventLoopAwareNettyIoExecutor executor;
     @Nullable
     private final BiIntFunction<Throwable, Completable> retryStrategy;
     private final DnsNameResolver resolver;
@@ -196,9 +197,9 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
                                         @Nullable Integer ndots, @Nullable Boolean optResourceEnabled,
                                         @Nullable DnsResolverAddressTypes dnsResolverAddressTypes,
                                         @Nullable DnsServerAddressStreamProvider dnsServerAddressStreamProvider) {
-        this.executor = executor;
+        this.executor = toEventLoopAwareNettyIoExecutor(executor);
         this.retryStrategy = retryStrategy;
-        EventLoop eventLoop = toEventLoopAwareNettyIoExecutor(executor).getEventLoopGroup().next();
+        EventLoop eventLoop = this.executor.getEventLoopGroup().next();
         DnsNameResolverBuilder builder = new DnsNameResolverBuilder(eventLoop)
                 // TODO(scott): handle the TTL in our custom cache implementation.
                 .ttl(minTTL, Integer.MAX_VALUE)
@@ -221,7 +222,7 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
     @Override
     public Publisher<Event<InetAddress>> discover(String address) {
         final DiscoverEntry entry;
-        if (executor.inIoThread()) {
+        if (executor.isCurrentThreadEventLoop()) {
             if (closed) {
                 return CLOSED_PUBLISHER;
             }
@@ -229,7 +230,7 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
             addEntry(entry);
         } else {
             entry = new DiscoverEntry(address);
-            executor.execute(() -> {
+            executor.executeOnEventloop(() -> {
                 if (closed) {
                     entry.completeSubscription();
                 } else {
@@ -250,10 +251,10 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
     }
 
     void removeEntry(DiscoverEntry entry) {
-        if (executor.inIoThread()) {
+        if (executor.isCurrentThreadEventLoop()) {
             removeEntry0(entry);
         } else {
-            executor.execute(() -> removeEntry0(entry));
+            executor.executeOnEventloop(() -> removeEntry0(entry));
         }
     }
 
@@ -279,10 +280,10 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
             @Override
             protected void handleSubscribe(Subscriber subscriber) {
                 closeCompletable.subscribe(subscriber);
-                if (executor.inIoThread()) {
+                if (executor.isCurrentThreadEventLoop()) {
                     closeAsync0();
                 } else {
-                    executor.execute(DefaultDnsServiceDiscoverer.this::closeAsync0);
+                    executor.executeOnEventloop(DefaultDnsServiceDiscoverer.this::closeAsync0);
                 }
             }
         };
@@ -381,10 +382,10 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
         }
 
         private void initializeSubscriber(org.reactivestreams.Subscriber<? super Event<InetAddress>> subscriber) {
-            if (executor.inIoThread()) {
+            if (executor.isCurrentThreadEventLoop()) {
                 initializeSubscriber0(subscriber);
             } else {
-                executor.execute(() -> initializeSubscriber0(subscriber));
+                executor.executeOnEventloop(() -> initializeSubscriber0(subscriber));
             }
         }
 
@@ -421,19 +422,19 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
                     // if the value is in the cache and not expired then return it and schedule a Runnable to refresh our data in
                     //    (current time - last data delivered time) time units.
                     // If the value is in the cache, but expired then remove/query for it.
-                    if (executor.inIoThread()) {
+                    if (executor.isCurrentThreadEventLoop()) {
                         request0(n);
                     } else {
-                        executor.execute(() -> request0(n));
+                        executor.executeOnEventloop(() -> request0(n));
                     }
                 }
 
                 @Override
                 public void cancel() {
-                    if (executor.inIoThread()) {
+                    if (executor.isCurrentThreadEventLoop()) {
                         cancel0();
                     } else {
-                        executor.execute(this::cancel0);
+                        executor.executeOnEventloop(this::cancel0);
                     }
                 }
 
@@ -474,7 +475,7 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
                 private void scheduleQuery(long nanos) {
                     // This value is coming from DNS TTL for which the unit is seconds and the minimum value we accept
                     // in the constructor is 1 second.
-                    executor.timer(nanos, NANOSECONDS).subscribe(new Completable.Subscriber() {
+                    executor.scheduleOnEventloop(nanos, NANOSECONDS).subscribe(new Completable.Subscriber() {
                         @Override
                         public void onSubscribe(Cancellable cancellable) {
                             // It is assumed this will happen synchronously and on the same thread.

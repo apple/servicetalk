@@ -19,7 +19,7 @@ import io.servicetalk.client.api.ServiceDiscoverer.Event;
 import io.servicetalk.client.servicediscoverer.ServiceDiscovererTestSubscriber;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.transport.netty.internal.NettyIoExecutor;
+import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -44,7 +44,7 @@ import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
-import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
+import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -56,13 +56,13 @@ public class DefaultDnsServiceDiscovererTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    private static NettyIoExecutor executor;
+    private static EventLoopAwareNettyIoExecutor executor;
     private static TestDnsServer dnsServer;
     private DefaultDnsServiceDiscoverer discoverer;
 
     @BeforeClass
     public static void beforeClass() throws IOException {
-        executor = toNettyIoExecutor(createExecutor());
+        executor = toEventLoopAwareNettyIoExecutor(createExecutor());
         dnsServer = new TestDnsServer(new HashSet<>(Arrays.asList("apple.com", "servicetalk.io")));
         dnsServer.start();
     }
