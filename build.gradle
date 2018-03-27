@@ -13,13 +13,15 @@ buildscript {
 apply plugin: "servicetalk-build"
 
 dependencies {
-  compile "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
-  compile "io.servicetalk:servicetalk-concurrent-api:0.1.0-SNAPSHOT"
-  compile "io.servicetalk:servicetalk-concurrent-context:0.1.0-SNAPSHOT"
-  compile "io.servicetalk:servicetalk-transport-api:0.1.0-SNAPSHOT"
-  compile "io.servicetalk:servicetalk-transport-netty-internal:0.1.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-bom:0.1.0-SNAPSHOT"
 
-  compile "io.netty:netty-handler:$nettyVersion"
-  compile "io.netty:netty-transport-native-epoll:$nettyVersion:linux-x86_64"
-  compile "io.netty:netty-transport-native-kqueue:$nettyVersion:osx-x86_64"
+  api "com.google.code.findbugs:jsr305"
+  api "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-concurrent-api:0.1.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-concurrent-context:0.1.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-transport-api:0.1.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-transport-netty-internal:0.1.0-SNAPSHOT"
+  api "io.netty:netty-handler"
+  api group: "io.netty", name: "netty-transport-native-epoll", classifier: "linux-x86_64"
+  api group: "io.netty", name: "netty-transport-native-kqueue", classifier: "osx-x86_64"
 }
