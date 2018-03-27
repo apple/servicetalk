@@ -13,22 +13,21 @@ buildscript {
 apply plugin: "servicetalk-build"
 
 dependencies {
-  compile "io.netty:netty-resolver-dns:$nettyVersion"
-  compile "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
-  compile "io.servicetalk:servicetalk-concurrent-api:0.1.0-SNAPSHOT"
-  compile "io.servicetalk:servicetalk-client-api:0.1.0-SNAPSHOT"
-  compile "io.servicetalk:servicetalk-client-internal:0.1.0-SNAPSHOT"
-  compile "io.servicetalk:servicetalk-transport-netty:0.1.0-SNAPSHOT"
-  compile "io.servicetalk:servicetalk-transport-netty-internal:0.1.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-bom:0.1.0-SNAPSHOT"
 
-  testCompile "org.mockito:mockito-core:$mockitoCoreVersion"
-  testCompile "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
-  testCompile "io.servicetalk:servicetalk-concurrent-internal-testFixtures:0.1.0-SNAPSHOT"
-  testCompile "io.servicetalk:servicetalk-client-internal-testFixtures:0.1.0-SNAPSHOT"
-  testCompile ("org.apache.directory.server:apacheds-protocol-dns:$apacheDirectoryServerVersion") {
-    // We need to use commons-lang 2.6 to be able to run the tests with java9
-    // See https://github.com/apache/bookkeeper/issues/385
-    exclude group: "commons-lang", module: "commons-lang"
-  }
-  testCompile "commons-lang:commons-lang:$commonsLangVersion"
+  api "com.google.code.findbugs:jsr305"
+  api "io.netty:netty-resolver-dns"
+  api "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-concurrent-api:0.1.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-client-api:0.1.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-client-internal:0.1.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-transport-netty:0.1.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-transport-netty-internal:0.1.0-SNAPSHOT"
+
+  testImplementation "org.mockito:mockito-core"
+  testImplementation "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
+  testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:0.1.0-SNAPSHOT"
+  testImplementation "io.servicetalk:servicetalk-client-internal-testFixtures:0.1.0-SNAPSHOT"
+  testImplementation "org.apache.directory.server:apacheds-protocol-dns"
+  testImplementation "commons-lang:commons-lang"
 }
