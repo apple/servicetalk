@@ -26,7 +26,7 @@ public interface HttpRequestMethod extends Comparable<HttpRequestMethod> {
      * Get the <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>.
      * @return the <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>.
      */
-    String getMethod();
+    String getName();
 
     /**
      * Get the {@link Properties} associated with this object.
