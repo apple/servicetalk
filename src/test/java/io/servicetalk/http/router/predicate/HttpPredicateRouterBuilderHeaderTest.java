@@ -17,6 +17,7 @@ package io.servicetalk.http.router.predicate;
 
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpService;
+
 import org.junit.Test;
 
 import java.util.regex.Pattern;
