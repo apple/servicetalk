@@ -15,11 +15,12 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.netty.channel.Channel;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
 import io.servicetalk.transport.netty.internal.SslClientChannelInitializer;
+
+import io.netty.channel.Channel;
 
 /**
  * {@link ChannelInitializer} for TCP client.

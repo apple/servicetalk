@@ -15,16 +15,16 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.netty.handler.logging.LogLevel;
 import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
 import io.servicetalk.transport.netty.internal.WireLogInitializer;
 
+import io.netty.handler.logging.LogLevel;
+
 import java.io.InputStream;
 import java.net.SocketOption;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.netty.internal.SSLContextFactory.forClient;

@@ -15,16 +15,16 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.netty.channel.ChannelOption;
-import io.netty.handler.ssl.SslContext;
 import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.netty.internal.WireLogInitializer;
 
+import io.netty.channel.ChannelOption;
+import io.netty.handler.ssl.SslContext;
+
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT;

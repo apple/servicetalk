@@ -15,6 +15,13 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
+import io.servicetalk.buffer.Buffer;
+import io.servicetalk.transport.api.FileDescriptorSocketAddress;
+import io.servicetalk.transport.netty.internal.BufferHandler;
+import io.servicetalk.transport.netty.internal.ChannelInitializer;
+import io.servicetalk.transport.netty.internal.Connection;
+import io.servicetalk.transport.netty.internal.NettyIoExecutor;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -27,12 +34,6 @@ import io.netty.channel.kqueue.KQueue;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.kqueue.KQueueSocketChannel;
 import io.netty.channel.unix.UnixChannel;
-import io.servicetalk.buffer.Buffer;
-import io.servicetalk.transport.api.FileDescriptorSocketAddress;
-import io.servicetalk.transport.netty.internal.BufferHandler;
-import io.servicetalk.transport.netty.internal.ChannelInitializer;
-import io.servicetalk.transport.netty.internal.Connection;
-import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;

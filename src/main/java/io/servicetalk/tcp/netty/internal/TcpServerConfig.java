@@ -15,9 +15,6 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.ssl.SslContext;
-import io.netty.util.DomainMappingBuilder;
 import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.SslConfig;
@@ -25,11 +22,14 @@ import io.servicetalk.transport.netty.internal.BuilderUtils;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 import io.servicetalk.transport.netty.internal.WireLogInitializer;
 
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.ssl.SslContext;
+import io.netty.util.DomainMappingBuilder;
+
 import java.io.InputStream;
 import java.net.SocketOption;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.netty.internal.SSLContextFactory.forServer;
