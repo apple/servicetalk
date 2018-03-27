@@ -16,60 +16,19 @@
 package io.servicetalk.transport.netty;
 
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.IoExecutorGroup;
+import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
 import java.util.concurrent.ThreadFactory;
 
 import static java.lang.Runtime.getRuntime;
 
 /**
- * Factory methods to create {@link IoExecutorGroup}s using netty as the transport.
+ * Factory methods to create {@link IoExecutor}s using netty as the transport.
  */
 public final class NettyIoExecutors {
 
     private NettyIoExecutors() {
         // no instances
-    }
-
-    /**
-     * Creates a new {@link IoExecutorGroup} with the specified number of {@code ioThreads}.
-     *
-     * @param ioThreads number of threads
-     * @param threadFactory the {@link ThreadFactory} to use. If possible you should use an instance of {@link IoThreadFactory} as
-     *                      allows internal optimizations.
-     * @return group the created {@link IoExecutorGroup}
-     *
-     * @deprecated Use {@link #createExecutor(int, ThreadFactory)}
-     */
-    @Deprecated
-    public static IoExecutorGroup createGroup(int ioThreads, ThreadFactory threadFactory) {
-        return createExecutor(ioThreads, threadFactory);
-    }
-
-    /**
-     * Creates a new {@link IoExecutorGroup} with the specified number of {@code ioThreads}.
-     *
-     * @param ioThreads number of threads
-     * @return group the created {@link IoExecutorGroup}
-     *
-     * @deprecated Use {@link #createExecutor(int)}
-     */
-    @Deprecated
-    public static IoExecutorGroup createGroup(int ioThreads) {
-        return createExecutor(ioThreads);
-    }
-
-    /**
-     * Creates a new {@link IoExecutorGroup} with the default number of {@code ioThreads}
-     * ({@code Runtime.getRuntime().availableProcessors() * 2}).
-     *
-     * @return group the created {@link IoExecutorGroup}
-     *
-     * @deprecated Use {@link #createExecutor()}
-     */
-    @Deprecated
-    public static IoExecutorGroup createGroup() {
-        return createExecutor();
     }
 
     /**
