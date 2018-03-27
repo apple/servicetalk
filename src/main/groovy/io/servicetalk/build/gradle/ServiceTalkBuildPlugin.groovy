@@ -111,9 +111,6 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
     project.configure(project) {
       apply plugin: "idea"
 
-      // safer/easier to always regenerate
-      tasks.idea.dependsOn tasks.cleanIdea
-
       if (project.parent == null) {
         idea.project.languageLevel = "1.8"
         idea.project.targetBytecodeVersion = JavaVersion.VERSION_1_8

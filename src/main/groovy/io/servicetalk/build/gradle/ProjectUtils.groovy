@@ -102,6 +102,13 @@ class ProjectUtils {
   static appendNodes(XmlProvider provider, InputStream resource) {
     def xmlProject = provider.asNode()
     def xmlComponents = new XmlParser().parse(resource)
-    xmlComponents.children().each { xmlProject.append it }
+    xmlComponents.children().each { newChild ->
+      // remove a <component> with the same name, so we don't append the new one multiple times.
+      def oldChild = xmlProject.get("component").find { newChild.@name.equals(it.@name) }
+      if (oldChild != null) {
+        xmlProject.remove(oldChild)
+      }
+      xmlProject.append newChild
+    }
   }
 }
