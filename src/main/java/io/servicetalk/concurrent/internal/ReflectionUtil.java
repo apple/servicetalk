@@ -16,7 +16,6 @@
 package io.servicetalk.concurrent.internal;
 
 import java.lang.reflect.AccessibleObject;
-
 import javax.annotation.Nullable;
 
 /**

@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.internal;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Completable;
 import io.servicetalk.concurrent.Single;
+
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 
@@ -30,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;

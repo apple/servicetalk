@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.internal;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Completable;
 import io.servicetalk.concurrent.Completable.Subscriber;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +27,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-
 import javax.annotation.Nullable;
 
 public final class ExecutorUtil {

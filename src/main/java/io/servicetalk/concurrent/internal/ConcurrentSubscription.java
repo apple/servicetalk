@@ -16,11 +16,11 @@
 package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.Cancellable;
+
 import org.reactivestreams.Subscription;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;

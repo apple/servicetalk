@@ -22,7 +22,6 @@ import sun.misc.Unsafe;
 import java.lang.reflect.Field;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-
 import javax.annotation.Nullable;
 
 import static java.lang.Boolean.getBoolean;
