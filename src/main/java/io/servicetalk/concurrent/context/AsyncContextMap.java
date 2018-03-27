@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.context;
 import java.util.ConcurrentModificationException;
 import java.util.Map;
 import java.util.function.BiFunction;
-
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;

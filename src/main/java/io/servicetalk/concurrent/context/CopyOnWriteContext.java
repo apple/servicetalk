@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-
 import javax.annotation.Nullable;
 
 import static java.lang.System.arraycopy;
