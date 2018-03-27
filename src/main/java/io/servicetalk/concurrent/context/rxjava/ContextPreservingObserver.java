@@ -15,10 +15,11 @@
  */
 package io.servicetalk.concurrent.context.rxjava;
 
-import io.reactivex.Observer;
-import io.reactivex.disposables.Disposable;
 import io.servicetalk.concurrent.context.AsyncContext;
 import io.servicetalk.concurrent.context.AsyncContextMap;
+
+import io.reactivex.Observer;
+import io.reactivex.disposables.Disposable;
 
 import static java.util.Objects.requireNonNull;
 

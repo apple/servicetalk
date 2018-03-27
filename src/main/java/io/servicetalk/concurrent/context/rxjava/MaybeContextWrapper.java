@@ -15,12 +15,13 @@
  */
 package io.servicetalk.concurrent.context.rxjava;
 
+import io.servicetalk.concurrent.context.AsyncContext;
+import io.servicetalk.concurrent.context.AsyncContextMap;
+
 import io.reactivex.Maybe;
 import io.reactivex.MaybeObserver;
 import io.reactivex.MaybeSource;
 import io.reactivex.internal.fuseable.HasUpstreamMaybeSource;
-import io.servicetalk.concurrent.context.AsyncContext;
-import io.servicetalk.concurrent.context.AsyncContextMap;
 
 import static java.util.Objects.requireNonNull;
 

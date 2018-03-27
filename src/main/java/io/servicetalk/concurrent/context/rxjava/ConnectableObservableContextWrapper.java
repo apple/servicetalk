@@ -15,14 +15,15 @@
  */
 package io.servicetalk.concurrent.context.rxjava;
 
+import io.servicetalk.concurrent.context.AsyncContext;
+import io.servicetalk.concurrent.context.AsyncContextMap;
+
 import io.reactivex.ObservableSource;
 import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.internal.fuseable.HasUpstreamObservableSource;
 import io.reactivex.observables.ConnectableObservable;
-import io.servicetalk.concurrent.context.AsyncContext;
-import io.servicetalk.concurrent.context.AsyncContextMap;
 
 import static java.util.Objects.requireNonNull;
 

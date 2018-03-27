@@ -15,12 +15,13 @@
  */
 package io.servicetalk.concurrent.context.rxjava;
 
+import io.servicetalk.concurrent.context.AsyncContext;
+import io.servicetalk.concurrent.context.AsyncContextMap;
+
 import io.reactivex.disposables.Disposable;
 import io.reactivex.flowables.ConnectableFlowable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.internal.fuseable.HasUpstreamPublisher;
-import io.servicetalk.concurrent.context.AsyncContext;
-import io.servicetalk.concurrent.context.AsyncContextMap;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 

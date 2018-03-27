@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.context.rxjava;
 
+import io.servicetalk.concurrent.context.AsyncContext;
+
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
@@ -24,7 +26,6 @@ import io.reactivex.flowables.ConnectableFlowable;
 import io.reactivex.functions.Function;
 import io.reactivex.observables.ConnectableObservable;
 import io.reactivex.plugins.RxJavaPlugins;
-import io.servicetalk.concurrent.context.AsyncContext;
 
 /**
  * Hooks to ensure {@link AsyncContext} is propagated into RxJava operators. Hooks can be installed all at once

@@ -15,6 +15,10 @@
  */
 package io.servicetalk.concurrent.context.rxjava;
 
+import io.servicetalk.concurrent.context.AsyncContext;
+import io.servicetalk.concurrent.context.AsyncContextMap;
+import io.servicetalk.concurrent.context.AsyncContextMap.Key;
+
 import io.reactivex.Completable;
 import io.reactivex.CompletableObserver;
 import io.reactivex.Flowable;
@@ -29,9 +33,6 @@ import io.reactivex.flowables.ConnectableFlowable;
 import io.reactivex.internal.disposables.EmptyDisposable;
 import io.reactivex.observables.ConnectableObservable;
 import io.reactivex.plugins.RxJavaPlugins;
-import io.servicetalk.concurrent.context.AsyncContext;
-import io.servicetalk.concurrent.context.AsyncContextMap;
-import io.servicetalk.concurrent.context.AsyncContextMap.Key;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -46,7 +47,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
-
 import javax.annotation.Nullable;
 
 import static org.junit.Assert.assertEquals;
