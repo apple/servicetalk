@@ -17,6 +17,7 @@ package io.servicetalk.transport.api;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.FlushStrategyHolder.FlushSignals;
+
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 

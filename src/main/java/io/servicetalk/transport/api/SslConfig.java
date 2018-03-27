@@ -18,7 +18,6 @@ package io.servicetalk.transport.api;
 import java.io.InputStream;
 import java.util.List;
 import java.util.function.Supplier;
-
 import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLParameters;

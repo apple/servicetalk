@@ -17,12 +17,12 @@ package io.servicetalk.transport.api;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.TerminalNotification;
+
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;

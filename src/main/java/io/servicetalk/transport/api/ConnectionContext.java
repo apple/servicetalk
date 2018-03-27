@@ -20,7 +20,6 @@ import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 import java.net.SocketAddress;
-
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 

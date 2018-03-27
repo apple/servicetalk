@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Publisher;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-
 import javax.annotation.Nullable;
 
 /**
