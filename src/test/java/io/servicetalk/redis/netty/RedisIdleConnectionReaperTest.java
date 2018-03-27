@@ -25,6 +25,7 @@ import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;

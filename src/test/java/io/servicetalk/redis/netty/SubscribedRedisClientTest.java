@@ -27,6 +27,7 @@ import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage;
 import io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage.KeyType;
+
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -47,7 +48,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.EmptyBuffer.EMPTY_BUFFER;

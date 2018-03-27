@@ -30,6 +30,7 @@ import io.servicetalk.redis.utils.RedisAuthConnectionFactory;
 import io.servicetalk.redis.utils.RedisAuthorizationException;
 import io.servicetalk.redis.utils.RetryingRedisClient;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
+
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,7 +38,6 @@ import org.junit.rules.Timeout;
 
 import java.net.InetSocketAddress;
 import java.util.function.Consumer;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoff;

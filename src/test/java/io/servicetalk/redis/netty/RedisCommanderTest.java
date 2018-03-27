@@ -28,6 +28,7 @@ import io.servicetalk.redis.api.RedisProtocolSupport.ExpireDuration;
 import io.servicetalk.redis.api.RedisProtocolSupport.LongitudeLatitudeMember;
 import io.servicetalk.redis.api.TransactedRedisCommander;
 import io.servicetalk.redis.netty.SubscribedRedisClientTest.AccumulatingSubscriber;
+
 import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;

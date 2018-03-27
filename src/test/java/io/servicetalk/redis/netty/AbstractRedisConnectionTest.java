@@ -23,6 +23,7 @@ import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.ConnectionContext;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;

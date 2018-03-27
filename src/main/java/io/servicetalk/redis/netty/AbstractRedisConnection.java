@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.redis.api.RedisConnection;
+
 import org.slf4j.Logger;
 
 import java.nio.channels.ClosedChannelException;

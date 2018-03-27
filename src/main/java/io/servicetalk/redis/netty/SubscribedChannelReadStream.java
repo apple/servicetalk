@@ -27,6 +27,7 @@ import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.api.RedisData.CompleteRedisData;
 import io.servicetalk.redis.api.RedisData.SimpleString;
 import io.servicetalk.redis.internal.CoercionException;
+
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 

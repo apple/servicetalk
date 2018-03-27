@@ -29,6 +29,7 @@ import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.api.RedisException;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.transport.api.ConnectionContext;
+
 import org.junit.Test;
 import org.reactivestreams.Subscription;
 

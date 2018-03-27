@@ -36,7 +36,6 @@ import java.io.InputStream;
 import java.net.SocketOption;
 import java.time.Duration;
 import java.util.function.Function;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.redis.netty.RedisUtils.isSubscribeModeCommand;

@@ -15,6 +15,9 @@
  */
 package io.servicetalk.redis.netty;
 
+import io.servicetalk.buffer.netty.BufferUtil;
+import io.servicetalk.redis.api.RedisData;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -22,11 +25,8 @@ import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.util.ByteProcessor;
 import io.netty.util.CharsetUtil;
 import io.netty.util.internal.PlatformDependent;
-import io.servicetalk.buffer.netty.BufferUtil;
-import io.servicetalk.redis.api.RedisData;
 
 import java.util.List;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.redis.internal.RedisUtils.EOL_LENGTH;

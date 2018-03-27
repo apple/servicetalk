@@ -26,6 +26,7 @@ import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.IoExecutor;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

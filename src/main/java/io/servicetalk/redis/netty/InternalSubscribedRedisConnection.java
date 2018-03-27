@@ -15,7 +15,6 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.netty.buffer.ByteBuf;
 import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
@@ -29,6 +28,8 @@ import io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessa
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.SequentialTaskQueue;
+
+import io.netty.buffer.ByteBuf;
 import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

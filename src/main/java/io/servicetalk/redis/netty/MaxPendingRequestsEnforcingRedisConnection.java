@@ -24,6 +24,7 @@ import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.transport.api.ConnectionContext;
+
 import org.reactivestreams.Subscriber;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;

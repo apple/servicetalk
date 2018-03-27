@@ -20,7 +20,6 @@ import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 
 import java.time.Duration;
-
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;

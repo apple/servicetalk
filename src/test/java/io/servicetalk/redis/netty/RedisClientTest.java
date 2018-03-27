@@ -33,6 +33,7 @@ import io.servicetalk.redis.api.RedisData.RequestRedisData;
 import io.servicetalk.redis.api.RedisException;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.redis.internal.RedisUtils.ListWithBuffersCoercedToCharSequences;
+
 import org.junit.Test;
 
 import java.util.ArrayList;

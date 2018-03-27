@@ -15,13 +15,14 @@
  */
 package io.servicetalk.redis.netty;
 
+import io.servicetalk.buffer.Buffer;
+import io.servicetalk.buffer.netty.BufferAllocators;
+import io.servicetalk.redis.api.RedisData;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.CharsetUtil;
-import io.servicetalk.buffer.Buffer;
-import io.servicetalk.buffer.netty.BufferAllocators;
-import io.servicetalk.redis.api.RedisData;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

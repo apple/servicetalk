@@ -28,6 +28,7 @@ import io.servicetalk.redis.api.RedisData.BulkStringChunk;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.utils.RetryingRedisClient;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
+
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -39,7 +40,6 @@ import org.junit.rules.Timeout;
 
 import java.net.InetSocketAddress;
 import java.util.regex.Pattern;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoff;

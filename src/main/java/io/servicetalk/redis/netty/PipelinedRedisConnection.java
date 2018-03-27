@@ -15,7 +15,6 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.netty.buffer.ByteBuf;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.redis.api.RedisData;
@@ -25,6 +24,8 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.DefaultPipelinedConnection;
 import io.servicetalk.transport.netty.internal.PipelinedConnection;
+
+import io.netty.buffer.ByteBuf;
 import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +33,6 @@ import org.slf4j.LoggerFactory;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;

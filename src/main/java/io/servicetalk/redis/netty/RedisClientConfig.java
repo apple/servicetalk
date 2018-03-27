@@ -19,7 +19,6 @@ import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 
 import java.time.Duration;
-
 import javax.annotation.Nullable;
 
 final class RedisClientConfig extends ReadOnlyRedisClientConfig {

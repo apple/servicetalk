@@ -18,6 +18,7 @@ package io.servicetalk.redis.netty;
 import io.servicetalk.buffer.Buffer;
 import io.servicetalk.redis.api.DefaultBaseRedisData;
 import io.servicetalk.redis.api.RedisData;
+
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;

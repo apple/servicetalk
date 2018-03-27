@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisConnection.SettingKey;
 import io.servicetalk.redis.api.RedisRequest;
+
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;

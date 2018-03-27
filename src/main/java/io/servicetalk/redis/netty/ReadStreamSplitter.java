@@ -15,7 +15,6 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.netty.buffer.ByteBuf;
 import io.servicetalk.buffer.CompositeBuffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
@@ -31,6 +30,8 @@ import io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessa
 import io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage.MessageType;
 import io.servicetalk.redis.netty.TerminalMessagePredicates.TerminalMessagePredicate;
 import io.servicetalk.transport.netty.internal.Connection;
+
+import io.netty.buffer.ByteBuf;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
@@ -43,7 +44,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;

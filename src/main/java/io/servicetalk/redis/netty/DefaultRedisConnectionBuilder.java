@@ -15,7 +15,6 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.netty.buffer.ByteBuf;
 import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.api.RedisConnection;
@@ -31,10 +30,11 @@ import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 import io.servicetalk.transport.netty.internal.NettyIoExecutors;
 
+import io.netty.buffer.ByteBuf;
+
 import java.io.InputStream;
 import java.net.SocketOption;
 import java.time.Duration;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.redis.netty.InternalSubscribedRedisConnection.newSubscribedConnection;

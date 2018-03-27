@@ -15,13 +15,14 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.netty.buffer.ByteBuf;
 import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.redis.internal.CoercionException;
+
+import io.netty.buffer.ByteBuf;
 
 import javax.annotation.Nullable;
 

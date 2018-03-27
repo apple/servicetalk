@@ -24,6 +24,7 @@ import io.servicetalk.redis.api.RedisException;
 import io.servicetalk.redis.utils.RedisAuthConnectionFactory;
 import io.servicetalk.redis.utils.RedisAuthorizationException;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
+
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,7 +32,6 @@ import org.junit.rules.Timeout;
 
 import java.net.InetSocketAddress;
 import java.util.function.Consumer;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
