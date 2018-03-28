@@ -5,9 +5,6 @@ plugins {
 apply plugin: "maven-publish"
 
 dependencyManagement {
-  imports {
-    mavenBom "io.netty:netty-bom:$nettyVersion"
-  }
   dependencies {
     // First Party ServiceTalk Dependencies
     dependency "io.servicetalk:servicetalk-http-router-predicate:0.1.0-SNAPSHOT"
@@ -35,31 +32,6 @@ dependencyManagement {
     dependency "io.servicetalk:servicetalk-concurent:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
-
-    // Transitive Dependencies
-    dependency "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-    dependency "com.google.code.findbugs:jsr305:$jsr305Version"
-    dependency "io.reactivex.rxjava2:rxjava:$rxJavaVersion"
-    dependency "org.jctools:jctools-core:$jcToolsVersion"
-    dependency "org.reactivestreams:reactive-streams:$reactiveStreamsVersion"
-    dependency "org.slf4j:slf4j-api:$slf4jVersion"
-
-    // Testing
-    dependency "junit:junit:$junitVersion"
-    dependency "org.hamcrest:hamcrest-library:$hamcrestVersion"
-    dependency "org.mockito:mockito-core:$mockitoCoreVersion"
-    dependency "org.reactivestreams:reactive-streams-tck:$reactiveStreamsVersion"
-    dependency "org.testng:testng:$testngVersion"
-
-    // Testing Support
-    dependency "commons-lang:commons-lang:$commonsLangVersion"
-    dependency ("org.apache.directory.server:apacheds-protocol-dns:$apacheDirectoryServerVersion") {
-      // We need to use commons-lang 2.6 to be able to run tests with java9
-      // See https://github.com/apache/bookkeeper/issues/385
-      exclude "commons-logging:commons-logging"
-    }
-    dependency "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
-    dependency "org.apache.logging.log4j:log4j-core:$log4jVersion"
   }
 }
 
