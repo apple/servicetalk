@@ -13,7 +13,7 @@ buildscript {
 apply plugin: "servicetalk-build"
 
 dependencies {
-  implementation "io.servicetalk:servicetalk-bom:0.1.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-bom-internal:0.1.0-SNAPSHOT"
 
   api "com.google.code.findbugs:jsr305"
   api "org.jctools:jctools-core"
