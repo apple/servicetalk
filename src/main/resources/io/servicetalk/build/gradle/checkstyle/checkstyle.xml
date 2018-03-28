@@ -108,7 +108,7 @@
     </module>
     <module name="CustomImportOrder">
       <property name="thirdPartyPackageRegExp" value=".*"/>
-      <property name="specialImportsRegExp" value="com.apple"/>
+      <property name="specialImportsRegExp" value="io.servicetalk"/>
       <property name="sortImportsInGroupAlphabetically" value="true"/>
       <property name="customImportOrderRules"
                 value="SPECIAL_IMPORTS###THIRD_PARTY_PACKAGE###STANDARD_JAVA_PACKAGE###STATIC"/>
