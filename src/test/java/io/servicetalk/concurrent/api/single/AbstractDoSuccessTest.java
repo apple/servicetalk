@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Single;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;

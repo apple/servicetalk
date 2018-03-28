@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;

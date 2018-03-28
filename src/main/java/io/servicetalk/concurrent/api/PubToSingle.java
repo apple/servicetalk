@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api;
 import org.reactivestreams.Subscription;
 
 import java.util.NoSuchElementException;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;

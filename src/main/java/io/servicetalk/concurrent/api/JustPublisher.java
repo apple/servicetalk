@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.ScalarValueSubscription;
+
 import org.reactivestreams.Subscriber;
 
 final class JustPublisher<T> extends Publisher<T> {

@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.Publisher;
+
 import org.junit.Rule;
 import org.junit.Test;
 

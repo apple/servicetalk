@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api.tck;
 
 import io.servicetalk.concurrent.api.Single;
+
 import org.testng.annotations.Test;
 
 @Test

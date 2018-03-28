@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.Publisher;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;

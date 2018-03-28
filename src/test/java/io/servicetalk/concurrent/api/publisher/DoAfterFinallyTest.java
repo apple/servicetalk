@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.DeliberateException;
 import io.servicetalk.concurrent.api.Publisher;
+
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;

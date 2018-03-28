@@ -24,7 +24,6 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.empty;

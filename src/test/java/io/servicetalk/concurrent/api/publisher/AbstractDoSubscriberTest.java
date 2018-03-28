@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api.publisher;
 import io.servicetalk.concurrent.api.DeliberateException;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

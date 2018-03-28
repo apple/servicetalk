@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;

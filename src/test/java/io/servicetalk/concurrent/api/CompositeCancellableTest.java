@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Verifier;

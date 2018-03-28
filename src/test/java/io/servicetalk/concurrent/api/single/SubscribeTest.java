@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.TestSingle;
+
 import org.junit.Before;
 import org.junit.Test;
 

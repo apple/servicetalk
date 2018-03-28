@@ -23,7 +23,6 @@ import io.servicetalk.concurrent.internal.TerminalNotification;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.PlatformDependent.newUnboundedLinkedMpscQueue;

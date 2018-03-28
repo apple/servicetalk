@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
+
 import org.junit.Rule;
 import org.junit.Test;
 

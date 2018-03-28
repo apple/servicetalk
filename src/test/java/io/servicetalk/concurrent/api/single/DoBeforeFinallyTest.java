@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.DeliberateException;
 import io.servicetalk.concurrent.api.Single;
+
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;

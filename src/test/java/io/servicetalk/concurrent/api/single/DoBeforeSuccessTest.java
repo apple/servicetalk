@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.api.Single;
+
 import org.junit.Test;
 
 import java.util.function.Consumer;

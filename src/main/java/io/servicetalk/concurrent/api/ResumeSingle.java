@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 
 import java.util.function.Function;
-
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;

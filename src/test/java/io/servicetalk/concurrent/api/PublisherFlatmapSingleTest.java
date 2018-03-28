@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;

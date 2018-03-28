@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+
 import org.junit.Test;
 
 import static org.mockito.Mockito.mock;

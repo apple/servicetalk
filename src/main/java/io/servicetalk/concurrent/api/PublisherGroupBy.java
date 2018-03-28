@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api;
 import org.reactivestreams.Subscriber;
 
 import java.util.function.Function;
-
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;

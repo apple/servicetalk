@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api.completable;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestSingle;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

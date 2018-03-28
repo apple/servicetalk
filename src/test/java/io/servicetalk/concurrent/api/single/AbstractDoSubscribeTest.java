@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestSingle;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

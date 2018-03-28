@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.internal.TerminalNotification;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -34,7 +35,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-
 import javax.annotation.Nullable;
 
 import static java.util.concurrent.Executors.newCachedThreadPool;

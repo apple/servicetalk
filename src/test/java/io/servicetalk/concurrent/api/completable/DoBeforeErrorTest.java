@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api.completable;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.DeliberateException;
+
 import org.junit.Test;
 
 import java.util.function.Consumer;

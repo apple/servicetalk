@@ -16,7 +16,6 @@
 package io.servicetalk.concurrent.api;
 
 import java.util.Optional;
-
 import javax.annotation.Nullable;
 
 import static java.util.Optional.ofNullable;

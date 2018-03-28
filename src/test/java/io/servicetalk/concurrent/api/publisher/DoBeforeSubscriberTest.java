@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api.publisher;
 
 import io.servicetalk.concurrent.api.Publisher;
+
 import org.reactivestreams.Subscriber;
 
 import java.util.function.Supplier;
