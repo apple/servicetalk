@@ -459,7 +459,7 @@ public class NettyChannelPublisherTest {
         if (checkReadRequested) {
             assertThat("No more reads requested by the handler.", readRequested, is(true));
         }
-        for (int item: items) {
+        for (int item : items) {
             handler.channelRead(handlerCtx, item);
         }
         readRequested = false;

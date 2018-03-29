@@ -91,7 +91,7 @@ public class FlushOutsideEventloopTest extends AbstractOutOfEventloopTest {
     }
 
     private void assertWritten(Integer... values) throws InterruptedException {
-        for (Integer v: values) {
+        for (Integer v : values) {
             assertThat("Unexpected items written. Items pending flush: " + pendingFlush, written.take(), is(v));
         }
         assertThat("Unexpected extra items written. Items pending flush: " + pendingFlush, written, is(empty()));
