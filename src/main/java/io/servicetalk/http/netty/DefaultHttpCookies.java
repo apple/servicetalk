@@ -40,6 +40,7 @@ final class DefaultHttpCookies extends MultiMap<String, HttpCookie> implements H
      * this initial value should be re-evaluated.
      */
     private static final HttpHeaders COOKIE_NAMES = new DefaultHttpHeaders(8, false);
+
     static {
         COOKIE_NAMES.add(new AsciiString("path"), new ParseStateCharSequence(ParseState.ParsingPath));
         COOKIE_NAMES.add(new AsciiString("domain"), new ParseStateCharSequence(ParseState.ParsingDomain));

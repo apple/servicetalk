@@ -225,7 +225,7 @@ public abstract class HttpHeadersTest {
     public void absentHeaderIteratorEmpty() {
         HttpHeaders headers = newHeaders();
 
-        assertIteratorIs(headers.getAll("name"), new String[] {});
+        assertIteratorIs(headers.getAll("name"), new String[]{});
     }
 
     @Test
@@ -475,13 +475,13 @@ public abstract class HttpHeadersTest {
     @Test(expected = IllegalArgumentException.class)
     public void invalidHeaderNameOutOfRangeCharacter() {
         HttpHeaders headers = newHeaders();
-        headers.add(new String(new byte[] {-1}, StandardCharsets.UTF_8), "foo");
+        headers.add(new String(new byte[]{-1}, StandardCharsets.UTF_8), "foo");
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void invalidHeaderNameOutOfRangeCharacterAsciiString() {
         HttpHeaders headers = newHeaders();
-        headers.add(new AsciiString(new byte[] {-1}), "foo");
+        headers.add(new AsciiString(new byte[]{-1}), "foo");
     }
 
     @Test(expected = IllegalArgumentException.class)
