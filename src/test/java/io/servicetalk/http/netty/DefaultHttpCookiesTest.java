@@ -615,8 +615,8 @@ public class DefaultHttpCookiesTest {
         private final boolean isHttpOnly;
 
         TestCookie(String name, String value, @Nullable String path,
-                      @Nullable String domain, @Nullable String expires,
-                      @Nullable Long maxAge, boolean isWrapped, boolean isSecure, boolean isHttpOnly) {
+                   @Nullable String domain, @Nullable String expires,
+                   @Nullable Long maxAge, boolean isWrapped, boolean isSecure, boolean isHttpOnly) {
             this.name = name;
             this.value = value;
             this.path = path;
