@@ -507,6 +507,7 @@ public class RxJavaContextHooksTest {
                 beforeSubscribeContext = AsyncContext.current();
                 s.onSubscribe(new Disposable() {
                     private boolean isDisposed;
+
                     @Override
                     public void dispose() {
                         isDisposed = true;
