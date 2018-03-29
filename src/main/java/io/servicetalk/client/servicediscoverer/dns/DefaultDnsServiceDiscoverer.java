@@ -337,7 +337,7 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
             @Override
             public Publisher<Event<InetSocketAddress>> discover(HostAndPort hostAndPort) {
                 return DefaultDnsServiceDiscoverer.this.discover(hostAndPort.getHostName()).map(originalEvent ->
-                    new DefaultServiceDiscovererEvent<>(new InetSocketAddress(originalEvent.getAddress(), hostAndPort.getPort()), originalEvent.isAvailable())
+                        new DefaultServiceDiscovererEvent<>(new InetSocketAddress(originalEvent.getAddress(), hostAndPort.getPort()), originalEvent.isAvailable())
                 );
             }
         };
