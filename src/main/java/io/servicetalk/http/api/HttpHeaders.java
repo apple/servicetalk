@@ -182,7 +182,7 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
     HttpHeaders add(HttpHeaders headers);
 
     /**
-     * Sets a header with the specified name and value. Any existing headers with the same name are overwritten.
+     * Sets a header with the specified {@code name} and {@code value}. Any existing headers with the same name are overwritten.
      *
      * @param name the header name.
      * @param value the value of the header.
@@ -191,12 +191,12 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
     HttpHeaders set(CharSequence name, CharSequence value);
 
     /**
-     * Sets a new header with the specified name and values. This method is equivalent to:
+     * Sets a new header with the specified {@code name} and {@code values}. This method is equivalent to:
      *
      * <pre>
      * headers.remove(name);
-     * for (T v : values) {
-     *     headers.add(name, v);
+     * for (T value : values) {
+     *     headers.add(name, value);
      * }
      * </pre>
      *
@@ -207,13 +207,13 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
     HttpHeaders set(CharSequence name, Iterable<? extends CharSequence> values);
 
     /**
-     * Sets a header with the specified name and values. Any existing headers with this name are removed. This method
+     * Sets a header with the specified {@code name} and {@code values}. Any existing headers with this name are removed. This method
      * is equivalent to:
      *
      * <pre>
      * headers.remove(name);
-     * for (T v : values) {
-     *     headers.add(name, v);
+     * for (T value : values) {
+     *     headers.add(name, value);
      * }
      * </pre>
      *
