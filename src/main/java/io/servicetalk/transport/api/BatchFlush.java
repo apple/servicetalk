@@ -128,12 +128,12 @@ final class BatchFlush implements FlushStrategy {
         @Override
         public void onNext(T t) {
             sendOnNextWithConcurrentTerminationCheck(() -> {
-                subscriber.onNext(t);
-                int unflushed = unflushedCountUpdater.incrementAndGet(this);
-                if (shouldFlush(unflushed, batchSize)) {
-                    sendFlush();
-                }
-            }, terminalNotification -> terminate(terminalNotification, getDurationSubscriptionOrDie()),
+                        subscriber.onNext(t);
+                        int unflushed = unflushedCountUpdater.incrementAndGet(this);
+                        if (shouldFlush(unflushed, batchSize)) {
+                            sendFlush();
+                        }
+                    }, terminalNotification -> terminate(terminalNotification, getDurationSubscriptionOrDie()),
                     subscriberStateUpdater, terminalNotificationUpdater, this);
         }
 
