@@ -177,7 +177,7 @@ public class RedisIdleConnectionReaperTest {
         when(delegateConnection.request(any(RedisRequest.class), eq(String.class))).thenReturn(success("pong"));
 
         commandSubscriber.listen(idleAwareConnection.asCommander().ping())
-            .verifySuccess("pong");
+                .verifySuccess("pong");
 
         completeTimer();
         verify(ioExecutor, times(1)).scheduleOnEventloop(1_000_000_000L, NANOSECONDS);

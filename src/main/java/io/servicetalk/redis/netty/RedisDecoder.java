@@ -72,7 +72,7 @@ final class RedisDecoder extends ByteToMessageDecoder {
     RedisDecoder(int maxInlineMessageLength) {
         if (maxInlineMessageLength <= 0 || maxInlineMessageLength > REDIS_MESSAGE_MAX_LENGTH) {
             throw new IllegalArgumentException("maxInlineMessageLength: " + maxInlineMessageLength +
-                                          " (expected: <= " + REDIS_MESSAGE_MAX_LENGTH + ")");
+                    " (expected: <= " + REDIS_MESSAGE_MAX_LENGTH + ")");
         }
         this.maxInlineMessageLength = maxInlineMessageLength;
     }
@@ -82,33 +82,33 @@ final class RedisDecoder extends ByteToMessageDecoder {
         try {
             for (;;) {
                 switch (state) {
-                case DECODE_TYPE:
-                    if (!decodeType(in)) {
-                        return;
-                    }
-                    break;
-                case DECODE_INLINE:
-                    if (!decodeInline(in, out)) {
-                        return;
-                    }
-                    break;
-                case DECODE_LENGTH:
-                    if (!decodeLength(in, out)) {
-                        return;
-                    }
-                    break;
-                case DECODE_BULK_STRING_EOL:
-                    if (!decodeBulkStringEndOfLine(in, out)) {
-                        return;
-                    }
-                    break;
-                case DECODE_BULK_STRING_CONTENT:
-                    if (!decodeBulkStringContent(in, out)) {
-                        return;
-                    }
-                    break;
-                default:
-                    throw new IllegalStateException("Unknown state: " + state);
+                    case DECODE_TYPE:
+                        if (!decodeType(in)) {
+                            return;
+                        }
+                        break;
+                    case DECODE_INLINE:
+                        if (!decodeInline(in, out)) {
+                            return;
+                        }
+                        break;
+                    case DECODE_LENGTH:
+                        if (!decodeLength(in, out)) {
+                            return;
+                        }
+                        break;
+                    case DECODE_BULK_STRING_EOL:
+                        if (!decodeBulkStringEndOfLine(in, out)) {
+                            return;
+                        }
+                        break;
+                    case DECODE_BULK_STRING_CONTENT:
+                        if (!decodeBulkStringContent(in, out)) {
+                            return;
+                        }
+                        break;
+                    default:
+                        throw new IllegalStateException("Unknown state: " + state);
                 }
             }
         } catch (Exception e) {
@@ -136,7 +136,7 @@ final class RedisDecoder extends ByteToMessageDecoder {
         if (lineBytes == null) {
             if (in.readableBytes() > maxInlineMessageLength) {
                 throw new RedisCodecException("length: " + in.readableBytes() +
-                                              " (expected: <= " + maxInlineMessageLength + ")");
+                        " (expected: <= " + maxInlineMessageLength + ")");
             }
             return false;
         }
@@ -155,43 +155,43 @@ final class RedisDecoder extends ByteToMessageDecoder {
             throw new RedisCodecException("length: " + length + " (expected: >= " + NULL_VALUE + ")");
         }
         switch (type) {
-        case ARRAY_HEADER:
-            if (length == NULL_VALUE) {
-                out.add(RedisData.NULL);
-            } else {
-                out.add(new RedisData.ArraySize(length));
-            }
-            resetDecoder();
-            return true;
-        case BULK_STRING:
-            if (length > REDIS_MESSAGE_MAX_LENGTH) {
-                throw new RedisCodecException("length: " + length + " (expected: <= " +
-                                              REDIS_MESSAGE_MAX_LENGTH + ")");
-            }
-            remainingBulkLength = (int) length; // range(int) is already checked.
-            return decodeBulkString(in, out);
-        default:
-            throw new RedisCodecException("bad type: " + type);
+            case ARRAY_HEADER:
+                if (length == NULL_VALUE) {
+                    out.add(RedisData.NULL);
+                } else {
+                    out.add(new RedisData.ArraySize(length));
+                }
+                resetDecoder();
+                return true;
+            case BULK_STRING:
+                if (length > REDIS_MESSAGE_MAX_LENGTH) {
+                    throw new RedisCodecException("length: " + length + " (expected: <= " +
+                            REDIS_MESSAGE_MAX_LENGTH + ")");
+                }
+                remainingBulkLength = (int) length; // range(int) is already checked.
+                return decodeBulkString(in, out);
+            default:
+                throw new RedisCodecException("bad type: " + type);
         }
     }
 
     private boolean decodeBulkString(ByteBuf in, List<Object> out) {
         switch (remainingBulkLength) {
-        case NULL_VALUE: // $-1\r\n
-            out.add(RedisData.NULL);
-            resetDecoder();
-            return true;
-        case 0:
-            state = State.DECODE_BULK_STRING_EOL;
-            return decodeBulkStringEndOfLine(in, out);
-        default: // expectedBulkLength is always positive.
-            if (remainingBulkLength == NULL_LENGTH) {
+            case NULL_VALUE: // $-1\r\n
                 out.add(RedisData.NULL);
-            } else {
-                out.add(new RedisData.BulkStringSize(remainingBulkLength));
-            }
-            state = State.DECODE_BULK_STRING_CONTENT;
-            return decodeBulkStringContent(in, out);
+                resetDecoder();
+                return true;
+            case 0:
+                state = State.DECODE_BULK_STRING_EOL;
+                return decodeBulkStringEndOfLine(in, out);
+            default: // expectedBulkLength is always positive.
+                if (remainingBulkLength == NULL_LENGTH) {
+                    out.add(RedisData.NULL);
+                } else {
+                    out.add(new RedisData.BulkStringSize(remainingBulkLength));
+                }
+                state = State.DECODE_BULK_STRING_CONTENT;
+                return decodeBulkStringContent(in, out);
         }
     }
 
@@ -241,17 +241,17 @@ final class RedisDecoder extends ByteToMessageDecoder {
 
     private RedisData newInlineRedisData(RedisMessageType messageType, ByteBuf content) {
         switch (messageType) {
-        case SIMPLE_STRING: {
-            return new RedisData.SimpleString(content.toString(CharsetUtil.UTF_8));
-        }
-        case ERROR: {
-            return new RedisData.Error(content.toString(CharsetUtil.UTF_8));
-        }
-        case INTEGER: {
-            return RedisData.Integer.newInstance(parseRedisNumber(content));
-        }
-        default:
-            throw new RedisCodecException("bad type: " + messageType);
+            case SIMPLE_STRING: {
+                return new RedisData.SimpleString(content.toString(CharsetUtil.UTF_8));
+            }
+            case ERROR: {
+                return new RedisData.Error(content.toString(CharsetUtil.UTF_8));
+            }
+            case INTEGER: {
+                return RedisData.Integer.newInstance(parseRedisNumber(content));
+            }
+            default:
+                throw new RedisCodecException("bad type: " + messageType);
         }
     }
 
@@ -278,7 +278,7 @@ final class RedisDecoder extends ByteToMessageDecoder {
         }
         if (readableBytes > POSITIVE_LONG_MAX_LENGTH + extraOneByteForNegative) {
             throw new RedisCodecException("too many characters to be a valid RESP Integer: " +
-                                          byteBuf.toString(CharsetUtil.US_ASCII));
+                    byteBuf.toString(CharsetUtil.US_ASCII));
         }
         if (negative) {
             return -parsePositiveNumber(byteBuf.skipBytes(extraOneByteForNegative));

@@ -252,10 +252,10 @@ public class RedisClientTest extends BaseRedisClientTest {
         awaitIndefinitely(commander.del(key));
         assertThat(awaitIndefinitely(commander.append(key, "bar").repeat(times -> times < 2)
                         .reduce(() -> new ArrayList<>(2), (list, value) -> {
-                                    list.add(value);
-                                    return list;
+                            list.add(value);
+                            return list;
                         })),
-                    contains(3L, 6L));
+                contains(3L, 6L));
     }
 
     @Test
