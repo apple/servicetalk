@@ -66,7 +66,7 @@ final class RedoWhenPublisher<T> extends Publisher<T> {
         private final RedoWhenPublisher<T> redoPublisher;
 
         RedoSubscriber(SequentialSubscription subscription, int redoCount, Subscriber<? super T> subscriber,
-                              RedoWhenPublisher<T> redoPublisher) {
+                       RedoWhenPublisher<T> redoPublisher) {
             super(subscription, redoCount, subscriber);
             this.redoPublisher = redoPublisher;
             cancellable = new SequentialCancellable();
