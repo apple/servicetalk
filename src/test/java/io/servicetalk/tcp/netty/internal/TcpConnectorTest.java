@@ -138,7 +138,6 @@ public final class TcpConnectorTest {
                 }
             });
             return context;
-
         }, () -> v -> true);
         Connection<Buffer, Buffer> connection = awaitIndefinitely(connector.connect(executor, serverContext.getListenAddress()));
         assert connection != null;

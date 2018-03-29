@@ -99,7 +99,7 @@ public final class TcpServer {
      *
      * @param context for the server.
      * @return Listening port.
-     * @throws  ClassCastException If the {@link SocketAddress} returned by {@link ServerContext#getListenAddress()} is not an {@link InetSocketAddress}.
+     * @throws ClassCastException If the {@link SocketAddress} returned by {@link ServerContext#getListenAddress()} is not an {@link InetSocketAddress}.
      */
     public static int getServerPort(ServerContext context) {
         return ((InetSocketAddress) context.getListenAddress()).getPort();
