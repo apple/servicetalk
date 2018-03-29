@@ -17,15 +17,15 @@
 
 -->
 <Configuration status="info">
-    <Appenders>
-        <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d %30t a=%X{a} b=%X{b} c=%X{c} [%-5level] %-30logger{1} - %msg%n"/>
-        </Console>
-    </Appenders>
-    <Loggers>
-        <Logger name="io.netty" level="info"/>
-        <Root level="debug">
-            <AppenderRef ref="Console"/>
-        </Root>
-    </Loggers>
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d %30t a=%X{a} b=%X{b} c=%X{c} [%-5level] %-30logger{1} - %msg%n"/>
+    </Console>
+  </Appenders>
+  <Loggers>
+    <Logger name="io.netty" level="info"/>
+    <Root level="debug">
+      <AppenderRef ref="Console"/>
+    </Root>
+  </Loggers>
 </Configuration>
