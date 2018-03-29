@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <FindBugsFilter>
-    <!-- This is the safest way to cast a generic Collection to a List. -->
-    <Match>
-        <Class name="io.servicetalk.redis.api.RedisRequests"/>
-        <Method name="castCollectionToList"/>
-        <Bug pattern="BC_BAD_CAST_TO_ABSTRACT_COLLECTION"/>
-    </Match>
+  <!-- This is the safest way to cast a generic Collection to a List. -->
+  <Match>
+    <Class name="io.servicetalk.redis.api.RedisRequests"/>
+    <Method name="castCollectionToList"/>
+    <Bug pattern="BC_BAD_CAST_TO_ABSTRACT_COLLECTION"/>
+  </Match>
 </FindBugsFilter>

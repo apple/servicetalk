@@ -51,6 +51,7 @@ public interface RedisConnectionBuilder<ResolvedAddress> {
                     onClose.subscribe(subscriber);
                 }
             };
+
             @Override
             public Single<RedisConnection> newConnection(ResolvedAddress resolvedAddress) {
                 return build(executor, resolvedAddress);

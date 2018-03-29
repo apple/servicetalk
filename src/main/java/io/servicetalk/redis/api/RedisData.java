@@ -124,6 +124,7 @@ public interface RedisData {
         private static final int CACHE_LOWER_BOUND_VALUE = -128;
         private static final int CACHE_UPPER_BOUND_VALUE = 128;
         private static final Integer[] INTEGER_CACHE = new Integer[CACHE_UPPER_BOUND_VALUE - CACHE_LOWER_BOUND_VALUE + 1];
+
         static {
             for (int i = 0; i < INTEGER_CACHE.length; ++i) {
                 INTEGER_CACHE[i] = new Integer((long) (i + CACHE_LOWER_BOUND_VALUE));
