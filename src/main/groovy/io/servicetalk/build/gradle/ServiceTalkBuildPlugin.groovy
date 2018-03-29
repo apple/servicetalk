@@ -271,10 +271,16 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
         }
       }
 
+      project.task("checkstyle") {
+        dependsOn checkstyleMain
+        dependsOn checkstyleTest
+      }
+
       tasks.checkstyleMain.dependsOn checkstyleConfig
       tasks.checkstyleTest.dependsOn checkstyleConfig
       tasks.matching { it.name == "checkstyleTestFixtures" }.all {
         it.dependsOn checkstyleConfig
+        tasks.checkstyle.dependsOn it
       }
 
       pmd {
@@ -282,6 +288,15 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
         sourceSets = [sourceSets.main, sourceSets.test]
         ruleSets = []
         ruleSetConfig = resources.text.fromString(getClass().getResourceAsStream("pmd/basic.xml").text)
+      }
+
+      project.task("pmd") {
+        dependsOn pmdMain
+        dependsOn pmdTest
+      }
+
+      tasks.matching { it.name == "pmdTestFixtures" }.all {
+        tasks.pmd.dependsOn it
       }
 
       // Exclusions are configured at each project level
@@ -310,6 +325,21 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
         if (spotbugsTestExclusionsFile.exists()) {
           excludeFilter = spotbugsTestExclusionsFile
         }
+      }
+
+      project.task("spotbugs") {
+        dependsOn spotbugsMain
+        dependsOn spotbugsTest
+      }
+
+      tasks.matching { it.name == "spotbugsTestFixtures" }.all {
+        tasks.spotbugs.dependsOn it
+      }
+
+      project.task("quality") {
+        dependsOn checkstyle
+        dependsOn pmd
+        dependsOn spotbugs
       }
     }
   }
