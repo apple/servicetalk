@@ -337,9 +337,9 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
       }
 
       project.task("quality") {
-        dependsOn checkstyle
-        dependsOn pmd
-        dependsOn spotbugs
+        dependsOn tasks.checkstyle
+        dependsOn tasks.pmd
+        dependsOn tasks.spotbugs
       }
     }
   }
