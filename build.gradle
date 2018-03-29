@@ -19,13 +19,13 @@ dependencies {
 jar {
   manifest {
     attributes "Built-JDK": System.getProperty("java.version"),
-            "Specification-Title": project.name,
-            "Specification-Version": "${->project.version}",
-            "Specification-Vendor": "Apple Inc.",
-            "Implementation-Title": project.name,
-            "Implementation-Version": "${->project.version}",
-            "Implementation-Vendor": "Apple Inc.",
-            "Automatic-Module-Name": "io.${project.name.replace("-", ".")}"
+        "Specification-Title": project.name,
+        "Specification-Version": "${-> project.version}",
+        "Specification-Vendor": "Apple Inc.",
+        "Implementation-Title": project.name,
+        "Implementation-Version": "${-> project.version}",
+        "Implementation-Vendor": "Apple Inc.",
+        "Automatic-Module-Name": "io.${project.name.replace("-", ".")}"
   }
 }
 
