@@ -40,6 +40,7 @@ public class PowerSetPartitionMapTest {
     private static final Key<Boolean> EXTRA = Key.newKeyWithDebugToString("extra");
     private static final ListenableAsyncCloseable VALUE = new ListenableAsyncCloseable() {
         private final CompletableProcessor close = new CompletableProcessor();
+
         @Override
         public Completable onClose() {
             return close;

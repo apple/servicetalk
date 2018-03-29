@@ -28,7 +28,9 @@ import static java.util.Collections.binarySearch;
 
 public final class ServiceDiscovererUtils {
 
-    private ServiceDiscovererUtils() { }
+    private ServiceDiscovererUtils() {
+        // no instances
+    }
 
     /**
      * Give a sorted list of currently active addresses, and a new set of unsorted active address calculate the {@link ServiceDiscoverer.Event}s.
