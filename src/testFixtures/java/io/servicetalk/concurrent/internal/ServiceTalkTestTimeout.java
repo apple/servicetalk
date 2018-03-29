@@ -78,9 +78,9 @@ public final class ServiceTalkTestTimeout extends Timeout {
         } while ((clazz = clazz.getSuperclass()) != Object.class);
         if (timeoutRuleClasses.size() > 1) {
             StringBuilder sb = new StringBuilder(256)
-             .append("Only one @Rule for a Timeout is allowed, but ")
-             .append(timeoutRuleClasses.size())
-             .append(" were detected in types: ");
+                    .append("Only one @Rule for a Timeout is allowed, but ")
+                    .append(timeoutRuleClasses.size())
+                    .append(" were detected in types: ");
             for (Class<?> clazz2 : timeoutRuleClasses) {
                 sb.append(clazz2.getName()).append(", ");
             }
