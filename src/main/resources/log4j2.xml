@@ -17,21 +17,21 @@
 
 -->
 <Configuration status="info">
-    <Properties>
-        <Property name="level">info</Property>
-    </Properties>
-    <Appenders>
-        <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d %30t [%-5level] %-30logger{1} - %msg%n"/>
-        </Console>
-    </Appenders>
-    <Loggers>
-        <Logger name="io.netty" level="${level}"/>
-        <Logger name="io.servicetalk" level="${level}"/>
-        <Logger name="servicetalk-global-wire-logger" level="${level}"/>
-        <Root level="info">
-            <AppenderRef ref="Console"/>
-        </Root>
-    </Loggers>
+  <Properties>
+    <Property name="level">info</Property>
+  </Properties>
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d %30t [%-5level] %-30logger{1} - %msg%n"/>
+    </Console>
+  </Appenders>
+  <Loggers>
+    <Logger name="io.netty" level="${level}"/>
+    <Logger name="io.servicetalk" level="${level}"/>
+    <Logger name="servicetalk-global-wire-logger" level="${level}"/>
+    <Root level="info">
+      <AppenderRef ref="Console"/>
+    </Root>
+  </Loggers>
 </Configuration>
 
