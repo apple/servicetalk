@@ -283,7 +283,7 @@ public class MulticastPublisherTest {
         AtomicBoolean onNextCalled = new AtomicBoolean();
         doAnswer((Answer<Void>) invocation -> {
             if (onNextCalled.compareAndSet(false, true)) {
-                source.sendItems(new Integer[] {null, 3});
+                source.sendItems(new Integer[]{null, 3});
             }
             return null;
         }).when(subscriber1.getSubscriber()).onNext(anyInt());
@@ -300,7 +300,7 @@ public class MulticastPublisherTest {
 
         // We now test that the queue can handle null items.
         subscriber2.request(2);
-        subscriber2.verifyItems(new Integer[] {null, 3});
+        subscriber2.verifyItems(new Integer[]{null, 3});
     }
 
     @Test

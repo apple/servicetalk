@@ -46,6 +46,6 @@ public class MapPublisherTest {
         subscriber1.request(2);
         source.verifyRequested(2);
         source.sendItems(1, 2);
-        subscriber1.verifyItems(sub -> verify(sub, times(2)), new String[] {null});
+        subscriber1.verifyItems(sub -> verify(sub, times(2)), new String[]{null});
     }
 }

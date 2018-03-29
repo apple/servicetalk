@@ -91,7 +91,7 @@ public class PublisherFlatmapSingleTest {
         subscriber.subscribe(source.flatmapSingle(integer -> Single.success(null), 2))
                 .request(1);
         source.sendItems(1).onComplete();
-        subscriber.verifyItems(new Integer[] {null}).verifySuccess();
+        subscriber.verifyItems(new Integer[]{null}).verifySuccess();
     }
 
     @Test
