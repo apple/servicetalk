@@ -306,7 +306,8 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         final PubSubRedisConnection pubSubClient1 = awaitIndefinitely(commandClient.subscribe(key("channel-1")));
         final AccumulatingSubscriber<PubSubRedisMessage> subscriber1 = new AccumulatingSubscriber<>();
 
-        subscriber1.subscribe(pubSubClient1.getMessages()).request(1);
+        subscriber1.subscribe(pubSubClient1.getMessages()).awaitSubscription(DEFAULT_TIMEOUT_SECONDS, SECONDS);
+        subscriber1.request(1);
 
         // Publish a test message
         publishTestMessage(key("channel-1"));
@@ -318,7 +319,8 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         final PubSubRedisConnection pubSubClient2 = awaitIndefinitely(pubSubClient1.psubscribe(key("channel-2*")));
         final AccumulatingSubscriber<PubSubRedisMessage> subscriber2 = new AccumulatingSubscriber<>();
 
-        subscriber2.subscribe(pubSubClient2.getMessages()).request(1);
+        subscriber2.subscribe(pubSubClient2.getMessages()).awaitSubscription(DEFAULT_TIMEOUT_SECONDS, SECONDS);
+        subscriber2.request(1);
 
         // Let's throw a wrench and psubscribe a second time to the same pattern
         final PubSubRedisConnection pubSubClient3 = awaitIndefinitely(pubSubClient1.psubscribe(key("channel-2*")));

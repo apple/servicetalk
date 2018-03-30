@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.buffer.Buffer;
@@ -240,9 +241,13 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         final ReservedRedisConnection cnx = awaitIndefinitely(client.reserveConnection(subscribeRequest));
         assert cnx != null : "Connection can not be null";
 
-        final Publisher<RedisData> messages1 = cnx.request(subscribeRequest);
+        CountDownLatch latch = new CountDownLatch(1);
+
+        final Publisher<RedisData> messages1 = cnx.request(subscribeRequest).doAfterSubscribe($ -> latch.countDown());
 
         final AccumulatingSubscriber<RedisData> messages1Subscriber = new AccumulatingSubscriber<RedisData>().subscribe(messages1);
+
+        latch.await();
 
         // Publish a test message
         publishTestMessage("test-channel-3");
@@ -346,7 +351,9 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
 
         BlockingQueue<AccumulatingSubscriber<PatternPubSubRedisMessage>> groupSubs = new LinkedBlockingQueue<>();
 
+        CountDownLatch latch = new CountDownLatch(1);
         cnx.request(subscribeRequest)
+                .doAfterSubscribe($ -> latch.countDown())
                 .map(msg -> (PatternPubSubRedisMessage) msg)
                 .groupBy(ChannelPubSubRedisMessage::getChannel, 32)
                 .forEach(grp -> {
@@ -355,6 +362,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
                     groupSubs.offer(sub);
                 });
 
+        latch.await();
         // Publish a test message
         publishTestMessage("test-channel-77");
 

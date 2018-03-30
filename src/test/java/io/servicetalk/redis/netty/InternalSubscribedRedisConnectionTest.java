@@ -16,15 +16,13 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.internal.TerminalNotification;
-import io.servicetalk.redis.api.PubSubRedisConnection;
-import io.servicetalk.redis.api.PubSubRedisMessage;
-import io.servicetalk.redis.api.RedisCommander;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
+import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.api.RedisRequest;
+import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
 import org.junit.AfterClass;
@@ -42,14 +40,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.SUBSCRIBE;
+import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static io.servicetalk.redis.netty.DefaultRedisConnectionBuilder.forPipeline;
 import static io.servicetalk.redis.netty.RedisTestUtils.randomStringOfLength;
-import static io.servicetalk.transport.api.FlushStrategy.defaultFlushStrategy;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -61,7 +58,6 @@ import static org.junit.Assume.assumeThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class InternalSubscribedRedisConnectionTest {
 
@@ -84,8 +80,11 @@ public class InternalSubscribedRedisConnectionTest {
         String redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
         redisAddress = InetSocketAddress.createUnresolved(redisHost, redisPort);
         executor = toNettyIoExecutor(createExecutor());
-        builder = DefaultRedisConnectionBuilder.<InetSocketAddress>forSubscribe()
-                .setPingPeriod(Duration.ofSeconds(1)).setIdleConnectionTimeout(Duration.ofSeconds(2));
+        builder = DefaultRedisConnectionBuilder.<InetSocketAddress>forSubscribe(
+                new RedisClientConfig(new TcpClientConfig(true))
+                .setDeferSubscribeTillConnect(true))
+                .setPingPeriod(Duration.ofSeconds(1))
+                .setIdleConnectionTimeout(Duration.ofSeconds(2));
     }
 
     @AfterClass
@@ -98,16 +97,18 @@ public class InternalSubscribedRedisConnectionTest {
     @Test
     public void testWriteCancelAndClose() throws ExecutionException, InterruptedException {
         assert builder != null && redisAddress != null && executor != null;
-
-        TestPublisher<RedisData.RequestRedisData> requestContent = new TestPublisher<>();
-        requestContent.sendOnSubscribe();
         CountDownLatch requestStreamCancelled = new CountDownLatch(1);
-        RedisRequest mockRequest = newMockRequest(requestContent.doBeforeCancel(requestStreamCancelled::countDown));
 
         RedisConnection connection = awaitIndefinitely(builder.build(executor, redisAddress));
         assert connection != null;
 
-        Subscription subscription = subscribeToResponse(connection.request(mockRequest), new ConcurrentLinkedQueue<>());
+        final RedisRequest subReq = newRequest(SUBSCRIBE,
+                new CompleteBulkString(connection.getBufferAllocator().fromUtf8("FOO")));
+
+        Publisher<RedisData> subscriptionRequest = connection.request(subReq)
+                .doAfterCancel(requestStreamCancelled::countDown);
+
+        Subscription subscription = subscribeToResponse(subscriptionRequest, new ConcurrentLinkedQueue<>());
         subscription.cancel();
         requestStreamCancelled.await();
 
@@ -120,16 +121,21 @@ public class InternalSubscribedRedisConnectionTest {
 
         RedisConnection connection = awaitIndefinitely(builder.build(executor, redisAddress));
         assert connection != null;
-        RedisCommander commander = connection.asCommander();
+
+        final CountDownLatch latch = new CountDownLatch(1);
 
         CharSequence channelToSubscribe = randomStringOfLength(32);
-        Publisher<PubSubRedisMessage> subscribeResponse = awaitIndefinitely(commander.subscribe(channelToSubscribe)
-                .map(PubSubRedisConnection::getMessages));
-        assert subscribeResponse != null : "Subscribe response stream can not be null.";
+        final RedisRequest subReq = newRequest(SUBSCRIBE,
+                new CompleteBulkString(connection.getBufferAllocator().fromUtf8(channelToSubscribe)));
+
+        Publisher<RedisData> subscriptionRequest = connection.request(subReq)
+                .doAfterSubscribe($ -> latch.countDown());
 
         LinkedBlockingQueue<Object> notifications = new LinkedBlockingQueue<>();
-        Subscription subscription = subscribeToResponse(subscribeResponse, notifications);
+        Subscription subscription = subscribeToResponse(subscriptionRequest, notifications);
         subscription.request(1);
+        latch.await();
+
         RedisConnection publishConnection = awaitIndefinitely(forPipeline().build(executor, redisAddress));
         assert publishConnection != null;
 
@@ -141,7 +147,7 @@ public class InternalSubscribedRedisConnectionTest {
 
         subscription.cancel();
 
-        awaitIndefinitely(connection.closeAsync());
+        awaitIndefinitely(connection.closeAsync().merge(publishConnection.closeAsync()));
     }
 
     private static <T> Subscription subscribeToResponse(Publisher<T> response, Queue<Object> notifications) throws InterruptedException {
@@ -170,14 +176,5 @@ public class InternalSubscribedRedisConnectionTest {
 
         assert subscription != null : "subscription null post subscribe.";
         return subscription;
-    }
-
-    @Nonnull
-    private static RedisRequest newMockRequest(Publisher<RedisData.RequestRedisData> requestContent) {
-        RedisRequest mockRequest = mock(RedisRequest.class);
-        when(mockRequest.getFlushStrategy()).thenReturn(defaultFlushStrategy());
-        when(mockRequest.getCommand()).thenReturn(SUBSCRIBE);
-        when(mockRequest.getContent()).thenReturn(requestContent);
-        return mockRequest;
     }
 }

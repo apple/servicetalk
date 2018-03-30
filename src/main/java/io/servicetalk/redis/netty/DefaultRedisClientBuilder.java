@@ -60,8 +60,17 @@ public final class DefaultRedisClientBuilder<ResolvedAddress> implements RedisCl
      * @param loadBalancerFactory A factory which generates {@link LoadBalancer} objects.
      */
     public DefaultRedisClientBuilder(LoadBalancerFactory<ResolvedAddress, RedisConnection> loadBalancerFactory) {
+        this(loadBalancerFactory, new RedisClientConfig(new TcpClientConfig(false)));
+    }
+
+    /**
+     * Create a new instance.
+     * @param loadBalancerFactory A factory which generates {@link LoadBalancer} objects.
+     * @param config the {@link RedisClientConfig} to use as basis
+     */
+    DefaultRedisClientBuilder(LoadBalancerFactory<ResolvedAddress, RedisConnection> loadBalancerFactory, RedisClientConfig config) {
         this.loadBalancerFactory = requireNonNull(loadBalancerFactory);
-        config = new RedisClientConfig(new TcpClientConfig(false));
+        this.config = requireNonNull(config);
     }
 
     /**

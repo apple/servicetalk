@@ -27,6 +27,7 @@ import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisData.BulkStringChunk;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.utils.RetryingRedisClient;
+import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
 import org.hamcrest.BaseMatcher;
@@ -91,13 +92,17 @@ public abstract class BaseRedisClientTest {
 
         executor = toEventLoopAwareNettyIoExecutor(createExecutor());
         serviceDiscoverer = new DefaultDnsServiceDiscoverer.Builder(executor.next()).build().toHostAndPortDiscoverer();
-        client = new RetryingRedisClient(
-                new DefaultRedisClientBuilder<InetSocketAddress>((eventPublisher, connectionFactory) -> new RoundRobinLoadBalancer<>(eventPublisher, connectionFactory, comparingInt(Object::hashCode)))
+        RedisClientConfig config = new RedisClientConfig(new TcpClientConfig(false))
+                .setDeferSubscribeTillConnect(true);
+        client = new RetryingRedisClient(new DefaultRedisClientBuilder<InetSocketAddress>(
+                (eventPublisher, connectionFactory) -> new RoundRobinLoadBalancer<>(eventPublisher, connectionFactory,
+                        comparingInt(Object::hashCode)), config)
                         .setMaxPipelinedRequests(10)
                         .setIdleConnectionTimeout(ofSeconds(2))
                         .setPingPeriod(ofSeconds(PING_PERIOD_SECONDS))
                         .build(executor, serviceDiscoverer.discover(new DefaultHostAndPort(redisHost, redisPort))),
-                retryWithExponentialBackoff(10, cause -> cause instanceof RetryableException, ofMillis(10), backoffNanos -> executor.next().scheduleOnEventloop(backoffNanos, NANOSECONDS)));
+                retryWithExponentialBackoff(10, cause -> cause instanceof RetryableException, ofMillis(10),
+                        backoffNanos -> executor.next().scheduleOnEventloop(backoffNanos, NANOSECONDS)));
 
         final String serverInfo = awaitIndefinitely(
                 client.request(newRequest(INFO, new CompleteBulkString(buf("SERVER"))))

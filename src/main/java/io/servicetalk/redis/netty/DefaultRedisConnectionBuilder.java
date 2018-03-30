@@ -39,6 +39,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.redis.netty.InternalSubscribedRedisConnection.newSubscribedConnection;
 import static io.servicetalk.redis.netty.PipelinedRedisConnection.newPipelinedConnection;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A builder for instances of {@link RedisConnection}.
@@ -50,8 +51,12 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
     private final boolean forSubscribe;
 
     private DefaultRedisConnectionBuilder(boolean forSubscribe) {
+        this(forSubscribe, new RedisClientConfig(new TcpClientConfig(false)));
+    }
+
+    private DefaultRedisConnectionBuilder(boolean forSubscribe, RedisClientConfig config) {
         this.forSubscribe = forSubscribe;
-        config = new RedisClientConfig(new TcpClientConfig(false));
+        this.config = requireNonNull(config);
     }
 
     /**
@@ -152,6 +157,19 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
      */
     public static <ResolvedAddress> DefaultRedisConnectionBuilder<ResolvedAddress> forSubscribe() {
         return new DefaultRedisConnectionBuilder<>(true);
+    }
+
+    /**
+     * Creates a new {@link DefaultRedisConnectionBuilder} to build connections only for <a href="https://redis.io/topics/pubsub">Redis Subscribe mode</a>.
+     *
+     * WARNING: Internal API used by Unit tests.
+     *
+     * @param <ResolvedAddress> the type of address after resolution.
+     * @param config the {@link RedisClientConfig} to provide config values not exposed on the builder
+     * @return A new instance of {@link DefaultRedisConnectionBuilder} that will build connections only for Redis Subscriber mode.
+     */
+    static <ResolvedAddress> DefaultRedisConnectionBuilder<ResolvedAddress> forSubscribe(RedisClientConfig config) {
+        return new DefaultRedisConnectionBuilder<>(true, config);
     }
 
     /**

@@ -31,6 +31,7 @@ class ReadOnlyRedisClientConfig {
     protected Duration idleConnectionTimeout; // default to no idle timeout
     @Nullable
     protected Duration pingPeriod = Duration.ofSeconds(30);
+    protected boolean deferSubscribeTillConnect;
 
     ReadOnlyRedisClientConfig(final ReadOnlyTcpClientConfig tcpClientConfig) {
         this.tcpClientConfig = requireNonNull(tcpClientConfig);
@@ -46,6 +47,7 @@ class ReadOnlyRedisClientConfig {
         maxPipelinedRequests = from.maxPipelinedRequests;
         idleConnectionTimeout = from.idleConnectionTimeout;
         pingPeriod = from.pingPeriod;
+        deferSubscribeTillConnect = from.deferSubscribeTillConnect;
     }
 
     /**
@@ -73,7 +75,7 @@ class ReadOnlyRedisClientConfig {
      * @return the {@link Duration} between keep-alive pings or {@code null} if disabled.
      */
     @Nullable
-    public Duration getPingPeriod() {
+    Duration getPingPeriod() {
         return pingPeriod;
     }
 
@@ -84,5 +86,14 @@ class ReadOnlyRedisClientConfig {
      */
     ReadOnlyTcpClientConfig getTcpClientConfig() {
         return tcpClientConfig;
+    }
+
+    /**
+     * WARNING: internal API not to be exposed in the {@link DefaultRedisClientBuilder}.
+     *
+     * @return {@code true} when subscribe signal needs to be deferred until the Redis PubSub subscribe ack
+     */
+    boolean isDeferSubscribeTillConnect() {
+        return deferSubscribeTillConnect;
     }
 }

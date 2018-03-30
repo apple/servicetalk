@@ -31,6 +31,7 @@ import io.servicetalk.transport.netty.internal.SequentialTaskQueue;
 
 import io.netty.buffer.ByteBuf;
 import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +42,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.matches;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.AUTH;
@@ -64,10 +66,12 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
 
     private final ReadStreamSplitter readStreamSplitter;
     private final WriteQueue writeQueue;
+    private final boolean deferSubscribeTillConnect;
 
     private InternalSubscribedRedisConnection(Connection<RedisData, ByteBuf> connection, ReadOnlyRedisClientConfig roConfig, int initialQueueCapacity, int maxBufferPerGroup) {
         super(durationNanos -> connection.getIoExecutor().scheduleOnEventloop(durationNanos, TimeUnit.NANOSECONDS), roConfig);
         this.connection = connection;
+        this.deferSubscribeTillConnect = roConfig.isDeferSubscribeTillConnect();
         writeQueue = new WriteQueue(maxPendingRequests, initialQueueCapacity);
         this.readStreamSplitter = new ReadStreamSplitter(connection, maxPendingRequests, maxBufferPerGroup,
                 redisRequest -> request0(redisRequest).ignoreElements());
@@ -123,7 +127,12 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
                  group, after we register the Subscriber for a command, we are OK even if response is received before request completes.
                  Since, in such a case groupBy will buffer the group and we will not see the new group in ReadStreamSplitter.
                  */
-                Publisher<PubSubChannelMessage> response = write.andThen(readStreamSplitter.registerNewCommand(command));
+                final Publisher<PubSubChannelMessage> response;
+                if (deferSubscribeTillConnect) {
+                    response = concatDeferOnSubscribe(write, readStreamSplitter.registerNewCommand(command));
+                } else {
+                    response = write.andThen(readStreamSplitter.registerNewCommand(command));
+                }
                 // Unwrap PubSubChannelMessage if it wraps an SimpleString response
                 response.map(m -> m.getKeyType() == SimpleString ? m.getData() : m).subscribe(subscriber);
             }
@@ -313,5 +322,45 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
                 }
             }
         }
+    }
+
+    /**
+     * Defers the {@link Subscriber#onSubscribe(Subscription)} (Subscription)} signal to the {@link Subscriber} of the returned
+     * {@link Publisher} till {@code next} {@link Publisher} sends an {@link Subscriber#onSubscribe(Subscription)}.
+     *
+     * This operator is required for in-process publisher-subscriber coordination. As a consequence a queued subscription
+     * command can't be cancelled before writing to Redis.
+     *
+     * @param queuedWrite the {@link Completable} tracking writing the enqueued
+     *                    {@link io.servicetalk.redis.api.RedisProtocolSupport.Command#SUBSCRIBE} or
+     *                    {@link io.servicetalk.redis.api.RedisProtocolSupport.Command#PSUBSCRIBE} commands to Redis
+     * @param next        the {@link PubSubChannelMessage} producer to subscribe to after completing the original {@link Completable}
+     * @return the composite operator
+     */
+    private static Publisher<PubSubChannelMessage> concatDeferOnSubscribe(Completable queuedWrite, Publisher<PubSubChannelMessage> next) {
+
+        return new Publisher<PubSubChannelMessage>() {
+            @Override
+            protected void handleSubscribe(org.reactivestreams.Subscriber<? super PubSubChannelMessage> subscriber) {
+                queuedWrite.subscribe(new io.servicetalk.concurrent.Completable.Subscriber() {
+
+                    @Override
+                    public void onSubscribe(Cancellable cancellable) {
+                        // Ignore onSubscribe as we are deferring the signal till we get the same from the next Publisher.
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        next.subscribe(subscriber);
+                    }
+
+                    @Override
+                    public void onError(Throwable t) {
+                        subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+                        subscriber.onError(t);
+                    }
+                });
+            }
+        };
     }
 }

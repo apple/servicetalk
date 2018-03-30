@@ -19,6 +19,7 @@ import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 
 import java.time.Duration;
+
 import javax.annotation.Nullable;
 
 final class RedisClientConfig extends ReadOnlyRedisClientConfig {
@@ -75,6 +76,18 @@ final class RedisClientConfig extends ReadOnlyRedisClientConfig {
     @Override
     TcpClientConfig getTcpClientConfig() {
         return (TcpClientConfig) tcpClientConfig;
+    }
+
+    /**
+     * Should the subscribe signal be deferred until the Redis PubSub subscribe ack or not (default).
+     *
+     * WARNING: internal API not to be exposed in the {@link DefaultRedisClientBuilder}.
+     * @param defer {@code true} to defer the subscribe
+     * @return {@code this}
+     */
+    RedisClientConfig setDeferSubscribeTillConnect(boolean defer) {
+        this.deferSubscribeTillConnect = defer;
+        return this;
     }
 
     /**
