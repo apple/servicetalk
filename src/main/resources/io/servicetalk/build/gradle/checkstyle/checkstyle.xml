@@ -57,6 +57,15 @@
       <property name="message" value="Call to print to the console. Remove it or add to the suppressions.xml"/>
       <property name="ignoreComments" value="true"/>
     </module>
+    <!-- Ensures that we have @ElementsAreNonnullByDefault annotation in package-info.java -->
+    <module name="RegexpSinglelineJava">
+      <property name="id" value="MissedElementsAreNonnullByDefault"/>
+      <property name="format" value="^\s*@ElementsAreNonnullByDefault\s*$"/>
+      <property name="minimum" value="1"/>
+      <property name="maximum" value="1"/>
+      <property name="message" value="Missed @ElementsAreNonnullByDefault annotation on package"/>
+      <property name="ignoreComments" value="true"/>
+    </module>
     <!-- Prohibit comparing this with null (i.e. this == null and this != null) -->
     <module name="DescendantToken">
       <property name="tokens" value="EQUAL,NOT_EQUAL"/>

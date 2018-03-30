@@ -4,6 +4,9 @@
     "http://checkstyle.sourceforge.net/dtds/suppressions_1_2.dtd">
 
 <suppressions>
+  <!-- Ignore for all files except that one, which name ends with "package-info.java" -->
+  <suppress id="MissedElementsAreNonnullByDefault" files="^((?!package-info\.java$).)*$"/>
+
   <!-- test -->
   <suppress id="ConsolePrint" files=".*[\\/]src[\\/]test[\\/].*"/>
   <suppress id="IllegalInstantiationOfString" files=".*[\\/]src[\\/]test[\\/].*"/>
