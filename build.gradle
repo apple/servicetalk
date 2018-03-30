@@ -18,7 +18,6 @@ dependencies {
   api "com.google.code.findbugs:jsr305"
   api "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
   api "io.servicetalk:servicetalk-concurrent-api:0.1.0-SNAPSHOT"
-  api "io.servicetalk:servicetalk-concurrent-context:0.1.0-SNAPSHOT"
   api "io.servicetalk:servicetalk-transport-api:0.1.0-SNAPSHOT"
   api "io.servicetalk:servicetalk-transport-netty-internal:0.1.0-SNAPSHOT"
   api "io.netty:netty-handler"
