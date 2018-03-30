@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static java.util.Arrays.copyOf;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -40,13 +41,13 @@ public final class FromArrayPublisherTest {
     public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
 
     @Test
-    public void testRequestAllValues() throws Exception {
+    public void testRequestAllValues() {
         Source source = newSource(5);
         subscriber.subscribe(source.getPublisher()).verifySuccess(source.getValues());
     }
 
     @Test
-    public void testRequestInChunks() throws Exception {
+    public void testRequestInChunks() {
         Source source = newSource(10);
         subscriber.subscribe(source.getPublisher())
                 .request(2)
@@ -56,14 +57,14 @@ public final class FromArrayPublisherTest {
     }
 
     @Test
-    public void testNullAsValue() throws Exception {
+    public void testNullAsValue() {
         String[] values = {"Hello", null};
-        Publisher<String> publisher = new FromArrayPublisher<>(values);
+        Publisher<String> publisher = new FromArrayPublisher<>(immediate(), values);
         subscriber.subscribe(publisher).request(2).verifyItems("Hello", null).verifySuccess();
     }
 
     @Test
-    public void testRequestPostComplete() throws Exception {
+    public void testRequestPostComplete() {
         // Due to race between on* and request-n, request-n may arrive after onComplete/onError.
         Source source = newSource(5);
         subscriber.subscribe(source.getPublisher()).verifySuccess(source.getValues());
@@ -72,9 +73,9 @@ public final class FromArrayPublisherTest {
     }
 
     @Test
-    public void testRequestPostError() throws Exception {
+    public void testRequestPostError() {
         String[] values = {"Hello", null};
-        Publisher<String> publisher = new FromArrayPublisher<>(values);
+        Publisher<String> publisher = new FromArrayPublisher<>(immediate(), values);
         subscriber.subscribe(publisher);
         doAnswer(invocation -> {
             throw DELIBERATE_EXCEPTION;
@@ -85,14 +86,14 @@ public final class FromArrayPublisherTest {
     }
 
     @Test
-    public void testReentrant() throws Exception {
+    public void testReentrant() {
         Source source = newSource(6);
         Publisher<String> p = source.getPublisher().doBeforeNext(s -> subscriber.request(5));
         subscriber.subscribe(p).request(1).verifyItems(source.getValues());
     }
 
     @Test
-    public void testReactiveStreams2_13() throws Exception {
+    public void testReactiveStreams2_13() {
         Source source = newSource(6);
         Publisher<String> p = source.getPublisher().doBeforeNext(s -> {
             throw DELIBERATE_EXCEPTION;
@@ -101,13 +102,13 @@ public final class FromArrayPublisherTest {
     }
 
     @Test
-    public void testIncompleteRequest() throws Exception {
+    public void testIncompleteRequest() {
         Source source = newSource(6);
         requestItemsAndVerifyEmissions(source);
     }
 
     @Test
-    public void testCancel() throws Exception {
+    public void testCancel() {
         Source source = newSource(6);
         requestItemsAndVerifyEmissions(source);
         subscriber.cancel();
@@ -242,7 +243,7 @@ public final class FromArrayPublisherTest {
         for (int i = 0; i < size; i++) {
             values[i] = "Hello" + i;
         }
-        return new Source(new FromArrayPublisher<>(values), values);
+        return new Source(new FromArrayPublisher<>(immediate(), values), values);
     }
 
     private static final class Source {

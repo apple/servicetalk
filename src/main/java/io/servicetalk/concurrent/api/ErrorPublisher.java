@@ -15,22 +15,22 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.EmptySubscription;
-
 import org.reactivestreams.Subscriber;
 
+import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static java.util.Objects.requireNonNull;
 
-final class ErrorPublisher<T> extends Publisher<T> {
+final class ErrorPublisher<T> extends AbstractSynchronousPublisher<T> {
     private final Throwable cause;
 
-    ErrorPublisher(Throwable cause) {
+    ErrorPublisher(Throwable cause, Executor executor) {
+        super(executor);
         this.cause = requireNonNull(cause);
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber) {
-        subscriber.onSubscribe(EmptySubscription.EMPTY_SUBSCRIPTION);
+    void doSubscribe(Subscriber<? super T> subscriber) {
+        subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
         subscriber.onError(cause);
     }
 }

@@ -17,21 +17,23 @@ package io.servicetalk.concurrent.api;
 
 import org.reactivestreams.Subscriber;
 
-import static java.util.Objects.requireNonNull;
+import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 
-final class ReactiveStreamsPublisher<T> extends FailRegularSubscribePublisher<T> {
+/**
+ * A {@link Publisher} that does not expect to receive a call to {@link #handleSubscribe(Subscriber)} since it overrides
+ * {@link #handleSubscribe(Subscriber, InOrderExecutor)}.
+ *
+ * @param <T> Type of items emitted.
+ */
+abstract class FailRegularSubscribePublisher<T> extends Publisher<T> {
 
-    private final org.reactivestreams.Publisher<T> publisher;
-
-    ReactiveStreamsPublisher(org.reactivestreams.Publisher<T> publisher, Executor executor) {
+    FailRegularSubscribePublisher(Executor executor) {
         super(executor);
-        this.publisher = requireNonNull(publisher);
     }
 
     @Override
-    void handleSubscribe(Subscriber<? super T> subscriber, InOrderExecutor inOrderExecutor) {
-        // Wrap the passed Subscriber with the InOrderExecutor to make sure they are not invoked in the thread that
-        // asynchronously processes signals and hence may not be safe to execute user code.
-        publisher.subscribe(inOrderExecutor.wrap(subscriber));
+    protected final void handleSubscribe(Subscriber<? super T> subscriber) {
+        subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+        subscriber.onError(new UnsupportedOperationException("Subscribe with no executor is not supported for " + getClass()));
     }
 }

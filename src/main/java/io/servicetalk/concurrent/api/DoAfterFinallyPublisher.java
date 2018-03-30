@@ -22,19 +22,18 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static java.util.Objects.requireNonNull;
 
-final class DoAfterFinallyPublisher<T> extends Publisher<T> {
+final class DoAfterFinallyPublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
 
-    private final Publisher<T> original;
     private final Runnable runnable;
 
-    DoAfterFinallyPublisher(Publisher<T> original, Runnable runnable) {
-        this.original = requireNonNull(original);
+    DoAfterFinallyPublisher(Publisher<T> original, Runnable runnable, Executor executor) {
+        super(original, executor);
         this.runnable = requireNonNull(runnable);
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber) {
-        original.subscribe(new DoFinallySubscriber<>(subscriber, runnable));
+    public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
+        return new DoFinallySubscriber<>(subscriber, runnable);
     }
 
     private static final class DoFinallySubscriber<T> implements Subscriber<T> {

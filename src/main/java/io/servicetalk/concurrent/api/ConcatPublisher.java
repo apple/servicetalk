@@ -25,24 +25,17 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <T> Type of items emitted by this {@link Publisher}.
  */
-final class ConcatPublisher<T> extends Publisher<T> {
-    private final Publisher<T> original;
+final class ConcatPublisher<T> extends AbstractAsynchronousPublisherOperator<T, T> {
     private final Publisher<T> next;
 
-    /**
-     * New instance.
-     *
-     * @param original {@link Publisher} on which this operator is applied.
-     * @param next     {@link Publisher} to concat with {@code original}.
-     */
-    ConcatPublisher(Publisher<T> original, Publisher<T> next) {
-        this.original = requireNonNull(original);
+    ConcatPublisher(Publisher<T> original, Publisher<T> next, Executor executor) {
+        super(original, executor);
         this.next = requireNonNull(next);
     }
 
     @Override
-    public void handleSubscribe(Subscriber<? super T> target) {
-        original.subscribe(new ConcatSubscriber<>(target, next));
+    public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
+        return new ConcatSubscriber<>(subscriber, next);
     }
 
     private static final class ConcatSubscriber<T> implements Subscriber<T> {

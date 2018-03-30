@@ -39,6 +39,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
@@ -79,7 +80,7 @@ public class PublisherFlatmapSingleTest {
     }
 
     @Test
-    public void testSingleItemSyncSingle() throws Exception {
+    public void testSingleItemSyncSingle() {
         subscriber.subscribe(source.flatmapSingle(integer -> Single.success(2), 2))
                 .request(1);
         source.sendItems(1).onComplete();
@@ -87,7 +88,7 @@ public class PublisherFlatmapSingleTest {
     }
 
     @Test
-    public void testSingleItemCompletesWithNull() throws Exception {
+    public void testSingleItemCompletesWithNull() {
         subscriber.subscribe(source.flatmapSingle(integer -> Single.success(null), 2))
                 .request(1);
         source.sendItems(1).onComplete();
@@ -95,7 +96,7 @@ public class PublisherFlatmapSingleTest {
     }
 
     @Test
-    public void testSingleItemSourceCompleteFirst() throws Exception {
+    public void testSingleItemSourceCompleteFirst() {
         TestSingle<Integer> single = new TestSingle<>();
         subscriber.subscribe(source.flatmapSingle(integer -> single, 2))
                 .request(1);
@@ -105,7 +106,7 @@ public class PublisherFlatmapSingleTest {
     }
 
     @Test
-    public void testSingleItemSingleCompleteFirst() throws Exception {
+    public void testSingleItemSingleCompleteFirst() {
         TestSingle<Integer> single = new TestSingle<>();
         subscriber.subscribe(source.flatmapSingle(integer -> single, 2))
                 .request(1);
@@ -116,7 +117,7 @@ public class PublisherFlatmapSingleTest {
     }
 
     @Test
-    public void testSingleItemSingleError() throws Exception {
+    public void testSingleItemSingleError() {
         subscriber.subscribe(source.flatmapSingle(integer -> Single.error(DELIBERATE_EXCEPTION), 2))
                 .request(1);
         source.sendItems(1);
@@ -124,7 +125,7 @@ public class PublisherFlatmapSingleTest {
     }
 
     @Test
-    public void testSingleErrorPostSourceComplete() throws Exception {
+    public void testSingleErrorPostSourceComplete() {
         TestSingle<Integer> single = new TestSingle<>();
         subscriber.subscribe(source.flatmapSingle(integer -> single, 2)).request(1);
         source.sendItems(1).onComplete();
@@ -133,7 +134,7 @@ public class PublisherFlatmapSingleTest {
     }
 
     @Test
-    public void testSourceEmitsErrorNoOnNexts() throws Exception {
+    public void testSourceEmitsErrorNoOnNexts() {
         subscriber.subscribe(source.flatmapSingle(integer -> Single.success(2), 2))
                 .request(1);
         source.fail();
@@ -141,7 +142,7 @@ public class PublisherFlatmapSingleTest {
     }
 
     @Test
-    public void testSourceEmitsErrorPostOnNexts() throws Exception {
+    public void testSourceEmitsErrorPostOnNexts() {
         subscriber.subscribe(source.flatmapSingle(integer -> Single.success(2), 2))
                 .request(1);
         source.sendItems(1).fail();
@@ -149,7 +150,7 @@ public class PublisherFlatmapSingleTest {
     }
 
     @Test
-    public void testSourceEmitsErrorPostOnNextsSingleNotCompleted() throws Exception {
+    public void testSourceEmitsErrorPostOnNextsSingleNotCompleted() {
         TestSingle<Integer> single = new TestSingle<>();
         subscriber.subscribe(source.flatmapSingle(integer -> single, 2))
                 .request(1);
@@ -159,7 +160,7 @@ public class PublisherFlatmapSingleTest {
     }
 
     @Test
-    public void testSubscriberCancel() throws Exception {
+    public void testSubscriberCancel() {
         TestSingle<Integer> single = new TestSingle<>();
         subscriber.subscribe(source.flatmapSingle(integer -> single, 2))
                 .request(1);
@@ -170,7 +171,7 @@ public class PublisherFlatmapSingleTest {
     }
 
     @Test
-    public void testSingleCompletePostCancel() throws Exception {
+    public void testSingleCompletePostCancel() {
         TestSingle<Integer> single = new TestSingle<>(true);
         subscriber.subscribe(source.flatmapSingle(integer -> single, 2))
                 .request(1);
@@ -183,7 +184,7 @@ public class PublisherFlatmapSingleTest {
     }
 
     @Test
-    public void testSingleErrorPostCancel() throws Exception {
+    public void testSingleErrorPostCancel() {
         TestSingle<Integer> single = new TestSingle<>(true);
         subscriber.subscribe(source.flatmapSingle(integer -> single, 2))
                 .request(1);
@@ -196,7 +197,7 @@ public class PublisherFlatmapSingleTest {
     }
 
     @Test
-    public void testMaxConcurrency() throws Exception {
+    public void testMaxConcurrency() {
         List<TestSingle<Integer>> emittedSingles = new ArrayList<>();
         subscriber.subscribe(source.flatmapSingle(integer -> {
             TestSingle<Integer> s = new TestSingle<>();
@@ -223,7 +224,7 @@ public class PublisherFlatmapSingleTest {
     }
 
     @Test
-    public void testMapperThrows() throws Exception {
+    public void testMapperThrows() {
         subscriber.subscribe(source.flatmapSingle(integer -> {
             throw DELIBERATE_EXCEPTION;
         }, 2)).request(1);
@@ -242,7 +243,7 @@ public class PublisherFlatmapSingleTest {
     }
 
     @Test
-    public void testNoFlowControl() throws Exception {
+    public void testNoFlowControl() {
         List<TestSingle<Integer>> emittedSingles = new ArrayList<>();
         subscriber.subscribe(source.flatmapSingle(integer -> {
             TestSingle<Integer> s = new TestSingle<>();
@@ -271,7 +272,7 @@ public class PublisherFlatmapSingleTest {
     }
 
     @Test
-    public void testRequestPostSingleError() throws Exception {
+    public void testRequestPostSingleError() {
         subscriber.subscribe(source.flatmapSingleDelayError(integer -> Single.error(DELIBERATE_EXCEPTION), 2))
                 .request(3);
         source.verifyRequested(2).sendItems(1); // Request no more than max concurrency.
@@ -282,7 +283,7 @@ public class PublisherFlatmapSingleTest {
     }
 
     @Test
-    public void testRequestMultipleTimes() throws Exception {
+    public void testRequestMultipleTimes() {
         subscriber.subscribe(source.flatmapSingle(integer -> Single.success(2), 10))
                 .request(2);
         source.verifyRequested(2).sendItems(1, 1);
@@ -293,7 +294,7 @@ public class PublisherFlatmapSingleTest {
     }
 
     @Test
-    public void testRequestMultipleTimesBreachMaxConcurrency() throws Exception {
+    public void testRequestMultipleTimesBreachMaxConcurrency() {
         subscriber.subscribe(source.flatmapSingle(integer -> Single.success(2), 2))
                 .request(2).request(2);
         source.verifyRequested(2);
@@ -303,7 +304,7 @@ public class PublisherFlatmapSingleTest {
     }
 
     @Test
-    public void testMultipleSingleErrors() throws Exception {
+    public void testMultipleSingleErrors() {
         List<DeliberateException> errors = new ArrayList<>();
         subscriber.subscribe(source.flatmapSingleDelayError(integer -> {
             DeliberateException de = new DeliberateException();
@@ -320,7 +321,7 @@ public class PublisherFlatmapSingleTest {
     }
 
     @Test
-    public void testRequestLongMaxValue() throws Exception {
+    public void testRequestLongMaxValue() {
         int maxConcurrency = 2;
         subscriber.subscribe(source.flatmapSingle(integer -> Single.success(2), maxConcurrency))
                 .request(Long.MAX_VALUE);
@@ -331,7 +332,7 @@ public class PublisherFlatmapSingleTest {
     }
 
     @Test
-    public void testAccumulateToLongMaxValue() throws Exception {
+    public void testAccumulateToLongMaxValue() {
         int maxConcurrency = 2;
         subscriber.subscribe(source.flatmapSingle(integer -> Single.success(2), maxConcurrency))
                 .request(Long.MAX_VALUE - 1);
@@ -345,7 +346,7 @@ public class PublisherFlatmapSingleTest {
     }
 
     @Test
-    public void testAccumulateToIntMaxValue() throws Exception {
+    public void testAccumulateToIntMaxValue() {
         int maxConcurrency = 2;
         subscriber.subscribe(source.flatmapSingle(integer -> Single.success(2), maxConcurrency))
                 .request(Integer.MAX_VALUE - 1);
@@ -368,7 +369,8 @@ public class PublisherFlatmapSingleTest {
             expectedNumbers[i] = i;
         }
         PublisherFlatmapSingle<Integer, String> pub = new PublisherFlatmapSingle<>(Publisher.from(expectedNumbers),
-                value -> Single.success(Integer.toString(value)), 1, false);
+                value -> Single.success(Integer.toString(value)),
+                1, false, immediate());
         pub.subscribe(new Subscriber<String>() {
             private Subscription subscription;
 

@@ -27,20 +27,19 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static java.util.Objects.requireNonNull;
 
-final class TakeWhilePublisher<T> extends Publisher<T> {
+final class TakeWhilePublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
     private static final Subscription CANCELLED = new EmptySubscription();
 
-    private final Publisher<T> publisher;
     private final Predicate<T> predicate;
 
-    TakeWhilePublisher(Publisher<T> publisher, Predicate<T> predicate) {
-        this.publisher = requireNonNull(publisher);
+    TakeWhilePublisher(Publisher<T> original, Predicate<T> predicate, Executor executor) {
+        super(original, executor);
         this.predicate = requireNonNull(predicate);
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber) {
-        publisher.subscribe(new TakeWhileSubscriber<>(subscriber, predicate));
+    public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
+        return new TakeWhileSubscriber<>(subscriber, predicate);
     }
 
     private static final class TakeWhileSubscriber<T> implements Subscriber<T> {

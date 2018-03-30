@@ -28,21 +28,17 @@ import static java.util.Objects.requireNonNull;
  * As returned by {@link Publisher#from(Object[])}.
  * @param <T> Type of items emitted by this {@link Publisher}.
  */
-final class FromArrayPublisher<T> extends Publisher<T> {
+final class FromArrayPublisher<T> extends AbstractSynchronousPublisher<T> {
     private final T[] values;
 
-    /**
-     * New instance.
-     *
-     * @param values to emit.
-     */
     @SafeVarargs
-    FromArrayPublisher(T... values) {
+    FromArrayPublisher(Executor executor, T... values) {
+        super(executor);
         this.values = requireNonNull(values);
     }
 
     @Override
-    public void handleSubscribe(Subscriber<? super T> s) {
+    void doSubscribe(Subscriber<? super T> s) {
         s.onSubscribe(new SubscriptionImpl(s));
     }
 

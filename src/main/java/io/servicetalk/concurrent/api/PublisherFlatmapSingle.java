@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,16 +51,15 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
  * @param <R> Type of items emitted by this {@link Publisher}
  * @param <T> Type of items emitted by source {@link Publisher}
  */
-final class PublisherFlatmapSingle<T, R> extends Publisher<R> {
+final class PublisherFlatmapSingle<T, R> extends AbstractAsynchronousPublisherOperator<T, R> {
     private static final Logger LOGGER = LoggerFactory.getLogger(PublisherFlatmapSingle.class);
 
-    private final Publisher<T> original;
     private final Function<T, Single<R>> mapper;
     private final int maxConcurrency;
     private final boolean delayError;
 
-    PublisherFlatmapSingle(Publisher<T> original, Function<T, Single<R>> mapper, int maxConcurrency, boolean delayError) {
-        this.original = requireNonNull(original);
+    PublisherFlatmapSingle(Publisher<T> original, Function<T, Single<R>> mapper, int maxConcurrency, boolean delayError, Executor executor) {
+        super(original, executor);
         this.mapper = requireNonNull(mapper);
         if (maxConcurrency <= 0) {
             throw new IllegalArgumentException("maxConcurrency: " + maxConcurrency + " (expected > 0)");
@@ -69,8 +69,8 @@ final class PublisherFlatmapSingle<T, R> extends Publisher<R> {
     }
 
     @Override
-    protected void handleSubscribe(org.reactivestreams.Subscriber<? super R> subscriber) {
-        original.subscribe(new FlatmapSubscriber<>(this, subscriber));
+    public Subscriber<? super T> apply(Subscriber<? super R> subscriber) {
+        return new FlatmapSubscriber<>(this, subscriber);
     }
 
     private static final class FlatmapSubscriber<T, R> implements org.reactivestreams.Subscriber<T>, Subscription {

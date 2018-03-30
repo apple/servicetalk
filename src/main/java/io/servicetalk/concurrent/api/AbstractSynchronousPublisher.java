@@ -17,21 +17,28 @@ package io.servicetalk.concurrent.api;
 
 import org.reactivestreams.Subscriber;
 
-import static java.util.Objects.requireNonNull;
+/**
+ * Base class for all {@link Publisher}s that are created with already realized values and does not generate values asynchronously.
+ *
+ * @param <T> Type of items emitted.
+ */
+abstract class AbstractSynchronousPublisher<T> extends FailRegularSubscribePublisher<T> {
 
-final class ReactiveStreamsPublisher<T> extends FailRegularSubscribePublisher<T> {
-
-    private final org.reactivestreams.Publisher<T> publisher;
-
-    ReactiveStreamsPublisher(org.reactivestreams.Publisher<T> publisher, Executor executor) {
+    AbstractSynchronousPublisher(Executor executor) {
         super(executor);
-        this.publisher = requireNonNull(publisher);
     }
 
     @Override
-    void handleSubscribe(Subscriber<? super T> subscriber, InOrderExecutor inOrderExecutor) {
+    final void handleSubscribe(Subscriber<? super T> subscriber, InOrderExecutor inOrderExecutor) {
         // Wrap the passed Subscriber with the InOrderExecutor to make sure they are not invoked in the thread that
         // asynchronously processes signals and hence may not be safe to execute user code.
-        publisher.subscribe(inOrderExecutor.wrap(subscriber));
+        doSubscribe(inOrderExecutor.wrap(subscriber));
     }
+
+    /**
+     * Handles the subscribe call.
+     *
+     *  @param subscriber {@link Subscriber} to this {@link Publisher}.
+     */
+    abstract void doSubscribe(Subscriber<? super T> subscriber);
 }

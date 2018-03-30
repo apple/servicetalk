@@ -36,18 +36,17 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid
 import static java.util.Collections.emptyIterator;
 import static java.util.Objects.requireNonNull;
 
-final class PublisherFlatMapIterable<T, U> extends Publisher<U> {
-    private final Publisher<T> original;
+final class PublisherFlatMapIterable<T, U> extends AbstractSynchronousPublisherOperator<T, U> {
     private final Function<? super T, ? extends Iterable<? extends U>> mapper;
 
-    PublisherFlatMapIterable(Publisher<T> original, Function<? super T, ? extends Iterable<? extends U>> mapper) {
-        this.original = requireNonNull(original);
+    PublisherFlatMapIterable(Publisher<T> original, Function<? super T, ? extends Iterable<? extends U>> mapper, Executor executor) {
+        super(original, executor);
         this.mapper = requireNonNull(mapper);
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super U> subscriber) {
-        original.subscribe(new FlatMapIterableSubscriber<>(mapper, subscriber));
+    public Subscriber<? super T> apply(Subscriber<? super U> subscriber) {
+        return new FlatMapIterableSubscriber<>(mapper, subscriber);
     }
 
     private static final class FlatMapIterableSubscriber<T, U> implements Subscriber<T>, Subscription {

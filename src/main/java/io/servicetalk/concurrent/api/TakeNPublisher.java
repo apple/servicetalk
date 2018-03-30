@@ -25,30 +25,28 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
-import static java.util.Objects.requireNonNull;
 
 /**
  * {@link Publisher} that will request a fixed number of elements.
  *
  * @param <T> the type of the elements.
  */
-final class TakeNPublisher<T> extends Publisher<T> {
+final class TakeNPublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
     private static final Subscription CANCELLED = new EmptySubscription();
 
-    private final Publisher<T> publisher;
     private final long numElements;
 
-    TakeNPublisher(Publisher<T> publisher, long numElements) {
+    TakeNPublisher(Publisher<T> original, long numElements, Executor executor) {
+        super(original, executor);
         if (numElements <= 0) {
             throw new IllegalArgumentException("numElements: " + numElements + " (expected >= 0)");
         }
-        this.publisher = requireNonNull(publisher);
         this.numElements = numElements;
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber) {
-        publisher.subscribe(new TakeNSubscriber<>(subscriber, numElements));
+    public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
+        return new TakeNSubscriber<>(subscriber, numElements);
     }
 
     private static final class TakeNSubscriber<T> implements Subscriber<T> {

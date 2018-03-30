@@ -22,21 +22,20 @@ import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 
-final class DoSubscriptionPublisher<T> extends Publisher<T> {
+final class DoSubscriptionPublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
 
-    private final Publisher<T> original;
     private final Supplier<Subscription> subscriptionSupplier;
     private final boolean before;
 
-    DoSubscriptionPublisher(Publisher<T> original, Supplier<Subscription> subscriptionSupplier, boolean before) {
-        this.original = requireNonNull(original);
+    DoSubscriptionPublisher(Publisher<T> original, Supplier<Subscription> subscriptionSupplier, boolean before, Executor executor) {
+        super(original, executor);
         this.subscriptionSupplier = requireNonNull(subscriptionSupplier);
         this.before = before;
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber) {
-        original.subscribe(new DoBeforeSubscriberCompletableSubscriber<>(subscriber, this));
+    public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
+        return new DoBeforeSubscriberCompletableSubscriber<>(subscriber, this);
     }
 
     private static final class DoBeforeSubscriberCompletableSubscriber<T> implements Subscriber<T> {

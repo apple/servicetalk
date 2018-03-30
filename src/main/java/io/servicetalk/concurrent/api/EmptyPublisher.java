@@ -15,20 +15,19 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.EmptySubscription;
-
 import org.reactivestreams.Subscriber;
 
-final class EmptyPublisher extends Publisher {
-    static final EmptyPublisher INSTANCE = new EmptyPublisher();
+import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 
-    private EmptyPublisher() {
-        // singleton
+final class EmptyPublisher<T> extends AbstractSynchronousPublisher<T> {
+
+    EmptyPublisher(Executor executor) {
+        super(executor);
     }
 
     @Override
-    protected void handleSubscribe(Subscriber subscriber) {
-        subscriber.onSubscribe(EmptySubscription.EMPTY_SUBSCRIPTION);
+    void doSubscribe(Subscriber<? super T> subscriber) {
+        subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
         subscriber.onComplete();
     }
 }

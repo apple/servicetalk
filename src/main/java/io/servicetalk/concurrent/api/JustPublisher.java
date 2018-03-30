@@ -19,16 +19,17 @@ import io.servicetalk.concurrent.internal.ScalarValueSubscription;
 
 import org.reactivestreams.Subscriber;
 
-final class JustPublisher<T> extends Publisher<T> {
+final class JustPublisher<T> extends AbstractSynchronousPublisher<T> {
 
     private final T value;
 
-    JustPublisher(T value) {
+    JustPublisher(T value, Executor executor) {
+        super(executor);
         this.value = value;
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber) {
+    void doSubscribe(Subscriber<? super T> subscriber) {
         subscriber.onSubscribe(new ScalarValueSubscription<>(value, subscriber));
     }
 }

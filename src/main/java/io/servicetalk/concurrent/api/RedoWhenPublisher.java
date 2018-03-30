@@ -33,9 +33,8 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <T> Type of items emitted from this {@link Publisher}.
  */
-final class RedoWhenPublisher<T> extends Publisher<T> {
+final class RedoWhenPublisher<T> extends AbstractRedoPublisherOperator<T> {
 
-    private final Publisher<T> original;
     private final BiFunction<Integer, TerminalNotification, Completable> shouldRedo;
     private final boolean forRetry;
 
@@ -46,29 +45,31 @@ final class RedoWhenPublisher<T> extends Publisher<T> {
      * @param shouldRedo {@link BiFunction} to create a {@link Completable} that determines whether to redo the operation.
      * @param forRetry If redo has to be done for error i.e. it is used for retry. If {@code true} completion for original source will complete the subscriber.
      *                    Otherwise, error will send the error to the subscriber.
+     * @param executor {@link Executor} for this {@link Publisher}.
      */
     RedoWhenPublisher(Publisher<T> original, BiFunction<Integer, TerminalNotification, Completable> shouldRedo,
-                      boolean forRetry) {
-        this.original = original;
+                      boolean forRetry, Executor executor) {
+        super(original, executor);
         this.shouldRedo = shouldRedo;
         this.forRetry = forRetry;
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber) {
-        final SequentialSubscription subscription = new SequentialSubscription();
-        original.subscribe(new RedoSubscriber<>(subscription, 0, subscriber, this));
+    protected Subscriber<? super T> redo(Subscriber<? super T> subscriber, InOrderExecutor inOrderExecutor) {
+        return new RedoSubscriber<>(new SequentialSubscription(), 0, subscriber, this, inOrderExecutor);
     }
 
     private static final class RedoSubscriber<T> extends RedoPublisher.AbstractRedoSubscriber<T> {
 
         private final SequentialCancellable cancellable;
         private final RedoWhenPublisher<T> redoPublisher;
+        private final InOrderExecutor inOrderExecutor;
 
         RedoSubscriber(SequentialSubscription subscription, int redoCount, Subscriber<? super T> subscriber,
-                       RedoWhenPublisher<T> redoPublisher) {
+                       RedoWhenPublisher<T> redoPublisher, InOrderExecutor inOrderExecutor) {
             super(subscription, redoCount, subscriber);
             this.redoPublisher = redoPublisher;
+            this.inOrderExecutor = inOrderExecutor;
             cancellable = new SequentialCancellable();
         }
 
@@ -135,7 +136,8 @@ final class RedoWhenPublisher<T> extends Publisher<T> {
 
                 @Override
                 public void onComplete() {
-                    redoPublisher.original.subscribe(new RedoSubscriber<>(subscription, redoCount + 1, subscriber, redoPublisher));
+                    redoPublisher.subscribeToOriginal(new RedoSubscriber<>(subscription, redoCount + 1, subscriber, redoPublisher,
+                            inOrderExecutor), inOrderExecutor);
                 }
 
                 @Override

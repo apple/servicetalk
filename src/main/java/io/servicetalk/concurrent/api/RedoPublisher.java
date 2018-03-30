@@ -30,20 +30,18 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
  *
  * @param <T> Type of items emitted from this {@link Publisher}.
  */
-final class RedoPublisher<T> extends Publisher<T> {
+final class RedoPublisher<T> extends AbstractRedoPublisherOperator<T> {
 
-    private final Publisher<T> original;
     private final BiPredicate<Integer, TerminalNotification> shouldRedo;
 
-    RedoPublisher(Publisher<T> original, BiPredicate<Integer, TerminalNotification> shouldRedo) {
-        this.original = original;
+    RedoPublisher(Publisher<T> original, BiPredicate<Integer, TerminalNotification> shouldRedo, Executor executor) {
+        super(original, executor);
         this.shouldRedo = shouldRedo;
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber) {
-        final SequentialSubscription subscription = new SequentialSubscription();
-        original.subscribe(new RedoSubscriber<>(subscription, 0, subscriber, this));
+    Subscriber<? super T> redo(Subscriber<? super T> subscriber, InOrderExecutor inOrderExecutor) {
+        return new RedoSubscriber<>(new SequentialSubscription(), 0, subscriber, this, inOrderExecutor);
     }
 
     abstract static class AbstractRedoSubscriber<T> implements Subscriber<T> {
@@ -80,11 +78,13 @@ final class RedoPublisher<T> extends Publisher<T> {
     private static final class RedoSubscriber<T> extends AbstractRedoSubscriber<T> {
 
         private final RedoPublisher<T> redoPublisher;
+        private final InOrderExecutor inOrderExecutor;
 
         RedoSubscriber(SequentialSubscription subscription, int redoCount, Subscriber<? super T> subscriber,
-                       RedoPublisher<T> redoPublisher) {
+                       RedoPublisher<T> redoPublisher, InOrderExecutor inOrderExecutor) {
             super(subscription, redoCount, subscriber);
             this.redoPublisher = redoPublisher;
+            this.inOrderExecutor = inOrderExecutor;
         }
 
         @Override
@@ -117,7 +117,7 @@ final class RedoPublisher<T> extends Publisher<T> {
             }
 
             if (shouldRedo) {
-                redoPublisher.original.subscribe(new RedoSubscriber<>(subscription, redoCount + 1, subscriber, redoPublisher));
+                redoPublisher.subscribeToOriginal(new RedoSubscriber<>(subscription, redoCount + 1, subscriber, redoPublisher, inOrderExecutor), inOrderExecutor);
             } else {
                 notification.terminate(subscriber);
             }

@@ -20,14 +20,27 @@ import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Utility methods to create various {@link Executor}s.
  */
 public final class Executors {
 
+    private static final Executor IMMEDIATE = from(Runnable::run);
+
     private Executors() {
         // no instances
+    }
+
+    /**
+     * Returns an {@link Executor} that executes all tasks submitted via {@link Executor#execute(Runnable)} immediately
+     * by calling {@link Runnable#run()}. {@link Executor#schedule(long, TimeUnit)} will use a global scheduler.
+     *
+     * @return An {@link Executor} that executes all tasks submitted via {@link Executor#execute(Runnable)} immediately.
+     */
+    public static Executor immediate() {
+        return IMMEDIATE;
     }
 
     /**

@@ -45,19 +45,18 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateS
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static java.util.Objects.requireNonNull;
 
-abstract class AbstractPublisherGroupBy<Key, T> extends Publisher<Publisher.Group<Key, T>> {
+abstract class AbstractPublisherGroupBy<Key, T> extends AbstractSynchronousPublisherOperator<T, Publisher.Group<Key, T>> {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractPublisherGroupBy.class);
 
-    final Publisher<T> original;
     final int initialCapacityForGroups;
     final int groupQueueSize;
 
-    AbstractPublisherGroupBy(Publisher<T> original, int groupQueueSize) {
-        this(original, groupQueueSize, 4);
+    AbstractPublisherGroupBy(Publisher<T> original, int groupQueueSize, Executor executor) {
+        this(original, groupQueueSize, 4, executor);
     }
 
-    AbstractPublisherGroupBy(Publisher<T> original, int groupQueueSize, int expectedGroupCountHint) {
-        this.original = requireNonNull(original);
+    AbstractPublisherGroupBy(Publisher<T> original, int groupQueueSize, int expectedGroupCountHint, Executor executor) {
+        super(original, executor);
         if (expectedGroupCountHint <= 0) {
             throw new IllegalArgumentException("expectedGroupCountHint " + expectedGroupCountHint + " (expected >0)");
         }

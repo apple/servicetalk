@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,18 +34,18 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.sendOnNextWithC
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.util.Objects.requireNonNull;
 
-final class TakeUntilPublisher<T> extends Publisher<T> {
-    private final Publisher<T> publisher;
+final class TakeUntilPublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
+
     private final Completable until;
 
-    TakeUntilPublisher(Publisher<T> publisher, Completable until) {
-        this.publisher = requireNonNull(publisher);
+    TakeUntilPublisher(Publisher<T> original, Completable until, Executor executor) {
+        super(original, executor);
         this.until = requireNonNull(until);
     }
 
     @Override
-    protected void handleSubscribe(org.reactivestreams.Subscriber<? super T> subscriber) {
-        publisher.subscribe(new TakeUntilSubscriber<>(subscriber, until));
+    public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
+        return new TakeUntilSubscriber<>(subscriber, until);
     }
 
     private static final class TakeUntilSubscriber<T> implements org.reactivestreams.Subscriber<T> {

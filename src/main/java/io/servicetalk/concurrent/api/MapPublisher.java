@@ -28,24 +28,17 @@ import static java.util.Objects.requireNonNull;
  * @param <R> Type of items emitted by this {@link Publisher}
  * @param <T> Type of items emitted by source {@link Publisher}
  */
-final class MapPublisher<R, T> extends Publisher<R> {
-    private final Publisher<T> source;
+final class MapPublisher<R, T> extends AbstractSynchronousPublisherOperator<T, R> {
     private final Function<T, R> mapper;
 
-    /**
-     * New instance.
-     *
-     * @param source {@link Publisher}.
-     * @param mapper Function to map each element emitted by source to what is emitted by this {@link Publisher}.
-     */
-    MapPublisher(Publisher<T> source, Function<T, R> mapper) {
-        this.source = requireNonNull(source);
+    MapPublisher(Publisher<T> source, Function<T, R> mapper, Executor executor) {
+        super(source, executor);
         this.mapper = requireNonNull(mapper);
     }
 
     @Override
-    public void handleSubscribe(Subscriber<? super R> originalSubscriber) {
-        source.subscribe(new MapSubscriber<>(originalSubscriber, mapper));
+    public Subscriber<? super T> apply(Subscriber<? super R> originalSubscriber) {
+        return new MapSubscriber<>(originalSubscriber, mapper);
     }
 
     private static final class MapSubscriber<T, R> implements Subscriber<T> {

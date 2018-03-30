@@ -31,24 +31,17 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <T> Type of items emitted by source {@link Publisher}
  */
-final class FilterPublisher<T> extends Publisher<T> {
-    private final Publisher<T> source;
+final class FilterPublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
     private final Predicate<T> predicate;
 
-    /**
-     * New instance.
-     *
-     * @param source {@link Publisher}.
-     * @param predicate to filter.
-     */
-    FilterPublisher(Publisher<T> source, Predicate<T> predicate) {
-        this.source = requireNonNull(source);
+    FilterPublisher(Publisher<T> source, Predicate<T> predicate, Executor executor) {
+        super(source, executor);
         this.predicate = requireNonNull(predicate);
     }
 
     @Override
-    public void handleSubscribe(Subscriber<? super T> subscriber) {
-        source.subscribe(new Subscriber<T>() {
+    public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
+        return new Subscriber<T>() {
             @Nullable
             private Subscription subscription;
 
@@ -81,6 +74,6 @@ final class FilterPublisher<T> extends Publisher<T> {
             public void onComplete() {
                 subscriber.onComplete();
             }
-        });
+        };
     }
 }

@@ -31,19 +31,20 @@ import static java.util.Objects.requireNonNull;
 final class PublisherGroupByMulti<Key, T> extends AbstractPublisherGroupBy<Key, T> {
     private final Function<T, Iterator<Key>> keySelector;
 
-    PublisherGroupByMulti(Publisher<T> original, Function<T, Iterator<Key>> keySelector, int groupQueueSize) {
-        super(original, groupQueueSize);
+    PublisherGroupByMulti(Publisher<T> original, Function<T, Iterator<Key>> keySelector, int groupQueueSize, Executor executor) {
+        super(original, groupQueueSize, executor);
         this.keySelector = requireNonNull(keySelector);
     }
 
-    PublisherGroupByMulti(Publisher<T> original, Function<T, Iterator<Key>> keySelector, int groupQueueSize, int expectedGroupCountHint) {
-        super(original, groupQueueSize, expectedGroupCountHint);
+    PublisherGroupByMulti(Publisher<T> original, Function<T, Iterator<Key>> keySelector, int groupQueueSize, int expectedGroupCountHint,
+                          Executor executor) {
+        super(original, groupQueueSize, expectedGroupCountHint, executor);
         this.keySelector = requireNonNull(keySelector);
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super Group<Key, T>> subscriber) {
-        original.subscribe(new SourceSubscriber<>(this, subscriber));
+    public Subscriber<? super T> apply(Subscriber<? super Group<Key, T>> subscriber) {
+        return new SourceSubscriber<>(this, subscriber);
     }
 
     private static final class SourceSubscriber<Key, T> extends AbstractSourceSubscriber<Key, T> {

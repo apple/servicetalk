@@ -33,6 +33,8 @@ import java.util.function.LongConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.InOrderExecutors.newOrderedExecutor;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -44,6 +46,16 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     private static final AtomicReference<BiConsumer<? super Subscriber, Consumer<? super Subscriber>>> SUBSCRIBE_PLUGIN_REF = new AtomicReference<>();
+
+    private final Executor executor;
+
+    protected Publisher() {
+        this(immediate());
+    }
+
+    protected Publisher(Executor executor) {
+        this.executor = requireNonNull(executor);
+    }
 
     /**
      * Add a plugin that will be invoked on each {@link #subscribe(Subscriber)} call. This can be used for visibility or to
@@ -58,6 +70,12 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
         );
     }
 
+    @Override
+    public final void subscribe(Subscriber<? super T> subscriber) {
+        // This is a user-driven subscribe i.e. there is no InOrderExecutor override, so create a new InOrderExecutor to use.
+        subscribe(subscriber, newOrderedExecutor(executor));
+    }
+
     /**
      * Handles a subscriber to this {@code Publisher}.
      *
@@ -65,15 +83,41 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      */
     protected abstract void handleSubscribe(Subscriber<? super T> subscriber);
 
-    @Override
-    public final void subscribe(Subscriber<? super T> subscriber) {
+    /**
+     * A special subscribe mode that uses the passed {@link InOrderExecutor} instead of creating a new
+     * {@link InOrderExecutor} like {@link #subscribe(Subscriber)}. This will call
+     * {@link #handleSubscribe(Subscriber, InOrderExecutor)} to handle this subscribe instead of {@link #handleSubscribe(Subscriber)}.<p>
+     *
+     *     This method is used by operator implementations to inherit a chosen {@link InOrderExecutor} per {@link Subscriber} where possible.
+     *     This method does not wrap the passed {@link Subscriber} or {@link Subscription} to offload processing to {@link InOrderExecutor}.
+     *     That is done by {@link #handleSubscribe(Subscriber, InOrderExecutor)} and hence can be overridden by operators that do not require this wrapping.
+     *
+     * @param subscriber {@link Subscriber} to this {@link Publisher}.
+     * @param inOrderExecutor {@link InOrderExecutor} to use for this {@link Subscriber}.
+     */
+    final void subscribe(Subscriber<? super T> subscriber, InOrderExecutor inOrderExecutor) {
         requireNonNull(subscriber);
         BiConsumer<? super Subscriber, Consumer<? super Subscriber>> plugin = SUBSCRIBE_PLUGIN_REF.get();
         if (plugin != null) {
-            plugin.accept(subscriber, this::handleSubscribe);
+            plugin.accept(subscriber, sub -> handleSubscribe(sub, inOrderExecutor));
         } else {
-            handleSubscribe(subscriber);
+            handleSubscribe(subscriber, inOrderExecutor);
         }
+    }
+
+    /**
+     * Override for {@link #handleSubscribe(Subscriber)} to offload the {@link #handleSubscribe(Subscriber)} call to the passed {@link InOrderExecutor}. <p>
+     *
+     *     This method wraps the passed {@link Subscriber} using {@link InOrderExecutor#wrap(Subscriber)} and then calls {@link #handleSubscribe(Subscriber)}
+     *     using {@link InOrderExecutor#execute(Runnable)}.
+     *     Operators that do not wish to wrap the passed {@link Subscriber} can override this method and omit the wrapping.
+     *
+     * @param subscriber the subscriber.
+     * @param inOrderExecutor {@link InOrderExecutor} to use for this {@link Subscriber}.
+     */
+    void handleSubscribe(Subscriber<? super T> subscriber, InOrderExecutor inOrderExecutor) {
+        Subscriber<? super T> safeSubscriber = inOrderExecutor.wrap(subscriber);
+        inOrderExecutor.execute(() -> handleSubscribe(safeSubscriber));
     }
 
     /**
@@ -120,7 +164,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/map.html">ReactiveX map operator.</a>
      */
     public final <R> Publisher<R> map(Function<T, R> mapper) {
-        return new MapPublisher<>(this, mapper);
+        return new MapPublisher<>(this, mapper, executor);
     }
 
     /**
@@ -132,7 +176,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/filter.html">ReactiveX filter operator.</a>
      */
     public final Publisher<T> filter(Predicate<T> predicate) {
-        return new FilterPublisher<>(this, predicate);
+        return new FilterPublisher<>(this, predicate, executor);
     }
 
     /**
@@ -145,7 +189,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/take.html">ReactiveX take operator.</a>
      */
     public final Publisher<T> take(long numElements) {
-        return new TakeNPublisher<>(this, numElements);
+        return new TakeNPublisher<>(this, numElements, executor);
     }
 
     /**
@@ -160,7 +204,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/takewhile.html">ReactiveX takeWhile operator.</a>
      */
     public final Publisher<T> takeWhile(Predicate<T> predicate) {
-        return new TakeWhilePublisher<>(this, predicate);
+        return new TakeWhilePublisher<>(this, predicate, executor);
     }
 
     /**
@@ -172,7 +216,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/takeuntil.html">ReactiveX takeUntil operator.</a>
      */
     public final Publisher<T> takeUntil(Completable until) {
-        return new TakeUntilPublisher<>(this, until);
+        return new TakeUntilPublisher<>(this, until, executor);
     }
 
     /**
@@ -187,7 +231,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatmap operator.</a>
      */
     public final <R> Publisher<R> flatmapSingle(Function<T, Single<R>> mapper, int maxConcurrency) {
-        return new PublisherFlatmapSingle<>(this, mapper, maxConcurrency, false);
+        return new PublisherFlatmapSingle<>(this, mapper, maxConcurrency, false, executor);
     }
 
     /**
@@ -205,7 +249,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
      */
     public final <R> Publisher<R> flatmapSingleDelayError(Function<T, Single<R>> mapper, int maxConcurrency) {
-        return new PublisherFlatmapSingle<>(this, mapper, maxConcurrency, true);
+        return new PublisherFlatmapSingle<>(this, mapper, maxConcurrency, true, executor);
     }
 
     /**
@@ -216,7 +260,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX FlatMap operator.</a>
      */
     public final <U> Publisher<U> flatMapIterable(Function<? super T, ? extends Iterable<? extends U>> mapper) {
-        return new PublisherFlatMapIterable<>(this, mapper);
+        return new PublisherFlatMapIterable<>(this, mapper, executor);
     }
 
     /**
@@ -264,7 +308,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/groupby.html">ReactiveX groupBy operator.</a>
      */
     public final <Key> Publisher<Group<Key, T>> groupBy(Function<T, Key> keySelector, int groupMaxQueueSize) {
-        return new PublisherGroupBy<>(this, keySelector, groupMaxQueueSize);
+        return new PublisherGroupBy<>(this, keySelector, groupMaxQueueSize, executor);
     }
 
     /**
@@ -298,7 +342,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/groupby.html">ReactiveX groupBy operator.</a>
      */
     public final <Key> Publisher<Group<Key, T>> groupBy(Function<T, Key> keySelector, int groupMaxQueueSize, int expectedGroupCountHint) {
-        return new PublisherGroupBy<>(this, keySelector, groupMaxQueueSize, expectedGroupCountHint);
+        return new PublisherGroupBy<>(this, keySelector, groupMaxQueueSize, expectedGroupCountHint, executor);
     }
 
     /**
@@ -312,7 +356,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see #groupBy(Function, int)
      */
     public final <Key> Publisher<Group<Key, T>> groupByMulti(Function<T, Iterator<Key>> keySelector, int groupMaxQueueSize) {
-        return new PublisherGroupByMulti<>(this, keySelector, groupMaxQueueSize);
+        return new PublisherGroupByMulti<>(this, keySelector, groupMaxQueueSize, executor);
     }
 
     /**
@@ -328,7 +372,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see #groupBy(Function, int)
      */
     public final <Key> Publisher<Group<Key, T>> groupByMulti(Function<T, Iterator<Key>> keySelector, int groupMaxQueueSize, int expectedGroupCountHint) {
-        return new PublisherGroupByMulti<>(this, keySelector, groupMaxQueueSize, expectedGroupCountHint);
+        return new PublisherGroupByMulti<>(this, keySelector, groupMaxQueueSize, expectedGroupCountHint, executor);
     }
 
     /**
@@ -344,7 +388,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} calls to {@link #subscribe(Subscriber)}.
      */
     public final Publisher<T> multicast(int expectedSubscribers) {
-        return new MulticastPublisher<>(this, expectedSubscribers);
+        return new MulticastPublisher<>(this, expectedSubscribers, executor);
     }
 
     /**
@@ -362,7 +406,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} calls to {@link #subscribe(Subscriber)}.
      */
     public final Publisher<T> multicast(int expectedSubscribers, int maxQueueSize) {
-        return new MulticastPublisher<>(this, expectedSubscribers, maxQueueSize);
+        return new MulticastPublisher<>(this, expectedSubscribers, maxQueueSize, executor);
     }
 
     /**
@@ -584,7 +628,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> doBeforeSubscriber(Supplier<Subscriber<? super T>> subscriberSupplier) {
-        return new DoBeforeSubscriberPublisher<>(this, subscriberSupplier);
+        return new DoBeforeSubscriberPublisher<>(this, subscriberSupplier, executor);
     }
 
     /**
@@ -598,7 +642,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> doBeforeSubscription(Supplier<Subscription> subscriptionSupplier) {
-        return new DoSubscriptionPublisher<>(this, subscriptionSupplier, true);
+        return new DoSubscriptionPublisher<>(this, subscriptionSupplier, true, executor);
     }
 
     /**
@@ -806,7 +850,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> doAfterFinally(Runnable doFinally) {
-        return new DoAfterFinallyPublisher<>(this, doFinally);
+        return new DoAfterFinallyPublisher<>(this, doFinally, executor);
     }
 
     /**
@@ -820,7 +864,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> doAfterSubscriber(Supplier<Subscriber<? super T>> subscriberSupplier) {
-        return new DoAfterSubscriberPublisher<>(this, subscriberSupplier);
+        return new DoAfterSubscriberPublisher<>(this, subscriberSupplier, executor);
     }
 
     /**
@@ -834,7 +878,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> doAfterSubscription(Supplier<Subscription> subscriptionSupplier) {
-        return new DoSubscriptionPublisher<>(this, subscriptionSupplier, false);
+        return new DoSubscriptionPublisher<>(this, subscriptionSupplier, false, executor);
     }
 
     /**
@@ -846,7 +890,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
      */
     public final Publisher<T> concatWith(Publisher<T> next) {
-        return new ConcatPublisher<>(this, next);
+        return new ConcatPublisher<>(this, next, executor);
     }
 
     /**
@@ -858,7 +902,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
      */
     public final Publisher<T> concatWith(Single<T> next) {
-        return new ConcatPublisher<>(this, next.toPublisher());
+        return new ConcatPublisher<>(this, next.toPublisher(), executor);
     }
 
     /**
@@ -872,7 +916,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      */
     public final Publisher<T> concatWith(Completable next) {
         // We can not use next.toPublisher() here as that returns Publisher<Void> which can not be concatenated with Publisher<T>
-        return new ConcatPublisher<>(this, next.andThen(empty()));
+        return new ConcatPublisher<>(this, next.andThen(empty(executor)), executor);
     }
 
     /**
@@ -885,7 +929,9 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
     public final Publisher<T> retry(BiIntPredicate<Throwable> shouldRetry) {
-        return new RedoPublisher<>(this, (retryCount, terminalNotification) -> terminalNotification.getCause() != null && shouldRetry.test(retryCount, terminalNotification.getCause()));
+        return new RedoPublisher<>(this,
+                (retryCount, terminalNotification) -> terminalNotification.getCause() != null && shouldRetry.test(retryCount, terminalNotification.getCause()),
+                executor);
     }
 
     /**
@@ -907,7 +953,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
                 return Completable.completed();
             }
             return retryWhen.apply(retryCount, notification.getCause());
-        }, true);
+        }, true, executor);
     }
 
     /**
@@ -919,7 +965,9 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
      */
     public final Publisher<T> repeat(IntPredicate shouldRepeat) {
-        return new RedoPublisher<>(this, (repeatCount, terminalNotification) -> terminalNotification.getCause() == null && shouldRepeat.test(repeatCount));
+        return new RedoPublisher<>(this,
+                (repeatCount, terminalNotification) -> terminalNotification.getCause() == null && shouldRepeat.test(repeatCount),
+                executor);
     }
 
     /**
@@ -941,7 +989,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
                 return Completable.completed();
             }
             return repeatWhen.apply(retryCount);
-        }, false);
+        }, false, executor);
     }
 
     /**
@@ -961,6 +1009,8 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
 
     /**
      * Creates a new {@link Publisher} that emits {@code value} to its {@link Subscriber} and then {@link Subscriber#onComplete()}.
+     * This method will use a global {@link Executor} to deliver signals to the {@link Subscriber}.
+     * Use {@link #just(Object, Executor)} to override this behavior with a custom {@link Executor}.
      *
      * @param value Value that the returned {@link Publisher} will emit.
      * @param <T> Type of items emitted by the returned {@link Publisher}.
@@ -968,14 +1018,51 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @return A new {@link Publisher} that emits {@code value} to its {@link Subscriber} and then {@link Subscriber#onComplete()}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/just.html">ReactiveX just operator.</a>
+     * @deprecated Use {@link #just(Object, Executor)}.
      */
+    @Deprecated
     public static <T> Publisher<T> just(T value) {
-        return new JustPublisher<>(value);
+        return just(value, immediate());
+    }
+
+    /**
+     * Creates a new {@link Publisher} that emits {@code value} to its {@link Subscriber} and then {@link Subscriber#onComplete()}.
+     *
+     * @param value Value that the returned {@link Publisher} will emit.
+     * @param <T> Type of items emitted by the returned {@link Publisher}.
+     * @param executor {@link Executor} for the returned {@link Publisher}.
+     *
+     * @return A new {@link Publisher} that emits {@code value} to its {@link Subscriber} and then {@link Subscriber#onComplete()}.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/just.html">ReactiveX just operator.</a>
+     */
+    public static <T> Publisher<T> just(T value, Executor executor) {
+        return new JustPublisher<>(value, executor);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that emits all {@code values} to its {@link Subscriber} and then {@link Subscriber#onComplete()}.
+     * This method will use a global {@link Executor} to deliver signals to the {@link Subscriber}.
+     * Use {@link #from(Executor, Object[])} to override this behavior with a custom {@link Executor}.
+     *
+     * @param values Values that the returned {@link Publisher} will emit.
+     * @param <T> Type of items emitted by the returned {@link Publisher}.
+     *
+     * @return A new {@link Publisher} that emits all {@code values} to its {@link Subscriber} and then {@link Subscriber#onComplete()}.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/from.html">ReactiveX from operator.</a>
+     * @deprecated Use {@link #from(Executor, Object[])}.
+     */
+    @Deprecated
+    @SafeVarargs
+    public static <T> Publisher<T> from(T... values) {
+        return from(immediate(), values);
     }
 
     /**
      * Creates a new {@link Publisher} that emits all {@code values} to its {@link Subscriber} and then {@link Subscriber#onComplete()}.
      *
+     * @param executor {@link Executor} for the returned {@link Publisher}.
      * @param values Values that the returned {@link Publisher} will emit.
      * @param <T> Type of items emitted by the returned {@link Publisher}.
      *
@@ -984,47 +1071,101 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/from.html">ReactiveX from operator.</a>
      */
     @SafeVarargs
-    public static <T> Publisher<T> from(T... values) {
-        return new FromArrayPublisher<>(values);
+    public static <T> Publisher<T> from(Executor executor, T... values) {
+        return new FromArrayPublisher<>(executor, values);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that completes when subscribed without emitting any item to its {@link Subscriber}.
+     * This method will use a global {@link Executor} to deliver signals to the {@link Subscriber}.
+     * Use {@link #empty(Executor)} to override this behavior with a custom {@link Executor}.
+     *
+     * @param <T> Type of items emitted by the returned {@link Publisher}.
+     * @return A new {@link Publisher} that completes when subscribed without emitting any item to its {@link Subscriber}.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/empty-never-throw.html">ReactiveX empty operator.</a>
+     * @deprecated Use {@link #empty(Executor)}.
+     */
+    @Deprecated
+    @SuppressWarnings("unchecked")
+    public static <T> Publisher<T> empty() {
+        return empty(immediate());
     }
 
     /**
      * Creates a new {@link Publisher} that completes when subscribed without emitting any item to its {@link Subscriber}.
      *
+     * @param executor {@link Executor} for the returned {@link Publisher}.
      * @param <T> Type of items emitted by the returned {@link Publisher}.
      * @return A new {@link Publisher} that completes when subscribed without emitting any item to its {@link Subscriber}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/empty-never-throw.html">ReactiveX empty operator.</a>
      */
     @SuppressWarnings("unchecked")
-    public static <T> Publisher<T> empty() {
-        return (Publisher<T>) EmptyPublisher.INSTANCE;
+    public static <T> Publisher<T> empty(Executor executor) {
+        return new EmptyPublisher<>(executor);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that never emits any item to its {@link Subscriber} and never call any terminal methods on it.
+     * This method will use a global {@link Executor} to deliver signals to the {@link Subscriber}.
+     * Use {@link #never(Executor)} to override this behavior with a custom {@link Executor}.
+     *
+     * @param <T> Type of items emitted by the returned {@link Publisher}.
+     * @return A new {@link Publisher} that never emits any item to its {@link Subscriber} and never call any terminal methods on it.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/empty-never-throw.html">ReactiveX never operator.</a>
+     * @deprecated Use {@link #never(Executor)}.
+     */
+    @Deprecated
+    @SuppressWarnings("unchecked")
+    public static <T> Publisher<T> never() {
+        return never(immediate());
     }
 
     /**
      * Creates a new {@link Publisher} that never emits any item to its {@link Subscriber} and never call any terminal methods on it.
      *
+     * @param executor {@link Executor} for the returned {@link Publisher}.
      * @param <T> Type of items emitted by the returned {@link Publisher}.
      * @return A new {@link Publisher} that never emits any item to its {@link Subscriber} and never call any terminal methods on it.
      *
      * @see <a href="http://reactivex.io/documentation/operators/empty-never-throw.html">ReactiveX never operator.</a>
      */
     @SuppressWarnings("unchecked")
-    public static <T> Publisher<T> never() {
-        return (Publisher<T>) NeverPublisher.INSTANCE;
+    public static <T> Publisher<T> never(Executor executor) {
+        return new NeverPublisher<>(executor);
     }
 
     /**
      * Creates a new {@link Publisher} that terminates its {@link Subscriber} with an error without emitting any item to it.
+     * This method will use a global {@link Executor} to deliver signals to the {@link Subscriber}.
+     * Use {@link #empty(Executor)} to override this behavior with a custom {@link Executor}.
      *
      * @param <T> Type of items emitted by the returned {@link Publisher}.
      * @param cause The {@link Throwable} that is used to terminate the {@link Subscriber}.
      * @return A new {@link Publisher} that terminates its {@link Subscriber} with an error without emitting any item to it.
      *
      * @see <a href="http://reactivex.io/documentation/operators/empty-never-throw.html">ReactiveX error operator.</a>
+     * @deprecated Use {@link #error(Throwable, Executor)}.
      */
+    @Deprecated
     public static <T> Publisher<T> error(Throwable cause) {
-        return new ErrorPublisher<>(cause);
+        return error(cause, immediate());
+    }
+
+    /**
+     * Creates a new {@link Publisher} that terminates its {@link Subscriber} with an error without emitting any item to it.
+     *
+     * @param executor {@link Executor} for the returned {@link Publisher}.
+     * @param <T> Type of items emitted by the returned {@link Publisher}.
+     * @param cause The {@link Throwable} that is used to terminate the {@link Subscriber}.
+     * @return A new {@link Publisher} that terminates its {@link Subscriber} with an error without emitting any item to it.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/empty-never-throw.html">ReactiveX error operator.</a>
+     */
+    public static <T> Publisher<T> error(Throwable cause, Executor executor) {
+        return new ErrorPublisher<>(cause, executor);
     }
 
     /**
@@ -1045,14 +1186,16 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * Returns a {@link Publisher} that wraps a {@link org.reactivestreams.Publisher}.
      *
      * @param publisher {@link org.reactivestreams.Publisher} to wrap.
+     * @param executor {@link Executor} for the returned {@link Publisher}.
+     *
      * @param <T> Type of items emitted by the returned {@link Publisher}.
      * @return a new {@link Publisher} that wraps a {@link org.reactivestreams.Publisher}.
      */
-    public static <T> Publisher<T> fromReactiveStreamsPublisher(org.reactivestreams.Publisher<T> publisher) {
+    public static <T> Publisher<T> fromReactiveStreamsPublisher(org.reactivestreams.Publisher<T> publisher, Executor executor) {
         if (publisher instanceof Publisher) {
             return (Publisher<T>) publisher;
         }
-        return new ReactiveStreamsPublisher<>(publisher);
+        return new ReactiveStreamsPublisher<>(publisher, executor);
     }
 
     /**

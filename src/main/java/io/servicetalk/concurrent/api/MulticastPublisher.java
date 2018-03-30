@@ -37,7 +37,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.NULL_TOKEN;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static java.lang.Math.min;
 
-final class MulticastPublisher<T> extends Publisher<T> implements Subscriber<T> {
+final class MulticastPublisher<T> extends FailRegularSubscribePublisher<T> implements Subscriber<T> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MulticastPublisher.class);
 
@@ -88,11 +88,12 @@ final class MulticastPublisher<T> extends Publisher<T> implements Subscriber<T> 
     private final AtomicReferenceArray<Subscriber<? super T>> subscribers;
     private final Publisher<T> original;
 
-    MulticastPublisher(Publisher<T> original, int expectedSubscribers) {
-        this(original, expectedSubscribers, 10);
+    MulticastPublisher(Publisher<T> original, int expectedSubscribers, Executor executor) {
+        this(original, expectedSubscribers, 10, executor);
     }
 
-    MulticastPublisher(Publisher<T> original, int expectedSubscribers, int maxQueueSize) {
+    MulticastPublisher(Publisher<T> original, int expectedSubscribers, int maxQueueSize, Executor executor) {
+        super(executor);
         if (expectedSubscribers < 2) {
             throw new IllegalArgumentException("expectedSubscribers: " + expectedSubscribers + " (expected >=2)");
         }
@@ -106,7 +107,7 @@ final class MulticastPublisher<T> extends Publisher<T> implements Subscriber<T> 
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber) {
+    void handleSubscribe(Subscriber<? super T> subscriber, InOrderExecutor inOrderExecutor) {
         for (;;) {
             final int subscriberCount = this.subscriberCount;
             if (subscriberCount == subscribers.length() || subscriberCount < 0) {
@@ -118,7 +119,7 @@ final class MulticastPublisher<T> extends Publisher<T> implements Subscriber<T> 
             if (subscriberCountUpdater.compareAndSet(this, subscriberCount, subscriberCount + 1)) {
                 subscribers.set(subscriberCount, new MulticastSubscriber<>(this, subscriber, subscriberCount));
                 if (subscriberCount == subscribers.length() - 1) {
-                    original.subscribe(this);
+                    original.subscribe(this, inOrderExecutor);
                 }
                 break;
             }
