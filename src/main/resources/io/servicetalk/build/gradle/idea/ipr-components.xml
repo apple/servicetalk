@@ -1,5 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <components>
+  <component name="CopyrightManager" default="ServiceTalk">
+    <copyright>
+      <option name="notice" value="Copyright © &amp;#36;today.year Apple Inc. and the ServiceTalk project authors&#10;&#10;Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);&#10;you may not use this file except in compliance with the License.&#10;You may obtain a copy of the License at&#10;&#10;  http://www.apache.org/licenses/LICENSE-2.0&#10;&#10;Unless required by applicable law or agreed to in writing, software&#10;distributed under the License is distributed on an &quot;AS IS&quot; BASIS,&#10;WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.&#10;See the License for the specific language governing permissions and&#10;limitations under the License."/>
+      <option name="myName" value="ServiceTalk"/>
+    </copyright>
+    <LanguageOptions name="__TEMPLATE__">
+      <option name="addBlankAfter" value="false"/>
+    </LanguageOptions>
+    <LanguageOptions name="Properties">
+      <option name="fileTypeOverride" value="3"/>
+    </LanguageOptions>
+  </component>
   <component name="NullableNotNullManager">
     <option name="myDefaultNullable" value="javax.annotation.Nullable"/>
     <option name="myDefaultNotNull" value="javax.annotation.Nonnull"/>

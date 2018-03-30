@@ -121,23 +121,6 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
         idea.workspace.iws.withXml { XmlProvider provider ->
           appendNodes(provider, getClass().getResourceAsStream("idea/iws-components.xml"))
         }
-
-        // This runs for every module, but the files are written to the correct location, but multiple times.
-        idea.project.ipr {
-          def resources = ["fileTemplates/includes/License.java",
-                   "fileTemplates/internal/AnnotationType.java",
-                   "fileTemplates/internal/Class.java",
-                   "fileTemplates/internal/Enum.java",
-                   "fileTemplates/internal/Interface.java",
-                   "fileTemplates/internal/package-info.java"]
-
-          // This is a bit of a hack. It depends on running gradle from the directory that you want to use as the
-          // IntelliJ IDEA project dir.
-          def folder = new File(".").canonicalFile
-          for (def resource : resources) {
-            copyResource("idea/" + resource, folder, resource)
-          }
-        }
       }
     }
   }
@@ -175,8 +158,40 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
         strictCheck = true
         mapping {
           java = 'SLASHSTAR_STYLE'
+          gradle = 'SLASHSTAR_STYLE'
+        }
+        headerDefinitions {
+          // Redefine XML style to align with Intellij IDEA format
+          // doc: https://github.com/hierynomus/license-gradle-plugin#creating-custom-header-definitions
+          xml_style {
+            firstLine = '<!--'
+            beforeEachLine = '  ~ '
+            endLine = '  -->'
+            skipLinePattern = '^<\\?xml.*>$'
+            firstLineDetectionPattern = '(\\\\s|\\\\t)*<!--.*$'
+            lastLineDetectionPattern = '.*-->(\\\\s|\\\\t)*$'
+            allowBlankLines = true
+            isMultiline = true
+          }
         }
       }
+
+      // Include some files from the root directory
+      // doc: https://github.com/hierynomus/license-gradle-plugin#running-on-a-non-java-project
+      def rootFileTree = fileTree("$rootDir") {
+        includes = ["*.gradle", "*.properties", "gradle/**"]
+        excludes = ["gradle/wrapper/**"]
+      }
+
+      project.task("licenseRoot", type: com.hierynomus.gradle.license.tasks.LicenseCheck) {
+        source = rootFileTree
+      }
+      tasks.license.dependsOn licenseRoot
+
+      project.task("licenseFormatRoot", type: com.hierynomus.gradle.license.tasks.LicenseFormat) {
+        source = rootFileTree
+      }
+      tasks.licenseFormat.dependsOn licenseFormatRoot
     }
   }
 
