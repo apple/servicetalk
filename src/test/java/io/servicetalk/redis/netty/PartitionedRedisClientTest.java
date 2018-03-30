@@ -30,6 +30,8 @@ import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.redis.api.PartitionedRedisClient;
+import io.servicetalk.redis.api.PubSubRedisConnection;
+import io.servicetalk.redis.api.PubSubRedisMessage;
 import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisCommander;
 import io.servicetalk.redis.api.RedisData;
@@ -47,6 +49,7 @@ import org.junit.rules.Timeout;
 import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,6 +59,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.INFO;
+import static io.servicetalk.redis.api.RedisProtocolSupport.CommandFlag.PUBSUB;
 import static io.servicetalk.redis.api.RedisProtocolSupport.CommandFlag.WRITE;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
@@ -65,6 +69,7 @@ import static java.time.Duration.ofSeconds;
 import static java.util.Comparator.comparingInt;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -113,7 +118,7 @@ public class PartitionedRedisClientTest {
 
         partitionAttributesBuilderFactory = command -> {
             final PartitionAttributesBuilder partitionAttributesBuilder;
-            if (command.hasFlag(WRITE)) {
+            if (command.hasFlag(WRITE) || command.hasFlag(PUBSUB)) {
                 partitionAttributesBuilder = new DefaultPartitionAttributesBuilder(2);
                 partitionAttributesBuilder.add(MASTER_KEY, true);
             } else {
@@ -144,7 +149,8 @@ public class PartitionedRedisClientTest {
                 }
             };
         };
-        client = new DefaultPartitionedRedisClientBuilder<InetSocketAddress>((eventPublisher, connectionFactory) -> new RoundRobinLoadBalancer<>(eventPublisher, connectionFactory, comparingInt(Object::hashCode)),
+        client = new DefaultPartitionedRedisClientBuilder<InetSocketAddress>((eventPublisher, connectionFactory) ->
+                new RoundRobinLoadBalancer<>(eventPublisher, connectionFactory, comparingInt(Object::hashCode)),
                 partitionAttributesBuilderFactory)
                 .setMaxPipelinedRequests(10)
                 .setPingPeriod(ofSeconds(1))
@@ -284,16 +290,42 @@ public class PartitionedRedisClientTest {
     @Test
     public void requestsAreRetryable() throws Exception {
         RedisCommander commander = client.asCommander();
-        assertThat(awaitIndefinitely(commander.mset("key1", "val1", "key3", "val3", "key5", "val5")), is("OK"));
+
+        Single<String> msetCommand = commander.mset("key1", "val1", "key3", "val3", "key5", "val5");
+        assertThat(awaitIndefinitely(msetCommand), is("OK"));
+
         sendHost1ServiceDiscoveryEvent(false);
 
-        assertThat(awaitIndefinitely(commander.mget("key1", "key3", "key5").retry((i, t) -> {
-            if (i > 1 || !(t instanceof UnknownPartitionException)) {
-                return false;
-            }
-            sendHost1ServiceDiscoveryEvent(true);
-            return true;
-        })), contains("val1", "val3", "val5"));
+        Single<List<Object>> mgetCommand = commander.mget("key1", "key3", "key5")
+                .retry((i, t) -> {
+                    if (i > 1 || !(t instanceof UnknownPartitionException)) {
+                        return false;
+                    }
+                    sendHost1ServiceDiscoveryEvent(true);
+                    return true;
+                });
+        assertThat(awaitIndefinitely(mgetCommand), contains("val1", "val3", "val5"));
+    }
+
+    @Test
+    public void reservedConnectionRequestsAreRetryable() throws Exception {
+
+        RedisCommander commander = client.asCommander();
+
+        sendHost1ServiceDiscoveryEvent(false);
+
+        // SUBSCRIBE uses reservedConnection()
+        Single<PubSubRedisMessage.Pong<String>> subscribeAndPingCommand = commander.subscribe("somechan")
+                .flatmap(PubSubRedisConnection::ping)
+                .retry((i, t) -> {
+                    if (i > 1 || !(t instanceof UnknownPartitionException)) {
+                        return false;
+                    }
+                    sendHost1ServiceDiscoveryEvent(true);
+                    return true;
+                });
+
+        assertThat(awaitIndefinitely(subscribeAndPingCommand).getValue(), equalTo("PONG"));
     }
 
     private void sendHost1ServiceDiscoveryEvent(boolean available) {

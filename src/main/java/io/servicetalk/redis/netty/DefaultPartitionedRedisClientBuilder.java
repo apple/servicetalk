@@ -328,14 +328,29 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress> implements Pa
                     });
         }
 
+        @Nullable
+        private RedisClient lookupPartitionedClientOrFailSubscriber(PartitionAttributes selector, Single.Subscriber<?> subscriber) {
+            final Partition partition = partitionMap.getPartition(selector);
+            final RedisClient client;
+            if (partition == null || (client = partition.getClient()) == null) {
+                subscriber.onSubscribe(IGNORE_CANCEL);
+                subscriber.onError(newUnknownPartitionException(selector, partition));
+                return null;
+            }
+            return client;
+        }
+
         @Override
         public Single<ReservedRedisConnection> reserveConnection(PartitionAttributes partitionSelector, RedisRequest request) {
-            Partition partition = partitionMap.getPartition(partitionSelector);
-            if (partition == null) {
-                return Single.error(new UnknownPartitionException(partitionSelector, "partition [" + partitionSelector + "] not found"));
-            }
-            RedisClient client = partition.getClient();
-            return client != null ? client.reserveConnection(request) : Single.error(new UnknownPartitionException(partitionSelector, "no client for partition [" + partitionSelector + "]"));
+            return new Single<ReservedRedisConnection>() {
+                @Override
+                protected void handleSubscribe(Subscriber<? super ReservedRedisConnection> subscriber) {
+                    RedisClient client = lookupPartitionedClientOrFailSubscriber(partitionSelector, subscriber);
+                    if (client != null) {
+                        client.reserveConnection(request).subscribe(subscriber);
+                    }
+                }
+            };
         }
 
         @Override
@@ -370,14 +385,10 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress> implements Pa
             return new Single<R>() {
                 @Override
                 protected void handleSubscribe(Subscriber<? super R> subscriber) {
-                    final Partition partition = partitionMap.getPartition(partitionSelector);
-                    final RedisClient client;
-                    if (partition == null || (client = partition.getClient()) == null) {
-                        subscriber.onSubscribe(IGNORE_CANCEL);
-                        subscriber.onError(newUnknownPartitionException(partitionSelector, partition));
-                        return;
+                    RedisClient client = lookupPartitionedClientOrFailSubscriber(partitionSelector, subscriber);
+                    if (client != null) {
+                        client.request(request, responseType).subscribe(subscriber);
                     }
-                    client.request(request, responseType).subscribe(subscriber);
                 }
             };
         }
