@@ -1,3 +1,22 @@
+/*
+ * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+plugins {
+  id "com.github.hierynomus.license" version "0.14.0"
+}
+
 repositories {
   maven {
     url "https://plugins.gradle.org/m2/"
@@ -15,6 +34,42 @@ dependencies {
   compile "gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.14.0"
   compile "gradle.plugin.com.github.spotbugs:spotbugs-gradle-plugin:1.6.1"
 }
+
+license {
+  header = file("$rootDir/src/main/resources/io/servicetalk/build/gradle/license/HEADER.txt")
+  strictCheck = true
+  mapping {
+    java = 'SLASHSTAR_STYLE'
+    gradle = 'SLASHSTAR_STYLE'
+  }
+  headerDefinitions {
+    xml_style {
+      firstLine = '<!--'
+      beforeEachLine = '  ~ '
+      endLine = '  -->'
+      skipLinePattern = '^<\\?xml.*>$'
+      firstLineDetectionPattern = '(\\\\s|\\\\t)*<!--.*$'
+      lastLineDetectionPattern = '.*-->(\\\\s|\\\\t)*$'
+      allowBlankLines = true
+      isMultiline = true
+    }
+  }
+}
+
+def rootFileTree = fileTree("$rootDir") {
+  includes = ["*.gradle", "*.properties", "gradle/**"]
+  excludes = ["gradle/wrapper/**"]
+}
+
+task licenseRoot(type: com.hierynomus.gradle.license.tasks.LicenseCheck) {
+  source = rootFileTree
+}
+tasks.license.dependsOn tasks.licenseRoot
+
+task licenseFormatRoot(type: com.hierynomus.gradle.license.tasks.LicenseFormat) {
+  source = rootFileTree
+}
+tasks.licenseFormat.dependsOn tasks.licenseFormatRoot
 
 jar {
   manifest {
