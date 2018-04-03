@@ -31,7 +31,7 @@ import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.http.router.predicate.Placeholders.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 

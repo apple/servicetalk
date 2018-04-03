@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpQuery;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpService;
@@ -35,14 +36,14 @@ import org.mockito.stubbing.Answer;
 import java.util.Iterator;
 import java.util.Spliterator;
 
-import static io.servicetalk.http.router.predicate.Placeholders.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static java.util.Arrays.asList;
 import static org.mockito.Mockito.when;
 
 public abstract class BaseHttpPredicateRouterBuilderTest {
 
     @Rule
-    public final MockitoRule rule = MockitoJUnit.rule();
+    public final MockitoRule rule = MockitoJUnit.rule().silent();
     @Rule
     public final ExpectedException expected = ExpectedException.none();
     @Rule
@@ -57,12 +58,15 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
     @Mock
     HttpHeaders headers;
     @Mock
+    HttpQuery query;
+    @Mock
     Single<HttpResponse<HttpPayloadChunk>> responseA, responseB, responseC, responseD, responseE, fallbackResponse;
 
     @Before
     public void setUp() {
         when(request.getVersion()).thenReturn(HTTP_1_1);
         when(request.getHeaders()).thenReturn(headers);
+        when(request.parseQuery()).thenReturn(query);
 
         when(serviceA.handle(ctx, request)).thenReturn(responseA);
         when(serviceB.handle(ctx, request)).thenReturn(responseB);
@@ -73,12 +77,12 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
     }
 
     @SuppressWarnings("unchecked")
-    <T> Answer<Iterator<T>> answerIteratorOf(T... values) {
+    <T> Answer<Iterator<T>> answerIteratorOf(final T... values) {
         return invocation -> asList(values).iterator();
     }
 
     @SuppressWarnings("unchecked")
-    <T> Answer<Spliterator<T>> answerSpliteratorOf(T... values) {
+    <T> Answer<Spliterator<T>> answerSpliteratorOf(final T... values) {
         return invocation -> asList(values).spliterator();
     }
 }

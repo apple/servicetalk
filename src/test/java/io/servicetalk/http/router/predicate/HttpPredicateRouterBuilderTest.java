@@ -34,11 +34,11 @@ import javax.net.ssl.SSLSession;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.Await.await;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.http.router.predicate.Placeholders.GET;
-import static io.servicetalk.http.router.predicate.Placeholders.HTTP_1_0;
-import static io.servicetalk.http.router.predicate.Placeholders.HTTP_1_1;
-import static io.servicetalk.http.router.predicate.Placeholders.POST;
-import static io.servicetalk.http.router.predicate.Placeholders.PUT;
+import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_0;
+import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
+import static io.servicetalk.http.api.HttpRequestMethods.GET;
+import static io.servicetalk.http.api.HttpRequestMethods.POST;
+import static io.servicetalk.http.api.HttpRequestMethods.PUT;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static org.junit.Assert.assertEquals;
@@ -235,8 +235,8 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
     @Test
     public void testWhenBiPredicate() {
-        SocketAddress addr1 = mock(SocketAddress.class);
-        SocketAddress addr2 = mock(SocketAddress.class);
+        final SocketAddress addr1 = mock(SocketAddress.class);
+        final SocketAddress addr2 = mock(SocketAddress.class);
         final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
                 .when((ctx, req) -> ctx.getRemoteAddress() == addr1).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)

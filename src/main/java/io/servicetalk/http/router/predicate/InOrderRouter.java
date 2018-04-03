@@ -62,7 +62,7 @@ final class InOrderRouter<I, O> implements HttpService<I, O> {
 
     @Override
     public Single<HttpResponse<O>> handle(final ConnectionContext ctx, final HttpRequest<I> request) {
-        for (PredicateServicePair<I, O> pair : predicateServicePairs) {
+        for (final PredicateServicePair<I, O> pair : predicateServicePairs) {
             if (pair.getPredicate().test(ctx, request)) {
                 return pair.getService().handle(ctx, request);
             }

@@ -36,10 +36,10 @@ public class HttpPredicateRouterBuilderQueryTest extends BaseHttpPredicateRouter
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
 
-        when(request.getQueryValues("page")).then(answerIteratorOf("home"));
+        when(query.getAll("page")).then(answerIteratorOf("home"));
         assertSame(responseA, service.handle(ctx, request));
 
-        when(request.getQueryValues("page")).thenReturn(emptyIterator());
+        when(query.getAll("page")).thenReturn(emptyIterator());
         assertSame(fallbackResponse, service.handle(ctx, request));
     }
 
@@ -50,19 +50,19 @@ public class HttpPredicateRouterBuilderQueryTest extends BaseHttpPredicateRouter
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
 
-        when(request.getQueryValues("page")).then(answerIteratorOf("home"));
+        when(query.getAll("page")).then(answerIteratorOf("home"));
         assertSame(responseA, service.handle(ctx, request));
 
-        when(request.getQueryValues("page")).then(answerIteratorOf("home", "signUp"));
+        when(query.getAll("page")).then(answerIteratorOf("home", "signUp"));
         assertSame(responseA, service.handle(ctx, request));
 
-        when(request.getQueryValues("page")).then(answerIteratorOf("signUp", "home"));
+        when(query.getAll("page")).then(answerIteratorOf("signUp", "home"));
         assertSame(fallbackResponse, service.handle(ctx, request));
 
-        when(request.getQueryValues("page")).then(answerIteratorOf("signUp"));
+        when(query.getAll("page")).then(answerIteratorOf("signUp"));
         assertSame(fallbackResponse, service.handle(ctx, request));
 
-        when(request.getQueryValues("page")).thenReturn(emptyIterator());
+        when(query.getAll("page")).thenReturn(emptyIterator());
         assertSame(fallbackResponse, service.handle(ctx, request));
     }
 
@@ -73,19 +73,19 @@ public class HttpPredicateRouterBuilderQueryTest extends BaseHttpPredicateRouter
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
 
-        when(request.getQueryValues("page")).then(answerIteratorOf("signUp"));
+        when(query.getAll("page")).then(answerIteratorOf("signUp"));
         assertSame(responseA, service.handle(ctx, request));
 
-        when(request.getQueryValues("page")).then(answerIteratorOf("signUp", "home"));
+        when(query.getAll("page")).then(answerIteratorOf("signUp", "home"));
         assertSame(responseA, service.handle(ctx, request));
 
-        when(request.getQueryValues("page")).then(answerIteratorOf("SignUp", "home"));
+        when(query.getAll("page")).then(answerIteratorOf("SignUp", "home"));
         assertSame(fallbackResponse, service.handle(ctx, request));
 
-        when(request.getQueryValues("page")).then(answerIteratorOf("home", "signUp"));
+        when(query.getAll("page")).then(answerIteratorOf("home", "signUp"));
         assertSame(fallbackResponse, service.handle(ctx, request));
 
-        when(request.getQueryValues("page")).then(answerIteratorOf("home"));
+        when(query.getAll("page")).then(answerIteratorOf("home"));
         assertSame(fallbackResponse, service.handle(ctx, request));
     }
 
@@ -96,19 +96,19 @@ public class HttpPredicateRouterBuilderQueryTest extends BaseHttpPredicateRouter
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
 
-        when(request.getQueryValues("page")).then(answerIteratorOf("signUp"));
+        when(query.getAll("page")).then(answerIteratorOf("signUp"));
         assertSame(responseA, service.handle(ctx, request));
 
-        when(request.getQueryValues("page")).then(answerIteratorOf("signUp", "home"));
+        when(query.getAll("page")).then(answerIteratorOf("signUp", "home"));
         assertSame(responseA, service.handle(ctx, request));
 
-        when(request.getQueryValues("page")).then(answerIteratorOf("SignUp", "home"));
+        when(query.getAll("page")).then(answerIteratorOf("SignUp", "home"));
         assertSame(responseA, service.handle(ctx, request));
 
-        when(request.getQueryValues("page")).then(answerIteratorOf("home", "signUp"));
+        when(query.getAll("page")).then(answerIteratorOf("home", "signUp"));
         assertSame(fallbackResponse, service.handle(ctx, request));
 
-        when(request.getQueryValues("page")).then(answerIteratorOf("home"));
+        when(query.getAll("page")).then(answerIteratorOf("home"));
         assertSame(fallbackResponse, service.handle(ctx, request));
     }
 
@@ -119,16 +119,16 @@ public class HttpPredicateRouterBuilderQueryTest extends BaseHttpPredicateRouter
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
 
-        when(request.getQueryValues("page")).then(answerIteratorOf("home"));
+        when(query.getAll("page")).then(answerIteratorOf("home"));
         assertSame(responseA, service.handle(ctx, request));
 
-        when(request.getQueryValues("page")).then(answerIteratorOf("signUp", "home"));
+        when(query.getAll("page")).then(answerIteratorOf("signUp", "home"));
         assertSame(responseA, service.handle(ctx, request));
 
-        when(request.getQueryValues("page")).then(answerIteratorOf("signUp"));
+        when(query.getAll("page")).then(answerIteratorOf("signUp"));
         assertSame(fallbackResponse, service.handle(ctx, request));
 
-        when(request.getQueryValues("page")).thenReturn(emptyIterator());
+        when(query.getAll("page")).thenReturn(emptyIterator());
         assertSame(fallbackResponse, service.handle(ctx, request));
     }
 }
