@@ -7,7 +7,6 @@ hs_err_pid*
 /*.ipr
 /*.iws
 /out/
-/fileTemplates/
 
 # gradle
 /.gradle/
