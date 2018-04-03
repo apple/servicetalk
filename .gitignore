@@ -2,22 +2,25 @@
 hs_err_pid*
 
 # intellij
-.idea
-*.iml
-*.ipr
-*.iws
-out/
+/.idea
+/*.iml
+/*.ipr
+/*.iws
+/out/
+/fileTemplates/
 
 # gradle
-.gradle/
-build/
-buildSrc/build
+/.gradle/
+/.out/
+/buildSrc/build
+/.dist/
 
 # Eclipse
-bin/
-.settings/
-.project
-.classpath
+/bin/
+/.settings/
+/.project
+/.classpath
+/build/
 
 # Mac
 .DS_Store
