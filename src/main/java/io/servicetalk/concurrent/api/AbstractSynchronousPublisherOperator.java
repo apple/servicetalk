@@ -32,7 +32,7 @@ import static java.util.Objects.requireNonNull;
  * @param <R> Type of {@link Publisher} returned by the operator.
  * @see AbstractAsynchronousPublisherOperator
  */
-abstract class AbstractSynchronousPublisherOperator<T, R> extends FailRegularSubscribePublisher<R>
+abstract class AbstractSynchronousPublisherOperator<T, R> extends AbstractNoHandleSubscribePublisher<R>
         implements PublisherOperator<T, R> {
 
     private final Publisher<T> original;

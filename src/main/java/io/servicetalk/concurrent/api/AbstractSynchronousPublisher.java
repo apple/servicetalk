@@ -22,7 +22,7 @@ import org.reactivestreams.Subscriber;
  *
  * @param <T> Type of items emitted.
  */
-abstract class AbstractSynchronousPublisher<T> extends FailRegularSubscribePublisher<T> {
+abstract class AbstractSynchronousPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
     AbstractSynchronousPublisher(Executor executor) {
         super(executor);

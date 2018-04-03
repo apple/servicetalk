@@ -25,9 +25,9 @@ import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRI
  *
  * @param <T> Type of items emitted.
  */
-abstract class FailRegularSubscribePublisher<T> extends Publisher<T> {
+abstract class AbstractNoHandleSubscribePublisher<T> extends Publisher<T> {
 
-    FailRegularSubscribePublisher(Executor executor) {
+    AbstractNoHandleSubscribePublisher(Executor executor) {
         super(executor);
     }
 

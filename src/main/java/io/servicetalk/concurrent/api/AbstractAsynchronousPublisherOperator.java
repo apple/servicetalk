@@ -30,7 +30,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @see AbstractSynchronousPublisherOperator
  */
-abstract class AbstractAsynchronousPublisherOperator<T, R> extends FailRegularSubscribePublisher<R>
+abstract class AbstractAsynchronousPublisherOperator<T, R> extends AbstractNoHandleSubscribePublisher<R>
         implements PublisherOperator<T, R> {
 
     private final Publisher<T> original;

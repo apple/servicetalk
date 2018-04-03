@@ -19,7 +19,7 @@ import org.reactivestreams.Subscriber;
 
 import static java.util.Objects.requireNonNull;
 
-final class ReactiveStreamsPublisher<T> extends FailRegularSubscribePublisher<T> {
+final class ReactiveStreamsPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
     private final org.reactivestreams.Publisher<T> publisher;
 

@@ -19,7 +19,7 @@ import org.reactivestreams.Subscriber;
 
 import static java.util.Objects.requireNonNull;
 
-abstract class AbstractRedoPublisherOperator<T> extends FailRegularSubscribePublisher<T> {
+abstract class AbstractRedoPublisherOperator<T> extends AbstractNoHandleSubscribePublisher<T> {
 
     private final Publisher<T> original;
 

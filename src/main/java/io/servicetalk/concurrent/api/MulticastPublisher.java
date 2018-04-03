@@ -37,7 +37,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.NULL_TOKEN;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static java.lang.Math.min;
 
-final class MulticastPublisher<T> extends FailRegularSubscribePublisher<T> implements Subscriber<T> {
+final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> implements Subscriber<T> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MulticastPublisher.class);
 
