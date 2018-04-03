@@ -28,17 +28,17 @@ final class EmptyHttpCookies implements HttpCookies {
 
     @Nullable
     @Override
-    public HttpCookie getCookie(String name) {
+    public HttpCookie getCookie(CharSequence name) {
         return null;
     }
 
     @Override
-    public Iterator<? extends HttpCookie> getCookies(String name) {
+    public Iterator<? extends HttpCookie> getCookies(CharSequence name) {
         return emptyIterator();
     }
 
     @Override
-    public Iterator<? extends HttpCookie> getCookies(String name, String domain, String path) {
+    public Iterator<? extends HttpCookie> getCookies(CharSequence name, CharSequence domain, CharSequence path) {
         return emptyIterator();
     }
 
@@ -48,12 +48,12 @@ final class EmptyHttpCookies implements HttpCookies {
     }
 
     @Override
-    public boolean removeCookies(String name) {
+    public boolean removeCookies(CharSequence name) {
         return false;
     }
 
     @Override
-    public boolean removeCookies(String name, String domain, String path) {
+    public boolean removeCookies(CharSequence name, CharSequence domain, CharSequence path) {
         return false;
     }
 

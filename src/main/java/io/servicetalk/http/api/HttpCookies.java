@@ -31,14 +31,14 @@ public interface HttpCookies extends Iterable<HttpCookie> {
      * @return a {@link HttpCookie} identified by {@code name}.
      */
     @Nullable
-    HttpCookie getCookie(String name);
+    HttpCookie getCookie(CharSequence name);
 
     /**
      * Get the {@link HttpCookie}s with the <a href="https://tools.ietf.org/html/rfc6265#section-4.2.2">same name</a>.
      * @param name the <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-name</a> of the {@link HttpCookie}s to get.
      * @return the {@link HttpCookie}s with the <a href="https://tools.ietf.org/html/rfc6265#section-4.2.2">same name</a>.
      */
-    Iterator<? extends HttpCookie> getCookies(String name);
+    Iterator<? extends HttpCookie> getCookies(CharSequence name);
 
     /**
      * Get the {@link HttpCookie}s with the <a href="https://tools.ietf.org/html/rfc6265#section-4.2.2">same name</a>.
@@ -49,7 +49,7 @@ public interface HttpCookies extends Iterable<HttpCookie> {
      *             This value may be matched according to the <a href="https://tools.ietf.org/html/rfc6265#section-5.1.4">Path Matching</a> algorithm.
      * @return the {@link HttpCookie}s with the <a href="https://tools.ietf.org/html/rfc6265#section-4.2.2">same name</a>.
      */
-    Iterator<? extends HttpCookie> getCookies(String name, String domain, String path);
+    Iterator<? extends HttpCookie> getCookies(CharSequence name, CharSequence domain, CharSequence path);
 
     /**
      * Add {@code cookie} to this collection.
@@ -65,7 +65,7 @@ public interface HttpCookies extends Iterable<HttpCookie> {
      * @param name the <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-name</a> of the {@link HttpCookie}s to remove.
      * @return the number of {@link HttpCookie}s removed as a result of this operation.
      */
-    boolean removeCookies(String name);
+    boolean removeCookies(CharSequence name);
 
     /**
      * Remove all {@link HttpCookie} identified by {@code name}.
@@ -76,7 +76,7 @@ public interface HttpCookies extends Iterable<HttpCookie> {
      *             This value may be matched according to the <a href="https://tools.ietf.org/html/rfc6265#section-5.1.4">Path Matching</a> algorithm.
      * @return the number of {@link HttpCookie}s removed as a result of this operation.
      */
-    boolean removeCookies(String name, String domain, String path);
+    boolean removeCookies(CharSequence name, CharSequence domain, CharSequence path);
 
     /**
      * Encode the current state of this {@link HttpCookies} to the {@link HttpHeaders}.

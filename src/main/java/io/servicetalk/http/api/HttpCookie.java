@@ -26,14 +26,14 @@ public interface HttpCookie {
      *
      * @return The name of this {@link HttpCookie}
      */
-    String getName();
+    CharSequence getName();
 
     /**
      * Returns the value of this {@link HttpCookie}.
      *
      * @return The value of this {@link HttpCookie}
      */
-    String getValue();
+    CharSequence getValue();
 
     /**
      * Returns true if the raw value of this {@link HttpCookie},
@@ -49,7 +49,7 @@ public interface HttpCookie {
      * @return The domain of this {@link HttpCookie}
      */
     @Nullable
-    String getDomain();
+    CharSequence getDomain();
 
     /**
      * Returns the path of this {@link HttpCookie}.
@@ -57,7 +57,7 @@ public interface HttpCookie {
      * @return The {@link HttpCookie}'s path
      */
     @Nullable
-    String getPath();
+    CharSequence getPath();
 
     /**
      * Returns the maximum age of this {@link HttpCookie} in seconds if specified.
@@ -72,7 +72,7 @@ public interface HttpCookie {
      * @return the expire date of this {@link HttpCookie} according to <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">Expires</a>.
      */
     @Nullable
-    String getExpires();
+    CharSequence getExpires();
 
     /**
      * Checks to see if this {@link HttpCookie} is secure.
