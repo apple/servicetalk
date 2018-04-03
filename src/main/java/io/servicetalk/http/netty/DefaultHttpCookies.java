@@ -20,20 +20,21 @@ import io.servicetalk.http.api.HttpCookies;
 import io.servicetalk.http.api.HttpHeaders;
 
 import io.netty.util.AsciiString;
-import io.netty.util.NetUtil;
 
 import java.util.Iterator;
 import javax.annotation.Nullable;
 
 import static io.netty.util.AsciiString.contentEqualsIgnoreCase;
 import static io.netty.util.AsciiString.regionMatches;
+import static io.netty.util.NetUtil.isValidIpV4Address;
+import static io.netty.util.NetUtil.isValidIpV6Address;
 import static io.servicetalk.http.netty.HeaderUtils.validateCookieTokenAndHeaderName;
 import static java.lang.Long.parseLong;
 import static java.lang.Math.min;
 import static java.util.Collections.emptyIterator;
 import static java.util.Objects.requireNonNull;
 
-final class DefaultHttpCookies extends MultiMap<String, HttpCookie> implements HttpCookies {
+final class DefaultHttpCookies extends MultiMap<CharSequence, HttpCookie> implements HttpCookies {
     /**
      * An underlying size of 8 has been shown with the current AsciiString hash algorithm to have no collisions with
      * the current set of supported cookie names. If more cookie names are supported, or the hash algorithm changes
@@ -56,7 +57,8 @@ final class DefaultHttpCookies extends MultiMap<String, HttpCookie> implements H
         this(httpHeaders, cookieHeaderName, validateContent, 16);
     }
 
-    DefaultHttpCookies(HttpHeaders httpHeaders, CharSequence cookieHeaderName, boolean validateContent, int arraySizeHint) {
+    DefaultHttpCookies(HttpHeaders httpHeaders, CharSequence cookieHeaderName, boolean validateContent,
+                       int arraySizeHint) {
         super(arraySizeHint);
         this.httpHeaders = httpHeaders;
         this.cookieHeaderName = cookieHeaderName;
@@ -70,23 +72,23 @@ final class DefaultHttpCookies extends MultiMap<String, HttpCookie> implements H
 
     @Nullable
     @Override
-    public HttpCookie getCookie(String name) {
+    public HttpCookie getCookie(CharSequence name) {
         return getValue(name);
     }
 
     @Override
-    public Iterator<? extends HttpCookie> getCookies(String name) {
+    public Iterator<? extends HttpCookie> getCookies(CharSequence name) {
         return getValues(name);
     }
 
     @Override
-    public Iterator<? extends HttpCookie> getCookies(String name, String domain, String path) {
+    public Iterator<? extends HttpCookie> getCookies(CharSequence name, CharSequence domain, CharSequence path) {
         int keyHash = hashCode(name);
-        BucketHead<String, HttpCookie> bucketHead = entries[index(keyHash)];
+        BucketHead<CharSequence, HttpCookie> bucketHead = entries[index(keyHash)];
         if (bucketHead == null) {
             return emptyIterator();
         }
-        MultiMapEntry<String, HttpCookie> e = bucketHead.entry;
+        MultiMapEntry<CharSequence, HttpCookie> e = bucketHead.entry;
         assert e != null;
         do {
             if (e.keyHash == keyHash && equals(name, e.getKey()) &&
@@ -106,26 +108,26 @@ final class DefaultHttpCookies extends MultiMap<String, HttpCookie> implements H
     }
 
     @Override
-    public boolean removeCookies(String name) {
+    public boolean removeCookies(CharSequence name) {
         return removeAll(name);
     }
 
     @Override
-    public boolean removeCookies(String name, String domain, String path) {
+    public boolean removeCookies(CharSequence name, CharSequence domain, CharSequence path) {
         int nameHash = hashCode(name);
         int bucketIndex = index(nameHash);
-        BucketHead<String, HttpCookie> bucketHead = entries[bucketIndex];
+        BucketHead<CharSequence, HttpCookie> bucketHead = entries[bucketIndex];
         if (bucketHead == null) {
             return false;
         }
         final int sizeBefore = size();
-        MultiMapEntry<String, HttpCookie> e = bucketHead.entry;
+        MultiMapEntry<CharSequence, HttpCookie> e = bucketHead.entry;
         assert e != null;
         do {
             if (e.keyHash == nameHash && equals(name, e.getKey()) &&
                     domainMatches(domain, e.value.getDomain()) &&
                     pathMatches(path, e.value.getPath())) {
-                MultiMapEntry<String, HttpCookie> tmpEntry = e;
+                MultiMapEntry<CharSequence, HttpCookie> tmpEntry = e;
                 e = e.bucketNext;
                 removeEntry(bucketHead, tmpEntry, bucketIndex);
             } else {
@@ -143,10 +145,11 @@ final class DefaultHttpCookies extends MultiMap<String, HttpCookie> implements H
     @Override
     public void encodeToHttpHeaders() {
         httpHeaders.remove(cookieHeaderName);
-        BucketHead<String, HttpCookie> currentBucketHead = lastBucketHead;
+        BucketHead<CharSequence, HttpCookie> currentBucketHead = lastBucketHead;
         while (currentBucketHead != null) {
-            StringBuilder sb = new StringBuilder(size() * 32); // educated guess that each cookie will require 30 characters.
-            MultiMapEntry<String, HttpCookie> current = currentBucketHead.entry;
+            // 32 is an educated guess that each cookie will require 30 characters.
+            StringBuilder sb = new StringBuilder(size() * 32);
+            MultiMapEntry<CharSequence, HttpCookie> current = currentBucketHead.entry;
             assert current != null;
             do {
                 sb.append(current.getKey()).append('=');
@@ -186,28 +189,28 @@ final class DefaultHttpCookies extends MultiMap<String, HttpCookie> implements H
     }
 
     @Override
-    protected MultiMapEntry<String, HttpCookie> newEntry(String key, HttpCookie value, int keyHash) {
+    protected MultiMapEntry<CharSequence, HttpCookie> newEntry(CharSequence key, HttpCookie value, int keyHash) {
         return new CookieMultiMapEntry(value, keyHash);
     }
 
     @Override
-    protected int hashCode(String key) {
+    protected int hashCode(CharSequence key) {
         return AsciiString.hashCode(key);
     }
 
     @Override
-    protected boolean equals(String key1, String key2) {
-        return key1.equalsIgnoreCase(key2);
+    protected boolean equals(CharSequence key1, CharSequence key2) {
+        return contentEqualsIgnoreCase(key1, key2);
     }
 
     @Override
-    protected boolean isKeyEqualityCompatible(MultiMap<? extends String, ? extends HttpCookie> multiMap) {
+    protected boolean isKeyEqualityCompatible(MultiMap<? extends CharSequence, ? extends HttpCookie> multiMap) {
         return multiMap.getClass().equals(getClass());
     }
 
     @Override
-    protected void validateKey(String key) {
-        if (key == null || key.isEmpty()) {
+    protected void validateKey(CharSequence key) {
+        if (key == null || key.length() == 0) {
             throw new IllegalArgumentException("cookie name cannot be null or empty");
         }
         if (validateContent) {
@@ -225,13 +228,13 @@ final class DefaultHttpCookies extends MultiMap<String, HttpCookie> implements H
         return value1.equals(value2);
     }
 
-    private static final class CookieMultiMapEntry extends MultiMapEntry<String, HttpCookie> {
+    private static final class CookieMultiMapEntry extends MultiMapEntry<CharSequence, HttpCookie> {
         CookieMultiMapEntry(HttpCookie cookie, int keyHash) {
             super(cookie, keyHash);
         }
 
         @Override
-        public String getKey() {
+        public CharSequence getKey() {
             return value.getName();
         }
     }
@@ -411,17 +414,19 @@ final class DefaultHttpCookies extends MultiMap<String, HttpCookie> implements H
     }
 
     private final class CookiesByNameDomainPathIterator extends ValuesByNameIterator {
-        private final String domain;
-        private final String path;
+        private final CharSequence domain;
+        private final CharSequence path;
 
-        CookiesByNameDomainPathIterator(int entryHashCode, String name, MultiMapEntry<String, HttpCookie> first, String domain, String path) {
+        CookiesByNameDomainPathIterator(int entryHashCode, CharSequence name,
+                                        MultiMapEntry<CharSequence, HttpCookie> first,
+                                        CharSequence domain, CharSequence path) {
             super(entryHashCode, name, first);
             this.domain = requireNonNull(domain);
             this.path = requireNonNull(path);
         }
 
         @Nullable
-        MultiMapEntry<String, HttpCookie> findNext(@Nullable MultiMapEntry<String, HttpCookie> entry) {
+        MultiMapEntry<CharSequence, HttpCookie> findNext(@Nullable MultiMapEntry<CharSequence, HttpCookie> entry) {
             while (entry != null) {
                 if (entry.keyHash == keyHashCode &&
                         DefaultHttpCookies.this.equals(key, entry.getKey()) &&
@@ -441,8 +446,8 @@ final class DefaultHttpCookies extends MultiMap<String, HttpCookie> implements H
      * @param cookieDomain The domain from the cookie.
      * @return {@code true} if there is a match.
      */
-    private static boolean domainMatches(String requestDomain, @Nullable String cookieDomain) {
-        if (cookieDomain == null || requestDomain.isEmpty()) {
+    private static boolean domainMatches(CharSequence requestDomain, @Nullable CharSequence cookieDomain) {
+        if (cookieDomain == null || requestDomain.length() == 0) {
             return false;
         }
         int startIndex = cookieDomain.length() - requestDomain.length();
@@ -451,12 +456,15 @@ final class DefaultHttpCookies extends MultiMap<String, HttpCookie> implements H
             // generally compared in a case insensitive fashion we do the same here.
             // [1] https://tools.ietf.org/html/rfc6265#section-5.1.3
             // the domain string and the string will have been canonicalized to lower case at this point
-            return cookieDomain.equalsIgnoreCase(requestDomain);
+            return contentEqualsIgnoreCase(cookieDomain, requestDomain);
         }
         boolean queryEndsInDot = requestDomain.charAt(requestDomain.length() - 1) == '.';
-        return ((queryEndsInDot && startIndex >= -1 && regionMatches(cookieDomain, true, startIndex + 1, requestDomain, 0, requestDomain.length() - 1)) ||
-               (!queryEndsInDot && startIndex > 0 && regionMatches(cookieDomain, true, startIndex, requestDomain, 0, requestDomain.length()))) &&
-                       !NetUtil.isValidIpV4Address(cookieDomain) && !NetUtil.isValidIpV6Address(cookieDomain);
+        return ((queryEndsInDot && startIndex >= -1 &&
+                   regionMatches(cookieDomain, true, startIndex + 1, requestDomain, 0, requestDomain.length() - 1)) ||
+               (!queryEndsInDot && startIndex > 0 &&
+                   regionMatches(cookieDomain, true, startIndex, requestDomain, 0, requestDomain.length()))) &&
+                !isValidIpV4Address(cookieDomain.toString()) && !isValidIpV6Address(cookieDomain.toString());
+        // TODO(scott): Netty will support IP validators which don't require the toString()
     }
 
     /**
@@ -465,8 +473,9 @@ final class DefaultHttpCookies extends MultiMap<String, HttpCookie> implements H
      * @param cookiePath The path from the cookie.
      * @return {@code true} if there is a match.
      */
-    private static boolean pathMatches(String requestPath, @Nullable String cookiePath) {
-        if (cookiePath == null || cookiePath.isEmpty() || requestPath.isEmpty()) {
+    private static boolean pathMatches(CharSequence requestPath, @Nullable CharSequence cookiePath) {
+        // cookiePath cannot be empty, but we check for 0 length to protect against IIOBE below.
+        if (cookiePath == null || cookiePath.length() == 0 || requestPath.length() == 0) {
             return false;
         }
 
@@ -475,12 +484,14 @@ final class DefaultHttpCookies extends MultiMap<String, HttpCookie> implements H
         }
         boolean actualStartsWithSlash = cookiePath.charAt(0) == '/';
         int length = min(actualStartsWithSlash ? cookiePath.length() - 1 : cookiePath.length(), requestPath.length());
-        return regionMatches(requestPath, false, requestPath.charAt(0) == '/' && !actualStartsWithSlash ? 1 : 0, cookiePath, 0, length) &&
+        return regionMatches(requestPath, false, requestPath.charAt(0) == '/' &&
+                !actualStartsWithSlash ? 1 : 0, cookiePath, 0, length) &&
                 (requestPath.length() > cookiePath.length() || cookiePath.charAt(length) == '/');
     }
 
     /**
-     * Extract a hex value and validate according to the <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-octet</a> format.
+     * Extract a hex value and validate according to the
+     * <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-octet</a> format.
      * @param cookieHeaderValue The cookie's value.
      * @param i The index where we detected a '%' character indicating a hex value is to follow.
      */
@@ -500,7 +511,8 @@ final class DefaultHttpCookies extends MultiMap<String, HttpCookie> implements H
     }
 
     /**
-     * <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-octet = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E</a>
+     * <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">
+     *     cookie-octet = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E</a>
      * @param hexValue The decimal representation of the hexadecimal value.
      */
     private static void validateCookieOctetHexValue(int hexValue) {
@@ -514,6 +526,7 @@ final class DefaultHttpCookies extends MultiMap<String, HttpCookie> implements H
     }
 
     private static int hexToDecimal(char c) {
-        return c >= '0' && c <= '9' ? c - '0' : c >= 'a' && c <= 'f' ? (c - 'a') + 10 : c >= 'A' && c < 'F' ? (c - 'A') + 10 : -1;
+        return c >= '0' && c <= '9' ? c - '0' : c >= 'a' && c <= 'f' ? (c - 'a') + 10 : c >= 'A' && c < 'F' ?
+                (c - 'A') + 10 : -1;
     }
 }

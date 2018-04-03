@@ -25,22 +25,22 @@ import javax.annotation.Nullable;
 import static io.netty.util.AsciiString.contentEqualsIgnoreCase;
 
 final class DefaultHttpCookie implements HttpCookie {
-    private final String name;
-    private final String value;
+    private final CharSequence name;
+    private final CharSequence value;
     @Nullable
-    private final String path;
+    private final CharSequence path;
     @Nullable
-    private final String domain;
+    private final CharSequence domain;
     @Nullable
-    private final String expires;
+    private final CharSequence expires;
     @Nullable
     private final Long maxAge;
     private final boolean isWrapped;
     private final boolean isSecure;
     private final boolean isHttpOnly;
 
-    DefaultHttpCookie(String name, String value, @Nullable String path,
-                      @Nullable String domain, @Nullable String expires,
+    DefaultHttpCookie(CharSequence name, CharSequence value, @Nullable CharSequence path,
+                      @Nullable CharSequence domain, @Nullable CharSequence expires,
                       @Nullable Long maxAge, boolean isWrapped, boolean isSecure, boolean isHttpOnly) {
         this.name = name;
         this.value = value;
@@ -54,12 +54,12 @@ final class DefaultHttpCookie implements HttpCookie {
     }
 
     @Override
-    public String getName() {
+    public CharSequence getName() {
         return name;
     }
 
     @Override
-    public String getValue() {
+    public CharSequence getValue() {
         return value;
     }
 
@@ -70,13 +70,13 @@ final class DefaultHttpCookie implements HttpCookie {
 
     @Nullable
     @Override
-    public String getDomain() {
+    public CharSequence getDomain() {
         return domain;
     }
 
     @Nullable
     @Override
-    public String getPath() {
+    public CharSequence getPath() {
         return path;
     }
 
@@ -88,7 +88,7 @@ final class DefaultHttpCookie implements HttpCookie {
 
     @Nullable
     @Override
-    public String getExpires() {
+    public CharSequence getExpires() {
         return expires;
     }
 
@@ -113,7 +113,7 @@ final class DefaultHttpCookie implements HttpCookie {
         // if equals(a) == equals(b) then a.hasCode() == b.hashCode()
         // [1] https://tools.ietf.org/html/rfc6265#section-5.1.3
         // [2] https://tools.ietf.org/html/rfc6265#section-5.1.4
-        return name.equalsIgnoreCase(rhs.getName()) &&
+        return contentEqualsIgnoreCase(name, rhs.getName()) &&
                 contentEqualsIgnoreCase(domain, rhs.getDomain()) &&
                 Objects.equals(path, rhs.getPath());
     }

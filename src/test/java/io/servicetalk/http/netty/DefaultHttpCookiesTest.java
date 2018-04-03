@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.Set;
 import javax.annotation.Nullable;
 
+import static io.netty.util.AsciiString.contentEqualsIgnoreCase;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -195,6 +196,21 @@ public class DefaultHttpCookiesTest {
         cookies.encodeToHttpHeaders();
         cookies = headers.parseSetCookies();
         decodeDifferentCookieNames(cookies);
+    }
+
+    @Test
+    public void getCookieNameDomainEmptyPath() {
+        HttpHeaders headers = new DefaultHttpHeaders();
+        headers.add("set-cookie", "qwerty=12345; Domain=somecompany.co.uk; Path=");
+        HttpCookies cookies = headers.parseSetCookies();
+        Iterator<? extends HttpCookie> cookieItr = cookies.getCookies("qwerty", "somecompany.co.uk", "");
+        assertFalse(cookieItr.hasNext());
+
+        cookieItr = cookies.getCookies("qwerty");
+        assertTrue(cookieItr.hasNext());
+        assertTrue(areCookiesEqual(new TestCookie("qwerty", "12345", null, "somecompany.co.uk", null,
+                null, false, false, false), cookieItr.next()));
+        assertFalse(cookieItr.hasNext());
     }
 
     @Test
@@ -588,7 +604,7 @@ public class DefaultHttpCookiesTest {
     }
 
     private static boolean areCookiesEqual(HttpCookie cookie1, HttpCookie cookie2) {
-        return cookie1.getName().equalsIgnoreCase(cookie2.getName()) &&
+        return contentEqualsIgnoreCase(cookie1.getName(), cookie2.getName()) &&
                 cookie1.getValue().equals(cookie2.getValue()) &&
                 Objects.equals(cookie1.getDomain(), cookie2.getDomain()) &&
                 Objects.equals(cookie1.getPath(), cookie2.getPath()) &&
