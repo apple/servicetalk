@@ -15,15 +15,25 @@
  */
 package io.servicetalk.http.api;
 
-import java.util.Iterator;
-
 public interface HttpRequestMetaData extends HttpMetaData {
+
+    @Override
+    HttpRequestMetaData setVersion(HttpProtocolVersion version);
+
     /**
      * Returns the {@link HttpRequestMethod} of this {@link HttpRequest}.
      *
      * @return The {@link HttpRequestMethod} of this {@link HttpRequest}
      */
     HttpRequestMethod getMethod();
+
+    /**
+     * Set the {@link HttpRequestMethod} of this {@link HttpRequest}.
+     *
+     * @param method the {@link HttpRequestMethod} to set.
+     * @return {@code this}.
+     */
+    HttpRequestMetaData setMethod(HttpRequestMethod method);
 
     /**
      * The <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a>.
@@ -34,6 +44,17 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * No decoding has been done on the request-target.
      */
     String getRequestTarget();
+
+    /**
+     * Set the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a>.
+     * <p>
+     * This will be treated as encoded according to <a href="https://tools.ietf.org/html/rfc3986#section-2.1">percent-encoding</a>.
+     * <p>
+     * This may result in clearing of internal caches used by methods that are derived from the {@code request-target}, such as {@link #getPath()}, {@link #getRawQuery()}, etc.
+     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc3986#section-2.1">percent-encoded</a> <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> to set.
+     * @return {@code this}.
+     */
+    HttpRequestMetaData setRequestTarget(String requestTarget);
 
     /**
      * The <a href="https://tools.ietf.org/html/rfc3986#section-3.3">path component</a> derived from {@link #getRequestTarget()}.
@@ -48,6 +69,38 @@ public interface HttpRequestMetaData extends HttpMetaData {
     String getPath();
 
     /**
+     * Sets the path to {@code path}, without any encoding performed. This assumes that any characters that require
+     * encoding have been encoded according to <a href="https://tools.ietf.org/html/rfc3986#section-2.1">percent-encoding</a>
+     * by the caller.
+     *
+     * Because this modifies the request target, this may result in the clearing of internal caches. See {@link #setRequestTarget(String)}.
+     *
+     * @param path the encoded path to set.
+     * @return {@code this}.
+     */
+    HttpRequestMetaData setRawPath(String path);
+
+    /**
+     * Sets the path, performing encoding according to <a href="https://tools.ietf.org/html/rfc3986#section-2.1">percent-encoding</a>,
+     * except for forward-slash ({@code '/'}) characters. This allows for {@code setPath("/abc")} without it turning into
+     * {@code '%2Fabc'}.
+     *
+     * @param path the un-encoded path to set.
+     * @return {@code this}.
+     */
+    HttpRequestMetaData setPath(String path);
+
+    /**
+     * Parses the <a href="https://tools.ietf.org/html/rfc3986#section-3.4">query component</a> of the request target,
+     * returning an {@link HttpQuery} that may be used for reading and manipulating the query component. Modifications
+     * to the {@link HttpQuery} will only be reflected in the request after {@link HttpQuery#encodeToRequestTarget()} is
+     * called. If the underlying request is modified, the returned {@link HttpQuery} may become stale.
+     *
+     * @return an {@link HttpQuery} that reflects the current state of the query component.
+     */
+    HttpQuery parseQuery();
+
+    /**
      * The <a href="https://tools.ietf.org/html/rfc3986#section-3.4">query component</a> derived from {@link #getRequestTarget()}.
      * <p>
      * No decoding has been done on the query component.
@@ -58,11 +111,14 @@ public interface HttpRequestMetaData extends HttpMetaData {
     String getRawQuery();
 
     /**
-     * The <a href="https://tools.ietf.org/html/rfc3986#section-3.4">query component</a> for {@code key} derived from {@link #getRequestTarget()}.
-     * The values are decoded according to <a href="https://tools.ietf.org/html/rfc3986#section-2.1">percent-encoding</a>.
-     * @param key The key which may identify a value in the <a href="https://tools.ietf.org/html/rfc3986#section-3.4">query component</a>.
-     * @return An {@link Iterator} over all the values identified by {@code key} in the <a href="https://tools.ietf.org/html/rfc3986#section-3.4">query component</a>.
-     * The values are decoded according to <a href="https://tools.ietf.org/html/rfc3986#section-2.1">percent-encoding</a>.
+     * Sets the <a href="https://tools.ietf.org/html/rfc3986#section-3.4">query component</a> to {@code query}, without
+     * any encoding performed. This assumes that any characters that require encoding have been encoded according to
+     * <a href="https://tools.ietf.org/html/rfc3986#section-2.1">percent-encoding</a> by the caller.
+     *
+     * Because this modifies the request target, this may result in the clearing of internal caches. See {@link #setRequestTarget(String)}.
+     *
+     * @param query the encoded query to set.
+     * @return {@code this}.
      */
-    Iterator<String> getQueryValues(String key);
+    HttpRequestMetaData setRawQuery(String query);
 }

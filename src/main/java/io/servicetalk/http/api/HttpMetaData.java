@@ -29,6 +29,14 @@ public interface HttpMetaData {
     HttpProtocolVersion getVersion();
 
     /**
+     * Set the protocol version of this {@link HttpMetaData}.
+     *
+     * @param version the protocol version to set.
+     * @return {@code this}.
+     */
+    HttpMetaData setVersion(HttpProtocolVersion version);
+
+    /**
      * Returns the headers of this message.
      *
      * @return the headers.
@@ -50,5 +58,5 @@ public interface HttpMetaData {
      * @param headerFilter a function that accepts the header name and value and returns the filtered value
      * @return string representation of the message and headers
      */
-    String toString(BiFunction<CharSequence, CharSequence, CharSequence> headerFilter);
+    String toString(BiFunction<? super CharSequence, ? super CharSequence, CharSequence> headerFilter);
 }

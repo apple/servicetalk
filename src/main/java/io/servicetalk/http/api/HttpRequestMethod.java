@@ -21,7 +21,7 @@ package io.servicetalk.http.api;
  * Instance of this type may be used in an associative array object so implementations are encouraged to implement
  * {@link Object#equals(Object)} and {@link Object#hashCode()}.
  */
-public interface HttpRequestMethod extends Comparable<HttpRequestMethod> {
+public interface HttpRequestMethod {
     /**
      * Get the <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>.
      * @return the <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>.

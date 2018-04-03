@@ -31,7 +31,9 @@ public interface HttpPayloadChunk extends BufferHolder {
 
     /**
      * Duplicates the content of this {@link HttpPayloadChunk} as returned by {@link #getContent()}.
-     * @return Duplicates this {@link HttpPayloadChunk}.
+     * <p>
+     * Typically the buffer is duplicated using {@link Buffer#duplicate()}.
+     * @return a new instance of {@link HttpPayloadChunk} with duplicated content.
      */
     HttpPayloadChunk duplicate();
 

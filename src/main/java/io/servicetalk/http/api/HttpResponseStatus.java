@@ -47,21 +47,92 @@ public interface HttpResponseStatus {
     /**
      * The <a href="https://tools.ietf.org/html/rfc7231#section-6">class of response</a>.
      */
-    interface StatusClass {
+    enum StatusClass {
         /**
-         * Determine if {@code code} falls into this class.
-         * @param statusCode the status code to test.
-         * @return {@code true} if and only if the specified HTTP status code falls into this class.
+         * <a href="https://tools.ietf.org/html/rfc7231#section-6.2">1xx Informational responses</a>.
          */
-        boolean contains(int statusCode);
+        INFORMATIONAL_1XX(100, 199),
+
+        /**
+         * <a href="https://tools.ietf.org/html/rfc7231#section-6.3">2xx Success</a>.
+         */
+        SUCCESS_2XX(200, 299),
+
+        /**
+         * <a href="https://tools.ietf.org/html/rfc7231#section-6.4">3xx Redirection</a>.
+         */
+        REDIRECTION_3XX(300, 399),
+
+        /**
+         * <a href="https://tools.ietf.org/html/rfc7231#section-6.5">4xx Client errors</a>.
+         */
+        CLIENT_ERROR_4XX(400, 499),
+
+        /**
+         * <a href="https://tools.ietf.org/html/rfc7231#section-6.6">5xx Server errors</a>.
+         */
+        SERVER_ERROR_5XX(500, 599),
+
+        /**
+         * Unknown. Statuses outside of the <a href="https://tools.ietf.org/html/rfc7231#section-6">defined range of
+         * response codes</a>.
+         */
+        UNKNOWN(0, 0) {
+            @Override
+            public boolean contains(final int statusCode) {
+                return statusCode < 100 || statusCode >= 600;
+            }
+        };
+
+        private final int minStatus;
+        private final int maxStatus;
+
+        StatusClass(final int minStatus, final int maxStatus) {
+            this.minStatus = minStatus;
+            this.maxStatus = maxStatus;
+        }
 
         /**
          * Determine if {@code code} falls into this class.
          * @param statusCode the status code to test.
          * @return {@code true} if and only if the specified HTTP status code falls into this class.
          */
-        default boolean contains(HttpResponseStatus statusCode) {
-            return contains(statusCode.getCode());
+        public boolean contains(final int statusCode) {
+            return minStatus <= statusCode && statusCode <= maxStatus;
+        }
+
+        /**
+         * Determine if {@code status} code falls into this class.
+         * @param status the status to test.
+         * @return {@code true} if and only if the specified HTTP status code falls into this class.
+         */
+        public boolean contains(final HttpResponseStatus status) {
+            return contains(status.getCode());
+        }
+
+        /**
+         * Determines the {@link StatusClass} from the {@code statusCode}.
+         *
+         * @param statusCode the status code to use for determining the {@link StatusClass}.
+         * @return One of the {@link StatusClass} enum values.
+         */
+        public static StatusClass toStatusClass(final int statusCode) {
+            if (INFORMATIONAL_1XX.contains(statusCode)) {
+                return INFORMATIONAL_1XX;
+            }
+            if (SUCCESS_2XX.contains(statusCode)) {
+                return SUCCESS_2XX;
+            }
+            if (REDIRECTION_3XX.contains(statusCode)) {
+                return REDIRECTION_3XX;
+            }
+            if (CLIENT_ERROR_4XX.contains(statusCode)) {
+                return CLIENT_ERROR_4XX;
+            }
+            if (SERVER_ERROR_5XX.contains(statusCode)) {
+                return SERVER_ERROR_5XX;
+            }
+            return UNKNOWN;
         }
     }
 }

@@ -29,6 +29,13 @@ import java.util.function.Function;
  * @param <T> Type of content.
  */
 public interface HttpResponse<T> extends HttpResponseMetaData {
+
+    @Override
+    HttpResponse<T> setVersion(HttpProtocolVersion version);
+
+    @Override
+    HttpResponse<T> setStatus(HttpResponseStatus status);
+
     /**
      * The <a href="https://tools.ietf.org/html/rfc7230.html#section-3.3">HTTP Message Body</a>.
      *
