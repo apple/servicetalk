@@ -27,4 +27,13 @@
     <Method name="equals"/>
     <Bug pattern="EQ_CHECK_FOR_OPERAND_NOT_COMPATIBLE_WITH_THIS"/>
   </Match>
+
+  <!-- The only field added is a Publisher, which doesn't make sense to use in equals/hashCode -->
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.http.netty.NettyToServiceTalkHttpRequest"/>
+      <Class name="io.servicetalk.http.netty.NettyToServiceTalkHttpResponse"/>
+    </Or>
+    <Bug pattern="EQ_DOESNT_OVERRIDE_EQUALS"/>
+  </Match>
 </FindBugsFilter>

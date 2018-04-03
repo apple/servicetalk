@@ -29,43 +29,43 @@ import static io.servicetalk.http.netty.HttpHeaderNames.COOKIE;
 import static io.servicetalk.http.netty.HttpHeaderNames.SET_COOKIE;
 import static java.util.Objects.requireNonNull;
 
-final class NettyToServiceTalkHttpHeaders implements HttpHeaders {
+class NettyToServiceTalkHttpHeaders implements HttpHeaders {
     private final io.netty.handler.codec.http.HttpHeaders nettyHeaders;
 
-    NettyToServiceTalkHttpHeaders(io.netty.handler.codec.http.HttpHeaders nettyHeaders) {
+    NettyToServiceTalkHttpHeaders(final io.netty.handler.codec.http.HttpHeaders nettyHeaders) {
         this.nettyHeaders = requireNonNull(nettyHeaders);
     }
 
     @Override
-    public boolean contains(CharSequence name, CharSequence value) {
+    public boolean contains(final CharSequence name, final CharSequence value) {
         return nettyHeaders.contains(name, value, false);
     }
 
     @Override
-    public boolean contains(CharSequence name, CharSequence value, boolean caseInsensitive) {
+    public boolean contains(final CharSequence name, final CharSequence value, final boolean caseInsensitive) {
         return nettyHeaders.contains(name, value, caseInsensitive);
     }
 
     @Override
-    public HttpCookies parseCookies(boolean validateContent) {
+    public HttpCookies parseCookies(final boolean validateContent) {
         return new DefaultHttpCookies(this, COOKIE, validateContent);
     }
 
     @Override
-    public HttpCookies parseSetCookies(boolean validateContent) {
+    public HttpCookies parseSetCookies(final boolean validateContent) {
         return new DefaultHttpCookies(this, SET_COOKIE, validateContent);
     }
 
     @Nullable
     @Override
-    public CharSequence get(CharSequence name) {
+    public CharSequence get(final CharSequence name) {
         return nettyHeaders.get(name);
     }
 
     @Nullable
     @Override
-    public CharSequence getAndRemove(CharSequence name) {
-        CharSequence value = nettyHeaders.get(name);
+    public CharSequence getAndRemove(final CharSequence name) {
+        final CharSequence value = nettyHeaders.get(name);
         if (value != null) {
             nettyHeaders.remove(name);
         }
@@ -73,7 +73,7 @@ final class NettyToServiceTalkHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public Iterator<? extends CharSequence> getAll(CharSequence name) {
+    public Iterator<? extends CharSequence> getAll(final CharSequence name) {
         return nettyHeaders.valueCharSequenceIterator(name);
     }
 
@@ -93,32 +93,32 @@ final class NettyToServiceTalkHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public HttpHeaders add(CharSequence name, CharSequence value) {
+    public HttpHeaders add(final CharSequence name, final CharSequence value) {
         nettyHeaders.add(name, value);
         return this;
     }
 
     @Override
-    public HttpHeaders add(CharSequence name, Iterable<? extends CharSequence> values) {
+    public HttpHeaders add(final CharSequence name, final Iterable<? extends CharSequence> values) {
         nettyHeaders.add(name, values);
         return this;
     }
 
     @Override
-    public HttpHeaders add(CharSequence name, CharSequence... values) {
+    public HttpHeaders add(final CharSequence name, final CharSequence... values) {
         nettyHeaders.add(name, new ArrayIterable<>(values));
         return this;
     }
 
     @Override
-    public HttpHeaders add(HttpHeaders headers) {
+    public HttpHeaders add(final HttpHeaders headers) {
         if (headers == this) {
             throw new IllegalArgumentException("can't add to itself");
         }
         if (headers instanceof NettyToServiceTalkHttpHeaders) {
             nettyHeaders.add(((NettyToServiceTalkHttpHeaders) headers).nettyHeaders);
         } else {
-            for (Map.Entry<? extends CharSequence, ? extends CharSequence> entry : headers) {
+            for (final Map.Entry<? extends CharSequence, ? extends CharSequence> entry : headers) {
                 nettyHeaders.add(entry.getKey(), entry.getValue());
             }
         }
@@ -126,25 +126,25 @@ final class NettyToServiceTalkHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public HttpHeaders set(CharSequence name, CharSequence value) {
+    public HttpHeaders set(final CharSequence name, final CharSequence value) {
         nettyHeaders.set(name, value);
         return this;
     }
 
     @Override
-    public HttpHeaders set(CharSequence name, Iterable<? extends CharSequence> values) {
+    public HttpHeaders set(final CharSequence name, final Iterable<? extends CharSequence> values) {
         nettyHeaders.set(name, values);
         return this;
     }
 
     @Override
-    public HttpHeaders set(CharSequence name, CharSequence... values) {
+    public HttpHeaders set(final CharSequence name, final CharSequence... values) {
         nettyHeaders.set(name, new ArrayIterable<>(values));
         return this;
     }
 
     @Override
-    public boolean remove(CharSequence name) {
+    public boolean remove(final CharSequence name) {
         return getAndRemove(name) != null;
     }
 
@@ -165,7 +165,7 @@ final class NettyToServiceTalkHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public String toString(BiFunction<? super CharSequence, ? super CharSequence, CharSequence> filter) {
+    public String toString(final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> filter) {
         return HeaderUtils.toString(this, filter);
     }
 
@@ -175,12 +175,8 @@ final class NettyToServiceTalkHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof HttpHeaders)) {
-            return false;
-        }
-
-        return HeaderUtils.equals(this, (HttpHeaders) o);
+    public boolean equals(final Object o) {
+        return o instanceof HttpHeaders && HeaderUtils.equals(this, (HttpHeaders) o);
     }
 
     @Override

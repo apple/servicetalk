@@ -35,77 +35,77 @@ import static io.servicetalk.http.netty.HeaderUtils.DEFAULT_HEADER_FILTER;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
-final class ServiceTalkToNettyHttpHeaders extends HttpHeaders {
+class ServiceTalkToNettyHttpHeaders extends HttpHeaders {
     private final io.servicetalk.http.api.HttpHeaders serviceTalkHeaders;
 
-    ServiceTalkToNettyHttpHeaders(io.servicetalk.http.api.HttpHeaders serviceTalkHeaders) {
+    ServiceTalkToNettyHttpHeaders(final io.servicetalk.http.api.HttpHeaders serviceTalkHeaders) {
         this.serviceTalkHeaders = requireNonNull(serviceTalkHeaders);
     }
 
     @Nullable
     @Override
-    public String get(CharSequence name) {
-        CharSequence v = serviceTalkHeaders.get(name);
+    public String get(final CharSequence name) {
+        final CharSequence v = serviceTalkHeaders.get(name);
         return v == null ? null : v.toString();
     }
 
     @Nullable
     @Override
-    public String get(String name) {
-        CharSequence v = serviceTalkHeaders.get(name);
+    public String get(final String name) {
+        final CharSequence v = serviceTalkHeaders.get(name);
         return v == null ? null : v.toString();
     }
 
     @Nullable
     @Override
-    public Integer getInt(CharSequence name) {
-        CharSequence value = serviceTalkHeaders.get(name);
+    public Integer getInt(final CharSequence name) {
+        final CharSequence value = serviceTalkHeaders.get(name);
         if (value == null) {
             return null;
         }
         try {
             return Integer.parseInt(value.toString());
-        } catch (RuntimeException ignore) {
+        } catch (final RuntimeException ignore) {
             return null;
         }
     }
 
     @Nullable
     @Override
-    public int getInt(CharSequence name, int defaultValue) {
-        Integer v = getInt(name);
+    public int getInt(final CharSequence name, final int defaultValue) {
+        final Integer v = getInt(name);
         return v != null ? v : defaultValue;
     }
 
     @Nullable
     @Override
-    public Short getShort(CharSequence name) {
-        CharSequence value = serviceTalkHeaders.get(name);
+    public Short getShort(final CharSequence name) {
+        final CharSequence value = serviceTalkHeaders.get(name);
         if (value == null) {
             return null;
         }
         try {
             return Short.parseShort(value.toString());
-        } catch (RuntimeException ignore) {
+        } catch (final RuntimeException ignore) {
             return null;
         }
     }
 
     @Nullable
     @Override
-    public short getShort(CharSequence name, short defaultValue) {
-        Short v = getShort(name);
+    public short getShort(final CharSequence name, final short defaultValue) {
+        final Short v = getShort(name);
         return v != null ? v : defaultValue;
     }
 
     @Nullable
     @Override
-    public Long getTimeMillis(CharSequence name) {
-        CharSequence value = serviceTalkHeaders.get(name);
+    public Long getTimeMillis(final CharSequence name) {
+        final CharSequence value = serviceTalkHeaders.get(name);
         if (value == null) {
             return null;
         }
-        Date date = DateFormatter.parseHttpDate(value);
+        final Date date = DateFormatter.parseHttpDate(value);
         if (date == null) {
             return null;
         }
@@ -114,21 +114,21 @@ final class ServiceTalkToNettyHttpHeaders extends HttpHeaders {
 
     @Nullable
     @Override
-    public long getTimeMillis(CharSequence name, long defaultValue) {
-        Long v = getTimeMillis(name);
+    public long getTimeMillis(final CharSequence name, final long defaultValue) {
+        final Long v = getTimeMillis(name);
         return v != null ? v : defaultValue;
     }
 
     @Override
-    public List<String> getAll(CharSequence name) {
-        List<String> list = new ArrayList<>(4);
+    public List<String> getAll(final CharSequence name) {
+        final List<String> list = new ArrayList<>(4);
         serviceTalkHeaders.getAll(name).forEachRemaining(charSeq -> list.add(charSeq.toString()));
         return unmodifiableList(list);
     }
 
     @Override
-    public List<String> getAll(String name) {
-        List<String> list = new ArrayList<>(4);
+    public List<String> getAll(final String name) {
+        final List<String> list = new ArrayList<>(4);
         serviceTalkHeaders.getAll(name).forEachRemaining(charSeq -> list.add(charSeq.toString()));
         return unmodifiableList(list);
     }
@@ -138,25 +138,25 @@ final class ServiceTalkToNettyHttpHeaders extends HttpHeaders {
         if (isEmpty()) {
             return Collections.emptyList();
         }
-        List<Map.Entry<String, String>> entriesConverted = new ArrayList<>(serviceTalkHeaders.size());
-        for (Map.Entry<String, String> entry : this) {
+        final List<Map.Entry<String, String>> entriesConverted = new ArrayList<>(serviceTalkHeaders.size());
+        for (final Map.Entry<String, String> entry : this) {
             entriesConverted.add(entry);
         }
         return unmodifiableList(entriesConverted);
     }
 
     @Override
-    public boolean contains(CharSequence name) {
+    public boolean contains(final CharSequence name) {
         return serviceTalkHeaders.contains(name);
     }
 
     @Override
-    public boolean contains(String name) {
+    public boolean contains(final String name) {
         return serviceTalkHeaders.contains(name);
     }
 
     @Override
-    public boolean contains(CharSequence name, CharSequence value, boolean ignoreCase) {
+    public boolean contains(final CharSequence name, final CharSequence value, final boolean ignoreCase) {
         return serviceTalkHeaders.contains(name, value, ignoreCase);
     }
 
@@ -186,94 +186,94 @@ final class ServiceTalkToNettyHttpHeaders extends HttpHeaders {
     }
 
     @Override
-    public HttpHeaders add(CharSequence name, Object value) {
+    public HttpHeaders add(final CharSequence name, final Object value) {
         serviceTalkHeaders.add(name, convertObject(value));
         return this;
     }
 
     @Override
-    public HttpHeaders add(String name, Object value) {
+    public HttpHeaders add(final String name, final Object value) {
         serviceTalkHeaders.add(name, convertObject(value));
         return this;
     }
 
     @Override
-    public HttpHeaders add(CharSequence name, Iterable<?> values) {
-        for (Object value : values) {
+    public HttpHeaders add(final CharSequence name, final Iterable<?> values) {
+        for (final Object value : values) {
             serviceTalkHeaders.add(name, convertObject(value));
         }
         return this;
     }
 
     @Override
-    public HttpHeaders add(String name, Iterable<?> values) {
-        for (Object value : values) {
+    public HttpHeaders add(final String name, final Iterable<?> values) {
+        for (final Object value : values) {
             serviceTalkHeaders.add(name, convertObject(value));
         }
         return this;
     }
 
     @Override
-    public HttpHeaders addInt(CharSequence name, int value) {
+    public HttpHeaders addInt(final CharSequence name, final int value) {
         serviceTalkHeaders.add(name, String.valueOf(value));
         return this;
     }
 
     @Override
-    public HttpHeaders addShort(CharSequence name, short value) {
+    public HttpHeaders addShort(final CharSequence name, final short value) {
         serviceTalkHeaders.add(name, String.valueOf(value));
         return this;
     }
 
     @Override
-    public HttpHeaders set(CharSequence name, Object value) {
+    public HttpHeaders set(final CharSequence name, final Object value) {
         serviceTalkHeaders.set(name, convertObject(value));
         return this;
     }
 
     @Override
-    public HttpHeaders set(String name, Object value) {
+    public HttpHeaders set(final String name, final Object value) {
         return set((CharSequence) name, value);
     }
 
     @Override
-    public HttpHeaders set(CharSequence name, Iterable<?> values) {
+    public HttpHeaders set(final CharSequence name, final Iterable<?> values) {
         serviceTalkHeaders.remove(name);
-        for (Object value : values) {
+        for (final Object value : values) {
             serviceTalkHeaders.add(name, convertObject(value));
         }
         return this;
     }
 
     @Override
-    public HttpHeaders set(String name, Iterable<?> values) {
+    public HttpHeaders set(final String name, final Iterable<?> values) {
         serviceTalkHeaders.remove(name);
-        for (Object value : values) {
+        for (final Object value : values) {
             serviceTalkHeaders.add(name, convertObject(value));
         }
         return this;
     }
 
     @Override
-    public HttpHeaders setInt(CharSequence name, int value) {
+    public HttpHeaders setInt(final CharSequence name, final int value) {
         serviceTalkHeaders.set(name, String.valueOf(value));
         return this;
     }
 
     @Override
-    public HttpHeaders setShort(CharSequence name, short value) {
+    public HttpHeaders setShort(final CharSequence name, final short value) {
         serviceTalkHeaders.set(name, String.valueOf(value));
         return this;
     }
 
     @Override
-    public HttpHeaders remove(CharSequence name) {
+    public HttpHeaders remove(final CharSequence name) {
         serviceTalkHeaders.remove(name);
         return this;
     }
 
     @Override
-    public HttpHeaders remove(String name) {
+    public HttpHeaders remove(final String name) {
         serviceTalkHeaders.remove(name);
         return this;
     }
@@ -294,12 +294,12 @@ final class ServiceTalkToNettyHttpHeaders extends HttpHeaders {
         return toString(DEFAULT_HEADER_FILTER);
     }
 
-    String toString(BiFunction<? super CharSequence, ? super CharSequence, CharSequence> filter) {
+    String toString(final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> filter) {
         return HeaderUtils.toString(serviceTalkHeaders, filter);
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         return o == this ||
                o instanceof ServiceTalkToNettyHttpHeaders && HeaderUtils.equals(serviceTalkHeaders, ((ServiceTalkToNettyHttpHeaders) o).serviceTalkHeaders) ||
                o instanceof io.servicetalk.http.api.HttpHeaders && HeaderUtils.equals(serviceTalkHeaders, (io.servicetalk.http.api.HttpHeaders) o);
@@ -310,7 +310,7 @@ final class ServiceTalkToNettyHttpHeaders extends HttpHeaders {
         return HeaderUtils.hashCode(serviceTalkHeaders);
     }
 
-    private static CharSequence convertObject(Object value) {
+    private static CharSequence convertObject(final Object value) {
         if (value instanceof CharSequence) {
             return (CharSequence) value;
         }
@@ -320,7 +320,7 @@ final class ServiceTalkToNettyHttpHeaders extends HttpHeaders {
     private static final class StringEntryIterator implements Iterator<Map.Entry<String, String>> {
         private final Iterator<Map.Entry<CharSequence, CharSequence>> iter;
 
-        StringEntryIterator(Iterator<Map.Entry<CharSequence, CharSequence>> iter) {
+        StringEntryIterator(final Iterator<Map.Entry<CharSequence, CharSequence>> iter) {
             this.iter = iter;
         }
 
@@ -347,7 +347,7 @@ final class ServiceTalkToNettyHttpHeaders extends HttpHeaders {
         @Nullable
         private String value;
 
-        StringEntry(Map.Entry<CharSequence, CharSequence> entry) {
+        StringEntry(final Map.Entry<CharSequence, CharSequence> entry) {
             this.entry = entry;
         }
 
@@ -368,8 +368,8 @@ final class ServiceTalkToNettyHttpHeaders extends HttpHeaders {
         }
 
         @Override
-        public String setValue(String value) {
-            String old = getValue();
+        public String setValue(final String value) {
+            final String old = getValue();
             entry.setValue(value);
             return old;
         }
@@ -381,17 +381,17 @@ final class ServiceTalkToNettyHttpHeaders extends HttpHeaders {
     }
 
     private static final class CharSequenceDelegatingStringSet extends DelegatingStringSet<CharSequence> {
-        CharSequenceDelegatingStringSet(Set<? extends CharSequence> allNames) {
+        CharSequenceDelegatingStringSet(final Set<? extends CharSequence> allNames) {
             super(allNames);
         }
 
         @Override
-        public boolean add(String e) {
+        public boolean add(final String e) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public boolean addAll(Collection<? extends String> c) {
+        public boolean addAll(final Collection<? extends String> c) {
             throw new UnsupportedOperationException();
         }
     }
@@ -399,7 +399,7 @@ final class ServiceTalkToNettyHttpHeaders extends HttpHeaders {
     private abstract static class DelegatingStringSet<T> extends AbstractCollection<String> implements Set<String> {
         protected final Set<? extends T> allNames;
 
-        DelegatingStringSet(Set<? extends T> allNames) {
+        DelegatingStringSet(final Set<? extends T> allNames) {
             this.allNames = checkNotNull(allNames, "allNames");
         }
 
@@ -414,7 +414,7 @@ final class ServiceTalkToNettyHttpHeaders extends HttpHeaders {
         }
 
         @Override
-        public boolean contains(Object o) {
+        public boolean contains(final Object o) {
             return allNames.contains(o.toString());
         }
 
@@ -424,7 +424,7 @@ final class ServiceTalkToNettyHttpHeaders extends HttpHeaders {
         }
 
         @Override
-        public boolean remove(Object o) {
+        public boolean remove(final Object o) {
             return allNames.remove(o);
         }
 
@@ -437,7 +437,7 @@ final class ServiceTalkToNettyHttpHeaders extends HttpHeaders {
     private static final class StringIterator<T> implements Iterator<String> {
         private final Iterator<T> iter;
 
-        StringIterator(Iterator<T> iter) {
+        StringIterator(final Iterator<T> iter) {
             this.iter = iter;
         }
 
@@ -448,7 +448,7 @@ final class ServiceTalkToNettyHttpHeaders extends HttpHeaders {
 
         @Override
         public String next() {
-            T next = iter.next();
+            final T next = iter.next();
             return next != null ? next.toString() : "null";
         }
 
