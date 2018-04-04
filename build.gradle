@@ -26,7 +26,7 @@ buildscript {
   }
 }
 
-apply plugin: "servicetalk-build"
+apply plugin: "servicetalk-library"
 
 dependencies {
   api "io.servicetalk:servicetalk-bom-internal:0.1.0-SNAPSHOT"
