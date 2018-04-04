@@ -31,10 +31,12 @@ class ProjectUtils {
     manifest.attributes("Built-JDK": System.getProperty("java.version"),
         "Specification-Title": project.name,
         "Specification-Version": "${-> project.version}",
-        "Specification-Vendor": "Apple Inc.",
+        // TODO: restore before open sourcing
+        //"Specification-Vendor": "Apple Inc.",
         "Implementation-Title": project.name,
         "Implementation-Version": "${-> project.version}",
-        "Implementation-Vendor": "Apple Inc.",
+        // TODO: restore before open sourcing
+        //"Implementation-Vendor": "Apple Inc.",
         "Automatic-Module-Name": "io.${project.name.replace("-", ".")}"
     )
   }
@@ -100,7 +102,7 @@ class ProjectUtils {
   }
 
   static File copyResource(String resourceSourcePath, File destinationFolder, String destinationFilename) {
-    def content = ServiceTalkBuildPlugin.class.getResource(resourceSourcePath).text
+    def content = ProjectUtils.class.getResource(resourceSourcePath).text
     return writeToFile(content, destinationFolder, destinationFilename)
   }
 

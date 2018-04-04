@@ -16,7 +16,6 @@
 package io.servicetalk.build.gradle
 
 import org.gradle.api.JavaVersion
-import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.XmlProvider
 import org.gradle.api.artifacts.Configuration
@@ -38,8 +37,10 @@ import static io.servicetalk.build.gradle.ProjectUtils.generateMavenDependencies
 import static io.servicetalk.build.gradle.ProjectUtils.getOrCreateNode
 import static io.servicetalk.build.gradle.ProjectUtils.writeToFile
 
-class ServiceTalkBuildPlugin implements Plugin<Project> {
+class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
   void apply(Project project) {
+    super.apply(project)
+
     applyDocPlugins project
 
     if (project.subprojects) {
@@ -47,24 +48,20 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
       applyEclipsePlugin project
 
       project.subprojects {
-        configureJavaProject it
+        configureProject it
       }
     } else {
-      configureJavaProject project
+      configureProject project
     }
   }
 
-  private static void configureJavaProject(Project project) {
-    applyJavaPlugin project
+  private static void configureProject(Project project) {
+    applyJavaLibraryPlugin project
+    applyQualityPlugins project
     applyIdeaPlugin project
     applyEclipsePlugin project
-    applyLicensePlugin project
-    applyCommonPlugins project
-    applyQualityPlugins project
 
     // TODO apply japicmp plugin
-
-    configureSubProject project
 
     // TODO allow subprojects to opt-in test fixtures
     configureTestFixtures project
@@ -72,7 +69,7 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
 
   private static void applyDocPlugins(Project project) {
     project.configure(project) {
-      apply plugin: "org.asciidoctor.convert"
+      pluginManager.apply("org.asciidoctor.convert")
 
       asciidoctor {
         sourceDir = file("docs")
@@ -101,103 +98,9 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
     }
   }
 
-  private static void applyJavaPlugin(Project project) {
+  private static void applyJavaLibraryPlugin(Project project) {
     project.configure(project) {
-      apply plugin: "java-library"
-    }
-  }
-
-  public static void applyIdeaPlugin(Project project) {
-    project.configure(project) {
-      apply plugin: "idea"
-
-      if (project.parent == null) {
-        idea.project.languageLevel = "1.8"
-        idea.project.targetBytecodeVersion = JavaVersion.VERSION_1_8
-
-        idea.project.ipr.withXml { XmlProvider provider ->
-          appendNodes(provider, getClass().getResourceAsStream("idea/ipr-components.xml"))
-        }
-        idea.workspace.iws.withXml { XmlProvider provider ->
-          appendNodes(provider, getClass().getResourceAsStream("idea/iws-components.xml"))
-        }
-      }
-    }
-  }
-
-  public static void applyEclipsePlugin(Project project) {
-    project.configure(project) {
-      apply plugin: "eclipse"
-
-      // safer/easier to always regenerate
-      tasks.eclipse.dependsOn tasks.cleanEclipse
-
-      if (project.parent != null) {
-        // TODO review this when shading is finalized
-        // assumes all subprojects depend on (shaded) netty
-        // tasks.eclipseClasspath.dependsOn ":service-talk-core:shadedNettySourcesJar"
-
-        eclipse.classpath.file.withXml { XmlProvider provider ->
-          def xmlClasspath = provider.asNode()
-          for (entry in xmlClasspath.classpathentry) {
-            if (entry.@kind == "lib" && entry.@path.contains("netty-all-shaded")) {
-              entry.@sourcepath = entry.@path.replaceFirst(".jar", "-sources.jar")
-            }
-          }
-        }
-      }
-    }
-  }
-
-  private static void applyLicensePlugin(Project project) {
-    project.configure(project) {
-      apply plugin: "com.github.hierynomus.license"
-      license {
-        header = null
-        headerURI = getClass().getResource("license/HEADER.txt").toURI()
-        strictCheck = true
-        mapping {
-          java = 'SLASHSTAR_STYLE'
-          gradle = 'SLASHSTAR_STYLE'
-        }
-        headerDefinitions {
-          // Redefine XML style to align with Intellij IDEA format
-          // doc: https://github.com/hierynomus/license-gradle-plugin#creating-custom-header-definitions
-          xml_style {
-            firstLine = '<!--'
-            beforeEachLine = '  ~ '
-            endLine = '  -->'
-            skipLinePattern = '^<\\?xml.*>$'
-            firstLineDetectionPattern = '(\\\\s|\\\\t)*<!--.*$'
-            lastLineDetectionPattern = '.*-->(\\\\s|\\\\t)*$'
-            allowBlankLines = true
-            isMultiline = true
-          }
-        }
-      }
-
-      // Include some files from the root directory
-      // doc: https://github.com/hierynomus/license-gradle-plugin#running-on-a-non-java-project
-      def rootFileTree = fileTree("$rootDir") {
-        includes = ["*.gradle", "*.properties", "gradle/**"]
-        excludes = ["gradle/wrapper/**"]
-      }
-
-      project.task("licenseRoot", type: com.hierynomus.gradle.license.tasks.LicenseCheck) {
-        source = rootFileTree
-      }
-      tasks.license.dependsOn licenseRoot
-
-      project.task("licenseFormatRoot", type: com.hierynomus.gradle.license.tasks.LicenseFormat) {
-        source = rootFileTree
-      }
-      tasks.licenseFormat.dependsOn licenseFormatRoot
-    }
-  }
-
-  private static void applyCommonPlugins(Project project) {
-    project.configure(project) {
-      apply plugin: "maven-publish"
+      pluginManager.apply("java-library")
 
       jar {
         addManifestAttributes(project, manifest)
@@ -220,52 +123,64 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
           mavenJava(MavenPublication) {
             // publish jars, sources and docs
             from components.java
-            artifact(javadocJar)
-            artifact(sourcesJar)
-            // set compile -> runtime deps
-            // see http://forums.gradle.org/gradle/topics/maven_publish_plugin_generated_pom_making_dependency_scope_runtime
-            pom.withXml { provider ->
-              provider.asNode().dependencies.dependency.findAll { pomDep ->
-                project.configurations["compile"].dependencies.any { dep ->
-                  dep.group == pomDep.groupId.text() &&
-                      dep.name == pomDep.artifactId.text()
-                }
-              }.each {
-                it.scope*.value = "compile"
-              }
+            // TODO: remove condition after open sourcing
+            if (!project.hasProperty("noSource")) {
+              artifact(javadocJar)
+              artifact(sourcesJar)
             }
           }
         }
       }
+    }
+  }
 
-      // compatibility with apple"s CI system
+  public static void applyIdeaPlugin(Project project) {
+    project.configure(project) {
+      pluginManager.apply("idea")
 
-      task("package", dependsOn: assemble)
+      if (project.parent == null) {
+        idea.project.languageLevel = "1.8"
+        idea.project.targetBytecodeVersion = JavaVersion.VERSION_1_8
 
-      def versionString = version.toString()
-
-      if (0 == repositories.size()) {
-        repositories {
-          jcenter()
+        idea.project.ipr.withXml { XmlProvider provider ->
+          appendNodes(provider, getClass().getResourceAsStream("idea/ipr-components.xml"))
         }
-      } else {
-        if (!versionString.endsWith("-apple")) {
-          version += "-apple"
+        idea.workspace.iws.withXml { XmlProvider provider ->
+          appendNodes(provider, getClass().getResourceAsStream("idea/iws-components.xml"))
         }
       }
+    }
+  }
 
-      if (!hasProperty("releaseBuild") && !versionString.endsWith("-SNAPSHOT")) {
-        version += "-SNAPSHOT"
+  public static void applyEclipsePlugin(Project project) {
+    project.configure(project) {
+      pluginManager.apply("eclipse")
+
+      // safer/easier to always regenerate
+      tasks.eclipse.dependsOn tasks.cleanEclipse
+
+      if (project.parent != null) {
+        // TODO review this when shading is finalized
+        // assumes all subprojects depend on (shaded) netty
+        // tasks.eclipseClasspath.dependsOn ":service-talk-core:shadedNettySourcesJar"
+
+        eclipse.classpath.file.withXml { XmlProvider provider ->
+          def xmlClasspath = provider.asNode()
+          for (entry in xmlClasspath.classpathentry) {
+            if (entry.@kind == "lib" && entry.@path.contains("netty-all-shaded")) {
+              entry.@sourcepath = entry.@path.replaceFirst(".jar", "-sources.jar")
+            }
+          }
+        }
       }
     }
   }
 
   private static void applyQualityPlugins(Project project) {
     project.configure(project) {
-
-      apply plugin: "checkstyle"
-      apply plugin: "pmd"
-      apply plugin: "com.github.spotbugs"
+      pluginManager.apply("checkstyle")
+      pluginManager.apply("pmd")
+      pluginManager.apply("com.github.spotbugs")
 
       checkstyle {
         toolVersion = "8.8"
@@ -359,18 +274,6 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
     }
   }
 
-  private static void configureSubProject(Project project) {
-    project.configure(project) {
-      sourceCompatibility = 1.8
-
-      test {
-        testLogging.showStandardStreams = true
-
-        jvmArgs '-server', '-Xms2g', '-Xmx4g', '-dsa', '-da', '-ea:com.apple...', '-ea:servicetalk...', '-XX:+AggressiveOpts', '-XX:+TieredCompilation', '-XX:+UseBiasedLocking', '-XX:+UseFastAccessorMethods', '-XX:+OptimizeStringConcat', '-XX:+HeapDumpOnOutOfMemoryError', '-XX:+PrintGCDetails'
-      }
-    }
-  }
-
   private static void configureTestFixtures(Project project) {
     project.configure(project) {
       File testFixturesFolder = file("$projectDir/src/testFixtures")
@@ -411,8 +314,11 @@ class ServiceTalkBuildPlugin implements Plugin<Project> {
           testFixtures(MavenPublication) {
             artifactId = "$testFixturesJar.baseName-$testFixturesJar.appendix"
             artifact(testFixturesJar)
-            artifact(sourcesJar)
-            artifact(javadocJar)
+            // TODO: remove condition after open sourcing
+            if (!project.hasProperty("noSource")) {
+              artifact(sourcesJar)
+              artifact(javadocJar)
+            }
             pom.withXml { provider ->
               Node dependenciesNode = getOrCreateNode(provider.asNode(), "dependencies")
               Configuration testFixturesCompileConfig = project.configurations["testFixturesCompile"]

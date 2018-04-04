@@ -15,24 +15,26 @@
  */
 plugins {
   id "com.github.hierynomus.license" version "0.14.0"
-}
-
-repositories {
-  maven {
-    url "https://plugins.gradle.org/m2/"
-  }
+  id "com.jfrog.bintray" version "1.7.3"
 }
 
 apply plugin: "groovy"
 apply plugin: "idea"
 apply plugin: "maven-publish"
 
+repositories {
+  jcenter()
+  maven { url "https://plugins.gradle.org/m2/" }
+}
+
 dependencies {
   compile gradleApi()
   compile localGroovy()
+  // these are plugins that are applied by the plugin
   compile "org.asciidoctor:asciidoctor-gradle-plugin:1.5.7"
   compile "gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.14.0"
   compile "gradle.plugin.com.github.spotbugs:spotbugs-gradle-plugin:1.6.1"
+  compile "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3"
 }
 
 license {
@@ -76,10 +78,12 @@ jar {
     attributes "Built-JDK": System.getProperty("java.version"),
         "Specification-Title": project.name,
         "Specification-Version": "${-> project.version}",
-        "Specification-Vendor": "Apple Inc.",
+        // TODO: restore before open sourcing
+        //"Specification-Vendor": "Apple Inc.",
         "Implementation-Title": project.name,
         "Implementation-Version": "${-> project.version}",
-        "Implementation-Vendor": "Apple Inc.",
+        // TODO: restore before open sourcing
+        //"Implementation-Vendor": "Apple Inc.",
         "Automatic-Module-Name": "io.${project.name.replace("-", ".")}"
   }
 }
@@ -90,6 +94,22 @@ publishing {
       // publish jars, sources and docs
       from components.java
     }
+  }
+}
+
+if (System.getenv("BINTRAY_USER") && System.getenv("BINTRAY_KEY")) {
+  bintray {
+      user = System.getenv("BINTRAY_USER")
+      key = System.getenv("BINTRAY_KEY")
+      publications = ["mavenJava"]
+      pkg {
+          repo = "servicetalk"
+          name = project.name
+          licenses = ["Apache-2.0"]
+          vcsUrl = "https://github.com/servicetalk/${project.name}.git"
+      }
+      override = true
+      publish = true
   }
 }
 
@@ -109,15 +129,9 @@ idea {
   }
 }
 
-task('package', dependsOn: assemble)
-
 def versionString = version.toString()
 
-if (0 == repositories.size()) {
-  repositories {
-    jcenter()
-  }
-} else {
+if (System.getenv("apple")) {
   if (!versionString.endsWith("-apple")) {
     version += "-apple"
   }
@@ -126,3 +140,5 @@ if (0 == repositories.size()) {
 if (!hasProperty('releaseBuild') && !versionString.endsWith("-SNAPSHOT")) {
   version += "-SNAPSHOT"
 }
+
+task('package', dependsOn: assemble)
