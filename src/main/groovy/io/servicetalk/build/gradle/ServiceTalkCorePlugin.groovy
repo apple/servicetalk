@@ -155,7 +155,7 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
       test {
         testLogging.showStandardStreams = true
 
-        jvmArgs '-server', '-Xms2g', '-Xmx4g', '-dsa', '-da', '-ea:com.apple...', '-ea:servicetalk...',
+        jvmArgs '-server', '-Xms2g', '-Xmx4g', '-dsa', '-da', '-ea:io.servicetalk...',
                 '-XX:+AggressiveOpts', '-XX:+TieredCompilation', '-XX:+UseBiasedLocking', '-XX:+UseFastAccessorMethods',
                 '-XX:+OptimizeStringConcat', '-XX:+HeapDumpOnOutOfMemoryError', '-XX:+PrintGCDetails'
       }
