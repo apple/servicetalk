@@ -36,7 +36,7 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
     configureTests project
   }
 
-  private static void applyLicensePlugin(Project project) {
+  public static void applyLicensePlugin(Project project) {
     project.configure(project) {
       pluginManager.apply("com.github.hierynomus.license")
       license {
@@ -66,7 +66,7 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
       // Include some files from the root directory
       // doc: https://github.com/hierynomus/license-gradle-plugin#running-on-a-non-java-project
       def rootFileTree = fileTree("$rootDir") {
-        includes = ["*.gradle", "*.properties", "gradle/**"]
+        includes = ["*.gradle", "*.properties", "scripts/**", "gradle/**"]
         excludes = ["gradle/wrapper/**"]
       }
 
