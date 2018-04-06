@@ -17,319 +17,321 @@ package io.servicetalk.http.api;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.toStatusClass;
+
 /**
  * Provides constant instances of {@link HttpResponseStatus}, as well as a mechanism for creating new instances if the
  * existing constants are not sufficient.
  */
-public final class HttpResponseStatuses {
+public enum HttpResponseStatuses implements HttpResponseStatus {
+
     /**
      * 100 Continue
      */
-    public static final HttpResponseStatus CONTINUE = new DefaultHttpResponseStatus(100, "Continue");
+    CONTINUE(100, "Continue"),
 
     /**
      * 101 Switching Protocols
      */
-    public static final HttpResponseStatus SWITCHING_PROTOCOLS =
-            new DefaultHttpResponseStatus(101, "Switching Protocols");
+    SWITCHING_PROTOCOLS(101, "Switching Protocols"),
 
     /**
      * 102 Processing (WebDAV, RFC2518)
      */
-    public static final HttpResponseStatus PROCESSING = new DefaultHttpResponseStatus(102, "Processing");
+    PROCESSING(102, "Processing"),
 
     /**
      * 200 OK
      */
-    public static final HttpResponseStatus OK = new DefaultHttpResponseStatus(200, "OK");
+    OK(200, "OK"),
 
     /**
      * 201 Created
      */
-    public static final HttpResponseStatus CREATED = new DefaultHttpResponseStatus(201, "Created");
+    CREATED(201, "Created"),
 
     /**
      * 202 Accepted
      */
-    public static final HttpResponseStatus ACCEPTED = new DefaultHttpResponseStatus(202, "Accepted");
+    ACCEPTED(202, "Accepted"),
 
     /**
      * 203 Non-Authoritative Information (since HTTP/1.1)
      */
-    public static final HttpResponseStatus NON_AUTHORITATIVE_INFORMATION =
-            new DefaultHttpResponseStatus(203, "Non-Authoritative Information");
+    NON_AUTHORITATIVE_INFORMATION(203, "Non-Authoritative Information"),
 
     /**
      * 204 No Content
      */
-    public static final HttpResponseStatus NO_CONTENT = new DefaultHttpResponseStatus(204, "No Content");
+    NO_CONTENT(204, "No Content"),
 
     /**
      * 205 Reset Content
      */
-    public static final HttpResponseStatus RESET_CONTENT = new DefaultHttpResponseStatus(205, "Reset Content");
+    RESET_CONTENT(205, "Reset Content"),
 
     /**
      * 206 Partial Content
      */
-    public static final HttpResponseStatus PARTIAL_CONTENT = new DefaultHttpResponseStatus(206, "Partial Content");
+    PARTIAL_CONTENT(206, "Partial Content"),
 
     /**
      * 207 Multi-Status (WebDAV, RFC2518)
      */
-    public static final HttpResponseStatus MULTI_STATUS = new DefaultHttpResponseStatus(207, "Multi-Status");
+    MULTI_STATUS(207, "Multi-Status"),
 
     /**
      * 300 Multiple Choices
      */
-    public static final HttpResponseStatus MULTIPLE_CHOICES = new DefaultHttpResponseStatus(300, "Multiple Choices");
+    MULTIPLE_CHOICES(300, "Multiple Choices"),
 
     /**
      * 301 Moved Permanently
      */
-    public static final HttpResponseStatus MOVED_PERMANENTLY = new DefaultHttpResponseStatus(301, "Moved Permanently");
+    MOVED_PERMANENTLY(301, "Moved Permanently"),
 
     /**
      * 302 Found
      */
-    public static final HttpResponseStatus FOUND = new DefaultHttpResponseStatus(302, "Found");
+    FOUND(302, "Found"),
 
     /**
      * 303 See Other (since HTTP/1.1)
      */
-    public static final HttpResponseStatus SEE_OTHER = new DefaultHttpResponseStatus(303, "See Other");
+    SEE_OTHER(303, "See Other"),
 
     /**
      * 304 Not Modified
      */
-    public static final HttpResponseStatus NOT_MODIFIED = new DefaultHttpResponseStatus(304, "Not Modified");
+    NOT_MODIFIED(304, "Not Modified"),
 
     /**
      * 305 Use Proxy (since HTTP/1.1)
      */
-    public static final HttpResponseStatus USE_PROXY = new DefaultHttpResponseStatus(305, "Use Proxy");
+    USE_PROXY(305, "Use Proxy"),
 
     /**
      * 307 Temporary Redirect (since HTTP/1.1)
      */
-    public static final HttpResponseStatus TEMPORARY_REDIRECT =
-            new DefaultHttpResponseStatus(307, "Temporary Redirect");
+    TEMPORARY_REDIRECT(307, "Temporary Redirect"),
 
     /**
      * 308 Permanent Redirect (RFC7538)
      */
-    public static final HttpResponseStatus PERMANENT_REDIRECT =
-            new DefaultHttpResponseStatus(308, "Permanent Redirect");
+    PERMANENT_REDIRECT(308, "Permanent Redirect"),
 
     /**
      * 400 Bad Request
      */
-    public static final HttpResponseStatus BAD_REQUEST = new DefaultHttpResponseStatus(400, "Bad Request");
+    BAD_REQUEST(400, "Bad Request"),
 
     /**
      * 401 Unauthorized
      */
-    public static final HttpResponseStatus UNAUTHORIZED = new DefaultHttpResponseStatus(401, "Unauthorized");
+    UNAUTHORIZED(401, "Unauthorized"),
 
     /**
      * 402 Payment Required
      */
-    public static final HttpResponseStatus PAYMENT_REQUIRED = new DefaultHttpResponseStatus(402, "Payment Required");
+    PAYMENT_REQUIRED(402, "Payment Required"),
 
     /**
      * 403 Forbidden
      */
-    public static final HttpResponseStatus FORBIDDEN = new DefaultHttpResponseStatus(403, "Forbidden");
+    FORBIDDEN(403, "Forbidden"),
 
     /**
      * 404 Not Found
      */
-    public static final HttpResponseStatus NOT_FOUND = new DefaultHttpResponseStatus(404, "Not Found");
+    NOT_FOUND(404, "Not Found"),
 
     /**
      * 405 Method Not Allowed
      */
-    public static final HttpResponseStatus METHOD_NOT_ALLOWED =
-            new DefaultHttpResponseStatus(405, "Method Not Allowed");
+    METHOD_NOT_ALLOWED(405, "Method Not Allowed"),
 
     /**
      * 406 Not Acceptable
      */
-    public static final HttpResponseStatus NOT_ACCEPTABLE = new DefaultHttpResponseStatus(406, "Not Acceptable");
+    NOT_ACCEPTABLE(406, "Not Acceptable"),
 
     /**
      * 407 Proxy Authentication Required
      */
-    public static final HttpResponseStatus PROXY_AUTHENTICATION_REQUIRED =
-            new DefaultHttpResponseStatus(407, "Proxy Authentication Required");
+    PROXY_AUTHENTICATION_REQUIRED(407, "Proxy Authentication Required"),
 
     /**
      * 408 Request Timeout
      */
-    public static final HttpResponseStatus REQUEST_TIMEOUT = new DefaultHttpResponseStatus(408, "Request Timeout");
+    REQUEST_TIMEOUT(408, "Request Timeout"),
 
     /**
      * 409 Conflict
      */
-    public static final HttpResponseStatus CONFLICT = new DefaultHttpResponseStatus(409, "Conflict");
+    CONFLICT(409, "Conflict"),
 
     /**
      * 410 Gone
      */
-    public static final HttpResponseStatus GONE = new DefaultHttpResponseStatus(410, "Gone");
+    GONE(410, "Gone"),
 
     /**
      * 411 Length Required
      */
-    public static final HttpResponseStatus LENGTH_REQUIRED = new DefaultHttpResponseStatus(411, "Length Required");
+    LENGTH_REQUIRED(411, "Length Required"),
 
     /**
      * 412 Precondition Failed
      */
-    public static final HttpResponseStatus PRECONDITION_FAILED =
-            new DefaultHttpResponseStatus(412, "Precondition Failed");
+    PRECONDITION_FAILED(412, "Precondition Failed"),
 
     /**
      * 413 Request Entity Too Large
      */
-    public static final HttpResponseStatus REQUEST_ENTITY_TOO_LARGE =
-            new DefaultHttpResponseStatus(413, "Request Entity Too Large");
+    REQUEST_ENTITY_TOO_LARGE(413, "Request Entity Too Large"),
 
     /**
      * 414 Request-URI Too Long
      */
-    public static final HttpResponseStatus REQUEST_URI_TOO_LONG =
-            new DefaultHttpResponseStatus(414, "Request-URI Too Long");
+    REQUEST_URI_TOO_LONG(414, "Request-URI Too Long"),
 
     /**
      * 415 Unsupported Media Type
      */
-    public static final HttpResponseStatus UNSUPPORTED_MEDIA_TYPE =
-            new DefaultHttpResponseStatus(415, "Unsupported Media Type");
+    UNSUPPORTED_MEDIA_TYPE(415, "Unsupported Media Type"),
 
     /**
      * 416 Requested Range Not Satisfiable
      */
-    public static final HttpResponseStatus REQUESTED_RANGE_NOT_SATISFIABLE =
-            new DefaultHttpResponseStatus(416, "Requested Range Not Satisfiable");
+    REQUESTED_RANGE_NOT_SATISFIABLE(416, "Requested Range Not Satisfiable"),
 
     /**
      * 417 Expectation Failed
      */
-    public static final HttpResponseStatus EXPECTATION_FAILED =
-            new DefaultHttpResponseStatus(417, "Expectation Failed");
+    EXPECTATION_FAILED(417, "Expectation Failed"),
 
     /**
      * 421 Misdirected Request
      * <p>
      * <a href="https://tools.ietf.org/html/draft-ietf-httpbis-http2-15#section-9.1.2">421 Status Code</a>
      */
-    public static final HttpResponseStatus MISDIRECTED_REQUEST =
-            new DefaultHttpResponseStatus(421, "Misdirected Request");
+    MISDIRECTED_REQUEST(421, "Misdirected Request"),
 
     /**
      * 422 Unprocessable Entity (WebDAV, RFC4918)
      */
-    public static final HttpResponseStatus UNPROCESSABLE_ENTITY =
-            new DefaultHttpResponseStatus(422, "Unprocessable Entity");
+    UNPROCESSABLE_ENTITY(422, "Unprocessable Entity"),
 
     /**
      * 423 Locked (WebDAV, RFC4918)
      */
-    public static final HttpResponseStatus LOCKED = new DefaultHttpResponseStatus(423, "Locked");
+    LOCKED(423, "Locked"),
 
     /**
      * 424 Failed Dependency (WebDAV, RFC4918)
      */
-    public static final HttpResponseStatus FAILED_DEPENDENCY = new DefaultHttpResponseStatus(424, "Failed Dependency");
+    FAILED_DEPENDENCY(424, "Failed Dependency"),
 
     /**
      * 425 Unordered Collection (WebDAV, RFC3648)
      */
-    public static final HttpResponseStatus UNORDERED_COLLECTION =
-            new DefaultHttpResponseStatus(425, "Unordered Collection");
+    UNORDERED_COLLECTION(425, "Unordered Collection"),
 
     /**
      * 426 Upgrade Required (RFC2817)
      */
-    public static final HttpResponseStatus UPGRADE_REQUIRED = new DefaultHttpResponseStatus(426, "Upgrade Required");
+    UPGRADE_REQUIRED(426, "Upgrade Required"),
 
     /**
      * 428 Precondition Required (RFC6585)
      */
-    public static final HttpResponseStatus PRECONDITION_REQUIRED =
-            new DefaultHttpResponseStatus(428, "Precondition Required");
+    PRECONDITION_REQUIRED(428, "Precondition Required"),
 
     /**
      * 429 Too Many Requests (RFC6585)
      */
-    public static final HttpResponseStatus TOO_MANY_REQUESTS = new DefaultHttpResponseStatus(429, "Too Many Requests");
+    TOO_MANY_REQUESTS(429, "Too Many Requests"),
 
     /**
      * 431 Request Header Fields Too Large (RFC6585)
      */
-    public static final HttpResponseStatus REQUEST_HEADER_FIELDS_TOO_LARGE =
-            new DefaultHttpResponseStatus(431, "Request Header Fields Too Large");
+    REQUEST_HEADER_FIELDS_TOO_LARGE(431, "Request Header Fields Too Large"),
 
     /**
      * 500 Internal Server Error
      */
-    public static final HttpResponseStatus INTERNAL_SERVER_ERROR =
-            new DefaultHttpResponseStatus(500, "Internal Server Error");
+    INTERNAL_SERVER_ERROR(500, "Internal Server Error"),
 
     /**
      * 501 Not Implemented
      */
-    public static final HttpResponseStatus NOT_IMPLEMENTED = new DefaultHttpResponseStatus(501, "Not Implemented");
+    NOT_IMPLEMENTED(501, "Not Implemented"),
 
     /**
      * 502 Bad Gateway
      */
-    public static final HttpResponseStatus BAD_GATEWAY = new DefaultHttpResponseStatus(502, "Bad Gateway");
+    BAD_GATEWAY(502, "Bad Gateway"),
 
     /**
      * 503 Service Unavailable
      */
-    public static final HttpResponseStatus SERVICE_UNAVAILABLE =
-            new DefaultHttpResponseStatus(503, "Service Unavailable");
+    SERVICE_UNAVAILABLE(503, "Service Unavailable"),
 
     /**
      * 504 Gateway Timeout
      */
-    public static final HttpResponseStatus GATEWAY_TIMEOUT = new DefaultHttpResponseStatus(504, "Gateway Timeout");
+    GATEWAY_TIMEOUT(504, "Gateway Timeout"),
 
     /**
      * 505 HTTP Version Not Supported
      */
-    public static final HttpResponseStatus HTTP_VERSION_NOT_SUPPORTED =
-            new DefaultHttpResponseStatus(505, "HTTP Version Not Supported");
+    HTTP_VERSION_NOT_SUPPORTED(505, "HTTP Version Not Supported"),
 
     /**
      * 506 Variant Also Negotiates (RFC2295)
      */
-    public static final HttpResponseStatus VARIANT_ALSO_NEGOTIATES =
-            new DefaultHttpResponseStatus(506, "Variant Also Negotiates");
+    VARIANT_ALSO_NEGOTIATES(506, "Variant Also Negotiates"),
 
     /**
      * 507 Insufficient Storage (WebDAV, RFC4918)
      */
-    public static final HttpResponseStatus INSUFFICIENT_STORAGE =
-            new DefaultHttpResponseStatus(507, "Insufficient Storage");
+    INSUFFICIENT_STORAGE(507, "Insufficient Storage"),
 
 
     /**
      * 510 Not Extended (RFC2774)
      */
-    public static final HttpResponseStatus NOT_EXTENDED = new DefaultHttpResponseStatus(510, "Not Extended");
+    NOT_EXTENDED(510, "Not Extended"),
 
     /**
      * 511 Network Authentication Required (RFC6585)
      */
-    public static final HttpResponseStatus NETWORK_AUTHENTICATION_REQUIRED =
-            new DefaultHttpResponseStatus(511, "Network Authentication Required");
+    NETWORK_AUTHENTICATION_REQUIRED(511, "Network Authentication Required");
 
-    private HttpResponseStatuses() {
+    private final int code;
+    private final String reasonPhrase;
+    private final StatusClass statusClass;
+
+    HttpResponseStatuses(int code, String reasonPhrase) {
         // No instances.
+        this.code = code;
+        this.reasonPhrase = reasonPhrase;
+        this.statusClass = toStatusClass(code);
+    }
+
+    @Override
+    public StatusClass getStatusClass() {
+        return statusClass;
+    }
+
+    @Override
+    public int getCode() {
+        return code;
+    }
+
+    @Override
+    public String getReasonPhrase() {
+        return reasonPhrase;
     }
 
     /**

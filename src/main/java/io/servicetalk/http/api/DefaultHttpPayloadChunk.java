@@ -26,6 +26,8 @@ public class DefaultHttpPayloadChunk implements HttpPayloadChunk {
 
     /**
      * Create a {@link DefaultHttpPayloadChunk} which has contents that are the specified {@link Buffer}.
+     *
+     * @param content {@link Buffer} payload.
      */
     public DefaultHttpPayloadChunk(final Buffer content) {
         this.content = content;

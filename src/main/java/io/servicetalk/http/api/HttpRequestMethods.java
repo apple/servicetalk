@@ -30,26 +30,30 @@ import static io.servicetalk.http.api.HttpRequestMethods.HttpRequestMethodProper
  * Provides constant instances of {@link HttpRequestMethod}, as well as a mechanism for creating new instances if the
  * existing constants are not sufficient.
  */
-public final class HttpRequestMethods {
+public enum HttpRequestMethods implements HttpRequestMethod {
 
-    public static final HttpRequestMethod GET = new DefaultHttpRequestMethod("GET", SAFE_IDEMPOTENT_CACHEABLE);
-    public static final HttpRequestMethod HEAD = new DefaultHttpRequestMethod("HEAD", SAFE_IDEMPOTENT_CACHEABLE);
-    public static final HttpRequestMethod OPTIONS = new DefaultHttpRequestMethod("OPTIONS", SAFE_IDEMPOTENT);
-    public static final HttpRequestMethod TRACE = new DefaultHttpRequestMethod("TRACE", SAFE_IDEMPOTENT);
-    public static final HttpRequestMethod PUT = new DefaultHttpRequestMethod("PUT", IDEMPOTENT);
-    public static final HttpRequestMethod DELETE = new DefaultHttpRequestMethod("DELETE", IDEMPOTENT);
-    public static final HttpRequestMethod POST = new DefaultHttpRequestMethod("POST", CACHEABLE);
-    public static final HttpRequestMethod PATCH = new DefaultHttpRequestMethod("PATCH", NONE);
-    public static final HttpRequestMethod CONNECT = new DefaultHttpRequestMethod("CONNECT", NONE);
+    GET("GET", SAFE_IDEMPOTENT_CACHEABLE),
+    HEAD("HEAD", SAFE_IDEMPOTENT_CACHEABLE),
+    OPTIONS("OPTIONS", SAFE_IDEMPOTENT),
+    TRACE("TRACE", SAFE_IDEMPOTENT),
+    PUT("PUT", IDEMPOTENT),
+    DELETE("DELETE", IDEMPOTENT),
+    POST("POST", CACHEABLE),
+    PATCH("PATCH", NONE),
+    CONNECT("CONNECT", NONE);
 
-    private HttpRequestMethods() {
-        // No instances.
+    private final String methodName;
+    private final Properties properties;
+
+    HttpRequestMethods(String methodName, Properties properties) {
+        this.methodName = methodName;
+        this.properties = properties;
     }
 
     /**
      * Get a {@link HttpRequestMethod} for the specified {@code methodName}, with
-     * {@link HttpRequestMethodProperties#NONE} for properties. If the {@code methodName} matches that of an existing
-     * constant, the constant will be returned, otherwise a new instance will be returned.
+     * {@link HttpRequestMethodProperties#NONE} for properties. If the {@code methodName} matches those of this
+     * {@code enum}, that {@code enum} value will be returned, otherwise a new instance will be returned.
      *
      * @param methodName the <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>
      * @return a {@link HttpRequestMethod}.
@@ -64,8 +68,8 @@ public final class HttpRequestMethods {
 
     /**
      * Get a {@link HttpRequestMethod} for the specified {@code methodName} and {@code properties}. If the
-     * {@code methodName} {@link String#equals} and {@code properties} '{@code ==}' those of an existing constant, the
-     * constant will be returned, otherwise a new instance will be returned.
+     * {@code methodName} {@link String#equals} and {@code properties} '{@code ==}' those of of this {@code enum}, that
+     * {@code enum} value will be returned, otherwise a new instance will be returned.
      *
      * @param methodName the <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>
      * @param properties the {@link Properties} associated with this request method.
@@ -103,6 +107,16 @@ public final class HttpRequestMethods {
             default:
                 return null;
         }
+    }
+
+    @Override
+    public String getName() {
+        return methodName;
+    }
+
+    @Override
+    public Properties getMethodProperties() {
+        return properties;
     }
 
     /**
