@@ -116,6 +116,7 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
             key = System.getenv("BINTRAY_KEY")
             publications = ["mavenJava"]
             pkg {
+                userOrg = "servicetalk"
                 repo = "servicetalk"
                 name = project.name
                 licenses = ["Apache-2.0"]

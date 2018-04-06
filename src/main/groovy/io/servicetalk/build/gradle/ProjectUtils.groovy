@@ -31,12 +31,10 @@ class ProjectUtils {
     manifest.attributes("Built-JDK": System.getProperty("java.version"),
         "Specification-Title": project.name,
         "Specification-Version": "${-> project.version}",
-        // TODO: restore before open sourcing
-        //"Specification-Vendor": "Apple Inc.",
+        "Specification-Vendor": "Apple Inc.",
         "Implementation-Title": project.name,
         "Implementation-Version": "${-> project.version}",
-        // TODO: restore before open sourcing
-        //"Implementation-Vendor": "Apple Inc.",
+        "Implementation-Vendor": "Apple Inc.",
         "Automatic-Module-Name": "io.${project.name.replace("-", ".")}"
     )
   }

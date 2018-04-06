@@ -78,12 +78,10 @@ jar {
     attributes "Built-JDK": System.getProperty("java.version"),
         "Specification-Title": project.name,
         "Specification-Version": "${-> project.version}",
-        // TODO: restore before open sourcing
-        //"Specification-Vendor": "Apple Inc.",
+        "Specification-Vendor": "Apple Inc.",
         "Implementation-Title": project.name,
         "Implementation-Version": "${-> project.version}",
-        // TODO: restore before open sourcing
-        //"Implementation-Vendor": "Apple Inc.",
+        "Implementation-Vendor": "Apple Inc.",
         "Automatic-Module-Name": "io.${project.name.replace("-", ".")}"
   }
 }
@@ -103,6 +101,7 @@ if (System.getenv("BINTRAY_USER") && System.getenv("BINTRAY_KEY")) {
       key = System.getenv("BINTRAY_KEY")
       publications = ["mavenJava"]
       pkg {
+          userOrg = "servicetalk"
           repo = "servicetalk"
           name = project.name
           licenses = ["Apache-2.0"]

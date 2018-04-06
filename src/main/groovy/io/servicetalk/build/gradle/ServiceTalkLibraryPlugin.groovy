@@ -123,11 +123,8 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
           mavenJava(MavenPublication) {
             // publish jars, sources and docs
             from components.java
-            // TODO: remove condition after open sourcing
-            if (!project.hasProperty("noSource")) {
-              artifact(javadocJar)
-              artifact(sourcesJar)
-            }
+            artifact(javadocJar)
+            artifact(sourcesJar)
           }
         }
       }
@@ -314,11 +311,8 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
           testFixtures(MavenPublication) {
             artifactId = "$testFixturesJar.baseName-$testFixturesJar.appendix"
             artifact(testFixturesJar)
-            // TODO: remove condition after open sourcing
-            if (!project.hasProperty("noSource")) {
-              artifact(sourcesJar)
-              artifact(javadocJar)
-            }
+            artifact(sourcesJar)
+            artifact(javadocJar)
             pom.withXml { provider ->
               Node dependenciesNode = getOrCreateNode(provider.asNode(), "dependencies")
               Configuration testFixturesCompileConfig = project.configurations["testFixturesCompile"]
