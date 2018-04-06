@@ -93,8 +93,11 @@ class ProjectUtils {
       builder.dependency {
         groupId(dep.group)
         artifactId(dep.name)
-        version(dep.version)
         scope(theScope)
+        // Managed dependencies have a null version
+        if (dep.version) {
+          version(dep.version)
+        }
       }
     }
   }
