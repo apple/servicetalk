@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.HttpResponseStatuses;
 
 import javax.annotation.Nullable;
 
@@ -32,130 +33,131 @@ final class NettyHttpResponseStatusConverter {
         return getResponseStatus(nettyStatus.code(), nettyStatus.reasonPhrase());
     }
 
-    static io.netty.handler.codec.http.HttpResponseStatus toNettyHttpResponseStatus(
-            final HttpResponseStatus serviceTalkStatus) {
-        final io.netty.handler.codec.http.HttpResponseStatus nettyStatus = valueOf(serviceTalkStatus.getCode());
-        if (nettyStatus != null && nettyStatus.reasonPhrase().equals(serviceTalkStatus.getReasonPhrase())) {
-            return nettyStatus;
+    static io.netty.handler.codec.http.HttpResponseStatus toNettyHttpResponseStatus(final HttpResponseStatus stStatus) {
+        io.netty.handler.codec.http.HttpResponseStatus nettyStatus = null;
+        if (stStatus instanceof HttpResponseStatuses) {
+            nettyStatus = valueOf((HttpResponseStatuses) stStatus);
         }
-        return new io.netty.handler.codec.http.HttpResponseStatus(serviceTalkStatus.getCode(),
-                serviceTalkStatus.getReasonPhrase());
+        if (nettyStatus == null) {
+            return new io.netty.handler.codec.http.HttpResponseStatus(stStatus.getCode(), stStatus.getReasonPhrase());
+        }
+        return nettyStatus;
     }
 
     @Nullable
-    private static io.netty.handler.codec.http.HttpResponseStatus valueOf(final int statusCode) {
-        switch (statusCode) {
-            case 100:
+    private static io.netty.handler.codec.http.HttpResponseStatus valueOf(final HttpResponseStatuses stStatus) {
+        switch (stStatus) {
+            case CONTINUE:
                 return io.netty.handler.codec.http.HttpResponseStatus.CONTINUE;
-            case 101:
+            case SWITCHING_PROTOCOLS:
                 return io.netty.handler.codec.http.HttpResponseStatus.SWITCHING_PROTOCOLS;
-            case 102:
+            case PROCESSING:
                 return io.netty.handler.codec.http.HttpResponseStatus.PROCESSING;
-            case 200:
+            case OK:
                 return io.netty.handler.codec.http.HttpResponseStatus.OK;
-            case 201:
+            case CREATED:
                 return io.netty.handler.codec.http.HttpResponseStatus.CREATED;
-            case 202:
+            case ACCEPTED:
                 return io.netty.handler.codec.http.HttpResponseStatus.ACCEPTED;
-            case 203:
+            case NON_AUTHORITATIVE_INFORMATION:
                 return io.netty.handler.codec.http.HttpResponseStatus.NON_AUTHORITATIVE_INFORMATION;
-            case 204:
+            case NO_CONTENT:
                 return io.netty.handler.codec.http.HttpResponseStatus.NO_CONTENT;
-            case 205:
+            case RESET_CONTENT:
                 return io.netty.handler.codec.http.HttpResponseStatus.RESET_CONTENT;
-            case 206:
+            case PARTIAL_CONTENT:
                 return io.netty.handler.codec.http.HttpResponseStatus.PARTIAL_CONTENT;
-            case 207:
+            case MULTI_STATUS:
                 return io.netty.handler.codec.http.HttpResponseStatus.MULTI_STATUS;
-            case 300:
+            case MULTIPLE_CHOICES:
                 return io.netty.handler.codec.http.HttpResponseStatus.MULTIPLE_CHOICES;
-            case 301:
+            case MOVED_PERMANENTLY:
                 return io.netty.handler.codec.http.HttpResponseStatus.MOVED_PERMANENTLY;
-            case 302:
+            case FOUND:
                 return io.netty.handler.codec.http.HttpResponseStatus.FOUND;
-            case 303:
+            case SEE_OTHER:
                 return io.netty.handler.codec.http.HttpResponseStatus.SEE_OTHER;
-            case 304:
+            case NOT_MODIFIED:
                 return io.netty.handler.codec.http.HttpResponseStatus.NOT_MODIFIED;
-            case 305:
+            case USE_PROXY:
                 return io.netty.handler.codec.http.HttpResponseStatus.USE_PROXY;
-            case 307:
+            case TEMPORARY_REDIRECT:
                 return io.netty.handler.codec.http.HttpResponseStatus.TEMPORARY_REDIRECT;
-            case 308:
+            case PERMANENT_REDIRECT:
                 return io.netty.handler.codec.http.HttpResponseStatus.PERMANENT_REDIRECT;
-            case 400:
+            case BAD_REQUEST:
                 return io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
-            case 401:
+            case UNAUTHORIZED:
                 return io.netty.handler.codec.http.HttpResponseStatus.UNAUTHORIZED;
-            case 402:
+            case PAYMENT_REQUIRED:
                 return io.netty.handler.codec.http.HttpResponseStatus.PAYMENT_REQUIRED;
-            case 403:
+            case FORBIDDEN:
                 return io.netty.handler.codec.http.HttpResponseStatus.FORBIDDEN;
-            case 404:
+            case NOT_FOUND:
                 return io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
-            case 405:
+            case METHOD_NOT_ALLOWED:
                 return io.netty.handler.codec.http.HttpResponseStatus.METHOD_NOT_ALLOWED;
-            case 406:
+            case NOT_ACCEPTABLE:
                 return io.netty.handler.codec.http.HttpResponseStatus.NOT_ACCEPTABLE;
-            case 407:
+            case PROXY_AUTHENTICATION_REQUIRED:
                 return io.netty.handler.codec.http.HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED;
-            case 408:
+            case REQUEST_TIMEOUT:
                 return io.netty.handler.codec.http.HttpResponseStatus.REQUEST_TIMEOUT;
-            case 409:
+            case CONFLICT:
                 return io.netty.handler.codec.http.HttpResponseStatus.CONFLICT;
-            case 410:
+            case GONE:
                 return io.netty.handler.codec.http.HttpResponseStatus.GONE;
-            case 411:
+            case LENGTH_REQUIRED:
                 return io.netty.handler.codec.http.HttpResponseStatus.LENGTH_REQUIRED;
-            case 412:
+            case PRECONDITION_FAILED:
                 return io.netty.handler.codec.http.HttpResponseStatus.PRECONDITION_FAILED;
-            case 413:
+            case REQUEST_ENTITY_TOO_LARGE:
                 return io.netty.handler.codec.http.HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE;
-            case 414:
+            case REQUEST_URI_TOO_LONG:
                 return io.netty.handler.codec.http.HttpResponseStatus.REQUEST_URI_TOO_LONG;
-            case 415:
+            case UNSUPPORTED_MEDIA_TYPE:
                 return io.netty.handler.codec.http.HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE;
-            case 416:
+            case REQUESTED_RANGE_NOT_SATISFIABLE:
                 return io.netty.handler.codec.http.HttpResponseStatus.REQUESTED_RANGE_NOT_SATISFIABLE;
-            case 417:
+            case EXPECTATION_FAILED:
                 return io.netty.handler.codec.http.HttpResponseStatus.EXPECTATION_FAILED;
-            case 421:
+            case MISDIRECTED_REQUEST:
                 return io.netty.handler.codec.http.HttpResponseStatus.MISDIRECTED_REQUEST;
-            case 422:
+            case UNPROCESSABLE_ENTITY:
                 return io.netty.handler.codec.http.HttpResponseStatus.UNPROCESSABLE_ENTITY;
-            case 423:
+            case LOCKED:
                 return io.netty.handler.codec.http.HttpResponseStatus.LOCKED;
-            case 424:
+            case FAILED_DEPENDENCY:
                 return io.netty.handler.codec.http.HttpResponseStatus.FAILED_DEPENDENCY;
-            case 425:
+            case UNORDERED_COLLECTION:
                 return io.netty.handler.codec.http.HttpResponseStatus.UNORDERED_COLLECTION;
-            case 426:
+            case UPGRADE_REQUIRED:
                 return io.netty.handler.codec.http.HttpResponseStatus.UPGRADE_REQUIRED;
-            case 428:
+            case PRECONDITION_REQUIRED:
                 return io.netty.handler.codec.http.HttpResponseStatus.PRECONDITION_REQUIRED;
-            case 429:
+            case TOO_MANY_REQUESTS:
                 return io.netty.handler.codec.http.HttpResponseStatus.TOO_MANY_REQUESTS;
-            case 431:
+            case REQUEST_HEADER_FIELDS_TOO_LARGE:
                 return io.netty.handler.codec.http.HttpResponseStatus.REQUEST_HEADER_FIELDS_TOO_LARGE;
-            case 500:
+            case INTERNAL_SERVER_ERROR:
                 return io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
-            case 501:
+            case NOT_IMPLEMENTED:
                 return io.netty.handler.codec.http.HttpResponseStatus.NOT_IMPLEMENTED;
-            case 502:
+            case BAD_GATEWAY:
                 return io.netty.handler.codec.http.HttpResponseStatus.BAD_GATEWAY;
-            case 503:
+            case SERVICE_UNAVAILABLE:
                 return io.netty.handler.codec.http.HttpResponseStatus.SERVICE_UNAVAILABLE;
-            case 504:
+            case GATEWAY_TIMEOUT:
                 return io.netty.handler.codec.http.HttpResponseStatus.GATEWAY_TIMEOUT;
-            case 505:
+            case HTTP_VERSION_NOT_SUPPORTED:
                 return io.netty.handler.codec.http.HttpResponseStatus.HTTP_VERSION_NOT_SUPPORTED;
-            case 506:
+            case VARIANT_ALSO_NEGOTIATES:
                 return io.netty.handler.codec.http.HttpResponseStatus.VARIANT_ALSO_NEGOTIATES;
-            case 507:
+            case INSUFFICIENT_STORAGE:
                 return io.netty.handler.codec.http.HttpResponseStatus.INSUFFICIENT_STORAGE;
-            case 510:
+            case NOT_EXTENDED:
                 return io.netty.handler.codec.http.HttpResponseStatus.NOT_EXTENDED;
-            case 511:
+            case NETWORK_AUTHENTICATION_REQUIRED:
                 return io.netty.handler.codec.http.HttpResponseStatus.NETWORK_AUTHENTICATION_REQUIRED;
             default:
                 return null;

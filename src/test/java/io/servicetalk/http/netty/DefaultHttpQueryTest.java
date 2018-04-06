@@ -31,18 +31,17 @@ import java.util.NoSuchElementException;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.addAll;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 public class DefaultHttpQueryTest {
 
@@ -52,16 +51,13 @@ public class DefaultHttpQueryTest {
     public final ExpectedException expected = ExpectedException.none();
 
     @Mock
-    private Supplier<String> rawPathSupplier;
-    @Mock
     private Consumer<String> requestTargetUpdater;
 
     final Map<String, List<String>> params = new LinkedHashMap<>();
 
     @Test
     public void testEncodeToRequestTargetWithNoParams() {
-        when(rawPathSupplier.get()).thenReturn("/some/path");
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, rawPathSupplier, requestTargetUpdater);
+        final DefaultHttpQuery query = new DefaultHttpQuery(params, "/some/path", requestTargetUpdater);
         query.encodeToRequestTarget();
 
         verify(requestTargetUpdater).accept("/some/path");
@@ -69,9 +65,8 @@ public class DefaultHttpQueryTest {
 
     @Test
     public void testEncodeToRequestTargetWithParam() {
-        when(rawPathSupplier.get()).thenReturn("/some/path");
         params.put("foo", newList("bar", "baz"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, rawPathSupplier, requestTargetUpdater);
+        final DefaultHttpQuery query = new DefaultHttpQuery(params, "/some/path", requestTargetUpdater);
         query.encodeToRequestTarget();
 
         verify(requestTargetUpdater).accept("/some/path?foo=bar&foo=baz");
@@ -79,10 +74,9 @@ public class DefaultHttpQueryTest {
 
     @Test
     public void testEncodeToRequestTargetWithMultipleParams() {
-        when(rawPathSupplier.get()).thenReturn("/some/path");
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("123", "456"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, rawPathSupplier, requestTargetUpdater);
+        final DefaultHttpQuery query = new DefaultHttpQuery(params, "/some/path", requestTargetUpdater);
         query.encodeToRequestTarget();
 
         verify(requestTargetUpdater).accept("/some/path?foo=bar&foo=baz&abc=123&abc=456");
@@ -90,9 +84,8 @@ public class DefaultHttpQueryTest {
 
     @Test
     public void testEncodeToRequestTargetWithSpecialCharacters() {
-        when(rawPathSupplier.get()).thenReturn("/some/path");
         params.put("pair", newList("key1=value1", "key2=value2"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, rawPathSupplier, requestTargetUpdater);
+        final DefaultHttpQuery query = new DefaultHttpQuery(params, "/some/path", requestTargetUpdater);
         query.encodeToRequestTarget();
 
         verify(requestTargetUpdater).accept("/some/path?pair=key1%3Dvalue1&pair=key2%3Dvalue2");
@@ -101,14 +94,14 @@ public class DefaultHttpQueryTest {
     @Test
     public void testGetFirstValue() {
         params.put("foo", newList("bar", "baz"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, rawPathSupplier, requestTargetUpdater);
+        final DefaultHttpQuery query = new DefaultHttpQuery(params, "", requestTargetUpdater);
 
         assertEquals("bar", query.get("foo"));
     }
 
     @Test
     public void testGetFirstValueNone() {
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, rawPathSupplier, requestTargetUpdater);
+        final DefaultHttpQuery query = new DefaultHttpQuery(params, "", requestTargetUpdater);
 
         assertNull(query.get("foo"));
     }
@@ -116,14 +109,14 @@ public class DefaultHttpQueryTest {
     @Test
     public void testGetAll() {
         params.put("foo", newList("bar", "baz"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, rawPathSupplier, requestTargetUpdater);
+        final DefaultHttpQuery query = new DefaultHttpQuery(params, "", requestTargetUpdater);
 
         assertEquals(asList("bar", "baz"), iteratorAsList(query.getAll("foo")));
     }
 
     @Test
     public void testGetAllEmpty() {
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, rawPathSupplier, requestTargetUpdater);
+        final DefaultHttpQuery query = new DefaultHttpQuery(params, "", requestTargetUpdater);
 
         assertFalse(query.getAll("foo").hasNext());
     }
@@ -131,17 +124,16 @@ public class DefaultHttpQueryTest {
     @Test
     public void testGetKeys() {
         params.put("foo", newList("bar", "baz"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, rawPathSupplier, requestTargetUpdater);
+        final DefaultHttpQuery query = new DefaultHttpQuery(params, "", requestTargetUpdater);
 
         assertEquals(asList("bar", "baz"), iteratorAsList(query.getAll("foo")));
     }
 
     @Test
     public void testSet() {
-        when(rawPathSupplier.get()).thenReturn("/some/path");
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, rawPathSupplier, requestTargetUpdater);
+        final DefaultHttpQuery query = new DefaultHttpQuery(params, "/some/path", requestTargetUpdater);
         query.set("abc", "new");
         query.encodeToRequestTarget();
 
@@ -150,10 +142,9 @@ public class DefaultHttpQueryTest {
 
     @Test
     public void testSetValues() {
-        when(rawPathSupplier.get()).thenReturn("/some/path");
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, rawPathSupplier, requestTargetUpdater);
+        final DefaultHttpQuery query = new DefaultHttpQuery(params, "/some/path", requestTargetUpdater);
         query.set("abc", newList("new1", "new2"));
         query.encodeToRequestTarget();
 
@@ -162,10 +153,9 @@ public class DefaultHttpQueryTest {
 
     @Test
     public void testAdd() {
-        when(rawPathSupplier.get()).thenReturn("/some/path");
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, rawPathSupplier, requestTargetUpdater);
+        final DefaultHttpQuery query = new DefaultHttpQuery(params, "/some/path", requestTargetUpdater);
         query.add("abc", "new");
         query.encodeToRequestTarget();
 
@@ -174,10 +164,9 @@ public class DefaultHttpQueryTest {
 
     @Test
     public void testAddValues() {
-        when(rawPathSupplier.get()).thenReturn("/some/path");
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, rawPathSupplier, requestTargetUpdater);
+        final DefaultHttpQuery query = new DefaultHttpQuery(params, "/some/path", requestTargetUpdater);
         query.add("abc", newList("new1", "new2"));
         query.encodeToRequestTarget();
 
@@ -187,7 +176,7 @@ public class DefaultHttpQueryTest {
     @Test
     public void testContainsKey() {
         params.put("foo", newList("bar", "baz"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, rawPathSupplier, requestTargetUpdater);
+        final DefaultHttpQuery query = new DefaultHttpQuery(params, "", requestTargetUpdater);
 
         assertTrue(query.contains("foo"));
         assertFalse(query.contains("abc"));
@@ -196,7 +185,7 @@ public class DefaultHttpQueryTest {
     @Test
     public void testContainsKeyAndValue() {
         params.put("foo", newList("bar", "baz"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, rawPathSupplier, requestTargetUpdater);
+        final DefaultHttpQuery query = new DefaultHttpQuery(params, "", requestTargetUpdater);
 
         assertTrue(query.contains("foo", "bar"));
         assertFalse(query.contains("foo", "new"));
@@ -204,9 +193,8 @@ public class DefaultHttpQueryTest {
 
     @Test
     public void testRemoveKey() {
-        when(rawPathSupplier.get()).thenReturn("/some/path");
         params.put("foo", newList("bar", "baz"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, rawPathSupplier, requestTargetUpdater);
+        final DefaultHttpQuery query = new DefaultHttpQuery(params, "/some/path", requestTargetUpdater);
         assertTrue(query.remove("foo"));
         assertFalse(query.contains("foo"));
         assertFalse(query.remove("foo"));
@@ -222,14 +210,13 @@ public class DefaultHttpQueryTest {
 
     @Test
     public void testRemoveKeyAndValue() {
-        when(rawPathSupplier.get()).thenReturn("/some/path");
         params.put("foo", newList("bar", "baz"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, rawPathSupplier, requestTargetUpdater);
+        final DefaultHttpQuery query = new DefaultHttpQuery(params, "/some/path", requestTargetUpdater);
         assertTrue(query.remove("foo", "bar"));
         assertFalse(query.remove("foo", "bar"));
 
         assertEquals("baz", query.get("foo"));
-        assertEquals(asList("baz"), iteratorAsList(query.getAll("foo")));
+        assertEquals(singletonList("baz"), iteratorAsList(query.getAll("foo")));
 
         query.encodeToRequestTarget();
 
@@ -240,7 +227,7 @@ public class DefaultHttpQueryTest {
     public void testSize() {
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def", "123"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, rawPathSupplier, requestTargetUpdater);
+        final DefaultHttpQuery query = new DefaultHttpQuery(params, "", requestTargetUpdater);
 
         assertEquals(4, query.size());
         query.remove("abc", "123");
@@ -257,7 +244,7 @@ public class DefaultHttpQueryTest {
     public void testIterator() {
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def", "123"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, rawPathSupplier, requestTargetUpdater);
+        final DefaultHttpQuery query = new DefaultHttpQuery(params, "", requestTargetUpdater);
 
         final Iterator<Map.Entry<String, String>> iterator = query.iterator();
 
@@ -291,7 +278,7 @@ public class DefaultHttpQueryTest {
     public void testIteratorAfterRemoval() {
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def", "123"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, rawPathSupplier, requestTargetUpdater);
+        final DefaultHttpQuery query = new DefaultHttpQuery(params, "", requestTargetUpdater);
 
         query.remove("abc", "def");
         query.remove("abc", "123");
@@ -318,7 +305,7 @@ public class DefaultHttpQueryTest {
     public void testIteratorRemove() {
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def", "123"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, rawPathSupplier, requestTargetUpdater);
+        final DefaultHttpQuery query = new DefaultHttpQuery(params, "", requestTargetUpdater);
 
         final Iterator<Map.Entry<String, String>> iterator = query.iterator();
 
@@ -358,7 +345,7 @@ public class DefaultHttpQueryTest {
     public void testIteratorRemoveTwice() {
         params.put("foo", newList("bar", "baz"));
         params.put("abc", newList("def", "123"));
-        final DefaultHttpQuery query = new DefaultHttpQuery(params, rawPathSupplier, requestTargetUpdater);
+        final DefaultHttpQuery query = new DefaultHttpQuery(params, "", requestTargetUpdater);
 
         final Iterator<Map.Entry<String, String>> iterator = query.iterator();
 
@@ -369,6 +356,7 @@ public class DefaultHttpQueryTest {
         iterator.remove();
     }
 
+    @SuppressWarnings("unchecked")
     private <T> List<T> newList(final T... elements) {
         final List<T> list = new ArrayList<>(elements.length);
         addAll(list, elements);

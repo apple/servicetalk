@@ -27,19 +27,20 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
+
+import static java.util.Collections.addAll;
 
 final class DefaultHttpQuery implements HttpQuery {
 
     private static final int DEFAULT_LIST_SIZE = 2;
 
-    private final Supplier<String> rawPathSupplier;
+    private final String rawPath;
     private final Consumer<String> requestTargetUpdater;
     private final Map<String, List<String>> params;
 
-    DefaultHttpQuery(final Map<String, List<String>> params, final Supplier<String> rawPathSupplier, final Consumer<String> requestTargetUpdater) {
-        this.rawPathSupplier = rawPathSupplier;
+    DefaultHttpQuery(final Map<String, List<String>> params, final String rawPath, final Consumer<String> requestTargetUpdater) {
+        this.rawPath = rawPath;
         this.requestTargetUpdater = requestTargetUpdater;
         this.params = params;
     }
@@ -85,9 +86,7 @@ final class DefaultHttpQuery implements HttpQuery {
     @Override
     public HttpQuery add(final String key, final String... values) {
         final List<String> paramValues = getValues(key);
-        for (final String value : values) {
-            paramValues.add(value);
-        }
+        addAll(paramValues, values);
         return this;
     }
 
@@ -112,9 +111,7 @@ final class DefaultHttpQuery implements HttpQuery {
     @Override
     public HttpQuery set(final String key, final String... values) {
         final ArrayList<String> list = new ArrayList<>(DefaultHttpQuery.DEFAULT_LIST_SIZE);
-        for (final String value : values) {
-            list.add(value);
-        }
+        addAll(list, values);
         params.put(key, list);
         return this;
     }
@@ -164,7 +161,7 @@ final class DefaultHttpQuery implements HttpQuery {
 
     @Override
     public void encodeToRequestTarget() {
-        final QueryStringEncoder encoder = new QueryStringEncoder(rawPathSupplier.get());
+        final QueryStringEncoder encoder = new QueryStringEncoder(rawPath);
 
         for (final Map.Entry<String, List<String>> entry : params.entrySet()) {
             for (final String value : entry.getValue()) {

@@ -26,13 +26,15 @@ final class NettyToServiceTalkHttpResponse<I> extends NettyToServiceTalkHttpResp
 
     private final Publisher<I> messageBody;
 
-    private NettyToServiceTalkHttpResponse(final io.netty.handler.codec.http.HttpResponse nettyHttpResponse, final Publisher<I> messageBody) {
+    private NettyToServiceTalkHttpResponse(final io.netty.handler.codec.http.HttpResponse nettyHttpResponse,
+                                           final Publisher<I> messageBody) {
         super(nettyHttpResponse);
         this.messageBody = messageBody;
     }
 
     @SuppressWarnings("unchecked")
-    static <I> HttpResponse<I> fromNettyHttpResponse(final io.netty.handler.codec.http.HttpResponse nettyHttpResponse, final Publisher<I> messageBody) {
+    static <I> HttpResponse<I> fromNettyHttpResponse(final io.netty.handler.codec.http.HttpResponse nettyHttpResponse,
+                                                     final Publisher<I> messageBody) {
         if (nettyHttpResponse instanceof ServiceTalkToNettyHttpResponse) {
             return ((ServiceTalkToNettyHttpResponse) nettyHttpResponse).getHttpResponse();
         }
@@ -59,5 +61,27 @@ final class NettyToServiceTalkHttpResponse<I> extends NettyToServiceTalkHttpResp
     @Override
     public <R> HttpResponse<R> transformMessageBody(final Function<Publisher<I>, Publisher<R>> transformer) {
         return new NettyToServiceTalkHttpResponse<>(getNettyHttpResponse(), transformer.apply(messageBody));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
+
+        NettyToServiceTalkHttpResponse<?> that = (NettyToServiceTalkHttpResponse<?>) o;
+
+        return messageBody.equals(that.messageBody);
+    }
+
+    @Override
+    public int hashCode() {
+        return 31 * super.hashCode() + messageBody.hashCode();
     }
 }

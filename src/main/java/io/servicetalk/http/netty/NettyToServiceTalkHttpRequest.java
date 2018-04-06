@@ -26,12 +26,20 @@ final class NettyToServiceTalkHttpRequest<I> extends NettyToServiceTalkHttpReque
 
     private final Publisher<I> messageBody;
 
-    private NettyToServiceTalkHttpRequest(final io.netty.handler.codec.http.HttpRequest nettyHttpRequest, final Publisher<I> messageBody) {
+    private NettyToServiceTalkHttpRequest(final io.netty.handler.codec.http.HttpRequest nettyHttpRequest,
+                                          final Publisher<I> messageBody) {
         super(nettyHttpRequest);
         this.messageBody = messageBody;
     }
 
-    static <I> HttpRequest<I> fromNettyHttpRequest(final io.netty.handler.codec.http.HttpRequest nettyHttpRequest, final Publisher<I> messageBody) {
+    private NettyToServiceTalkHttpRequest(final NettyToServiceTalkHttpRequestMetaData metaData,
+                                          final Publisher<I> messageBody) {
+        super(metaData);
+        this.messageBody = messageBody;
+    }
+
+    static <I> HttpRequest<I> fromNettyHttpRequest(final io.netty.handler.codec.http.HttpRequest nettyHttpRequest,
+                                                   final Publisher<I> messageBody) {
         if (nettyHttpRequest instanceof ServiceTalkToNettyHttpRequest) {
             return ((ServiceTalkToNettyHttpRequest) nettyHttpRequest).getHttpRequest();
         }
@@ -81,6 +89,28 @@ final class NettyToServiceTalkHttpRequest<I> extends NettyToServiceTalkHttpReque
 
     @Override
     public <R> HttpRequest<R> transformMessageBody(final Function<Publisher<I>, Publisher<R>> transformer) {
-        return new NettyToServiceTalkHttpRequest<>(getNettyHttpRequest(), transformer.apply(messageBody));
+        return new NettyToServiceTalkHttpRequest<>(this, transformer.apply(messageBody));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
+
+        NettyToServiceTalkHttpRequest<?> that = (NettyToServiceTalkHttpRequest<?>) o;
+
+        return messageBody.equals(that.messageBody);
+    }
+
+    @Override
+    public int hashCode() {
+        return 31 * super.hashCode() + messageBody.hashCode();
     }
 }

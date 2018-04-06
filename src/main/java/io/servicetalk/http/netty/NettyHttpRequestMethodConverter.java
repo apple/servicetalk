@@ -20,6 +20,9 @@ import io.servicetalk.http.api.HttpRequestMethods;
 
 import io.netty.handler.codec.http.HttpMethod;
 
+import static io.netty.handler.codec.http.HttpMethod.valueOf;
+import static io.servicetalk.http.api.HttpRequestMethods.getRequestMethod;
+
 final class NettyHttpRequestMethodConverter {
 
     private NettyHttpRequestMethodConverter() {
@@ -27,10 +30,34 @@ final class NettyHttpRequestMethodConverter {
     }
 
     static HttpRequestMethod fromNettyHttpMethod(final HttpMethod nettyMethod) {
-        return HttpRequestMethods.getRequestMethod(nettyMethod.name());
+        return getRequestMethod(nettyMethod.name());
     }
 
     static HttpMethod toNettyHttpMethod(final HttpRequestMethod serviceTalkMethod) {
-        return HttpMethod.valueOf(serviceTalkMethod.getName());
+        if (serviceTalkMethod instanceof HttpRequestMethods) {
+            switch ((HttpRequestMethods) serviceTalkMethod) {
+                case GET:
+                    return HttpMethod.GET;
+                case HEAD:
+                    return HttpMethod.HEAD;
+                case OPTIONS:
+                    return HttpMethod.OPTIONS;
+                case TRACE:
+                    return HttpMethod.TRACE;
+                case PUT:
+                    return HttpMethod.PUT;
+                case DELETE:
+                    return HttpMethod.DELETE;
+                case POST:
+                    return HttpMethod.POST;
+                case PATCH:
+                    return HttpMethod.PATCH;
+                case CONNECT:
+                    return HttpMethod.CONNECT;
+                default:
+                    break;
+            }
+        }
+        return valueOf(serviceTalkMethod.getName());
     }
 }

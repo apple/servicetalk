@@ -31,22 +31,27 @@ final class NettyHttpProtocolVersionConverter {
     }
 
     static HttpProtocolVersion fromNettyHttpVersion(final HttpVersion nettyHttpVersion) {
-        if (HttpVersion.HTTP_1_1 == nettyHttpVersion) {
+        if (nettyHttpVersion == HttpVersion.HTTP_1_1) {
             return HTTP_1_1;
         }
-        if (HttpVersion.HTTP_1_0 == nettyHttpVersion) {
+        if (nettyHttpVersion == HttpVersion.HTTP_1_0) {
             return HTTP_1_0;
         }
         return getProtocolVersion(nettyHttpVersion.majorVersion(), nettyHttpVersion.minorVersion());
     }
 
     static HttpVersion toNettyHttpVersion(final HttpProtocolVersion httpVersion) {
-        if (HttpProtocolVersions.HTTP_1_1 == httpVersion) {
-            return HttpVersion.HTTP_1_1;
+        if (httpVersion instanceof HttpProtocolVersions) {
+            switch ((HttpProtocolVersions) httpVersion) {
+                case HTTP_1_0:
+                    return HttpVersion.HTTP_1_0;
+                case HTTP_1_1:
+                    return HttpVersion.HTTP_1_1;
+                default:
+                    break;
+            }
         }
-        if (HttpProtocolVersions.HTTP_1_0 == httpVersion) {
-            return HttpVersion.HTTP_1_0;
-        }
-        return new HttpVersion("HTTP", httpVersion.getMajorVersion(), httpVersion.getMinorVersion(), false);
+        return new HttpVersion("HTTP", httpVersion.getMajorVersion(), httpVersion.getMinorVersion(),
+                false);
     }
 }

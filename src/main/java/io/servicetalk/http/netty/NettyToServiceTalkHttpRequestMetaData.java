@@ -60,6 +60,14 @@ class NettyToServiceTalkHttpRequestMetaData extends NettyToServiceTalkHttpHeader
         this.nettyHttpRequest = nettyHttpRequest;
     }
 
+    NettyToServiceTalkHttpRequestMetaData(final NettyToServiceTalkHttpRequestMetaData original) {
+        super(original.nettyHttpRequest.headers());
+        this.nettyHttpRequest = original.nettyHttpRequest;
+        queryStringDecoder = original.queryStringDecoder;
+        queryString = original.queryString;
+        uri = original.uri;
+    }
+
     @Override
     public HttpProtocolVersion getVersion() {
         return fromNettyHttpVersion(nettyHttpRequest.protocolVersion());
@@ -131,7 +139,7 @@ class NettyToServiceTalkHttpRequestMetaData extends NettyToServiceTalkHttpHeader
 
     @Override
     public HttpQuery parseQuery() {
-        return new DefaultHttpQuery(lazyParseQueryString(), this::getRawPath, this::setRequestTarget);
+        return new DefaultHttpQuery(lazyParseQueryString(), getRawPath(), this::setRequestTarget);
     }
 
     @Override
