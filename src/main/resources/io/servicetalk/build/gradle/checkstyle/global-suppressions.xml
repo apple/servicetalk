@@ -15,8 +15,8 @@
   ~ limitations under the License.
   -->
 <!DOCTYPE suppressions PUBLIC
-    "-//Puppy Crawl//DTD Check Configuration 1.3//EN"
-    "http://checkstyle.sourceforge.net/dtds/suppressions_1_2.dtd">
+    "-//Puppy Crawl//DTD Suppressions 1.1//EN"
+    "http://www.puppycrawl.com/dtds/suppressions_1_1.dtd">
 
 <suppressions>
   <!-- Ignore for all files except that one, which name ends with "package-info.java" -->
