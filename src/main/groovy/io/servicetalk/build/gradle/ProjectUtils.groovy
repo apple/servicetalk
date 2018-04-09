@@ -35,7 +35,8 @@ class ProjectUtils {
         "Implementation-Title": project.name,
         "Implementation-Version": "${-> project.version}",
         "Implementation-Vendor": "Apple Inc.",
-        "Automatic-Module-Name": "io.${project.name.replace("-", ".")}"
+        "Automatic-Module-Name": "io.${project.name.replace("-", ".")}",
+        "Sealed": "true"
     )
   }
 
