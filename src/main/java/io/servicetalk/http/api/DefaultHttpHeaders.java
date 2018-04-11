@@ -85,7 +85,7 @@ public final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequenc
     }
 
     @Override
-    protected void validateKey(final CharSequence name) {
+    protected void validateKey(@Nullable final CharSequence name) {
         if (name == null || name.length() == 0) {
             throw new IllegalArgumentException("empty header names are not allowed");
         }

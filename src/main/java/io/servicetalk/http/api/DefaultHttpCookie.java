@@ -31,22 +31,22 @@ final class DefaultHttpCookie implements HttpCookie {
     private final CharSequence expires;
     @Nullable
     private final Long maxAge;
-    private final boolean isWrapped;
-    private final boolean isSecure;
-    private final boolean isHttpOnly;
+    private final boolean wrapped;
+    private final boolean secure;
+    private final boolean httpOnly;
 
     DefaultHttpCookie(final CharSequence name, final CharSequence value, @Nullable final CharSequence path,
                       @Nullable final CharSequence domain, @Nullable final CharSequence expires,
-                      @Nullable final Long maxAge, final boolean isWrapped, final boolean isSecure, final boolean isHttpOnly) {
+                      @Nullable final Long maxAge, final boolean wrapped, final boolean secure, final boolean httpOnly) {
         this.name = name;
         this.value = value;
         this.path = path;
         this.domain = domain;
         this.expires = expires;
         this.maxAge = maxAge;
-        this.isWrapped = isWrapped;
-        this.isSecure = isSecure;
-        this.isHttpOnly = isHttpOnly;
+        this.wrapped = wrapped;
+        this.secure = secure;
+        this.httpOnly = httpOnly;
     }
 
     @Override
@@ -61,7 +61,7 @@ final class DefaultHttpCookie implements HttpCookie {
 
     @Override
     public boolean isWrapped() {
-        return isWrapped;
+        return wrapped;
     }
 
     @Nullable
@@ -90,12 +90,12 @@ final class DefaultHttpCookie implements HttpCookie {
 
     @Override
     public boolean isSecure() {
-        return isSecure;
+        return secure;
     }
 
     @Override
     public boolean isHttpOnly() {
-        return isHttpOnly;
+        return httpOnly;
     }
 
     @Override

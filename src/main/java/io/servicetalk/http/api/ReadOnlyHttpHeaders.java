@@ -41,15 +41,15 @@ final class ReadOnlyHttpHeaders implements HttpHeaders {
         this.keyValuePairs = requireNonNull(keyValuePairs);
     }
 
-    private int hashCode(final CharSequence name) {
+    private static int hashCode(final CharSequence name) {
         return AsciiString.hashCode(name);
     }
 
-    private boolean equals(final CharSequence name1, final CharSequence name2) {
+    private static boolean equals(final CharSequence name1, final CharSequence name2) {
         return contentEqualsIgnoreCase(name1, name2);
     }
 
-    private boolean equalsValues(final CharSequence name1, final CharSequence name2) {
+    private static boolean equalsValues(final CharSequence name1, final CharSequence name2) {
         return contentEquals(name1, name2);
     }
 
@@ -250,11 +250,13 @@ final class ReadOnlyHttpHeaders implements HttpHeaders {
         }
 
         @Override
+        @Nullable
         public CharSequence getKey() {
             return key;
         }
 
         @Override
+        @Nullable
         public CharSequence getValue() {
             return value;
         }

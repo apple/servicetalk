@@ -213,7 +213,7 @@ public final class DefaultHttpCookies extends MultiMap<CharSequence, HttpCookie>
     }
 
     @Override
-    protected void validateKey(final CharSequence key) {
+    protected void validateKey(@Nullable final CharSequence key) {
         if (key == null || key.length() == 0) {
             throw new IllegalArgumentException("cookie name cannot be null or empty");
         }
