@@ -15,17 +15,21 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.ByteProcessor;
 import io.servicetalk.http.api.HttpHeaders;
 
 import io.netty.util.AsciiString;
-import io.netty.util.ByteProcessor;
 
 import java.util.Iterator;
 import java.util.Map;
 import java.util.function.BiFunction;
 
+import static io.netty.util.AsciiString.contentEquals;
 import static java.lang.System.lineSeparator;
 
+/**
+ * Duplicate of HeaderUtils in http-api, will be removed in the future.
+ */
 final class HeaderUtils {
     /**
      * Constant used to seed the hash code generation. Could be anything but this was borrowed from murmur3.
@@ -41,21 +45,21 @@ final class HeaderUtils {
         // no instances
     }
 
-    static String toString(HttpHeaders headers,
-                           BiFunction<? super CharSequence, ? super CharSequence, CharSequence> filter) {
-        String simpleName = headers.getClass().getSimpleName();
-        int size = headers.size();
+    static String toString(final HttpHeaders headers,
+                           final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> filter) {
+        final String simpleName = headers.getClass().getSimpleName();
+        final int size = headers.size();
         if (size == 0) {
             return simpleName + "[]";
         } else {
             // original capacity assumes 20 chars per headers
-            StringBuilder sb = new StringBuilder(simpleName.length() + 2 + size * 20)
+            final StringBuilder sb = new StringBuilder(simpleName.length() + 2 + size * 20)
                     .append(simpleName)
                     .append('[');
-            Iterator<Map.Entry<CharSequence, CharSequence>> itr = headers.iterator();
+            final Iterator<Map.Entry<CharSequence, CharSequence>> itr = headers.iterator();
             if (itr.hasNext()) {
                 for (;;) {
-                    Map.Entry<CharSequence, CharSequence> e = itr.next();
+                    final Map.Entry<CharSequence, CharSequence> e = itr.next();
                     sb.append(e.getKey()).append(": ").append(filter.apply(e.getKey(), e.getValue()));
                     if (itr.hasNext()) {
                         sb.append(lineSeparator());
@@ -68,7 +72,7 @@ final class HeaderUtils {
         }
     }
 
-    static boolean equals(HttpHeaders lhs, HttpHeaders rhs) {
+    static boolean equals(final HttpHeaders lhs, final HttpHeaders rhs) {
         if (lhs.size() != rhs.size()) {
             return false;
         }
@@ -79,11 +83,11 @@ final class HeaderUtils {
 
         // The regular iterator is not suitable for equality comparisons because the overall ordering is not
         // in any specific order relative to the content of this MultiMap.
-        for (CharSequence name : lhs.getNames()) {
-            Iterator<? extends CharSequence> valueItr = lhs.getAll(name);
-            Iterator<? extends CharSequence> h2ValueItr = rhs.getAll(name);
+        for (final CharSequence name : lhs.getNames()) {
+            final Iterator<? extends CharSequence> valueItr = lhs.getAll(name);
+            final Iterator<? extends CharSequence> h2ValueItr = rhs.getAll(name);
             while (valueItr.hasNext() && h2ValueItr.hasNext()) {
-                if (!AsciiString.contentEquals(valueItr.next(), h2ValueItr.next())) {
+                if (!contentEquals(valueItr.next(), h2ValueItr.next())) {
                     return false;
                 }
             }
@@ -94,14 +98,14 @@ final class HeaderUtils {
         return true;
     }
 
-    static int hashCode(HttpHeaders headers) {
+    static int hashCode(final HttpHeaders headers) {
         if (headers.isEmpty()) {
             return 0;
         }
         int result = HASH_CODE_SEED;
-        for (CharSequence key : headers.getNames()) {
+        for (final CharSequence key : headers.getNames()) {
             result = 31 * result + AsciiString.hashCode(key);
-            Iterator<? extends CharSequence> valueItr = headers.getAll(key);
+            final Iterator<? extends CharSequence> valueItr = headers.getAll(key);
             while (valueItr.hasNext()) {
                 result = 31 * result + AsciiString.hashCode(valueItr.next());
             }
@@ -115,9 +119,10 @@ final class HeaderUtils {
      * valid <a href="https://tools.ietf.org/html/rfc7230#section-3.2.6">field-name</a> of a
      * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header-field</a>. Both of these
      * formats have the same restrictions.
+     *
      * @param key the cookie name or header name to validate.
      */
-    static void validateCookieTokenAndHeaderName(CharSequence key) {
+    static void validateCookieTokenAndHeaderName(final CharSequence key) {
         // HEADER
         // header-field   = field-name ":" OWS field-value OWS
         //
@@ -143,7 +148,7 @@ final class HeaderUtils {
         //                      | "/" | "[" | "]" | "?" | "="
         //                      | "{" | "}" | SP | HT
         for (int i = 0; i < key.length(); ++i) {
-            char value = key.charAt(i);
+            final char value = key.charAt(i);
             // CTL = <any US-ASCII control character
             //       (octets 0 - 31) and DEL (127)>
             // separators     = "(" | ")" | "<" | ">" | "@"
@@ -180,9 +185,10 @@ final class HeaderUtils {
 
     /**
      * Validate char is valid <a href="https://tools.ietf.org/html/rfc7230#section-3.2.6">token</a> character.
+     *
      * @param value the character to validate.
      */
-    private static void validateHeaderNameToken(byte value) {
+    private static void validateHeaderNameToken(final byte value) {
         if (value >= 0 && value <= 32 || value < 0) {
             throw new IllegalArgumentException("invalid token detected: " + value);
         }

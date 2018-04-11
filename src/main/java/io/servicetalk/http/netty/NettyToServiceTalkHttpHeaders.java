@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.DefaultHttpCookies;
 import io.servicetalk.http.api.HttpCookies;
 import io.servicetalk.http.api.HttpHeaders;
 
@@ -24,9 +25,9 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
+import static io.servicetalk.http.api.HttpHeaderNames.SET_COOKIE;
 import static io.servicetalk.http.netty.HeaderUtils.DEFAULT_HEADER_FILTER;
-import static io.servicetalk.http.netty.HttpHeaderNames.COOKIE;
-import static io.servicetalk.http.netty.HttpHeaderNames.SET_COOKIE;
 import static java.util.Objects.requireNonNull;
 
 class NettyToServiceTalkHttpHeaders implements HttpHeaders {

@@ -22,11 +22,7 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 /**
- * Accepts a <a href="https://tools.ietf.org/html/rfc7230#section-2.7">HTTP URI</a> and breaks down the components.
- *
- * In some scenarios, HTTP URI parsing using {@link java.net.URI} has been in the hot-path. For HTTP, not all of the
- * complexity of {@link java.net.URI} is needed. Additionally, deriving "the correct" hostname for HTTP can be easy to
- * get wrong. {@link HttpUri} attempts to address these issues.
+ * Duplicate of HttpUri in http-api, will be removed in the future.
  */
 final class HttpUri {
     static final int DEFAULT_PORT_HTTP = 80;
@@ -51,6 +47,9 @@ final class HttpUri {
      * \_/   \______________/\_________/ \_________/ \__/
      * |           |            |            |        |
      * scheme     authority       path        query   fragment
+     *                       \__________________________/
+     *                                |
+     *                                  file
      * </pre>
      *
      * @param uri The URI from a HTTP request line.
@@ -66,6 +65,9 @@ final class HttpUri {
      * \_/   \______________/\_________/ \_________/ \__/
      * |           |            |            |        |
      * scheme     authority       path        query   fragment
+     *                       \__________________________/
+     *                                |
+     *                                  file
      * </pre>
      *
      * @param uri               The URI from a HTTP request line.
@@ -238,9 +240,13 @@ final class HttpUri {
     }
 
     static String buildRequestTarget(final String scheme, @Nullable final String host, @Nullable final Integer port,
-                                     final String path, final String query) {
+                                     @Nullable final String path, @Nullable final String query, @Nullable final String file) {
+        if (file == null) {
+            assert path != null;
+            assert query != null;
+        }
         final int approximateLength = (host == null ? 0 : scheme.length() + 3 + host.length() + (port == null ? 0 : 4))
-                + path.length() + query.length() + 1;
+                + (file != null ? file.length() : path.length() + 1 + query.length());
         final StringBuilder uri = new StringBuilder(approximateLength);
         if (host != null) {
             uri.append(scheme).append("://").append(host);
@@ -248,9 +254,13 @@ final class HttpUri {
                 uri.append(':').append(port);
             }
         }
-        uri.append(path);
-        if (!query.isEmpty()) {
-            uri.append('?').append(query);
+        if (file != null) {
+            uri.append(file);
+        } else {
+            uri.append(path);
+            if (!query.isEmpty()) {
+                uri.append('?').append(query);
+            }
         }
         return uri.toString();
     }

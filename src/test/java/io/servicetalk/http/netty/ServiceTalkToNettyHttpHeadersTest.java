@@ -15,19 +15,21 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.AbstractHttpHeadersTest;
+import io.servicetalk.http.api.DefaultHttpHeaders;
 import io.servicetalk.http.api.HttpHeaders;
 
 import org.junit.Ignore;
 import org.junit.Test;
 
-public class ServiceTalkToNettyHttpHeadersTest extends HttpHeadersTest {
+public class ServiceTalkToNettyHttpHeadersTest extends AbstractHttpHeadersTest {
     @Override
     protected HttpHeaders newHeaders() {
         return new NettyToServiceTalkHttpHeaders(new ServiceTalkToNettyHttpHeaders(new DefaultHttpHeaders()));
     }
 
     @Override
-    protected HttpHeaders newHeaders(int initialSizeHint) {
+    protected HttpHeaders newHeaders(final int initialSizeHint) {
         return new NettyToServiceTalkHttpHeaders(new ServiceTalkToNettyHttpHeaders(new DefaultHttpHeaders(initialSizeHint, true)));
     }
 

@@ -28,14 +28,18 @@ import org.junit.rules.ExpectedException;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.addAll;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
@@ -51,6 +55,8 @@ public class NettyToServiceTalkHttpRequestMetaDataTest {
     private final HttpRequest nettyHttpRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "temp");
 
     private NettyToServiceTalkHttpRequestMetaData fixture;
+
+    final Map<String, List<String>> params = new LinkedHashMap<>();
 
     @Before
     public void setUp() {
@@ -234,6 +240,58 @@ public class NettyToServiceTalkHttpRequestMetaDataTest {
         final HttpQuery newQuery = fixture.parseQuery();
         assertEquals(newQuery.getKeys(), singleton("abc"));
         assertEquals(iteratorAsList(newQuery.getAll("abc")), singletonList("new"));
+    }
+
+    @Test
+    public void testEncodeToRequestTargetWithNoParams() {
+        nettyHttpRequest.setUri("/some/path");
+        fixture.setQueryParams(params);
+
+        assertEquals("/some/path", fixture.getRequestTarget());
+    }
+
+    @Test
+    public void testEncodeToRequestTargetWithParam() {
+        nettyHttpRequest.setUri("/some/path");
+        params.put("foo", newList("bar", "baz"));
+        fixture.setQueryParams(params);
+
+        assertEquals("/some/path?foo=bar&foo=baz", fixture.getRequestTarget());
+    }
+
+    @Test
+    public void testEncodeToRequestTargetWithMultipleParams() {
+        nettyHttpRequest.setUri("/some/path");
+        params.put("foo", newList("bar", "baz"));
+        params.put("abc", newList("123", "456"));
+        fixture.setQueryParams(params);
+
+        assertEquals("/some/path?foo=bar&foo=baz&abc=123&abc=456", fixture.getRequestTarget());
+    }
+
+    @Test
+    public void testEncodeToRequestTargetWithSpecialCharacters() {
+        nettyHttpRequest.setUri("/some/path");
+        params.put("pair", newList("key1=value1", "key2=value2"));
+        fixture.setQueryParams(params);
+
+        assertEquals("/some/path?pair=key1%3Dvalue1&pair=key2%3Dvalue2", fixture.getRequestTarget());
+    }
+
+    @Test
+    public void testEncodeToRequestTargetWithAbsoluteForm() {
+        nettyHttpRequest.setUri("http://my.site.com/some/path?foo=bar&abc=def&foo=baz");
+        params.put("foo", newList("new"));
+        fixture.setQueryParams(params);
+
+        assertEquals("http://my.site.com/some/path?foo=new", fixture.getRequestTarget());
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> List<T> newList(final T... elements) {
+        final List<T> list = new ArrayList<>(elements.length);
+        addAll(list, elements);
+        return list;
     }
 
     private <T> List<T> iteratorAsList(final Iterator<T> iterator) {

@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.DefaultHttpQuery;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpQuery;
@@ -23,6 +24,7 @@ import io.servicetalk.http.api.HttpRequestMethod;
 
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.QueryStringDecoder;
+import io.netty.handler.codec.http.QueryStringEncoder;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
@@ -124,7 +126,7 @@ class NettyToServiceTalkHttpRequestMetaData extends NettyToServiceTalkHttpHeader
         } catch (final UnsupportedEncodingException e) {
             throw new UnsupportedCharsetException(REQUEST_TARGET_CHARSET.name());
         }
-        setRequestTarget(encodeRequestTargetWithNewPath(encodedPath));
+        setRequestTarget(encodeRequestTarget(encodedPath, getRawQuery(), null));
         return this;
     }
 
@@ -133,13 +135,13 @@ class NettyToServiceTalkHttpRequestMetaData extends NettyToServiceTalkHttpHeader
         if (!path.isEmpty() && path.charAt(0) != '/') {
             throw new IllegalArgumentException("Path must be empty or start with '/'");
         }
-        setRequestTarget(encodeRequestTargetWithNewPath(path));
+        setRequestTarget(encodeRequestTarget(path, getRawQuery(), null));
         return this;
     }
 
     @Override
     public HttpQuery parseQuery() {
-        return new DefaultHttpQuery(lazyParseQueryString(), getRawPath(), this::setRequestTarget);
+        return new DefaultHttpQuery(lazyParseQueryString(), this::setQueryParams);
     }
 
     @Override
@@ -149,7 +151,7 @@ class NettyToServiceTalkHttpRequestMetaData extends NettyToServiceTalkHttpHeader
 
     @Override
     public HttpRequestMetaData setRawQuery(final String query) {
-        setRequestTarget(encodeRequestTargetWithNewQuery(requireNonNull(query)));
+        setRequestTarget(encodeRequestTarget(getRawPath(), requireNonNull(query), null));
         return this;
     }
 
@@ -191,24 +193,28 @@ class NettyToServiceTalkHttpRequestMetaData extends NettyToServiceTalkHttpHeader
         return uri;
     }
 
-    private String encodeRequestTargetWithNewPath(final String path) {
+    // package-private for testing.
+    void setQueryParams(final Map<String, List<String>> params) {
+        final QueryStringEncoder encoder = new QueryStringEncoder(getRawPath());
+
+        for (final Map.Entry<String, List<String>> entry : params.entrySet()) {
+            for (final String value : entry.getValue()) {
+                encoder.addParam(entry.getKey(), value);
+            }
+        }
+
+        setRequestTarget(encodeRequestTarget(null, null, encoder.toString()));
+    }
+
+    private String encodeRequestTarget(@Nullable final String path, @Nullable final String query, @Nullable final String file) {
         final HttpUri uri = lazyParseRequestTarget();
         return buildRequestTarget(
                 uri.isSsl() ? "https" : "http",
                 uri.getHost(),
                 uri.hasExplicitPort() ? uri.getPort() : null,
                 path,
-                getRawQuery());
-    }
-
-    private String encodeRequestTargetWithNewQuery(final String query) {
-        final HttpUri uri = lazyParseRequestTarget();
-        return buildRequestTarget(
-                uri.isSsl() ? "https" : "http",
-                uri.getHost(),
-                uri.hasExplicitPort() ? uri.getPort() : null,
-                getRawPath(),
-                query);
+                query,
+                file);
     }
 
     final HttpRequest getNettyHttpRequest() {
