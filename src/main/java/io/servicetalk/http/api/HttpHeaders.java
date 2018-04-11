@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
  * All header field names are compared in a <a href="https://tools.ietf.org/html/rfc7230#section-3.2">case-insensitive manner</a>.
  */
 public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>> {
+
     /**
      * Returns the value of a header with the specified name. If there is more than one value for the specified name,
      * the first value in insertion order is returned.
@@ -47,8 +48,8 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * @param defaultValue the default value.
      * @return the first header value or {@code defaultValue} if there is no such header.
      */
-    default CharSequence get(CharSequence name, CharSequence defaultValue) {
-        CharSequence value = get(name);
+    default CharSequence get(final CharSequence name, final CharSequence defaultValue) {
+        final CharSequence value = get(name);
         return value != null ? value : defaultValue;
     }
 
@@ -70,8 +71,8 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * @param defaultValue the default value.
      * @return the first header value or {@code defaultValue} if there is no such header.
      */
-    default CharSequence getAndRemove(CharSequence name, CharSequence defaultValue) {
-        CharSequence value = getAndRemove(name);
+    default CharSequence getAndRemove(final CharSequence name, final CharSequence defaultValue) {
+        final CharSequence value = getAndRemove(name);
         return value == null ? defaultValue : value;
     }
 
@@ -89,7 +90,7 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * @param name the header name.
      * @return {@code true} if {@code name} exists.
      */
-    default boolean contains(CharSequence name) {
+    default boolean contains(final CharSequence name) {
         return get(name) != null;
     }
 
@@ -230,7 +231,7 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * @param headers The headers which contains the new values for this {@link HttpHeaders}.
      * @return {@code this}.
      */
-    default HttpHeaders set(HttpHeaders headers) {
+    default HttpHeaders set(final HttpHeaders headers) {
         if (headers != this) {
             clear();
             add(headers);
@@ -244,9 +245,9 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * @param headers The headers used to remove names and then add new entries.
      * @return {@code this}.
      */
-    default HttpHeaders setAll(HttpHeaders headers) {
+    default HttpHeaders setAll(final HttpHeaders headers) {
         if (headers != this) {
-            for (CharSequence key : headers.getNames()) {
+            for (final CharSequence key : headers.getNames()) {
                 remove(key);
             }
             add(headers);

@@ -37,4 +37,10 @@ dependencies {
   api "io.servicetalk:servicetalk-client-api:0.1.0-SNAPSHOT"
   api "io.servicetalk:servicetalk-concurrent-api:0.1.0-SNAPSHOT"
   api "io.servicetalk:servicetalk-transport-api:0.1.0-SNAPSHOT"
+
+  testImplementation "org.hamcrest:hamcrest-library"
+  testImplementation "org.mockito:mockito-core"
+
+  testFixturesImplementation "org.hamcrest:hamcrest-library"
+  testFixturesImplementation "junit:junit"
 }
