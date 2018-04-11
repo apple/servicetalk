@@ -193,17 +193,6 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     }
 
     /**
-     * Subscribes to {@code mergeWith} {@link Completable} and only terminates this {@link Single} when {@code mergeWith} terminates.
-     *
-     * @param mergeWith {@link Completable} to subscribe and forward error to the returned {@link Single}.
-     *                  Only terminate the returned {@link Single} when this terminates.
-     * @return New {@link Single} that awaits successful termination of both this {@link Single} and {@code mergeWith} or failed termination of one.
-     */
-    public final Single<T> merge(Completable mergeWith) {
-        return new MergeWithCompletableSingle<>(this, mergeWith);
-    }
-
-    /**
      * Invokes the {@code onSubscribe} {@link Consumer} argument <strong>before</strong> {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned {@link Single}.
      *
      * @param onSubscribe Invoked <strong>before</strong> {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
