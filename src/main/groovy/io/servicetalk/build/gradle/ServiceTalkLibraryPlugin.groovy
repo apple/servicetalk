@@ -18,8 +18,6 @@ package io.servicetalk.build.gradle
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.api.XmlProvider
-import org.gradle.api.artifacts.Configuration
-import org.gradle.api.artifacts.Dependency
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.tasks.Exec
 import org.gradle.api.tasks.SourceSet
@@ -34,8 +32,7 @@ import static io.servicetalk.build.gradle.ProjectUtils.appendNodes
 import static io.servicetalk.build.gradle.ProjectUtils.copyResource
 import static io.servicetalk.build.gradle.ProjectUtils.createJavadocJarTask
 import static io.servicetalk.build.gradle.ProjectUtils.createSourcesJarTask
-import static io.servicetalk.build.gradle.ProjectUtils.generateMavenDependencies
-import static io.servicetalk.build.gradle.ProjectUtils.getOrCreateNode
+import static io.servicetalk.build.gradle.ProjectUtils.fixBomDependencies
 import static io.servicetalk.build.gradle.ProjectUtils.writeToFile
 
 class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
@@ -64,7 +61,6 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
 
     // TODO apply japicmp plugin
 
-    // TODO allow subprojects to opt-in test fixtures
     configureTestFixtures project
   }
 
@@ -126,6 +122,7 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
             from components.java
             artifact(javadocJar)
             artifact(sourcesJar)
+            fixBomDependencies(pom)
           }
         }
       }
@@ -312,26 +309,11 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         publications {
           testFixtures(MavenPublication) {
             artifactId = "$testFixturesJar.baseName-$testFixturesJar.appendix"
+            from new TestFixturesComponent(project)
             artifact(testFixturesJar)
             artifact(sourcesJar)
             artifact(javadocJar)
-            pom.withXml { provider ->
-              Node dependenciesNode = getOrCreateNode(provider.asNode(), "dependencies")
-              Configuration testFixturesImplementationConfig = project.configurations["testFixturesImplementation"]
-              Configuration testFixturesRuntimeConfig = project.configurations["testFixturesRuntime"]
-              def mainPub = findByName("mavenJava")
-              dependenciesNode.append(generateMavenDependencies(
-                  [project.dependencies.create("$mainPub.groupId:$mainPub.artifactId:$mainPub.version")], "compile").first())
-              // FIXME filter out BOM dependencies and output them in a dependencyManagement/dependencies node
-              //       nb. BOM deps are standard DefaultExternalModuleDependency so not sure how to filter them?!
-              for (depNode in generateMavenDependencies(testFixturesImplementationConfig.allDependencies, "compile")) {
-                dependenciesNode.append(depNode)
-              }
-              def runtimeDependencies = testFixturesRuntimeConfig.allDependencies - testFixturesImplementationConfig.allDependencies
-              for (depNode in generateMavenDependencies(runtimeDependencies, "runtime")) {
-                dependenciesNode.append(depNode)
-              }
-            }
+            fixBomDependencies(pom)
           }
         }
       }

@@ -21,6 +21,7 @@ import org.gradle.api.XmlProvider
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.java.archives.Manifest
 import org.gradle.api.plugins.JavaBasePlugin
+import org.gradle.api.publish.maven.MavenPom
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.javadoc.Javadoc
@@ -41,7 +42,7 @@ class ProjectUtils {
 
   private static <T extends Task> T createTask(Project project, String name, @DelegatesTo.Target Class<T> type,
                                                @DelegatesTo(strategy = 1, genericTypeIndex = 0) Closure<?> config) {
-    project.task(name, type: type, config)
+    project.task(name, type: type, config) as T
   }
 
   static Jar createSourcesJarTask(Project project, SourceSet sourceSet) {
@@ -79,32 +80,9 @@ class ProjectUtils {
     }
   }
 
-  static Node getOrCreateNode(Node parentNode, String tag) {
-    def component = parentNode[tag].find { true }
-    if (!component) {
-      component = parentNode.appendNode(tag)
-    }
-    component
-  }
-
-  static List<Node> generateMavenDependencies(Iterable<Dependency> dependencies, String theScope) {
-    def builder = NodeBuilder.newInstance()
-    dependencies.collect { dep ->
-      builder.dependency {
-        groupId(dep.group)
-        artifactId(dep.name)
-        scope(theScope)
-        // Managed dependencies have a null version
-        if (dep.version) {
-          version(dep.version)
-        }
-      }
-    }
-  }
-
   static File copyResource(String resourceSourcePath, File destinationFolder, String destinationFilename) {
     def content = ProjectUtils.class.getResource(resourceSourcePath).text
-    return writeToFile(content, destinationFolder, destinationFilename)
+    writeToFile(content, destinationFolder, destinationFilename)
   }
 
   static File writeToFile(String content, File folder, String fileName) {
@@ -114,7 +92,7 @@ class ProjectUtils {
     }
     file.createNewFile()
     file.write(content)
-    return file
+    file
   }
 
   static appendNodes(XmlProvider provider, InputStream resource) {
@@ -126,7 +104,45 @@ class ProjectUtils {
       if (oldChild != null) {
         xmlProject.remove(oldChild)
       }
-      xmlProject.append newChild
+      xmlProject.append(newChild)
     }
+  }
+
+  /**
+   * MavenPublication currently wrongly outputs BOM dependencies as regular dependencies instead of
+   * outputting them in a dependencyManagement, with 'pom' type and 'import' scope.
+   * This method corrects the issue.
+   */
+  static void fixBomDependencies(MavenPom pom) {
+    pom.withXml {
+      Node rootNode = it.asNode()
+      Node dependenciesNode = rootNode["dependencies"].find() as Node
+      if (!dependenciesNode) {
+        return
+      }
+
+      List<Node> bomDependencies = dependenciesNode.children().findAll { it["artifactId"].text().contains("-bom") } as List<Node>
+      if (!bomDependencies) {
+        return
+      }
+
+      bomDependencies.each { dependenciesNode.remove(it) }
+      Node managedDependenciesNode = getOrCreateNode(getOrCreateNode(rootNode, "dependencyManagement"), "dependencies")
+      bomDependencies.collect {
+        getOrCreateNode(it, "type").setValue("pom")
+        getOrCreateNode(it, "scope").setValue("import")
+        it
+      }.each {
+        managedDependenciesNode.append(it)
+      }
+    }
+  }
+
+  static Node getOrCreateNode(Node parentNode, String tag) {
+    def node = parentNode[tag].find()
+    if (!node) {
+      node = parentNode.appendNode(tag)
+    }
+    node
   }
 }
