@@ -18,7 +18,7 @@ package io.servicetalk.tcp.netty.internal;
 import io.servicetalk.buffer.netty.BufferUtil;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.SequentialCancellable;
+import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.FileDescriptorSocketAddress;
 import io.servicetalk.transport.netty.internal.AbstractChannelReadHandler;
@@ -110,7 +110,7 @@ public final class TcpConnector<Read, Write> {
         EventLoop loop = executor.getEventLoopGroup().next();
 
         // We have to subscribe before any possibility that we complete the single, so subscribe now and hookup the cancellable after we get the future.
-        final SequentialCancellable cancellable = new SequentialCancellable();
+        final DelayedCancellable cancellable = new DelayedCancellable();
         subscriber.onSubscribe(cancellable);
         // Create the handler here and ensure in connectWithBootstrap / initFileDescriptorBasedChannel it is added to the ChannelPipeline
         // after registration is complete as otherwise we may miss channelActive events.
@@ -147,8 +147,8 @@ public final class TcpConnector<Read, Write> {
         return attachCancelSubscriber(initFileDescriptorBasedChannel(loop, channel, handler), cancellable);
     }
 
-    private static ChannelFuture attachCancelSubscriber(ChannelFuture channelFuture, SequentialCancellable cancellable) {
-        cancellable.setNextCancellable(() -> channelFuture.cancel(false));
+    private static ChannelFuture attachCancelSubscriber(ChannelFuture channelFuture, DelayedCancellable cancellable) {
+        cancellable.setDelayedCancellable(() -> channelFuture.cancel(false));
         return channelFuture;
     }
 
