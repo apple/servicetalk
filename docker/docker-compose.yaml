@@ -1,0 +1,55 @@
+#
+# Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+version: "3"
+
+services:
+
+  java:
+    image: java:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+  test:
+    depends_on: [java]
+    image: java:latest
+    command: /bin/bash -cl "./gradlew clean build"
+    volumes:
+      - ~/.ssh:/root/.ssh
+      - ~/.gradle:/root/.gradle
+      - ..:/code
+    working_dir: /code
+
+  publish-snapshot:
+    depends_on: [java]
+    image: java:latest
+    command: /bin/bash -cl "BINTRAY_USER=$BINTRAY_USER BINTRAY_KEY=$BINTRAY_KEY ./gradlew clean bintrayUpload"
+    volumes:
+      - ~/.ssh:/root/.ssh
+      - ~/.gradle:/root/.gradle
+      - ..:/code
+    working_dir: /code
+
+  publish-release:
+    depends_on: [java]
+    image: java:latest
+    command: /bin/bash -cl "BINTRAY_USER=$BINTRAY_USER BINTRAY_KEY=$BINTRAY_KEY ./gradlew clean bintrayUpload -PreleaseBuild=true"
+    volumes:
+      - ~/.ssh:/root/.ssh
+      - ~/.gradle:/root/.gradle
+      - ..:/code
+    working_dir: /code
