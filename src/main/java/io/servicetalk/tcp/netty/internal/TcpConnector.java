@@ -67,10 +67,12 @@ public final class TcpConnector<Read, Write> {
      * New instance.
      * @param config to use for initialization.
      * @param channelInitializer for each connected channel.
-     * @param terminalItemPredicate used for creating a new {@link Predicate} per channel to be passed to {@link AbstractChannelReadHandler}.
+     * @param terminalItemPredicate used for creating a new {@link Predicate} per channel to be passed to
+     * {@link AbstractChannelReadHandler}.
      * @param local address.
      */
-    public TcpConnector(ReadOnlyTcpClientConfig config, ChannelInitializer channelInitializer, Supplier<Predicate<Read>> terminalItemPredicate,
+    public TcpConnector(ReadOnlyTcpClientConfig config, ChannelInitializer channelInitializer,
+                        Supplier<Predicate<Read>> terminalItemPredicate,
                         @Nullable SocketAddress local) {
         this.config = requireNonNull(config);
         this.channelInitializer = requireNonNull(channelInitializer);
@@ -82,9 +84,11 @@ public final class TcpConnector<Read, Write> {
      * New instance.
      * @param config to use for initialization.
      * @param channelInitializer for each connected channel.
-     * @param terminalItemPredicate used for creating a new {@link Predicate} per channel to be passed to {@link AbstractChannelReadHandler}.
+     * @param terminalItemPredicate used for creating a new {@link Predicate} per channel to be passed to
+     * {@link AbstractChannelReadHandler}.
      */
-    public TcpConnector(ReadOnlyTcpClientConfig config, ChannelInitializer channelInitializer, Supplier<Predicate<Read>> terminalItemPredicate) {
+    public TcpConnector(ReadOnlyTcpClientConfig config, ChannelInitializer channelInitializer,
+                        Supplier<Predicate<Read>> terminalItemPredicate) {
         this(config, channelInitializer, terminalItemPredicate, null);
     }
 
@@ -101,29 +105,34 @@ public final class TcpConnector<Read, Write> {
         return new Single<Connection<Read, Write>>() {
             @Override
             protected void handleSubscribe(Subscriber<? super Connection<Read, Write>> subscriber) {
-                connectFutureToListener(connect0(remote, eventLoopAwareNettyIoExecutor, subscriber), subscriber, remote);
+                connectFutureToListener(connect0(remote, eventLoopAwareNettyIoExecutor, subscriber), subscriber,
+                                        remote);
             }
         };
     }
 
-    private ChannelFuture connect0(Object resolvedAddress, EventLoopAwareNettyIoExecutor executor, Single.Subscriber<? super Connection<Read, Write>> subscriber) {
+    private ChannelFuture connect0(Object resolvedAddress, EventLoopAwareNettyIoExecutor executor,
+                                   Single.Subscriber<? super Connection<Read, Write>> subscriber) {
         EventLoop loop = executor.getEventLoopGroup().next();
 
-        // We have to subscribe before any possibility that we complete the single, so subscribe now and hookup the cancellable after we get the future.
+        // We have to subscribe before any possibility that we complete the single, so subscribe now and hookup the
+        // cancellable after we get the future.
         final DelayedCancellable cancellable = new DelayedCancellable();
         subscriber.onSubscribe(cancellable);
-        // Create the handler here and ensure in connectWithBootstrap / initFileDescriptorBasedChannel it is added to the ChannelPipeline
-        // after registration is complete as otherwise we may miss channelActive events.
+        // Create the handler here and ensure in connectWithBootstrap / initFileDescriptorBasedChannel it is added to
+        // the ChannelPipeline after registration is complete as otherwise we may miss channelActive events.
         ChannelHandler handler = new io.netty.channel.ChannelInitializer<Channel>() {
             @Override
             protected void initChannel(Channel channel) {
                 ConnectionContext context = newContext(channel, executor, config.getAllocator(), channelInitializer);
                 AbstractChannelReadHandler readHandler = channel.pipeline().get(AbstractChannelReadHandler.class);
                 if (readHandler != null) {
-                    subscriber.onError(new IllegalStateException(format("A handler %s of type %s already found, can not connect with this existing handler.",
+                    subscriber.onError(new IllegalStateException(
+                            format("A handler %s of type %s already found, can not connect with this existing handler.",
                             readHandler, AbstractChannelReadHandler.class.getName())));
                 } else {
-                    Connection.TerminalPredicate<Read> predicate = new Connection.TerminalPredicate<>(terminalItemPredicate.get());
+                    Connection.TerminalPredicate<Read> predicate =
+                            new Connection.TerminalPredicate<>(terminalItemPredicate.get());
                     channel.pipeline().addLast(new AbstractChannelReadHandler<Read>(predicate) {
                         @Override
                         protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Read> newPublisher) {
@@ -138,7 +147,8 @@ public final class TcpConnector<Read, Write> {
             return attachCancelSubscriber(connectWithBootstrap(resolvedAddress, loop, handler), cancellable);
         }
         if (local != null) {
-            throw new IllegalArgumentException("local cannot be specified when " + FileDescriptorSocketAddress.class.getSimpleName() + " is used");
+            throw new IllegalArgumentException("local cannot be specified when " +
+                    FileDescriptorSocketAddress.class.getSimpleName() + " is used");
         }
         Channel channel = socketChannel(loop, (FileDescriptorSocketAddress) resolvedAddress);
         if (channel == null) {
@@ -218,12 +228,15 @@ public final class TcpConnector<Read, Write> {
         return loop.register(channel);
     }
 
-    private void connectFutureToListener(ChannelFuture future, Single.Subscriber<? super Connection<Read, Write>> subscriber, Object resolvedAddress) {
+    private void connectFutureToListener(ChannelFuture future,
+                                         Single.Subscriber<? super Connection<Read, Write>> subscriber,
+                                         Object resolvedAddress) {
         future.addListener(f -> {
             Throwable cause = f.cause();
             if (cause != null) {
                 if (cause instanceof ConnectTimeoutException) {
-                    String msg = resolvedAddress instanceof FileDescriptorSocketAddress ? "Failed to register: " + resolvedAddress : "Failed to connect: " + resolvedAddress + " (local: " + local + ")";
+                    String msg = resolvedAddress instanceof FileDescriptorSocketAddress ? "Failed to register: " +
+                            resolvedAddress : "Failed to connect: " + resolvedAddress + " (local: " + local + ")";
                     cause = new io.servicetalk.client.api.ConnectTimeoutException(msg, cause);
                 }
                 subscriber.onError(cause);
