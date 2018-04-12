@@ -112,18 +112,18 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
       // bintray publishing information
       if (System.getenv("BINTRAY_USER") && System.getenv("BINTRAY_KEY")) {
         bintray {
-            user = System.getenv("BINTRAY_USER")
-            key = System.getenv("BINTRAY_KEY")
-            publications = ["mavenJava"]
-            pkg {
-                userOrg = "servicetalk"
-                repo = "servicetalk"
-                name = project.name
-                licenses = ["Apache-2.0"]
-                vcsUrl = "https://github.com/servicetalk/${project.name}.git"
-            }
-            override = true
-            publish = true
+          user = System.getenv("BINTRAY_USER")
+          key = System.getenv("BINTRAY_KEY")
+          publications = ["mavenJava"]
+          pkg {
+            userOrg = "servicetalk"
+            repo = "servicetalk"
+            name = project.name
+            licenses = ["Apache-2.0"]
+            vcsUrl = "https://github.com/servicetalk/${project.name}.git"
+          }
+          override = true
+          publish = true
         }
       }
 

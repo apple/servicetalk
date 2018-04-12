@@ -318,6 +318,12 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         }
       }
 
+      if (System.getenv("BINTRAY_USER") && System.getenv("BINTRAY_KEY")) {
+        bintray {
+          publications = ["mavenJava", "testFixtures"]
+        }
+      }
+
       project.plugins.withType(IdeaPlugin) {
         project.idea.module.testSourceDirs += testFixturesSourceSet.allSource.srcDirs
         project.idea.module.scopes["TEST"].plus += [project.configurations["testFixturesRuntime"]]
