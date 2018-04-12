@@ -79,6 +79,11 @@ final class AsciiString implements CharSequence {
         return string.subSequence(start, end);
     }
 
+    @Override
+    public String toString() {
+        return string;
+    }
+
     /**
      * {@inheritDoc}
      * <p>
