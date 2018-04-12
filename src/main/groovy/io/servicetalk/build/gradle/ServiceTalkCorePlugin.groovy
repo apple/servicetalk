@@ -154,7 +154,10 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
   private static void configureTests(Project project) {
     project.configure(project) {
       test {
-        testLogging.showStandardStreams = true
+        testLogging {
+          events "passed", "skipped", "failed"
+          showStandardStreams = true
+        }
 
         jvmArgs '-server', '-Xms2g', '-Xmx4g', '-dsa', '-da', '-ea:io.servicetalk...',
                 '-XX:+AggressiveOpts', '-XX:+TieredCompilation', '-XX:+UseBiasedLocking', '-XX:+UseFastAccessorMethods',
