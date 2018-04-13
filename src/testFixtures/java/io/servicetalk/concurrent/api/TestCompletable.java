@@ -33,30 +33,40 @@ public class TestCompletable extends Completable implements Completable.Subscrib
     private final Queue<Subscriber> subscribers = new ConcurrentLinkedQueue<>();
     private final DynamicCompositeCancellable dynamicCancellable = new MapDynamicCompositeCancellable();
     private final boolean invokeListenerPostCancel;
+    private boolean deferOnSubscribe;
     @Nullable
     private TerminalNotification terminalNotification;
 
-    public TestCompletable(boolean invokeListenerPostCancel) {
+    public TestCompletable(boolean invokeListenerPostCancel, boolean deferOnSubscribe) {
         this.invokeListenerPostCancel = invokeListenerPostCancel;
+        this.deferOnSubscribe = deferOnSubscribe;
     }
 
     public TestCompletable() {
-        this(false);
+        this(false, false);
     }
 
     @Override
     public synchronized void handleSubscribe(Subscriber subscriber) {
         subscribers.add(subscriber);
-        subscriber.onSubscribe(() -> {
+        dynamicCancellable.add(() -> {
             if (!invokeListenerPostCancel) {
                 subscribers.remove(subscriber);
             }
-            dynamicCancellable.cancel();
         });
+        if (!deferOnSubscribe) {
+            subscriber.onSubscribe(dynamicCancellable);
+        }
         if (terminalNotification != null) {
             subscribers.remove(subscriber);
             terminalNotification.terminate(subscriber);
         }
+    }
+
+    public void sendOnSubscribe() {
+        assert deferOnSubscribe;
+        deferOnSubscribe = false;
+        subscribers.forEach(s -> s.onSubscribe(dynamicCancellable));
     }
 
     @Override

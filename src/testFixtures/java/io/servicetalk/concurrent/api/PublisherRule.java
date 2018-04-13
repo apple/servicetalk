@@ -38,6 +38,7 @@ public class PublisherRule<T> implements TestRule {
     private Subscription subscription;
     private volatile boolean cancelled;
     private AtomicLong outstandingRequest;
+    private boolean deferOnSubscribe;
 
     @Override
     public Statement apply(Statement base, Description description) {
@@ -60,7 +61,9 @@ public class PublisherRule<T> implements TestRule {
                     @Override
                     protected void handleSubscribe(Subscriber<? super T> s) {
                         capturedSubscriber = s;
-                        s.onSubscribe(subscription);
+                        if (!deferOnSubscribe) {
+                            s.onSubscribe(subscription);
+                        }
                     }
                 };
                 base.evaluate();
@@ -69,7 +72,18 @@ public class PublisherRule<T> implements TestRule {
     }
 
     public Publisher<T> getPublisher() {
+        return getPublisher(false);
+    }
+
+    public Publisher<T> getPublisher(boolean deferOnSubscribe) {
+        this.deferOnSubscribe = deferOnSubscribe;
         return source;
+    }
+
+    public void sendOnSubscribe() {
+        assert deferOnSubscribe;
+        deferOnSubscribe = false;
+        capturedSubscriber.onSubscribe(subscription);
     }
 
     public PublisherRule<T> sendItems(T... items) {

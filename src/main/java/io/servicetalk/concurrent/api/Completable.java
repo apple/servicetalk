@@ -104,6 +104,27 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     }
 
     /**
+     * Merges the passed {@link Publisher} with this {@link Completable}.
+     * <p>
+     * The resulting {@link Publisher} emits all items emitted by the passed {@link Publisher} and terminates
+     * successfully when both this {@link Completable} and the passed {@link Publisher} terminates successfully.
+     * It terminates with an error when any one of this {@link Completable} or passed {@link Publisher} terminates with
+     * an error.
+     *
+     * @param mergeWith the {@link Publisher} to merge in
+     * @param <T>       The value type of the resulting {@link Publisher}.
+     * @return {@link Publisher} that emits all items emitted by the passed {@link Publisher} and terminates
+     * successfully when both this {@link Completable} and the passed {@link Publisher} terminates successfully.
+     * It terminates with an error when any one of this {@link Completable} or passed {@link Publisher} terminates with
+     * an error.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
+     */
+    public final <T> Publisher<T> merge(Publisher<T> mergeWith) {
+        return new CompletableMergeWithPublisher<>(this, mergeWith);
+    }
+
+    /**
      * Merges this {@link Completable} with the {@code other} {@link Completable}s, and delays error notification until all involved {@link Completable}s terminate.
      * <p>
      * Use {@link #merge(Completable...)} if any error should immediately terminate the returned {@link Completable}.
