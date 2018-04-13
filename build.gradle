@@ -28,7 +28,7 @@ buildscript {
 }
 
 plugins {
-  id "io.spring.dependency-management" version "1.0.4.RELEASE"
+  id "io.spring.dependency-management" version "1.0.5.RELEASE"
 }
 
 apply plugin: "servicetalk-core"
@@ -62,5 +62,17 @@ dependencyManagement {
     }
     dependency "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     dependency "org.apache.logging.log4j:log4j-core:$log4jVersion"
+  }
+}
+
+dependencies {
+  constraints {
+    dependencyManagement.managedVersions.each { dependency ->
+      add("compile", dependency.key) {
+        version {
+          prefer dependency.value
+        }
+      }
+    }
   }
 }
