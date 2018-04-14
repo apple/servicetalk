@@ -21,10 +21,13 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.QueueFullException;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.transport.api.FlushStrategy;
 import io.servicetalk.transport.api.IoExecutor;
 
 import org.reactivestreams.Subscriber;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -45,13 +48,14 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  */
 public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedConnection<Req, Resp> {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultPipelinedConnection.class);
+
     private static final AtomicIntegerFieldUpdater<DefaultPipelinedConnection> pendingRequestsCountUpdater =
             newUpdater(DefaultPipelinedConnection.class, "pendingRequestsCount");
 
     private final Connection<Resp, Req> connection;
     private final Connection.TerminalPredicate<Resp> terminalMsgPredicate;
-    private final CompletableQueue writeQueue;
-    private final CompletableQueue readQueue;
+    private final WriteQueue<Resp> writeQueue;
     private final int maxPendingRequests;
 
     @SuppressWarnings("unused")
@@ -77,8 +81,7 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
     public DefaultPipelinedConnection(Connection<Resp, Req> connection, int maxPendingRequests, int initialQueueSize) {
         this.connection = requireNonNull(connection);
         this.terminalMsgPredicate = connection.getTerminalMsgPredicate();
-        writeQueue = new CompletableQueue(initialQueueSize);
-        readQueue = new CompletableQueue(initialQueueSize);
+        writeQueue = new WriteQueue<>(terminalMsgPredicate, initialQueueSize);
         this.maxPendingRequests = maxPendingRequests;
     }
 
@@ -153,8 +156,7 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
     }
 
     private Publisher<Resp> writeOrQueueRequest(Completable completable, @Nullable Predicate<Resp> terminalMsgPredicate) {
-
-        Completable ensureMaxRequests = new Completable() {
+        return new Completable() {
             @Override
             protected void handleSubscribe(Subscriber subscriber) {
                 subscriber.onSubscribe(IGNORE_CANCEL);
@@ -164,79 +166,31 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
                         subscriber.onError(new QueueFullException("pipelined-requests", maxPendingRequests));
                         return;
                     }
-                    if (pendingRequestsCountUpdater.compareAndSet(
-                            DefaultPipelinedConnection.this, current, current + 1)) {
+                    if (pendingRequestsCountUpdater.compareAndSet(DefaultPipelinedConnection.this, current, current + 1)) {
                         break;
                     }
                 }
                 subscriber.onComplete();
             }
-        };
-
-        if (terminalMsgPredicate == null) {
-            return ensureMaxRequests.andThen(
-                    queueWriteAndRead(completable)
-                            // Cleanup needs to happen before firing terminal events
-                            .doBeforeFinally(this::decrementRequestCount));
-        }
-
-        Runnable requestFinished = () -> {
-            pendingRequestsCountUpdater.decrementAndGet(this);
-            this.terminalMsgPredicate.discardIfCurrent(terminalMsgPredicate);
-        };
-        return ensureMaxRequests.andThen(
-                queueWriteAndRead(completable)
-                        // Cleanup needs to happen before firing terminal events
-                        .doBeforeFinally(requestFinished));
-    }
-
-    private void decrementRequestCount() {
-        pendingRequestsCountUpdater.decrementAndGet(this);
-    }
-
-    private Publisher<Resp> queueWriteAndRead(Completable write) {
-        // doAfterFinally() x2 used here to satisfy the current unit tests, but in practice doBeforeFinally() works too.
-        // Further investigation is needed to define the strategy when a read is canceled. Currently the pipeline code
-        // here assumes the underlying NettyChannelPublisher to drop te connection on cancel. This should be expressed
-        // in a tighter contract between Connection and PipelinedConnection. Alternative strategies may include
-        // retaining the connection and simply draining and discarding the remaining elements in the stream before
-        // subscribing the reader of the next request.
-        return writeQueue.offerAndExecuteCompletable()
-                .andThen(write.doAfterFinally(writeQueue::postTaskTermination))
-                .merge(readQueue.offerAndExecuteCompletable()
-                        .andThen(connection.read().doAfterFinally(readQueue::postTaskTermination)));
-    }
-
-    private static final class CompletableQueue extends SequentialTaskQueue<Completable.Subscriber> {
-
-        private CompletableQueue(int initialCapacity) {
-            // Queues are unbounded since max capacity has to be enforced across these two queues
-            // i.e. requests queued for write + responses not completed must not exceed maxPendingRequests.
-            super(initialCapacity, UNBOUNDED);
-        }
-
-        private Completable offerAndExecuteCompletable() {
-            return new Completable() {
-                @Override
-                protected void handleSubscribe(Subscriber subscriber) {
-                    subscriber.onSubscribe(Cancellable.IGNORE_CANCEL);
-                    if (!offerAndTryExecute(subscriber)) {
-                        subscriber.onError(new IllegalStateException("Failed to enqueue in unbounded Task Queue"));
+        }.andThen(new Completable() {
+                    @Override
+                    protected void handleSubscribe(Subscriber subscriber) {
+                        Task<Resp> task = new Task<>(completable, subscriber, terminalMsgPredicate);
+                        subscriber.onSubscribe(task);
+                        if (!writeQueue.offerAndTryExecute(task)) {
+                            task.cancel();
+                            subscriber.onError(new IllegalStateException("Unexpected reject from an unbounded pending requests queue."));
+                        }
                     }
-                }
-            };
-        }
-
-        @Override
-        protected void execute(Completable.Subscriber subscriber) {
-            subscriber.onComplete();
-        }
+                }.andThen(connection.read()).doBeforeFinally(() -> {
+                    pendingRequestsCountUpdater.decrementAndGet(this);
+                    if (terminalMsgPredicate != null) {
+                        this.terminalMsgPredicate.discardIfCurrent(terminalMsgPredicate);
+                    }
+                }).doAfterFinally(writeQueue.responseQueue::postTaskTermination)
+        );
     }
 
-    /**
-     * Visible for Unit testing.
-     * @return number of pending requests
-     */
     int getPendingRequestsCount() {
         return pendingRequestsCount;
     }
@@ -280,5 +234,127 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
     @Override
     public String toString() {
         return DefaultPipelinedConnection.class.getSimpleName() + "(" + connection + ")";
+    }
+
+    private static final class WriteQueue<Resp> extends SequentialTaskQueue<Task<Resp>> {
+
+        private final ResponseQueue<Resp> responseQueue;
+
+        WriteQueue(Connection.TerminalPredicate<Resp> terminalMsgPredicate, int initialQueueSize) {
+            // Queues are unbounded since max capacity has to be enforced across these two queues
+            // i.e. requests queued for write + responses not completed must not exceed maxPendingRequests.
+            super(initialQueueSize, UNBOUNDED);
+            responseQueue = new ResponseQueue<>(terminalMsgPredicate, initialQueueSize);
+        }
+
+        @Override
+        protected void execute(Task<Resp> requestTask) {
+            requestTask.write.subscribe(new WriteSourceSubscriber<>(requestTask, this));
+        }
+    }
+
+    private static final class ResponseQueue<Resp> extends SequentialTaskQueue<Task<Resp>> {
+
+        private final Connection.TerminalPredicate<Resp> terminalMsgPredicate;
+
+        ResponseQueue(Connection.TerminalPredicate<Resp> terminalMsgPredicate, int initialQueueSize) {
+            // Queues are unbounded since max capacity has to be enforced across these two queues
+            // i.e. requests queued for write + responses not completed must not exceed maxPendingRequests.
+            super(initialQueueSize, UNBOUNDED);
+            this.terminalMsgPredicate = terminalMsgPredicate;
+        }
+
+        @Override
+        protected void execute(Task<Resp> toExecute) {
+            final Predicate<Resp> predicate = toExecute.terminalMsgPredicate;
+            if (predicate != null) {
+                terminalMsgPredicate.replaceCurrent(predicate);
+            }
+            // Trigger subscription to the read Publisher. postTaskTermination will be called when response stream completes.
+            toExecute.readReadyListener.onComplete();
+        }
+    }
+
+    private static final class Task<Resp> extends SequentialCancellable {
+
+        final Completable write;
+        final Completable.Subscriber readReadyListener;
+        @Nullable
+        final Predicate<Resp> terminalMsgPredicate;
+
+        Task(Completable write, Completable.Subscriber readReadyListener, @Nullable Predicate<Resp> terminalMsgPredicate) {
+            this.write = requireNonNull(write);
+            this.readReadyListener = requireNonNull(readReadyListener);
+            this.terminalMsgPredicate = terminalMsgPredicate;
+        }
+    }
+
+    private static final class WriteSourceSubscriber<Resp> implements Completable.Subscriber {
+
+        private static final AtomicIntegerFieldUpdater<WriteSourceSubscriber> postTaskTerminationCalledUpdater =
+                newUpdater(WriteSourceSubscriber.class, "postTaskTerminationCalled");
+        private final Task<Resp> requestTask;
+        private final WriteQueue<Resp> writeQueue;
+
+        @SuppressWarnings("unused")
+        private volatile int postTaskTerminationCalled;
+
+        WriteSourceSubscriber(Task<Resp> requestTask, WriteQueue<Resp> writeQueue) {
+            this.requestTask = requestTask;
+            this.writeQueue = writeQueue;
+        }
+
+        @Override
+        public void onSubscribe(Cancellable cancellable) {
+            requestTask.setNextCancellable(() -> {
+                cancellable.cancel();
+                safePostTaskTermination();
+            });
+        }
+
+        @Override
+        public void onComplete() {
+            // Write completed successfully, enqueue response listener and execute response before
+            // writing further requests.
+            final boolean offered;
+            try {
+                offered = writeQueue.responseQueue.offerAndTryExecute(requestTask);
+            } catch (Throwable cause) {
+                requestTask.readReadyListener.onError(cause);
+                throw cause;
+            } finally {
+                safePostTaskTermination();
+            }
+
+            if (!offered) {
+                onError0(new IllegalStateException("Unexpected reject from an unbounded response listener queue."));
+            }
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            onError0(t);
+        }
+
+        private void onError0(Throwable t) {
+            try {
+                requestTask.readReadyListener.onError(t);
+            } finally {
+                safePostTaskTermination();
+            }
+        }
+
+        private void safePostTaskTermination() {
+            if (!postTaskTerminationCalledUpdater.compareAndSet(this, 0, 1)) {
+                return;
+            }
+            try {
+                // Since this method may throw if a task is executed synchronously and it fails,
+                // putting this in finally may hide the exception.
+                writeQueue.postTaskTermination();
+            } catch (Throwable t) {
+                LOGGER.error("Unexpected failure cleaning up task, post termination.", t);
+            }
+        }
     }
 }

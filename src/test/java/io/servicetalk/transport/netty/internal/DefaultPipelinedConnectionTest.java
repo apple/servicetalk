@@ -15,13 +15,10 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.Completable.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.QueueFullException;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -40,8 +37,6 @@ import static io.servicetalk.transport.api.FlushStrategy.defaultFlushStrategy;
 import static java.lang.Integer.MAX_VALUE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -69,7 +64,7 @@ public class DefaultPipelinedConnectionTest {
         ConnectionContext context = mock(ConnectionContext.class);
         when(context.closeAsync()).thenReturn(new NettyFutureCompletable(channel::close));
         Connection.RequestNSupplier requestNSupplier = mock(Connection.RequestNSupplier.class);
-        readPublisher = new TestPublisher<>();
+        readPublisher = new TestPublisher<>(false, false);
         readPublisher.sendOnSubscribe();
         writePublisher1 = new TestPublisher<>();
         writePublisher1.sendOnSubscribe();
@@ -85,17 +80,15 @@ public class DefaultPipelinedConnectionTest {
         readSubscriber.subscribe(requester.request(writePublisher1, defaultFlushStrategy())).request(1);
         secondReadSubscriber.subscribe(requester.request(writePublisher2, defaultFlushStrategy())).request(1);
         writePublisher1.verifySubscribed();
-        readPublisher.verifySubscribed();
+        readPublisher.verifyNotSubscribed();
         writePublisher2.verifyNotSubscribed();
         writePublisher1.sendItems(1).onComplete();
-        writePublisher2.verifySubscribed();
-        readPublisher.sendItems(1).onComplete();
-        writePublisher2.verifySubscribed();
+        readPublisher.verifySubscribed().sendItems(1).onComplete();
         readSubscriber.verifySuccess(1);
-        writePublisher2.sendItems(1).onComplete();
+        readPublisher.verifyNotSubscribed();
+        writePublisher2.verifySubscribed().sendItems(1).onComplete();
         readPublisher.verifySubscribed();
         readPublisher.sendItems(1).onComplete();
-        readPublisher.verifyNotSubscribed();
         secondReadSubscriber.verifySuccess(1);
     }
 
@@ -133,34 +126,6 @@ public class DefaultPipelinedConnectionTest {
         writePublisher2.sendItems(1).onComplete();
         readPublisher.onComplete();
         secondReadSubscriber.verifySuccess();
-        dispose();
-    }
-
-    @Test
-    public void testPipelinedFullDuplexRequests() {
-        assertEquals(0, requester.getPendingRequestsCount());
-        readSubscriber.subscribe(requester.request(writePublisher1, defaultFlushStrategy())).request(2);
-        assertEquals(1, requester.getPendingRequestsCount());
-        secondReadSubscriber.subscribe(requester.request(writePublisher2, defaultFlushStrategy())).request(1);
-        writePublisher1.verifySubscribed().sendItems(1); // 1st write starting
-        writePublisher2.verifyNotSubscribed();
-        readPublisher.verifySubscribed().sendItems(1); // 1st read starting - 1st write ongoing
-        readSubscriber.verifyItems(1);
-        writePublisher1.onComplete();
-        writePublisher1.verifyNotSubscribed();
-        writePublisher2.verifySubscribed().sendItems(1); // 2nd write starting - 1st read ongoing
-        secondReadSubscriber.verifyNoEmissions();
-        readPublisher.sendItems(2).onComplete(); // 1st read complete
-        readPublisher.verifySubscribed().sendItems(3); // 2nd read starting
-        readSubscriber.verifySuccess(2);
-        secondReadSubscriber.verifyItems(3);
-        readPublisher.onComplete(); // 2nd read complete
-        assertEquals(1, requester.getPendingRequestsCount());
-        writePublisher2.onComplete(); // 2nd write complete
-        writePublisher2.verifyNotSubscribed();
-        secondReadSubscriber.verifySuccess();
-        readPublisher.verifyNotSubscribed();
-        assertEquals(0, requester.getPendingRequestsCount());
         dispose();
     }
 
@@ -208,38 +173,6 @@ public class DefaultPipelinedConnectionTest {
     @Test
     public void testEnforceLimitWithReadsPending() {
         enforceLimitWhenReadsPending();
-    }
-
-    @Test
-    public void testEnsureRequestCountUpdatedBeforeTerminalEvents() {
-        MockedCompletableListenerRule sub = new MockedCompletableListenerRule();
-        Completable completable1 = requester.request(never()).ignoreElements();
-        Completable completable2 = requester.request(success(1)).ignoreElements();
-        Subscriber subscriber = new Subscriber() {
-            @Override
-            public void onSubscribe(Cancellable subCancel) {
-                // NOOP
-            }
-
-            @Override
-            public void onComplete() {
-                sub.listen(requester.request(Single.success(1)).ignoreElements());
-                sub.verifyNoEmissions();
-                readPublisher.onComplete();
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                fail(t.getMessage());
-            }
-        };
-        MockedCompletableListenerRule listener = new MockedCompletableListenerRule().listen(completable1);
-        completable2.subscribe(subscriber);
-        readPublisher.onComplete(); // allow 1st pending request to get canceled
-        assertEquals(MAX_PENDING_REQUESTS, requester.getPendingRequestsCount());
-        readPublisher.onComplete(); // completes 2nd req & triggers 3nd req from onComplete() event
-        listener.cancel(); // unblocks write queue for 2nd and 3rd req
-        sub.verifyCompletion(); // ensures 3rd req completed successfully after requestCount updated
     }
 
     @Test
