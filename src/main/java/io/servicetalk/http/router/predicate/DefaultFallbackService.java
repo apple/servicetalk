@@ -18,8 +18,14 @@ package io.servicetalk.http.router.predicate;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.HttpResponses;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.transport.api.ConnectionContext;
+
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
+import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
+import static io.servicetalk.http.api.HttpResponseStatuses.NOT_FOUND;
 
 final class DefaultFallbackService<I, O> implements HttpService<I, O> {
 
@@ -31,13 +37,11 @@ final class DefaultFallbackService<I, O> implements HttpService<I, O> {
 
     @Override
     public Single<HttpResponse<O>> handle(final ConnectionContext ctx, final HttpRequest<I> request) {
-        // final HttpResponse<O> response = HttpResponse.create(request.getVersion(), NOT_FOUND, Publisher.empty());
-        // response.getHeaders().set(CONTENT_LENGTH, "0")
-        //        .set(CONTENT_TYPE, TEXT_PLAIN);
-        // // TODO: Set keepalive once we have an isKeepAlive helper method.
-        // return Single.success(response);
-        // TODO: We don't have an implementation of HttpResponse to return yet.
-        return Single.error(new UnsupportedOperationException("Not yet implemented."));
+        final HttpResponse<O> response = HttpResponses.newResponse(request.getVersion(), NOT_FOUND);
+        response.getHeaders().set(CONTENT_LENGTH, "0")
+                .set(CONTENT_TYPE, TEXT_PLAIN);
+        // TODO(derek): Set keepalive once we have an isKeepAlive helper method.
+        return Single.success(response);
     }
 
     @SuppressWarnings("unchecked")
