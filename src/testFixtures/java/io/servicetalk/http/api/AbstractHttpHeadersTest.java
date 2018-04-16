@@ -27,7 +27,7 @@ import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-import static io.servicetalk.http.api.CharSequences.newCaseInsensitiveAsciiString;
+import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -477,7 +477,7 @@ public abstract class AbstractHttpHeadersTest {
     @Test(expected = IllegalArgumentException.class)
     public void invalidHeaderNameOutOfRangeCharacterAsciiString() {
         final HttpHeaders headers = newHeaders();
-        headers.add(newCaseInsensitiveAsciiString(String.valueOf((char) -1)), "foo");
+        headers.add(newAsciiString(String.valueOf((char) -1)), "foo");
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -489,7 +489,7 @@ public abstract class AbstractHttpHeadersTest {
     @Test(expected = IllegalArgumentException.class)
     public void invalidHeaderNameCharacterAsciiString() {
         final HttpHeaders headers = newHeaders();
-        headers.add(newCaseInsensitiveAsciiString("="), "foo");
+        headers.add(newAsciiString("="), "foo");
     }
 
     @Test(expected = NoSuchElementException.class)

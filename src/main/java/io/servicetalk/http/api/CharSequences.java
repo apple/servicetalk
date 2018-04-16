@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.api;
 
+import javax.annotation.Nullable;
+
 import static io.servicetalk.http.api.AsciiString.cached;
 
 /**
@@ -35,7 +37,36 @@ public final class CharSequences {
      * @param input a string containing only 8-bit ASCII characters.
      * @return a {@link CharSequence}
      */
-    public static CharSequence newCaseInsensitiveAsciiString(final String input) {
+    public static CharSequence newAsciiString(final String input) {
         return cached(input);
+    }
+
+    /**
+     * Perform a case-insensitive comparison of two {@link CharSequence}s.
+     * <p>
+     * NOTE: This only supports 8-bit ASCII.
+     *
+     * @param a first {@link CharSequence} to compare.
+     * @param b second {@link CharSequence} to compare.
+     * @return {@code true} if both {@link CharSequence}'s are equals when ignoring the case.
+     */
+    public static boolean contentEqualsIgnoreCase(@Nullable final CharSequence a, @Nullable final CharSequence b) {
+        if (a == null || b == null) {
+            return a == b;
+        }
+
+        if (a == b) {
+            return true;
+        }
+
+        if (a.length() != b.length()) {
+            return false;
+        }
+        for (int i = 0; i < a.length(); ++i) {
+            if (!AsciiString.equalsIgnoreCase(a.charAt(i), b.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
     }
 }

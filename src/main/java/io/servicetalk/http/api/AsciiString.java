@@ -60,7 +60,7 @@ final class AsciiString implements CharSequence {
      * Used for the constants (which already stored in the JVM's string table) and in cases
      * where the guaranteed use of the {@link #toString()} method.
      */
-    public static AsciiString cached(final String string) {
+    static AsciiString cached(final String string) {
         return new AsciiString(string);
     }
 
@@ -114,7 +114,7 @@ final class AsciiString implements CharSequence {
      * @return {@code -1} if the processor iterated to or beyond the end of the readable bytes.
      * The last-visited index If the {@link ByteProcessor#process(byte)} returned {@code false}.
      */
-    public int forEachByte(final ByteProcessor visitor) {
+    int forEachByte(final ByteProcessor visitor) {
         final int len = length();
         for (int i = 0; i < len; ++i) {
             if (!visitor.process((byte) charAt(i))) {
@@ -127,7 +127,7 @@ final class AsciiString implements CharSequence {
     /**
      * Returns {@code true} if the content of both {@link CharSequence}'s are equals. This only supports 8-bit ASCII.
      */
-    public static boolean contentEquals(@Nullable final CharSequence a, @Nullable final CharSequence b) {
+    static boolean contentEquals(@Nullable final CharSequence a, @Nullable final CharSequence b) {
         if (a == null || b == null) {
             return a == b;
         }
@@ -148,30 +148,6 @@ final class AsciiString implements CharSequence {
     }
 
     /**
-     * Returns {@code true} if both {@link CharSequence}'s are equals when ignore the case. This only supports 8-bit
-     * ASCII.
-     */
-    public static boolean contentEqualsIgnoreCase(@Nullable final CharSequence a, @Nullable final CharSequence b) {
-        if (a == null || b == null) {
-            return a == b;
-        }
-
-        if (a == b) {
-            return true;
-        }
-
-        if (a.length() != b.length()) {
-            return false;
-        }
-        for (int i = 0; i < a.length(); ++i) {
-            if (!equalsIgnoreCase(a.charAt(i), b.charAt(i))) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
      * This methods make regionMatches operation correctly for any chars in strings.
      *
      * @param cs         the {@code CharSequence} to be processed
@@ -182,8 +158,8 @@ final class AsciiString implements CharSequence {
      * @param length     the number of characters to compare.
      * @return {@code true} if the ranges of characters are equal, {@code false} otherwise.
      */
-    public static boolean regionMatches(final CharSequence cs, final boolean ignoreCase, final int csStart,
-                                        final CharSequence string, final int start, final int length) {
+    static boolean regionMatches(final CharSequence cs, final boolean ignoreCase, final int csStart,
+                                 final CharSequence string, final int start, final int length) {
         if (cs instanceof String && string instanceof String) {
             return ((String) cs).regionMatches(ignoreCase, csStart, (String) string, start, length);
         }
@@ -198,7 +174,7 @@ final class AsciiString implements CharSequence {
      * algorithm with {@link #hashCode()} so that you can put both {@link AsciiString}s and arbitrary
      * {@link CharSequence}s into the same headers.
      */
-    public static int hashCode(final CharSequence value) {
+    static int hashCode(final CharSequence value) {
         int h = 0;
         final int end = value.length();
         for (int i = 0; i < end; ++i) {
@@ -234,7 +210,7 @@ final class AsciiString implements CharSequence {
         return true;
     }
 
-    private static boolean equalsIgnoreCase(final char a, final char b) {
+    static boolean equalsIgnoreCase(final char a, final char b) {
         return a == b || toLowerCase(a) == toLowerCase(b);
     }
 

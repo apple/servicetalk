@@ -15,14 +15,14 @@
  */
 package io.servicetalk.http.api;
 
-public class DefaultHttpHeadersTest extends AbstractHttpHeadersTest {
-    @Override
-    protected HttpHeaders newHeaders() {
-        return DefaultHttpHeadersFactory.INSTANCE.newHeaders();
-    }
-
-    @Override
-    protected HttpHeaders newHeaders(final int initialSizeHint) {
-        return new DefaultHttpHeaders(initialSizeHint, true);
-    }
+/**
+ * Factory method for creating {@link HttpHeaders}.
+ */
+public interface HttpHeadersFactory {
+    /**
+     * Create an {@link HttpHeaders} instance.
+     *
+     * @return an {@link HttpHeaders} instance.
+     */
+    HttpHeaders newHeaders();
 }

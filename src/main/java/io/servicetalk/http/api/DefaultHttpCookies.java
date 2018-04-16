@@ -18,9 +18,9 @@ package io.servicetalk.http.api;
 import java.util.Iterator;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.AsciiString.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.AsciiString.regionMatches;
-import static io.servicetalk.http.api.CharSequences.newCaseInsensitiveAsciiString;
+import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
+import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HeaderUtils.validateCookieTokenAndHeaderName;
 import static io.servicetalk.http.api.NetUtil.isValidIpV4Address;
 import static io.servicetalk.http.api.NetUtil.isValidIpV6Address;
@@ -41,10 +41,10 @@ public final class DefaultHttpCookies extends MultiMap<CharSequence, HttpCookie>
     private static final HttpHeaders COOKIE_NAMES = new DefaultHttpHeaders(8, false);
 
     static {
-        COOKIE_NAMES.add(newCaseInsensitiveAsciiString("path"), new ParseStateCharSequence(ParseState.ParsingPath));
-        COOKIE_NAMES.add(newCaseInsensitiveAsciiString("domain"), new ParseStateCharSequence(ParseState.ParsingDomain));
-        COOKIE_NAMES.add(newCaseInsensitiveAsciiString("expires"), new ParseStateCharSequence(ParseState.ParsingExpires));
-        COOKIE_NAMES.add(newCaseInsensitiveAsciiString("max-age"), new ParseStateCharSequence(ParseState.ParsingMaxAge));
+        COOKIE_NAMES.add(newAsciiString("path"), new ParseStateCharSequence(ParseState.ParsingPath));
+        COOKIE_NAMES.add(newAsciiString("domain"), new ParseStateCharSequence(ParseState.ParsingDomain));
+        COOKIE_NAMES.add(newAsciiString("expires"), new ParseStateCharSequence(ParseState.ParsingExpires));
+        COOKIE_NAMES.add(newAsciiString("max-age"), new ParseStateCharSequence(ParseState.ParsingMaxAge));
     }
 
     private final HttpHeaders httpHeaders;

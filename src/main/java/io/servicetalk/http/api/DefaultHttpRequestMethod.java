@@ -57,9 +57,7 @@ final class DefaultHttpRequestMethod implements HttpRequestMethod {
 
     @Override
     public int hashCode() {
-        int result = name.hashCode();
-        result = 31 * result + properties.hashCode();
-        return result;
+        return 31 * name.hashCode() + properties.hashCode();
     }
 
     @Override

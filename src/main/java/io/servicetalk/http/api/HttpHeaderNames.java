@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import static io.servicetalk.http.api.CharSequences.newCaseInsensitiveAsciiString;
+import static io.servicetalk.http.api.CharSequences.newAsciiString;
 
 /**
  * Common <a href="https://tools.ietf.org/html/rfc7231#section-5">request header names</a> and
@@ -25,314 +25,314 @@ public final class HttpHeaderNames {
     /**
      * {@code "accept"}
      */
-    public static final CharSequence ACCEPT = newCaseInsensitiveAsciiString("accept");
+    public static final CharSequence ACCEPT = newAsciiString("accept");
     /**
      * {@code "accept-charset"}
      */
-    public static final CharSequence ACCEPT_CHARSET = newCaseInsensitiveAsciiString("accept-charset");
+    public static final CharSequence ACCEPT_CHARSET = newAsciiString("accept-charset");
     /**
      * {@code "accept-encoding"}
      */
-    public static final CharSequence ACCEPT_ENCODING = newCaseInsensitiveAsciiString("accept-encoding");
+    public static final CharSequence ACCEPT_ENCODING = newAsciiString("accept-encoding");
     /**
      * {@code "accept-language"}
      */
-    public static final CharSequence ACCEPT_LANGUAGE = newCaseInsensitiveAsciiString("accept-language");
+    public static final CharSequence ACCEPT_LANGUAGE = newAsciiString("accept-language");
     /**
      * {@code "accept-ranges"}
      */
-    public static final CharSequence ACCEPT_RANGES = newCaseInsensitiveAsciiString("accept-ranges");
+    public static final CharSequence ACCEPT_RANGES = newAsciiString("accept-ranges");
     /**
      * {@code "accept-patch"}
      */
-    public static final CharSequence ACCEPT_PATCH = newCaseInsensitiveAsciiString("accept-patch");
+    public static final CharSequence ACCEPT_PATCH = newAsciiString("accept-patch");
     /**
      * {@code "access-control-allow-credentials"}
      */
     public static final CharSequence ACCESS_CONTROL_ALLOW_CREDENTIALS =
-            newCaseInsensitiveAsciiString("access-control-allow-credentials");
+            newAsciiString("access-control-allow-credentials");
     /**
      * {@code "access-control-allow-headers"}
      */
     public static final CharSequence ACCESS_CONTROL_ALLOW_HEADERS =
-            newCaseInsensitiveAsciiString("access-control-allow-headers");
+            newAsciiString("access-control-allow-headers");
     /**
      * {@code "access-control-allow-methods"}
      */
     public static final CharSequence ACCESS_CONTROL_ALLOW_METHODS =
-            newCaseInsensitiveAsciiString("access-control-allow-methods");
+            newAsciiString("access-control-allow-methods");
     /**
      * {@code "access-control-allow-origin"}
      */
     public static final CharSequence ACCESS_CONTROL_ALLOW_ORIGIN =
-            newCaseInsensitiveAsciiString("access-control-allow-origin");
+            newAsciiString("access-control-allow-origin");
     /**
      * {@code "access-control-expose-headers"}
      */
     public static final CharSequence ACCESS_CONTROL_EXPOSE_HEADERS =
-            newCaseInsensitiveAsciiString("access-control-expose-headers");
+            newAsciiString("access-control-expose-headers");
     /**
      * {@code "access-control-max-age"}
      */
-    public static final CharSequence ACCESS_CONTROL_MAX_AGE = newCaseInsensitiveAsciiString("access-control-max-age");
+    public static final CharSequence ACCESS_CONTROL_MAX_AGE = newAsciiString("access-control-max-age");
     /**
      * {@code "access-control-request-headers"}
      */
     public static final CharSequence ACCESS_CONTROL_REQUEST_HEADERS =
-            newCaseInsensitiveAsciiString("access-control-request-headers");
+            newAsciiString("access-control-request-headers");
     /**
      * {@code "access-control-request-method"}
      */
     public static final CharSequence ACCESS_CONTROL_REQUEST_METHOD =
-            newCaseInsensitiveAsciiString("access-control-request-method");
+            newAsciiString("access-control-request-method");
     /**
      * {@code "age"}
      */
-    public static final CharSequence AGE = newCaseInsensitiveAsciiString("age");
+    public static final CharSequence AGE = newAsciiString("age");
     /**
      * {@code "allow"}
      */
-    public static final CharSequence ALLOW = newCaseInsensitiveAsciiString("allow");
+    public static final CharSequence ALLOW = newAsciiString("allow");
     /**
      * {@code "authorization"}
      */
-    public static final CharSequence AUTHORIZATION = newCaseInsensitiveAsciiString("authorization");
+    public static final CharSequence AUTHORIZATION = newAsciiString("authorization");
     /**
      * {@code "cache-control"}
      */
-    public static final CharSequence CACHE_CONTROL = newCaseInsensitiveAsciiString("cache-control");
+    public static final CharSequence CACHE_CONTROL = newAsciiString("cache-control");
     /**
      * {@code "connection"}
      */
-    public static final CharSequence CONNECTION = newCaseInsensitiveAsciiString("connection");
+    public static final CharSequence CONNECTION = newAsciiString("connection");
     /**
      * {@code "content-base"}
      */
-    public static final CharSequence CONTENT_BASE = newCaseInsensitiveAsciiString("content-base");
+    public static final CharSequence CONTENT_BASE = newAsciiString("content-base");
     /**
      * {@code "content-encoding"}
      */
-    public static final CharSequence CONTENT_ENCODING = newCaseInsensitiveAsciiString("content-encoding");
+    public static final CharSequence CONTENT_ENCODING = newAsciiString("content-encoding");
     /**
      * {@code "content-language"}
      */
-    public static final CharSequence CONTENT_LANGUAGE = newCaseInsensitiveAsciiString("content-language");
+    public static final CharSequence CONTENT_LANGUAGE = newAsciiString("content-language");
     /**
      * {@code "content-length"}
      */
-    public static final CharSequence CONTENT_LENGTH = newCaseInsensitiveAsciiString("content-length");
+    public static final CharSequence CONTENT_LENGTH = newAsciiString("content-length");
     /**
      * {@code "content-location"}
      */
-    public static final CharSequence CONTENT_LOCATION = newCaseInsensitiveAsciiString("content-location");
+    public static final CharSequence CONTENT_LOCATION = newAsciiString("content-location");
     /**
      * {@code "content-transfer-encoding"}
      */
-    public static final CharSequence CONTENT_TRANSFER_ENCODING = newCaseInsensitiveAsciiString("content-transfer-encoding");
+    public static final CharSequence CONTENT_TRANSFER_ENCODING = newAsciiString("content-transfer-encoding");
     /**
      * {@code "content-disposition"}
      */
-    public static final CharSequence CONTENT_DISPOSITION = newCaseInsensitiveAsciiString("content-disposition");
+    public static final CharSequence CONTENT_DISPOSITION = newAsciiString("content-disposition");
     /**
      * {@code "content-md5"}
      */
-    public static final CharSequence CONTENT_MD5 = newCaseInsensitiveAsciiString("content-md5");
+    public static final CharSequence CONTENT_MD5 = newAsciiString("content-md5");
     /**
      * {@code "content-range"}
      */
-    public static final CharSequence CONTENT_RANGE = newCaseInsensitiveAsciiString("content-range");
+    public static final CharSequence CONTENT_RANGE = newAsciiString("content-range");
     /**
      * {@code "content-security-policy"}
      */
-    public static final CharSequence CONTENT_SECURITY_POLICY = newCaseInsensitiveAsciiString("content-security-policy");
+    public static final CharSequence CONTENT_SECURITY_POLICY = newAsciiString("content-security-policy");
     /**
      * {@code "content-type"}
      */
-    public static final CharSequence CONTENT_TYPE = newCaseInsensitiveAsciiString("content-type");
+    public static final CharSequence CONTENT_TYPE = newAsciiString("content-type");
     /**
      * {@code "cookie"}
      */
-    public static final CharSequence COOKIE = newCaseInsensitiveAsciiString("cookie");
+    public static final CharSequence COOKIE = newAsciiString("cookie");
     /**
      * {@code "date"}
      */
-    public static final CharSequence DATE = newCaseInsensitiveAsciiString("date");
+    public static final CharSequence DATE = newAsciiString("date");
     /**
      * {@code "etag"}
      */
-    public static final CharSequence ETAG = newCaseInsensitiveAsciiString("etag");
+    public static final CharSequence ETAG = newAsciiString("etag");
     /**
      * {@code "expect"}
      */
-    public static final CharSequence EXPECT = newCaseInsensitiveAsciiString("expect");
+    public static final CharSequence EXPECT = newAsciiString("expect");
     /**
      * {@code "expires"}
      */
-    public static final CharSequence EXPIRES = newCaseInsensitiveAsciiString("expires");
+    public static final CharSequence EXPIRES = newAsciiString("expires");
     /**
      * {@code "from"}
      */
-    public static final CharSequence FROM = newCaseInsensitiveAsciiString("from");
+    public static final CharSequence FROM = newAsciiString("from");
     /**
      * {@code "host"}
      */
-    public static final CharSequence HOST = newCaseInsensitiveAsciiString("host");
+    public static final CharSequence HOST = newAsciiString("host");
     /**
      * {@code "if-match"}
      */
-    public static final CharSequence IF_MATCH = newCaseInsensitiveAsciiString("if-match");
+    public static final CharSequence IF_MATCH = newAsciiString("if-match");
     /**
      * {@code "if-modified-since"}
      */
-    public static final CharSequence IF_MODIFIED_SINCE = newCaseInsensitiveAsciiString("if-modified-since");
+    public static final CharSequence IF_MODIFIED_SINCE = newAsciiString("if-modified-since");
     /**
      * {@code "if-none-match"}
      */
-    public static final CharSequence IF_NONE_MATCH = newCaseInsensitiveAsciiString("if-none-match");
+    public static final CharSequence IF_NONE_MATCH = newAsciiString("if-none-match");
     /**
      * {@code "if-range"}
      */
-    public static final CharSequence IF_RANGE = newCaseInsensitiveAsciiString("if-range");
+    public static final CharSequence IF_RANGE = newAsciiString("if-range");
     /**
      * {@code "if-unmodified-since"}
      */
-    public static final CharSequence IF_UNMODIFIED_SINCE = newCaseInsensitiveAsciiString("if-unmodified-since");
+    public static final CharSequence IF_UNMODIFIED_SINCE = newAsciiString("if-unmodified-since");
     /**
      * {@code "last-modified"}
      */
-    public static final CharSequence LAST_MODIFIED = newCaseInsensitiveAsciiString("last-modified");
+    public static final CharSequence LAST_MODIFIED = newAsciiString("last-modified");
     /**
      * {@code "location"}
      */
-    public static final CharSequence LOCATION = newCaseInsensitiveAsciiString("location");
+    public static final CharSequence LOCATION = newAsciiString("location");
     /**
      * {@code "max-forwards"}
      */
-    public static final CharSequence MAX_FORWARDS = newCaseInsensitiveAsciiString("max-forwards");
+    public static final CharSequence MAX_FORWARDS = newAsciiString("max-forwards");
     /**
      * {@code "origin"}
      */
-    public static final CharSequence ORIGIN = newCaseInsensitiveAsciiString("origin");
+    public static final CharSequence ORIGIN = newAsciiString("origin");
     /**
      * {@code "pragma"}
      */
-    public static final CharSequence PRAGMA = newCaseInsensitiveAsciiString("pragma");
+    public static final CharSequence PRAGMA = newAsciiString("pragma");
     /**
      * {@code "proxy-authenticate"}
      */
-    public static final CharSequence PROXY_AUTHENTICATE = newCaseInsensitiveAsciiString("proxy-authenticate");
+    public static final CharSequence PROXY_AUTHENTICATE = newAsciiString("proxy-authenticate");
     /**
      * {@code "proxy-authorization"}
      */
-    public static final CharSequence PROXY_AUTHORIZATION = newCaseInsensitiveAsciiString("proxy-authorization");
+    public static final CharSequence PROXY_AUTHORIZATION = newAsciiString("proxy-authorization");
     /**
      * {@code "range"}
      */
-    public static final CharSequence RANGE = newCaseInsensitiveAsciiString("range");
+    public static final CharSequence RANGE = newAsciiString("range");
     /**
      * {@code "referer"}
      */
-    public static final CharSequence REFERER = newCaseInsensitiveAsciiString("referer");
+    public static final CharSequence REFERER = newAsciiString("referer");
     /**
      * {@code "retry-after"}
      */
-    public static final CharSequence RETRY_AFTER = newCaseInsensitiveAsciiString("retry-after");
+    public static final CharSequence RETRY_AFTER = newAsciiString("retry-after");
     /**
      * {@code "sec-websocket-key1"}
      */
-    public static final CharSequence SEC_WEBSOCKET_KEY1 = newCaseInsensitiveAsciiString("sec-websocket-key1");
+    public static final CharSequence SEC_WEBSOCKET_KEY1 = newAsciiString("sec-websocket-key1");
     /**
      * {@code "sec-websocket-key2"}
      */
-    public static final CharSequence SEC_WEBSOCKET_KEY2 = newCaseInsensitiveAsciiString("sec-websocket-key2");
+    public static final CharSequence SEC_WEBSOCKET_KEY2 = newAsciiString("sec-websocket-key2");
     /**
      * {@code "sec-websocket-location"}
      */
-    public static final CharSequence SEC_WEBSOCKET_LOCATION = newCaseInsensitiveAsciiString("sec-websocket-location");
+    public static final CharSequence SEC_WEBSOCKET_LOCATION = newAsciiString("sec-websocket-location");
     /**
      * {@code "sec-websocket-origin"}
      */
-    public static final CharSequence SEC_WEBSOCKET_ORIGIN = newCaseInsensitiveAsciiString("sec-websocket-origin");
+    public static final CharSequence SEC_WEBSOCKET_ORIGIN = newAsciiString("sec-websocket-origin");
     /**
      * {@code "sec-websocket-protocol"}
      */
-    public static final CharSequence SEC_WEBSOCKET_PROTOCOL = newCaseInsensitiveAsciiString("sec-websocket-protocol");
+    public static final CharSequence SEC_WEBSOCKET_PROTOCOL = newAsciiString("sec-websocket-protocol");
     /**
      * {@code "sec-websocket-version"}
      */
-    public static final CharSequence SEC_WEBSOCKET_VERSION = newCaseInsensitiveAsciiString("sec-websocket-version");
+    public static final CharSequence SEC_WEBSOCKET_VERSION = newAsciiString("sec-websocket-version");
     /**
      * {@code "sec-websocket-key"}
      */
-    public static final CharSequence SEC_WEBSOCKET_KEY = newCaseInsensitiveAsciiString("sec-websocket-key");
+    public static final CharSequence SEC_WEBSOCKET_KEY = newAsciiString("sec-websocket-key");
     /**
      * {@code "sec-websocket-accept"}
      */
-    public static final CharSequence SEC_WEBSOCKET_ACCEPT = newCaseInsensitiveAsciiString("sec-websocket-accept");
+    public static final CharSequence SEC_WEBSOCKET_ACCEPT = newAsciiString("sec-websocket-accept");
     /**
      * {@code "sec-websocket-protocol"}
      */
-    public static final CharSequence SEC_WEBSOCKET_EXTENSIONS = newCaseInsensitiveAsciiString("sec-websocket-extensions");
+    public static final CharSequence SEC_WEBSOCKET_EXTENSIONS = newAsciiString("sec-websocket-extensions");
     /**
      * {@code "server"}
      */
-    public static final CharSequence SERVER = newCaseInsensitiveAsciiString("server");
+    public static final CharSequence SERVER = newAsciiString("server");
     /**
      * {@code "set-cookie"}
      */
-    public static final CharSequence SET_COOKIE = newCaseInsensitiveAsciiString("set-cookie");
+    public static final CharSequence SET_COOKIE = newAsciiString("set-cookie");
     /**
      * {@code "set-cookie2"}
      */
-    public static final CharSequence SET_COOKIE2 = newCaseInsensitiveAsciiString("set-cookie2");
+    public static final CharSequence SET_COOKIE2 = newAsciiString("set-cookie2");
     /**
      * {@code "te"}
      */
-    public static final CharSequence TE = newCaseInsensitiveAsciiString("te");
+    public static final CharSequence TE = newAsciiString("te");
     /**
      * {@code "trailer"}
      */
-    public static final CharSequence TRAILER = newCaseInsensitiveAsciiString("trailer");
+    public static final CharSequence TRAILER = newAsciiString("trailer");
     /**
      * {@code "transfer-encoding"}
      */
-    public static final CharSequence TRANSFER_ENCODING = newCaseInsensitiveAsciiString("transfer-encoding");
+    public static final CharSequence TRANSFER_ENCODING = newAsciiString("transfer-encoding");
     /**
      * {@code "upgrade"}
      */
-    public static final CharSequence UPGRADE = newCaseInsensitiveAsciiString("upgrade");
+    public static final CharSequence UPGRADE = newAsciiString("upgrade");
     /**
      * {@code "user-agent"}
      */
-    public static final CharSequence USER_AGENT = newCaseInsensitiveAsciiString("user-agent");
+    public static final CharSequence USER_AGENT = newAsciiString("user-agent");
     /**
      * {@code "vary"}
      */
-    public static final CharSequence VARY = newCaseInsensitiveAsciiString("vary");
+    public static final CharSequence VARY = newAsciiString("vary");
     /**
      * {@code "via"}
      */
-    public static final CharSequence VIA = newCaseInsensitiveAsciiString("via");
+    public static final CharSequence VIA = newAsciiString("via");
     /**
      * {@code "warning"}
      */
-    public static final CharSequence WARNING = newCaseInsensitiveAsciiString("warning");
+    public static final CharSequence WARNING = newAsciiString("warning");
     /**
      * {@code "websocket-location"}
      */
-    public static final CharSequence WEBSOCKET_LOCATION = newCaseInsensitiveAsciiString("websocket-location");
+    public static final CharSequence WEBSOCKET_LOCATION = newAsciiString("websocket-location");
     /**
      * {@code "websocket-origin"}
      */
-    public static final CharSequence WEBSOCKET_ORIGIN = newCaseInsensitiveAsciiString("websocket-origin");
+    public static final CharSequence WEBSOCKET_ORIGIN = newAsciiString("websocket-origin");
     /**
      * {@code "websocket-protocol"}
      */
-    public static final CharSequence WEBSOCKET_PROTOCOL = newCaseInsensitiveAsciiString("websocket-protocol");
+    public static final CharSequence WEBSOCKET_PROTOCOL = newAsciiString("websocket-protocol");
     /**
      * {@code "www-authenticate"}
      */
-    public static final CharSequence WWW_AUTHENTICATE = newCaseInsensitiveAsciiString("www-authenticate");
+    public static final CharSequence WWW_AUTHENTICATE = newAsciiString("www-authenticate");
 
     private HttpHeaderNames() {
         // No instances

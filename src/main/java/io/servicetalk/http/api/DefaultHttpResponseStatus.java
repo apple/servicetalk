@@ -62,16 +62,11 @@ final class DefaultHttpResponseStatus implements HttpResponseStatus {
          *   A client SHOULD ignore the reason-phrase content.
          * https://tools.ietf.org/html/rfc7230#section-3.1.2
          */
-        if (statusCode != that.statusCode) {
-            return false;
-        }
-        return statusClass.equals(that.statusClass);
+        return statusCode == that.statusCode && statusClass.equals(that.statusClass);
     }
 
     @Override
     public int hashCode() {
-        int result = statusCode;
-        result = 31 * result + statusClass.hashCode();
-        return result;
+        return 31 * statusCode + statusClass.hashCode();
     }
 }

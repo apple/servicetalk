@@ -20,16 +20,16 @@ import io.servicetalk.buffer.Buffer;
 /**
  * The default implementation of {@link HttpPayloadChunk}.
  */
-public class DefaultHttpPayloadChunk implements HttpPayloadChunk {
+class DefaultHttpPayloadChunk implements HttpPayloadChunk {
 
-    protected final Buffer content;
+    private final Buffer content;
 
     /**
      * Create a {@link DefaultHttpPayloadChunk} which has contents that are the specified {@link Buffer}.
      *
      * @param content {@link Buffer} payload.
      */
-    public DefaultHttpPayloadChunk(final Buffer content) {
+    DefaultHttpPayloadChunk(final Buffer content) {
         this.content = content;
     }
 

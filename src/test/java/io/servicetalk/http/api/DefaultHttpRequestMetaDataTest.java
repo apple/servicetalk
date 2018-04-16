@@ -15,14 +15,21 @@
  */
 package io.servicetalk.http.api;
 
-public class DefaultHttpHeadersTest extends AbstractHttpHeadersTest {
+import java.util.List;
+import java.util.Map;
+
+import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
+import static io.servicetalk.http.api.HttpRequestMethods.GET;
+
+public class DefaultHttpRequestMetaDataTest extends AbstractHttpRequestMetaDataTest<DefaultHttpRequestMetaData> {
+
     @Override
-    protected HttpHeaders newHeaders() {
-        return DefaultHttpHeadersFactory.INSTANCE.newHeaders();
+    protected void createFixture(final String uri) {
+        fixture = new DefaultHttpRequestMetaData(GET, uri, HTTP_1_1, EmptyHttpHeaders.INSTANCE);
     }
 
     @Override
-    protected HttpHeaders newHeaders(final int initialSizeHint) {
-        return new DefaultHttpHeaders(initialSizeHint, true);
+    protected void setFixtureQueryParams(final Map<String, List<String>> params) {
+        fixture.setQueryParams(params);
     }
 }

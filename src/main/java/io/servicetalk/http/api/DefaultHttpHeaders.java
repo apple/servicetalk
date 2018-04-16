@@ -22,7 +22,7 @@ import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.AsciiString.contentEquals;
-import static io.servicetalk.http.api.AsciiString.contentEqualsIgnoreCase;
+import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.HeaderUtils.DEFAULT_HEADER_FILTER;
 import static io.servicetalk.http.api.HeaderUtils.HEADER_NAME_VALIDATOR;
 import static io.servicetalk.http.api.HeaderUtils.validateCookieTokenAndHeaderName;
@@ -32,15 +32,8 @@ import static io.servicetalk.http.api.HttpHeaderNames.SET_COOKIE;
 /**
  * Default implementation of {@link HttpHeaders}.
  */
-public final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> implements HttpHeaders {
+final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> implements HttpHeaders {
     private final boolean validateNames;
-
-    /**
-     * Create a new instance.
-     */
-    public DefaultHttpHeaders() {
-        this(16, true);
-    }
 
     /**
      * Create a new instance.
@@ -49,7 +42,7 @@ public final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequenc
      *                      The next positive power of two will be used. An upper bound may be enforced.
      * @param validateNames {@code true} to validate header names.
      */
-    public DefaultHttpHeaders(final int arraySizeHint, final boolean validateNames) {
+    DefaultHttpHeaders(final int arraySizeHint, final boolean validateNames) {
         super(arraySizeHint);
         this.validateNames = validateNames;
     }
@@ -71,7 +64,7 @@ public final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequenc
 
     @Override
     public boolean contains(final CharSequence name, final CharSequence value, final boolean caseInsensitive) {
-        return caseInsensitive ? contains(name, value, AsciiString::contentEqualsIgnoreCase) : contains(name, value);
+        return caseInsensitive ? contains(name, value, CharSequences::contentEqualsIgnoreCase) : contains(name, value);
     }
 
     @Override

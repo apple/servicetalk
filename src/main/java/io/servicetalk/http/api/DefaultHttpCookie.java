@@ -18,7 +18,7 @@ package io.servicetalk.http.api;
 import java.util.Objects;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.AsciiString.contentEqualsIgnoreCase;
+import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
 
 final class DefaultHttpCookie implements HttpCookie {
     private final CharSequence name;
