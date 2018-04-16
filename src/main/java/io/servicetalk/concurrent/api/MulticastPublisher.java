@@ -31,10 +31,10 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.internal.ConcurrentSubscription.wrap;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.NULL_TOKEN;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static java.lang.Math.min;
 
 final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> implements Subscriber<T> {
@@ -74,8 +74,8 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
     private boolean inOnNext;
     @Nullable
     private Queue<Object> reentryQueue;
-    @Nullable
-    private volatile Subscription subscription;
+    private final DelayedSubscription delayedSubscription = new DelayedSubscription();
+    private final ConcurrentSubscription subscription = wrap(delayedSubscription);
     @SuppressWarnings({"unused", "FieldCanBeLocal"})
     private volatile int notCancelledCount;
     @SuppressWarnings("unused")
@@ -117,7 +117,10 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
             }
 
             if (subscriberCountUpdater.compareAndSet(this, subscriberCount, subscriberCount + 1)) {
-                subscribers.set(subscriberCount, new MulticastSubscriber<>(this, subscriber, subscriberCount));
+                MulticastSubscriber<T> multicastSubscriber = new MulticastSubscriber<>(this, subscriber,
+                        subscriberCount);
+                subscribers.set(subscriberCount, multicastSubscriber);
+                multicastSubscriber.onSubscribe(subscription);
                 if (subscriberCount == subscribers.length() - 1) {
                     original.subscribe(this, inOrderExecutor);
                 }
@@ -128,28 +131,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
 
     @Override
     public void onSubscribe(Subscription s) {
-        if (!checkDuplicateSubscription(subscription, s)) {
-            return;
-        }
-        subscription = s = ConcurrentSubscription.wrap(s);
-        // We always call onSubscribe for all Subscribers and if an exception is thrown by any Subscriber we throw it
-        // after we are done. We rely upon the original Publisher of data to then call onError, and therefore we need
-        // to make sure we call onSubscribe for all Subscribers so we don't call onError without calling onSubscribe.
-        Throwable cause = null;
-        for (int i = 0; i < subscribers.length(); ++i) {
-            try {
-                subscribers.get(i).onSubscribe(s);
-            } catch (Throwable t) {
-                if (cause == null) {
-                    cause = t;
-                } else {
-                    cause.addSuppressed(t);
-                }
-            }
-        }
-        if (cause != null) {
-            throwException(cause);
-        }
+        delayedSubscription.setDelayedSubscription(s);
     }
 
     private boolean offerNext(@Nullable Object o) {
@@ -176,11 +158,8 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
                 reentryQueue = new ArrayDeque<>(min(4, maxQueueSize));
             }
             if (!offerNext(t)) {
-                Subscription s = subscription;
-                assert s != null : "Subscription can not be null in onNext()";
                 terminatedPrematurely = true;
-
-                s.cancel(); // Cancel subscription but not mark state as cancelled since we still need to drain the groups.
+                subscription.cancel(); // Cancel subscription but not mark state as cancelled since we still need to drain the groups.
                 offerTerminal(TerminalNotification.error(new QueueFullException("global", maxQueueSize)));
             }
         } else {
@@ -310,8 +289,6 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
                 break;
             }
             if (sourceRequestedUpdater.compareAndSet(this, sourceRequested, individualSourceRequested)) {
-                Subscription subscription = this.subscription;
-                assert subscription != null;
                 subscription.request(individualSourceRequested - sourceRequested);
                 break;
             }
@@ -321,15 +298,15 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
     void cancelIndividualSubscriber(int subscriberIndex) {
         Subscriber<? super T> subscriber = subscribers.getAndSet(subscriberIndex, noopSubscriber());
         if (subscriber != NOOP_SUBSCRIBER && notCancelledCountUpdater.decrementAndGet(this) == 0) {
-            Subscription subscription = this.subscription;
-            assert subscription != null;
             subscription.cancel();
         }
     }
 
     private static final class MulticastSubscriber<T> extends IndividualMulticastSubscriber<T> implements Subscriber<T> {
         private static final Logger LOGGER = LoggerFactory.getLogger(MulticastSubscriber.class);
+
         private final MulticastPublisher<T> source;
+
         final int subscriberIndex;
 
         MulticastSubscriber(MulticastPublisher<T> source, Subscriber<? super T> target, int subscriberIndex) {
@@ -357,9 +334,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
 
         @Override
         void handleInvalidRequestN(long n) {
-            Subscription subscription = source.subscription;
-            assert subscription != null;
-            subscription.request(n);
+            source.subscription.request(n);
         }
 
         @Override

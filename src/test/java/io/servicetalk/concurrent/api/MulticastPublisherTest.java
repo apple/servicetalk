@@ -23,6 +23,8 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
@@ -33,10 +35,15 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 public class MulticastPublisherTest {
     @Rule
@@ -51,6 +58,50 @@ public class MulticastPublisherTest {
     @Before
     public void setUp() throws Exception {
         source = new TestPublisher<>(true);
+    }
+
+    @Test
+    public void emitItemsAndThenError() {
+        Publisher<Integer> multicast = source.multicast(2);
+        MockedSubscriberRule<Integer> subscriber1 = new MockedSubscriberRule<>();
+        MockedSubscriberRule<Integer> subscriber2 = new MockedSubscriberRule<>();
+        subscriber1.subscribe(multicast);
+        subscriber2.subscribe(multicast);
+
+        source.sendOnSubscribe();
+
+        subscriber1.request(2);
+        subscriber2.request(2);
+        source.verifyRequested(2);
+        source.sendItems(1, 2);
+        subscriber1.verifyItems(1, 2);
+        subscriber2.verifyItems(1, 2);
+        source.fail();
+        subscriber1.verifyFailure(DELIBERATE_EXCEPTION);
+        subscriber2.verifyFailure(DELIBERATE_EXCEPTION);
+    }
+
+    @Test
+    public void duplicateOnSubscribeIsInvalid() {
+        MulticastPublisher<Integer> source = new MulticastPublisher<>(new Publisher<Integer>() {
+            @Override
+            protected void handleSubscribe(Subscriber<? super Integer> subscriber) {
+                // noop
+            }
+        }, 2, immediate());
+        source.forEach(t -> {
+            //ignore
+        });
+        source.forEach(t -> {
+            //ignore
+        });
+
+        Subscription sub = mock(Subscription.class);
+        source.onSubscribe(sub);
+        Subscription dup = mock(Subscription.class);
+        source.onSubscribe(dup);
+        verify(dup).cancel();
+        verify(sub, times(0)).cancel();
     }
 
     @Test
