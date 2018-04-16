@@ -16,7 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.AbstractHttpHeadersTest;
-import io.servicetalk.http.api.DefaultHttpHeaders;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpHeaders;
 
 import org.junit.Ignore;
@@ -25,12 +25,12 @@ import org.junit.Test;
 public class ServiceTalkToNettyHttpHeadersTest extends AbstractHttpHeadersTest {
     @Override
     protected HttpHeaders newHeaders() {
-        return new NettyToServiceTalkHttpHeaders(new ServiceTalkToNettyHttpHeaders(new DefaultHttpHeaders()));
+        return new NettyToServiceTalkHttpHeaders(new ServiceTalkToNettyHttpHeaders(DefaultHttpHeadersFactory.INSTANCE.newHeaders()));
     }
 
     @Override
     protected HttpHeaders newHeaders(final int initialSizeHint) {
-        return new NettyToServiceTalkHttpHeaders(new ServiceTalkToNettyHttpHeaders(new DefaultHttpHeaders(initialSizeHint, true)));
+        return new NettyToServiceTalkHttpHeaders(new ServiceTalkToNettyHttpHeaders(new DefaultHttpHeadersFactory(true, initialSizeHint).newHeaders()));
     }
 
     @Ignore("netty Iterator doesn't support remove")
