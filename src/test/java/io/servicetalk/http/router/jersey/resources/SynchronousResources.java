@@ -15,9 +15,10 @@
  */
 package io.servicetalk.http.router.jersey.resources;
 
-import io.servicetalk.buffer.netty.BufferAllocators;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.transport.api.ConnectionContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -69,6 +70,9 @@ import static javax.ws.rs.core.Response.status;
  */
 @Path(PATH)
 public class SynchronousResources {
+    @Context
+    private ConnectionContext ctx;
+
     public static final String PATH = "/sync";
 
     @Produces(TEXT_PLAIN)
@@ -91,7 +95,7 @@ public class SynchronousResources {
     @Produces(TEXT_PLAIN)
     @Path("/matrix/{pathSegment:ps}/params")
     @GET
-    public String objectsByCatecory(@PathParam("pathSegment") final PathSegment pathSegment,
+    public String objectsByCategory(@PathParam("pathSegment") final PathSegment pathSegment,
                                     @MatrixParam("mp") final List<String> matrixParams) {
         final MultivaluedMap<String, String> matrixParameters = pathSegment.getMatrixParameters();
         final String categorySegmentPath = pathSegment.getPath();
@@ -107,6 +111,13 @@ public class SynchronousResources {
     @GET
     public Response bogusChunked() {
         return ok("foo").header("Transfer-Encoding", "chunked").build();
+    }
+
+    @Produces(TEXT_PLAIN)
+    @Path("/servicetalk-request")
+    @GET
+    public String serviceTalkRequest(@Context final HttpRequest<HttpPayloadChunk> serviceTalkRequest) {
+        return "GOT: " + serviceTalkRequest.getRequestTarget();
     }
 
     @Produces(TEXT_PLAIN)
@@ -143,8 +154,7 @@ public class SynchronousResources {
     @Path("/text-strin-pubout")
     @POST
     public Publisher<HttpPayloadChunk> postTextStrInPubOut(final String requestContent) {
-        // TODO use request-scoped allocator when available
-        return asChunkPublisher("GOT: " + requestContent, BufferAllocators.DEFAULT.getAllocator());
+        return asChunkPublisher("GOT: " + requestContent, ctx.getAllocator());
     }
 
     @Consumes(TEXT_PLAIN)
@@ -160,12 +170,9 @@ public class SynchronousResources {
     @GET
     public Response getTextPubResponse(@QueryParam("i") final int i) {
         final String contentString = "GOT: " + i;
-        // TODO use request-scoped allocator when available
-        final Publisher<HttpPayloadChunk> responseContent =
-                asChunkPublisher(contentString, BufferAllocators.DEFAULT.getAllocator());
+        final Publisher<HttpPayloadChunk> responseContent = asChunkPublisher(contentString, ctx.getAllocator());
         // Wrap content Publisher to capture its generic type (i.e. HttpPayloadChunk)
         final GenericEntity<Publisher<HttpPayloadChunk>> entity = new GenericEntity<Publisher<HttpPayloadChunk>>(responseContent) {
-            // NOOP
         };
         return status(i)
                 // We know the content length so we set it, otherwise the response is chunked
@@ -214,9 +221,7 @@ public class SynchronousResources {
             throws IOException {
         final Map<String, Object> responseContent = new HashMap<>(requestContent);
         responseContent.put("foo", "bar3");
-        // TODO use request-scoped allocator when available
-        return asChunkPublisher(new ObjectMapper().writeValueAsBytes(responseContent),
-                BufferAllocators.DEFAULT.getAllocator());
+        return asChunkPublisher(new ObjectMapper().writeValueAsBytes(responseContent), ctx.getAllocator());
     }
 
     @Consumes(APPLICATION_JSON)

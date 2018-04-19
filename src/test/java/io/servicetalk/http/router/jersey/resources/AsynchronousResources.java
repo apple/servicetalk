@@ -15,9 +15,9 @@
  */
 package io.servicetalk.http.router.jersey.resources;
 
-import io.servicetalk.buffer.netty.BufferAllocators;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -89,14 +89,12 @@ public class AsynchronousResources {
     @Produces(TEXT_PLAIN)
     @Path("/text-pub-response")
     @GET
-    public CompletionStage<Response> getTextPubResponse(@QueryParam("i") final int i) {
+    public CompletionStage<Response> getTextPubResponse(@QueryParam("i") final int i,
+                                                        final @Context ConnectionContext ctx) {
         final String contentString = "GOT: " + i;
-        // TODO use request-scoped allocator when available
-        final Publisher<HttpPayloadChunk> responseContent =
-                asChunkPublisher(contentString, BufferAllocators.DEFAULT.getAllocator());
+        final Publisher<HttpPayloadChunk> responseContent = asChunkPublisher(contentString, ctx.getAllocator());
         // Wrap content Publisher to capture its generic type (i.e. HttpPayloadChunk)
         final GenericEntity<Publisher<HttpPayloadChunk>> entity = new GenericEntity<Publisher<HttpPayloadChunk>>(responseContent) {
-            // NOOP
         };
         return completedFuture(status(i)
                 // We know the content length so we set it, otherwise the response is chunked

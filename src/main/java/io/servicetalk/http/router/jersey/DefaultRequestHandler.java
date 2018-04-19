@@ -21,6 +21,7 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.glassfish.jersey.internal.MapPropertiesDelegate;
+import org.glassfish.jersey.internal.util.collection.Ref;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ContainerRequest;
 
@@ -31,6 +32,8 @@ import javax.annotation.Nullable;
 import javax.ws.rs.core.SecurityContext;
 
 import static io.servicetalk.http.router.jersey.CharSequenceUtil.ensureNoLeadingSlash;
+import static io.servicetalk.http.router.jersey.Context.CONNECTION_CONTEXT_REF_TYPE;
+import static io.servicetalk.http.router.jersey.Context.HTTP_REQUEST_REF_TYPE;
 import static io.servicetalk.http.router.jersey.DummyHttpUtil.getBaseUri;
 import static org.glassfish.jersey.server.internal.ContainerUtils.encodeUnsafeCharacters;
 
@@ -106,6 +109,11 @@ final class DefaultRequestHandler implements BiFunction<ConnectionContext, HttpR
         final DefaultContainerResponseWriter responseWriter =
                 new DefaultContainerResponseWriter(req, ctx.getAllocator());
         containerRequest.setWriter(responseWriter);
+
+        containerRequest.setRequestScopedInitializer(injectionManager -> {
+            injectionManager.<Ref<ConnectionContext>>getInstance(CONNECTION_CONTEXT_REF_TYPE).set(ctx);
+            injectionManager.<Ref<HttpRequest<HttpPayloadChunk>>>getInstance(HTTP_REQUEST_REF_TYPE).set(req);
+        });
 
         // Handle the request synchronously because we do it on a dedicated request thread
         applicationHandler.handle(containerRequest);

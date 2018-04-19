@@ -78,6 +78,13 @@ public class SynchronousResourceTest extends AbstractResourceTest {
     }
 
     @Test
+    public void servicetalkRequestContext() {
+        final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, PATH + "/servicetalk-request");
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        assertResponse(res, OK, TEXT_PLAIN, "GOT: " + PATH + "/servicetalk-request");
+    }
+
+    @Test
     public void http10Support() {
         final HttpRequest<HttpPayloadChunk> req = newH10Request(GET, PATH + "/text");
         final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
