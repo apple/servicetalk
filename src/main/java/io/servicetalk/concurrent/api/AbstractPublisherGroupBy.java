@@ -88,10 +88,13 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractSynchronousPubli
         @SuppressWarnings("unused")
         @Nullable
         private volatile SpscQueue<Publisher.Group<Key, T>> groupQueue;
+        private final Executor executor;
         private final Subscriber<? super Publisher.Group<Key, T>> target;
         private final Map<Key, GroupSink<Key, T>> groups;
 
-        AbstractSourceSubscriber(int initialCapacityForGroups, Subscriber<? super Publisher.Group<Key, T>> target) {
+        AbstractSourceSubscriber(Executor executor, int initialCapacityForGroups,
+                                 Subscriber<? super Publisher.Group<Key, T>> target) {
+            this.executor = executor;
             this.target = target;
             // loadFactor: 1 to have table size as expected groups.
             groups = new ConcurrentHashMap<>(initialCapacityForGroups, 1, 1);
@@ -134,7 +137,7 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractSynchronousPubli
                         return;
                     }
                 }
-                groupSink = new GroupSink<>(key, groupSinkQueueSize, this);
+                groupSink = new GroupSink<>(executor, key, groupSinkQueueSize, this);
                 final Publisher.Group<Key, T> group = new Publisher.Group<>(key, groupSink.publisher);
                 final GroupSink<Key, T> oldVal = groups.put(key, groupSink);
                 assert oldVal == null;
@@ -414,11 +417,11 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractSynchronousPubli
         final Publisher<T> publisher;
         private final AbstractSourceSubscriber<Key, T> sourceSubscriber;
 
-        GroupSink(Key key, int maxQueueSize, AbstractSourceSubscriber<Key, T> sourceSubscriber) {
+        GroupSink(Executor executor, Key key, int maxQueueSize, AbstractSourceSubscriber<Key, T> sourceSubscriber) {
             super(maxQueueSize);
             this.sourceSubscriber = sourceSubscriber;
             this.key = key;
-            publisher = new Publisher<T>() {
+            publisher = new Publisher<T>(executor) {
                 @Override
                 protected void handleSubscribe(Subscriber<? super T> subscriber) {
                     requireNonNull(subscriber);

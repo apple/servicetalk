@@ -28,19 +28,18 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <T> Type of items emitted by this {@link Publisher}.
  */
-final class ResumePublisher<T> extends Publisher<T> {
+final class ResumePublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
 
-    private final Publisher<T> first;
     private final Function<Throwable, Publisher<T>> nextFactory;
 
-    ResumePublisher(Publisher<T> first, Function<Throwable, Publisher<T>> nextFactory) {
-        this.first = requireNonNull(first);
+    ResumePublisher(Publisher<T> first, Function<Throwable, Publisher<T>> nextFactory, Executor executor) {
+        super(first, executor);
         this.nextFactory = requireNonNull(nextFactory);
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber) {
-        first.subscribe(new ResumeSubscriber<>(subscriber, nextFactory));
+    public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
+        return new ResumeSubscriber<>(subscriber, nextFactory);
     }
 
     private static final class ResumeSubscriber<T> implements Subscriber<T> {

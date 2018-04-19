@@ -26,6 +26,7 @@ import org.reactivestreams.Subscription;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
@@ -57,7 +58,7 @@ public class PublisherRule<T> implements TestRule {
                         cancelled = true;
                     }
                 };
-                source = new Publisher<T>() {
+                source = new Publisher<T>(immediate()) {
                     @Override
                     protected void handleSubscribe(Subscriber<? super T> s) {
                         capturedSubscriber = s;

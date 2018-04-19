@@ -30,28 +30,33 @@ import static java.util.Objects.requireNonNull;
  */
 final class PublisherGroupByMulti<Key, T> extends AbstractPublisherGroupBy<Key, T> {
     private final Function<T, Iterator<Key>> keySelector;
+    private final Executor executor;
 
-    PublisherGroupByMulti(Publisher<T> original, Function<T, Iterator<Key>> keySelector, int groupQueueSize, Executor executor) {
+    PublisherGroupByMulti(Publisher<T> original, Function<T, Iterator<Key>> keySelector, int groupQueueSize,
+                          Executor executor) {
         super(original, groupQueueSize, executor);
         this.keySelector = requireNonNull(keySelector);
+        this.executor = executor;
     }
 
-    PublisherGroupByMulti(Publisher<T> original, Function<T, Iterator<Key>> keySelector, int groupQueueSize, int expectedGroupCountHint,
-                          Executor executor) {
+    PublisherGroupByMulti(Publisher<T> original, Function<T, Iterator<Key>> keySelector, int groupQueueSize,
+                          int expectedGroupCountHint, Executor executor) {
         super(original, groupQueueSize, expectedGroupCountHint, executor);
         this.keySelector = requireNonNull(keySelector);
+        this.executor = executor;
     }
 
     @Override
     public Subscriber<? super T> apply(Subscriber<? super Group<Key, T>> subscriber) {
-        return new SourceSubscriber<>(this, subscriber);
+        return new SourceSubscriber<>(executor, this, subscriber);
     }
 
     private static final class SourceSubscriber<Key, T> extends AbstractSourceSubscriber<Key, T> {
         private final PublisherGroupByMulti<Key, T> source;
 
-        SourceSubscriber(PublisherGroupByMulti<Key, T> source, Subscriber<? super Group<Key, T>> target) {
-            super(source.initialCapacityForGroups, target);
+        SourceSubscriber(Executor executor, PublisherGroupByMulti<Key, T> source,
+                         Subscriber<? super Group<Key, T>> target) {
+            super(executor, source.initialCapacityForGroups, target);
             this.source = source;
         }
 

@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -65,6 +66,11 @@ public class TestPublisher<T> extends Publisher<T> implements Subscriber<T> {
     }
 
     public TestPublisher(boolean preserveSubscriber, boolean ignoreMultipleSubscriptions) {
+        this(immediate(), preserveSubscriber, ignoreMultipleSubscriptions);
+    }
+
+    public TestPublisher(Executor executor, boolean preserveSubscriber, boolean ignoreMultipleSubscriptions) {
+        super(executor);
         this.preserveSubscriber = preserveSubscriber;
         this.ignoreMultipleSubscriptions = ignoreMultipleSubscriptions;
     }

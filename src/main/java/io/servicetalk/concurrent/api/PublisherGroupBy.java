@@ -29,27 +29,31 @@ import static java.util.Objects.requireNonNull;
  */
 final class PublisherGroupBy<Key, T> extends AbstractPublisherGroupBy<Key, T> {
     private final Function<T, Key> keySelector;
+    private final Executor executor;
 
     PublisherGroupBy(Publisher<T> original, Function<T, Key> keySelector, int groupQueueSize, Executor executor) {
         super(original, groupQueueSize, executor);
         this.keySelector = requireNonNull(keySelector);
+        this.executor = executor;
     }
 
-    PublisherGroupBy(Publisher<T> original, Function<T, Key> keySelector, int groupQueueSize, int expectedGroupCountHint, Executor executor) {
+    PublisherGroupBy(Publisher<T> original, Function<T, Key> keySelector, int groupQueueSize,
+                     int expectedGroupCountHint, Executor executor) {
         super(original, groupQueueSize, expectedGroupCountHint, executor);
         this.keySelector = requireNonNull(keySelector);
+        this.executor = executor;
     }
 
     @Override
     public Subscriber<? super T> apply(Subscriber<? super Group<Key, T>> subscriber) {
-        return new SourceSubscriber<>(this, subscriber);
+        return new SourceSubscriber<>(executor, this, subscriber);
     }
 
     private static final class SourceSubscriber<Key, T> extends AbstractSourceSubscriber<Key, T> {
         private final PublisherGroupBy<Key, T> source;
 
-        SourceSubscriber(PublisherGroupBy<Key, T> source, Subscriber<? super Group<Key, T>> target) {
-            super(source.initialCapacityForGroups, target);
+        SourceSubscriber(Executor executor, PublisherGroupBy<Key, T> source, Subscriber<? super Group<Key, T>> target) {
+            super(executor, source.initialCapacityForGroups, target);
             this.source = source;
         }
 

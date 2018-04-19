@@ -83,7 +83,7 @@ public class MulticastPublisherTest {
 
     @Test
     public void duplicateOnSubscribeIsInvalid() {
-        MulticastPublisher<Integer> source = new MulticastPublisher<>(new Publisher<Integer>() {
+        MulticastPublisher<Integer> source = new MulticastPublisher<>(new Publisher<Integer>(immediate()) {
             @Override
             protected void handleSubscribe(Subscriber<? super Integer> subscriber) {
                 // noop
@@ -334,7 +334,7 @@ public class MulticastPublisherTest {
         AtomicBoolean onNextCalled = new AtomicBoolean();
         doAnswer((Answer<Void>) invocation -> {
             if (onNextCalled.compareAndSet(false, true)) {
-                source.sendItems(new Integer[]{null, 3});
+                source.sendItems(null, 3);
             }
             return null;
         }).when(subscriber1.getSubscriber()).onNext(anyInt());

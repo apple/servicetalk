@@ -151,7 +151,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
     public final Publisher<T> onErrorResume(Function<Throwable, Publisher<T>> nextFactory) {
-        return new ResumePublisher<>(this, nextFactory);
+        return new ResumePublisher<>(this, nextFactory, executor);
     }
 
     /**
@@ -614,7 +614,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> doBeforeFinally(Runnable doFinally) {
-        return new DoBeforeFinallyPublisher<>(this, doFinally);
+        return new DoBeforeFinallyPublisher<>(this, doFinally, executor);
     }
 
     /**
