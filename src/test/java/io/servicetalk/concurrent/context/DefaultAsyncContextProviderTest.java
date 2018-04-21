@@ -49,6 +49,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.context.DefaultAsyncContextProvider.INSTANCE;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
@@ -78,7 +79,7 @@ public class DefaultAsyncContextProviderTest {
     }
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         AsyncContext.clear();
     }
 
@@ -326,9 +327,7 @@ public class DefaultAsyncContextProviderTest {
             f4.complete(AsyncContext.current());
 
             AsyncContext.put(K2, "v2"); // this won't affect the operators below
-        }).reduce(StringBuilder::new, StringBuilder::append).doBeforeFinally(() -> {
-            f5.complete(AsyncContext.current());
-        });
+        }).reduce(StringBuilder::new, StringBuilder::append).doBeforeFinally(() -> f5.complete(AsyncContext.current()));
 
         AsyncContext.put(K1, "v1");
         awaitIndefinitely(single);
@@ -390,9 +389,7 @@ public class DefaultAsyncContextProviderTest {
 
         new ContextCapturer()
                 .runAndWait(collector -> {
-                    Consumer<Void> c = INSTANCE.wrap((Consumer<Void>) v -> {
-                        collector.complete(AsyncContext.current());
-                    });
+                    Consumer<Void> c = INSTANCE.wrap((Consumer<Void>) v -> collector.complete(AsyncContext.current()));
                     executor.execute(() -> c.accept(null));
                 })
                 .verifyContext(verifier);
@@ -500,29 +497,31 @@ public class DefaultAsyncContextProviderTest {
         @Nullable
         AsyncContextMap cancelContext;
 
+        ContextCaptureTestPublisher() {
+            super(immediate());
+        }
+
         @Override
         protected void handleSubscribe(org.reactivestreams.Subscriber s) {
             // Introduce some asynchrony here and there
-            executor.execute(() -> {
-                s.onSubscribe(new Subscription() {
-                    @Override
-                    public void request(long n) {
-                        assert n >= 2 : "This test requires request(n >= 2)";
-                        requestNContexts.add(AsyncContext.current());
+            executor.execute(() -> s.onSubscribe(new Subscription() {
+                @Override
+                public void request(long n) {
+                    assert n >= 2 : "This test requires request(n >= 2)";
+                    requestNContexts.add(AsyncContext.current());
 
-                        s.onNext("1");
-                        executor.execute(() -> {
-                            s.onNext("2");
-                            executor.execute(s::onComplete);
-                        });
-                    }
+                    s.onNext("1");
+                    executor.execute(() -> {
+                        s.onNext("2");
+                        executor.execute(s::onComplete);
+                    });
+                }
 
-                    @Override
-                    public void cancel() {
-                        cancelContext = AsyncContext.current();
-                    }
-                });
-            });
+                @Override
+                public void cancel() {
+                    cancelContext = AsyncContext.current();
+                }
+            }));
         }
 
         ContextCaptureTestPublisher verifySubscriptionContext(Consumer<AsyncContextMap> consumer) {
