@@ -24,6 +24,7 @@ import io.netty.channel.EventLoop;
 import org.junit.Rule;
 import org.junit.Test;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.transport.netty.internal.Flush.composeFlushes;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
@@ -41,7 +42,8 @@ public class FlushOutsideEventloopTest extends AbstractOutOfEventloopTest {
     public void setup0() {
         src = new TestPublisher<Integer>().sendOnSubscribe();
         signals = new FlushSignals();
-        Publisher<Integer> composedFlush = composeFlushes(channel, src, signals).doBeforeNext(integer -> channel.write(integer));
+        Publisher<Integer> composedFlush = composeFlushes(channel, src, immediate(), signals)
+                .doBeforeNext(integer -> channel.write(integer));
         subscriber.subscribe(composedFlush).request(Long.MAX_VALUE);
     }
 

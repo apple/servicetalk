@@ -30,6 +30,7 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.mockito.stubbing.Answer;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.success;
@@ -63,6 +64,7 @@ public class DefaultPipelinedConnectionTest {
         EmbeddedChannel channel = new EmbeddedChannel();
         ConnectionContext context = mock(ConnectionContext.class);
         when(context.closeAsync()).thenReturn(new NettyFutureCompletable(channel::close));
+        when(context.getExecutor()).thenReturn(immediate());
         Connection.RequestNSupplier requestNSupplier = mock(Connection.RequestNSupplier.class);
         readPublisher = new TestPublisher<>(false, false);
         readPublisher.sendOnSubscribe();
@@ -110,7 +112,7 @@ public class DefaultPipelinedConnectionTest {
 
     @Test
     public void testPublisherWrite() {
-        readSubscriber.subscribe(requester.request(just(1), defaultFlushStrategy())).request(1);
+        readSubscriber.subscribe(requester.request(just(1, immediate()), defaultFlushStrategy())).request(1);
         readPublisher.onComplete();
         readSubscriber.verifySuccess();
         dispose();

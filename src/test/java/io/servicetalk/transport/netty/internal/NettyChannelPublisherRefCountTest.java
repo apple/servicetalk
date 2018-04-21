@@ -30,6 +30,7 @@ import org.junit.rules.Timeout;
 
 import java.util.concurrent.TimeUnit;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -47,7 +48,7 @@ public class NettyChannelPublisherRefCountTest {
 
     @Before
     public void setUp() {
-        handler = new AbstractChannelReadHandler<Object>(integer -> true) {
+        handler = new AbstractChannelReadHandler<Object>(integer -> true, immediate()) {
             @Override
             protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Object> newPublisher) {
                 publisher = newPublisher;

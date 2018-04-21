@@ -17,6 +17,7 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.IoExecutor;
 
@@ -41,7 +42,8 @@ public final class NettyConnectionContext implements ConnectionContext {
 
     private static final AttributeKey<ConnectionContext> SVC_CONTEXT = AttributeKey.newInstance(NettyConnectionContext.class.getName() + "_attr_service_context");
 
-    private final IoExecutor executor;
+    private final IoExecutor ioExecutor;
+    private final Executor executor;
     private final BufferAllocator allocator;
     private final NettyChannelListenableAsyncCloseable close;
     private final Channel channel;
@@ -51,13 +53,16 @@ public final class NettyConnectionContext implements ConnectionContext {
     /**
      * New instance.
      *
-     * @param executor {@link IoExecutor} that is used.
-     * @param allocator Buffer allocator for the context.
-     * @param channel to use.
+     * @param channel {@link Channel} for this connection.
+     * @param ioExecutor {@link IoExecutor} for this connection.
+     * @param executor {@link Executor} for this connection.
+     * @param allocator {@link BufferAllocator} for this connection.
      */
-    private NettyConnectionContext(Channel channel, IoExecutor executor, BufferAllocator allocator) {
+    private NettyConnectionContext(Channel channel, IoExecutor ioExecutor, Executor executor,
+                                   BufferAllocator allocator) {
         this.channel = requireNonNull(channel);
         close = new NettyChannelListenableAsyncCloseable(channel);
+        this.ioExecutor = requireNonNull(ioExecutor);
         this.executor = requireNonNull(executor);
         this.allocator = requireNonNull(allocator);
     }
@@ -84,25 +89,34 @@ public final class NettyConnectionContext implements ConnectionContext {
 
     @Override
     public IoExecutor getIoExecutor() {
+        return ioExecutor;
+    }
+
+    @Override
+    public Executor getExecutor() {
         return executor;
     }
 
     /**
-     * Creates a new {@link NettyConnectionContext} by initializing the passed {@code channel} using the {@code initializer}.
+     * Creates a new {@link NettyConnectionContext} by initializing the passed {@code channel} using the
+     * {@code initializer}.
      *
      * @param channel for the newly created {@link NettyConnectionContext}.
-     * @param executor the {@link IoExecutor} to use.
+     * @param ioExecutor the {@link IoExecutor} to use.
+     * @param executor the {@link Executor} to use.
      * @param allocator for the context.
      * @param initializer to initialize the channel.  @return A new {@link NettyConnectionContext}.
      *
      * @return New {@link ConnectionContext} for the channel.
      */
-    public static ConnectionContext newContext(Channel channel, IoExecutor executor, BufferAllocator allocator, ChannelInitializer initializer) {
-        ConnectionContext context = new NettyConnectionContext(channel, executor, allocator);
+    public static ConnectionContext newContext(Channel channel, IoExecutor ioExecutor, Executor executor,
+                                               BufferAllocator allocator, ChannelInitializer initializer) {
+        ConnectionContext context = new NettyConnectionContext(channel, ioExecutor, executor, allocator);
         context = initializer.init(channel, context);
         RefCountedTrapper refCountedTrapper = channel.pipeline().get(RefCountedTrapper.class);
         if (refCountedTrapper == null) {
-            LOGGER.warn("No handler of type {} found in the pipeline, this may leak ref-counted objects out of netty pipeline.", RefCountedTrapper.class.getName());
+            LOGGER.warn("No handler of type {} found in the pipeline, this may leak ref-counted objects out of netty pipeline.",
+                    RefCountedTrapper.class.getName());
         }
         channel.attr(SVC_CONTEXT).set(context);
         return context;

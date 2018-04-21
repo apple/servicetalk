@@ -16,6 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.FlushStrategyHolder.FlushSignals;
 
@@ -44,12 +45,14 @@ public final class Flush {
      *
      * @param channel Channel to flush.
      * @param source Original source.
+     * @param executor {@link Executor} to use for the returned {@link Publisher}.
      * @param flushSignals {@link Publisher} that emits an item whenever it wishes to flush the channel.
      * @param <T> Type of elements emitted by {@code source}.
      * @return {@link Publisher} that forwards all items from {@code source} and flushes the channel whenever any item is emitted from {@code flushSignals}.
      */
-    public static <T> Publisher<T> composeFlushes(Channel channel, Publisher<T> source, FlushSignals flushSignals) {
-        return new Publisher<T>() {
+    public static <T> Publisher<T> composeFlushes(Channel channel, Publisher<T> source,
+                                                  Executor executor, FlushSignals flushSignals) {
+        return new Publisher<T>(executor) {
             @Override
             protected void handleSubscribe(Subscriber<? super T> subscriber) {
                 source.subscribe(new FlushSubscriber<>(flushSignals, subscriber, channel));

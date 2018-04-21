@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -68,7 +69,7 @@ public class NettyChannelPublisherTest {
 
     @Before
     public void setUp() {
-        handler = new AbstractChannelReadHandler<Integer>(integer -> nextItemTerminal) {
+        handler = new AbstractChannelReadHandler<Integer>(integer -> nextItemTerminal, immediate()) {
             @Override
             protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Integer> newPublisher) {
                 publisher = newPublisher;
@@ -92,7 +93,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testSupplyEqualsDemand() throws Exception {
+    public void testSupplyEqualsDemand() {
         subscriber.subscribe(publisher).request(3);
         fireChannelRead(1, 2);
         subscriber.verifyItems(1, 2);
@@ -102,7 +103,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testSupplyLessThanDemand() throws Exception {
+    public void testSupplyLessThanDemand() {
         subscriber.subscribe(publisher).request(3);
         fireChannelRead(1, 2);
         subscriber.verifyItems(1, 2);
@@ -112,7 +113,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testDemandLessThanSupply() throws Exception {
+    public void testDemandLessThanSupply() {
         subscriber.subscribe(publisher).request(1);
         fireChannelRead(1, 2);
         subscriber.verifyItems(1).request(1);
@@ -131,7 +132,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testErrorBufferedWithExactDemand() throws Exception {
+    public void testErrorBufferedWithExactDemand() {
         subscriber.subscribe(publisher).request(1);
         fireChannelRead(1, 2);
         handler.exceptionCaught(handlerCtx, DELIBERATE_EXCEPTION);
@@ -139,7 +140,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testErrorBufferedWithMoreDemand() throws Exception {
+    public void testErrorBufferedWithMoreDemand() {
         subscriber.subscribe(publisher).request(1);
         fireChannelRead(1, 2);
         handler.exceptionCaught(handlerCtx, DELIBERATE_EXCEPTION);
@@ -154,7 +155,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testErrorWithNoDemandAndBuffer() throws Exception {
+    public void testErrorWithNoDemandAndBuffer() {
         subscriber.subscribe(publisher);
         fireChannelRead(1);
         handler.exceptionCaught(handlerCtx, DELIBERATE_EXCEPTION);
@@ -169,7 +170,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testConcurrentSubscribers() throws Exception {
+    public void testConcurrentSubscribers() {
         subscriber.subscribe(publisher).request(1);
         fireChannelRead(1);
         subscriber.verifyItems(1);
@@ -187,7 +188,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testSequentialSubscriptionsNoCarryOverDemand() throws Exception {
+    public void testSequentialSubscriptionsNoCarryOverDemand() {
         nextItemTerminal = true;
         subscriber.subscribe(publisher).request(1);
         fireChannelRead(1);
@@ -199,7 +200,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testSequentialSubscriptionsCarryOverDemand() throws Exception {
+    public void testSequentialSubscriptionsCarryOverDemand() {
         nextItemTerminal = true;
         subscriber.subscribe(publisher).request(3);
         fireChannelRead(1);
@@ -215,7 +216,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testBufferBetweenSubscriptions() throws Exception {
+    public void testBufferBetweenSubscriptions() {
         nextItemTerminal = true;
         subscriber.subscribe(publisher).request(3);
         fireChannelRead(1);
@@ -226,7 +227,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testCancelBeforeTerminal() throws Exception {
+    public void testCancelBeforeTerminal() {
         subscriber.subscribe(publisher).request(3);
         fireChannelRead(1);
         subscriber.verifyItems(1).cancel();
@@ -234,7 +235,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testCancelAfterTerminal() throws Exception {
+    public void testCancelAfterTerminal() {
         subscriber.subscribe(publisher).request(3);
         nextItemTerminal = true;
         fireChannelRead(1);
@@ -243,7 +244,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testDelayedCancel() throws Exception {
+    public void testDelayedCancel() {
         nextItemTerminal = true;
         subscriber.subscribe(publisher).request(3);
         final Subscription firstSubscription = subscriber.getSubscription();
@@ -263,7 +264,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testDelayedRequestN() throws Exception {
+    public void testDelayedRequestN() {
         nextItemTerminal = true;
         subscriber.subscribe(publisher).request(3);
         final Subscription firstSubscription = subscriber.getSubscription();
@@ -281,14 +282,14 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testEmitItemsWithNoSubscriber() throws Exception {
+    public void testEmitItemsWithNoSubscriber() {
         nextItemTerminal = true;
         fireChannelReadToBuffer(1);
         subscriber.subscribe(publisher).request(1).verifySuccess(1);
     }
 
     @Test
-    public void testCancelFromWithinComplete() throws Exception {
+    public void testCancelFromWithinComplete() {
         final AtomicReference<Object> resultRef = new AtomicReference<>();
         fireChannelReadToBuffer(1);
         nextItemTerminal = true;
@@ -333,7 +334,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testQueuedCompleteAndFatalErrorExactDemand() throws Exception {
+    public void testQueuedCompleteAndFatalErrorExactDemand() {
         subscriber.subscribe(publisher);
         nextItemTerminal = true;
         fireChannelRead(1);
@@ -342,7 +343,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testQueuedCompleteAndFatalErrorMoreDemand() throws Exception {
+    public void testQueuedCompleteAndFatalErrorMoreDemand() {
         subscriber.subscribe(publisher);
         nextItemTerminal = true;
         fireChannelRead(1);
@@ -351,7 +352,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testQueuedErrorAndFatalErrorExactDemand() throws Exception {
+    public void testQueuedErrorAndFatalErrorExactDemand() {
         subscriber.subscribe(publisher);
         fireChannelRead(1);
         channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
@@ -360,7 +361,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void testQueuedErrorAndFatalErrorMoreDemand() throws Exception {
+    public void testQueuedErrorAndFatalErrorMoreDemand() {
         subscriber.subscribe(publisher);
         fireChannelRead(1);
         channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
@@ -369,7 +370,7 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
-    public void invalidRequestNDoesCancel() throws Exception {
+    public void invalidRequestNDoesCancel() {
         subscriber.subscribe(publisher);
         fireChannelRead(1, 2, 3);
         subscriber.request(1).verifyItems(1);

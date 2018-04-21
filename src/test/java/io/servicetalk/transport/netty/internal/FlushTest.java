@@ -28,6 +28,7 @@ import org.junit.Test;
 import org.mockito.InOrder;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.transport.netty.internal.Flush.composeFlushes;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -54,7 +55,8 @@ public class FlushTest {
         when(eventLoop.inEventLoop()).thenReturn(true);
         when(channel.eventLoop()).thenReturn(eventLoop);
         flushSignals = new FlushStrategyHolder.FlushSignals();
-        Publisher<String> flushedStream = composeFlushes(channel, source.getPublisher(), flushSignals).doBeforeNext(s -> channel.write(s));
+        Publisher<String> flushedStream = composeFlushes(channel, source.getPublisher(), immediate(), flushSignals)
+                .doBeforeNext(s -> channel.write(s));
         subscriber.subscribe(flushedStream);
         verifier = inOrder(channel);
     }

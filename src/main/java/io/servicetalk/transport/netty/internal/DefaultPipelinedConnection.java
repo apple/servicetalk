@@ -18,6 +18,7 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.QueueFullException;
 import io.servicetalk.concurrent.api.Single;
@@ -146,7 +147,7 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
     }
 
     private Publisher<Resp> writeOrQueue(Completable completable, @Nullable Supplier<Predicate<Resp>> terminalMsgPredicateSupplier) {
-        return new Publisher<Resp>() {
+        return new Publisher<Resp>(getExecutor()) {
             @Override
             protected void handleSubscribe(Subscriber<? super Resp> subscriber) {
                 writeOrQueueRequest(completable, terminalMsgPredicateSupplier == null ? null : terminalMsgPredicateSupplier.get())
@@ -219,6 +220,11 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
     @Override
     public IoExecutor getIoExecutor() {
         return connection.getIoExecutor();
+    }
+
+    @Override
+    public Executor getExecutor() {
+        return connection.getExecutor();
     }
 
     @Override

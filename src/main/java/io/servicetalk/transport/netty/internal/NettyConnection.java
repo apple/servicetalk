@@ -17,6 +17,7 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -186,7 +187,7 @@ public final class NettyConnection<Read, Write> implements Connection<Read, Writ
 
     @Override
     public Completable write(Publisher<Write> write, FlushStrategy flushStrategy, Supplier<RequestNSupplier> requestNSupplierFactory) {
-        return write(flushStrategy.apply(requireNonNull(write)), requestNSupplierFactory);
+        return write(flushStrategy.apply(requireNonNull(write), getExecutor()), requestNSupplierFactory);
     }
 
     private Completable write(FlushStrategyHolder<Write> writeWithFlush, Supplier<RequestNSupplier> requestNSupplierFactory) {
@@ -200,7 +201,8 @@ public final class NettyConnection<Read, Write> implements Connection<Read, Writ
                         holder.setReadInProgressSupplier(readInProgressSupplier);
                         readAwareFlushStrategyHolder = holder;
                     }
-                    composeFlushes(channel, writeWithFlush.getSource(), writeWithFlush.getFlushSignals()).subscribe(subscriber);
+                    composeFlushes(channel, writeWithFlush.getSource(), getExecutor(), writeWithFlush.getFlushSignals())
+                            .subscribe(subscriber);
                 }
             }
         });
@@ -273,6 +275,11 @@ public final class NettyConnection<Read, Write> implements Connection<Read, Writ
     @Override
     public NettyIoExecutor getIoExecutor() {
         return toNettyIoExecutor(context.getIoExecutor());
+    }
+
+    @Override
+    public Executor getExecutor() {
+        return context.getExecutor();
     }
 
     @Override
