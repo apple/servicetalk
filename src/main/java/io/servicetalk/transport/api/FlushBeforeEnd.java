@@ -15,6 +15,7 @@
  */
 package io.servicetalk.transport.api;
 
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.FlushStrategyHolder.FlushSignals;
 
@@ -33,9 +34,9 @@ final class FlushBeforeEnd implements FlushStrategy {
     }
 
     @Override
-    public <T> FlushStrategyHolder<T> apply(Publisher<T> source) {
+    public <T> FlushStrategyHolder<T> apply(Publisher<T> source, Executor executor) {
         FlushSignals signals = new FlushSignals();
-        return from(new Publisher<T>() {
+        return from(new Publisher<T>(executor) {
             @Override
             protected void handleSubscribe(Subscriber<? super T> s) {
                 source.subscribe(new FlushBeforeEndSubscriber<>(s, signals));

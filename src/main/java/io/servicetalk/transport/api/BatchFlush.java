@@ -15,6 +15,7 @@
  */
 package io.servicetalk.transport.api;
 
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
@@ -47,10 +48,10 @@ final class BatchFlush implements FlushStrategy {
     }
 
     @Override
-    public <T> FlushStrategyHolder<T> apply(Publisher<T> source) {
+    public <T> FlushStrategyHolder<T> apply(Publisher<T> source, Executor executor) {
         requireNonNull(source);
         FlushStrategyHolder.FlushSignals signals = new FlushStrategyHolder.FlushSignals();
-        Publisher<T> src = new Publisher<T>() {
+        Publisher<T> src = new Publisher<T>(executor) {
             @Override
             protected void handleSubscribe(Subscriber<? super T> subscriber) {
                 source.subscribe(new MultiSourceBatchSubscriber<>(subscriber, durationBoundaries, signals, batchSize));

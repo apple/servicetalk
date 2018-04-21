@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
@@ -146,15 +147,15 @@ public class FlushStrategiesTest {
     }
 
     private void setupForEach() {
-        setupFor(FlushStrategy.<String>flushOnEach().apply(source));
+        setupFor(FlushStrategy.<String>flushOnEach().apply(source, immediate()));
     }
 
     private void setupForBatch(int batchSize) {
-        setupFor(FlushStrategy.<String>batchFlush(batchSize, durationSource.map(s -> 1L)).apply(source));
+        setupFor(FlushStrategy.<String>batchFlush(batchSize, durationSource.map(s -> 1L)).apply(source, immediate()));
     }
 
     private void setupForEnd() {
-        setupFor(FlushStrategy.<String>flushBeforeEnd().apply(source));
+        setupFor(FlushStrategy.<String>flushBeforeEnd().apply(source, immediate()));
     }
 
     private void setupFor(FlushStrategyHolder<String> strategy) {

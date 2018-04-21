@@ -15,6 +15,7 @@
  */
 package io.servicetalk.transport.api;
 
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 
 import org.reactivestreams.Subscriber;
@@ -32,9 +33,9 @@ final class FlushOnEach implements FlushStrategy {
     }
 
     @Override
-    public <T> FlushStrategyHolder<T> apply(Publisher<T> source) {
+    public <T> FlushStrategyHolder<T> apply(Publisher<T> source, Executor executor) {
         FlushStrategyHolder.FlushSignals signals = new FlushStrategyHolder.FlushSignals();
-        return from(new Publisher<T>() {
+        return from(new Publisher<T>(executor) {
             @Override
             protected void handleSubscribe(Subscriber<? super T> s) {
                 source.subscribe(new FlushOnEachSubscriber<>(s, signals));

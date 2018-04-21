@@ -17,6 +17,7 @@ package io.servicetalk.transport.api;
 
 import io.servicetalk.buffer.Buffer;
 import io.servicetalk.buffer.BufferAllocator;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 import java.net.SocketAddress;
@@ -58,4 +59,10 @@ public interface ConnectionContext extends ListenableAsyncCloseable {
      * @return The {@link IoExecutor} that is used to handle the IO for the connection.
      */
     IoExecutor getIoExecutor();
+
+    /**
+     * Get the {@link Executor} that is used to create any asynchronous sources by the connection.
+     * @return The {@link Executor} that is used to create any asynchronous sources by the connection.
+     */
+    Executor getExecutor();
 }
