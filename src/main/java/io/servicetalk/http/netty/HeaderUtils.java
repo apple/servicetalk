@@ -15,204 +15,37 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.ByteProcessor;
 import io.servicetalk.http.api.HttpHeaders;
 
-import io.netty.util.AsciiString;
-
 import java.util.Iterator;
-import java.util.Map;
-import java.util.function.BiFunction;
 
-import static io.netty.util.AsciiString.contentEquals;
-import static java.lang.System.lineSeparator;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
+import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 
 /**
  * Duplicate of HeaderUtils in http-api, will be removed in the future.
  */
 final class HeaderUtils {
-    /**
-     * Constant used to seed the hash code generation. Could be anything but this was borrowed from murmur3.
-     */
-    static final int HASH_CODE_SEED = 0xc2b2ae35;
-    static final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> DEFAULT_HEADER_FILTER = (k, v) -> "<filtered>";
-    static final ByteProcessor HEADER_NAME_VALIDATOR = value -> {
-        validateHeaderNameToken(value);
-        return true;
-    };
-
     private HeaderUtils() {
         // no instances
     }
 
-    static String toString(final HttpHeaders headers,
-                           final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> filter) {
-        final String simpleName = headers.getClass().getSimpleName();
-        final int size = headers.size();
-        if (size == 0) {
-            return simpleName + "[]";
+    static boolean isTransferEncodingChunked(HttpHeaders headers) {
+        return headers.contains(TRANSFER_ENCODING, CHUNKED, true);
+    }
+
+    static void setTransferEncodingChunked(HttpHeaders headers, boolean chunked) {
+        if (chunked) {
+            headers.set(TRANSFER_ENCODING, CHUNKED);
+            headers.remove(CONTENT_LENGTH);
         } else {
-            // original capacity assumes 20 chars per headers
-            final StringBuilder sb = new StringBuilder(simpleName.length() + 2 + size * 20)
-                    .append(simpleName)
-                    .append('[');
-            final Iterator<Map.Entry<CharSequence, CharSequence>> itr = headers.iterator();
-            if (itr.hasNext()) {
-                for (;;) {
-                    final Map.Entry<CharSequence, CharSequence> e = itr.next();
-                    sb.append(e.getKey()).append(": ").append(filter.apply(e.getKey(), e.getValue()));
-                    if (itr.hasNext()) {
-                        sb.append(lineSeparator());
-                    } else {
-                        break;
-                    }
+            Iterator<? extends CharSequence> itr = headers.getAll(TRANSFER_ENCODING);
+            while (itr.hasNext()) {
+                if (io.netty.handler.codec.http.HttpHeaderValues.CHUNKED.contentEqualsIgnoreCase(itr.next())) {
+                    itr.remove();
                 }
             }
-            return sb.append(']').toString();
-        }
-    }
-
-    static boolean equals(final HttpHeaders lhs, final HttpHeaders rhs) {
-        if (lhs.size() != rhs.size()) {
-            return false;
-        }
-
-        if (lhs == rhs) {
-            return true;
-        }
-
-        // The regular iterator is not suitable for equality comparisons because the overall ordering is not
-        // in any specific order relative to the content of this MultiMap.
-        for (final CharSequence name : lhs.getNames()) {
-            final Iterator<? extends CharSequence> valueItr = lhs.getAll(name);
-            final Iterator<? extends CharSequence> h2ValueItr = rhs.getAll(name);
-            while (valueItr.hasNext() && h2ValueItr.hasNext()) {
-                if (!contentEquals(valueItr.next(), h2ValueItr.next())) {
-                    return false;
-                }
-            }
-            if (valueItr.hasNext() != h2ValueItr.hasNext()) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    static int hashCode(final HttpHeaders headers) {
-        if (headers.isEmpty()) {
-            return 0;
-        }
-        int result = HASH_CODE_SEED;
-        for (final CharSequence key : headers.getNames()) {
-            result = 31 * result + AsciiString.hashCode(key);
-            final Iterator<? extends CharSequence> valueItr = headers.getAll(key);
-            while (valueItr.hasNext()) {
-                result = 31 * result + AsciiString.hashCode(valueItr.next());
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Validate {@code key} is valid <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-name</a>
-     * (aka <a href="https://tools.ietf.org/html/rfc2616#section-2.2">token</a>) and a
-     * valid <a href="https://tools.ietf.org/html/rfc7230#section-3.2.6">field-name</a> of a
-     * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header-field</a>. Both of these
-     * formats have the same restrictions.
-     *
-     * @param key the cookie name or header name to validate.
-     */
-    static void validateCookieTokenAndHeaderName(final CharSequence key) {
-        // HEADER
-        // header-field   = field-name ":" OWS field-value OWS
-        //
-        // field-name     = token
-        // token          = 1*tchar
-        //
-        // tchar          = "!" / "#" / "$" / "%" / "&" / "'" / "*"
-        //                    / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
-        //                    / DIGIT / ALPHA
-        //                    ; any VCHAR, except delimiters
-        //  Delimiters are chosen
-        //   from the set of US-ASCII visual characters not allowed in a token
-        //   (DQUOTE and "(),/:;<=>?@[\]{}")
-        //
-        // COOKIE
-        // cookie-pair       = cookie-name "=" cookie-value
-        // cookie-name       = token
-        // token          = 1*<any CHAR except CTLs or separators>
-        // CTL = <any US-ASCII control character
-        //       (octets 0 - 31) and DEL (127)>
-        // separators     = "(" | ")" | "<" | ">" | "@"
-        //                      | "," | ";" | ":" | "\" | <">
-        //                      | "/" | "[" | "]" | "?" | "="
-        //                      | "{" | "}" | SP | HT
-        for (int i = 0; i < key.length(); ++i) {
-            final char value = key.charAt(i);
-            // CTL = <any US-ASCII control character
-            //       (octets 0 - 31) and DEL (127)>
-            // separators     = "(" | ")" | "<" | ">" | "@"
-            //                      | "," | ";" | ":" | "\" | <">
-            //                      | "/" | "[" | "]" | "?" | "="
-            //                      | "{" | "}" | SP | HT
-            if (value <= 32 || value >= 127) {
-                throw new IllegalArgumentException("invalid token detected at index: " + i);
-            }
-            switch (value) {
-                case '(':
-                case ')':
-                case '<':
-                case '>':
-                case '@':
-                case ',':
-                case ';':
-                case ':':
-                case '\\':
-                case '"':
-                case '/':
-                case '[':
-                case ']':
-                case '?':
-                case '=':
-                case '{':
-                case '}':
-                    throw new IllegalArgumentException("invalid token detected at index: " + i);
-                default:
-                    break;
-            }
-        }
-    }
-
-    /**
-     * Validate char is valid <a href="https://tools.ietf.org/html/rfc7230#section-3.2.6">token</a> character.
-     *
-     * @param value the character to validate.
-     */
-    private static void validateHeaderNameToken(final byte value) {
-        if (value >= 0 && value <= 32 || value < 0) {
-            throw new IllegalArgumentException("invalid token detected: " + value);
-        }
-        switch (value) {
-            case '(':
-            case ')':
-            case '<':
-            case '>':
-            case '@':
-            case ',':
-            case ';':
-            case ':':
-            case '\\':
-            case '"':
-            case '/':
-            case '[':
-            case ']':
-            case '?':
-            case '=':
-            case '{':
-            case '}':
-                throw new IllegalArgumentException("invalid token detected: " + value);
-            default:
-                break;
         }
     }
 }
