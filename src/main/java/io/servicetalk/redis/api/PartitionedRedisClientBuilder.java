@@ -17,21 +17,41 @@ package io.servicetalk.redis.api;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.partition.PartitionedEvent;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.IoExecutor;
+
+import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 
 /**
  * A builder of {@link PartitionedRedisClient} objects.
  * @param <ResolvedAddress> An resolved address that can be used to establish new {@link RedisConnection}s.
  */
 public interface PartitionedRedisClientBuilder<ResolvedAddress> {
+
     /**
      * Build a new {@link PartitionedRedisClient}.
      *
-     * @param executor The {@link IoExecutor} to use for I/O.
+     * @param ioExecutor The {@link IoExecutor} to use for I/O.
      * @param addressEventStream A stream of events (typically from a {@link ServiceDiscoverer#discover(Object)}) that
      *                           provides the addresses used to create new {@link RedisConnection}s.
      * @return A new {@link PartitionedRedisClient}.
      */
-    PartitionedRedisClient build(IoExecutor executor, Publisher<PartitionedEvent<ResolvedAddress>> addressEventStream);
+    default PartitionedRedisClient build(IoExecutor ioExecutor,
+                                         Publisher<PartitionedEvent<ResolvedAddress>> addressEventStream) {
+        return build(ioExecutor, newCachedThreadExecutor(), addressEventStream);
+    }
+
+    /**
+     * Build a new {@link PartitionedRedisClient}.
+     *
+     * @param ioExecutor The {@link IoExecutor} to use for I/O.
+     * @param executor {@link Executor} to use for any asynchronous source created by the returned
+     * {@link PartitionedRedisClient}.
+     * @param addressEventStream A stream of events (typically from a {@link ServiceDiscoverer#discover(Object)}) that
+     *                           provides the addresses used to create new {@link RedisConnection}s.
+     * @return A new {@link PartitionedRedisClient}.
+     */
+    PartitionedRedisClient build(IoExecutor ioExecutor, Executor executor,
+                                 Publisher<PartitionedEvent<ResolvedAddress>> addressEventStream);
 }
