@@ -43,6 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
@@ -76,7 +77,7 @@ public class DefaultDnsServiceDiscovererTest {
 
     @Before
     public void setup() {
-        discoverer = new DefaultDnsServiceDiscoverer.Builder(executor.next())
+        discoverer = new DefaultDnsServiceDiscoverer.Builder(executor.next(), immediate())
                 .setDnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_ONLY)
                 .setOptResourceEnabled(false)
                 .setDnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(new SingletonDnsServerAddresses(dnsServer.localAddress())))
@@ -92,7 +93,7 @@ public class DefaultDnsServiceDiscovererTest {
     @Test
     public void testRetry() throws InterruptedException {
         AtomicInteger retryStrategyCalledCount = new AtomicInteger();
-        discoverer = new DefaultDnsServiceDiscoverer.Builder(executor.next())
+        discoverer = new DefaultDnsServiceDiscoverer.Builder(executor.next(), immediate())
                 .setDnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_ONLY)
                 .setOptResourceEnabled(false)
                 .setDnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(new SingletonDnsServerAddresses(dnsServer.localAddress())))

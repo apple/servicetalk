@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
 import io.servicetalk.transport.api.IoExecutor;
@@ -63,9 +64,6 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
 
     static final Comparator<InetAddress> INET_ADDRESS_COMPARATOR = Comparator.comparing(o -> ByteBuffer.wrap(o.getAddress()));
 
-    private static final Publisher<Event<InetAddress>> CLOSED_PUBLISHER =
-            Publisher.error(new IllegalStateException(DefaultDnsServiceDiscoverer.class.getSimpleName() + " closed!"));
-
     private static final org.reactivestreams.Subscriber<Event<InetAddress>> CANCELLED = new org.reactivestreams.Subscriber<Event<InetAddress>>() {
         @Override
         public void onSubscribe(Subscription s) {
@@ -87,7 +85,8 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
 
     private final CompletableProcessor closeCompletable = new CompletableProcessor();
     private final Map<String, List<DiscoverEntry>> registerMap = new HashMap<>(8);
-    private final EventLoopAwareNettyIoExecutor executor;
+    private final EventLoopAwareNettyIoExecutor nettyIoExecutor;
+    private final Executor executor;
     @Nullable
     private final BiIntFunction<Throwable, Completable> retryStrategy;
     private final DnsNameResolver resolver;
@@ -97,7 +96,8 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
      * Builder use to create objects of type {@link DefaultDnsServiceDiscoverer}.
      */
     public static final class Builder {
-        private final IoExecutor executor;
+        private final IoExecutor ioExecutor;
+        private final Executor executor;
         @Nullable
         private DnsServerAddressStreamProvider dnsServerAddressStreamProvider;
         @Nullable
@@ -112,9 +112,11 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
 
         /**
          * Create a new instance.
-         * @param executor The executor which will be used for I/O.
+         * @param ioExecutor The {@link IoExecutor} which will be used for I/O.
+         * @param executor The {@link Executor} which will be used for calling user code.
          */
-        public Builder(IoExecutor executor) {
+        public Builder(IoExecutor ioExecutor, Executor executor) {
+            this.ioExecutor = requireNonNull(ioExecutor);
             this.executor = requireNonNull(executor);
         }
 
@@ -189,17 +191,20 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
          * @return a new instance of {@link DefaultDnsServiceDiscoverer}.
          */
         public DefaultDnsServiceDiscoverer build() {
-            return new DefaultDnsServiceDiscoverer(executor, retryStrategy, minTTLSeconds, ndots, optResourceEnabled, dnsResolverAddressTypes, dnsServerAddressStreamProvider);
+            return new DefaultDnsServiceDiscoverer(ioExecutor, executor, retryStrategy, minTTLSeconds, ndots,
+                    optResourceEnabled, dnsResolverAddressTypes, dnsServerAddressStreamProvider);
         }
     }
 
-    private DefaultDnsServiceDiscoverer(IoExecutor executor, @Nullable BiIntFunction<Throwable, Completable> retryStrategy, int minTTL,
+    private DefaultDnsServiceDiscoverer(IoExecutor ioExecutor, Executor executor,
+                                        @Nullable BiIntFunction<Throwable, Completable> retryStrategy, int minTTL,
                                         @Nullable Integer ndots, @Nullable Boolean optResourceEnabled,
                                         @Nullable DnsResolverAddressTypes dnsResolverAddressTypes,
                                         @Nullable DnsServerAddressStreamProvider dnsServerAddressStreamProvider) {
-        this.executor = toEventLoopAwareNettyIoExecutor(executor);
+        this.nettyIoExecutor = toEventLoopAwareNettyIoExecutor(ioExecutor);
+        this.executor = executor;
         this.retryStrategy = retryStrategy;
-        EventLoop eventLoop = this.executor.getEventLoopGroup().next();
+        EventLoop eventLoop = this.nettyIoExecutor.getEventLoopGroup().next();
         DnsNameResolverBuilder builder = new DnsNameResolverBuilder(eventLoop)
                 // TODO(scott): handle the TTL in our custom cache implementation.
                 .ttl(minTTL, Integer.MAX_VALUE)
@@ -222,15 +227,16 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
     @Override
     public Publisher<Event<InetAddress>> discover(String address) {
         final DiscoverEntry entry;
-        if (executor.isCurrentThreadEventLoop()) {
+        if (nettyIoExecutor.isCurrentThreadEventLoop()) {
             if (closed) {
-                return CLOSED_PUBLISHER;
+                return Publisher.error(new IllegalStateException(DefaultDnsServiceDiscoverer.class.getSimpleName() + " closed!"),
+                        executor);
             }
-            entry = new DiscoverEntry(address);
+            entry = new DiscoverEntry(address, executor);
             addEntry(entry);
         } else {
-            entry = new DiscoverEntry(address);
-            executor.executeOnEventloop(() -> {
+            entry = new DiscoverEntry(address, executor);
+            nettyIoExecutor.executeOnEventloop(() -> {
                 if (closed) {
                     entry.completeSubscription();
                 } else {
@@ -251,10 +257,10 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
     }
 
     void removeEntry(DiscoverEntry entry) {
-        if (executor.isCurrentThreadEventLoop()) {
+        if (nettyIoExecutor.isCurrentThreadEventLoop()) {
             removeEntry0(entry);
         } else {
-            executor.executeOnEventloop(() -> removeEntry0(entry));
+            nettyIoExecutor.executeOnEventloop(() -> removeEntry0(entry));
         }
     }
 
@@ -280,10 +286,10 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
             @Override
             protected void handleSubscribe(Subscriber subscriber) {
                 closeCompletable.subscribe(subscriber);
-                if (executor.isCurrentThreadEventLoop()) {
+                if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                     closeAsync0();
                 } else {
-                    executor.executeOnEventloop(DefaultDnsServiceDiscoverer.this::closeAsync0);
+                    nettyIoExecutor.executeOnEventloop(DefaultDnsServiceDiscoverer.this::closeAsync0);
                 }
             }
         };
@@ -349,17 +355,18 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
         final String inetHost;
         final Publisher<Event<InetAddress>> publisher;
 
-        DiscoverEntry(String inetHost) {
+        DiscoverEntry(String inetHost, Executor executor) {
+            super(executor);
             this.inetHost = inetHost;
             if (retryStrategy != null) {
-                publisher = new Publisher<Event<InetAddress>>() {
+                publisher = new Publisher<Event<InetAddress>>(executor) {
                     @Override
                     protected void handleSubscribe(org.reactivestreams.Subscriber<? super Event<InetAddress>> subscriber) {
                         initializeSubscriber(subscriber);
                     }
                 }.retryWhen(retryStrategy);
             } else {
-                publisher = new Publisher<Event<InetAddress>>() {
+                publisher = new Publisher<Event<InetAddress>>(executor) {
                     @Override
                     protected void handleSubscribe(org.reactivestreams.Subscriber<? super Event<InetAddress>> subscriber) {
                         initializeSubscriber(subscriber);
@@ -382,10 +389,10 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
         }
 
         private void initializeSubscriber(org.reactivestreams.Subscriber<? super Event<InetAddress>> subscriber) {
-            if (executor.isCurrentThreadEventLoop()) {
+            if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                 initializeSubscriber0(subscriber);
             } else {
-                executor.executeOnEventloop(() -> initializeSubscriber0(subscriber));
+                nettyIoExecutor.executeOnEventloop(() -> initializeSubscriber0(subscriber));
             }
         }
 
@@ -422,19 +429,19 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
                     // if the value is in the cache and not expired then return it and schedule a Runnable to refresh our data in
                     //    (current time - last data delivered time) time units.
                     // If the value is in the cache, but expired then remove/query for it.
-                    if (executor.isCurrentThreadEventLoop()) {
+                    if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                         request0(n);
                     } else {
-                        executor.executeOnEventloop(() -> request0(n));
+                        nettyIoExecutor.executeOnEventloop(() -> request0(n));
                     }
                 }
 
                 @Override
                 public void cancel() {
-                    if (executor.isCurrentThreadEventLoop()) {
+                    if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                         cancel0();
                     } else {
-                        executor.executeOnEventloop(this::cancel0);
+                        nettyIoExecutor.executeOnEventloop(this::cancel0);
                     }
                 }
 
@@ -475,7 +482,7 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
                 private void scheduleQuery(long nanos) {
                     // This value is coming from DNS TTL for which the unit is seconds and the minimum value we accept
                     // in the constructor is 1 second.
-                    executor.scheduleOnEventloop(nanos, NANOSECONDS).subscribe(new Completable.Subscriber() {
+                    nettyIoExecutor.scheduleOnEventloop(nanos, NANOSECONDS).subscribe(new Completable.Subscriber() {
                         @Override
                         public void onSubscribe(Cancellable cancellable) {
                             // It is assumed this will happen synchronously and on the same thread.
