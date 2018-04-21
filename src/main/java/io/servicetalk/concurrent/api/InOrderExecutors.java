@@ -22,6 +22,9 @@ import org.reactivestreams.Subscriber;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.api.Completable.completed;
+
 /**
  * A factory for {@link InOrderExecutor}s.
  */
@@ -67,12 +70,13 @@ final class InOrderExecutors {
 
             @Override
             public Cancellable execute(Runnable task) throws RejectedExecutionException {
-                return original.execute(task);
+                task.run();
+                return IGNORE_CANCEL;
             }
 
             @Override
             public Completable schedule(long duration, TimeUnit durationUnit) {
-                return original.schedule(duration, durationUnit);
+                return completed();
             }
 
             @Override
