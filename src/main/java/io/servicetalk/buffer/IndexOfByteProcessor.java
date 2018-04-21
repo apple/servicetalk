@@ -13,28 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-buildscript {
-  if (!repositories) {
-    repositories {
-      jcenter()
-      maven { url "https://plugins.gradle.org/m2/" }
+package io.servicetalk.buffer;
+
+final class IndexOfByteProcessor implements ByteProcessor {
+    private final byte byteToFind;
+
+    IndexOfByteProcessor(byte byteToFind) {
+        this.byteToFind = byteToFind;
     }
-  }
 
-  dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-build:0.1.0-SNAPSHOT"
-  }
-}
-
-apply plugin: "servicetalk-library"
-
-dependencies {
-  api "io.servicetalk:servicetalk-bom-internal:0.1.0-SNAPSHOT"
-
-  api "com.google.code.findbugs:jsr305"
-  api "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
-
-  testImplementation "org.hamcrest:hamcrest-library"
-  testImplementation "org.mockito:mockito-core"
-  testImplementation "junit:junit"
+    @Override
+    public boolean process(byte value) {
+        return value != byteToFind;
+    }
 }
