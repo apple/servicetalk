@@ -22,7 +22,6 @@ import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatus;
-import io.servicetalk.http.api.HttpResponseStatuses;
 
 import org.glassfish.jersey.internal.util.collection.Ref;
 import org.glassfish.jersey.server.ContainerException;
@@ -37,11 +36,14 @@ import javax.annotation.Nullable;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.Response.StatusType;
 
+import static io.servicetalk.buffer.ReadOnlyBufferAllocators.PREFER_DIRECT_ALLOCATOR;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
+import static io.servicetalk.http.api.CharSequences.emptyAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpResponseStatuses.INTERNAL_SERVER_ERROR;
+import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
 import static io.servicetalk.http.api.HttpResponses.newResponse;
 import static io.servicetalk.http.router.jersey.CharSequenceUtil.asCharSequence;
 import static java.util.Arrays.stream;
@@ -54,7 +56,8 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     private static final Map<Status, HttpResponseStatus> RESPONSE_STATUSES =
             unmodifiableMap(stream(Status.values())
                     .collect(toMap(identity(),
-                            s -> HttpResponseStatuses.getResponseStatus(s.getStatusCode(), s.getReasonPhrase()))));
+                            s -> getResponseStatus(s.getStatusCode(),
+                                    PREFER_DIRECT_ALLOCATOR.fromAscii(s.getReasonPhrase())))));
 
     private static final int UNKNOWN_RESPONSE_LENGTH = -1;
     private static final int EMPTY_RESPONSE = 0;
@@ -153,9 +156,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
 
         final HttpHeaders headers = response.getHeaders();
         containerResponse.getHeaders().forEach((k, vs) -> vs.forEach(v -> {
-            if (v != null) {
-                headers.add(k, asCharSequence(v));
-            }
+            headers.add(k, v == null ? emptyAsciiString() : asCharSequence(v));
         }));
 
         if (contentLength == UNKNOWN_RESPONSE_LENGTH) {
@@ -170,10 +171,11 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         return response;
     }
 
-    private static HttpResponseStatus getStatus(final ContainerResponse containerResponse) {
+    private HttpResponseStatus getStatus(final ContainerResponse containerResponse) {
         final StatusType statusInfo = containerResponse.getStatusInfo();
         return statusInfo instanceof Status ? RESPONSE_STATUSES.get(statusInfo) :
-                HttpResponseStatuses.getResponseStatus(statusInfo.getStatusCode(), statusInfo.getReasonPhrase());
+                getResponseStatus(statusInfo.getStatusCode(),
+                        allocator.fromAscii(statusInfo.getReasonPhrase()));
     }
 
     private static void removeChunkedEncoding(final HttpHeaders headers) {

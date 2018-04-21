@@ -21,6 +21,7 @@ import io.servicetalk.http.api.HttpResponse;
 
 import org.junit.Test;
 
+import static io.servicetalk.buffer.ReadOnlyBufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
@@ -62,7 +63,7 @@ public class SynchronousResourceTest extends AbstractResourceTest {
     public void customResponseStatus() {
         final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, PATH + "/statuses/444");
         final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
-        assertResponse(res, getResponseStatus(444, "Three fours!"), null, "");
+        assertResponse(res, getResponseStatus(444, DEFAULT_ALLOCATOR.fromAscii("Three fours!")), null, "");
         assertThat(res.getVersion(), is(HTTP_1_1));
     }
 

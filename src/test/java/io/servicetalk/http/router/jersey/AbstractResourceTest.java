@@ -37,6 +37,7 @@ import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.ext.Provider;
 
+import static io.servicetalk.buffer.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.http.api.HttpHeaderNames.ALLOW;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
@@ -227,7 +228,7 @@ public abstract class AbstractResourceTest extends AbstractRequestHandlerTest {
         req = newH11Request(POST, getResourcePath() + "/filtered", ctx.getAllocator().fromUtf8("foo2"));
         req.getHeaders().set("X-Abort-With-Status", "451");
         res = handler.apply(ctx, req);
-        assertResponse(res, getResponseStatus(451, ""), null, "");
+        assertResponse(res, getResponseStatus(451, EMPTY_BUFFER), null, "");
     }
 
     @Test

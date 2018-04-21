@@ -37,6 +37,7 @@ import static io.servicetalk.http.router.jersey.Context.CHUNK_PUBLISHER_REF_TYPE
 import static io.servicetalk.http.router.jersey.Context.CONNECTION_CONTEXT_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.HTTP_REQUEST_REF_TYPE;
 import static io.servicetalk.http.router.jersey.DummyHttpUtil.getBaseUri;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.glassfish.jersey.internal.util.collection.Refs.emptyRef;
 import static org.glassfish.jersey.server.internal.ContainerUtils.encodeUnsafeCharacters;
 
@@ -100,7 +101,7 @@ final class DefaultRequestHandler implements BiFunction<ConnectionContext, HttpR
         final ContainerRequest containerRequest = new ContainerRequest(
                 URI.create(baseUri.toString()),
                 URI.create(requestUriBuilder.toString()),
-                req.getMethod().getName(),
+                req.getMethod().getName().toString(US_ASCII),
                 UNAUTHENTICATED_SECURITY_CONTEXT,
                 new MapPropertiesDelegate());
 
