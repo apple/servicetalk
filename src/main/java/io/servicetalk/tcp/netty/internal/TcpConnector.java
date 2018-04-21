@@ -16,6 +16,7 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.netty.BufferUtil;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
@@ -43,6 +44,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
@@ -95,25 +97,26 @@ public final class TcpConnector<Read, Write> {
     /**
      * Connects to the passed {@code remote} address, resolving the address, if required.
      *
-     * @param executor Determines which {@link NettyIoExecutor} should be used for the connection.
+     * @param ioExecutor Determines which {@link NettyIoExecutor} should be used for the connection.
+     * @param executor {@link Executor} to used to create the returned {@link Single}.
      * @param remote address to connect.
      * @return {@link Single} that contains the {@link ConnectionContext} for the connection.
      */
-    public Single<Connection<Read, Write>> connect(NettyIoExecutor executor, Object remote) {
-        EventLoopAwareNettyIoExecutor eventLoopAwareNettyIoExecutor = toEventLoopAwareNettyIoExecutor(executor);
+    public Single<Connection<Read, Write>> connect(NettyIoExecutor ioExecutor, Executor executor, Object remote) {
+        EventLoopAwareNettyIoExecutor eventLoopAwareNettyIoExecutor = toEventLoopAwareNettyIoExecutor(ioExecutor);
         requireNonNull(remote);
         return new Single<Connection<Read, Write>>() {
             @Override
             protected void handleSubscribe(Subscriber<? super Connection<Read, Write>> subscriber) {
-                connectFutureToListener(connect0(remote, eventLoopAwareNettyIoExecutor, subscriber), subscriber,
-                                        remote);
+                connectFutureToListener(connect0(remote, eventLoopAwareNettyIoExecutor, executor, subscriber),
+                        subscriber, remote);
             }
         };
     }
 
-    private ChannelFuture connect0(Object resolvedAddress, EventLoopAwareNettyIoExecutor executor,
+    private ChannelFuture connect0(Object resolvedAddress, EventLoopAwareNettyIoExecutor ioExecutor, Executor executor,
                                    Single.Subscriber<? super Connection<Read, Write>> subscriber) {
-        EventLoop loop = executor.getEventLoopGroup().next();
+        EventLoop loop = ioExecutor.getEventLoopGroup().next();
 
         // We have to subscribe before any possibility that we complete the single, so subscribe now and hookup the
         // cancellable after we get the future.
@@ -124,7 +127,8 @@ public final class TcpConnector<Read, Write> {
         ChannelHandler handler = new io.netty.channel.ChannelInitializer<Channel>() {
             @Override
             protected void initChannel(Channel channel) {
-                ConnectionContext context = newContext(channel, executor, config.getAllocator(), channelInitializer);
+                ConnectionContext context = newContext(channel, ioExecutor, executor, config.getAllocator(),
+                        channelInitializer);
                 AbstractChannelReadHandler readHandler = channel.pipeline().get(AbstractChannelReadHandler.class);
                 if (readHandler != null) {
                     subscriber.onError(new IllegalStateException(
@@ -133,7 +137,7 @@ public final class TcpConnector<Read, Write> {
                 } else {
                     Connection.TerminalPredicate<Read> predicate =
                             new Connection.TerminalPredicate<>(terminalItemPredicate.get());
-                    channel.pipeline().addLast(new AbstractChannelReadHandler<Read>(predicate) {
+                    channel.pipeline().addLast(new AbstractChannelReadHandler<Read>(predicate, immediate()) {
                         @Override
                         protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Read> newPublisher) {
                             subscriber.onSuccess(new NettyConnection<>(channel, context, newPublisher, predicate));

@@ -38,6 +38,7 @@ import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.transport.api.FlushStrategy.defaultFlushStrategy;
 import static java.net.InetSocketAddress.createUnresolved;
@@ -53,7 +54,7 @@ public final class TcpConnectorTest {
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
 
-    private static NettyIoExecutor executor;
+    private static NettyIoExecutor nettyIoExecutor;
 
     private int serverPort;
     private ServerContext serverContext;
@@ -61,20 +62,20 @@ public final class TcpConnectorTest {
 
     @BeforeClass
     public static void beforeClass() {
-        executor = (NettyIoExecutor) NettyIoExecutors.createExecutor();
+        nettyIoExecutor = (NettyIoExecutor) NettyIoExecutors.createExecutor();
     }
 
     @AfterClass
     public static void afterClass() {
-        executor.closeAsync().subscribe();
+        nettyIoExecutor.closeAsync().subscribe();
     }
 
     @Before
     public void setUp() throws Exception {
-        TcpServer server = new TcpServer(executor);
+        TcpServer server = new TcpServer(nettyIoExecutor);
         serverContext = server.start(0, conn -> conn.write(conn.read(), defaultFlushStrategy()));
         serverPort = TcpServer.getServerPort(serverContext);
-        client = new TcpClient(executor);
+        client = new TcpClient(nettyIoExecutor);
     }
 
     @After
@@ -92,7 +93,8 @@ public final class TcpConnectorTest {
         testWriteAndRead(client.connectBlocking(serverPort));
     }
 
-    private static void testWriteAndRead(Connection<Buffer, Buffer> connection) throws ExecutionException, InterruptedException {
+    private static void testWriteAndRead(Connection<Buffer, Buffer> connection)
+            throws ExecutionException, InterruptedException {
         awaitIndefinitely(connection.writeAndFlush(connection.getAllocator().fromAscii("Hello")));
         String response = awaitIndefinitely(connection.read().first().map(buffer -> buffer.toString(defaultCharset())));
         assertThat("Unexpected response.", response, is("Hello"));
@@ -123,23 +125,25 @@ public final class TcpConnectorTest {
         final CountDownLatch registeredLatch = new CountDownLatch(1);
         final CountDownLatch activeLatch = new CountDownLatch(1);
 
-        TcpConnector<Buffer, Buffer> connector = new TcpConnector<>(new ReadOnlyTcpClientConfig(true), (channel, context) -> {
-            channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
-                @Override
-                public void channelRegistered(ChannelHandlerContext ctx) {
-                    registeredLatch.countDown();
-                    ctx.fireChannelRegistered();
-                }
+        TcpConnector<Buffer, Buffer> connector = new TcpConnector<>(new ReadOnlyTcpClientConfig(true),
+                (channel, context) -> {
+                    channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                        @Override
+                        public void channelRegistered(ChannelHandlerContext ctx) {
+                            registeredLatch.countDown();
+                            ctx.fireChannelRegistered();
+                        }
 
-                @Override
-                public void channelActive(ChannelHandlerContext ctx) {
-                    activeLatch.countDown();
-                    ctx.fireChannelActive();
-                }
-            });
-            return context;
-        }, () -> v -> true);
-        Connection<Buffer, Buffer> connection = awaitIndefinitely(connector.connect(executor, serverContext.getListenAddress()));
+                        @Override
+                        public void channelActive(ChannelHandlerContext ctx) {
+                            activeLatch.countDown();
+                            ctx.fireChannelActive();
+                        }
+                    });
+                    return context;
+                }, () -> v -> true);
+        Connection<Buffer, Buffer> connection = awaitIndefinitely(connector.connect(nettyIoExecutor, immediate(),
+                serverContext.getListenAddress()));
         assert connection != null;
         awaitIndefinitely(connection.closeAsync());
 

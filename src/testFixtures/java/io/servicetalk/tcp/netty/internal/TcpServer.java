@@ -18,6 +18,7 @@ package io.servicetalk.tcp.netty.internal;
 import io.servicetalk.buffer.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.ServerContext;
@@ -37,6 +38,7 @@ import java.net.SocketAddress;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
+import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 
 /**
@@ -72,24 +74,29 @@ public final class TcpServer {
      * @throws ExecutionException   If the server start failed.
      * @throws InterruptedException If the calling thread was interrupted waiting for the server to start.
      */
-    public ServerContext start(int port, Function<Connection<Buffer, Buffer>, Completable> service) throws ExecutionException, InterruptedException {
+    public ServerContext start(int port, Function<Connection<Buffer, Buffer>, Completable> service)
+            throws ExecutionException, InterruptedException {
         TcpServerInitializer initializer = new TcpServerInitializer(config);
+        final Executor executor = newCachedThreadExecutor();
         ChannelInitializer channelInitializer = new TcpServerChannelInitializer(config).andThen((channel, context) -> {
             channel.pipeline().addLast(new BufferHandler(config.getAllocator()));
-            channel.pipeline().addLast(new AbstractChannelReadHandler<Buffer>(buffer -> false) {
-                @Override
-                protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Buffer> newPublisher) {
-                    Connection<Buffer, Buffer> conn = new NettyConnection<>(ctx.channel(), context, newPublisher);
-                    service.apply(conn)
-                            .doBeforeError(throwable -> LOGGER.error("Error handling a connection.", throwable))
-                            .doBeforeFinally(() -> ctx.channel().close())
-                            .subscribe(NoOpSubscriber.NOOP_SUBSCRIBER);
-                }
-            });
+            channel.pipeline()
+                    .addLast(new AbstractChannelReadHandler<Buffer>(buffer -> false, executor) {
+                        @Override
+                        protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Buffer> newPublisher) {
+                            Connection<Buffer, Buffer> conn = new NettyConnection<>(ctx.channel(), context,
+                                    newPublisher);
+                            service.apply(conn)
+                                    .doBeforeError(throwable -> LOGGER.error("Error handling a connection.", throwable))
+                                    .doBeforeFinally(() -> ctx.channel().close())
+                                    .subscribe(NoOpSubscriber.NOOP_SUBSCRIBER);
+                        }
+                    });
             return context;
         });
         //noinspection ConstantConditions
-        return awaitIndefinitely(initializer.start(new InetSocketAddress(port), ContextFilter.ACCEPT_ALL, channelInitializer)
+        return awaitIndefinitely(initializer.start(new InetSocketAddress(port), ContextFilter.ACCEPT_ALL,
+                channelInitializer)
                 .doBeforeSuccess(ctx -> LOGGER.info("Server started on port {}.", getServerPort(ctx)))
                 .doBeforeError(throwable -> LOGGER.error("Failed starting server on port {}.", port)));
     }
@@ -99,7 +106,8 @@ public final class TcpServer {
      *
      * @param context for the server.
      * @return Listening port.
-     * @throws ClassCastException If the {@link SocketAddress} returned by {@link ServerContext#getListenAddress()} is not an {@link InetSocketAddress}.
+     * @throws ClassCastException If the {@link SocketAddress} returned by {@link ServerContext#getListenAddress()} is
+     * not an {@link InetSocketAddress}.
      */
     public static int getServerPort(ServerContext context) {
         return ((InetSocketAddress) context.getListenAddress()).getPort();

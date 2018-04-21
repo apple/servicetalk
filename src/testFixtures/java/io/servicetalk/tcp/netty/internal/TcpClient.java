@@ -16,6 +16,7 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.Buffer;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.FileDescriptorSocketAddress;
 import io.servicetalk.transport.netty.internal.BufferHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
@@ -41,6 +42,7 @@ import java.net.StandardSocketOptions;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -53,24 +55,36 @@ import static org.junit.Assume.assumeTrue;
 public final class TcpClient {
 
     private final TcpConnector<Buffer, Buffer> connector;
+    private final Executor executor;
     private final ReadOnlyTcpClientConfig roConfig;
-    private final NettyIoExecutor executor;
+    private final NettyIoExecutor nettyIoExecutor;
 
     /**
      * New instance.
-     * @param executor {@link NettyIoExecutor} for this client.
+     * @param nettyIoExecutor {@link NettyIoExecutor} for this client.
      */
-    public TcpClient(NettyIoExecutor executor) {
-        this(executor, defaultConfig());
+    public TcpClient(NettyIoExecutor nettyIoExecutor) {
+        this(nettyIoExecutor, defaultConfig());
     }
 
     /**
      * New instance.
-     * @param executor {@link NettyIoExecutor} for this client.
+     * @param nettyIoExecutor {@link NettyIoExecutor} for this client.
      * @param config for the client.
      */
-    public TcpClient(NettyIoExecutor executor, TcpClientConfig config) {
-        this.executor = requireNonNull(executor);
+    public TcpClient(NettyIoExecutor nettyIoExecutor, TcpClientConfig config) {
+        this(nettyIoExecutor, newCachedThreadExecutor(), config);
+    }
+
+    /**
+     * New instance.
+     * @param nettyIoExecutor {@link NettyIoExecutor} for this client.
+     * @param executor {@link Executor} for this client.
+     * @param config for the client.
+     */
+    public TcpClient(NettyIoExecutor nettyIoExecutor, Executor executor, TcpClientConfig config) {
+        this.nettyIoExecutor = requireNonNull(nettyIoExecutor);
+        this.executor = executor;
         roConfig = config.asReadOnly();
         ChannelInitializer initializer = new TcpClientChannelInitializer(roConfig);
         initializer = initializer.andThen((channel, context) -> {
@@ -99,9 +113,10 @@ public final class TcpClient {
      * @throws ExecutionException If connect failed.
      * @throws InterruptedException If interrupted while waiting for connect to complete.
      */
-    public Connection<Buffer, Buffer> connectBlocking(SocketAddress address) throws ExecutionException, InterruptedException {
+    public Connection<Buffer, Buffer> connectBlocking(SocketAddress address)
+            throws ExecutionException, InterruptedException {
         //noinspection ConstantConditions
-        return awaitIndefinitely(connector.connect(executor, address));
+        return awaitIndefinitely(connector.connect(nettyIoExecutor, executor, address));
     }
 
     /**
@@ -112,8 +127,9 @@ public final class TcpClient {
      * @throws ExecutionException If connect failed.
      * @throws InterruptedException If interrupted while waiting for connect to complete.
      */
-    public Connection<Buffer, Buffer> connectWithFdBlocking(SocketAddress address) throws ExecutionException, InterruptedException {
-        assumeTrue(executor.isFileDescriptorSocketAddressSupported());
+    public Connection<Buffer, Buffer> connectWithFdBlocking(SocketAddress address)
+            throws ExecutionException, InterruptedException {
+        assumeTrue(nettyIoExecutor.isFileDescriptorSocketAddressSupported());
         assumeTrue(Epoll.isAvailable() || KQueue.isAvailable());
 
         final Class<? extends Channel> channelClass;
@@ -143,7 +159,8 @@ public final class TcpClient {
         channel.deregister().syncUninterruptibly();
         FileDescriptorSocketAddress fd = new FileDescriptorSocketAddress(channel.fd().intValue());
         Connection<Buffer, Buffer> connection = connectBlocking(fd);
-        assertThat("Data read on the FileDescriptor from netty pipeline.", dataReadDirectlyFromNetty.get(), is(false));
+        assertThat("Data read on the FileDescriptor from netty pipeline.",
+                dataReadDirectlyFromNetty.get(), is(false));
         return connection;
     }
 

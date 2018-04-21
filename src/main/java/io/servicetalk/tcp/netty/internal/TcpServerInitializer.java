@@ -39,6 +39,7 @@ import java.net.SocketAddress;
 import java.util.Map;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.wrapEventLoop;
 import static io.servicetalk.transport.netty.internal.NettyConnectionContext.newContext;
@@ -107,7 +108,9 @@ public final class TcpServerInitializer {
             @Override
             protected void initChannel(Channel channel) {
                 try {
-                    ConnectionContext context = newContext(channel, wrapEventLoop(channel.eventLoop()), config.getAllocator(), channelInitializer);
+                    // TODO: Use proper executor
+                    ConnectionContext context = newContext(channel, wrapEventLoop(channel.eventLoop()), immediate(),
+                            config.getAllocator(), channelInitializer);
                     //TODO 3.x: Use filter result.
                     contextFilter.filter(context);
                 } catch (Exception cause) {
