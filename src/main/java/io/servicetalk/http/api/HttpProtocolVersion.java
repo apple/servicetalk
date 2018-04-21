@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.Buffer;
+
 /**
  * HTTP <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">protocol versioning</a>.
  */
@@ -35,5 +37,5 @@ public interface HttpProtocolVersion {
      * Get the <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP-version</a>.
      * @return the <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP-version</a>.
      */
-    String getHttpVersion();
+    Buffer getHttpVersion();
 }

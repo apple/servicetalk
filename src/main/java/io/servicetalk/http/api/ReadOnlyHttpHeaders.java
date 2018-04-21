@@ -23,7 +23,8 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.AsciiString.contentEquals;
+import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
+import static io.servicetalk.http.api.CharSequences.contentEquals;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.HeaderUtils.DEFAULT_HEADER_FILTER;
 import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
@@ -42,7 +43,7 @@ final class ReadOnlyHttpHeaders implements HttpHeaders {
     }
 
     private static int hashCode(final CharSequence name) {
-        return AsciiString.hashCode(name);
+        return caseInsensitiveHashCode(name);
     }
 
     private static boolean equals(final CharSequence name1, final CharSequence name2) {

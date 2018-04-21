@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import java.util.Objects;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
 
 final class DefaultHttpCookie implements HttpCookie {
@@ -116,9 +117,9 @@ final class DefaultHttpCookie implements HttpCookie {
 
     @Override
     public int hashCode() {
-        int hash = 31 + AsciiString.hashCode(name);
+        int hash = 31 + caseInsensitiveHashCode(name);
         if (domain != null) {
-            hash = 31 * hash + AsciiString.hashCode(domain);
+            hash = 31 * hash + caseInsensitiveHashCode(domain);
         }
         if (path != null) {
             hash = 31 * hash + path.hashCode();

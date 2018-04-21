@@ -15,11 +15,10 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.Buffer;
 import io.servicetalk.http.api.DefaultHttpRequestMethod.DefaultHttpRequestMethodProperties;
-import io.servicetalk.http.api.HttpRequestMethod.Properties;
 
-import javax.annotation.Nullable;
-
+import static io.servicetalk.buffer.ReadOnlyBufferAllocators.PREFER_DIRECT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpRequestMethods.HttpRequestMethodProperties.CACHEABLE;
 import static io.servicetalk.http.api.HttpRequestMethods.HttpRequestMethodProperties.IDEMPOTENT;
 import static io.servicetalk.http.api.HttpRequestMethods.HttpRequestMethodProperties.NONE;
@@ -32,86 +31,37 @@ import static io.servicetalk.http.api.HttpRequestMethods.HttpRequestMethodProper
  */
 public enum HttpRequestMethods implements HttpRequestMethod {
 
-    GET("GET", SAFE_IDEMPOTENT_CACHEABLE),
-    HEAD("HEAD", SAFE_IDEMPOTENT_CACHEABLE),
-    OPTIONS("OPTIONS", SAFE_IDEMPOTENT),
-    TRACE("TRACE", SAFE_IDEMPOTENT),
-    PUT("PUT", IDEMPOTENT),
-    DELETE("DELETE", IDEMPOTENT),
-    POST("POST", CACHEABLE),
-    PATCH("PATCH", NONE),
-    CONNECT("CONNECT", NONE);
+    GET(PREFER_DIRECT_ALLOCATOR.fromAscii("GET"), SAFE_IDEMPOTENT_CACHEABLE),
+    HEAD(PREFER_DIRECT_ALLOCATOR.fromAscii("HEAD"), SAFE_IDEMPOTENT_CACHEABLE),
+    OPTIONS(PREFER_DIRECT_ALLOCATOR.fromAscii("OPTIONS"), SAFE_IDEMPOTENT),
+    TRACE(PREFER_DIRECT_ALLOCATOR.fromAscii("TRACE"), SAFE_IDEMPOTENT),
+    PUT(PREFER_DIRECT_ALLOCATOR.fromAscii("PUT"), IDEMPOTENT),
+    DELETE(PREFER_DIRECT_ALLOCATOR.fromAscii("DELETE"), IDEMPOTENT),
+    POST(PREFER_DIRECT_ALLOCATOR.fromAscii("POST"), CACHEABLE),
+    PATCH(PREFER_DIRECT_ALLOCATOR.fromAscii("PATCH"), NONE),
+    CONNECT(PREFER_DIRECT_ALLOCATOR.fromAscii("CONNECT"), NONE);
 
-    private final String methodName;
+    private final Buffer methodName;
     private final Properties properties;
 
-    HttpRequestMethods(String methodName, Properties properties) {
+    HttpRequestMethods(Buffer methodName, Properties properties) {
         this.methodName = methodName;
         this.properties = properties;
     }
 
     /**
-     * Get a {@link HttpRequestMethod} for the specified {@code methodName}, with
-     * {@link HttpRequestMethodProperties#NONE} for properties. If the {@code methodName} matches those of this
-     * {@code enum}, that {@code enum} value will be returned, otherwise a new instance will be returned.
-     *
-     * @param methodName the <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>
-     * @return a {@link HttpRequestMethod}.
+     * Create a new {@link HttpRequestMethod} from a
+     * <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>.
+     * @param methodName a <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>.
+     * @return a new {@link HttpRequestMethod}.
      */
-    public static HttpRequestMethod getRequestMethod(final String methodName) {
-        final HttpRequestMethod requestMethod = findRequestMethod(methodName);
-        if (requestMethod != null) {
-            return requestMethod;
-        }
+    public static HttpRequestMethod newRequestMethod(final Buffer methodName) {
         return new DefaultHttpRequestMethod(methodName);
     }
 
-    /**
-     * Get a {@link HttpRequestMethod} for the specified {@code methodName} and {@code properties}. If the
-     * {@code methodName} {@link String#equals} and {@code properties} '{@code ==}' those of of this {@code enum}, that
-     * {@code enum} value will be returned, otherwise a new instance will be returned.
-     *
-     * @param methodName the <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>
-     * @param properties the {@link Properties} associated with this request method.
-     * @return a {@link HttpRequestMethod}.
-     */
-    public static HttpRequestMethod getRequestMethod(final String methodName, final Properties properties) {
-        final HttpRequestMethod requestMethod = findRequestMethod(methodName);
-        if (requestMethod != null && requestMethod.getMethodProperties() == properties) {
-            return requestMethod;
-        }
-        return new DefaultHttpRequestMethod(methodName, properties);
-    }
-
-    @Nullable
-    private static HttpRequestMethod findRequestMethod(final String methodName) {
-        switch (methodName) {
-            case "GET":
-                return GET;
-            case "HEAD":
-                return HEAD;
-            case "OPTIONS":
-                return OPTIONS;
-            case "TRACE":
-                return TRACE;
-            case "PUT":
-                return PUT;
-            case "DELETE":
-                return DELETE;
-            case "POST":
-                return POST;
-            case "PATCH":
-                return PATCH;
-            case "CONNECT":
-                return CONNECT;
-            default:
-                return null;
-        }
-    }
-
     @Override
-    public String getName() {
-        return methodName;
+    public Buffer getName() {
+        return methodName.duplicate();
     }
 
     @Override

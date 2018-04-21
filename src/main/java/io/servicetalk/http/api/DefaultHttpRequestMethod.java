@@ -15,25 +15,28 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.Buffer;
+
 import static io.servicetalk.http.api.HttpRequestMethods.HttpRequestMethodProperties.NONE;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 
 final class DefaultHttpRequestMethod implements HttpRequestMethod {
 
-    private final String name;
+    private final Buffer name;
     private final Properties properties;
 
-    DefaultHttpRequestMethod(final String name) {
+    DefaultHttpRequestMethod(final Buffer name) {
         this(name, NONE);
     }
 
-    DefaultHttpRequestMethod(final String name, final Properties properties) {
+    DefaultHttpRequestMethod(final Buffer name, final Properties properties) {
         this.name = name;
         this.properties = properties;
     }
 
     @Override
-    public String getName() {
-        return name;
+    public Buffer getName() {
+        return name.duplicate();
     }
 
     @Override
@@ -62,7 +65,7 @@ final class DefaultHttpRequestMethod implements HttpRequestMethod {
 
     @Override
     public String toString() {
-        return name;
+        return name.toString(US_ASCII);
     }
 
     static final class DefaultHttpRequestMethodProperties implements Properties {

@@ -21,10 +21,10 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.AsciiString.contentEquals;
+import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
+import static io.servicetalk.http.api.CharSequences.contentEquals;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.HeaderUtils.DEFAULT_HEADER_FILTER;
-import static io.servicetalk.http.api.HeaderUtils.HEADER_NAME_VALIDATOR;
 import static io.servicetalk.http.api.HeaderUtils.validateCookieTokenAndHeaderName;
 import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
 import static io.servicetalk.http.api.HttpHeaderNames.SET_COOKIE;
@@ -93,11 +93,7 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
      * @param name The filed-name to validate.
      */
     private static void validateHeaderName(final CharSequence name) {
-        if (name instanceof AsciiString) {
-            ((AsciiString) name).forEachByte(HEADER_NAME_VALIDATOR);
-        } else {
-            validateCookieTokenAndHeaderName(name);
-        }
+        validateCookieTokenAndHeaderName(name);
     }
 
     @Nullable
@@ -207,10 +203,7 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
 
     @Override
     protected int hashCode(final CharSequence name) {
-        if (name.getClass() == AsciiString.class) {
-            return name.hashCode();
-        }
-        return AsciiString.hashCode(name);
+        return caseInsensitiveHashCode(name);
     }
 
     @Override

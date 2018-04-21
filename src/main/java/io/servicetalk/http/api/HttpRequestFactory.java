@@ -15,10 +15,8 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Publisher;
-
 /**
- * Factory method for creating {@link HttpRequest}s, for use by protocol decoders.
+ * Factory method for creating {@link HttpRequestMetaData}s, for use by protocol decoders.
  */
 public interface HttpRequestFactory extends HttpTrailersFactory {
     /**
@@ -26,10 +24,9 @@ public interface HttpRequestFactory extends HttpTrailersFactory {
      *
      * @param version the {@link HttpProtocolVersion} of the request.
      * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the request.
-     * @param messageBody a {@link Publisher} of the message body of the request.
-     * @param <I> Type of the content of the request.
+     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
+     * request.
      * @return a new {@link HttpRequest}.
      */
-    <I> HttpRequest<I> newRequest(HttpProtocolVersion version, HttpRequestMethod method, String requestTarget, Publisher<I> messageBody);
+    HttpRequestMetaData newRequestMetaData(HttpProtocolVersion version, HttpRequestMethod method, String requestTarget);
 }

@@ -15,14 +15,20 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.Buffer;
+
+import static io.servicetalk.buffer.ReadOnlyBufferAllocators.PREFER_DIRECT_ALLOCATOR;
+
 final class DefaultHttpProtocolVersion implements HttpProtocolVersion {
 
     private final int major;
     private final int minor;
+    private final Buffer httpVersion;
 
     DefaultHttpProtocolVersion(final int major, final int minor) {
         this.major = major;
         this.minor = minor;
+        this.httpVersion = httpVersionToBuffer(major, minor);
     }
 
     @Override
@@ -36,8 +42,8 @@ final class DefaultHttpProtocolVersion implements HttpProtocolVersion {
     }
 
     @Override
-    public String getHttpVersion() {
-        return major + "." + minor;
+    public Buffer getHttpVersion() {
+        return httpVersion.duplicate();
     }
 
     @Override
@@ -57,5 +63,9 @@ final class DefaultHttpProtocolVersion implements HttpProtocolVersion {
     @Override
     public int hashCode() {
         return major * 31 + minor;
+    }
+
+    static Buffer httpVersionToBuffer(int major, int minor) {
+        return PREFER_DIRECT_ALLOCATOR.fromAscii("HTTP/" + major + "." + minor);
     }
 }

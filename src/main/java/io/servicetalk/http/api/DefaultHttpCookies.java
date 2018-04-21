@@ -18,9 +18,10 @@ package io.servicetalk.http.api;
 import java.util.Iterator;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.AsciiString.regionMatches;
+import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
+import static io.servicetalk.http.api.CharSequences.regionMatches;
 import static io.servicetalk.http.api.HeaderUtils.validateCookieTokenAndHeaderName;
 import static io.servicetalk.http.api.NetUtil.isValidIpV4Address;
 import static io.servicetalk.http.api.NetUtil.isValidIpV6Address;
@@ -32,10 +33,10 @@ import static java.util.Objects.requireNonNull;
 /**
  * Default implementation of {@link HttpCookies}.
  */
-public final class DefaultHttpCookies extends MultiMap<CharSequence, HttpCookie> implements HttpCookies {
+final class DefaultHttpCookies extends MultiMap<CharSequence, HttpCookie> implements HttpCookies {
     /**
-     * An underlying size of 8 has been shown with the current AsciiString hash algorithm to have no collisions with
-     * the current set of supported cookie names. If more cookie names are supported, or the hash algorithm changes
+     * An underlying size of 8 has been shown with the current {@link AsciiBuffer} hash algorithm to have no collisions
+     * with the current set of supported cookie names. If more cookie names are supported, or the hash algorithm changes
      * this initial value should be re-evaluated.
      */
     private static final HttpHeaders COOKIE_NAMES = new DefaultHttpHeaders(8, false);
@@ -57,7 +58,7 @@ public final class DefaultHttpCookies extends MultiMap<CharSequence, HttpCookie>
      * @param cookieHeaderName the header name to parse cookies from
      * @param validateContent if true, validate the contents of the cookie headers
      */
-    public DefaultHttpCookies(final HttpHeaders httpHeaders, final CharSequence cookieHeaderName, final boolean validateContent) {
+    DefaultHttpCookies(final HttpHeaders httpHeaders, final CharSequence cookieHeaderName, final boolean validateContent) {
         this(httpHeaders, cookieHeaderName, validateContent, 16);
     }
 
@@ -199,7 +200,7 @@ public final class DefaultHttpCookies extends MultiMap<CharSequence, HttpCookie>
 
     @Override
     protected int hashCode(final CharSequence key) {
-        return AsciiString.hashCode(key);
+        return caseInsensitiveHashCode(key);
     }
 
     @Override
@@ -467,8 +468,7 @@ public final class DefaultHttpCookies extends MultiMap<CharSequence, HttpCookie>
                 regionMatches(cookieDomain, true, startIndex + 1, requestDomain, 0, requestDomain.length() - 1)) ||
                 (!queryEndsInDot && startIndex > 0 &&
                         regionMatches(cookieDomain, true, startIndex, requestDomain, 0, requestDomain.length()))) &&
-                !isValidIpV4Address(cookieDomain.toString()) && !isValidIpV6Address(cookieDomain.toString());
-        // TODO(scott): Netty will support IP validators which don't require the toString()
+                !isValidIpV4Address(cookieDomain) && !isValidIpV6Address(cookieDomain);
     }
 
     /**

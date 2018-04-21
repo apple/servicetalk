@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.Buffer;
+
 /**
  * <a href="https://tools.ietf.org/html/rfc7231#section-6">Response Status Code</a>.
  */
@@ -24,6 +26,12 @@ public interface HttpResponseStatus {
      * @return the three digit <a href="https://tools.ietf.org/html/rfc7231#section-6">status-code</a> indicating status of the response.
      */
     int getCode();
+
+    /**
+     * Get a {@link Buffer} version of {@link #getCode()} that can be used for encoding.
+     * @return a {@link Buffer} version of {@link #getCode()} that can be used for encoding.
+     */
+    Buffer getCodeBuffer();
 
     /**
      * Get the <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1.2">reason-phrase</a> portion of the response.
@@ -36,7 +44,7 @@ public interface HttpResponseStatus {
      * </pre>
      * @return the <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1.2">reason-phrase</a> portion of the response.
      */
-    String getReasonPhrase();
+    Buffer getReasonPhrase();
 
     /**
      * Get the {@link StatusClass} for this {@link HttpResponseStatus}.

@@ -42,18 +42,31 @@ final class NetUtil {
      * @return true, if the string represents an IPV4 address in dotted
      * notation, false otherwise
      */
-    public static boolean isValidIpV4Address(final String ip) {
+    static boolean isValidIpV4Address(final CharSequence ip) {
         return isValidIpV4Address(ip, 0, ip.length());
     }
 
+    private static boolean isValidIpV4Address(final CharSequence ip, int from, int toExclusive) {
+        return ip instanceof String ? isValidIpV4Address((String) ip, from, toExclusive, String::indexOf) :
+               ip instanceof AsciiBuffer ?
+                        isValidIpV4Address((AsciiBuffer) ip, from, toExclusive, AsciiBuffer::indexOf) :
+                        isValidIpV4Address(ip, from, toExclusive, NetUtil::indexOf0);
+    }
+
+    @FunctionalInterface
+    private interface IndexOfExtractor<T extends CharSequence> {
+        int indexOf(T src, char toSearch, int fromIndex);
+    }
+
     @SuppressWarnings("DuplicateBooleanBranch")
-    private static boolean isValidIpV4Address(final String ip, int from, final int toExcluded) {
-        final int len = toExcluded - from;
+    private static <T extends CharSequence> boolean isValidIpV4Address(T ip, int from, int toExcluded,
+                                                                       IndexOfExtractor<T> extractor) {
+        int len = toExcluded - from;
         int i;
         return len <= 15 && len >= 7 &&
-                (i = ip.indexOf('.', from + 1)) > 0 && isValidIpV4Word(ip, from, i) &&
-                (i = ip.indexOf('.', from = i + 2)) > 0 && isValidIpV4Word(ip, from - 1, i) &&
-                (i = ip.indexOf('.', from = i + 2)) > 0 && isValidIpV4Word(ip, from - 1, i) &&
+                (i = extractor.indexOf(ip, '.', from + 1)) > 0 && isValidIpV4Word(ip, from, i) &&
+                (i = extractor.indexOf(ip, '.', from = i + 2)) > 0 && isValidIpV4Word(ip, from - 1, i) &&
+                (i = extractor.indexOf(ip, '.', from = i + 2)) > 0 && isValidIpV4Word(ip, from - 1, i) &&
                 isValidIpV4Word(ip, i + 1, toExcluded);
     }
 
@@ -62,7 +75,7 @@ final class NetUtil {
      *
      * @return true, if the string represents an IPV6 address
      */
-    public static boolean isValidIpV6Address(final String ip) {
+    static boolean isValidIpV6Address(final CharSequence ip) {
         int end = ip.length();
         if (end < 2) {
             return false;
@@ -158,7 +171,7 @@ final class NetUtil {
                     }
 
                     // 7 - is minimum IPv4 address length
-                    int ipv4End = ip.indexOf('%', ipv4Start + 7);
+                    int ipv4End = indexOf(ip, '%', ipv4Start + 7);
                     if (ipv4End < 0) {
                         ipv4End = end;
                     }
@@ -209,5 +222,27 @@ final class NetUtil {
 
     private static boolean isValidIPv4MappedChar(final char c) {
         return c == 'f' || c == 'F';
+    }
+
+    private static int indexOf(final CharSequence cs, final char searchChar, int start) {
+        if (cs instanceof String) {
+            return ((String) cs).indexOf(searchChar, start);
+        } else if (cs instanceof AsciiBuffer) {
+            return ((AsciiBuffer) cs).indexOf(searchChar, start);
+        }
+        return indexOf0(cs, searchChar, start);
+    }
+
+    private static int indexOf0(final CharSequence cs, final char searchChar, int start) {
+        if (cs == null) {
+            return -1;
+        }
+        final int sz = cs.length();
+        for (int i = start < 0 ? 0 : start; i < sz; i++) {
+            if (cs.charAt(i) == searchChar) {
+                return i;
+            }
+        }
+        return -1;
     }
 }

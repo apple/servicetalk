@@ -15,8 +15,12 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.Buffer;
+
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.ReadOnlyBufferAllocators.PREFER_DIRECT_ALLOCATOR;
+import static io.servicetalk.http.api.DefaultHttpResponseStatus.statusCodeToBuffer;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.toStatusClass;
 
 /**
@@ -28,295 +32,297 @@ public enum HttpResponseStatuses implements HttpResponseStatus {
     /**
      * 100 Continue
      */
-    CONTINUE(100, "Continue"),
+    CONTINUE(100, PREFER_DIRECT_ALLOCATOR.fromAscii("Continue")),
 
     /**
      * 101 Switching Protocols
      */
-    SWITCHING_PROTOCOLS(101, "Switching Protocols"),
+    SWITCHING_PROTOCOLS(101, PREFER_DIRECT_ALLOCATOR.fromAscii("Switching Protocols")),
 
     /**
      * 102 Processing (WebDAV, RFC2518)
      */
-    PROCESSING(102, "Processing"),
+    PROCESSING(102, PREFER_DIRECT_ALLOCATOR.fromAscii("Processing")),
 
     /**
      * 200 OK
      */
-    OK(200, "OK"),
+    OK(200, PREFER_DIRECT_ALLOCATOR.fromAscii("OK")),
 
     /**
      * 201 Created
      */
-    CREATED(201, "Created"),
+    CREATED(201, PREFER_DIRECT_ALLOCATOR.fromAscii("Created")),
 
     /**
      * 202 Accepted
      */
-    ACCEPTED(202, "Accepted"),
+    ACCEPTED(202, PREFER_DIRECT_ALLOCATOR.fromAscii("Accepted")),
 
     /**
      * 203 Non-Authoritative Information (since HTTP/1.1)
      */
-    NON_AUTHORITATIVE_INFORMATION(203, "Non-Authoritative Information"),
+    NON_AUTHORITATIVE_INFORMATION(203, PREFER_DIRECT_ALLOCATOR.fromAscii("Non-Authoritative Information")),
 
     /**
      * 204 No Content
      */
-    NO_CONTENT(204, "No Content"),
+    NO_CONTENT(204, PREFER_DIRECT_ALLOCATOR.fromAscii("No Content")),
 
     /**
      * 205 Reset Content
      */
-    RESET_CONTENT(205, "Reset Content"),
+    RESET_CONTENT(205, PREFER_DIRECT_ALLOCATOR.fromAscii("Reset Content")),
 
     /**
      * 206 Partial Content
      */
-    PARTIAL_CONTENT(206, "Partial Content"),
+    PARTIAL_CONTENT(206, PREFER_DIRECT_ALLOCATOR.fromAscii("Partial Content")),
 
     /**
      * 207 Multi-Status (WebDAV, RFC2518)
      */
-    MULTI_STATUS(207, "Multi-Status"),
+    MULTI_STATUS(207, PREFER_DIRECT_ALLOCATOR.fromAscii("Multi-Status")),
 
     /**
      * 300 Multiple Choices
      */
-    MULTIPLE_CHOICES(300, "Multiple Choices"),
+    MULTIPLE_CHOICES(300, PREFER_DIRECT_ALLOCATOR.fromAscii("Multiple Choices")),
 
     /**
      * 301 Moved Permanently
      */
-    MOVED_PERMANENTLY(301, "Moved Permanently"),
+    MOVED_PERMANENTLY(301, PREFER_DIRECT_ALLOCATOR.fromAscii("Moved Permanently")),
 
     /**
      * 302 Found
      */
-    FOUND(302, "Found"),
+    FOUND(302, PREFER_DIRECT_ALLOCATOR.fromAscii("Found")),
 
     /**
      * 303 See Other (since HTTP/1.1)
      */
-    SEE_OTHER(303, "See Other"),
+    SEE_OTHER(303, PREFER_DIRECT_ALLOCATOR.fromAscii("See Other")),
 
     /**
      * 304 Not Modified
      */
-    NOT_MODIFIED(304, "Not Modified"),
+    NOT_MODIFIED(304, PREFER_DIRECT_ALLOCATOR.fromAscii("Not Modified")),
 
     /**
      * 305 Use Proxy (since HTTP/1.1)
      */
-    USE_PROXY(305, "Use Proxy"),
+    USE_PROXY(305, PREFER_DIRECT_ALLOCATOR.fromAscii("Use Proxy")),
 
     /**
      * 307 Temporary Redirect (since HTTP/1.1)
      */
-    TEMPORARY_REDIRECT(307, "Temporary Redirect"),
+    TEMPORARY_REDIRECT(307, PREFER_DIRECT_ALLOCATOR.fromAscii("Temporary Redirect")),
 
     /**
      * 308 Permanent Redirect (RFC7538)
      */
-    PERMANENT_REDIRECT(308, "Permanent Redirect"),
+    PERMANENT_REDIRECT(308, PREFER_DIRECT_ALLOCATOR.fromAscii("Permanent Redirect")),
 
     /**
      * 400 Bad Request
      */
-    BAD_REQUEST(400, "Bad Request"),
+    BAD_REQUEST(400, PREFER_DIRECT_ALLOCATOR.fromAscii("Bad Request")),
 
     /**
      * 401 Unauthorized
      */
-    UNAUTHORIZED(401, "Unauthorized"),
+    UNAUTHORIZED(401, PREFER_DIRECT_ALLOCATOR.fromAscii("Unauthorized")),
 
     /**
      * 402 Payment Required
      */
-    PAYMENT_REQUIRED(402, "Payment Required"),
+    PAYMENT_REQUIRED(402, PREFER_DIRECT_ALLOCATOR.fromAscii("Payment Required")),
 
     /**
      * 403 Forbidden
      */
-    FORBIDDEN(403, "Forbidden"),
+    FORBIDDEN(403, PREFER_DIRECT_ALLOCATOR.fromAscii("Forbidden")),
 
     /**
      * 404 Not Found
      */
-    NOT_FOUND(404, "Not Found"),
+    NOT_FOUND(404, PREFER_DIRECT_ALLOCATOR.fromAscii("Not Found")),
 
     /**
      * 405 Method Not Allowed
      */
-    METHOD_NOT_ALLOWED(405, "Method Not Allowed"),
+    METHOD_NOT_ALLOWED(405, PREFER_DIRECT_ALLOCATOR.fromAscii("Method Not Allowed")),
 
     /**
      * 406 Not Acceptable
      */
-    NOT_ACCEPTABLE(406, "Not Acceptable"),
+    NOT_ACCEPTABLE(406, PREFER_DIRECT_ALLOCATOR.fromAscii("Not Acceptable")),
 
     /**
      * 407 Proxy Authentication Required
      */
-    PROXY_AUTHENTICATION_REQUIRED(407, "Proxy Authentication Required"),
+    PROXY_AUTHENTICATION_REQUIRED(407, PREFER_DIRECT_ALLOCATOR.fromAscii("Proxy Authentication Required")),
 
     /**
      * 408 Request Timeout
      */
-    REQUEST_TIMEOUT(408, "Request Timeout"),
+    REQUEST_TIMEOUT(408, PREFER_DIRECT_ALLOCATOR.fromAscii("Request Timeout")),
 
     /**
      * 409 Conflict
      */
-    CONFLICT(409, "Conflict"),
+    CONFLICT(409, PREFER_DIRECT_ALLOCATOR.fromAscii("Conflict")),
 
     /**
      * 410 Gone
      */
-    GONE(410, "Gone"),
+    GONE(410, PREFER_DIRECT_ALLOCATOR.fromAscii("Gone")),
 
     /**
      * 411 Length Required
      */
-    LENGTH_REQUIRED(411, "Length Required"),
+    LENGTH_REQUIRED(411, PREFER_DIRECT_ALLOCATOR.fromAscii("Length Required")),
 
     /**
      * 412 Precondition Failed
      */
-    PRECONDITION_FAILED(412, "Precondition Failed"),
+    PRECONDITION_FAILED(412, PREFER_DIRECT_ALLOCATOR.fromAscii("Precondition Failed")),
 
     /**
      * 413 Request Entity Too Large
      */
-    REQUEST_ENTITY_TOO_LARGE(413, "Request Entity Too Large"),
+    REQUEST_ENTITY_TOO_LARGE(413, PREFER_DIRECT_ALLOCATOR.fromAscii("Request Entity Too Large")),
 
     /**
      * 414 Request-URI Too Long
      */
-    REQUEST_URI_TOO_LONG(414, "Request-URI Too Long"),
+    REQUEST_URI_TOO_LONG(414, PREFER_DIRECT_ALLOCATOR.fromAscii("Request-URI Too Long")),
 
     /**
      * 415 Unsupported Media Type
      */
-    UNSUPPORTED_MEDIA_TYPE(415, "Unsupported Media Type"),
+    UNSUPPORTED_MEDIA_TYPE(415, PREFER_DIRECT_ALLOCATOR.fromAscii("Unsupported Media Type")),
 
     /**
      * 416 Requested Range Not Satisfiable
      */
-    REQUESTED_RANGE_NOT_SATISFIABLE(416, "Requested Range Not Satisfiable"),
+    REQUESTED_RANGE_NOT_SATISFIABLE(416, PREFER_DIRECT_ALLOCATOR.fromAscii("Requested Range Not Satisfiable")),
 
     /**
      * 417 Expectation Failed
      */
-    EXPECTATION_FAILED(417, "Expectation Failed"),
+    EXPECTATION_FAILED(417, PREFER_DIRECT_ALLOCATOR.fromAscii("Expectation Failed")),
 
     /**
      * 421 Misdirected Request
      * <p>
      * <a href="https://tools.ietf.org/html/draft-ietf-httpbis-http2-15#section-9.1.2">421 Status Code</a>
      */
-    MISDIRECTED_REQUEST(421, "Misdirected Request"),
+    MISDIRECTED_REQUEST(421, PREFER_DIRECT_ALLOCATOR.fromAscii("Misdirected Request")),
 
     /**
      * 422 Unprocessable Entity (WebDAV, RFC4918)
      */
-    UNPROCESSABLE_ENTITY(422, "Unprocessable Entity"),
+    UNPROCESSABLE_ENTITY(422, PREFER_DIRECT_ALLOCATOR.fromAscii("Unprocessable Entity")),
 
     /**
      * 423 Locked (WebDAV, RFC4918)
      */
-    LOCKED(423, "Locked"),
+    LOCKED(423, PREFER_DIRECT_ALLOCATOR.fromAscii("Locked")),
 
     /**
      * 424 Failed Dependency (WebDAV, RFC4918)
      */
-    FAILED_DEPENDENCY(424, "Failed Dependency"),
+    FAILED_DEPENDENCY(424, PREFER_DIRECT_ALLOCATOR.fromAscii("Failed Dependency")),
 
     /**
      * 425 Unordered Collection (WebDAV, RFC3648)
      */
-    UNORDERED_COLLECTION(425, "Unordered Collection"),
+    UNORDERED_COLLECTION(425, PREFER_DIRECT_ALLOCATOR.fromAscii("Unordered Collection")),
 
     /**
      * 426 Upgrade Required (RFC2817)
      */
-    UPGRADE_REQUIRED(426, "Upgrade Required"),
+    UPGRADE_REQUIRED(426, PREFER_DIRECT_ALLOCATOR.fromAscii("Upgrade Required")),
 
     /**
      * 428 Precondition Required (RFC6585)
      */
-    PRECONDITION_REQUIRED(428, "Precondition Required"),
+    PRECONDITION_REQUIRED(428, PREFER_DIRECT_ALLOCATOR.fromAscii("Precondition Required")),
 
     /**
      * 429 Too Many Requests (RFC6585)
      */
-    TOO_MANY_REQUESTS(429, "Too Many Requests"),
+    TOO_MANY_REQUESTS(429, PREFER_DIRECT_ALLOCATOR.fromAscii("Too Many Requests")),
 
     /**
      * 431 Request Header Fields Too Large (RFC6585)
      */
-    REQUEST_HEADER_FIELDS_TOO_LARGE(431, "Request Header Fields Too Large"),
+    REQUEST_HEADER_FIELDS_TOO_LARGE(431, PREFER_DIRECT_ALLOCATOR.fromAscii("Request Header Fields Too Large")),
 
     /**
      * 500 Internal Server Error
      */
-    INTERNAL_SERVER_ERROR(500, "Internal Server Error"),
+    INTERNAL_SERVER_ERROR(500, PREFER_DIRECT_ALLOCATOR.fromAscii("Internal Server Error")),
 
     /**
      * 501 Not Implemented
      */
-    NOT_IMPLEMENTED(501, "Not Implemented"),
+    NOT_IMPLEMENTED(501, PREFER_DIRECT_ALLOCATOR.fromAscii("Not Implemented")),
 
     /**
      * 502 Bad Gateway
      */
-    BAD_GATEWAY(502, "Bad Gateway"),
+    BAD_GATEWAY(502, PREFER_DIRECT_ALLOCATOR.fromAscii("Bad Gateway")),
 
     /**
      * 503 Service Unavailable
      */
-    SERVICE_UNAVAILABLE(503, "Service Unavailable"),
+    SERVICE_UNAVAILABLE(503, PREFER_DIRECT_ALLOCATOR.fromAscii("Service Unavailable")),
 
     /**
      * 504 Gateway Timeout
      */
-    GATEWAY_TIMEOUT(504, "Gateway Timeout"),
+    GATEWAY_TIMEOUT(504, PREFER_DIRECT_ALLOCATOR.fromAscii("Gateway Timeout")),
 
     /**
      * 505 HTTP Version Not Supported
      */
-    HTTP_VERSION_NOT_SUPPORTED(505, "HTTP Version Not Supported"),
+    HTTP_VERSION_NOT_SUPPORTED(505, PREFER_DIRECT_ALLOCATOR.fromAscii("HTTP Version Not Supported")),
 
     /**
      * 506 Variant Also Negotiates (RFC2295)
      */
-    VARIANT_ALSO_NEGOTIATES(506, "Variant Also Negotiates"),
+    VARIANT_ALSO_NEGOTIATES(506, PREFER_DIRECT_ALLOCATOR.fromAscii("Variant Also Negotiates")),
 
     /**
      * 507 Insufficient Storage (WebDAV, RFC4918)
      */
-    INSUFFICIENT_STORAGE(507, "Insufficient Storage"),
+    INSUFFICIENT_STORAGE(507, PREFER_DIRECT_ALLOCATOR.fromAscii("Insufficient Storage")),
 
 
     /**
      * 510 Not Extended (RFC2774)
      */
-    NOT_EXTENDED(510, "Not Extended"),
+    NOT_EXTENDED(510, PREFER_DIRECT_ALLOCATOR.fromAscii("Not Extended")),
 
     /**
      * 511 Network Authentication Required (RFC6585)
      */
-    NETWORK_AUTHENTICATION_REQUIRED(511, "Network Authentication Required");
+    NETWORK_AUTHENTICATION_REQUIRED(511, PREFER_DIRECT_ALLOCATOR.fromAscii("Network Authentication Required"));
 
     private final int code;
-    private final String reasonPhrase;
+    private final Buffer reasonPhrase;
+    private final Buffer statusCodeBuffer;
     private final StatusClass statusClass;
 
-    HttpResponseStatuses(int code, String reasonPhrase) {
+    HttpResponseStatuses(int code, Buffer reasonPhrase) {
         // No instances.
         this.code = code;
         this.reasonPhrase = reasonPhrase;
         this.statusClass = toStatusClass(code);
+        this.statusCodeBuffer = statusCodeToBuffer(code);
     }
 
     @Override
@@ -330,8 +336,17 @@ public enum HttpResponseStatuses implements HttpResponseStatus {
     }
 
     @Override
-    public String getReasonPhrase() {
-        return reasonPhrase;
+    public Buffer getCodeBuffer() {
+        // duplicate the buffer just to be safe, otherwise someone could modified the reader/writer indexes of the
+        // constants and prevent correct encoding/decoding.
+        return statusCodeBuffer.duplicate();
+    }
+
+    @Override
+    public Buffer getReasonPhrase() {
+        // duplicate the buffer just to be safe, otherwise someone could modified the reader/writer indexes of the
+        // constants and prevent correct encoding/decoding.
+        return reasonPhrase.duplicate();
     }
 
     /**
@@ -345,16 +360,16 @@ public enum HttpResponseStatuses implements HttpResponseStatus {
      *                     portion of the response.
      * @return a {@link HttpResponseStatus}.
      */
-    public static HttpResponseStatus getResponseStatus(final int statusCode, final String reasonPhrase) {
-        final HttpResponseStatus responseStatus = valueOf(statusCode);
-        if (responseStatus != null && responseStatus.getReasonPhrase().equals(reasonPhrase)) {
+    public static HttpResponseStatus getResponseStatus(final int statusCode, final Buffer reasonPhrase) {
+        final HttpResponseStatuses responseStatus = valueOf(statusCode);
+        if (responseStatus != null && responseStatus.reasonPhrase.equals(reasonPhrase)) {
             return responseStatus;
         }
         return new DefaultHttpResponseStatus(statusCode, reasonPhrase);
     }
 
     @Nullable
-    private static HttpResponseStatus valueOf(final int statusCode) {
+    private static HttpResponseStatuses valueOf(final int statusCode) {
         switch (statusCode) {
             case 100:
                 return CONTINUE;

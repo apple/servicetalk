@@ -21,7 +21,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-import static io.servicetalk.http.api.AsciiString.contentEquals;
+import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
+import static io.servicetalk.http.api.CharSequences.contentEquals;
 import static java.lang.System.lineSeparator;
 
 final class HeaderUtils {
@@ -30,7 +31,7 @@ final class HeaderUtils {
      */
     static final int HASH_CODE_SEED = 0xc2b2ae35;
     static final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> DEFAULT_HEADER_FILTER = (k, v) -> "<filtered>";
-    static final ByteProcessor HEADER_NAME_VALIDATOR = value -> {
+    private static final ByteProcessor HEADER_NAME_VALIDATOR = value -> {
         validateHeaderNameToken(value);
         return true;
     };
@@ -98,10 +99,10 @@ final class HeaderUtils {
         }
         int result = HASH_CODE_SEED;
         for (final CharSequence key : headers.getNames()) {
-            result = 31 * result + AsciiString.hashCode(key);
+            result = 31 * result + caseInsensitiveHashCode(key);
             final Iterator<? extends CharSequence> valueItr = headers.getAll(key);
             while (valueItr.hasNext()) {
-                result = 31 * result + AsciiString.hashCode(valueItr.next());
+                result = 31 * result + caseInsensitiveHashCode(valueItr.next());
             }
         }
         return result;
@@ -117,6 +118,14 @@ final class HeaderUtils {
      * @param key the cookie name or header name to validate.
      */
     static void validateCookieTokenAndHeaderName(final CharSequence key) {
+        if (key.getClass() == AsciiBuffer.class) {
+            ((AsciiBuffer) key).forEachByte(HEADER_NAME_VALIDATOR);
+        } else {
+            validateCookieTokenAndHeaderName0(key);
+        }
+    }
+
+    private static void validateCookieTokenAndHeaderName0(final CharSequence key) {
         // HEADER
         // header-field   = field-name ":" OWS field-value OWS
         //

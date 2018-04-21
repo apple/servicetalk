@@ -15,10 +15,8 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Publisher;
-
 /**
- * Factory method for creating {@link HttpResponse}s, for use by protocol decoders.
+ * Factory method for creating {@link HttpResponseMetaData}s, for use by protocol decoders.
  */
 public interface HttpResponseFactory extends HttpTrailersFactory {
     /**
@@ -26,9 +24,7 @@ public interface HttpResponseFactory extends HttpTrailersFactory {
      *
      * @param status the {@link HttpResponseStatus} of the response.
      * @param version the {@link HttpProtocolVersion} of the response.
-     * @param messageBody a {@link Publisher} of the message body of the response.
-     * @param <O> Type of the content of the response.
      * @return a new {@link HttpResponse}.
      */
-    <O> HttpResponse<O> newResponse(HttpProtocolVersion version, HttpResponseStatus status, Publisher<O> messageBody);
+    HttpResponseMetaData newResponseMetaData(HttpProtocolVersion version, HttpResponseStatus status);
 }

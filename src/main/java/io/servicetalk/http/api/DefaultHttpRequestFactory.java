@@ -15,8 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Publisher;
-
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -24,13 +22,14 @@ import static java.util.Objects.requireNonNull;
  */
 public final class DefaultHttpRequestFactory implements HttpRequestFactory {
 
+    public static final HttpRequestFactory INSTANCE = new DefaultHttpRequestFactory();
     private final HttpHeadersFactory httpHeadersFactory;
     private final HttpTrailersFactory httpTrailersFactory;
 
     /**
      * Create an instance of the factory with the default {@link DefaultHttpHeadersFactory}.
      */
-    public DefaultHttpRequestFactory() {
+    private DefaultHttpRequestFactory() {
         this(DefaultHttpHeadersFactory.INSTANCE);
     }
 
@@ -56,8 +55,8 @@ public final class DefaultHttpRequestFactory implements HttpRequestFactory {
     }
 
     @Override
-    public <I> HttpRequest<I> newRequest(final HttpProtocolVersion version, final HttpRequestMethod method, final String requestTarget, final Publisher<I> messageBody) {
-        return new DefaultHttpRequest<>(method, requestTarget, version, messageBody, httpHeadersFactory.newHeaders());
+    public HttpRequestMetaData newRequestMetaData(final HttpProtocolVersion version, final HttpRequestMethod method, final String requestTarget) {
+        return new DefaultHttpRequestMetaData(method, requestTarget, version, httpHeadersFactory.newHeaders());
     }
 
     @Override

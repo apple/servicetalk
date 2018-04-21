@@ -15,20 +15,27 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.Buffer;
+
+import static io.servicetalk.buffer.ReadOnlyBufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.toStatusClass;
+
 final class DefaultHttpResponseStatus implements HttpResponseStatus {
 
     private final int statusCode;
-    private final String reasonPhrase;
+    private final Buffer reasonPhrase;
+    private final Buffer statusCodeBuffer;
     private final StatusClass statusClass;
 
-    DefaultHttpResponseStatus(final int statusCode, final String reasonPhrase) {
-        this(statusCode, reasonPhrase, HttpResponseStatus.StatusClass.toStatusClass(statusCode));
+    DefaultHttpResponseStatus(final int statusCode, final Buffer reasonPhrase) {
+        this(statusCode, reasonPhrase, toStatusClass(statusCode));
     }
 
-    DefaultHttpResponseStatus(final int statusCode, final String reasonPhrase, final StatusClass statusClass) {
+    DefaultHttpResponseStatus(final int statusCode, final Buffer reasonPhrase, final StatusClass statusClass) {
         this.statusCode = statusCode;
         this.reasonPhrase = reasonPhrase;
         this.statusClass = statusClass;
+        this.statusCodeBuffer = statusCodeToBuffer(statusCode);
     }
 
     @Override
@@ -37,7 +44,12 @@ final class DefaultHttpResponseStatus implements HttpResponseStatus {
     }
 
     @Override
-    public String getReasonPhrase() {
+    public Buffer getCodeBuffer() {
+        return statusCodeBuffer.duplicate();
+    }
+
+    @Override
+    public Buffer getReasonPhrase() {
         return reasonPhrase;
     }
 
@@ -68,5 +80,9 @@ final class DefaultHttpResponseStatus implements HttpResponseStatus {
     @Override
     public int hashCode() {
         return 31 * statusCode + statusClass.hashCode();
+    }
+
+    static Buffer statusCodeToBuffer(int status) {
+        return DEFAULT_ALLOCATOR.fromAscii(String.valueOf(status));
     }
 }

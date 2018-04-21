@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.Buffer;
+
 /**
  * HTTP <a href="https://tools.ietf.org/html/rfc7231#section-4">Request Methods</a>.
  * <p>
@@ -26,7 +28,7 @@ public interface HttpRequestMethod {
      * Get the <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>.
      * @return the <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>.
      */
-    String getName();
+    Buffer getName();
 
     /**
      * Get the {@link Properties} associated with this object.
