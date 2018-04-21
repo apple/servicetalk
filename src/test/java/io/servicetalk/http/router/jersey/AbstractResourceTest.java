@@ -15,84 +15,96 @@
  */
 package io.servicetalk.http.router.jersey;
 
-import io.servicetalk.buffer.Buffer;
-import io.servicetalk.buffer.netty.BufferAllocators;
 import io.servicetalk.concurrent.api.DeliberateException;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequest;
-import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.HttpResponseStatus;
-import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.http.router.jersey.resources.AsynchronousResources;
+import io.servicetalk.http.router.jersey.resources.SynchronousResources;
 
-import org.glassfish.jersey.server.ApplicationHandler;
-import org.hamcrest.Matcher;
-import org.junit.Before;
-import org.junit.Rule;
+import org.glassfish.jersey.server.ResourceConfig;
 import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
 
-import java.util.function.Function;
-import javax.annotation.Nullable;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import javax.ws.rs.NameBinding;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.container.ContainerResponseContext;
+import javax.ws.rs.container.ContainerResponseFilter;
+import javax.ws.rs.core.Application;
+import javax.ws.rs.ext.Provider;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.http.api.HttpHeaderNames.ALLOW;
-import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
-import static io.servicetalk.http.api.HttpHeaderNames.HOST;
-import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
-import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
-import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_0;
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpRequestMethods.HEAD;
 import static io.servicetalk.http.api.HttpRequestMethods.OPTIONS;
 import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.http.api.HttpRequestMethods.PUT;
-import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.http.api.HttpResponseStatuses.ACCEPTED;
 import static io.servicetalk.http.api.HttpResponseStatuses.CONFLICT;
 import static io.servicetalk.http.api.HttpResponseStatuses.NOT_FOUND;
 import static io.servicetalk.http.api.HttpResponseStatuses.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.router.jersey.TestUtil.getContentAsString;
+import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
+import static io.servicetalk.http.router.jersey.TestUtil.assertResponse;
+import static io.servicetalk.http.router.jersey.TestUtil.newH11Request;
 import static io.servicetalk.http.router.jersey.resources.SynchronousResources.PATH;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
+import static javax.ws.rs.core.Response.status;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonStringEquals;
 import static org.glassfish.jersey.message.internal.CommittingOutputStream.DEFAULT_BUFFER_SIZE;
 import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
-import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.when;
 
-public abstract class AbstractResourceTest {
-    static final String TEST_HOST = "some.fakehost.tld";
+public abstract class AbstractResourceTest extends AbstractRequestHandlerTest {
+    @NameBinding
+    @Target({ElementType.TYPE, ElementType.METHOD})
+    @Retention(value = RetentionPolicy.RUNTIME)
+    public @interface TestFiltered {
+    }
 
-    @Rule
-    public final MockitoRule rule = MockitoJUnit.rule();
+    @TestFiltered
+    @Provider
+    public static class TestFilter implements ContainerRequestFilter, ContainerResponseFilter {
+        private static final String TEST_PROPERTY_NAME = "fooProp";
 
-    @Rule
-    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
+        @Override
+        public void filter(final ContainerRequestContext requestContext) {
+            final String abortStatus = requestContext.getHeaderString("X-Abort-With-Status");
+            if (abortStatus != null) {
+                requestContext.abortWith(status(Integer.valueOf(abortStatus)).build());
+            }
+            requestContext.setProperty("fooProp", "barProp");
+        }
 
-    @Mock
-    protected ConnectionContext ctx;
+        @Override
+        public void filter(final ContainerRequestContext requestContext,
+                           final ContainerResponseContext responseContext) {
+            responseContext.getHeaders().add("X-Foo-Prop", requestContext.getProperty(TEST_PROPERTY_NAME));
+        }
+    }
 
-    protected DefaultRequestHandler handler;
+    public static class TestApplication extends ResourceConfig {
+        TestApplication() {
+            super(
+                    TestFilter.class,
+                    SynchronousResources.class,
+                    AsynchronousResources.class
+            );
+        }
+    }
 
-    @Before
-    public void init() {
-        when(ctx.getAllocator()).thenReturn(BufferAllocators.DEFAULT.getAllocator());
-        handler = new DefaultRequestHandler(new ApplicationHandler(new TestApplication()));
+    @Override
+    protected Application getApplication() {
+        return new TestApplication();
     }
 
     abstract String getResourcePath();
@@ -194,6 +206,31 @@ public abstract class AbstractResourceTest {
     }
 
     @Test
+    public void postTextResponse() {
+        final HttpRequest<HttpPayloadChunk> req =
+                newH11Request(POST, getResourcePath() + "/text-response", ctx.getAllocator().fromUtf8("foo"));
+        req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
+
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        assertResponse(res, ACCEPTED, TEXT_PLAIN, "GOT: foo");
+    }
+
+    @Test
+    public void filtered() {
+        HttpRequest<HttpPayloadChunk> req =
+                newH11Request(POST, getResourcePath() + "/filtered", ctx.getAllocator().fromUtf8("foo1"));
+        req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
+        HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        assertResponse(res, OK, TEXT_PLAIN, "GOT: foo1");
+        assertThat(res.getHeaders().get("X-Foo-Prop"), is("barProp"));
+
+        req = newH11Request(POST, getResourcePath() + "/filtered", ctx.getAllocator().fromUtf8("foo2"));
+        req.getHeaders().set("X-Abort-With-Status", "451");
+        res = handler.apply(ctx, req);
+        assertResponse(res, getResponseStatus(451, ""), null, "");
+    }
+
+    @Test
     public void getJson() {
         final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, getResourcePath() + "/json");
 
@@ -211,85 +248,5 @@ public abstract class AbstractResourceTest {
         assertResponse(res, ACCEPTED, APPLICATION_JSON, jsonStringEquals("{\"key\":\"val1\",\"foo\":\"bar2\"}"),
                 String::length);
         assertThat(res.getHeaders().get("X-Test"), is("test-header"));
-    }
-
-    static HttpRequest<HttpPayloadChunk> newH10Request(final HttpRequestMethod method,
-                                                       final String requestTarget) {
-        return newRequest(HTTP_1_0, method, "http://" + TEST_HOST + requestTarget);
-    }
-
-    static HttpRequest<HttpPayloadChunk> newH11Request(final HttpRequestMethod method,
-                                                       final String requestTarget) {
-        final HttpRequest<HttpPayloadChunk> request = newRequest(HTTP_1_1, method, requestTarget);
-        request.getHeaders().add(HOST, TEST_HOST);
-        return request;
-    }
-
-    static HttpRequest<HttpPayloadChunk> newH11Request(final HttpRequestMethod method,
-                                                       final String requestTarget,
-                                                       final Buffer content) {
-        final HttpRequest<HttpPayloadChunk> request = newRequest(HTTP_1_1, method, requestTarget,
-                just(newPayloadChunk(content), immediate()));
-
-        request.getHeaders().add(HOST, TEST_HOST);
-        request.getHeaders().add(CONTENT_LENGTH, Integer.toString(content.getReadableBytes()));
-        return request;
-    }
-
-    static void assertResponse(final HttpResponse<HttpPayloadChunk> res,
-                               final HttpResponseStatus expectedStatusCode,
-                               @Nullable final CharSequence expectedContentType,
-                               final String expectedContent) {
-        assertResponse(res, expectedStatusCode, expectedContentType, is(expectedContent), $ -> expectedContent.length());
-    }
-
-    static void assertResponse(final HttpResponse<HttpPayloadChunk> res,
-                               final HttpResponseStatus expectedStatusCode,
-                               @Nullable final CharSequence expectedContentType,
-                               final Matcher<String> contentMatcher,
-                               final int expectedContentLength) {
-        assertResponse(res, expectedStatusCode, expectedContentType, contentMatcher, $ -> expectedContentLength);
-    }
-
-    static void assertResponse(final HttpResponse<HttpPayloadChunk> res,
-                               final HttpResponseStatus expectedStatusCode,
-                               @Nullable final CharSequence expectedContentType,
-                               final Matcher<String> contentMatcher,
-                               final Function<String, Integer> expectedContentLengthExtractor) {
-        assertResponse(res, HTTP_1_1, expectedStatusCode, expectedContentType, contentMatcher,
-                expectedContentLengthExtractor);
-    }
-
-    static void assertResponse(final HttpResponse<HttpPayloadChunk> res,
-                               final HttpProtocolVersion expectedHttpVersion,
-                               final HttpResponseStatus expectedStatusCode,
-                               @Nullable final CharSequence expectedContentType,
-                               final Matcher<String> contentMatcher,
-                               final Function<String, Integer> expectedContentLengthExtractor) {
-
-        assertThat(res.getVersion(), is(expectedHttpVersion));
-        assertThat(res.getStatus().getCode(), is(expectedStatusCode.getCode()));
-        assertThat(res.getStatus().getReasonPhrase(), is(expectedStatusCode.getReasonPhrase()));
-
-        if (expectedContentType != null) {
-            assertThat(res.getHeaders().get(CONTENT_TYPE), is(expectedContentType));
-        } else {
-            assertThat(res.getHeaders().contains(CONTENT_TYPE), is(false));
-        }
-
-        final String contentAsString = getContentAsString(res);
-
-        @Nullable
-        final Integer expectedContentLength = expectedContentLengthExtractor.apply(contentAsString);
-        if (expectedContentLength != null) {
-            assertThat(res.getHeaders().get(CONTENT_LENGTH), is(Integer.toString(expectedContentLength)));
-            res.getHeaders().getAll(TRANSFER_ENCODING)
-                    .forEachRemaining(h -> assertThat(h.toString(), equalToIgnoringCase("chunked")));
-        } else {
-            assertThat(res.getHeaders().contains(CONTENT_LENGTH), is(false));
-            assertThat(res.getHeaders().get(TRANSFER_ENCODING), is(CHUNKED));
-        }
-
-        assertThat(contentAsString, contentMatcher);
     }
 }

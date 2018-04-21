@@ -17,6 +17,7 @@ package io.servicetalk.http.router.jersey.resources;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.router.jersey.AbstractResourceTest.TestFiltered;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.HashMap;
@@ -87,6 +88,13 @@ public class AsynchronousResources {
     }
 
     @Produces(TEXT_PLAIN)
+    @Path("/text-response")
+    @POST
+    public CompletionStage<Response> postTextResponse(final String requestContent) {
+        return completedFuture(accepted("GOT: " + requestContent).build());
+    }
+
+    @Produces(TEXT_PLAIN)
     @Path("/text-pub-response")
     @GET
     public CompletionStage<Response> getTextPubResponse(@QueryParam("i") final int i,
@@ -101,6 +109,14 @@ public class AsynchronousResources {
                 .header(CONTENT_LENGTH, contentString.length())
                 .entity(entity)
                 .build());
+    }
+
+    @TestFiltered
+    @Produces(TEXT_PLAIN)
+    @Path("/filtered")
+    @POST
+    public CompletionStage<String> postFiltered(final String requestContent) {
+        return completedFuture("GOT: " + requestContent);
     }
 
     @Produces(APPLICATION_JSON)

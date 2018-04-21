@@ -18,7 +18,6 @@ package io.servicetalk.http.router.jersey;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.HttpResponseStatuses;
 
 import org.junit.Test;
 
@@ -29,6 +28,11 @@ import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponseStatuses.PARTIAL_CONTENT;
+import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
+import static io.servicetalk.http.router.jersey.TestUtil.TEST_HOST;
+import static io.servicetalk.http.router.jersey.TestUtil.assertResponse;
+import static io.servicetalk.http.router.jersey.TestUtil.newH10Request;
+import static io.servicetalk.http.router.jersey.TestUtil.newH11Request;
 import static io.servicetalk.http.router.jersey.resources.SynchronousResources.PATH;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
@@ -58,7 +62,7 @@ public class SynchronousResourceTest extends AbstractResourceTest {
     public void customResponseStatus() {
         final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, PATH + "/statuses/444");
         final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
-        assertResponse(res, HttpResponseStatuses.getResponseStatus(444, "Three fours!"), null, "");
+        assertResponse(res, getResponseStatus(444, "Three fours!"), null, "");
         assertThat(res.getVersion(), is(HTTP_1_1));
     }
 
@@ -109,6 +113,16 @@ public class SynchronousResourceTest extends AbstractResourceTest {
 
         final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
         assertResponse(res, OK, TEXT_PLAIN, "GOT: bar3");
+    }
+
+    @Test
+    public void postTextPubInPubOut() {
+        final HttpRequest<HttpPayloadChunk> req = newH11Request(POST, PATH + "/text-pubin-pubout",
+                ctx.getAllocator().fromUtf8("bar23"));
+        req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
+
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        assertResponse(res, OK, TEXT_PLAIN, is("GOT: bar23"), $ -> null);
     }
 
     @Test

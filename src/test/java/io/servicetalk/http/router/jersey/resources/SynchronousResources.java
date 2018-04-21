@@ -18,6 +18,7 @@ package io.servicetalk.http.router.jersey.resources;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.router.jersey.AbstractResourceTest.TestFiltered;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -149,6 +150,13 @@ public class SynchronousResources {
         return noContent().header("X-Test", headers.getHeaderString("hdr")).build();
     }
 
+    @Produces(TEXT_PLAIN)
+    @Path("/text-response")
+    @POST
+    public Response postTextResponse(final String requestContent) {
+        return accepted("GOT: " + requestContent).build();
+    }
+
     @Consumes(TEXT_PLAIN)
     @Produces(TEXT_PLAIN)
     @Path("/text-strin-pubout")
@@ -163,6 +171,14 @@ public class SynchronousResources {
     @POST
     public String postTextPubInStrOut(final Publisher<HttpPayloadChunk> requestContent) {
         return "GOT: " + getContentAsString(requestContent);
+    }
+
+    @Consumes(TEXT_PLAIN)
+    @Produces(TEXT_PLAIN)
+    @Path("/text-pubin-pubout")
+    @POST
+    public Publisher<HttpPayloadChunk> postTextPubInPubOut(final Publisher<HttpPayloadChunk> requestContent) {
+        return asChunkPublisher("GOT: ", ctx.getAllocator()).concatWith(requestContent);
     }
 
     @Produces(TEXT_PLAIN)
@@ -194,6 +210,14 @@ public class SynchronousResources {
             }
             output.flush();
         };
+    }
+
+    @TestFiltered
+    @Produces(TEXT_PLAIN)
+    @Path("/filtered")
+    @POST
+    public String filtered(final String requestContent) {
+        return "GOT: " + requestContent;
     }
 
     @Produces(APPLICATION_JSON)

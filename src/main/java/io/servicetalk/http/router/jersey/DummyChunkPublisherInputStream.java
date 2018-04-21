@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.router.jersey;
 
+import io.servicetalk.buffer.Buffer;
+import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
 
@@ -24,19 +26,24 @@ import java.io.IOException;
 import java.io.InputStream;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Publisher.defer;
+import static io.servicetalk.concurrent.api.Publisher.error;
+import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static java.util.Objects.requireNonNull;
 
 /**
  * Dummy adapter between {@link Publisher} of {@link HttpPayloadChunk} and {@link InputStream}.
  */
-final class DummyBufferPublisherInputStream extends InputStream {
+final class DummyChunkPublisherInputStream extends InputStream {
     private final Publisher<HttpPayloadChunk> chunkPublisher;
 
     @Nullable
     private InputStream inputStream;
 
-    DummyBufferPublisherInputStream(final Publisher<HttpPayloadChunk> chunkPublisher) {
+    DummyChunkPublisherInputStream(final Publisher<HttpPayloadChunk> chunkPublisher) {
         this.chunkPublisher = requireNonNull(chunkPublisher);
     }
 
@@ -64,5 +71,19 @@ final class DummyBufferPublisherInputStream extends InputStream {
             }
         }
         return inputStream.read();
+    }
+
+    static Publisher<HttpPayloadChunk> asChunkPublisher(final InputStream is, final BufferAllocator allocator) {
+        requireNonNull(is);
+        requireNonNull(allocator);
+        return defer(() -> {
+            try {
+                final Buffer b = allocator.newBuffer(is.available() > 0 ? is.available() : 128);
+                b.writeBytesUntilEndStream(is, 4096);
+                return just(newPayloadChunk(b), immediate());
+            } catch (final Exception e) {
+                return error(e, immediate());
+            }
+        });
     }
 }

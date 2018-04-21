@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.router.jersey;
 
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
@@ -32,9 +33,11 @@ import javax.annotation.Nullable;
 import javax.ws.rs.core.SecurityContext;
 
 import static io.servicetalk.http.router.jersey.CharSequenceUtil.ensureNoLeadingSlash;
+import static io.servicetalk.http.router.jersey.Context.CHUNK_PUBLISHER_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.CONNECTION_CONTEXT_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.HTTP_REQUEST_REF_TYPE;
 import static io.servicetalk.http.router.jersey.DummyHttpUtil.getBaseUri;
+import static org.glassfish.jersey.internal.util.collection.Refs.emptyRef;
 import static org.glassfish.jersey.server.internal.ContainerUtils.encodeUnsafeCharacters;
 
 final class DefaultRequestHandler implements BiFunction<ConnectionContext, HttpRequest<HttpPayloadChunk>,
@@ -104,15 +107,18 @@ final class DefaultRequestHandler implements BiFunction<ConnectionContext, HttpR
         req.getHeaders().forEach(h ->
                 containerRequest.getHeaders().add(h.getKey().toString(), h.getValue().toString()));
 
-        final DummyBufferPublisherInputStream entityStream = new DummyBufferPublisherInputStream(req.getMessageBody());
+        final DummyChunkPublisherInputStream entityStream = new DummyChunkPublisherInputStream(req.getMessageBody());
         containerRequest.setEntityStream(entityStream);
+        final Ref<Publisher<HttpPayloadChunk>> chunkPublisherRef = emptyRef();
         final DefaultContainerResponseWriter responseWriter =
-                new DefaultContainerResponseWriter(req, ctx.getAllocator());
+                new DefaultContainerResponseWriter(req, ctx.getAllocator(), chunkPublisherRef);
         containerRequest.setWriter(responseWriter);
 
         containerRequest.setRequestScopedInitializer(injectionManager -> {
             injectionManager.<Ref<ConnectionContext>>getInstance(CONNECTION_CONTEXT_REF_TYPE).set(ctx);
             injectionManager.<Ref<HttpRequest<HttpPayloadChunk>>>getInstance(HTTP_REQUEST_REF_TYPE).set(req);
+            injectionManager.<Ref<Ref<Publisher<HttpPayloadChunk>>>>getInstance(CHUNK_PUBLISHER_REF_TYPE)
+                    .set(chunkPublisherRef);
         });
 
         // Handle the request synchronously because we do it on a dedicated request thread

@@ -15,18 +15,41 @@
  */
 package io.servicetalk.http.router.jersey;
 
+import io.servicetalk.buffer.Buffer;
 import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpProtocolVersion;
+import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.HttpResponseStatus;
+
+import org.hamcrest.Matcher;
+
+import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
+import static io.servicetalk.http.api.HttpHeaderNames.HOST;
+import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
+import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
+import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_0;
+import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
+import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.Matchers.equalToIgnoringCase;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public final class TestUtil {
+    static final String TEST_HOST = "some.fakehost.tld";
+
     private TestUtil() {
         // no instances
     }
@@ -52,5 +75,85 @@ public final class TestUtil {
 
     public static Publisher<HttpPayloadChunk> asChunkPublisher(final byte[] content, final BufferAllocator allocator) {
         return just(newPayloadChunk(allocator.wrap(content)), immediate());
+    }
+
+    static HttpRequest<HttpPayloadChunk> newH10Request(final HttpRequestMethod method,
+                                                       final String requestTarget) {
+        return newRequest(HTTP_1_0, method, "http://" + TEST_HOST + requestTarget);
+    }
+
+    static HttpRequest<HttpPayloadChunk> newH11Request(final HttpRequestMethod method,
+                                                       final String requestTarget) {
+        final HttpRequest<HttpPayloadChunk> request = newRequest(HTTP_1_1, method, requestTarget);
+        request.getHeaders().add(HOST, TEST_HOST);
+        return request;
+    }
+
+    static HttpRequest<HttpPayloadChunk> newH11Request(final HttpRequestMethod method,
+                                                       final String requestTarget,
+                                                       final Buffer content) {
+        final HttpRequest<HttpPayloadChunk> request = newRequest(HTTP_1_1, method, requestTarget,
+                just(newPayloadChunk(content), immediate()));
+
+        request.getHeaders().add(HOST, TEST_HOST);
+        request.getHeaders().add(CONTENT_LENGTH, Integer.toString(content.getReadableBytes()));
+        return request;
+    }
+
+    static void assertResponse(final HttpResponse<HttpPayloadChunk> res,
+                               final HttpResponseStatus expectedStatusCode,
+                               @Nullable final CharSequence expectedContentType,
+                               final String expectedContent) {
+        assertResponse(res, expectedStatusCode, expectedContentType, is(expectedContent), $ -> expectedContent.length());
+    }
+
+    static void assertResponse(final HttpResponse<HttpPayloadChunk> res,
+                               final HttpResponseStatus expectedStatusCode,
+                               @Nullable final CharSequence expectedContentType,
+                               final Matcher<String> contentMatcher,
+                               final int expectedContentLength) {
+        assertResponse(res, expectedStatusCode, expectedContentType, contentMatcher, $ -> expectedContentLength);
+    }
+
+    static void assertResponse(final HttpResponse<HttpPayloadChunk> res,
+                               final HttpResponseStatus expectedStatusCode,
+                               @Nullable final CharSequence expectedContentType,
+                               final Matcher<String> contentMatcher,
+                               final Function<String, Integer> expectedContentLengthExtractor) {
+        assertResponse(res, HTTP_1_1, expectedStatusCode, expectedContentType, contentMatcher,
+                expectedContentLengthExtractor);
+    }
+
+    static void assertResponse(final HttpResponse<HttpPayloadChunk> res,
+                               final HttpProtocolVersion expectedHttpVersion,
+                               final HttpResponseStatus expectedStatusCode,
+                               @Nullable final CharSequence expectedContentType,
+                               final Matcher<String> contentMatcher,
+                               final Function<String, Integer> expectedContentLengthExtractor) {
+
+        assertThat(res.getVersion(), is(expectedHttpVersion));
+        assertThat(res.getStatus().getCode(), is(expectedStatusCode.getCode()));
+        assertThat(res.getStatus().getReasonPhrase(), is(expectedStatusCode.getReasonPhrase()));
+
+        if (expectedContentType != null) {
+            assertThat(res.getHeaders().get(CONTENT_TYPE), is(expectedContentType));
+        } else {
+            assertThat(res.getHeaders().contains(CONTENT_TYPE), is(false));
+        }
+
+        final String contentAsString = getContentAsString(res);
+
+        @Nullable
+        final Integer expectedContentLength = expectedContentLengthExtractor.apply(contentAsString);
+        if (expectedContentLength != null) {
+            assertThat(res.getHeaders().get(CONTENT_LENGTH), is(Integer.toString(expectedContentLength)));
+            res.getHeaders().getAll(TRANSFER_ENCODING)
+                    .forEachRemaining(h -> assertThat(h.toString(), equalToIgnoringCase("chunked")));
+        } else {
+            assertThat(res.getHeaders().contains(CONTENT_LENGTH), is(false));
+            assertThat(res.getHeaders().get(TRANSFER_ENCODING), is(CHUNKED));
+        }
+
+        assertThat(contentAsString, contentMatcher);
     }
 }

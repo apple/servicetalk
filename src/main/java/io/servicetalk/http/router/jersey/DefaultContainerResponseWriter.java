@@ -24,6 +24,7 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpResponseStatuses;
 
+import org.glassfish.jersey.internal.util.collection.Ref;
 import org.glassfish.jersey.server.ContainerException;
 import org.glassfish.jersey.server.ContainerResponse;
 import org.glassfish.jersey.server.spi.ContainerResponseWriter;
@@ -60,13 +61,16 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
 
     private final HttpRequest<HttpPayloadChunk> request;
     private final BufferAllocator allocator;
+    private final Ref<Publisher<HttpPayloadChunk>> chunkPublisherRef;
 
     private HttpResponse<HttpPayloadChunk> response;
 
     DefaultContainerResponseWriter(final HttpRequest<HttpPayloadChunk> request,
-                                   final BufferAllocator allocator) {
-        this.request = requireNonNull(request);
+                                   final BufferAllocator allocator,
+                                   final Ref<Publisher<HttpPayloadChunk>> chunkPublisherRef) {
+        this.request = request;
         this.allocator = requireNonNull(allocator);
+        this.chunkPublisherRef = requireNonNull(chunkPublisherRef);
 
         // Set a default response used in case of failure
         response = newResponse(request.getVersion(), INTERNAL_SERVER_ERROR);
@@ -81,17 +85,17 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     public OutputStream writeResponseStatusAndHeaders(final long contentLength, final ContainerResponse responseContext)
             throws ContainerException {
 
+        @Nullable
+        final Publisher<HttpPayloadChunk> chunkPublisher = chunkPublisherRef.get();
         // contentLength is >= 0 if the entity content length in bytes is known to Jersey, otherwise -1
-        if (responseContext.getEntity() instanceof Publisher) {
-            @SuppressWarnings("unchecked")
-            final Publisher<HttpPayloadChunk> entity = (Publisher<HttpPayloadChunk>) responseContext.getEntity();
-            response = createResponse(request, UNKNOWN_RESPONSE_LENGTH, entity, responseContext);
+        if (chunkPublisher != null) {
+            response = createResponse(request, UNKNOWN_RESPONSE_LENGTH, chunkPublisher, responseContext);
             return null;
         } else if (contentLength == 0) {
             response = createResponse(request, EMPTY_RESPONSE, null, responseContext);
             return null;
         } else {
-            final DummyBufferPublisherOutputStream bpos = new DummyBufferPublisherOutputStream(allocator);
+            final DummyChunkPublisherOutputStream bpos = new DummyChunkPublisherOutputStream(allocator);
             response = createResponse(request, contentLength, bpos.getChunkPublisher(), responseContext);
             return bpos;
         }

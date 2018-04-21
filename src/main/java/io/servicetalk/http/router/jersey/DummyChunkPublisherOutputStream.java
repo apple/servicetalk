@@ -30,16 +30,16 @@ import static java.util.Objects.requireNonNull;
 /**
  * Dummy adapter between {@link java.io.OutputStream} and {@link Publisher} of {@link HttpPayloadChunk}.
  */
-final class DummyBufferPublisherOutputStream extends ByteArrayOutputStream {
+final class DummyChunkPublisherOutputStream extends ByteArrayOutputStream {
     private final BufferAllocator allocator;
 
-    DummyBufferPublisherOutputStream(final BufferAllocator allocator) {
+    DummyChunkPublisherOutputStream(final BufferAllocator allocator) {
         this.allocator = requireNonNull(allocator);
     }
 
     Publisher<HttpPayloadChunk> getChunkPublisher() {
         return defer(() ->
                 just(newPayloadChunk(
-                        allocator.wrap(DummyBufferPublisherOutputStream.this.toByteArray())), immediate()));
+                        allocator.wrap(DummyChunkPublisherOutputStream.this.toByteArray())), immediate()));
     }
 }

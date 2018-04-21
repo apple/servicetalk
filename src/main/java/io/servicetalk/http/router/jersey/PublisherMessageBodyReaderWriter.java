@@ -17,7 +17,10 @@ package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.transport.api.ConnectionContext;
 
+import org.glassfish.jersey.internal.util.collection.Ref;
 import org.glassfish.jersey.message.internal.EntityInputStream;
 
 import java.io.InputStream;
@@ -27,11 +30,13 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.concurrent.CompletionStage;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
+import static io.servicetalk.http.router.jersey.DummyChunkPublisherInputStream.asChunkPublisher;
 import static org.glassfish.jersey.message.internal.ReaderInterceptorExecutor.closeableInputStream;
 
 /**
@@ -39,6 +44,15 @@ import static org.glassfish.jersey.message.internal.ReaderInterceptorExecutor.cl
  * when request/response entities need to be converted to {@code Publisher<HttpPayloadChunk>}.
  */
 final class PublisherMessageBodyReaderWriter implements MessageBodyReader<Publisher<HttpPayloadChunk>>, MessageBodyWriter<Publisher<HttpPayloadChunk>> {
+    @Context
+    private ConnectionContext ctx;
+
+    @Context
+    private HttpRequest<HttpPayloadChunk> req;
+
+    @Context
+    private Ref<Publisher<HttpPayloadChunk>> chunkPublisherRef;
+
     @Override
     public boolean isReadable(final Class type, final Type genericType, final Annotation[] annotations, final MediaType mediaType) {
         return isHttpChunkPublisher(genericType, false);
@@ -48,9 +62,14 @@ final class PublisherMessageBodyReaderWriter implements MessageBodyReader<Publis
     public Publisher<HttpPayloadChunk> readFrom(final Class type, final Type genericType, final Annotation[] annotations,
                                                 final MediaType mediaType, final MultivaluedMap httpHeaders,
                                                 final InputStream entityStream) throws WebApplicationException {
-        // Unwrap the entity stream created by Jersey to fetch the original request chunk publisher
+        // Unwrap the entity stream created by Jersey to fetch the wrapped one
         final EntityInputStream eis = (EntityInputStream) closeableInputStream(entityStream);
-        return ((DummyBufferPublisherInputStream) eis.getWrappedStream()).getChunkPublisher();
+        if (eis.getWrappedStream() instanceof DummyChunkPublisherInputStream) {
+            // If the wrapped stream is built around a Publisher, provide it to the resource as-is
+            return ((DummyChunkPublisherInputStream) eis.getWrappedStream()).getChunkPublisher();
+        }
+
+        return asChunkPublisher(eis, ctx.getAllocator());
     }
 
     @Override
@@ -62,7 +81,9 @@ final class PublisherMessageBodyReaderWriter implements MessageBodyReader<Publis
     public void writeTo(final Publisher<HttpPayloadChunk> publisher, final Class<?> type, final Type genericType, final Annotation[] annotations,
                         final MediaType mediaType, final MultivaluedMap<String, Object> httpHeaders,
                         final OutputStream entityStream) throws WebApplicationException {
-        // Nothing to do: the response entity is a chunk publisher and thus can be used as-is by ServiceTalk
+        // The response entity being a Publisher, we do not need to write it to the entity stream
+        // but instead store it in request context to bypass the stream writing infrastructure.
+        chunkPublisherRef.set(publisher);
     }
 
     private static boolean isHttpChunkPublisher(final Type genericType, final boolean unwrapCompletionStage) {
@@ -80,6 +101,7 @@ final class PublisherMessageBodyReaderWriter implements MessageBodyReader<Publis
             return isHttpChunkPublisher(typeArguments[0], false);
         }
 
-        return Publisher.class.equals(parameterizedType.getRawType()) && HttpPayloadChunk.class.equals(typeArguments[0]);
+        return Publisher.class.isAssignableFrom((Class<?>) parameterizedType.getRawType())
+                && HttpPayloadChunk.class.isAssignableFrom((Class<?>) typeArguments[0]);
     }
 }

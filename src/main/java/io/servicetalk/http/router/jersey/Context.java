@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.router.jersey;
 
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -28,6 +29,7 @@ import javax.inject.Provider;
 import javax.ws.rs.core.GenericType;
 
 final class Context {
+
     static final GenericType<Ref<ConnectionContext>> CONNECTION_CONTEXT_REF_GENERIC_TYPE =
             new GenericType<Ref<ConnectionContext>>() {
             };
@@ -44,6 +46,16 @@ final class Context {
             new GenericType<HttpRequest<HttpPayloadChunk>>() {
             };
 
+    static final GenericType<Ref<Ref<Publisher<HttpPayloadChunk>>>> CHUNK_PUBLISHER_REF_REF_GENERIC_TYPE =
+            new GenericType<Ref<Ref<Publisher<HttpPayloadChunk>>>>() {
+            };
+
+    static final Type CHUNK_PUBLISHER_REF_TYPE = CHUNK_PUBLISHER_REF_REF_GENERIC_TYPE.getType();
+
+    static final GenericType<Ref<Publisher<HttpPayloadChunk>>> CHUNK_PUBLISHER_REF_GENERIC_TYPE =
+            new GenericType<Ref<Publisher<HttpPayloadChunk>>>() {
+            };
+
     static final class ConnectionContextReferencingFactory extends ReferencingFactory<ConnectionContext> {
         @Inject
         ConnectionContextReferencingFactory(final Provider<Ref<ConnectionContext>> referenceFactory) {
@@ -54,6 +66,15 @@ final class Context {
     static final class HttpRequestReferencingFactory extends ReferencingFactory<HttpRequest<HttpPayloadChunk>> {
         @Inject
         HttpRequestReferencingFactory(final Provider<Ref<HttpRequest<HttpPayloadChunk>>> referenceFactory) {
+            super(referenceFactory);
+        }
+    }
+
+    static final class ChunkPublisherRefReferencingFactory
+            extends ReferencingFactory<Ref<Publisher<HttpPayloadChunk>>> {
+        @Inject
+        ChunkPublisherRefReferencingFactory(
+                final Provider<Ref<Ref<Publisher<HttpPayloadChunk>>>> referenceFactory) {
             super(referenceFactory);
         }
     }
