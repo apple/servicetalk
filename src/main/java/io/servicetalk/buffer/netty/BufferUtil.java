@@ -78,8 +78,13 @@ public final class BufferUtil {
         return buf;
     }
 
+    /**
+     * Converts the passed {@code buffer} to {@link ByteBuf}, or returns {@code null} if not possible.
+     * @param buffer The {@link Buffer} to convert.
+     * @return a {@link ByteBuf} equivalent of {@code buffer}, or {@code null} if no equivalent can be found.
+     */
     @Nullable
-    static ByteBuf toByteBufNoThrow(Buffer buffer) {
+    public static ByteBuf toByteBufNoThrow(Buffer buffer) {
         if (buffer instanceof NettyBuffer) {
             return ((NettyBuffer) buffer).buffer;
         }
