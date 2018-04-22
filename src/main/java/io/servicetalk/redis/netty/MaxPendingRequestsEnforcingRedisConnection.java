@@ -18,6 +18,7 @@ package io.servicetalk.redis.netty;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.MaxRequestLimitExceededException;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.LatestValueSubscriber;
 import io.servicetalk.redis.api.RedisConnection;
@@ -47,9 +48,11 @@ final class MaxPendingRequestsEnforcingRedisConnection extends RedisConnection {
 
     private final LatestValueSubscriber<Integer> maxConcurrencyHolder;
     private final RedisConnection connection;
+    private final Executor executor;
 
-    MaxPendingRequestsEnforcingRedisConnection(RedisConnection connection) {
+    MaxPendingRequestsEnforcingRedisConnection(RedisConnection connection, Executor executor) {
         this.connection = connection;
+        this.executor = executor;
         maxConcurrencyHolder = new LatestValueSubscriber<>();
         connection.getSettingStream(MAX_CONCURRENCY).subscribe(maxConcurrencyHolder);
     }
@@ -66,7 +69,7 @@ final class MaxPendingRequestsEnforcingRedisConnection extends RedisConnection {
 
     @Override
     public Publisher<RedisData> request(RedisRequest request) {
-        return new Publisher<RedisData>() {
+        return new Publisher<RedisData>(executor) {
             @Override
             protected void handleSubscribe(Subscriber<? super RedisData> subscriber) {
                 final int maxPendingRequests = maxConcurrencyHolder.getLastSeenValue(0);

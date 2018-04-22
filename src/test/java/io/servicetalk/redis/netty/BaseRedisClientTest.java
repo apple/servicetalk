@@ -43,6 +43,7 @@ import java.net.InetSocketAddress;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoff;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.INFO;
@@ -91,7 +92,8 @@ public abstract class BaseRedisClientTest {
         redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
 
         executor = toEventLoopAwareNettyIoExecutor(createExecutor());
-        serviceDiscoverer = new DefaultDnsServiceDiscoverer.Builder(executor.next()).build().toHostAndPortDiscoverer();
+        serviceDiscoverer = new DefaultDnsServiceDiscoverer.Builder(executor.next(), immediate()).build()
+                .toHostAndPortDiscoverer();
         RedisClientConfig config = new RedisClientConfig(new TcpClientConfig(false))
                 .setDeferSubscribeTillConnect(true);
         client = new RetryingRedisClient(new DefaultRedisClientBuilder<InetSocketAddress>(

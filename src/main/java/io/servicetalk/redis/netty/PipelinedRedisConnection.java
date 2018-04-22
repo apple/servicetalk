@@ -128,7 +128,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
     }
 
     private Publisher<RedisData> request0(final RedisRequest request, boolean fromClose, boolean internalPing) {
-        return new Publisher<RedisData>() {
+        return new Publisher<RedisData>(connection.getExecutor()) {
             @Override
             protected void handleSubscribe(Subscriber<? super RedisData> subscriber) {
                 final RedisProtocolSupport.Command cmd = request.getCommand();

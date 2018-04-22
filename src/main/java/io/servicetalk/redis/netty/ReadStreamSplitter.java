@@ -108,7 +108,8 @@ final class ReadStreamSplitter {
     ReadStreamSplitter(Connection<RedisData, ByteBuf> connection, int maxConcurrentRequests, int maxBufferPerGroup, Function<RedisRequest, Completable> unsubscribeWriter) {
         this.connection = requireNonNull(connection);
         this.unsubscribeWriter = requireNonNull(unsubscribeWriter);
-        this.original = new SubscribedChannelReadStream(connection.read(), connection.getAllocator())
+        this.original = new SubscribedChannelReadStream(connection.read(), connection.getAllocator(),
+                connection.getExecutor())
                 .groupBy(new GroupSelector(), maxBufferPerGroup, maxConcurrentRequests);
         Connection.TerminalPredicate<RedisData> terminalMsgPredicate = connection.getTerminalMsgPredicate();
         // Max pending is enforced by the upstream connection for writes, so this can be unbounded.
@@ -129,7 +130,7 @@ final class ReadStreamSplitter {
      * @return {@link Publisher} containing response for this command.
      */
     Publisher<PubSubChannelMessage> registerNewCommand(Command command) {
-        return new Publisher<PubSubChannelMessage>() {
+        return new Publisher<PubSubChannelMessage>(connection.getExecutor()) {
             @Override
             protected void handleSubscribe(Subscriber<? super PubSubChannelMessage> subscriber) {
                 TerminalMessagePredicate cmdPredicate = null;

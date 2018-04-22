@@ -40,6 +40,7 @@ import java.net.InetSocketAddress;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoff;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
@@ -157,7 +158,8 @@ public class RedisAuthConnectionFactoryClientTest {
         redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
 
         executor = toEventLoopAwareNettyIoExecutor(createExecutor());
-        serviceDiscoverer = new DefaultDnsServiceDiscoverer.Builder(executor.next()).build().toHostAndPortDiscoverer();
+        serviceDiscoverer = new DefaultDnsServiceDiscoverer.Builder(executor.next(), immediate()).build()
+                .toHostAndPortDiscoverer();
         client = new RetryingRedisClient(
                 new DefaultRedisClientBuilder<InetSocketAddress>((eventPublisher, connectionFactory) -> new RoundRobinLoadBalancer<>(eventPublisher, new RedisAuthConnectionFactory<>(connectionFactory, ctx -> ctx.getAllocator().fromAscii(password)), comparingInt(Object::hashCode)))
                         .setMaxPipelinedRequests(10)

@@ -18,6 +18,7 @@ package io.servicetalk.redis.netty;
 import io.servicetalk.buffer.Buffer;
 import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.buffer.netty.BufferAllocators;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.redis.api.PubSubRedisMessage.ChannelPubSubRedisMessage;
@@ -75,7 +76,9 @@ final class SubscribedChannelReadStream extends Publisher<SubscribedChannelReadS
     private final BufferAllocator allocator;
     private final Publisher<RedisData> original;
 
-    SubscribedChannelReadStream(final Publisher<RedisData> original, final BufferAllocator allocator) {
+    SubscribedChannelReadStream(final Publisher<RedisData> original, final BufferAllocator allocator,
+                                Executor executor) {
+        super(executor);
         this.original = requireNonNull(original);
         this.allocator = requireNonNull(allocator);
     }

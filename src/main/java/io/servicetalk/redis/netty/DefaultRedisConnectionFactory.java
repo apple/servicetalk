@@ -18,6 +18,7 @@ package io.servicetalk.redis.netty;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.transport.api.IoExecutor;
@@ -28,11 +29,13 @@ import static io.servicetalk.redis.netty.DefaultRedisConnectionBuilder.buildForP
 import static io.servicetalk.redis.netty.DefaultRedisConnectionBuilder.buildForSubscribe;
 import static java.util.Objects.requireNonNull;
 
-final class DefaultRedisConnectionFactory<ResolvedAddress> implements ConnectionFactory<ResolvedAddress, LoadBalancedRedisConnection> {
+final class DefaultRedisConnectionFactory<ResolvedAddress>
+        implements ConnectionFactory<ResolvedAddress, LoadBalancedRedisConnection> {
 
     private final CompletableProcessor onClose = new CompletableProcessor();
     private final ReadOnlyRedisClientConfig config;
-    private final IoExecutor executor;
+    private final IoExecutor ioExecutor;
+    private final Executor executor;
     private final boolean forSubscribe;
     private final Function<RedisConnection, RedisConnection> connectionFilterFactory;
     private final Completable closeAsync = new Completable() {
@@ -43,9 +46,11 @@ final class DefaultRedisConnectionFactory<ResolvedAddress> implements Connection
         }
     };
 
-    DefaultRedisConnectionFactory(ReadOnlyRedisClientConfig config, IoExecutor executor, boolean forSubscribe,
+    DefaultRedisConnectionFactory(ReadOnlyRedisClientConfig config, IoExecutor ioExecutor, Executor executor,
+                                  boolean forSubscribe,
                                   Function<RedisConnection, RedisConnection> connectionFilterFactory) {
         this.config = config;
+        this.ioExecutor = ioExecutor;
         this.executor = executor;
         this.forSubscribe = forSubscribe;
         this.connectionFilterFactory = connectionFilterFactory;
@@ -53,7 +58,8 @@ final class DefaultRedisConnectionFactory<ResolvedAddress> implements Connection
 
     @Override
     public Single<LoadBalancedRedisConnection> newConnection(ResolvedAddress address) {
-        return (forSubscribe ? buildForSubscribe(executor, address, config) : buildForPipelined(executor, address, config))
+        return (forSubscribe ? buildForSubscribe(ioExecutor, executor, address, config)
+                : buildForPipelined(ioExecutor, executor, address, config))
                 .map(this::newConnection);
     }
 

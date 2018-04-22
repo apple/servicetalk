@@ -18,6 +18,7 @@ package io.servicetalk.redis.netty;
 import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.QueueFullException;
 import io.servicetalk.redis.api.RedisConnection;
@@ -68,8 +69,11 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
     private final WriteQueue writeQueue;
     private final boolean deferSubscribeTillConnect;
 
-    private InternalSubscribedRedisConnection(Connection<RedisData, ByteBuf> connection, ReadOnlyRedisClientConfig roConfig, int initialQueueCapacity, int maxBufferPerGroup) {
-        super(durationNanos -> connection.getIoExecutor().scheduleOnEventloop(durationNanos, TimeUnit.NANOSECONDS), roConfig);
+    private InternalSubscribedRedisConnection(Connection<RedisData, ByteBuf> connection,
+                                              ReadOnlyRedisClientConfig roConfig, int initialQueueCapacity,
+                                              int maxBufferPerGroup) {
+        super(durationNanos -> connection.getIoExecutor().scheduleOnEventloop(durationNanos, TimeUnit.NANOSECONDS),
+                roConfig);
         this.connection = connection;
         this.deferSubscribeTillConnect = roConfig.isDeferSubscribeTillConnect();
         writeQueue = new WriteQueue(maxPendingRequests, initialQueueCapacity);
@@ -86,7 +90,8 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
     public Publisher<RedisData> request(RedisRequest request) {
         final RedisProtocolSupport.Command command = request.getCommand();
         if (!isSubscribeModeCommand(command) && command != PING && command != QUIT && command != AUTH) {
-            return Publisher.error(new IllegalArgumentException("Invalid command: " + command + ". This command is not allowed in subscribe mode."));
+            return Publisher.error(new IllegalArgumentException("Invalid command: " + command
+                    + ". This command is not allowed in subscribe mode."), connection.getExecutor());
         }
 
         return request0(request);
@@ -95,7 +100,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
     private Publisher<RedisData> request0(RedisRequest request) {
         final RedisProtocolSupport.Command command = request.getCommand();
         final Publisher<ByteBuf> reqContent = RedisUtils.encodeRequestContent(request, connection.getAllocator());
-        return new Publisher<RedisData>() {
+        return new Publisher<RedisData>(connection.getExecutor()) {
             @SuppressWarnings("unchecked")
             @Override
             protected void handleSubscribe(Subscriber<? super RedisData> subscriber) {
@@ -129,7 +134,8 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
                  */
                 final Publisher<PubSubChannelMessage> response;
                 if (deferSubscribeTillConnect) {
-                    response = concatDeferOnSubscribe(write, readStreamSplitter.registerNewCommand(command));
+                    response = concatDeferOnSubscribe(write, readStreamSplitter.registerNewCommand(command),
+                            connection.getExecutor());
                 } else {
                     response = write.andThen(readStreamSplitter.registerNewCommand(command));
                 }
@@ -332,14 +338,17 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
      * command can't be cancelled before writing to Redis.
      *
      * @param queuedWrite the {@link Completable} tracking writing the enqueued
-     *                    {@link io.servicetalk.redis.api.RedisProtocolSupport.Command#SUBSCRIBE} or
-     *                    {@link io.servicetalk.redis.api.RedisProtocolSupport.Command#PSUBSCRIBE} commands to Redis
+     *                    {@link RedisProtocolSupport.Command#SUBSCRIBE} or
+     *                    {@link RedisProtocolSupport.Command#PSUBSCRIBE} commands to Redis
      * @param next        the {@link PubSubChannelMessage} producer to subscribe to after completing the original {@link Completable}
+     * @param executor {@link Executor} used to create the returned {@link Publisher}.
      * @return the composite operator
      */
-    private static Publisher<PubSubChannelMessage> concatDeferOnSubscribe(Completable queuedWrite, Publisher<PubSubChannelMessage> next) {
+    private static Publisher<PubSubChannelMessage> concatDeferOnSubscribe(Completable queuedWrite,
+                                                                          Publisher<PubSubChannelMessage> next,
+                                                                          Executor executor) {
 
-        return new Publisher<PubSubChannelMessage>() {
+        return new Publisher<PubSubChannelMessage>(executor) {
             @Override
             protected void handleSubscribe(org.reactivestreams.Subscriber<? super PubSubChannelMessage> subscriber) {
                 queuedWrite.subscribe(new io.servicetalk.concurrent.Completable.Subscriber() {

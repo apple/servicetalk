@@ -52,6 +52,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.DISCARD;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.EXEC;
@@ -79,7 +80,7 @@ public class PingerTest {
     public final Timeout timeout = new ServiceTalkTestTimeout(1, TimeUnit.MINUTES);
 
     @Nullable
-    private static NettyIoExecutor executor;
+    private static NettyIoExecutor nettyIoExecutor;
     @Nullable
     private static ReadOnlyRedisClientConfig config;
     @Nullable
@@ -94,14 +95,14 @@ public class PingerTest {
         String redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
         serverAddress = new InetSocketAddress(redisHost, redisPort);
 
-        executor = toNettyIoExecutor(createExecutor());
+        nettyIoExecutor = toNettyIoExecutor(createExecutor());
         config = new RedisClientConfig(new TcpClientConfig(false)).setPingPeriod(PING_PERIOD).setMaxPipelinedRequests(10).asReadOnly();
     }
 
     @AfterClass
     public static void tearDown() throws Exception {
-        if (executor != null) {
-            awaitIndefinitely(executor.closeAsync());
+        if (nettyIoExecutor != null) {
+            awaitIndefinitely(nettyIoExecutor.closeAsync());
         }
     }
 
@@ -193,7 +194,7 @@ public class PingerTest {
 
     private static Single<Connection<RedisData, ByteBuf>> connect(Queue<Object> commandsWritten) {
         assert config != null;
-        assert executor != null;
+        assert nettyIoExecutor != null;
         assert serverAddress != null;
 
         final ReadOnlyTcpClientConfig roTcpConfig = config.getTcpClientConfig();
@@ -230,6 +231,6 @@ public class PingerTest {
                 });
 
         final TcpConnector<RedisData, ByteBuf> connector = new TcpConnector<>(roTcpConfig, initializer, () -> o -> false);
-        return connector.connect(executor, serverAddress);
+        return connector.connect(nettyIoExecutor, immediate(), serverAddress);
     }
 }
