@@ -33,7 +33,8 @@ public interface HttpServerStarter {
      *
      * @param address Listen address for the server.
      * @param service Service invoked for every request received by this server.
-     * @return A {@link Single} that completes successfully when the server is started.
+     * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
+     * the server could not be started.
      */
     Single<ServerContext> start(SocketAddress address, HttpService<HttpPayloadChunk, HttpPayloadChunk> service);
 
@@ -46,7 +47,8 @@ public interface HttpServerStarter {
      * @param address Listen address for the server.
      * @param contextFilter to use for filtering accepted connections.
      * @param service Service invoked for every request received by this server (that pass the provided {@code contextFilter}).
-     * @return A {@link Single} that completes successfully when the server is started.
+     * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
+     * the server could not be started.
      */
     Single<ServerContext> start(SocketAddress address, ContextFilter contextFilter, HttpService<HttpPayloadChunk, HttpPayloadChunk> service);
 }
