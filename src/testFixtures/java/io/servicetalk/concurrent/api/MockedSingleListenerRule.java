@@ -87,6 +87,16 @@ public class MockedSingleListenerRule<T> implements TestRule {
         return this;
     }
 
+    public T verifySuccessAndReturn(Class<T> returnClass) {
+        verifyCancellable();
+        assert subscriber != null;
+        verify(subscriber).onSubscribe(any());
+        ArgumentCaptor<T> captor = ArgumentCaptor.forClass(returnClass);
+        verify(subscriber).onSuccess(captor.capture());
+        verifyNoMoreInteractions(subscriber);
+        return captor.getValue();
+    }
+
     public MockedSingleListenerRule<T> verifyFailure(Throwable cause) {
         verifyCancellable();
         assert subscriber != null;
