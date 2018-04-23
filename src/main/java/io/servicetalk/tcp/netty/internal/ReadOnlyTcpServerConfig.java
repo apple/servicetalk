@@ -50,7 +50,6 @@ public class ReadOnlyTcpServerConfig {
     @Nullable
     protected SslContext sslContext;
     protected long idleTimeoutMs;
-    protected long gracefulCloseTimeMs = 10000;
     @Nullable
     protected DomainNameMapping<SslContext> mappings;
     @Nullable
@@ -81,7 +80,6 @@ public class ReadOnlyTcpServerConfig {
         allocator = from.allocator;
         sslContext = from.sslContext;
         idleTimeoutMs = from.idleTimeoutMs;
-        gracefulCloseTimeMs = from.gracefulCloseTimeMs;
 
         // Deep copy DomainNameMapping<SslContext>
         if (from.mappings != null) {
@@ -110,15 +108,6 @@ public class ReadOnlyTcpServerConfig {
      */
     public int getBacklog() {
         return backlog;
-    }
-
-    /**
-     * Returns time to wait for active connections to become inactive before closing them forcibly when close is called.
-     *
-     * @return graceful close time.
-     */
-    public long getGracefulCloseTimeMs() {
-        return gracefulCloseTimeMs;
     }
 
     /**

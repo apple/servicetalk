@@ -29,7 +29,6 @@ import io.netty.util.DomainMappingBuilder;
 import java.io.InputStream;
 import java.net.SocketOption;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.netty.internal.SSLContextFactory.forServer;
@@ -62,22 +61,6 @@ public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
             throw new IllegalArgumentException("backlog must be >= 0");
         }
         this.backlog = backlog;
-        return this;
-    }
-
-    /**
-     * Allow to specify the amount of time the server will try to wait for active connections to become inactive before
-     * closing these forcible when close is called.
-     *
-     * @param duration timeout duration.
-     * @param unit time unit.
-     * @return this.
-     */
-    public TcpServerConfig setGracefulCloseTime(long duration, TimeUnit unit) {
-        if (duration < 0) {
-            throw new IllegalArgumentException("gracefulCloseTimeoutMs must be >= 0");
-        }
-        this.gracefulCloseTimeMs = unit.toMillis(duration);
         return this;
     }
 
