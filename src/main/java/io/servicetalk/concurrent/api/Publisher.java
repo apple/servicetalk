@@ -121,6 +121,70 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     }
 
     /**
+     * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
+     * to compose existing operator(s) to satisfy your use case.</strong>
+     * <p>
+     * Returns a {@link Publisher} that when {@link Publisher#subscribe(Subscriber)} is called the {@code operator}
+     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Publisher}.
+     * <pre>
+     *     Publisher&lt;X&gt; pub = ...;
+     *     pub.map(..) // A
+     *        .liftSynchronous(original -&lt; modified)
+     *        .filter(..) // B
+     * </pre>
+     * The {@code original -> modified} "operator" <strong>MUST</strong> be "synchronous" in that it does not interact
+     * with the original {@link Subscriber} from outside the modified {@link Subscriber} or {@link Subscription}
+     * threads. That is the say this operator will not impact the {@link Executor} constraints already in place between
+     * <i>A</i> and <i>B</i> above. If you need asynchronous behavior, or are unsure, see
+     * {@link #liftAsynchronous(PublisherOperator)}.
+     * @param operator The custom operator logic. The input is the "original" {@link Subscriber} to this
+     * {@link Publisher} and the return is the "modified" {@link Subscriber} that provides custom operator business
+     * logic.
+     * @param <R> Type of the items emitted by the returned {@link Publisher}.
+     * @return a {@link Publisher} that when {@link Publisher#subscribe(Subscriber)} is called the {@code operator}
+     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Publisher}.
+     * @see #liftAsynchronous(PublisherOperator)
+     */
+    public final <R> Publisher<R> liftSynchronous(PublisherOperator<T, R> operator) {
+        return new LiftSynchronousOperator<>(this, operator, executor);
+    }
+
+    /**
+     * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
+     * to compose existing operator(s) to satisfy your use case.</strong>
+     * <p>
+     * Returns a {@link Publisher} that when {@link Publisher#subscribe(Subscriber)} is called the {@code operator}
+     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Publisher}.
+     * <pre>
+     *     Publisher&lt;X&gt; pub = ...;
+     *     pub.map(..) // A
+     *        .liftSynchronous(original -&lt; modified)
+     *        .filter(..) // B
+     * </pre>
+     * The {@code original -> modified} "operator" MAY be "asynchronous" in that it may interact with the original
+     * {@link Subscriber} from outside the modified {@link Subscriber} or {@link Subscription} threads. More
+     * specifically:
+     * <ul>
+     *  <li>all of the {@link Subscriber} invocations going "downstream" (i.e. from <i>A</i> to <i>B</i> above) MAY be
+     *  offloaded via an {@link Executor}</li>
+     *  <li>all of the {@link Subscription} invocations going "upstream" (i.e. from <i>B</i> to <i>A</i> above) MAY be
+     *  offloaded via an {@link Executor}</li>
+     * </ul>
+     * This behavior exists to prevent blocking code negatively impacting the thread that powers the upstream source of
+     * data (e.g. an EventLoop).
+     * @param operator The custom operator logic. The input is the "original" {@link Subscriber} to this
+     * {@link Publisher} and the return is the "modified" {@link Subscriber} that provides custom operator business
+     * logic.
+     * @param <R> Type of the items emitted by the returned {@link Publisher}.
+     * @return a {@link Publisher} that when {@link Publisher#subscribe(Subscriber)} is called the {@code operator}
+     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Publisher}.
+     * @see #liftSynchronous(PublisherOperator)
+     */
+    public final <R> Publisher<R> liftAsynchronous(PublisherOperator<T, R> operator) {
+        return new LiftAsynchronousOperator<>(this, operator, executor);
+    }
+
+    /**
      * Converts this {@link Publisher} to a {@link Single}.
      *
      * @return A {@link Single} that will contain the first item emitted from the this {@link Publisher}.

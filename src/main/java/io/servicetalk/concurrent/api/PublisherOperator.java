@@ -36,7 +36,7 @@ import java.util.function.Function;
  * @param <T> Type of items emitted by the {@link Publisher} this operator is applied.
  * @param <R> Type of items emitted by this operator.
  */
-interface PublisherOperator<T, R> extends Function<Subscriber<? super R>, Subscriber<? super T>> {
+public interface PublisherOperator<T, R> extends Function<Subscriber<? super R>, Subscriber<? super T>> {
 
     /**
      * Implementation of this operator. See {@link PublisherOperator} for definition of an operator.
