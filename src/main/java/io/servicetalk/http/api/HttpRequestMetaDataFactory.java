@@ -16,9 +16,15 @@
 package io.servicetalk.http.api;
 
 /**
- * Factory method for creating {@link HttpRequestMetaData}s, for use by protocol decoders.
+ * A static factory class for {@link HttpRequestMetaData} objects.
+ * <p>
+ * This is typically only used by HTTP decoders.
  */
-public interface HttpRequestFactory extends HttpTrailersFactory {
+public final class HttpRequestMetaDataFactory {
+    private HttpRequestMetaDataFactory() {
+        // no instances
+    }
+
     /**
      * Create a new instance.
      *
@@ -26,7 +32,11 @@ public interface HttpRequestFactory extends HttpTrailersFactory {
      * @param method the {@link HttpRequestMethod} of the request.
      * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
      * request.
-     * @return a new {@link HttpRequest}.
+     * @param headers the {@link HttpHeaders} to use for the request.
+     * @return a new {@link HttpRequestMetaData}.
      */
-    HttpRequestMetaData newRequestMetaData(HttpProtocolVersion version, HttpRequestMethod method, String requestTarget);
+    public static HttpRequestMetaData newRequestMetaData(HttpProtocolVersion version, HttpRequestMethod method,
+                                                         String requestTarget, HttpHeaders headers) {
+        return new DefaultHttpRequestMetaData(method, requestTarget, version, headers);
+    }
 }

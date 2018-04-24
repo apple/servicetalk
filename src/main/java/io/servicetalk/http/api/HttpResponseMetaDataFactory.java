@@ -16,15 +16,25 @@
 package io.servicetalk.http.api;
 
 /**
- * Factory method for creating {@link HttpResponseMetaData}s, for use by protocol decoders.
+ * A static factory class for {@link HttpResponseMetaData} objects.
+ * <p>
+ * This is typically only used by HTTP decoders.
  */
-public interface HttpResponseFactory extends HttpTrailersFactory {
+public final class HttpResponseMetaDataFactory {
+    private HttpResponseMetaDataFactory() {
+        // no instances
+    }
+
     /**
      * Create a new instance.
      *
      * @param status the {@link HttpResponseStatus} of the response.
      * @param version the {@link HttpProtocolVersion} of the response.
-     * @return a new {@link HttpResponse}.
+     * @param headers the {@link HttpHeaders} to use for the response.
+     * @return a new {@link HttpResponseMetaData}.
      */
-    HttpResponseMetaData newResponseMetaData(HttpProtocolVersion version, HttpResponseStatus status);
+    public static HttpResponseMetaData newResponseMetaData(HttpProtocolVersion version, HttpResponseStatus status,
+                                                           HttpHeaders headers) {
+        return new DefaultHttpResponseMetaData(status, version, headers);
+    }
 }
