@@ -27,7 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT;
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.transport.netty.internal.WireLogInitializer.GLOBAL_WIRE_LOGGER;
 import static java.util.Collections.unmodifiableMap;
 
@@ -40,7 +40,7 @@ public class ReadOnlyTcpClientConfig {
     protected final boolean autoRead;
     @SuppressWarnings("rawtypes")
     protected final Map<ChannelOption, Object> optionMap;
-    protected BufferAllocator allocator = DEFAULT.getAllocator();
+    protected BufferAllocator allocator = DEFAULT_ALLOCATOR;
     @Nullable
     protected SslContext sslContext;
     @Nullable
