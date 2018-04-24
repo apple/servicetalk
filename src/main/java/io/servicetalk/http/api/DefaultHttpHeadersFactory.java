@@ -23,31 +23,44 @@ public final class DefaultHttpHeadersFactory implements HttpHeadersFactory {
     public static final HttpHeadersFactory INSTANCE = new DefaultHttpHeadersFactory(true);
 
     private final boolean validateNames;
-    private final int arraySizeHint;
+    private final int headersArraySizeHint;
+    private final int trailersArraySizeHint;
 
     /**
      * Create an instance of the factory with the default array size hint.
      *
-     * @param validateNames {@code true} to validate header names.
+     * @param validateNames {@code true} to validate header/trailer names.
      */
     public DefaultHttpHeadersFactory(final boolean validateNames) {
-        this(validateNames, 16);
+        this(validateNames, 16, 4);
     }
 
     /**
      * Create an instance of the factory.
      *
-     * @param arraySizeHint A hint as to how large the hash data structure should be.
-     * The next positive power of two will be used. An upper bound may be enforced.
-     * @param validateNames {@code true} to validate header names.
+     * @param validateNames {@code true} to validate header/trailer names.
+     * @param headersArraySizeHint A hint as to how large the hash data structure should be for the headers.
+     * @param trailersArraySizeHint A hint as to how large the hash data structure should be for the trailers.
      */
-    public DefaultHttpHeadersFactory(final boolean validateNames, final int arraySizeHint) {
+    public DefaultHttpHeadersFactory(final boolean validateNames, final int headersArraySizeHint,
+                                     final int trailersArraySizeHint) {
         this.validateNames = validateNames;
-        this.arraySizeHint = arraySizeHint;
+        this.headersArraySizeHint = headersArraySizeHint;
+        this.trailersArraySizeHint = trailersArraySizeHint;
     }
 
     @Override
     public HttpHeaders newHeaders() {
-        return new DefaultHttpHeaders(arraySizeHint, validateNames);
+        return new DefaultHttpHeaders(headersArraySizeHint, validateNames);
+    }
+
+    @Override
+    public HttpHeaders newTrailers() {
+        return new DefaultHttpHeaders(trailersArraySizeHint, validateNames);
+    }
+
+    @Override
+    public HttpHeaders newEmptyTrailers() {
+        return new DefaultHttpHeaders(0, validateNames);
     }
 }

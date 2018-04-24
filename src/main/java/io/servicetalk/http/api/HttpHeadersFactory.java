@@ -25,4 +25,25 @@ public interface HttpHeadersFactory {
      * @return an {@link HttpHeaders} instance.
      */
     HttpHeaders newHeaders();
+
+    /**
+     * Create an {@link HttpHeaders} instance designed to hold
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
+     *
+     * @return an {@link HttpHeaders} instance.
+     */
+    HttpHeaders newTrailers();
+
+    /**
+     * Create an {@link HttpHeaders} instance designed to hold
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>, possibly optimized for being empty.
+     * <p>
+     * Note: this should not return an immutable instance unless it is known that no code will need to mutate the
+     * trailers.
+     *
+     * @return an {@link HttpHeaders} instance.
+     */
+    default HttpHeaders newEmptyTrailers() {
+        return newTrailers();
+    }
 }
