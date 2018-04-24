@@ -38,6 +38,7 @@ dependencies {
   api "io.netty:netty-codec-http"
 
   testImplementation "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
+  testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:0.1.0-SNAPSHOT"
   testImplementation "org.hamcrest:hamcrest-library"
   testImplementation "org.mockito:mockito-core"
   testImplementation "junit:junit"
