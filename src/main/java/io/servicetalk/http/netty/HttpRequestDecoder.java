@@ -18,7 +18,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
-import io.servicetalk.http.api.HttpTrailersFactory;
 
 import io.netty.buffer.ByteBuf;
 
@@ -39,7 +38,6 @@ import static io.servicetalk.http.api.HttpRequestMethods.PUT;
 import static io.servicetalk.http.api.HttpRequestMethods.TRACE;
 import static io.servicetalk.http.api.HttpRequestMethods.newRequestMethod;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.util.Objects.requireNonNull;
 
 final class HttpRequestDecoder extends HttpObjectDecoder {
     private static final Map<ByteBuf, HttpRequestMethod> BUF_TO_METHOD_MAP = new HashMap<ByteBuf, HttpRequestMethod>() {
@@ -55,12 +53,10 @@ final class HttpRequestDecoder extends HttpObjectDecoder {
             put(copiedBuffer("CONNECT", US_ASCII), CONNECT);
         }
     };
-    private final HttpHeadersFactory headersFactory;
 
-    HttpRequestDecoder(HttpHeadersFactory headersFactory, HttpTrailersFactory trailersFactory,
+    HttpRequestDecoder(HttpHeadersFactory headersFactory,
                        int maxInitialLineLength, int maxHeaderSize, int maxChunkSize, boolean chunkedSupported) {
-        super(trailersFactory, maxInitialLineLength, maxHeaderSize, maxChunkSize, chunkedSupported);
-        this.headersFactory = requireNonNull(headersFactory);
+        super(headersFactory, maxInitialLineLength, maxHeaderSize, maxChunkSize, chunkedSupported);
     }
 
     @Override
@@ -73,7 +69,7 @@ final class HttpRequestDecoder extends HttpObjectDecoder {
         return newRequestMetaData(nettyBufferToHttpVersion(third),
                                   nettyBufferToHttpMethod(first),
                                   second.toString(US_ASCII),
-                                  headersFactory.newHeaders());
+                                  getHeadersFactory().newHeaders());
     }
 
     private static HttpRequestMethod nettyBufferToHttpMethod(ByteBuf buf) {

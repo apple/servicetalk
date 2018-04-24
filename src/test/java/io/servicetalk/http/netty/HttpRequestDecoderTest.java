@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.Buffer;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
-import io.servicetalk.http.api.DefaultHttpTrailersFactory;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequestMetaData;
@@ -287,8 +286,7 @@ public class HttpRequestDecoderTest {
     }
 
     private static EmbeddedChannel newEmbeddedChannel() {
-        HttpRequestDecoder decoder = new HttpRequestDecoder(DefaultHttpHeadersFactory.INSTANCE,
-                DefaultHttpTrailersFactory.INSTANCE, 8192, 8192, 8192, true);
+        HttpRequestDecoder decoder = new HttpRequestDecoder(DefaultHttpHeadersFactory.INSTANCE, 8192, 8192, 8192, true);
         decoder.setDiscardAfterReads(1);
         return new EmbeddedChannel(decoder);
     }

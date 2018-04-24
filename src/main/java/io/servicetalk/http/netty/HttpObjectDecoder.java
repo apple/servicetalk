@@ -31,13 +31,13 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethods;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.api.HttpTrailersFactory;
 import io.servicetalk.http.api.LastHttpPayloadChunk;
 
 import io.netty.buffer.ByteBuf;
@@ -99,7 +99,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
     private final int maxInitialLineSize;
     private final boolean chunkedSupported;
 
-    private final HttpTrailersFactory trailersFactory;
+    private final HttpHeadersFactory headersFactory;
     @Nullable
     private HttpMetaData message;
     @Nullable
@@ -129,7 +129,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
     /**
      * Creates a new instance with the specified parameters.
      */
-    protected HttpObjectDecoder(HttpTrailersFactory trailersFactory,
+    protected HttpObjectDecoder(HttpHeadersFactory headersFactory,
             int maxInitialLineLength, int maxHeaderSize, int maxChunkSize, boolean chunkedSupported) {
         if (maxInitialLineLength <= 0) {
             throw new IllegalArgumentException(
@@ -146,10 +146,14 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
                     "maxChunkSize must be a positive integer: " +
                             maxChunkSize);
         }
-        this.trailersFactory = requireNonNull(trailersFactory);
+        this.headersFactory = requireNonNull(headersFactory);
         this.maxChunkSize = maxChunkSize;
         this.chunkedSupported = chunkedSupported;
         this.maxInitialLineSize = maxInitialLineLength;
+    }
+
+    final HttpHeadersFactory getHeadersFactory() {
+        return headersFactory;
     }
 
     /**
@@ -314,7 +318,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
                     // https://tools.ietf.org/html/rfc7230.html#section-4.1
                     // This is not chunked encoding so there will not be any trailers.
                     ctx.fireChannelRead(newLastPayloadChunk(newBufferFrom(content),
-                                        trailersFactory.newEmptyTrailers()));
+                                        headersFactory.newEmptyTrailers()));
                     resetNow();
                 } else {
                     ctx.fireChannelRead(newPayloadChunk(newBufferFrom(content)));
@@ -626,7 +630,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
         if (lfIndex - 2 > buffer.readerIndex()) {
             LastHttpPayloadChunk trailer = this.trailer;
             if (trailer == null) {
-                trailer = this.trailer = newLastPayloadChunk(EMPTY_BUFFER, trailersFactory.newTrailers());
+                trailer = this.trailer = newLastPayloadChunk(EMPTY_BUFFER, headersFactory.newTrailers());
             }
 
             return parseAllHeaders(buffer, trailer.getTrailers(), lfIndex, maxInitialLineSize) ? trailer : null;

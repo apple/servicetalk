@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.Buffer;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
-import io.servicetalk.http.api.DefaultHttpTrailersFactory;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpResponseMetaData;
@@ -141,7 +140,7 @@ public class HttpResponseEncoderTest {
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
-        HttpHeaders trailers = DefaultHttpTrailersFactory.INSTANCE.newTrailers();
+        HttpHeaders trailers = DefaultHttpHeadersFactory.INSTANCE.newTrailers();
         trailers.add("TrailerStatus", "good");
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, trailers);
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
@@ -207,7 +206,7 @@ public class HttpResponseEncoderTest {
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
-        HttpHeaders trailers = DefaultHttpTrailersFactory.INSTANCE.newTrailers();
+        HttpHeaders trailers = DefaultHttpHeadersFactory.INSTANCE.newTrailers();
         trailers.add("TrailerStatus", "good");
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, trailers);
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
@@ -228,7 +227,7 @@ public class HttpResponseEncoderTest {
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
-        HttpHeaders trailers = DefaultHttpTrailersFactory.INSTANCE.newTrailers();
+        HttpHeaders trailers = DefaultHttpHeadersFactory.INSTANCE.newTrailers();
         trailers.add("TrailerStatus", "good");
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, trailers);
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());

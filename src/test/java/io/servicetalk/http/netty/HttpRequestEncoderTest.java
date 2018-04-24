@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.Buffer;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
-import io.servicetalk.http.api.DefaultHttpTrailersFactory;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
@@ -144,7 +143,7 @@ public class HttpRequestEncoderTest {
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
-        HttpHeaders trailers = DefaultHttpTrailersFactory.INSTANCE.newTrailers();
+        HttpHeaders trailers = DefaultHttpHeadersFactory.INSTANCE.newTrailers();
         trailers.add("TrailerStatus", "good");
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, trailers);
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
@@ -214,7 +213,7 @@ public class HttpRequestEncoderTest {
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
-        HttpHeaders trailers = DefaultHttpTrailersFactory.INSTANCE.newTrailers();
+        HttpHeaders trailers = DefaultHttpHeadersFactory.INSTANCE.newTrailers();
         trailers.add("TrailerStatus", "good");
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, trailers);
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
@@ -236,7 +235,7 @@ public class HttpRequestEncoderTest {
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
-        HttpHeaders trailers = DefaultHttpTrailersFactory.INSTANCE.newTrailers();
+        HttpHeaders trailers = DefaultHttpHeadersFactory.INSTANCE.newTrailers();
         trailers.add("TrailerStatus", "good");
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, trailers);
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,

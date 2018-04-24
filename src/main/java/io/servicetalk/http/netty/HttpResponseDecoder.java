@@ -18,7 +18,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
-import io.servicetalk.http.api.HttpTrailersFactory;
 
 import io.netty.buffer.ByteBuf;
 
@@ -27,15 +26,11 @@ import static io.servicetalk.http.api.HttpResponseMetaDataFactory.newResponseMet
 import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
 import static java.lang.Integer.parseInt;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.util.Objects.requireNonNull;
 
 final class HttpResponseDecoder extends HttpObjectDecoder {
-    private final HttpHeadersFactory headersFactory;
-
-    HttpResponseDecoder(HttpHeadersFactory headersFactory, HttpTrailersFactory trailersFactory,
+    HttpResponseDecoder(HttpHeadersFactory headersFactory,
                         int maxInitialLineLength, int maxHeaderSize, int maxChunkSize, boolean chunkedSupported) {
-        super(trailersFactory, maxInitialLineLength, maxHeaderSize, maxChunkSize, chunkedSupported);
-        this.headersFactory = requireNonNull(headersFactory);
+        super(headersFactory, maxInitialLineLength, maxHeaderSize, maxChunkSize, chunkedSupported);
     }
 
     @Override
@@ -47,7 +42,7 @@ final class HttpResponseDecoder extends HttpObjectDecoder {
     protected HttpMetaData createMessage(ByteBuf first, ByteBuf second, ByteBuf third) {
         return newResponseMetaData(nettyBufferToHttpVersion(first),
                                    nettyBufferToHttpStatus(second, third),
-                                   headersFactory.newHeaders());
+                                   getHeadersFactory().newHeaders());
     }
 
     private static HttpResponseStatus nettyBufferToHttpStatus(ByteBuf statusCode, ByteBuf reasonPhrase) {
