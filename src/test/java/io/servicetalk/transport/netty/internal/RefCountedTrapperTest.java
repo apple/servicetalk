@@ -16,7 +16,6 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.buffer.BufferAllocator;
-import io.servicetalk.buffer.netty.BufferAllocators;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.EventLoop;
@@ -24,6 +23,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import org.junit.Test;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -62,7 +62,7 @@ public class RefCountedTrapperTest {
 
     private static final class TestRefCountedTrapper extends RefCountedTrapper {
         TestRefCountedTrapper() {
-            super(BufferAllocators.DEFAULT.getAllocator());
+            super(DEFAULT_ALLOCATOR);
         }
 
         @Override
