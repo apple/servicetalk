@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.router.jersey;
 
-import io.servicetalk.buffer.netty.BufferAllocators;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.api.ConnectionContext;
 
@@ -28,6 +27,7 @@ import org.mockito.junit.MockitoRule;
 
 import javax.ws.rs.core.Application;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static org.mockito.Mockito.when;
 
 public abstract class AbstractRequestHandlerTest {
@@ -44,7 +44,7 @@ public abstract class AbstractRequestHandlerTest {
 
     @Before
     public void init() {
-        when(ctx.getAllocator()).thenReturn(BufferAllocators.DEFAULT.getAllocator());
+        when(ctx.getAllocator()).thenReturn(DEFAULT_ALLOCATOR);
         handler = new DefaultRequestHandler(new ApplicationHandler(getApplication()));
     }
 
