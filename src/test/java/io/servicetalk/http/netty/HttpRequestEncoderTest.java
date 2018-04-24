@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.Buffer;
-import io.servicetalk.buffer.netty.BufferAllocators;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultHttpRequestFactory;
 import io.servicetalk.http.api.DefaultHttpTrailersFactory;
@@ -32,6 +31,7 @@ import org.junit.Test;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.buffer.EmptyBuffer.EMPTY_BUFFER;
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
@@ -60,7 +60,7 @@ public class HttpRequestEncoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
-        Buffer buffer = BufferAllocators.DEFAULT.getAllocator().wrap(content);
+        Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, EmptyHttpHeaders.INSTANCE);
         HttpRequestMetaData request = DefaultHttpRequestFactory.INSTANCE.newRequestMetaData(HTTP_1_1,
                 GET, "/some/path?foo=bar&baz=yyy");
@@ -91,7 +91,7 @@ public class HttpRequestEncoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
-        Buffer buffer = BufferAllocators.DEFAULT.getAllocator().wrap(content);
+        Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
 
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, EmptyHttpHeaders.INSTANCE);
         HttpRequestMetaData request = new DefaultHttpRequestFactory(new DefaultHttpHeadersFactory(false))
@@ -123,7 +123,7 @@ public class HttpRequestEncoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
-        Buffer buffer = BufferAllocators.DEFAULT.getAllocator().wrap(content);
+        Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, EmptyHttpHeaders.INSTANCE);
         HttpRequestMetaData request = DefaultHttpRequestFactory.INSTANCE.newRequestMetaData(HTTP_1_1,
                 GET, "/some/path?foo=bar&baz=yyy");
@@ -142,7 +142,7 @@ public class HttpRequestEncoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
-        Buffer buffer = BufferAllocators.DEFAULT.getAllocator().wrap(content);
+        Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
         HttpHeaders trailers = DefaultHttpTrailersFactory.INSTANCE.newTrailers();
         trailers.add("TrailerStatus", "good");
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, trailers);
@@ -194,7 +194,7 @@ public class HttpRequestEncoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
-        Buffer buffer = BufferAllocators.DEFAULT.getAllocator().wrap(content);
+        Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, EmptyHttpHeaders.INSTANCE);
         HttpRequestMetaData request = DefaultHttpRequestFactory.INSTANCE.newRequestMetaData(HTTP_1_1,
                 GET, "/some/path?foo=bar&baz=yyy");
@@ -212,7 +212,7 @@ public class HttpRequestEncoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
-        Buffer buffer = BufferAllocators.DEFAULT.getAllocator().wrap(content);
+        Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
         HttpHeaders trailers = DefaultHttpTrailersFactory.INSTANCE.newTrailers();
         trailers.add("TrailerStatus", "good");
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, trailers);
@@ -234,7 +234,7 @@ public class HttpRequestEncoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
-        Buffer buffer = BufferAllocators.DEFAULT.getAllocator().wrap(content);
+        Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
         HttpHeaders trailers = DefaultHttpTrailersFactory.INSTANCE.newTrailers();
         trailers.add("TrailerStatus", "good");
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, trailers);

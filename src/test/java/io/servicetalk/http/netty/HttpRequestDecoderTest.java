@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.Buffer;
-import io.servicetalk.buffer.netty.BufferAllocators;
 import io.servicetalk.http.api.DefaultHttpRequestFactory;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpPayloadChunk;
@@ -35,6 +34,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static io.netty.util.AsciiString.contentEquals;
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.USER_AGENT;
 import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
@@ -308,7 +308,7 @@ public class HttpRequestDecoderTest {
             assertEquals(expectedContentLength, chunk.getContent().getReadableBytes());
             assertTrue(chunk.getTrailers().isEmpty());
         } else {
-            Buffer actual = BufferAllocators.DEFAULT.getAllocator().newBuffer(-expectedContentLength);
+            Buffer actual = DEFAULT_ALLOCATOR.newBuffer(-expectedContentLength);
             Object chunk;
             for (;;) {
                 chunk = channel.readInbound();
