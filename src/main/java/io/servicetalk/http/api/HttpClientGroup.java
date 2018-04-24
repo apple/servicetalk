@@ -23,24 +23,30 @@ import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
 /**
  * Logically this interface provides a <pre>{@code Map<GroupKey, HttpClient>}</pre>, and also the ability to create new
  * {@link HttpClient} objects if none yet exist.
+ *
  * @param <UnresolvedAddress> The address type used to create new {@link HttpClient}s.
- * @param <I> The type of content of the request.
- * @param <O> The type of content of the response.
+ * @param <I> The type of payload of the request.
+ * @param <O> The type of payload of the response.
  */
 public interface HttpClientGroup<UnresolvedAddress, I, O> extends ListenableAsyncCloseable {
     /**
      * Locate or create a client and delegate to {@link HttpClient#request(HttpRequest)}.
-     * @param key identifies the {@link HttpClient} to use, or provides enough information to create a {@link HttpClient} if non exist.
-     * @param request the request to send.
-     * @return The response.
+     *
+     * @param key Identifies the {@link HttpClient} to use, or provides enough information to create
+     * an {@link HttpClient} if non exist.
+     * @param request The {@link HttpRequest} to send.
+     * @return The received {@link HttpResponse}.
      * @see HttpClient#request(HttpRequest)
      */
     Single<HttpResponse<O>> request(GroupKey<UnresolvedAddress> key, HttpRequest<I> request);
 
     /**
      * Locate or create a client and delegate to {@link HttpClient#reserveConnection(HttpRequest)}.
-     * @param key identifies the {@link HttpClient} to use, or provides enough information to create a {@link HttpClient} if non exist.
-     * @param request the request which may provide more information about which {@link HttpConnection} to reserve.
+     *
+     * @param key Identifies the {@link HttpClient} to use, or provides enough information to create
+     * an {@link HttpClient} if non exist.
+     * @param request The {@link HttpRequest} which may provide more information about which {@link HttpConnection} to
+     * reserve.
      * @return A {@link ReservedHttpConnection}.
      * @see HttpClient#reserveConnection(HttpRequest)
      */
