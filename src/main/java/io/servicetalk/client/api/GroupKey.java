@@ -15,16 +15,19 @@
  */
 package io.servicetalk.client.api;
 
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.IoExecutor;
 
 /**
  * Identifies a client within a group of clients, and provides enough information to create a client if non exist.
+ *
  * @param <Address> The type of address used to create new clients (typically this is unresolved address).
  */
 public interface GroupKey<Address> {
     /**
      * Get the address to use when looking for or creating a new client. This address is typically unresolved, but
      * may not be a requirement depending upon configuration.
+     *
      * @return the address to use when looking for or creating a new client. This address is typically unresolved, but
      * may not be a requirement depending upon configuration.
      */
@@ -32,7 +35,15 @@ public interface GroupKey<Address> {
 
     /**
      * Get the {@link IoExecutor} to use when looking for or creating a new client.
+     *
      * @return the {@link IoExecutor} to use when looking for or creating a new client.
      */
     IoExecutor getIoExecutor();
+
+    /**
+     * Get the {@link Executor} to use when looking for or creating a new client.
+     *
+     * @return the {@link Executor} to use when looking for or creating a new client.
+     */
+    Executor getExecutor();
 }
