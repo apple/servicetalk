@@ -17,7 +17,6 @@ package io.servicetalk.redis.netty;
 
 import io.servicetalk.buffer.Buffer;
 import io.servicetalk.buffer.BufferAllocator;
-import io.servicetalk.buffer.netty.BufferAllocators;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
@@ -34,6 +33,7 @@ import org.reactivestreams.Subscription;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage.KeyType.Channel;
 import static io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage.KeyType.Pattern;
@@ -50,28 +50,28 @@ import static java.util.Objects.requireNonNull;
 final class SubscribedChannelReadStream extends Publisher<SubscribedChannelReadStream.PubSubChannelMessage> {
 
     private static final CompleteBulkString MESSAGE_PUBSUB_MESSAGE_TYPE =
-            new CompleteBulkString(BufferAllocators.DEFAULT.getAllocator().fromAscii("message").asReadOnly());
+            new CompleteBulkString(DEFAULT_ALLOCATOR.fromAscii("message").asReadOnly());
 
     private static final CompleteBulkString PMESSAGE_PUBSUB_MESSAGE_TYPE =
-            new CompleteBulkString(BufferAllocators.DEFAULT.getAllocator().fromAscii("pmessage").asReadOnly());
+            new CompleteBulkString(DEFAULT_ALLOCATOR.fromAscii("pmessage").asReadOnly());
 
     private static final CompleteBulkString PONG_PUBSUB_MESSAGE_TYPE =
-            new CompleteBulkString(BufferAllocators.DEFAULT.getAllocator().fromAscii("pong").asReadOnly());
+            new CompleteBulkString(DEFAULT_ALLOCATOR.fromAscii("pong").asReadOnly());
 
     private static final CompleteBulkString OK_PUBSUB_MESSAGE_TYPE =
-            new CompleteBulkString(BufferAllocators.DEFAULT.getAllocator().fromAscii("OK").asReadOnly());
+            new CompleteBulkString(DEFAULT_ALLOCATOR.fromAscii("OK").asReadOnly());
 
     private static final CompleteBulkString SUBSCRIBE_PUBSUB_MESSAGE_TYPE =
-            new CompleteBulkString(BufferAllocators.DEFAULT.getAllocator().fromAscii("subscribe").asReadOnly());
+            new CompleteBulkString(DEFAULT_ALLOCATOR.fromAscii("subscribe").asReadOnly());
 
     private static final CompleteBulkString PSUBSCRIBE_PUBSUB_MESSAGE_TYPE =
-            new CompleteBulkString(BufferAllocators.DEFAULT.getAllocator().fromAscii("psubscribe").asReadOnly());
+            new CompleteBulkString(DEFAULT_ALLOCATOR.fromAscii("psubscribe").asReadOnly());
 
     private static final CompleteBulkString UNSUBSCRIBE_PUBSUB_MESSAGE_TYPE =
-            new CompleteBulkString(BufferAllocators.DEFAULT.getAllocator().fromAscii("unsubscribe").asReadOnly());
+            new CompleteBulkString(DEFAULT_ALLOCATOR.fromAscii("unsubscribe").asReadOnly());
 
     private static final CompleteBulkString PUNSUBSCRIBE_PUBSUB_MESSAGE_TYPE =
-            new CompleteBulkString(BufferAllocators.DEFAULT.getAllocator().fromAscii("punsubscribe").asReadOnly());
+            new CompleteBulkString(DEFAULT_ALLOCATOR.fromAscii("punsubscribe").asReadOnly());
 
     private final BufferAllocator allocator;
     private final Publisher<RedisData> original;

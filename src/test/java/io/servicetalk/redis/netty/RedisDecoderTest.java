@@ -16,7 +16,6 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.buffer.Buffer;
-import io.servicetalk.buffer.netty.BufferAllocators;
 import io.servicetalk.redis.api.RedisData;
 
 import io.netty.buffer.ByteBuf;
@@ -27,6 +26,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
@@ -199,10 +199,10 @@ public class RedisDecoderTest {
     }
 
     private static Buffer emptyBuffer() {
-        return BufferAllocators.DEFAULT.getAllocator().newBuffer();
+        return DEFAULT_ALLOCATOR.newBuffer();
     }
 
     private static Buffer asciiBuffer(CharSequence sequence) {
-        return BufferAllocators.DEFAULT.getAllocator().fromAscii(sequence);
+        return DEFAULT_ALLOCATOR.fromAscii(sequence);
     }
 }

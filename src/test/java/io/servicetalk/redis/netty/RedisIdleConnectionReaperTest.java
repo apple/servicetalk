@@ -15,7 +15,6 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.servicetalk.buffer.netty.BufferAllocators;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
@@ -40,6 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.redis.api.RedisData.NULL;
@@ -173,7 +173,7 @@ public class RedisIdleConnectionReaperTest {
 
     @Test
     public void commanderRequestsAreInstrumented() {
-        when(delegateConnection.getBufferAllocator()).thenReturn(BufferAllocators.DEFAULT.getAllocator());
+        when(delegateConnection.getBufferAllocator()).thenReturn(DEFAULT_ALLOCATOR);
         when(delegateConnection.request(any(RedisRequest.class), eq(String.class))).thenReturn(success("pong"));
 
         commandSubscriber.listen(idleAwareConnection.asCommander().ping())
