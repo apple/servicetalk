@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.Buffer;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
-import io.servicetalk.http.api.DefaultHttpResponseFactory;
 import io.servicetalk.http.api.DefaultHttpTrailersFactory;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaders;
@@ -32,6 +31,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.buffer.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.SERVER;
@@ -40,6 +40,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
 import static io.servicetalk.http.api.HttpPayloadChunks.newLastPayloadChunk;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
+import static io.servicetalk.http.api.HttpResponseMetaDataFactory.newResponseMetaData;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static java.lang.Integer.toHexString;
 import static java.lang.String.valueOf;
@@ -62,7 +63,7 @@ public class HttpResponseEncoderTest {
         ThreadLocalRandom.current().nextBytes(content);
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, EmptyHttpHeaders.INSTANCE);
-        HttpResponseMetaData response = DefaultHttpResponseFactory.INSTANCE.newResponseMetaData(HTTP_1_1, OK);
+        HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
         response.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test")
@@ -76,7 +77,7 @@ public class HttpResponseEncoderTest {
     @Test(expected = IllegalArgumentException.class)
     public void contentLengthNoTrailersHeaderWhiteSpaceThrowByDefault() {
         EmbeddedChannel channel = newEmbeddedChannel();
-        HttpResponseMetaData response = DefaultHttpResponseFactory.INSTANCE.newResponseMetaData(HTTP_1_1, OK);
+        HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
         try {
             response.getHeaders().add(" " + CONNECTION, KEEP_ALIVE);
         } finally {
@@ -92,8 +93,8 @@ public class HttpResponseEncoderTest {
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
 
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, EmptyHttpHeaders.INSTANCE);
-        HttpResponseMetaData response = new DefaultHttpResponseFactory(new DefaultHttpHeadersFactory(false))
-                .newResponseMetaData(HTTP_1_1, OK);
+        HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK,
+                new DefaultHttpHeadersFactory(false).newHeaders());
         response.getHeaders()
                 .add(" " + CONNECTION + " ", " " + KEEP_ALIVE)
                 .add("  " + SERVER + "   ", "    unit-test   ")
@@ -123,7 +124,7 @@ public class HttpResponseEncoderTest {
         ThreadLocalRandom.current().nextBytes(content);
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, EmptyHttpHeaders.INSTANCE);
-        HttpResponseMetaData response = DefaultHttpResponseFactory.INSTANCE.newResponseMetaData(HTTP_1_1, OK);
+        HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
         response.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test")
@@ -143,7 +144,7 @@ public class HttpResponseEncoderTest {
         HttpHeaders trailers = DefaultHttpTrailersFactory.INSTANCE.newTrailers();
         trailers.add("TrailerStatus", "good");
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, trailers);
-        HttpResponseMetaData response = DefaultHttpResponseFactory.INSTANCE.newResponseMetaData(HTTP_1_1, OK);
+        HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
         response.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test")
@@ -158,7 +159,7 @@ public class HttpResponseEncoderTest {
     public void chunkedNoTrailersNoContent() {
         EmbeddedChannel channel = newEmbeddedChannel();
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(EMPTY_BUFFER, EmptyHttpHeaders.INSTANCE);
-        HttpResponseMetaData response = DefaultHttpResponseFactory.INSTANCE.newResponseMetaData(HTTP_1_1, OK);
+        HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
         response.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test")
@@ -173,7 +174,7 @@ public class HttpResponseEncoderTest {
     public void variableNoTrailersNoContent() {
         EmbeddedChannel channel = newEmbeddedChannel();
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(EMPTY_BUFFER, EmptyHttpHeaders.INSTANCE);
-        HttpResponseMetaData response = DefaultHttpResponseFactory.INSTANCE.newResponseMetaData(HTTP_1_1, OK);
+        HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
         response.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test");
@@ -190,7 +191,7 @@ public class HttpResponseEncoderTest {
         ThreadLocalRandom.current().nextBytes(content);
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, EmptyHttpHeaders.INSTANCE);
-        HttpResponseMetaData response = DefaultHttpResponseFactory.INSTANCE.newResponseMetaData(HTTP_1_1, OK);
+        HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
         response.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test");
@@ -209,7 +210,7 @@ public class HttpResponseEncoderTest {
         HttpHeaders trailers = DefaultHttpTrailersFactory.INSTANCE.newTrailers();
         trailers.add("TrailerStatus", "good");
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, trailers);
-        HttpResponseMetaData response = DefaultHttpResponseFactory.INSTANCE.newResponseMetaData(HTTP_1_1, OK);
+        HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
         response.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test");
@@ -230,7 +231,7 @@ public class HttpResponseEncoderTest {
         HttpHeaders trailers = DefaultHttpTrailersFactory.INSTANCE.newTrailers();
         trailers.add("TrailerStatus", "good");
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, trailers);
-        HttpResponseMetaData response = DefaultHttpResponseFactory.INSTANCE.newResponseMetaData(HTTP_1_1, OK);
+        HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
         response.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test")

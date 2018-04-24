@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.Buffer;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
-import io.servicetalk.http.api.DefaultHttpRequestFactory;
 import io.servicetalk.http.api.DefaultHttpTrailersFactory;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaders;
@@ -32,6 +31,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.buffer.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
@@ -40,6 +40,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
 import static io.servicetalk.http.api.HttpPayloadChunks.newLastPayloadChunk;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
+import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static java.lang.Integer.toHexString;
 import static java.lang.String.valueOf;
@@ -62,8 +63,8 @@ public class HttpRequestEncoderTest {
         ThreadLocalRandom.current().nextBytes(content);
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, EmptyHttpHeaders.INSTANCE);
-        HttpRequestMetaData request = DefaultHttpRequestFactory.INSTANCE.newRequestMetaData(HTTP_1_1,
-                GET, "/some/path?foo=bar&baz=yyy");
+        HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
+                GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
         request.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(USER_AGENT, "unit-test")
@@ -77,8 +78,8 @@ public class HttpRequestEncoderTest {
     @Test(expected = IllegalArgumentException.class)
     public void contentLengthNoTrailersHeaderWhiteSpaceThrowByDefault() {
         EmbeddedChannel channel = newEmbeddedChannel();
-        HttpRequestMetaData request = DefaultHttpRequestFactory.INSTANCE.newRequestMetaData(HTTP_1_1,
-                GET, "/some/path?foo=bar&baz=yyy");
+        HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
+                GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
         try {
             request.getHeaders().add(" " + CONNECTION, KEEP_ALIVE);
         } finally {
@@ -94,8 +95,8 @@ public class HttpRequestEncoderTest {
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
 
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, EmptyHttpHeaders.INSTANCE);
-        HttpRequestMetaData request = new DefaultHttpRequestFactory(new DefaultHttpHeadersFactory(false))
-                .newRequestMetaData(HTTP_1_1, GET, "/some/path?foo=bar&baz=yyy");
+        HttpRequestMetaData request = newRequestMetaData(HTTP_1_1, GET, "/some/path?foo=bar&baz=yyy",
+                new DefaultHttpHeadersFactory(false).newHeaders());
         request.getHeaders()
                 .add(" " + CONNECTION + " ", " " + KEEP_ALIVE)
                 .add("  " + USER_AGENT + "   ", "    unit-test   ")
@@ -125,8 +126,8 @@ public class HttpRequestEncoderTest {
         ThreadLocalRandom.current().nextBytes(content);
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, EmptyHttpHeaders.INSTANCE);
-        HttpRequestMetaData request = DefaultHttpRequestFactory.INSTANCE.newRequestMetaData(HTTP_1_1,
-                GET, "/some/path?foo=bar&baz=yyy");
+        HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
+                GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
         request.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(USER_AGENT, "unit-test")
@@ -146,8 +147,8 @@ public class HttpRequestEncoderTest {
         HttpHeaders trailers = DefaultHttpTrailersFactory.INSTANCE.newTrailers();
         trailers.add("TrailerStatus", "good");
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, trailers);
-        HttpRequestMetaData request = DefaultHttpRequestFactory.INSTANCE.newRequestMetaData(HTTP_1_1,
-                GET, "/some/path?foo=bar&baz=yyy");
+        HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
+                GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
         request.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(USER_AGENT, "unit-test")
@@ -162,8 +163,8 @@ public class HttpRequestEncoderTest {
     public void chunkedNoTrailersNoContent() {
         EmbeddedChannel channel = newEmbeddedChannel();
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(EMPTY_BUFFER, EmptyHttpHeaders.INSTANCE);
-        HttpRequestMetaData request = DefaultHttpRequestFactory.INSTANCE.newRequestMetaData(HTTP_1_1,
-                GET, "/some/path?foo=bar&baz=yyy");
+        HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
+                GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
         request.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(USER_AGENT, "unit-test")
@@ -178,8 +179,8 @@ public class HttpRequestEncoderTest {
     public void variableNoTrailersNoContent() {
         EmbeddedChannel channel = newEmbeddedChannel();
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(EMPTY_BUFFER, EmptyHttpHeaders.INSTANCE);
-        HttpRequestMetaData request = DefaultHttpRequestFactory.INSTANCE.newRequestMetaData(HTTP_1_1,
-                GET, "/some/path?foo=bar&baz=yyy");
+        HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
+                GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
         request.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(USER_AGENT, "unit-test");
@@ -196,8 +197,8 @@ public class HttpRequestEncoderTest {
         ThreadLocalRandom.current().nextBytes(content);
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, EmptyHttpHeaders.INSTANCE);
-        HttpRequestMetaData request = DefaultHttpRequestFactory.INSTANCE.newRequestMetaData(HTTP_1_1,
-                GET, "/some/path?foo=bar&baz=yyy");
+        HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
+                GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
         request.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(USER_AGENT, "unit-test");
@@ -216,8 +217,8 @@ public class HttpRequestEncoderTest {
         HttpHeaders trailers = DefaultHttpTrailersFactory.INSTANCE.newTrailers();
         trailers.add("TrailerStatus", "good");
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, trailers);
-        HttpRequestMetaData request = DefaultHttpRequestFactory.INSTANCE.newRequestMetaData(HTTP_1_1,
-                GET, "/some/path?foo=bar&baz=yyy");
+        HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
+                GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
         request.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(USER_AGENT, "unit-test");
@@ -238,8 +239,8 @@ public class HttpRequestEncoderTest {
         HttpHeaders trailers = DefaultHttpTrailersFactory.INSTANCE.newTrailers();
         trailers.add("TrailerStatus", "good");
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, trailers);
-        HttpRequestMetaData request = DefaultHttpRequestFactory.INSTANCE.newRequestMetaData(HTTP_1_1,
-                GET, "/some/path?foo=bar&baz=yyy");
+        HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
+                GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
         request.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(USER_AGENT, "unit-test")

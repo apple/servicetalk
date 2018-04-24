@@ -37,6 +37,7 @@ import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethods;
 import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.HttpTrailersFactory;
 import io.servicetalk.http.api.LastHttpPayloadChunk;
 
 import io.netty.buffer.ByteBuf;
@@ -79,6 +80,7 @@ import static java.lang.Character.isISOControl;
 import static java.lang.Character.isWhitespace;
 import static java.lang.Math.min;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.util.Objects.requireNonNull;
 
 abstract class HttpObjectDecoder extends ByteToMessageDecoder {
     private static final ByteBuf HTTP_1_1_BUF = copiedBuffer("HTTP/1.1", US_ASCII);
@@ -97,6 +99,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
     private final int maxInitialLineSize;
     private final boolean chunkedSupported;
 
+    private final HttpTrailersFactory trailersFactory;
     @Nullable
     private HttpMetaData message;
     @Nullable
@@ -126,7 +129,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
     /**
      * Creates a new instance with the specified parameters.
      */
-    protected HttpObjectDecoder(
+    protected HttpObjectDecoder(HttpTrailersFactory trailersFactory,
             int maxInitialLineLength, int maxHeaderSize, int maxChunkSize, boolean chunkedSupported) {
         if (maxInitialLineLength <= 0) {
             throw new IllegalArgumentException(
@@ -143,6 +146,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
                     "maxChunkSize must be a positive integer: " +
                             maxChunkSize);
         }
+        this.trailersFactory = requireNonNull(trailersFactory);
         this.maxChunkSize = maxChunkSize;
         this.chunkedSupported = chunkedSupported;
         this.maxInitialLineSize = maxInitialLineLength;
@@ -168,18 +172,6 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
      * <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1">start line</a>.
      */
     protected abstract HttpMetaData createMessage(ByteBuf first, ByteBuf second, ByteBuf third);
-
-    /**
-     * Create a new {@link HttpHeaders} object that can be used for trailing headers.
-     * @return a new {@link HttpHeaders} object that can be used for trailing headers.
-     */
-    protected abstract HttpHeaders newTrailers();
-
-    /**
-     * Create a new {@link HttpHeaders} object when there are no trailing headers.
-     * @return a new {@link HttpHeaders} object when there are no trailing headers.
-     */
-    protected abstract HttpHeaders newEmptyTrailers();
 
     @Override
     protected final void decode(ChannelHandlerContext ctx, ByteBuf buffer) {
@@ -322,7 +314,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
                     // https://tools.ietf.org/html/rfc7230.html#section-4.1
                     // This is not chunked encoding so there will not be any trailers.
                     ctx.fireChannelRead(newLastPayloadChunk(newBufferFrom(content),
-                                        newEmptyTrailers()));
+                                        trailersFactory.newEmptyTrailers()));
                     resetNow();
                 } else {
                     ctx.fireChannelRead(newPayloadChunk(newBufferFrom(content)));
@@ -634,7 +626,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
         if (lfIndex - 2 > buffer.readerIndex()) {
             LastHttpPayloadChunk trailer = this.trailer;
             if (trailer == null) {
-                trailer = this.trailer = newLastPayloadChunk(EMPTY_BUFFER, newTrailers());
+                trailer = this.trailer = newLastPayloadChunk(EMPTY_BUFFER, trailersFactory.newTrailers());
             }
 
             return parseAllHeaders(buffer, trailer.getTrailers(), lfIndex, maxInitialLineSize) ? trailer : null;

@@ -15,10 +15,10 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpMetaData;
-import io.servicetalk.http.api.HttpRequestFactory;
 import io.servicetalk.http.api.HttpRequestMethod;
+import io.servicetalk.http.api.HttpTrailersFactory;
 
 import io.netty.buffer.ByteBuf;
 
@@ -27,6 +27,7 @@ import java.util.Map;
 
 import static io.netty.buffer.Unpooled.copiedBuffer;
 import static io.servicetalk.buffer.netty.BufferUtil.newBufferFrom;
+import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethods.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethods.DELETE;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
@@ -54,12 +55,12 @@ final class HttpRequestDecoder extends HttpObjectDecoder {
             put(copiedBuffer("CONNECT", US_ASCII), CONNECT);
         }
     };
-    private final HttpRequestFactory requestFactory;
+    private final HttpHeadersFactory headersFactory;
 
-    HttpRequestDecoder(HttpRequestFactory requestFactory,
+    HttpRequestDecoder(HttpHeadersFactory headersFactory, HttpTrailersFactory trailersFactory,
                        int maxInitialLineLength, int maxHeaderSize, int maxChunkSize, boolean chunkedSupported) {
-        super(maxInitialLineLength, maxHeaderSize, maxChunkSize, chunkedSupported);
-        this.requestFactory = requireNonNull(requestFactory);
+        super(trailersFactory, maxInitialLineLength, maxHeaderSize, maxChunkSize, chunkedSupported);
+        this.headersFactory = requireNonNull(headersFactory);
     }
 
     @Override
@@ -69,19 +70,10 @@ final class HttpRequestDecoder extends HttpObjectDecoder {
 
     @Override
     protected HttpMetaData createMessage(ByteBuf first, ByteBuf second, ByteBuf third) {
-        return requestFactory.newRequestMetaData(nettyBufferToHttpVersion(third),
-                                         nettyBufferToHttpMethod(first),
-                                         second.toString(US_ASCII));
-    }
-
-    @Override
-    protected HttpHeaders newTrailers() {
-        return requestFactory.newTrailers();
-    }
-
-    @Override
-    protected HttpHeaders newEmptyTrailers() {
-        return requestFactory.newEmptyTrailers();
+        return newRequestMetaData(nettyBufferToHttpVersion(third),
+                                  nettyBufferToHttpMethod(first),
+                                  second.toString(US_ASCII),
+                                  headersFactory.newHeaders());
     }
 
     private static HttpRequestMethod nettyBufferToHttpMethod(ByteBuf buf) {
