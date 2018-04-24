@@ -16,6 +16,7 @@
 package io.servicetalk.buffer.netty;
 
 import io.servicetalk.buffer.Buffer;
+import io.servicetalk.buffer.BufferAllocator;
 
 import io.netty.buffer.ByteBuf;
 import org.junit.Test;
@@ -24,11 +25,12 @@ import org.junit.runners.Parameterized;
 
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_DIRECT_ALLOCATOR;
+import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_HEAP_ALLOCATOR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -36,86 +38,84 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public class BufferAllocatorsTest {
 
-    private final BufferAllocators allocators;
+    private final BufferAllocator allocator;
 
-    public BufferAllocatorsTest(BufferAllocators allocators) {
-        this.allocators = allocators;
+    public BufferAllocatorsTest(BufferAllocator allocator) {
+        this.allocator = allocator;
     }
 
     @Parameterized.Parameters(name = "{index}: allocators = {0}")
     public static Collection<Object> data() {
-        List<Object> params = new ArrayList<>();
-        Collections.addAll(params, BufferAllocators.values());
-        return params;
+        return Arrays.asList(DEFAULT_ALLOCATOR, PREFER_DIRECT_ALLOCATOR, PREFER_HEAP_ALLOCATOR);
     }
 
     @Test
     public void testNewBuffer() {
-        assertBuffer(allocators.getAllocator().newBuffer());
+        assertBuffer(allocator.newBuffer());
     }
 
     @Test
     public void testNewBufferDirect() {
-        assertBuffer(allocators.getAllocator().newBuffer(true), true);
+        assertBuffer(allocator.newBuffer(true), true);
     }
 
     @Test
     public void testNewBufferHeap() {
-        assertBuffer(allocators.getAllocator().newBuffer(false), false);
+        assertBuffer(allocator.newBuffer(false), false);
     }
 
     @Test
     public void testNewCompositeBuffer() {
-        assertByteBufIsUnreleasable(allocators.getAllocator().newCompositeBuffer());
+        assertByteBufIsUnreleasable(allocator.newCompositeBuffer());
     }
 
     @Test
     public void testFromAscii() {
-        assertBuffer(allocators.getAllocator().fromAscii("test"));
+        assertBuffer(allocator.fromAscii("test"));
     }
 
     @Test
     public void testFromAsciiDirect() {
-        assertBuffer(allocators.getAllocator().fromAscii("test", true), true);
+        assertBuffer(allocator.fromAscii("test", true), true);
     }
 
     @Test
     public void testFromAsciiHeap() {
-        assertBuffer(allocators.getAllocator().fromAscii("test", false), false);
+        assertBuffer(allocator.fromAscii("test", false), false);
     }
 
     @Test
     public void testFromUtf8() {
-        assertBuffer(allocators.getAllocator().fromUtf8("test"));
+        assertBuffer(allocator.fromUtf8("test"));
     }
 
     @Test
     public void testFromUtf8Direct() {
-        assertBuffer(allocators.getAllocator().fromUtf8("test", true), true);
+        assertBuffer(allocator.fromUtf8("test", true), true);
     }
 
     @Test
     public void testFromUtf8Heap() {
-        assertBuffer(allocators.getAllocator().fromUtf8("test", false), false);
+        assertBuffer(allocator.fromUtf8("test", false), false);
     }
 
     @Test
     public void testFromSequence() {
-        assertBuffer(allocators.getAllocator().fromSequence("test", StandardCharsets.US_ASCII));
+        assertBuffer(allocator.fromSequence("test", StandardCharsets.US_ASCII));
     }
 
     @Test
     public void testFromSequenceDirect() {
-        assertBuffer(allocators.getAllocator().fromSequence("test", StandardCharsets.US_ASCII, true), true);
+        assertBuffer(allocator.fromSequence("test", StandardCharsets.US_ASCII, true), true);
     }
 
     @Test
     public void testFromSequenceHeap() {
-        assertBuffer(allocators.getAllocator().fromSequence("test", StandardCharsets.US_ASCII, false), false);
+        assertBuffer(allocator.fromSequence("test", StandardCharsets.US_ASCII, false), false);
     }
 
     private void assertBuffer(Buffer buffer) {
-        assertBuffer(buffer, allocators != BufferAllocators.PREFER_HEAP);
+        assertBuffer(buffer, allocator != PREFER_HEAP_ALLOCATOR);
     }
 
     private static void assertBuffer(Buffer buffer, boolean direct) {
