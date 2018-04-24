@@ -17,7 +17,6 @@ package io.servicetalk.redis.api;
 
 import io.servicetalk.buffer.Buffer;
 import io.servicetalk.buffer.BufferAllocator;
-import io.servicetalk.buffer.netty.BufferAllocators;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.redis.api.RedisData.ArraySize;
@@ -41,6 +40,7 @@ import org.junit.runner.RunWith;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static java.lang.String.join;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -71,7 +71,7 @@ public class RedisRequesterUtilsTest {
     public void setup() {
         requestor = mock(RedisRequester.class);
         request = mock(RedisRequest.class);
-        allocator = BufferAllocators.DEFAULT.getAllocator();
+        allocator = DEFAULT_ALLOCATOR;
         when(requestor.getBufferAllocator()).thenReturn(allocator);
         when(requestor.request(any())).thenReturn(publisher.getPublisher());
     }
