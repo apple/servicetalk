@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.ServerContext;
@@ -32,11 +33,12 @@ public interface HttpServerStarter {
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
      * @param address Listen address for the server.
+     * @param executor The {@link Executor} for invoking {@code service}. (The caller is responsible for closing the executor.)
      * @param service Service invoked for every request received by this server.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    Single<ServerContext> start(SocketAddress address, HttpService<HttpPayloadChunk, HttpPayloadChunk> service);
+    Single<ServerContext> start(SocketAddress address, Executor executor, HttpService<HttpPayloadChunk, HttpPayloadChunk> service);
 
     /**
      * Starts this server and returns a {@link Single} that completes when the server is successfully started or
@@ -46,9 +48,10 @@ public interface HttpServerStarter {
      *
      * @param address Listen address for the server.
      * @param contextFilter to use for filtering accepted connections.
+     * @param executor The {@link Executor} for invoking {@code service}. (The caller is responsible for closing the executor.)
      * @param service Service invoked for every request received by this server (that pass the provided {@code contextFilter}).
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    Single<ServerContext> start(SocketAddress address, ContextFilter contextFilter, HttpService<HttpPayloadChunk, HttpPayloadChunk> service);
+    Single<ServerContext> start(SocketAddress address, ContextFilter contextFilter, Executor executor, HttpService<HttpPayloadChunk, HttpPayloadChunk> service);
 }
