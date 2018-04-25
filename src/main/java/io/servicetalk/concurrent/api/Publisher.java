@@ -126,15 +126,15 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * <p>
      * Returns a {@link Publisher} that when {@link Publisher#subscribe(Subscriber)} is called the {@code operator}
      * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Publisher}.
-     * <pre>
-     *     Publisher&lt;X&gt; pub = ...;
+     * <pre>{@code
+     *     Publisher<X> pub = ...;
      *     pub.map(..) // A
-     *        .liftSynchronous(original -&lt; modified)
+     *        .liftSynchronous(original -> modified)
      *        .filter(..) // B
-     * </pre>
+     * }</pre>
      * The {@code original -> modified} "operator" <strong>MUST</strong> be "synchronous" in that it does not interact
      * with the original {@link Subscriber} from outside the modified {@link Subscriber} or {@link Subscription}
-     * threads. That is the say this operator will not impact the {@link Executor} constraints already in place between
+     * threads. That is to say this operator will not impact the {@link Executor} constraints already in place between
      * <i>A</i> and <i>B</i> above. If you need asynchronous behavior, or are unsure, see
      * {@link #liftAsynchronous(PublisherOperator)}.
      * @param operator The custom operator logic. The input is the "original" {@link Subscriber} to this
@@ -155,12 +155,12 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * <p>
      * Returns a {@link Publisher} that when {@link Publisher#subscribe(Subscriber)} is called the {@code operator}
      * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Publisher}.
-     * <pre>
-     *     Publisher&lt;X&gt; pub = ...;
+     * <pre>{@code
+     *     Publisher<X> pub = ...;
      *     pub.map(..) // A
-     *        .liftSynchronous(original -&lt; modified)
+     *        .liftSynchronous(original -> modified)
      *        .filter(..) // B
-     * </pre>
+     * }</pre>
      * The {@code original -> modified} "operator" MAY be "asynchronous" in that it may interact with the original
      * {@link Subscriber} from outside the modified {@link Subscriber} or {@link Subscription} threads. More
      * specifically:
