@@ -38,7 +38,6 @@ dependencyManagement {
     // First Party ServiceTalk Dependencies
     dependency "io.servicetalk:servicetalk-http-router-predicate:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-http-netty:0.1.0-SNAPSHOT"
-    dependency "io.servicetalk:servicetalk-http-netty-internal:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-http-api:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-redis-api:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-redis-netty:0.1.0-SNAPSHOT"
