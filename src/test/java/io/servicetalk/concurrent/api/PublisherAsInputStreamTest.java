@@ -1,0 +1,194 @@
+/*
+ * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.servicetalk.concurrent.api;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
+import java.io.IOException;
+import java.io.InputStream;
+
+import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Publisher.empty;
+import static io.servicetalk.concurrent.api.Publisher.from;
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.util.Arrays.copyOfRange;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.rules.ExpectedException.none;
+
+public final class PublisherAsInputStreamTest {
+
+    @Rule
+    public final ExpectedException expected = none();
+
+    @Test
+    public void streamEmitsAllDataInSingleRead() throws IOException {
+        Character[] src = {'1', '2', '3', '4'};
+        InputStream stream = from(immediate(), src).toInputStream(c -> new byte[]{(byte) c.charValue()});
+        byte[] data = new byte[4];
+        int read = stream.read(data, 0, 4);
+        assertThat("Unexpected number of bytes read.", read, is(4));
+        assertThat("Unexpected bytes read.", bytesToCharArray(data, read), equalTo(src));
+        assertThat("Bytes read after complete.", stream.read(), is(-1));
+    }
+
+    @Test
+    public void streamEmitsAllDataInMultipleReads() throws IOException {
+        Character[] src = {'1', '2', '3', '4'};
+        InputStream stream = from(immediate(), src).toInputStream(c -> new byte[]{(byte) c.charValue()});
+        byte[] data = new byte[2];
+
+        int read = stream.read(data, 0, 2);
+        assertThat("Unexpected number of bytes read.", read, is(2));
+        assertThat("Unexpected bytes read.", bytesToCharArray(data, 2),
+                equalTo(copyOfRange(src, 0, 2)));
+        read = stream.read(data, 0, 2);
+        assertThat("Unexpected number of bytes read.", read, is(2));
+        assertThat("Unexpected bytes read.", bytesToCharArray(data, 2),
+                equalTo(copyOfRange(src, 2, 4)));
+
+        assertThat("Bytes read after complete.", stream.read(), is(-1));
+    }
+
+    @Test
+    public void incrementallyFillAnArray() throws IOException {
+        Character[] src = {'1', '2', '3', '4'};
+        InputStream stream = from(immediate(), src).toInputStream(c -> new byte[]{(byte) c.charValue()});
+        byte[] data = new byte[4];
+
+        int read = stream.read(data, 0, 2);
+        assertThat("Unexpected number of bytes read.", read, is(2));
+        assertThat("Unexpected bytes read.", bytesToCharArray(data, 2),
+                equalTo(copyOfRange(src, 0, 2)));
+        read = stream.read(data, 2, 2);
+        assertThat("Unexpected number of bytes read.", read, is(2));
+        assertThat("Unexpected bytes read.", bytesToCharArray(data, 4), equalTo(src));
+
+        assertThat("Bytes read after complete.", stream.read(), is(-1));
+    }
+
+    @Test
+    public void readRequestMoreThanDataBuffer() throws IOException {
+        Character[] src = {'1', '2', '3', '4'};
+        InputStream stream = from(immediate(), src).toInputStream(c -> new byte[]{(byte) c.charValue()});
+        byte[] data = new byte[16];
+        int read = stream.read(data, 0, 16);
+        assertThat("Unexpected number of bytes read.", read, is(4));
+        assertThat("Unexpected bytes read.", bytesToCharArray(data, read), equalTo(src));
+        assertThat("Bytes read after complete.", stream.read(), is(-1));
+    }
+
+    @Test
+    public void readRequestLessThanDataBuffer() throws IOException {
+        String src = "1234";
+        InputStream stream = from(immediate(), src).toInputStream(str -> str.getBytes(US_ASCII));
+        byte[] data = new byte[2];
+        int read = stream.read(data, 0, 2);
+        assertThat("Unexpected number of bytes read.", read, is(2));
+        assertThat("Unexpected bytes read.", bytesToCharArray(data, read), equalTo(new Character[]{'1', '2'}));
+    }
+
+    @Test
+    public void largerSizeItems() throws IOException {
+        InputStream stream = from(immediate(), "123", "45678")
+                .toInputStream(str -> str.getBytes(US_ASCII));
+        byte[] data = new byte[4];
+        int read = stream.read(data, 0, 4);
+        assertThat("Unexpected number of bytes read.", read, is(4));
+        assertThat("Unexpected bytes read.", bytesToCharArray(data, read),
+                equalTo(new Character[]{'1', '2', '3', '4'}));
+    }
+
+    @Test
+    public void streamErrorShouldBeEmittedPostData() throws IOException {
+        DeliberateException de = new DeliberateException();
+        Character[] src = {'1', '2', '3', '4'};
+        InputStream stream = from(immediate(), src).concatWith(Completable.error(de))
+                .toInputStream(c -> new byte[]{(byte) c.charValue()});
+        byte[] data = new byte[4];
+
+        try {
+            stream.read(data, 0, 4);
+        } catch (DeliberateException e) {
+            assertThat("Unexpected exception.", e, sameInstance(de));
+            assertThat("Unexpected bytes read.", bytesToCharArray(data, 4), equalTo(src));
+        }
+    }
+
+    @Test
+    public void closeThenReadShouldBeInvalid() throws IOException {
+        Character[] src = {'1', '2', '3', '4'};
+        InputStream stream = from(immediate(), src).toInputStream(c -> new byte[]{(byte) c.charValue()});
+        stream.close();
+        expected.expect(instanceOf(IOException.class));
+        stream.read();
+    }
+
+    @Test
+    public void singleByteRead() throws IOException {
+        Character[] src = {'1'};
+        InputStream stream = from(immediate(), src).toInputStream(c -> new byte[]{(byte) c.charValue()});
+        int read = stream.read();
+        assertThat("Unexpected bytes read.", (char) read, equalTo('1'));
+        assertThat("Bytes read after complete.", stream.read(), is(-1));
+    }
+
+    @Test
+    public void zeroLengthReadShouldBeValid() throws IOException {
+        Character[] src = {'1'};
+        InputStream stream = from(immediate(), src).toInputStream(c -> new byte[]{(byte) c.charValue()});
+        byte[] data = new byte[0];
+        int read = stream.read(data, 0, 0);
+        assertThat("Unexpected bytes read.", read, equalTo(0));
+        assertThat("Bytes read after complete.", (char) stream.read(), equalTo('1'));
+    }
+
+    @Test
+    public void checkAvailableReturnsCorrectlyWithPrefetch() throws IOException {
+        TestPublisher<String> testPublisher = new TestPublisher<>();
+        testPublisher.sendOnSubscribe();
+        InputStream stream = testPublisher.toInputStream(str -> str.getBytes(US_ASCII));
+        assertThat("Unexpected available return type.", stream.available(), is(0));
+        testPublisher.sendItems("1234");
+        assertThat("Unexpected available return type.", stream.available(), is(0));
+        byte[] data = new byte[2];
+        int read = stream.read(data, 0, 2);
+        assertThat("Unexpected number of bytes read.", read, is(2));
+        assertThat("Unexpected bytes read.", bytesToCharArray(data, read), equalTo(new Character[]{'1', '2'}));
+        assertThat("Unexpected available return type.", stream.available(), is(2));
+    }
+
+    @Test
+    public void completionAndEmptyReadShouldIndicateEOF() throws IOException {
+        InputStream stream = from(immediate(), empty(immediate())).toInputStream(obj -> new byte[0]);
+        byte[] data = new byte[32];
+        int read = stream.read(data, 0, 32);
+        assertThat("Unexpected bytes read.", read, equalTo(-1));
+    }
+
+    private Character[] bytesToCharArray(final byte[] data, final int length) {
+        Character[] toReturn = new Character[length];
+        for (int i = 0; i < length; i++) {
+            toReturn[i] = (char) data[i];
+        }
+        return toReturn;
+    }
+}

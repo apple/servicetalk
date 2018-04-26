@@ -20,6 +20,8 @@ import io.servicetalk.concurrent.Cancellable;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
@@ -1071,6 +1073,143 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
         ForEachSubscriber<T> subscriber = new ForEachSubscriber<>(forEach);
         subscribe(subscriber);
         return subscriber;
+    }
+
+    /**
+     * Subscribes to {@code this} {@link Publisher} and converts all signals received by the {@link Subscriber} to the
+     * returned {@link InputStream} following the below rules:
+     * <ul>
+     *     <li>{@link Subscription} received by {@link Subscriber#onSubscribe(Subscription)} is used to request more
+     *     data when required. If the returned {@link InputStream} is closed, {@link Subscription} is cancelled and
+     *     any unread data is disposed.</li>
+     *     <li>Any items received by {@link Subscriber#onNext(Object)} are converted to a {@code byte[]} using the
+     *     passed {@code serializer}. These {@code byte}s are available to be read from the {@link InputStream}</li>
+     *     <li>Any {@link Throwable} received by {@link Subscriber#onError(Throwable)} is thrown (wrapped in an
+     *     {@link IOException}) when data is read from the returned {@link InputStream}. This error will be thrown
+     *     only after draining all queued data, if any.</li>
+     *     <li>When {@link Subscriber#onComplete()} is called, returned {@link InputStream}'s read methods will return
+     *     {@code -1} to indicate end of stream after emitting all received data.</li>
+     * </ul>
+     *
+     * <h2>Flow control</h2>
+     * This operator may pre-fetch may pre-fetch items from {@code this} {@link Publisher} if available to reduce
+     * blocking for read operations from the returned {@link InputStream}. In order to increase responsiveness of the
+     * {@link InputStream} some amount of buffering may be done. Use {@link #toInputStream(Function, int)} to manage
+     * capacity of this buffer.
+     *
+     * @param serializer {@link Function} that is invoked for every item emitted by {@code this} {@link Publisher}.
+     * @return {@link InputStream} that emits all data emitted by {@code this} {@link Publisher}. If {@code this}
+     * {@link Publisher} terminates with an error, same error is thrown (wrapped in an {@link IOException}) from the
+     * returned {@link InputStream}s read methods after emitting all received data.
+     */
+    public final InputStream toInputStream(Function<T, byte[]> serializer) {
+        return new PublisherAsInputStream<>(new PublisherAsIterable<>(this).iterator(), serializer);
+    }
+
+    /**
+     * Subscribes to {@code this} {@link Publisher} and converts all signals received by the {@link Subscriber} to the
+     * returned {@link InputStream} following the below rules:
+     * <ul>
+     *     <li>{@link Subscription} received by {@link Subscriber#onSubscribe(Subscription)} is used to request more
+     *     data when required. If the returned {@link InputStream} is closed, {@link Subscription} is cancelled and
+     *     any unread data is disposed.</li>
+     *     <li>Any items received by {@link Subscriber#onNext(Object)} are convertedto a {@code byte[]} using the
+     *     passed {@code serializer}. These {@code byte}s are available to be read from the {@link InputStream}</li>
+     *     <li>Any {@link Throwable} received by {@link Subscriber#onError(Throwable)} is thrown (wrapped in an
+     *     {@link IOException}) when data is read from the returned {@link InputStream}. This error will be thrown
+     *     only after draining all queued data, if any.</li>
+     *     <li>When {@link Subscriber#onComplete()} is called, returned {@link InputStream}'s read methods will return
+     *     {@code -1} to indicate end of stream after emitting all received data.</li>
+     * </ul>
+     *
+     * <h2>Flow control</h2>
+     * This operator may pre-fetch items from {@code this} {@link Publisher} if available to reduce blocking for read
+     * operations from the returned {@link InputStream}. In order to increase responsiveness of the {@link InputStream}
+     * some amount of buffering may be done. {@code queueCapacity} can be used to bound this buffer.
+     *
+     * @param serializer {@link Function} that is invoked for every item emitted by {@code this} {@link Publisher}.
+     * @param queueCapacity Hint for the capacity of the intermediary queue that stores items that are emitted by
+     * {@code this} {@link Publisher} but has not yet been read from the returned {@link InputStream}.
+     * @return {@link InputStream} that emits all data emitted by {@code this} {@link Publisher}. If {@code this}
+     * {@link Publisher} terminates with an error, same error is thrown (wrapped in an {@link IOException}) from the
+     * returned {@link InputStream}s read methods after emitting all received data.
+     */
+    public final InputStream toInputStream(Function<T, byte[]> serializer, int queueCapacity) {
+        return new PublisherAsInputStream<>(new PublisherAsIterable<>(this, queueCapacity).iterator(),
+                serializer);
+    }
+
+    /**
+     * Converts {@code this} {@link Publisher} to an {@link Iterable}. Every time {@link Iterable#iterator()} is called
+     * on the returned {@link Iterable}, {@code this} {@link Publisher} is subscribed following the below rules:
+     * <ul>
+     *     <li>{@link Subscription} received by {@link Subscriber#onSubscribe(Subscription)} is used to request more
+     *     data when required.</li>
+     *     <li>Any items received by {@link Subscriber#onNext(Object)} is returned from a call to
+     *     {@link Iterator#next()}.</li>
+     *     <li>Any {@link Throwable} received by {@link Subscriber#onError(Throwable)} is thrown (wrapped in a
+     *     {@link RuntimeException} if required) when {@link Iterator#next()} is called. This error will be thrown
+     *      only after draining all queued data, if any.</li>
+     *     <li>When {@link Subscriber#onComplete()} is called, returned {@link Iterator}s {@link Iterator#hasNext()}
+     *     will return {@code false} {@link Iterator#next()} will throw {@link NoSuchElementException}. This error
+     *     will be thrown only after draining all queued data, if any.</li>
+     * </ul>
+     *
+     * <h2>Flow control</h2>
+     * This operator may pre-fetch items from {@code this} {@link Publisher} if available to reduce blocking of
+     * {@link Iterator#hasNext()} from the returned {@link Iterable}. In order to increase responsiveness of
+     * the {@link Iterator} some amount of buffering may be done. Use {@link #toIterable(int)} to manage capacity of
+     * this buffer.
+     *
+     * <h2>Blocking</h2>
+     * The returned {@link Iterator} from the returned {@link Iterable} will block on {@link Iterator#hasNext()} and
+     * {@link Iterator#next()} if no data is available. This operator may try to reduce this blocking by requesting
+     * data ahead of time.
+     *
+     * @return {@link Iterable} representing {@code this} {@link Publisher}. Every time {@link Iterable#iterator()} is
+     * invoked on the {@link Iterable}, {@code this} {@link Publisher} is subscribed. {@link Iterator} returned from
+     * this {@link Iterable} does not support {@link Iterator#remove()}.
+     */
+    public final Iterable<T> toIterable() {
+        return new PublisherAsIterable<>(this);
+    }
+
+    /**
+     * Converts {@code this} {@link Publisher} to an {@link Iterable}. Every time {@link Iterable#iterator()} is called
+     * on the returned {@link Iterable}, {@code this} {@link Publisher} is subscribed following the below rules:
+     * <ul>
+     *     <li>{@link Subscription} received by {@link Subscriber#onSubscribe(Subscription)} is used to request more
+     *     data when required.</li>
+     *     <li>Any items received by {@link Subscriber#onNext(Object)} is returned from a call to
+     *     {@link Iterator#next()}.</li>
+     *     <li>Any {@link Throwable} received by {@link Subscriber#onError(Throwable)} is thrown (wrapped in a
+     *     {@link RuntimeException} if required) when {@link Iterator#next()}. This error will be thrown
+     *      only after draining all queued data, if any.</li>
+     *     <li>When {@link Subscriber#onComplete()} is called, returned {@link Iterator}s {@link Iterator#hasNext()}
+     *     will return {@code false} and {@link Iterator#next()} will throw {@link NoSuchElementException}. This error
+     *     will be thrown only after draining all queued data, if any.</li>
+     * </ul>
+     *
+     * <h2>Flow control</h2>
+     * This operator may pre-fetch items from {@code this} {@link Publisher} if available to reduce blocking of
+     * {@link Iterator#hasNext()} from the returned {@link Iterable}. In order to increase responsiveness of
+     * the {@link Iterator} some amount of buffering may be done. {@code queueCapacityHint} can be used to bound this
+     * buffer.
+     *
+     * <h2>Blocking</h2>
+     * The returned {@link Iterator} from the returned {@link Iterable} will block on {@link Iterator#hasNext()} and
+     * {@link Iterator#next()} if no data is available. This operator may try to reduce this blocking by requesting
+     * data ahead of time.
+     *
+     * @param queueCapacityHint Hint for the capacity of the intermediary queue that stores items that are emitted by
+     * {@code this} {@link Publisher} but has not yet been returned from the {@link Iterator}.
+     *
+     * @return {@link Iterable} representing {@code this} {@link Publisher}. Every time {@link Iterable#iterator()} is
+     * invoked on the {@link Iterable}, {@code this} {@link Publisher} is subscribed. {@link Iterator} returned from
+     * this {@link Iterable} does not support {@link Iterator#remove()}.
+     */
+    public final Iterable<T> toIterable(int queueCapacityHint) {
+        return new PublisherAsIterable<>(this, queueCapacityHint);
     }
 
     /**
