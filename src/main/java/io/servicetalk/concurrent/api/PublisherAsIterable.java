@@ -117,8 +117,7 @@ final class PublisherAsIterable<T> implements Iterable<T> {
         @Override
         public void onNext(@Nullable T t) {
             --requested;
-            t = wrapNull(t);
-            if (!data.offer(t)) { // We have received more data than we requested.
+            if (!data.offer(t == null ? NULL_PLACEHOLDER : t)) { // We have received more data than we requested.
                 subscription.cancel();
                 throw new QueueFullException("publisher-iterator", maxBufferedItems);
             }
@@ -206,11 +205,6 @@ final class PublisherAsIterable<T> implements Iterable<T> {
             @SuppressWarnings("unchecked")
             T t = (T) signal;
             return t;
-        }
-
-        @SuppressWarnings("unchecked")
-        private T wrapNull(@Nullable final T t) {
-            return t == null ? (T) NULL_PLACEHOLDER : t;
         }
     }
 }
