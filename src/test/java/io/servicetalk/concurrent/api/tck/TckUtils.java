@@ -30,11 +30,15 @@ final class TckUtils {
      * @return the publisher.
      */
     static Publisher<Integer> newPublisher(int numElements) {
+        return Publisher.from(newArray(numElements));
+    }
+
+    static Integer[] newArray(int numElements) {
         Integer[] values = new Integer[numElements];
         for (int i = 0; i < values.length; i++) {
             values[i] = i;
         }
-        return Publisher.from(values);
+        return values;
     }
 
     static int maxElementsFromPublisher() {

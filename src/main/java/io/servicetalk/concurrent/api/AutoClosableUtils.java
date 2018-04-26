@@ -13,17 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api.tck;
+package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.api.Publisher;
+final class AutoClosableUtils {
+    private AutoClosableUtils() {
+        // no instances
+    }
 
-import org.testng.annotations.Test;
-
-@Test
-public class PublisherDeferFromTckTest extends PublisherFromArrayTckTest {
-
-    @Override
-    public Publisher<Integer> createPublisher(long elements) {
-        return Publisher.defer(() -> PublisherDeferFromTckTest.super.createPublisher(elements));
+    static void closeAndReThrow(AutoCloseable closeable) {
+        try {
+            closeable.close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

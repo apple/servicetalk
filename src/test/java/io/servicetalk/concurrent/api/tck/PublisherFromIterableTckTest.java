@@ -15,15 +15,24 @@
  */
 package io.servicetalk.concurrent.api.tck;
 
-import io.servicetalk.concurrent.api.Publisher;
-
+import org.reactivestreams.Publisher;
 import org.testng.annotations.Test;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.tck.TckUtils.newArray;
+import static io.servicetalk.concurrent.api.tck.TckUtils.requestNToInt;
+import static java.util.Arrays.asList;
+
 @Test
-public class PublisherDeferFromTckTest extends PublisherFromArrayTckTest {
+public class PublisherFromIterableTckTest extends AbstractPublisherTckTest<Integer> {
+    @Override
+    public Publisher<Integer> createPublisher(final long elements) {
+        return from(immediate(), () -> asList(newArray(requestNToInt(elements))).iterator());
+    }
 
     @Override
-    public Publisher<Integer> createPublisher(long elements) {
-        return Publisher.defer(() -> PublisherDeferFromTckTest.super.createPublisher(elements));
+    public long maxElementsFromPublisher() {
+        return TckUtils.maxElementsFromPublisher();
     }
 }

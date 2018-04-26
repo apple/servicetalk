@@ -19,11 +19,13 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.function.Function.identity;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class PublisherFlatMapIterableTest {
@@ -31,6 +33,22 @@ public class PublisherFlatMapIterableTest {
     public final PublisherRule<List<String>> publisher = new PublisherRule<>();
     @Rule
     public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
+    @Rule
+    public final PublisherRule<BlockingIterable<String>> cancellablePublisher = new PublisherRule<>();
+
+    @Test
+    public void cancellableIterableIsCancelled() {
+        cancellablePublisher.getPublisher().flatMapIterable(identity()).subscribe(subscriber.getSubscriber());
+        subscriber.verifySubscribe();
+        subscriber.request(1);
+        AtomicBoolean cancelled = new AtomicBoolean();
+        cancellablePublisher.sendItems(new TestIterableToBlockingIterable<>(asList("one", "two"),
+                (time, unit) -> { }, (time, unit) -> { }, () -> cancelled.set(true)));
+        subscriber.verifyItems("one");
+        subscriber.verifyNoEmissions();
+        subscriber.cancel();
+        assertTrue(cancelled.get());
+    }
 
     @Test
     public void justComplete() {

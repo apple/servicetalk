@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
+import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
@@ -39,23 +40,30 @@ final class FromArrayPublisher<T> extends AbstractSynchronousPublisher<T> {
 
     @Override
     void doSubscribe(Subscriber<? super T> s) {
-        s.onSubscribe(new SubscriptionImpl(s));
+        if (values.length != 0) {
+            s.onSubscribe(new FromArraySubscription<>(values, s));
+        } else {
+            s.onSubscribe(EMPTY_SUBSCRIPTION);
+            s.onComplete();
+        }
     }
 
-    private final class SubscriptionImpl implements Subscription {
+    private static final class FromArraySubscription<T> implements Subscription {
         private final Subscriber<? super T> subscriber;
+        private final T[] values;
         private int beginOffset;
         private int endOffset;
         private boolean ignoreRequests;
 
-        SubscriptionImpl(Subscriber<? super T> s) {
-            subscriber = s;
+        FromArraySubscription(T[] values, Subscriber<? super T> subscriber) {
+            this.values = values;
+            this.subscriber = subscriber;
         }
 
         @Override
         public void request(long n) {
             if (!isRequestNValid(n) && endOffset >= 0) {
-                fail(newExceptionForInvalidRequestN(n));
+                sendOnError(newExceptionForInvalidRequestN(n));
                 return;
             }
             endOffset = min((int) min(Integer.MAX_VALUE, addWithOverflowProtection(endOffset, n)), values.length);
@@ -67,27 +75,34 @@ final class FromArrayPublisher<T> extends AbstractSynchronousPublisher<T> {
                 try {
                     subscriber.onNext(values[beginOffset]);
                 } catch (Throwable cause) {
-                    fail(cause);
+                    sendOnError(cause);
                     return;
                 }
             }
-            ignoreRequests = false;
+            if (endOffset >= 0) {
+                ignoreRequests = false;
+            }
             if (beginOffset == values.length) {
-                ignoreRequests = true;
-                subscriber.onComplete();
+                sendComplete();
             }
         }
 
         @Override
         public void cancel() {
-            // Resetting the begin/end offset to -1 prevents delivering any more data if a subscriber cancels while in onNext.
+            // Resetting the begin/end offset to -1 prevents delivering any more data if a subscriber cancels while in
+            // onNext, and also to prevent a duplicate terminal event onError if we have already terminated.
             beginOffset = endOffset = -1;
             ignoreRequests = true;
         }
 
-        private void fail(Throwable cause) {
+        private void sendOnError(Throwable cause) {
             cancel();
             subscriber.onError(cause);
+        }
+
+        private void sendComplete() {
+            cancel();
+            subscriber.onComplete();
         }
     }
 }

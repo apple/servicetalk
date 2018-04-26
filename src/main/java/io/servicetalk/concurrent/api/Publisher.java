@@ -22,6 +22,7 @@ import org.reactivestreams.Subscription;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -30,6 +31,7 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
 import java.util.function.LongConsumer;
+import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -1137,6 +1139,59 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     @SafeVarargs
     public static <T> Publisher<T> from(Executor executor, T... values) {
         return new FromArrayPublisher<>(executor, values);
+    }
+
+    /**
+     * Create a new {@link Publisher} that on {@link Publisher#subscribe(Subscriber)} will get an {@link Iterator} via
+     * {@link Iterable#iterator()} and emit all values to the {@link Subscriber} and then
+     * {@link Subscriber#onComplete()}.
+     * <p>
+     * The Reactive Streams specification provides two criteria (
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#3.4">3.4</a>, and
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#3.5">3.5</a>) stating
+     * the {@link Subscription} should be "responsive". The responsiveness of the associated {@link Subscription}s will
+     * depend upon the behavior of the {@code iterable} below. Make sure the {@link Executor} for this execution chain
+     * can tolerate this responsiveness and any blocking behavior.
+     * @param executor {@link Executor} for the returned {@link Publisher}.
+     * @param iterable used to obtain instances of {@link Iterator} to extract data from. {@link Iterable#iterator()}
+     * must not return {@code null}. If this is of type {@link BlockingIterable} then any generated
+     * {@link BlockingIterator}s will have their {@link BlockingIterator#close()} method called if an error
+     * occurs.
+     * @param <T> Type of items emitted by the returned {@link Publisher}.
+     * @return a new {@link Publisher} that on {@link Publisher#subscribe(Subscriber)} will get an {@link Iterator} via
+     * {@link Iterable#iterator()} and emit all values to the {@link Subscriber} and then
+     * {@link Subscriber#onComplete()}.
+     */
+    public static <T> Publisher<T> from(Executor executor, Iterable<T> iterable) {
+        return new FromIterablePublisher<>(executor, iterable);
+    }
+
+    /**
+     * Create a new {@link Publisher} that on {@link Publisher#subscribe(Subscriber)} will get an {@link Iterator} via
+     * {@link Iterable#iterator()} and emit all values to the {@link Subscriber} and then
+     * {@link Subscriber#onComplete()}.
+     * <p>
+     * The Reactive Streams specification provides two criteria (
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#3.4">3.4</a>, and
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#3.5">3.5</a>) stating
+     * the {@link Subscription} should be "responsive". The responsiveness of the associated {@link Subscription}s will
+     * depend upon the behavior of the {@code iterable} below. Make sure the {@link Executor} for this execution chain
+     * can tolerate this responsiveness and any blocking behavior.
+     * @param executor {@link Executor} for the returned {@link Publisher}.
+     * @param iterable used to obtain instances of {@link Iterator} to extract data from. {@link Iterable#iterator()}
+     * must not return {@code null}. Any generated {@link BlockingIterator}s will have their
+     * {@link BlockingIterator#close()} method called if an error occurs.
+     * @param timeoutSupplier A {@link LongSupplier} which provides the time duration to wait for each
+     * interaction with {@code iterable}.
+     * @param unit The time units for the {@code timeout} duration.
+     * @param <T> Type of items emitted by the returned {@link Publisher}.
+     * @return a new {@link Publisher} that on {@link Publisher#subscribe(Subscriber)} will get an {@link Iterator} via
+     * {@link Iterable#iterator()} and emit all values to the {@link Subscriber} and then
+     * {@link Subscriber#onComplete()}.
+     */
+    public static <T> Publisher<T> from(Executor executor, BlockingIterable<T> iterable,
+                                        LongSupplier timeoutSupplier, TimeUnit unit) {
+        return new FromBlockingIterablePublisher<>(executor, iterable, timeoutSupplier, unit);
     }
 
     /**

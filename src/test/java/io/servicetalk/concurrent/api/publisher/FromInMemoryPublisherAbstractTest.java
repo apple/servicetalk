@@ -13,10 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api;
+package io.servicetalk.concurrent.api.publisher;
+
+import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.MockedSubscriberRule;
+import io.servicetalk.concurrent.api.Publisher;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.stubbing.Answer;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
@@ -28,27 +33,32 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static java.util.Arrays.copyOf;
+import static java.util.Objects.requireNonNull;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public final class FromArrayPublisherTest {
-
+public abstract class FromInMemoryPublisherAbstractTest {
     @Rule
     public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
 
+    protected abstract InMemorySource newPublisher(Executor executor, String[] values);
+
     @Test
     public void testRequestAllValues() {
-        Source source = newSource(5);
+        InMemorySource source = newSource(5);
         subscriber.subscribe(source.getPublisher()).verifySuccess(source.getValues());
     }
 
     @Test
     public void testRequestInChunks() {
-        Source source = newSource(10);
+        InMemorySource source = newSource(10);
         subscriber.subscribe(source.getPublisher())
                 .request(2)
                 .request(2)
@@ -59,14 +69,14 @@ public final class FromArrayPublisherTest {
     @Test
     public void testNullAsValue() {
         String[] values = {"Hello", null};
-        Publisher<String> publisher = new FromArrayPublisher<>(immediate(), values);
-        subscriber.subscribe(publisher).request(2).verifyItems("Hello", null).verifySuccess();
+        InMemorySource source = newPublisher(immediate(), values);
+        subscriber.subscribe(source.getPublisher()).request(2).verifyItems("Hello", null).verifySuccess();
     }
 
     @Test
     public void testRequestPostComplete() {
         // Due to race between on* and request-n, request-n may arrive after onComplete/onError.
-        Source source = newSource(5);
+        InMemorySource source = newSource(5);
         subscriber.subscribe(source.getPublisher()).verifySuccess(source.getValues());
         subscriber.request(1);
         verifyNoMoreInteractions(subscriber.getSubscriber());
@@ -75,8 +85,8 @@ public final class FromArrayPublisherTest {
     @Test
     public void testRequestPostError() {
         String[] values = {"Hello", null};
-        Publisher<String> publisher = new FromArrayPublisher<>(immediate(), values);
-        subscriber.subscribe(publisher);
+        InMemorySource source = newPublisher(immediate(), values);
+        subscriber.subscribe(source.getPublisher());
         doAnswer(invocation -> {
             throw DELIBERATE_EXCEPTION;
         }).when(subscriber.getSubscriber()).onNext(eq(null));
@@ -87,14 +97,14 @@ public final class FromArrayPublisherTest {
 
     @Test
     public void testReentrant() {
-        Source source = newSource(6);
+        InMemorySource source = newSource(6);
         Publisher<String> p = source.getPublisher().doBeforeNext(s -> subscriber.request(5));
         subscriber.subscribe(p).request(1).verifyItems(source.getValues());
     }
 
     @Test
     public void testReactiveStreams2_13() {
-        Source source = newSource(6);
+        InMemorySource source = newSource(6);
         Publisher<String> p = source.getPublisher().doBeforeNext(s -> {
             throw DELIBERATE_EXCEPTION;
         });
@@ -103,13 +113,13 @@ public final class FromArrayPublisherTest {
 
     @Test
     public void testIncompleteRequest() {
-        Source source = newSource(6);
+        InMemorySource source = newSource(6);
         requestItemsAndVerifyEmissions(source);
     }
 
     @Test
     public void testCancel() {
-        Source source = newSource(6);
+        InMemorySource source = newSource(6);
         requestItemsAndVerifyEmissions(source);
         subscriber.cancel();
         verifyNoMoreInteractions(subscriber.getSubscriber());
@@ -118,8 +128,20 @@ public final class FromArrayPublisherTest {
     }
 
     @Test
+    public void testCancelFromInOnNext() {
+        InMemorySource source = newSource(2);
+        subscriber.subscribe(source.getPublisher());
+        doAnswer((Answer<Void>) invocation -> {
+            subscriber.cancel();
+            return null;
+        }).when(subscriber.getSubscriber()).onNext(any());
+        subscriber.request(1).verifyItems("Hello0");
+        subscriber.request(1).verifyNoEmissions();
+    }
+
+    @Test
     public void testReentrantInvalidRequestN() throws InterruptedException {
-        Source source = newSource(2);
+        InMemorySource source = newSource(2);
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
         source.getPublisher().subscribe(new Subscriber<String>() {
@@ -167,10 +189,18 @@ public final class FromArrayPublisherTest {
 
     @Test
     public void testInvalidRequestNZeroLengthArrayNoMultipleTerminal() {
-        Source source = newSource(0);
+        InMemorySource source = newSource(1);
         subscriber.subscribe(source.getPublisher());
         subscriber.request(-1).verifyFailure(IllegalArgumentException.class);
         subscriber.request(1).verifyNoEmissions();
+    }
+
+    @Test
+    public void testInvalidRequestAfterCompleteDoesNotDeliverOnError() {
+        InMemorySource source = newSource(1);
+        subscriber.subscribe(source.getPublisher()).request(1).verifySuccess();
+        subscriber.request(-1);
+        verify(subscriber.getSubscriber(), never()).onError(any());
     }
 
     @Test
@@ -178,8 +208,8 @@ public final class FromArrayPublisherTest {
         final AtomicReference<AssertionError> assertErrorRef = new AtomicReference<>();
         final AtomicBoolean onErrorCalled = new AtomicBoolean();
 
-        Source source = newSource(20);
-        source.publisher.subscribe(new Subscriber<String>() {
+        InMemorySource source = newSource(20);
+        source.getPublisher().subscribe(new Subscriber<String>() {
             private boolean onNextCalled;
 
             @Override
@@ -231,37 +261,32 @@ public final class FromArrayPublisherTest {
         assertTrue(onErrorCalled.get());
     }
 
-    private void requestItemsAndVerifyEmissions(Source source) {
+    private void requestItemsAndVerifyEmissions(InMemorySource source) {
         subscriber.subscribe(source.getPublisher())
                 .request(3)
                 .verifyItems(copyOf(source.getValues(), 3));
         verifyNoMoreInteractions(subscriber.getSubscriber());
     }
 
-    private static Source newSource(int size) {
+    final InMemorySource newSource(int size) {
         String[] values = new String[size];
         for (int i = 0; i < size; i++) {
             values[i] = "Hello" + i;
         }
-        return new Source(new FromArrayPublisher<>(immediate(), values), values);
+        return newPublisher(immediate(), values);
     }
 
-    private static final class Source {
-
-        private final Publisher<String> publisher;
+    protected abstract class InMemorySource {
         private final String[] values;
 
-        private Source(Publisher<String> publisher, String[] values) {
-            this.publisher = publisher;
-            this.values = values;
+        protected InMemorySource(String[] values) {
+            this.values = requireNonNull(values);
         }
 
-        Publisher<String> getPublisher() {
-            return publisher;
-        }
-
-        String[] getValues() {
+        protected final String[] getValues() {
             return values;
         }
+
+        protected abstract Publisher<String> getPublisher();
     }
 }

@@ -13,17 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api.tck;
+package io.servicetalk.concurrent.api.publisher;
 
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 
-import org.testng.annotations.Test;
+import static io.servicetalk.concurrent.api.Publisher.from;
+import static java.util.Arrays.asList;
 
-@Test
-public class PublisherDeferFromTckTest extends PublisherFromArrayTckTest {
-
+public class FromIterablePublisherTest extends FromInMemoryPublisherAbstractTest {
     @Override
-    public Publisher<Integer> createPublisher(long elements) {
-        return Publisher.defer(() -> PublisherDeferFromTckTest.super.createPublisher(elements));
+    protected InMemorySource newPublisher(final Executor executor, final String[] values) {
+        return new InMemorySource(values) {
+            private final Publisher<String> publisher = from(executor, asList(values));
+            @Override
+            protected Publisher<String> getPublisher() {
+                return publisher;
+            }
+        };
     }
 }

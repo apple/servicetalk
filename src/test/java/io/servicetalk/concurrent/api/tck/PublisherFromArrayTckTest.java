@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import org.testng.annotations.Test;
 
 @Test
-public class PublisherFromTckTest extends AbstractPublisherTckTest<Integer> {
+public class PublisherFromArrayTckTest extends AbstractPublisherTckTest<Integer> {
 
     @Override
     public Publisher<Integer> createPublisher(long elements) {
