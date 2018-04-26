@@ -20,7 +20,6 @@ import org.reactivestreams.Subscription;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -32,6 +31,9 @@ import java.util.concurrent.TimeoutException;
  * {@link Subscription}. If the data is not completely consumed from this {@link Iterable} then {@link #close()}
  * <strong>MUST</strong> be called. If the data is completely consumed (e.g. {@link #hasNext()} and/or
  * {@link #hasNext(long, TimeUnit)} return {@code false}) then this object is implicitly {@link #close() closed}.
+ * <p>
+ * Note that the {@link Iterator} methods of this interface may throw {@link IteratorClosedException} if
+ * {@link #close()} was previously called.
  * @param <T> the type of elements returned by this {@link Iterator}.
  */
 public interface BlockingIterator<T> extends Iterator<T>, AutoCloseable {
@@ -46,12 +48,12 @@ public interface BlockingIterator<T> extends Iterator<T>, AutoCloseable {
      * implicitly {@link #close() closed}.
      * @throws TimeoutException if the wait timed out. This object is implicitly {@link #close() closed} if this
      * occurs.
-     * @throws CancellationException if there is no data immediately available, this {@link BlockingIterator} has
+     * @throws IteratorClosedException if there is no data immediately available, this {@link BlockingIterator} has
      * been {@link #close() closed}, and no attempt to fetch data will be made.
      * <p>
      * Note that {@link #close()} is not required to interrupt this call.
      */
-    boolean hasNext(long timeout, TimeUnit unit) throws TimeoutException, CancellationException;
+    boolean hasNext(long timeout, TimeUnit unit) throws TimeoutException, IteratorClosedException;
 
     /**
      * The equivalent of {@link #next()} but only waits for {@code timeout} duration of time.
@@ -64,12 +66,12 @@ public interface BlockingIterator<T> extends Iterator<T>, AutoCloseable {
      * @throws NoSuchElementException if the iteration has no more elements.
      * @throws TimeoutException if the wait timed out. This object is implicitly {@link #close() closed} if this
      * occurs.
-     * @throws CancellationException if there is no data immediately available, this {@link BlockingIterator} has
+     * @throws IteratorClosedException if there is no data immediately available, this {@link BlockingIterator} has
      * been {@link #close() closed}, and no attempt to fetch data will be made.
      * <p>
      * Note that {@link #close()} is not required to interrupt this call.
      */
-    T next(long timeout, TimeUnit unit) throws TimeoutException, CancellationException;
+    T next(long timeout, TimeUnit unit) throws TimeoutException, IteratorClosedException;
 
     /**
      * This method is used to communicate that you are no longer interested in consuming data.
