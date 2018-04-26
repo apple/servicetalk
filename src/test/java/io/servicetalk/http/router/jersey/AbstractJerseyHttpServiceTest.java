@@ -16,6 +16,10 @@
 package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.HttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.glassfish.jersey.server.ApplicationHandler;
@@ -25,12 +29,15 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
+import java.util.function.Function;
 import javax.ws.rs.core.Application;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
+import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static org.mockito.Mockito.when;
 
-public abstract class AbstractRequestHandlerTest {
+public abstract class AbstractJerseyHttpServiceTest {
     @Rule
     public final MockitoRule rule = MockitoJUnit.rule();
 
@@ -40,12 +47,28 @@ public abstract class AbstractRequestHandlerTest {
     @Mock
     protected ConnectionContext ctx;
 
-    protected DefaultRequestHandler handler;
+    protected HttpService<HttpPayloadChunk, HttpPayloadChunk> service;
+
+    // Test helper that invokes httpService and awaits the single/unwrap exceptions
+    protected Function<HttpRequest<HttpPayloadChunk>, HttpResponse<HttpPayloadChunk>> handler;
 
     @Before
     public void init() {
         when(ctx.getAllocator()).thenReturn(DEFAULT_ALLOCATOR);
-        handler = new DefaultRequestHandler(new ApplicationHandler(getApplication()));
+
+        service = new DefaultJerseyHttpService(new ApplicationHandler(getApplication()), newCachedThreadExecutor());
+
+        handler = req -> {
+            try {
+                return awaitIndefinitely(service.handle(ctx, req));
+            } catch (final Throwable t) {
+                final Throwable c = t.getCause();
+                if (c instanceof RuntimeException) {
+                    throw (RuntimeException) c;
+                }
+                throw new RuntimeException(c != null ? c : t);
+            }
+        };
     }
 
     protected abstract Application getApplication();

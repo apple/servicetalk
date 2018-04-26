@@ -39,19 +39,19 @@ import static java.lang.Character.toUpperCase;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static org.hamcrest.Matchers.is;
 
-public abstract class AbstractFilterInterceptorTest extends AbstractRequestHandlerTest {
+public abstract class AbstractFilterInterceptorTest extends AbstractJerseyHttpServiceTest {
     @Test
     public void synchronousResource() {
         HttpRequest<HttpPayloadChunk> req =
                 newH11Request(POST, SynchronousResources.PATH + "/text", ctx.getAllocator().fromUtf8("foo1"));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
 
-        HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, OK, TEXT_PLAIN, "GOT: FOO1!");
 
         req = newH11Request(POST, SynchronousResources.PATH + "/text-response", ctx.getAllocator().fromUtf8("foo2"));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
-        res = handler.apply(ctx, req);
+        res = handler.apply(req);
         assertResponse(res, ACCEPTED, TEXT_PLAIN, "GOT: FOO2!");
     }
 
@@ -60,19 +60,19 @@ public abstract class AbstractFilterInterceptorTest extends AbstractRequestHandl
         HttpRequest<HttpPayloadChunk> req = newH11Request(POST, SynchronousResources.PATH + "/text-strin-pubout",
                 ctx.getAllocator().fromUtf8("foo1"));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
-        HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, OK, TEXT_PLAIN, is("GOT: FOO1!"), $ -> null);
 
         req = newH11Request(POST, SynchronousResources.PATH + "/text-pubin-strout",
                 ctx.getAllocator().fromUtf8("foo2"));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
-        res = handler.apply(ctx, req);
+        res = handler.apply(req);
         assertResponse(res, OK, TEXT_PLAIN, "GOT: FOO2!");
 
         req = newH11Request(POST, SynchronousResources.PATH + "/text-pubin-pubout",
                 ctx.getAllocator().fromUtf8("foo3"));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
-        res = handler.apply(ctx, req);
+        res = handler.apply(req);
         assertResponse(res, OK, TEXT_PLAIN, is("GOT: FOO3!"), $ -> null);
     }
 
@@ -83,7 +83,7 @@ public abstract class AbstractFilterInterceptorTest extends AbstractRequestHandl
                         ctx.getAllocator().fromUtf8("bar"));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
 
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, OK, TEXT_PLAIN, "GOT: BAR!");
     }
 
@@ -92,12 +92,12 @@ public abstract class AbstractFilterInterceptorTest extends AbstractRequestHandl
         HttpRequest<HttpPayloadChunk> req =
                 newH11Request(POST, AsynchronousResources.PATH + "/text", ctx.getAllocator().fromUtf8("baz1"));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
-        HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, OK, TEXT_PLAIN, "GOT: BAZ1!");
 
         req = newH11Request(POST, AsynchronousResources.PATH + "/text-response", ctx.getAllocator().fromUtf8("baz2"));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
-        res = handler.apply(ctx, req);
+        res = handler.apply(req);
         assertResponse(res, ACCEPTED, TEXT_PLAIN, "GOT: BAZ2!");
     }
 

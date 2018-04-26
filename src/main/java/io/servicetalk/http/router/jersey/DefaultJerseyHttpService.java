@@ -15,10 +15,15 @@
  */
 package io.servicetalk.http.router.jersey;
 
+import io.servicetalk.concurrent.Single.Subscriber;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.HttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.glassfish.jersey.internal.MapPropertiesDelegate;
@@ -28,21 +33,21 @@ import org.glassfish.jersey.server.ContainerRequest;
 
 import java.net.URI;
 import java.security.Principal;
-import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 import javax.ws.rs.core.SecurityContext;
 
 import static io.servicetalk.http.router.jersey.CharSequenceUtil.ensureNoLeadingSlash;
 import static io.servicetalk.http.router.jersey.Context.CHUNK_PUBLISHER_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.CONNECTION_CONTEXT_REF_TYPE;
+import static io.servicetalk.http.router.jersey.Context.EXECUTOR_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.HTTP_REQUEST_REF_TYPE;
 import static io.servicetalk.http.router.jersey.DummyHttpUtil.getBaseUri;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.util.Objects.requireNonNull;
 import static org.glassfish.jersey.internal.util.collection.Refs.emptyRef;
 import static org.glassfish.jersey.server.internal.ContainerUtils.encodeUnsafeCharacters;
 
-final class DefaultRequestHandler implements BiFunction<ConnectionContext, HttpRequest<HttpPayloadChunk>,
-        HttpResponse<HttpPayloadChunk>> {
+final class DefaultJerseyHttpService implements HttpService<HttpPayloadChunk, HttpPayloadChunk> {
 
     private static final SecurityContext UNAUTHENTICATED_SECURITY_CONTEXT = new SecurityContext() {
         @Nullable
@@ -69,18 +74,41 @@ final class DefaultRequestHandler implements BiFunction<ConnectionContext, HttpR
     };
 
     private final ApplicationHandler applicationHandler;
+    // TODO will be replaced more granular (per-resource) executors
+    private final Executor executor;
 
-    DefaultRequestHandler(final ApplicationHandler applicationHandler) {
+    DefaultJerseyHttpService(final ApplicationHandler applicationHandler, final Executor executor) {
         if (!applicationHandler.getConfiguration().isEnabled(ServiceTalkFeature.class)) {
             throw new IllegalStateException("The " + ServiceTalkFeature.class.getSimpleName()
                     + " needs to be enabled for this application.");
         }
 
         this.applicationHandler = applicationHandler;
+        this.executor = requireNonNull(executor);
     }
 
     @Override
-    public HttpResponse<HttpPayloadChunk> apply(final ConnectionContext ctx, final HttpRequest<HttpPayloadChunk> req) {
+    public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
+                                                         final HttpRequest<HttpPayloadChunk> req) {
+        return new Single<HttpResponse<HttpPayloadChunk>>() {
+            @Override
+            protected void handleSubscribe(final Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber) {
+                final DelayedCancellable delayedCancellable = new DelayedCancellable();
+                subscriber.onSubscribe(delayedCancellable);
+                try {
+                    handle0(ctx, req, subscriber, delayedCancellable);
+                } catch (final Throwable t) {
+                    subscriber.onError(t);
+                }
+            }
+        };
+    }
+
+    private void handle0(final ConnectionContext ctx,
+                         final HttpRequest<HttpPayloadChunk> req,
+                         final Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber,
+                         final DelayedCancellable delayedCancellable) {
+
         final CharSequence baseUri = getBaseUri(ctx, req);
         final CharSequence path = ensureNoLeadingSlash(req.getRawPath());
 
@@ -110,9 +138,10 @@ final class DefaultRequestHandler implements BiFunction<ConnectionContext, HttpR
 
         final DummyChunkPublisherInputStream entityStream = new DummyChunkPublisherInputStream(req.getMessageBody());
         containerRequest.setEntityStream(entityStream);
+
         final Ref<Publisher<HttpPayloadChunk>> chunkPublisherRef = emptyRef();
         final DefaultContainerResponseWriter responseWriter =
-                new DefaultContainerResponseWriter(req, ctx.getAllocator(), chunkPublisherRef);
+                new DefaultContainerResponseWriter(req, ctx.getAllocator(), executor, chunkPublisherRef, subscriber);
         containerRequest.setWriter(responseWriter);
 
         containerRequest.setRequestScopedInitializer(injectionManager -> {
@@ -120,11 +149,11 @@ final class DefaultRequestHandler implements BiFunction<ConnectionContext, HttpR
             injectionManager.<Ref<HttpRequest<HttpPayloadChunk>>>getInstance(HTTP_REQUEST_REF_TYPE).set(req);
             injectionManager.<Ref<Ref<Publisher<HttpPayloadChunk>>>>getInstance(CHUNK_PUBLISHER_REF_TYPE)
                     .set(chunkPublisherRef);
+            injectionManager.<Ref<Executor>>getInstance(EXECUTOR_REF_TYPE).set(executor);
         });
 
-        // Handle the request synchronously because we do it on a dedicated request thread
-        applicationHandler.handle(containerRequest);
+        delayedCancellable.setDelayedCancellable(responseWriter::cancelSuspendedTimer);
 
-        return responseWriter.getResponse();
+        applicationHandler.handle(containerRequest);
     }
 }

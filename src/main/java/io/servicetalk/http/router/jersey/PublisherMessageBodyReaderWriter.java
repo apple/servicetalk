@@ -17,7 +17,6 @@ package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.glassfish.jersey.internal.util.collection.Ref;
@@ -46,9 +45,6 @@ import static org.glassfish.jersey.message.internal.ReaderInterceptorExecutor.cl
 final class PublisherMessageBodyReaderWriter implements MessageBodyReader<Publisher<HttpPayloadChunk>>, MessageBodyWriter<Publisher<HttpPayloadChunk>> {
     @Context
     private ConnectionContext ctx;
-
-    @Context
-    private HttpRequest<HttpPayloadChunk> req;
 
     @Context
     private Ref<Publisher<HttpPayloadChunk>> chunkPublisherRef;

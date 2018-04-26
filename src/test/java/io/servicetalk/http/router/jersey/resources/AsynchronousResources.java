@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.router.jersey.resources;
 
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.router.jersey.AbstractResourceTest.TestFiltered;
@@ -22,7 +24,10 @@ import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -33,6 +38,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.HttpHeaders;
@@ -43,10 +50,14 @@ import static io.servicetalk.http.router.jersey.TestUtil.asChunkPublisher;
 import static io.servicetalk.http.router.jersey.resources.AsynchronousResources.PATH;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
+import static javax.ws.rs.core.Response.Status.GATEWAY_TIMEOUT;
 import static javax.ws.rs.core.Response.accepted;
 import static javax.ws.rs.core.Response.noContent;
 import static javax.ws.rs.core.Response.status;
@@ -57,6 +68,9 @@ import static javax.ws.rs.core.Response.status;
 @Path(PATH)
 public class AsynchronousResources {
     public static final String PATH = "/async";
+
+    @Context
+    private Executor executor;
 
     @Produces(TEXT_PLAIN)
     @Path("/text")
@@ -70,6 +84,36 @@ public class AsynchronousResources {
         }
 
         return completedFuture("GOT: " + qp + " & " + hp);
+    }
+
+    @Produces(TEXT_PLAIN)
+    @Path("/failed-text")
+    @GET
+    public CompletionStage<String> getFailed(@QueryParam("cancel") final boolean cancel) {
+        final CompletableFuture<String> cf = new CompletableFuture<>();
+        if (cancel) {
+            cf.cancel(true);
+        } else {
+            cf.completeExceptionally(DELIBERATE_EXCEPTION);
+        }
+        return cf;
+    }
+
+    @Produces(TEXT_PLAIN)
+    @Path("/delayed-text")
+    @GET
+    public CompletionStage<String> getDelayedText(@QueryParam("delay") final long delay,
+                                                  @QueryParam("unit") final TimeUnit unit) {
+        final CompletableFuture<String> cf = new CompletableFuture<>();
+        final Cancellable cancellable = executor.schedule(delay, unit)
+                .doAfterComplete(() -> cf.complete("DONE"))
+                .subscribe();
+
+        return cf.whenComplete((r, t) -> {
+            if (t instanceof CancellationException) {
+                cancellable.cancel();
+            }
+        });
     }
 
     @Consumes(TEXT_PLAIN)
@@ -134,5 +178,61 @@ public class AsynchronousResources {
         final Map<String, Object> responseContent = new HashMap<>(requestContent);
         responseContent.put("foo", "bar2");
         return completedFuture(accepted(responseContent).header("X-Test", "test-header").build());
+    }
+
+    @Produces(TEXT_PLAIN)
+    @Path("/suspended/resume")
+    @GET
+    public void getAsyncResponseResume(@Suspended final AsyncResponse ar) {
+        ar.resume("DONE");
+    }
+
+    @Produces(TEXT_PLAIN)
+    @Path("/suspended/cancel")
+    @GET
+    public void getAsyncResponseCancel(@Suspended final AsyncResponse ar) {
+        ar.cancel();
+    }
+
+    @Produces(TEXT_PLAIN)
+    @Path("/suspended/timeout-resume")
+    @GET
+    public void getAsyncResponseTimeoutResume(@Suspended final AsyncResponse ar) {
+        ar.setTimeout(1, MINUTES);
+        executor.schedule(10, MILLISECONDS)
+                .doAfterComplete(() -> ar.resume("DONE"))
+                .subscribe();
+    }
+
+    @Produces(TEXT_PLAIN)
+    @Path("/suspended/timeout-expire")
+    @GET
+    public void getAsyncResponseTimeoutExpire(@Suspended final AsyncResponse ar) {
+        // Set timeout twice to ensure users can update it at will
+        ar.setTimeout(1, MINUTES);
+        ar.setTimeout(1, NANOSECONDS);
+    }
+
+    @Produces(TEXT_PLAIN)
+    @Path("/suspended/timeout-expire-handled")
+    @GET
+    public void getAsyncResponseTimeoutExpireHandled(@Suspended final AsyncResponse ar) {
+        ar.setTimeoutHandler(ar2 -> ar2.resume(status(GATEWAY_TIMEOUT).build()));
+        ar.setTimeout(1, NANOSECONDS);
+    }
+
+    @Produces(TEXT_PLAIN)
+    @Path("/suspended/resume-timeout")
+    @GET
+    public void getAsyncResponseResumeTimeout(@Suspended final AsyncResponse ar) {
+        ar.resume("DONE");
+        ar.setTimeout(1, MINUTES);
+    }
+
+    @Produces(TEXT_PLAIN)
+    @Path("/suspended/busy")
+    @GET
+    public void getAsyncResponseBusy(@Suspended final AsyncResponse ar) {
+        // Neither resume nor cancel -> busy for ever
     }
 }

@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.router.jersey;
 
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
@@ -56,6 +57,12 @@ final class Context {
             new GenericType<Ref<Publisher<HttpPayloadChunk>>>() {
             };
 
+    static final GenericType<Ref<Executor>> EXECUTOR_REF_GENERIC_TYPE =
+            new GenericType<Ref<Executor>>() {
+            };
+
+    static final Type EXECUTOR_REF_TYPE = EXECUTOR_REF_GENERIC_TYPE.getType();
+
     static final class ConnectionContextReferencingFactory extends ReferencingFactory<ConnectionContext> {
         @Inject
         ConnectionContextReferencingFactory(final Provider<Ref<ConnectionContext>> referenceFactory) {
@@ -75,6 +82,13 @@ final class Context {
         @Inject
         ChunkPublisherRefReferencingFactory(
                 final Provider<Ref<Ref<Publisher<HttpPayloadChunk>>>> referenceFactory) {
+            super(referenceFactory);
+        }
+    }
+
+    static final class ExecutorReferencingFactory extends ReferencingFactory<Executor> {
+        @Inject
+        ExecutorReferencingFactory(final Provider<Ref<Executor>> referenceFactory) {
             super(referenceFactory);
         }
     }

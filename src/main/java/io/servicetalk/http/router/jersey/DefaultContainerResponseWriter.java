@@ -16,6 +16,9 @@
 package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.buffer.BufferAllocator;
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.Single.Subscriber;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpPayloadChunk;
@@ -29,7 +32,6 @@ import org.glassfish.jersey.server.ContainerResponse;
 import org.glassfish.jersey.server.spi.ContainerResponseWriter;
 
 import java.io.OutputStream;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
@@ -37,15 +39,14 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.Response.StatusType;
 
 import static io.servicetalk.buffer.ReadOnlyBufferAllocators.PREFER_DIRECT_ALLOCATOR;
-import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.CharSequences.emptyAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
-import static io.servicetalk.http.api.HttpResponseStatuses.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
 import static io.servicetalk.http.api.HttpResponses.newResponse;
 import static io.servicetalk.http.router.jersey.CharSequenceUtil.asCharSequence;
+import static io.servicetalk.http.router.jersey.DummyHttpUtil.removeHeader;
 import static java.util.Arrays.stream;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
@@ -64,23 +65,26 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
 
     private final HttpRequest<HttpPayloadChunk> request;
     private final BufferAllocator allocator;
+    private final Executor executor;
     private final Ref<Publisher<HttpPayloadChunk>> chunkPublisherRef;
+    private final Subscriber<? super HttpResponse<HttpPayloadChunk>> responseSubscriber;
 
-    private HttpResponse<HttpPayloadChunk> response;
+    @Nullable
+    private volatile Cancellable suspendedTimerCancellable;
+
+    @Nullable
+    private volatile Runnable suspendedTimeoutRunnable;
 
     DefaultContainerResponseWriter(final HttpRequest<HttpPayloadChunk> request,
                                    final BufferAllocator allocator,
-                                   final Ref<Publisher<HttpPayloadChunk>> chunkPublisherRef) {
+                                   final Executor executor,
+                                   final Ref<Publisher<HttpPayloadChunk>> chunkPublisherRef,
+                                   final Subscriber<? super HttpResponse<HttpPayloadChunk>> responseSubscriber) {
         this.request = request;
         this.allocator = requireNonNull(allocator);
+        this.executor = requireNonNull(executor);
         this.chunkPublisherRef = requireNonNull(chunkPublisherRef);
-
-        // Set a default response used in case of failure
-        response = newResponse(request.getVersion(), INTERNAL_SERVER_ERROR);
-    }
-
-    HttpResponse<HttpPayloadChunk> getResponse() {
-        return response;
+        this.responseSubscriber = requireNonNull(responseSubscriber);
     }
 
     @Nullable
@@ -92,14 +96,14 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         final Publisher<HttpPayloadChunk> chunkPublisher = chunkPublisherRef.get();
         // contentLength is >= 0 if the entity content length in bytes is known to Jersey, otherwise -1
         if (chunkPublisher != null) {
-            response = createResponse(request, UNKNOWN_RESPONSE_LENGTH, chunkPublisher, responseContext);
+            sendResponse(request, UNKNOWN_RESPONSE_LENGTH, chunkPublisher, responseContext);
             return null;
         } else if (contentLength == 0) {
-            response = createResponse(request, EMPTY_RESPONSE, null, responseContext);
+            sendResponse(request, EMPTY_RESPONSE, null, responseContext);
             return null;
         } else {
             final DummyChunkPublisherOutputStream bpos = new DummyChunkPublisherOutputStream(allocator);
-            response = createResponse(request, contentLength, bpos.getChunkPublisher(), responseContext);
+            sendResponse(request, contentLength, bpos.getChunkPublisher(), responseContext);
             return bpos;
         }
 
@@ -108,26 +112,62 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
 
     @Override
     public boolean suspend(final long timeOut, final TimeUnit timeUnit, final TimeoutHandler timeoutHandler) {
-        throw new UnsupportedOperationException();
+        // This timeoutHandler is not the one provided by users but a Jersey wrapper
+        // that catches any throwable and converts them into error responses,
+        // thus it is safe to use this runnable in doAfterComplete (below).
+        // Also note that Jersey maintains a suspended/resumed state so if this fires after
+        // the response has resumed, it will actually be a NOOP.
+        // So there's no strong requirement for cancelling timer on commit/failure (below)
+        // besides cleaning up our resources.
+        final Runnable r = () -> timeoutHandler.onTimeout(this);
+
+        suspendedTimeoutRunnable = r;
+        scheduleSuspendedTimer(timeOut, timeUnit, r);
+        return true;
     }
 
     @Override
     public void setSuspendTimeout(final long timeOut, final TimeUnit timeUnit) throws IllegalStateException {
-        throw new UnsupportedOperationException();
+        final Runnable r = suspendedTimeoutRunnable;
+        if (r == null) {
+            throw new IllegalStateException("Request is not suspended");
+        }
+
+        cancelSuspendedTimer();
+        scheduleSuspendedTimer(timeOut, timeUnit, r);
+    }
+
+    private void scheduleSuspendedTimer(final long timeOut, final TimeUnit timeUnit, final Runnable r) {
+        // timeOut<=0 means processing is suspended indefinitely: no need to actually schedule a task
+        if (timeOut <= 0) {
+            return;
+        }
+
+        suspendedTimerCancellable =
+                executor.schedule(timeOut, timeUnit)
+                        .doAfterComplete(r)
+                        .subscribe();
     }
 
     @Override
     public void commit() {
+        suspendedTimeoutRunnable = null;
+        cancelSuspendedTimer();
+
         // TODO send flush signal when supported
     }
 
     @Override
     public void failure(final Throwable error) {
-        // Rethrow the original exception as required by JAX-RS, 3.3.4.
-        if (error instanceof RuntimeException) {
-            throw (RuntimeException) error;
-        } else {
-            throw new ContainerException(error);
+        suspendedTimeoutRunnable = null;
+        cancelSuspendedTimer();
+        responseSubscriber.onError(error);
+    }
+
+    void cancelSuspendedTimer() {
+        final Cancellable c = suspendedTimerCancellable;
+        if (c != null) {
+            c.cancel();
         }
     }
 
@@ -142,10 +182,11 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         return true;
     }
 
-    private HttpResponse<HttpPayloadChunk> createResponse(final HttpRequest<HttpPayloadChunk> request,
-                                                          final long contentLength,
-                                                          @Nullable final Publisher<HttpPayloadChunk> content,
-                                                          final ContainerResponse containerResponse) {
+    private void sendResponse(final HttpRequest<HttpPayloadChunk> request,
+                              final long contentLength,
+                              @Nullable final Publisher<HttpPayloadChunk> content,
+                              final ContainerResponse containerResponse) {
+
         final HttpResponse<HttpPayloadChunk> response;
         final HttpResponseStatus status = getStatus(containerResponse);
         if (content != null) {
@@ -165,10 +206,10 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
             }
         } else {
             headers.set(CONTENT_LENGTH, Long.toString(contentLength));
-            removeChunkedEncoding(headers);
+            removeHeader(headers, TRANSFER_ENCODING, CHUNKED);
         }
 
-        return response;
+        responseSubscriber.onSuccess(response);
     }
 
     private HttpResponseStatus getStatus(final ContainerResponse containerResponse) {
@@ -176,13 +217,5 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         return statusInfo instanceof Status ? RESPONSE_STATUSES.get(statusInfo) :
                 getResponseStatus(statusInfo.getStatusCode(),
                         allocator.fromAscii(statusInfo.getReasonPhrase()));
-    }
-
-    private static void removeChunkedEncoding(final HttpHeaders headers) {
-        for (final Iterator<? extends CharSequence> i = headers.getAll(TRANSFER_ENCODING); i.hasNext();) {
-            if (contentEqualsIgnoreCase(CHUNKED, i.next())) {
-                i.remove();
-            }
-        }
     }
 }

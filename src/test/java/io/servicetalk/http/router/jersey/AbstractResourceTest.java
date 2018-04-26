@@ -65,7 +65,7 @@ import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
-public abstract class AbstractResourceTest extends AbstractRequestHandlerTest {
+public abstract class AbstractResourceTest extends AbstractJerseyHttpServiceTest {
     @NameBinding
     @Target({ElementType.TYPE, ElementType.METHOD})
     @Retention(value = RetentionPolicy.RUNTIME)
@@ -114,7 +114,7 @@ public abstract class AbstractResourceTest extends AbstractRequestHandlerTest {
     public void notFound() {
         final HttpRequest<HttpPayloadChunk> req = newH11Request(HEAD, getResourcePath() + "/not_a_resource");
 
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, NOT_FOUND, null, "");
     }
 
@@ -123,14 +123,14 @@ public abstract class AbstractResourceTest extends AbstractRequestHandlerTest {
         final HttpRequest<HttpPayloadChunk> req =
                 newH11Request(GET, getResourcePath() + "/text?qp=throw-not-translated");
 
-        handler.apply(ctx, req);
+        handler.apply(req);
     }
 
     @Test
     public void translatedException() {
         final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, getResourcePath() + "/text?qp=throw-translated");
 
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, CONFLICT, null, "");
     }
 
@@ -138,7 +138,7 @@ public abstract class AbstractResourceTest extends AbstractRequestHandlerTest {
     public void implicitHead() {
         final HttpRequest<HttpPayloadChunk> req = newH11Request(HEAD, getResourcePath() + "/text");
 
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, OK, TEXT_PLAIN, isEmptyString(), 16);
     }
 
@@ -146,7 +146,7 @@ public abstract class AbstractResourceTest extends AbstractRequestHandlerTest {
     public void implicitOptions() {
         final HttpRequest<HttpPayloadChunk> req = newH11Request(OPTIONS, getResourcePath() + "/text");
 
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, OK, "application/vnd.sun.wadl+xml", not(isEmptyString()), String::length);
         assertThat(res.getHeaders().get(ALLOW, "").toString().split(","),
                 is(arrayContainingInAnyOrder("HEAD", "POST", "GET", "OPTIONS")));
@@ -156,7 +156,7 @@ public abstract class AbstractResourceTest extends AbstractRequestHandlerTest {
     public void getText() {
         final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, getResourcePath() + "/text");
 
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, OK, TEXT_PLAIN, "GOT: null & null");
     }
 
@@ -164,7 +164,7 @@ public abstract class AbstractResourceTest extends AbstractRequestHandlerTest {
     public void getTextQueryParam() {
         final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, getResourcePath() + "/text?qp=foo%20|bar");
 
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, OK, TEXT_PLAIN, "GOT: foo |bar & null");
     }
 
@@ -173,7 +173,7 @@ public abstract class AbstractResourceTest extends AbstractRequestHandlerTest {
         final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, getResourcePath() + "/text");
         req.getHeaders().add("hp", "bar");
 
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, OK, TEXT_PLAIN, "GOT: null & bar");
     }
 
@@ -184,7 +184,7 @@ public abstract class AbstractResourceTest extends AbstractRequestHandlerTest {
                 newH11Request(POST, getResourcePath() + "/text", ctx.getAllocator().fromUtf8("foo"));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
 
-        HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, OK, TEXT_PLAIN, "GOT: foo");
 
         // Large payload that goes above default buffer size
@@ -192,7 +192,7 @@ public abstract class AbstractResourceTest extends AbstractRequestHandlerTest {
         req = newH11Request(POST, PATH + "/text", ctx.getAllocator().fromUtf8(payload));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
 
-        res = handler.apply(ctx, req);
+        res = handler.apply(req);
         assertResponse(res, OK, TEXT_PLAIN, is("GOT: " + payload), $ -> null);
     }
 
@@ -201,7 +201,7 @@ public abstract class AbstractResourceTest extends AbstractRequestHandlerTest {
         final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, getResourcePath() + "/text-response");
         req.getHeaders().add("hdr", "bar");
 
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, NO_CONTENT, null, "");
         assertThat(res.getHeaders().get("X-Test"), is("bar"));
     }
@@ -212,7 +212,7 @@ public abstract class AbstractResourceTest extends AbstractRequestHandlerTest {
                 newH11Request(POST, getResourcePath() + "/text-response", ctx.getAllocator().fromUtf8("foo"));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
 
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, ACCEPTED, TEXT_PLAIN, "GOT: foo");
     }
 
@@ -221,13 +221,13 @@ public abstract class AbstractResourceTest extends AbstractRequestHandlerTest {
         HttpRequest<HttpPayloadChunk> req =
                 newH11Request(POST, getResourcePath() + "/filtered", ctx.getAllocator().fromUtf8("foo1"));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
-        HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, OK, TEXT_PLAIN, "GOT: foo1");
         assertThat(res.getHeaders().get("X-Foo-Prop"), is("barProp"));
 
         req = newH11Request(POST, getResourcePath() + "/filtered", ctx.getAllocator().fromUtf8("foo2"));
         req.getHeaders().set("X-Abort-With-Status", "451");
-        res = handler.apply(ctx, req);
+        res = handler.apply(req);
         assertResponse(res, getResponseStatus(451, EMPTY_BUFFER), null, "");
     }
 
@@ -235,7 +235,7 @@ public abstract class AbstractResourceTest extends AbstractRequestHandlerTest {
     public void getJson() {
         final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, getResourcePath() + "/json");
 
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, OK, APPLICATION_JSON, jsonStringEquals("{\"foo\":\"bar1\"}"), String::length);
     }
 
@@ -245,7 +245,7 @@ public abstract class AbstractResourceTest extends AbstractRequestHandlerTest {
                 ctx.getAllocator().fromUtf8("{\"key\":\"val1\"}"));
         req.getHeaders().add(CONTENT_TYPE, APPLICATION_JSON);
 
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, ACCEPTED, APPLICATION_JSON, jsonStringEquals("{\"key\":\"val1\",\"foo\":\"bar2\"}"),
                 String::length);
         assertThat(res.getHeaders().get("X-Test"), is("test-header"));

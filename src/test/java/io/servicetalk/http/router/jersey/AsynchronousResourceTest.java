@@ -15,7 +15,22 @@
  */
 package io.servicetalk.http.router.jersey;
 
+import io.servicetalk.concurrent.api.DeliberateException;
+import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpResponse;
+
+import org.junit.Test;
+
+import static io.servicetalk.http.api.HttpRequestMethods.GET;
+import static io.servicetalk.http.api.HttpResponseStatuses.GATEWAY_TIMEOUT;
+import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static io.servicetalk.http.api.HttpResponseStatuses.SERVICE_UNAVAILABLE;
+import static io.servicetalk.http.router.jersey.TestUtil.assertResponse;
+import static io.servicetalk.http.router.jersey.TestUtil.newH11Request;
 import static io.servicetalk.http.router.jersey.resources.AsynchronousResources.PATH;
+import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
+import static org.junit.Assert.fail;
 
 public class AsynchronousResourceTest extends AbstractResourceTest {
     @Override
@@ -23,16 +38,100 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
         return PATH;
     }
 
+    @Test(expected = DeliberateException.class)
+    public void failedText() {
+        final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, getResourcePath() + "/failed-text");
+        handler.apply(req);
+    }
+
+    @Test
+    public void cancelledDelayedText() {
+        final HttpRequest<HttpPayloadChunk> req =
+                newH11Request(GET, getResourcePath() + "/failed-text?cancel=true");
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
+        assertResponse(res, SERVICE_UNAVAILABLE, null, "");
+    }
+
+    @Test
+    public void getDelayedText() {
+        final HttpRequest<HttpPayloadChunk> req =
+                newH11Request(GET, getResourcePath() + "/delayed-text?delay=10&unit=MILLISECONDS");
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
+        assertResponse(res, OK, TEXT_PLAIN, "DONE");
+    }
+
+    @Test
+    public void rsCancelDelayedText() {
+        final HttpRequest<HttpPayloadChunk> req =
+                newH11Request(GET, getResourcePath() + "/delayed-text?delay=1&unit=DAYS");
+        service.handle(ctx, req)
+                .subscribe(res -> fail("No response expected, got: " + res))
+                .cancel();
+    }
+
     @Override
     public void getJson() {
-        // TODO remove after https://github.com/jersey/jersey/issues/3672 is solved
+        // TODO remove after https://github.com/eclipse-ee4j/jersey/issues/3672 is solved
     }
 
     @Override
     public void putJsonResponse() {
-        // TODO remove after https://github.com/jersey/jersey/issues/3672 is solved
+        // TODO remove after https://github.com/eclipse-ee4j/jersey/issues/3672 is solved
     }
 
-    // TODO test support for JAX-RS AsyncResponse
+    @Test
+    public void resumeSuspended() {
+        final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, getResourcePath() + "/suspended/resume");
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
+        assertResponse(res, OK, TEXT_PLAIN, "DONE");
+    }
+
+    @Test
+    public void cancelSuspended() {
+        final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, getResourcePath() + "/suspended/cancel");
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
+        assertResponse(res, SERVICE_UNAVAILABLE, null, "");
+    }
+
+    @Test
+    public void setTimeOutResumeSuspended() {
+        final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, getResourcePath() + "/suspended/timeout-resume");
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
+        assertResponse(res, OK, TEXT_PLAIN, "DONE");
+    }
+
+    @Test
+    public void setTimeOutExpire() {
+        final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, getResourcePath() + "/suspended/timeout-expire");
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
+        assertResponse(res, SERVICE_UNAVAILABLE, null, "");
+    }
+
+    @Test
+    public void setTimeOutExpireHandled() {
+        final HttpRequest<HttpPayloadChunk> req =
+                newH11Request(GET, getResourcePath() + "/suspended/timeout-expire-handled");
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
+        assertResponse(res, GATEWAY_TIMEOUT, null, "");
+    }
+
+    @Test
+    public void setTimeOutResumed() {
+        final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, getResourcePath() + "/suspended/resume-timeout");
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
+        // Jersey catches and logs the exception that is raised internally when attempting
+        // to set a timeout on the resumed request ; and just proceeds with normal response handling
+        assertResponse(res, OK, TEXT_PLAIN, "DONE");
+    }
+
+    @Test
+    public void rsCancelSuspended() {
+        final HttpRequest<HttpPayloadChunk> req =
+                newH11Request(GET, getResourcePath() + "/suspended/busy");
+        service.handle(ctx, req)
+                .subscribe(res -> fail("No response expected, got: " + res))
+                .cancel();
+    }
+
     // TODO test support for Single responses
 }

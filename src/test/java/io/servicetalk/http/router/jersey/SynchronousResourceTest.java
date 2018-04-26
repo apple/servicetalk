@@ -51,18 +51,18 @@ public class SynchronousResourceTest extends AbstractResourceTest {
     @Test
     public void uriBuilding() {
         HttpRequest<HttpPayloadChunk> req = newH11Request(GET, PATH + "/uris/relative");
-        HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, OK, TEXT_PLAIN, "/async/text");
 
         req = newH11Request(GET, getResourcePath() + "/uris/absolute");
-        res = handler.apply(ctx, req);
+        res = handler.apply(req);
         assertResponse(res, OK, TEXT_PLAIN, "http://" + TEST_HOST + "/sync/uris/absolute");
     }
 
     @Test
     public void customResponseStatus() {
         final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, PATH + "/statuses/444");
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, getResponseStatus(444, DEFAULT_ALLOCATOR.fromAscii("Three fours!")), null, "");
         assertThat(res.getVersion(), is(HTTP_1_1));
     }
@@ -71,28 +71,28 @@ public class SynchronousResourceTest extends AbstractResourceTest {
     public void pathParams() {
         final HttpRequest<HttpPayloadChunk> req =
                 newH11Request(GET, PATH + "/matrix/ps;foo=bar1;foo=bar2/params;mp=bar3;mp=bar4");
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, OK, TEXT_PLAIN, "GOT: foo=bar1,bar2 & ps & bar3,bar4");
     }
 
     @Test
     public void bogusChunked() {
         final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, PATH + "/bogus-chunked");
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, OK, TEXT_PLAIN, "foo");
     }
 
     @Test
     public void servicetalkRequestContext() {
         final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, PATH + "/servicetalk-request");
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, OK, TEXT_PLAIN, "GOT: " + PATH + "/servicetalk-request");
     }
 
     @Test
     public void http10Support() {
         final HttpRequest<HttpPayloadChunk> req = newH10Request(GET, PATH + "/text");
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, HTTP_1_0, OK, TEXT_PLAIN, is("GOT: null & null"), $ -> 16);
     }
 
@@ -102,7 +102,7 @@ public class SynchronousResourceTest extends AbstractResourceTest {
                 ctx.getAllocator().fromUtf8("bar2"));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
 
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, OK, TEXT_PLAIN, is("GOT: bar2"), $ -> null);
     }
 
@@ -112,7 +112,7 @@ public class SynchronousResourceTest extends AbstractResourceTest {
                 ctx.getAllocator().fromUtf8("bar3"));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
 
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, OK, TEXT_PLAIN, "GOT: bar3");
     }
 
@@ -122,7 +122,7 @@ public class SynchronousResourceTest extends AbstractResourceTest {
                 ctx.getAllocator().fromUtf8("bar23"));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
 
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, OK, TEXT_PLAIN, is("GOT: bar23"), $ -> null);
     }
 
@@ -131,7 +131,7 @@ public class SynchronousResourceTest extends AbstractResourceTest {
         final HttpRequest<HttpPayloadChunk> req = newH11Request(GET,
                 PATH + "/text-pub-response?i=" + PARTIAL_CONTENT.getCode());
 
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, PARTIAL_CONTENT, TEXT_PLAIN, "GOT: 206");
     }
 
@@ -142,7 +142,7 @@ public class SynchronousResourceTest extends AbstractResourceTest {
                 ctx.getAllocator().fromUtf8("bar4"));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
 
-        HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, OK, TEXT_PLAIN, "GOT: bar4");
 
         // Large payload that goes above default buffer size
@@ -150,7 +150,7 @@ public class SynchronousResourceTest extends AbstractResourceTest {
         req = newH11Request(POST, PATH + "/text-oio-streams", ctx.getAllocator().fromUtf8(payload));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
 
-        res = handler.apply(ctx, req);
+        res = handler.apply(req);
         assertResponse(res, OK, TEXT_PLAIN, is("GOT: " + payload), $ -> null);
     }
 
@@ -160,7 +160,7 @@ public class SynchronousResourceTest extends AbstractResourceTest {
                 ctx.getAllocator().fromUtf8("{\"key\":\"val2\"}"));
         req.getHeaders().add(CONTENT_TYPE, APPLICATION_JSON);
 
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, OK, APPLICATION_JSON, jsonStringEquals("{\"key\":\"val2\",\"foo\":\"bar3\"}"), $ -> null);
     }
 
@@ -170,7 +170,7 @@ public class SynchronousResourceTest extends AbstractResourceTest {
                 ctx.getAllocator().fromUtf8("{\"key\":\"val3\"}"));
         req.getHeaders().add(CONTENT_TYPE, APPLICATION_JSON);
 
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(ctx, req);
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, OK, APPLICATION_JSON, jsonStringEquals("{\"key\":\"val3\",\"foo\":\"bar4\"}"),
                 String::length);
     }

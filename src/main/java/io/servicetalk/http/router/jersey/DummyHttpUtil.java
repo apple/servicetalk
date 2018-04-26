@@ -15,10 +15,14 @@
  */
 package io.servicetalk.http.router.jersey;
 
+import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.transport.api.ConnectionContext;
 
+import java.util.Iterator;
+
+import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.router.jersey.CharSequenceUtil.ensureTrailingSlash;
 
@@ -31,6 +35,15 @@ final class DummyHttpUtil {
 
     private DummyHttpUtil() {
         // no instances
+    }
+
+    static void removeHeader(final HttpHeaders headers, final CharSequence name, final CharSequence value) {
+        final Iterator<? extends CharSequence> i = headers.getAll(name);
+        while (i.hasNext()) {
+            if (contentEqualsIgnoreCase(value, i.next())) {
+                i.remove();
+            }
+        }
     }
 
     static CharSequence getBaseUri(final ConnectionContext ctx, final HttpRequest<HttpPayloadChunk> req) {
