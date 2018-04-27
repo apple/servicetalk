@@ -25,6 +25,7 @@ import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 import io.servicetalk.transport.netty.internal.NettyServerContext;
+import io.servicetalk.transport.netty.internal.RefCountedTrapper;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -95,9 +96,23 @@ public final class TcpServerInitializer {
      * @param listenAddress for the server.
      * @param contextFilter to use for filtering accepted connections.
      * @param channelInitializer to use for initializing all accepted connections.
-     * @return Single which completes when the server is started.
+     * @return {@link Single} which completes when the server is started.
      */
     public Single<ServerContext> start(SocketAddress listenAddress, ContextFilter contextFilter, ChannelInitializer channelInitializer) {
+        return start(listenAddress, contextFilter, channelInitializer, true);
+    }
+
+    /**
+     * Starts a server using the passed {@code channelInitializer} on the {@code listenAddress}.
+     *
+     * @param listenAddress for the server.
+     * @param contextFilter to use for filtering accepted connections.
+     * @param channelInitializer to use for initializing all accepted connections.
+     * @param checkForRefCountedTrapper Whether to log a warning if a {@link RefCountedTrapper} is not found in the pipeline.
+     * @return {@link Single} which completes when the server is started.
+     */
+    public Single<ServerContext> start(SocketAddress listenAddress, ContextFilter contextFilter, ChannelInitializer channelInitializer,
+                                       boolean checkForRefCountedTrapper) {
         requireNonNull(channelInitializer);
         requireNonNull(contextFilter);
         listenAddress = toNettyAddress(requireNonNull(listenAddress));
@@ -110,7 +125,7 @@ public final class TcpServerInitializer {
                 try {
                     // TODO: Use proper executor
                     ConnectionContext context = newContext(channel, wrapEventLoop(channel.eventLoop()), immediate(),
-                            config.getAllocator(), channelInitializer);
+                            config.getAllocator(), channelInitializer, checkForRefCountedTrapper);
                     //TODO 3.x: Use filter result.
                     contextFilter.filter(context);
                 } catch (Exception cause) {
