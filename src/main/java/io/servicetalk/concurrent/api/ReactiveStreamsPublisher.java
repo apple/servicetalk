@@ -29,9 +29,9 @@ final class ReactiveStreamsPublisher<T> extends AbstractNoHandleSubscribePublish
     }
 
     @Override
-    void handleSubscribe(Subscriber<? super T> subscriber, InOrderExecutor inOrderExecutor) {
-        // Wrap the passed Subscriber with the InOrderExecutor to make sure they are not invoked in the thread that
+    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
+        // Wrap the passed Subscriber with the SignalOffloader to make sure they are not invoked in the thread that
         // asynchronously processes signals and hence may not be safe to execute user code.
-        publisher.subscribe(inOrderExecutor.wrap(subscriber));
+        publisher.subscribe(signalOffloader.offloadSubscriber(subscriber));
     }
 }

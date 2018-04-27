@@ -29,28 +29,28 @@ abstract class AbstractRedoPublisherOperator<T> extends AbstractNoHandleSubscrib
     }
 
     @Override
-    final void handleSubscribe(Subscriber<? super T> subscriber, InOrderExecutor inOrderExecutor) {
-        subscribeToOriginal(requireNonNull(redo(subscriber, inOrderExecutor)), inOrderExecutor);
+    final void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
+        subscribeToOriginal(requireNonNull(redo(subscriber, signalOffloader)), signalOffloader);
     }
 
     /**
      * Subscribes the passed {@link Subscriber} to the original {@link Publisher}.
      *
      * @param subscriber {@link Subscriber} to use.
-     * @param inOrderExecutor {@link InOrderExecutor} for the passed {@link Subscriber}.
+     * @param signalOffloader {@link SignalOffloader} for the passed {@link Subscriber}.
      */
-    final void subscribeToOriginal(Subscriber<? super T> subscriber, InOrderExecutor inOrderExecutor) {
-        original.subscribe(subscriber, inOrderExecutor);
+    final void subscribeToOriginal(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
+        original.subscribe(subscriber, signalOffloader);
     }
 
     /**
      * Bridges this {@link Publisher}'s {@link Subscriber} to the original {@link Publisher}'s {@link Subscriber}.
      *
      * @param subscriber {@link Subscriber} to this {@link Publisher}.
-     * @param inOrderExecutor  {@link InOrderExecutor} for the passed {@link Subscriber}. Typically, implementations will
-     *                         not use this {@link InOrderExecutor} but just pass it to {@link #subscribeToOriginal(Subscriber, InOrderExecutor)}
+     * @param signalOffloader  {@link SignalOffloader} for the passed {@link Subscriber}. Typically, implementations will
+     *                         not use this {@link SignalOffloader} but just pass it to {@link #subscribeToOriginal(Subscriber, SignalOffloader)}
      *                         at a later point.
      * @return {@link Subscriber} to subscribe to the original {@link Subscriber}.
      */
-    abstract Subscriber<? super T> redo(Subscriber<? super T> subscriber, InOrderExecutor inOrderExecutor);
+    abstract Subscriber<? super T> redo(Subscriber<? super T> subscriber, SignalOffloader signalOffloader);
 }

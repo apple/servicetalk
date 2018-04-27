@@ -21,7 +21,7 @@ import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRI
 
 /**
  * A {@link Publisher} that does not expect to receive a call to {@link #handleSubscribe(Subscriber)} since it overrides
- * {@link #handleSubscribe(Subscriber, InOrderExecutor)}.
+ * {@link #handleSubscribe(Subscriber, SignalOffloader)}.
  *
  * @param <T> Type of items emitted.
  */

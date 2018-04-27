@@ -55,21 +55,21 @@ final class RedoWhenPublisher<T> extends AbstractRedoPublisherOperator<T> {
     }
 
     @Override
-    protected Subscriber<? super T> redo(Subscriber<? super T> subscriber, InOrderExecutor inOrderExecutor) {
-        return new RedoSubscriber<>(new SequentialSubscription(), 0, subscriber, this, inOrderExecutor);
+    protected Subscriber<? super T> redo(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
+        return new RedoSubscriber<>(new SequentialSubscription(), 0, subscriber, this, signalOffloader);
     }
 
     private static final class RedoSubscriber<T> extends RedoPublisher.AbstractRedoSubscriber<T> {
 
         private final SequentialCancellable cancellable;
         private final RedoWhenPublisher<T> redoPublisher;
-        private final InOrderExecutor inOrderExecutor;
+        private final SignalOffloader signalOffloader;
 
         RedoSubscriber(SequentialSubscription subscription, int redoCount, Subscriber<? super T> subscriber,
-                       RedoWhenPublisher<T> redoPublisher, InOrderExecutor inOrderExecutor) {
+                       RedoWhenPublisher<T> redoPublisher, SignalOffloader signalOffloader) {
             super(subscription, redoCount, subscriber);
             this.redoPublisher = redoPublisher;
-            this.inOrderExecutor = inOrderExecutor;
+            this.signalOffloader = signalOffloader;
             cancellable = new SequentialCancellable();
         }
 
@@ -137,7 +137,7 @@ final class RedoWhenPublisher<T> extends AbstractRedoPublisherOperator<T> {
                 @Override
                 public void onComplete() {
                     redoPublisher.subscribeToOriginal(new RedoSubscriber<>(subscription, redoCount + 1, subscriber, redoPublisher,
-                            inOrderExecutor), inOrderExecutor);
+                            signalOffloader), signalOffloader);
                 }
 
                 @Override

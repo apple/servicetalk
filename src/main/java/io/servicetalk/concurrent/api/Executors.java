@@ -22,6 +22,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import static io.servicetalk.concurrent.api.NoopSignalOffloader.NOOP_SIGNAL_OFFLOADER;
+
 /**
  * Utility methods to create various {@link Executor}s.
  */
@@ -41,6 +43,19 @@ public final class Executors {
      */
     public static Executor immediate() {
         return IMMEDIATE;
+    }
+
+    /**
+     * Creates a new {@link SignalOffloader} that will use the passed {@link Executor} to offload signals.
+     *
+     * @param executor {@link Executor} to use for offloading signals.
+     * @return Newly created {@link SignalOffloader}.
+     */
+    static SignalOffloader newOffloader(Executor executor) {
+        if (executor == IMMEDIATE) {
+            return NOOP_SIGNAL_OFFLOADER;
+        }
+        return new DefaultSignalOffloader(executor);
     }
 
     /**

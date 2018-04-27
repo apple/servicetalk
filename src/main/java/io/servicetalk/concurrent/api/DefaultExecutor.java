@@ -18,14 +18,9 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -35,6 +30,8 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.internal.ExecutorUtil.executeOnService;
+import static io.servicetalk.concurrent.internal.ExecutorUtil.scheduleForSubscriber;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -42,8 +39,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * An implementation of {@link Executor} that uses an implementation of {@link java.util.concurrent.Executor} to execute tasks.
  */
 final class DefaultExecutor implements Executor {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultExecutor.class);
 
     private static final long DEFAULT_KEEP_ALIVE_TIME_SECONDS = 60;
     /**
@@ -173,8 +168,7 @@ final class DefaultExecutor implements Executor {
 
                 @Override
                 public Cancellable apply(Runnable runnable) {
-                    Future<?> future = service.submit(runnable);
-                    return () -> future.cancel(interruptOnCancel);
+                    return executeOnService(service, runnable, interruptOnCancel);
                 }
             };
         }
@@ -224,67 +218,8 @@ final class DefaultExecutor implements Executor {
         return new Completable() {
             @Override
             protected void handleSubscribe(Subscriber subscriber) {
-                CancellableTask task = new CancellableTask(subscriber, interruptOnCancel);
-                final ScheduledFuture future;
-                try {
-                    future = service.schedule(task, duration, timeUnit);
-                } catch (Throwable t) {
-                    task.fail(service, t);
-                    return;
-                }
-                task.setUpstreamFuture(future);
+                scheduleForSubscriber(subscriber, service, interruptOnCancel, duration, timeUnit);
             }
         };
-    }
-
-    private static final class CancellableTask implements Cancellable, Runnable {
-        private final Completable.Subscriber subscriber;
-        private final boolean interruptOnCancel;
-        @Nullable
-        private volatile ScheduledFuture upstreamFuture;
-        private volatile boolean cancelled;
-
-        CancellableTask(Completable.Subscriber subscriber, boolean interruptOnCancel) {
-            this.subscriber = subscriber;
-            this.interruptOnCancel = interruptOnCancel;
-
-            // This will always happen before the schedule operation is invoked. So that means it will always happen
-            // before we call terminal methods on the subscriber.
-            subscriber.onSubscribe(this);
-        }
-
-        @Override
-        public void cancel() {
-            cancelled = true;
-            ScheduledFuture upstreamFuture = this.upstreamFuture;
-            if (upstreamFuture != null) {
-                // It is assumed concurrent invocation of cancel is supported, and multiple invocation will result in a no-op.
-                upstreamFuture.cancel(interruptOnCancel);
-            }
-        }
-
-        void setUpstreamFuture(ScheduledFuture upstreamFuture) {
-            this.upstreamFuture = upstreamFuture;
-            if (cancelled) {
-                // It is assumed concurrent invocation of cancel is supported, and multiple invocation will result in a no-op.
-                upstreamFuture.cancel(interruptOnCancel);
-            }
-        }
-
-        @Override
-        public void run() {
-            // It is assumed if the ScheduledExecutorService throws an exception, it will never run the task. This means
-            // we don't have to have any concurrency protection around the subscriber (between failing it below).
-            subscriber.onComplete();
-        }
-
-        void fail(Object scheduler, Throwable cause) {
-            // The Scheduler API currently doesn't make any guarantees about what thread will be used to invoke the
-            // subscriber. It maybe the the thread used by the underlying Scheduler and it maybe the calling thread.
-            // The threading model used to invoke user code is ultimately determined by the Completable created to
-            // represent the async operation, and may be inherited via the current execution context.
-            subscriber.onError(cause);
-            LOGGER.warn("Failed to schedule a task on the scheduler {}", scheduler, cause);
-        }
     }
 }

@@ -43,7 +43,7 @@ abstract class AbstractSynchronousPublisherOperator<T, R> extends AbstractNoHand
     }
 
     @Override
-    final void handleSubscribe(Subscriber<? super R> subscriber, InOrderExecutor inOrderExecutor) {
-        original.subscribe(apply(subscriber));
+    final void handleSubscribe(Subscriber<? super R> subscriber, SignalOffloader signalOffloader) {
+        original.subscribe(apply(subscriber), signalOffloader);
     }
 }

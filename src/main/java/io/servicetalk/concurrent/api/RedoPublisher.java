@@ -40,8 +40,8 @@ final class RedoPublisher<T> extends AbstractRedoPublisherOperator<T> {
     }
 
     @Override
-    Subscriber<? super T> redo(Subscriber<? super T> subscriber, InOrderExecutor inOrderExecutor) {
-        return new RedoSubscriber<>(new SequentialSubscription(), 0, subscriber, this, inOrderExecutor);
+    Subscriber<? super T> redo(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
+        return new RedoSubscriber<>(new SequentialSubscription(), 0, subscriber, this, signalOffloader);
     }
 
     abstract static class AbstractRedoSubscriber<T> implements Subscriber<T> {
@@ -78,13 +78,13 @@ final class RedoPublisher<T> extends AbstractRedoPublisherOperator<T> {
     private static final class RedoSubscriber<T> extends AbstractRedoSubscriber<T> {
 
         private final RedoPublisher<T> redoPublisher;
-        private final InOrderExecutor inOrderExecutor;
+        private final SignalOffloader signalOffloader;
 
         RedoSubscriber(SequentialSubscription subscription, int redoCount, Subscriber<? super T> subscriber,
-                       RedoPublisher<T> redoPublisher, InOrderExecutor inOrderExecutor) {
+                       RedoPublisher<T> redoPublisher, SignalOffloader signalOffloader) {
             super(subscription, redoCount, subscriber);
             this.redoPublisher = redoPublisher;
-            this.inOrderExecutor = inOrderExecutor;
+            this.signalOffloader = signalOffloader;
         }
 
         @Override
@@ -117,7 +117,7 @@ final class RedoPublisher<T> extends AbstractRedoPublisherOperator<T> {
             }
 
             if (shouldRedo) {
-                redoPublisher.subscribeToOriginal(new RedoSubscriber<>(subscription, redoCount + 1, subscriber, redoPublisher, inOrderExecutor), inOrderExecutor);
+                redoPublisher.subscribeToOriginal(new RedoSubscriber<>(subscription, redoCount + 1, subscriber, redoPublisher, signalOffloader), signalOffloader);
             } else {
                 notification.terminate(subscriber);
             }

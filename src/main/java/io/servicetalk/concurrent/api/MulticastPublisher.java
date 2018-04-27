@@ -108,7 +108,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
     }
 
     @Override
-    void handleSubscribe(Subscriber<? super T> subscriber, InOrderExecutor inOrderExecutor) {
+    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
         for (;;) {
             final int subscriberCount = this.subscriberCount;
             if (subscriberCount == subscribers.length() || subscriberCount < 0) {
@@ -123,7 +123,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
                 subscribers.set(subscriberCount, multicastSubscriber);
                 multicastSubscriber.onSubscribe(subscription);
                 if (subscriberCount == subscribers.length() - 1) {
-                    original.subscribe(this, inOrderExecutor);
+                    original.subscribe(this, signalOffloader);
                 }
                 break;
             }

@@ -38,7 +38,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.api.InOrderExecutors.newOrderedExecutor;
+import static io.servicetalk.concurrent.api.Executors.newOffloader;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -76,8 +76,10 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
 
     @Override
     public final void subscribe(Subscriber<? super T> subscriber) {
-        // This is a user-driven subscribe i.e. there is no InOrderExecutor override, so create a new InOrderExecutor to use.
-        subscribe(subscriber, newOrderedExecutor(executor));
+        // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader to use.
+        final SignalOffloader signalOffloader = newOffloader(executor);
+        // Since this is a user-driven subscribe (end of the execution chain), offload subscription methods
+        subscribe(signalOffloader.offloadSubscription(subscriber), signalOffloader);
     }
 
     /**
@@ -88,40 +90,40 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     protected abstract void handleSubscribe(Subscriber<? super T> subscriber);
 
     /**
-     * A special subscribe mode that uses the passed {@link InOrderExecutor} instead of creating a new
-     * {@link InOrderExecutor} like {@link #subscribe(Subscriber)}. This will call
-     * {@link #handleSubscribe(Subscriber, InOrderExecutor)} to handle this subscribe instead of {@link #handleSubscribe(Subscriber)}.<p>
+     * A special subscribe mode that uses the passed {@link SignalOffloader} instead of creating a new
+     * {@link SignalOffloader} like {@link #subscribe(Subscriber)}. This will call
+     * {@link #handleSubscribe(Subscriber, SignalOffloader)} to handle this subscribe instead of {@link #handleSubscribe(Subscriber)}.<p>
      *
-     *     This method is used by operator implementations to inherit a chosen {@link InOrderExecutor} per {@link Subscriber} where possible.
-     *     This method does not wrap the passed {@link Subscriber} or {@link Subscription} to offload processing to {@link InOrderExecutor}.
-     *     That is done by {@link #handleSubscribe(Subscriber, InOrderExecutor)} and hence can be overridden by operators that do not require this wrapping.
+     *     This method is used by operator implementations to inherit a chosen {@link SignalOffloader} per {@link Subscriber} where possible.
+     *     This method does not wrap the passed {@link Subscriber} or {@link Subscription} to offload processing to {@link SignalOffloader}.
+     *     That is done by {@link #handleSubscribe(Subscriber, SignalOffloader)} and hence can be overridden by operators that do not require this wrapping.
      *
      * @param subscriber {@link Subscriber} to this {@link Publisher}.
-     * @param inOrderExecutor {@link InOrderExecutor} to use for this {@link Subscriber}.
+     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
      */
-    final void subscribe(Subscriber<? super T> subscriber, InOrderExecutor inOrderExecutor) {
+    final void subscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
         requireNonNull(subscriber);
         BiConsumer<? super Subscriber, Consumer<? super Subscriber>> plugin = SUBSCRIBE_PLUGIN_REF.get();
         if (plugin != null) {
-            plugin.accept(subscriber, sub -> handleSubscribe(sub, inOrderExecutor));
+            plugin.accept(subscriber, sub -> handleSubscribe(sub, signalOffloader));
         } else {
-            handleSubscribe(subscriber, inOrderExecutor);
+            handleSubscribe(subscriber, signalOffloader);
         }
     }
 
     /**
-     * Override for {@link #handleSubscribe(Subscriber)} to offload the {@link #handleSubscribe(Subscriber)} call to the passed {@link InOrderExecutor}. <p>
+     * Override for {@link #handleSubscribe(Subscriber)} to offload the {@link #handleSubscribe(Subscriber)} call to the passed {@link SignalOffloader}. <p>
      *
-     *     This method wraps the passed {@link Subscriber} using {@link InOrderExecutor#wrap(Subscriber)} and then calls {@link #handleSubscribe(Subscriber)}
-     *     using {@link InOrderExecutor#execute(Runnable)}.
+     *     This method wraps the passed {@link Subscriber} using {@link SignalOffloader#offloadSubscriber(Subscriber)} and then calls {@link #handleSubscribe(Subscriber)}
+     *     using {@link SignalOffloader#offloadSignal(Object, Consumer)}.
      *     Operators that do not wish to wrap the passed {@link Subscriber} can override this method and omit the wrapping.
      *
      * @param subscriber the subscriber.
-     * @param inOrderExecutor {@link InOrderExecutor} to use for this {@link Subscriber}.
+     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
      */
-    void handleSubscribe(Subscriber<? super T> subscriber, InOrderExecutor inOrderExecutor) {
-        Subscriber<? super T> safeSubscriber = inOrderExecutor.wrap(subscriber);
-        inOrderExecutor.execute(() -> handleSubscribe(safeSubscriber));
+    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
+        Subscriber<? super T> safeSubscriber = signalOffloader.offloadSubscriber(subscriber);
+        signalOffloader.offloadSignal(safeSubscriber, this::handleSubscribe);
     }
 
     /**
