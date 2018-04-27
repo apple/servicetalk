@@ -105,18 +105,37 @@ public final class NettyConnectionContext implements ConnectionContext {
      * @param ioExecutor the {@link IoExecutor} to use.
      * @param executor the {@link Executor} to use.
      * @param allocator for the context.
-     * @param initializer to initialize the channel.  @return A new {@link NettyConnectionContext}.
-     *
+     * @param initializer to initialize the channel.
      * @return New {@link ConnectionContext} for the channel.
      */
     public static ConnectionContext newContext(Channel channel, IoExecutor ioExecutor, Executor executor,
                                                BufferAllocator allocator, ChannelInitializer initializer) {
+        return newContext(channel, ioExecutor, executor, allocator, initializer, true);
+    }
+
+    /**
+     * Creates a new {@link NettyConnectionContext} by initializing the passed {@code channel} using the
+     * {@code initializer}.
+     *
+     * @param channel for the newly created {@link NettyConnectionContext}.
+     * @param ioExecutor the {@link IoExecutor} to use.
+     * @param executor the {@link Executor} to use.
+     * @param allocator for the context.
+     * @param initializer to initialize the channel.
+     * @param checkForRefCountedTrapper Whether to log a warning if a {@link RefCountedTrapper} is not found in the pipeline.
+     * @return New {@link ConnectionContext} for the channel.
+     */
+    public static ConnectionContext newContext(Channel channel, IoExecutor ioExecutor, Executor executor,
+                                               BufferAllocator allocator, ChannelInitializer initializer,
+                                               boolean checkForRefCountedTrapper) {
         ConnectionContext context = new NettyConnectionContext(channel, ioExecutor, executor, allocator);
         context = initializer.init(channel, context);
-        RefCountedTrapper refCountedTrapper = channel.pipeline().get(RefCountedTrapper.class);
-        if (refCountedTrapper == null) {
-            LOGGER.warn("No handler of type {} found in the pipeline, this may leak ref-counted objects out of netty pipeline.",
-                    RefCountedTrapper.class.getName());
+        if (checkForRefCountedTrapper) {
+            RefCountedTrapper refCountedTrapper = channel.pipeline().get(RefCountedTrapper.class);
+            if (refCountedTrapper == null) {
+                LOGGER.warn("No handler of type {} found in the pipeline, this may leak ref-counted objects out of netty pipeline.",
+                        RefCountedTrapper.class.getName());
+            }
         }
         channel.attr(SVC_CONTEXT).set(context);
         return context;
