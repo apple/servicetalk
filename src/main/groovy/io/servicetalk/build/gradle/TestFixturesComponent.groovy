@@ -22,10 +22,12 @@ import org.gradle.api.artifacts.ModuleDependency
 import org.gradle.api.artifacts.PublishArtifact
 import org.gradle.api.attributes.AttributeContainer
 import org.gradle.api.attributes.Usage
+import org.gradle.api.capabilities.Capability
 import org.gradle.api.internal.component.SoftwareComponentInternal
 import org.gradle.api.internal.component.UsageContext
 import org.gradle.api.model.ObjectFactory
 
+import static java.util.Collections.emptySet
 import static org.gradle.api.internal.attributes.ImmutableAttributes.EMPTY
 import static org.gradle.util.GUtil.toWords
 
@@ -66,7 +68,7 @@ class TestFixturesComponent implements SoftwareComponentInternal {
 
     @Override
     Set<? extends PublishArtifact> getArtifacts() {
-      []
+      emptySet()
     }
 
     @Override
@@ -77,6 +79,11 @@ class TestFixturesComponent implements SoftwareComponentInternal {
     @Override
     Set<? extends DependencyConstraint> getDependencyConstraints() {
       configuration.incoming.dependencyConstraints
+    }
+
+    @Override
+    Set<? extends Capability> getCapabilities() {
+      emptySet()
     }
 
     @Override
