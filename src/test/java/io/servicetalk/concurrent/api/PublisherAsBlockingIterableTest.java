@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.api.PublisherAsIterable.CancellableIterator;
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -26,9 +26,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Spliterator;
+import java.util.concurrent.TimeoutException;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -40,10 +42,12 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.fail;
 import static org.junit.rules.ExpectedException.none;
 
-public final class PublisherAsIterableTest {
+public final class PublisherAsBlockingIterableTest {
 
     @Rule
     public final ExpectedException expected = none();
+    @Rule
+    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
 
     @Test
     public void subscribeDelayedTillIterator() {
@@ -103,24 +107,62 @@ public final class PublisherAsIterableTest {
     }
 
     @Test
-    public void cancelShouldTerminatePostDrain() {
+    public void hasNextWithTimeout() throws Exception {
         TestPublisher<Integer> source = new TestPublisher<>();
-        CancellableIterator<Integer> iterator = (CancellableIterator<Integer>) source.toIterable().iterator();
+        BlockingIterator<Integer> iterator = source.toIterable().iterator();
         source.verifySubscribed().sendOnSubscribe();
         source.sendItems(1, 2);
-        iterator.cancel();
+        assertThat("hasNext timed out.", iterator.hasNext(-1, MILLISECONDS), is(true));
+        assertThat("Unexpected item found.", iterator.next(-1, MILLISECONDS), is(1));
+        assertThat("Unexpected item found.", iterator.next(-1, MILLISECONDS), is(2));
+        expected.expect(instanceOf(TimeoutException.class));
+        try {
+            iterator.hasNext(10, MILLISECONDS);
+        } catch (TimeoutException e) {
+            assertThat("Unexpected item found.", iterator.hasNext(-1, MILLISECONDS), is(false));
+            source.verifyCancelled();
+            throw e;
+        }
+    }
+
+    @Test
+    public void nextWithTimeout() throws Exception {
+        TestPublisher<Integer> source = new TestPublisher<>();
+        BlockingIterator<Integer> iterator = source.toIterable().iterator();
+        source.verifySubscribed().sendOnSubscribe();
+        source.sendItems(1, 2);
+        assertThat("hasNext timed out.", iterator.hasNext(-1, MILLISECONDS), is(true));
+        assertThat("Unexpected item found.", iterator.next(-1, MILLISECONDS), is(1));
+        assertThat("Unexpected item found.", iterator.next(-1, MILLISECONDS), is(2));
+        expected.expect(instanceOf(TimeoutException.class));
+        try {
+            iterator.next(10, MILLISECONDS);
+        } catch (TimeoutException e) {
+            assertThat("Unexpected item found.", iterator.hasNext(-1, MILLISECONDS), is(false));
+            source.verifyCancelled();
+            throw e;
+        }
+    }
+
+    @Test
+    public void cancelShouldTerminatePostDrain() throws Exception {
+        TestPublisher<Integer> source = new TestPublisher<>();
+        BlockingIterator<Integer> iterator = source.toIterable().iterator();
+        source.verifySubscribed().sendOnSubscribe();
+        source.sendItems(1, 2);
+        iterator.close();
         assertThat("Unexpected item found.", iterator.next(), is(1));
         assertThat("Unexpected item found.", iterator.next(), is(2));
         assertThat("Item not expected but found.", iterator.hasNext(), is(false));
     }
 
     @Test
-    public void cancelShouldTerminatePostDrainAndRejectSubsequentItems() {
+    public void cancelShouldTerminatePostDrainAndRejectSubsequentItems() throws Exception {
         TestPublisher<Integer> source = new TestPublisher<>(true);
-        CancellableIterator<Integer> iterator = (CancellableIterator<Integer>) source.toIterable().iterator();
+        BlockingIterator<Integer> iterator = source.toIterable().iterator();
         source.verifySubscribed().sendOnSubscribe();
         source.sendItems(1, 2);
-        iterator.cancel();
+        iterator.close();
         source.sendItems(1); // Additional item, must be ignored.
         assertThat("Unexpected item found.", iterator.next(), is(1));
         assertThat("Unexpected item found.", iterator.next(), is(2));
@@ -152,6 +194,20 @@ public final class PublisherAsIterableTest {
         source.onComplete();
         expected.expect(instanceOf(NoSuchElementException.class));
         iterator.next();
+    }
+
+    @Test
+    public void nextWithTimeoutWithoutHasNextAndTerminal() throws TimeoutException {
+        TestPublisher<Integer> source = new TestPublisher<>();
+        BlockingIterator<Integer> iterator = source.toIterable().iterator();
+        source.verifySubscribed().sendOnSubscribe();
+        source.onNext(1);
+        assertThat("Unexpected item found.", iterator.next(), is(1));
+        source.onNext(2);
+        assertThat("Unexpected item found.", iterator.next(), is(2));
+        source.onComplete();
+        expected.expect(instanceOf(NoSuchElementException.class));
+        iterator.next(10, MILLISECONDS);
     }
 
     @Test
@@ -275,12 +331,11 @@ public final class PublisherAsIterableTest {
     }
 
     @Test
-    public void queueFullButAccommodatesCancel() {
+    public void queueFullButAccommodatesCancel() throws Exception {
         TestPublisher<Integer> source = new TestPublisher<>();
-        CancellableIterator<Integer> iterator = (CancellableIterator<Integer>) source.toIterable(1)
-                .iterator();
+        BlockingIterator<Integer> iterator = source.toIterable(1).iterator();
         source.verifySubscribed().sendOnSubscribe().verifyRequested(1).sendItems(1);
-        iterator.cancel();
+        iterator.close();
         verifyNextIs(iterator, 1);
         assertThat("Item expected but not found.", iterator.hasNext(), is(false));
     }

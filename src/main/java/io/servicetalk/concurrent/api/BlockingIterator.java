@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import javax.annotation.Nullable;
 
 /**
  * An {@link Iterator} which supports {@link AutoCloseable#close()} and also whose blocking operations support timeout
@@ -31,14 +32,13 @@ import java.util.concurrent.TimeoutException;
  * {@link Subscription}. If the data is not completely consumed from this {@link Iterable} then {@link #close()}
  * <strong>MUST</strong> be called. If the data is completely consumed (e.g. {@link #hasNext()} and/or
  * {@link #hasNext(long, TimeUnit)} return {@code false}) then this object is implicitly {@link #close() closed}.
- * <p>
- * Note that the {@link Iterator} methods of this interface may throw {@link IteratorClosedException} if
- * {@link #close()} was previously called.
  * @param <T> the type of elements returned by this {@link Iterator}.
  */
 public interface BlockingIterator<T> extends Iterator<T>, AutoCloseable {
     /**
      * The equivalent of {@link #hasNext()} but only waits for {@code timeout} duration amount of time.
+     * <p>
+     * Note that {@link #close()} is not required to interrupt this call.
      * @param timeout The duration of time to wait. If this value is non-positive that means the timeout expiration is
      * immediate or in the past. In this case, if this implementation cannot determine if there is more data immediately
      * (e.g. without external dependencies) then a {@link TimeoutException} should be thrown, otherwise the method can
@@ -48,15 +48,13 @@ public interface BlockingIterator<T> extends Iterator<T>, AutoCloseable {
      * implicitly {@link #close() closed}.
      * @throws TimeoutException if the wait timed out. This object is implicitly {@link #close() closed} if this
      * occurs.
-     * @throws IteratorClosedException if there is no data immediately available, this {@link BlockingIterator} has
-     * been {@link #close() closed}, and no attempt to fetch data will be made.
-     * <p>
-     * Note that {@link #close()} is not required to interrupt this call.
      */
-    boolean hasNext(long timeout, TimeUnit unit) throws TimeoutException, IteratorClosedException;
+    boolean hasNext(long timeout, TimeUnit unit) throws TimeoutException;
 
     /**
      * The equivalent of {@link #next()} but only waits for {@code timeout} duration of time.
+     * <p>
+     * Note that {@link #close()} is not required to interrupt this call.
      * @param timeout The duration of time to wait. If this value is non-positive that means the timeout expiration is
      * immediate or in the past. In this case, if this implementation cannot determine if there is more data immediately
      * (e.g. without external dependencies) then a {@link TimeoutException} should be thrown, otherwise the method can
@@ -66,17 +64,15 @@ public interface BlockingIterator<T> extends Iterator<T>, AutoCloseable {
      * @throws NoSuchElementException if the iteration has no more elements.
      * @throws TimeoutException if the wait timed out. This object is implicitly {@link #close() closed} if this
      * occurs.
-     * @throws IteratorClosedException if there is no data immediately available, this {@link BlockingIterator} has
-     * been {@link #close() closed}, and no attempt to fetch data will be made.
-     * <p>
-     * Note that {@link #close()} is not required to interrupt this call.
      */
-    T next(long timeout, TimeUnit unit) throws TimeoutException, IteratorClosedException;
+    @Nullable
+    T next(long timeout, TimeUnit unit) throws TimeoutException;
 
     /**
      * This method is used to communicate that you are no longer interested in consuming data.
      * This provides a "best effort" notification to the producer of data that you are no longer interested in data
-     * from this {@link Iterator}.
+     * from this {@link Iterator}. It is still possible that data may be obtained after calling this method, for example
+     * if there is data currently queued in memory.
      * <p>
      * If all the data has not been consumed (e.g. {@link #hasNext()} and/or {@link #hasNext(long, TimeUnit)}
      * have not yet returned {@code false}) this may have transport implications (e.g. if the source of data comes from

@@ -15,7 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
@@ -24,10 +23,11 @@ import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
@@ -39,20 +39,20 @@ import static java.util.Objects.requireNonNull;
 /**
  * As returned by {@link Publisher#toIterable(int)} and {@link Publisher#toIterable()}.
  *
- * @param <T> Type of items emitted by the {@link Publisher} from which this {@link Iterable} is created.
+ * @param <T> Type of items emitted by the {@link Publisher} from which this {@link BlockingIterable} is created.
  */
-final class PublisherAsIterable<T> implements Iterable<T> {
+final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PublisherAsIterable.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(PublisherAsBlockingIterable.class);
 
     private final Publisher<T> original;
     private final int queueCapacityHint;
 
-    PublisherAsIterable(final Publisher<T> original) {
+    PublisherAsBlockingIterable(final Publisher<T> original) {
         this(original, 16);
     }
 
-    PublisherAsIterable(final Publisher<T> original, int queueCapacityHint) {
+    PublisherAsBlockingIterable(final Publisher<T> original, int queueCapacityHint) {
         this.original = requireNonNull(original);
         if (queueCapacityHint <= 0) {
             throw new IllegalArgumentException("Invalid queueCapacityHint: " + queueCapacityHint + " (expected > 0).");
@@ -62,20 +62,13 @@ final class PublisherAsIterable<T> implements Iterable<T> {
     }
 
     @Override
-    public CancellableIterator<T> iterator() {
+    public BlockingIterator<T> iterator() {
         SubscriberAndIterator<T> subscriberAndIterator = new SubscriberAndIterator<>(queueCapacityHint);
         original.subscribe(subscriberAndIterator);
         return subscriberAndIterator;
     }
 
-    /**
-     * An {@link Iterator} that can be cancelled.
-     * @param <T> Type of items returned by this {@link Iterator}.
-     */
-    interface CancellableIterator<T> extends Iterator<T>, Cancellable {
-    }
-
-    private static final class SubscriberAndIterator<T> implements Subscriber<T>, CancellableIterator<T> {
+    private static final class SubscriberAndIterator<T> implements Subscriber<T>, BlockingIterator<T> {
         private static final Object CANCELLED_SIGNAL = new Object();
         private static final Object NULL_PLACEHOLDER = new Object();
         private static final TerminalNotification COMPLETE_NOTIFICATION = complete();
@@ -106,11 +99,11 @@ final class PublisherAsIterable<T> implements Iterable<T> {
         }
 
         @Override
-        public void cancel() {
+        public void close() {
             subscription.cancel();
-            if (!data.offer(CANCELLED_SIGNAL)) {
-                LOGGER.error("Unexpected reject from queue while offering cancel. Requested: " + requested
-                        + ", capacity: " + (queueCapacity));
+            if (!terminated && !data.offer(CANCELLED_SIGNAL)) {
+                throw new IllegalStateException("Unexpected reject from queue while offering cancel. Requested: " +
+                        requested + ", capacity: " + (queueCapacity));
             }
         }
 
@@ -126,9 +119,8 @@ final class PublisherAsIterable<T> implements Iterable<T> {
             // Assumption here is that the source does not necessarily wait to produce all data before emitting hence
             // request(n) should be as fast as request(1).
             if (requested == maxBufferedItems / 2) {
-                long delta = maxBufferedItems - requested;
+                final long delta = maxBufferedItems - requested;
                 requested += delta;
-                // Replenish buffer
                 subscription.request(delta);
             }
         }
@@ -159,24 +151,53 @@ final class PublisherAsIterable<T> implements Iterable<T> {
             }
             try {
                 next = data.take();
-                if (next instanceof TerminalNotification) {
-                    terminated = true;
-                    // If we have an error, return true, so that the same can be thrown from next().
-                    return ((TerminalNotification) next).getCause() != null;
-                }
-                if (next == CANCELLED_SIGNAL) {
-                    terminated = true;
-                    next = null;
-                    return false;
-                }
-                return true;
             } catch (InterruptedException e) {
-                currentThread().interrupt(); // Reset the interrupted flag.
-                terminated = true;
-                next = error(e);
-                subscription.cancel();
-                return true; // Return true so that the InterruptedException can be thrown from next()
+                return hasNextInterrupted(e);
             }
+            return hasNextProcessNext();
+        }
+
+        @Override
+        public boolean hasNext(final long timeout, final TimeUnit unit) throws TimeoutException {
+            if (terminated) {
+                return next != null && next != COMPLETE_NOTIFICATION;
+            }
+            if (next != null) {
+                return true; // Keep returning true till next() is called which sets next to null
+            }
+            try {
+                next = data.poll(timeout, unit);
+                if (next == null) {
+                    terminated = true;
+                    subscription.cancel();
+                    throw new TimeoutException("timed out after: " + timeout + " units: " + unit);
+                }
+            } catch (InterruptedException e) {
+                return hasNextInterrupted(e);
+            }
+            return hasNextProcessNext();
+        }
+
+        private boolean hasNextInterrupted(InterruptedException e) {
+            currentThread().interrupt(); // Reset the interrupted flag.
+            terminated = true;
+            next = error(e);
+            subscription.cancel();
+            return true; // Return true so that the InterruptedException can be thrown from next()
+        }
+
+        private boolean hasNextProcessNext() {
+            if (next instanceof TerminalNotification) {
+                terminated = true;
+                // If we have an error, return true, so that the same can be thrown from next().
+                return ((TerminalNotification) next).getCause() != null;
+            }
+            if (next == CANCELLED_SIGNAL) {
+                terminated = true;
+                next = null;
+                return false;
+            }
+            return true;
         }
 
         @Nullable
@@ -185,6 +206,20 @@ final class PublisherAsIterable<T> implements Iterable<T> {
             if (!hasNext()) {
                 throw new NoSuchElementException();
             }
+            return processNext();
+        }
+
+        @Nullable
+        @Override
+        public T next(final long timeout, final TimeUnit unit) throws TimeoutException {
+            if (!hasNext(timeout, unit)) {
+                throw new NoSuchElementException();
+            }
+            return processNext();
+        }
+
+        @Nullable
+        private T processNext() {
             final Object signal = next;
             assert next != null;
             next = null;

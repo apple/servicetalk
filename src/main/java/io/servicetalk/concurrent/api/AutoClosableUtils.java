@@ -15,16 +15,26 @@
  */
 package io.servicetalk.concurrent.api;
 
+import java.io.IOException;
+
 final class AutoClosableUtils {
     private AutoClosableUtils() {
         // no instances
     }
 
-    static void closeAndReThrow(AutoCloseable closeable) {
+    static void closeAndReThrowUnchecked(AutoCloseable closeable) {
         try {
             closeable.close();
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    static void closeAndReThrowIoException(AutoCloseable closeable) throws IOException {
+        try {
+            closeable.close();
+        } catch (Exception e) {
+            throw new IOException(e);
         }
     }
 }

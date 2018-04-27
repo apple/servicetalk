@@ -21,7 +21,7 @@ import org.reactivestreams.Subscription;
 import java.util.Iterator;
 import java.util.concurrent.TimeoutException;
 
-import static io.servicetalk.concurrent.api.AutoClosableUtils.closeAndReThrow;
+import static io.servicetalk.concurrent.api.AutoClosableUtils.closeAndReThrowUnchecked;
 import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
@@ -99,7 +99,7 @@ final class FromIterablePublisher<T> extends AbstractSynchronousPublisher<T> {
         public final void cancel() {
             cleanupForCancel();
             if (iterator instanceof AutoCloseable) {
-                closeAndReThrow((AutoCloseable) iterator);
+                closeAndReThrowUnchecked((AutoCloseable) iterator);
             }
         }
 

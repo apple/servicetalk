@@ -15,13 +15,12 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.api.PublisherAsIterable.CancellableIterator;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.AutoClosableUtils.closeAndReThrowIoException;
 import static java.lang.Math.min;
 import static java.lang.System.arraycopy;
 import static java.util.Objects.requireNonNull;
@@ -35,58 +34,53 @@ final class PublisherAsInputStream<T> extends InputStream {
 
     private static final byte[] CLOSED = new byte[0];
     private final Function<T, byte[]> serializer;
-    private final CancellableIterator<T> iterator;
-
-    @Nullable
-    private byte[] singleByteRead;
+    private final BlockingIterator<T> iterator;
 
     @Nullable
     private byte[] leftover;
     private int leftoverReadIndex;
 
-    PublisherAsInputStream(final CancellableIterator<T> source, final Function<T, byte[]> serializer) {
+    PublisherAsInputStream(final BlockingIterator<T> source, final Function<T, byte[]> serializer) {
         this.serializer = requireNonNull(serializer);
         iterator = source;
     }
 
     @Override
-    public int read(final byte[] b, int off, final int len) throws IOException {
-        if (leftover == CLOSED) {
-            throw new IOException("Stream is already closed.");
-        }
+    public int read(final byte[] b, int off, int len) throws IOException {
+        checkAlreadyClosed();
         requireNonNull(b);
         if (off < 0 || len < 0 || len > b.length - off) {
             throw new IndexOutOfBoundsException("Unexpected offset " + off + " (expected > 0) or length " + len
                     + " (expected >= 0 and should fit in the destination array). Destination array length " + b.length);
-        } else if (len == 0) {
-            return 0;
         }
 
-        int bytesRead = 0;
-        int leftToRead = len;
-        do {
-            if (leftover != null && leftover.length > leftoverReadIndex) {
+        final int initialLen = len;
+        for (;;) {
+            if (leftover != null) {
                 // We have leftOver bytes from a previous read, so try to satisfy read from leftOver.
-                final int toRead = min(leftToRead, (leftover.length - leftoverReadIndex));
+                final int toRead = min(len, (leftover.length - leftoverReadIndex));
                 arraycopy(leftover, leftoverReadIndex, b, off, toRead);
-                bytesRead += toRead;
                 if (toRead != len) { // drained left over.
-                    leftover = null;
-                    leftoverReadIndex = 0;
+                    resetLeftover();
                     off += toRead;
-                    leftToRead -= toRead;
+                    len -= toRead;
                 } else { // toRead == len, i.e. we filled the buffer.
                     leftoverReadIndex += toRead;
-                    return bytesRead;
+                    checkResetLeftover(leftover);
+                    return initialLen - (len - toRead);
                 }
             }
+            // Avoid fetching a new element if we have no more space to read to. This prevents serializing and
+            // retaining an object that we may never actually need.
+            if (len == 0) {
+                return initialLen - len;
+            }
             if (!iterator.hasNext()) {
+                final int bytesRead = initialLen - len;
                 return bytesRead == 0 ? -1 : bytesRead;
             }
             leftover = serializer.apply(iterator.next());
-        } while (bytesRead < len);
-
-        return bytesRead;
+        }
     }
 
     @Override
@@ -95,9 +89,9 @@ final class PublisherAsInputStream<T> extends InputStream {
     }
 
     @Override
-    public void close() {
+    public void close() throws IOException {
         leftover = CLOSED;
-        iterator.cancel();
+        closeAndReThrowIoException(iterator);
     }
 
     @Override
@@ -109,12 +103,41 @@ final class PublisherAsInputStream<T> extends InputStream {
 
     @Override
     public int read() throws IOException {
-        if (singleByteRead == null) {
-            singleByteRead = new byte[1];
+        checkAlreadyClosed();
+        if (leftover != null) {
+            return readSingleByteFromLeftover(leftover);
         }
-        if (read(singleByteRead, 0, 1) > 0) {
-            return singleByteRead[0];
+        for (;;) {
+            if (!iterator.hasNext()) {
+                return -1;
+            }
+            leftover = serializer.apply(iterator.next());
+            if (leftover != null) {
+                return readSingleByteFromLeftover(leftover);
+            }
         }
-        return -1;
+    }
+
+    private int readSingleByteFromLeftover(byte[] leftover) {
+        final int value = leftover[leftoverReadIndex++];
+        checkResetLeftover(leftover);
+        return value;
+    }
+
+    private void checkResetLeftover(byte[] leftover) {
+        if (leftoverReadIndex == leftover.length) {
+            resetLeftover();
+        }
+    }
+
+    private void resetLeftover() {
+        leftover = null;
+        leftoverReadIndex = 0;
+    }
+
+    private void checkAlreadyClosed() throws IOException {
+        if (leftover == CLOSED) {
+            throw new IOException("Stream is already closed.");
+        }
     }
 }

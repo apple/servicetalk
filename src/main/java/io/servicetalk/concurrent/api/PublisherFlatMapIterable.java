@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.AutoClosableUtils.closeAndReThrow;
+import static io.servicetalk.concurrent.api.AutoClosableUtils.closeAndReThrowUnchecked;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.CONCURRENT_EMITTING;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.CONCURRENT_IDLE;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
@@ -140,7 +140,7 @@ final class PublisherFlatMapIterable<T, U> extends AbstractSynchronousPublisherO
             Iterator<? extends U> currentIterator = this.currentIterator;
             this.currentIterator = EmptyIterator.instance();
             if (currentIterator instanceof AutoCloseable) {
-                closeAndReThrow(((AutoCloseable) currentIterator));
+                closeAndReThrowUnchecked(((AutoCloseable) currentIterator));
             }
             sourceSubscription.cancel();
         }
