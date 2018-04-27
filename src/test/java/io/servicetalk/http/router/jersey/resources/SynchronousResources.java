@@ -46,6 +46,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.PathSegment;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
@@ -259,5 +260,12 @@ public class SynchronousResources {
                 new HashMap<>(new ObjectMapper().readValue(getContentAsString(requestContent), Map.class));
         responseContent.put("foo", "bar4");
         return responseContent;
+    }
+
+    @Produces(APPLICATION_JSON)
+    @Path("/security-context")
+    @GET
+    public SecurityContext serviceTalkRequest(@Context final SecurityContext securityContext) {
+        return securityContext;
     }
 }

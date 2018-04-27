@@ -37,7 +37,7 @@ import static io.servicetalk.http.router.jersey.TestUtil.newH11Request;
 import static io.servicetalk.http.router.jersey.resources.SynchronousResources.PATH;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
-import static net.javacrumbs.jsonunit.JsonMatchers.jsonStringEquals;
+import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.glassfish.jersey.message.internal.CommittingOutputStream.DEFAULT_BUFFER_SIZE;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -161,7 +161,7 @@ public class SynchronousResourceTest extends AbstractResourceTest {
         req.getHeaders().add(CONTENT_TYPE, APPLICATION_JSON);
 
         final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
-        assertResponse(res, OK, APPLICATION_JSON, jsonStringEquals("{\"key\":\"val2\",\"foo\":\"bar3\"}"), $ -> null);
+        assertResponse(res, OK, APPLICATION_JSON, jsonEquals("{\"key\":\"val2\",\"foo\":\"bar3\"}"), $ -> null);
     }
 
     @Test
@@ -171,7 +171,17 @@ public class SynchronousResourceTest extends AbstractResourceTest {
         req.getHeaders().add(CONTENT_TYPE, APPLICATION_JSON);
 
         final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
-        assertResponse(res, OK, APPLICATION_JSON, jsonStringEquals("{\"key\":\"val3\",\"foo\":\"bar4\"}"),
+        assertResponse(res, OK, APPLICATION_JSON, jsonEquals("{\"key\":\"val3\",\"foo\":\"bar4\"}"),
+                String::length);
+    }
+
+    @Test
+    public void defaultSecurityContext() {
+        final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, PATH + "/security-context");
+
+        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
+        assertResponse(res, OK, APPLICATION_JSON,
+                jsonEquals("{\"authenticationScheme\":null,\"secure\":false,\"userPrincipal\":null}"),
                 String::length);
     }
 }
