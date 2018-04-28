@@ -55,7 +55,7 @@ public final class TestUtil {
     }
 
     public static String getContentAsString(final HttpResponse<HttpPayloadChunk> res) {
-        return getContentAsString(res.getMessageBody());
+        return getContentAsString(res.getPayloadBody());
     }
 
     public static String getContentAsString(final Publisher<HttpPayloadChunk> content) {

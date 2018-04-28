@@ -47,7 +47,7 @@ import static java.util.Objects.requireNonNull;
 import static org.glassfish.jersey.internal.util.collection.Refs.emptyRef;
 import static org.glassfish.jersey.server.internal.ContainerUtils.encodeUnsafeCharacters;
 
-final class DefaultJerseyHttpService implements HttpService<HttpPayloadChunk, HttpPayloadChunk> {
+final class DefaultJerseyHttpService extends HttpService<HttpPayloadChunk, HttpPayloadChunk> {
 
     private static final SecurityContext UNAUTHENTICATED_SECURITY_CONTEXT = new SecurityContext() {
         @Nullable
@@ -136,7 +136,7 @@ final class DefaultJerseyHttpService implements HttpService<HttpPayloadChunk, Ht
         req.getHeaders().forEach(h ->
                 containerRequest.getHeaders().add(h.getKey().toString(), h.getValue().toString()));
 
-        final DummyChunkPublisherInputStream entityStream = new DummyChunkPublisherInputStream(req.getMessageBody());
+        final DummyChunkPublisherInputStream entityStream = new DummyChunkPublisherInputStream(req.getPayloadBody());
         containerRequest.setEntityStream(entityStream);
 
         final Ref<Publisher<HttpPayloadChunk>> chunkPublisherRef = emptyRef();
