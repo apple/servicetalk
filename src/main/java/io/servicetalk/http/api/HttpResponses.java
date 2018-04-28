@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 
 /**
@@ -32,7 +33,7 @@ public final class HttpResponses {
     }
 
     /**
-     * Create a new instance using HTTP 1.1 with empty message body and headers.
+     * Create a new instance using HTTP 1.1 with empty payload body and headers.
      *
      * @param status the {@link HttpResponseStatus} of the response.
      * @param <O> Type of the content of the response.
@@ -43,7 +44,7 @@ public final class HttpResponses {
     }
 
     /**
-     * Create a new instance with empty message body and headers.
+     * Create a new instance with empty payload body and headers.
      *
      * @param version the {@link HttpProtocolVersion} of the response.
      * @param status the {@link HttpResponseStatus} of the response.
@@ -58,12 +59,12 @@ public final class HttpResponses {
      * Create a new instance using HTTP 1.1 with empty headers.
      *
      * @param status the {@link HttpResponseStatus} of the response.
-     * @param messageBody the message body of the response.
+     * @param payloadBody the payload body of the response.
      * @param <O> Type of the content of the response.
      * @return a new {@link HttpResponse}.
      */
-    public static <O> HttpResponse<O> newResponse(final HttpResponseStatus status, final O messageBody) {
-        return newResponse(HTTP_1_1, status, messageBody);
+    public static <O> HttpResponse<O> newResponse(final HttpResponseStatus status, final O payloadBody) {
+        return newResponse(HTTP_1_1, status, payloadBody);
     }
 
     /**
@@ -71,24 +72,26 @@ public final class HttpResponses {
      *
      * @param version the {@link HttpProtocolVersion} of the response.
      * @param status the {@link HttpResponseStatus} of the response.
-     * @param messageBody the message body of the response.
+     * @param payloadBody the payload body of the response.
      * @param <O> Type of the content of the response.
      * @return a new {@link HttpResponse}.
      */
-    public static <O> HttpResponse<O> newResponse(final HttpProtocolVersion version, final HttpResponseStatus status, final O messageBody) {
-        return newResponse(version, status, just(messageBody, immediate()));
+    public static <O> HttpResponse<O> newResponse(final HttpProtocolVersion version,
+                                                  final HttpResponseStatus status,
+                                                  final O payloadBody) {
+        return newResponse(version, status, just(payloadBody, immediate()));
     }
 
     /**
      * Create a new instance using HTTP 1.1 with empty headers.
      *
      * @param status the {@link HttpResponseStatus} of the response.
-     * @param messageBody a {@link Publisher} of the message body of the response.
+     * @param payloadBody a {@link Publisher} of the payload body of the response.
      * @param <O> Type of the content of the response.
      * @return a new {@link HttpResponse}.
      */
-    public static <O> HttpResponse<O> newResponse(final HttpResponseStatus status, final Publisher<O> messageBody) {
-        return newResponse(HTTP_1_1, status, messageBody);
+    public static <O> HttpResponse<O> newResponse(final HttpResponseStatus status, final Publisher<O> payloadBody) {
+        return newResponse(HTTP_1_1, status, payloadBody);
     }
 
     /**
@@ -96,12 +99,14 @@ public final class HttpResponses {
      *
      * @param status the {@link HttpResponseStatus} of the response.
      * @param version the {@link HttpProtocolVersion} of the response.
-     * @param messageBody a {@link Publisher} of the message body of the response.
+     * @param payloadBody a {@link Publisher} of the payload body of the response.
      * @param <O> Type of the content of the response.
      * @return a new {@link HttpResponse}.
      */
-    public static <O> HttpResponse<O> newResponse(final HttpProtocolVersion version, final HttpResponseStatus status, final Publisher<O> messageBody) {
-        return newResponse(version, status, messageBody, DefaultHttpHeadersFactory.INSTANCE.newHeaders());
+    public static <O> HttpResponse<O> newResponse(final HttpProtocolVersion version,
+                                                  final HttpResponseStatus status,
+                                                  final Publisher<O> payloadBody) {
+        return newResponse(version, status, payloadBody, INSTANCE.newHeaders());
     }
 
     /**
@@ -109,12 +114,15 @@ public final class HttpResponses {
      *
      * @param version the {@link HttpProtocolVersion} of the response.
      * @param status the {@link HttpResponseStatus} of the response.
-     * @param messageBody a {@link Publisher} of the message body of the response.
+     * @param payloadBody a {@link Publisher} of the payload body of the response.
      * @param headers the {@link HttpHeaders} of the response.
      * @param <O> Type of the content of the response.
      * @return a new {@link HttpResponse}.
      */
-    public static <O> HttpResponse<O> newResponse(final HttpProtocolVersion version, final HttpResponseStatus status, final Publisher<O> messageBody, final HttpHeaders headers) {
-        return new DefaultHttpResponse<>(status, version, headers, messageBody);
+    public static <O> HttpResponse<O> newResponse(final HttpProtocolVersion version,
+                                                  final HttpResponseStatus status,
+                                                  final Publisher<O> payloadBody,
+                                                  final HttpHeaders headers) {
+        return new DefaultHttpResponse<>(status, version, headers, payloadBody);
     }
 }

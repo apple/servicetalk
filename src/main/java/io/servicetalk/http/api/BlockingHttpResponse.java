@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.api.BlockingIterable;
 import io.servicetalk.concurrent.api.Publisher;
 
 import org.reactivestreams.Subscriber;
@@ -22,35 +23,32 @@ import org.reactivestreams.Subscriber;
 import java.util.function.Function;
 
 /**
- * HTTP response that provides the payload as a {@link Publisher}.
- *
- * <h2>Trailing headers</h2>
- * Trailing headers can be obtained from a response if the type of the payload is {@link HttpPayloadChunk}.
- * In such a case, the last element in the stream would be {@link LastHttpPayloadChunk} which contains the trailing
- * headers, if any.
- *
- * @param <T> Type of payload.
+ * The equivalent of {@link HttpResponse} but with synchronous/blocking APIs instead of asynchronous APIs.
+ * @param <T> Type of payload.HttpServiceToBlockingHttpService.java
  */
-public interface HttpResponse<T> extends HttpResponseMetaData {
+public interface BlockingHttpResponse<T> extends HttpResponseMetaData {
+    @Override
+    BlockingHttpResponse<T> setVersion(HttpProtocolVersion version);
 
     @Override
-    HttpResponse<T> setVersion(HttpProtocolVersion version);
-
-    @Override
-    HttpResponse<T> setStatus(HttpResponseStatus status);
+    BlockingHttpResponse<T> setStatus(HttpResponseStatus status);
 
     /**
      * The <a href="https://tools.ietf.org/html/rfc7230.html#section-3.3">HTTP Payload Body</a>.
      * <p>
-     * By default the returned {@link Publisher} only supports a single call to {@link Publisher#subscribe(Subscriber)}.
-     * This is because the payload is typically not all available in memory at any given time. If you need multiple
-     * calls to {@link Publisher#subscribe(Subscriber)} you should add support for multiple {@link Subscriber}s and
-     * consider adding support for caching data in memory. See the {@link Publisher#multicast(int) Multicast Operator}
-     * and the <a href="http://reactivex.io/documentation/operators/replay.html">Replay Operator</a> for more details.
-     * @return {@link Publisher} that emits the
+     * By default the returned {@link Iterable} only supports a single call to {@link Iterable#iterator()}. This is
+     * because the payload is typically not all available in memory at any given time. If you need multiple calls to
+     * {@link Iterable#iterator()} you should add support for caching data in memory and enable multiple
+     * {@link Publisher#subscribe(Subscriber)} calls. See the
+     * <a href="http://reactivex.io/documentation/operators/replay.html">Replay Operator</a> and
+     * {@link Publisher#multicast(int) Multicast Operator} for more details.
+     *
+     * TODO(scott): add a link to ServiceTalk replay operator and synchronous equivalent tools.
+     *
+     * @return {@link Iterable} that emits the
      * <a href="https://tools.ietf.org/html/rfc7230.html#section-3.3">HTTP Payload Body</a> of this request.
      */
-    Publisher<T> getPayloadBody();
+    BlockingIterable<T> getPayloadBody();
 
     /**
      * To modify the {@link #getPayloadBody()} of the response and preserving the containing request object.
@@ -59,5 +57,5 @@ public interface HttpResponse<T> extends HttpResponseMetaData {
      * @param <R> Type of the resulting payload body.
      * @return New {@code HttpResponse} with the altered {@link #getPayloadBody()}.
      */
-    <R> HttpResponse<R> transformPayloadBody(Function<Publisher<T>, Publisher<R>> transformer);
+    <R> BlockingHttpResponse<R> transformPayloadBody(Function<BlockingIterable<T>, BlockingIterable<R>> transformer);
 }

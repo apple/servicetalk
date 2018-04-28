@@ -24,7 +24,8 @@ class DefaultHttpResponseMetaData extends AbstractHttpMetaData implements HttpRe
 
     private HttpResponseStatus status;
 
-    DefaultHttpResponseMetaData(final HttpResponseStatus status, final HttpProtocolVersion version, final HttpHeaders headers) {
+    DefaultHttpResponseMetaData(final HttpResponseStatus status, final HttpProtocolVersion version,
+                                final HttpHeaders headers) {
         super(version, headers);
         this.status = requireNonNull(status);
     }
@@ -52,7 +53,8 @@ class DefaultHttpResponseMetaData extends AbstractHttpMetaData implements HttpRe
     }
 
     @Override
-    public String toString(final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> headerFilter) {
+    public final String toString(
+            final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> headerFilter) {
         return getVersion() + " " + getStatus() + lineSeparator()
                 + getHeaders().toString(headerFilter);
     }

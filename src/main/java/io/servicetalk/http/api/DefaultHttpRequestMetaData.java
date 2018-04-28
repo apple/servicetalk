@@ -47,7 +47,8 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     @Nullable
     private HttpUri uri;
 
-    DefaultHttpRequestMetaData(final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version, final HttpHeaders headers) {
+    DefaultHttpRequestMetaData(final HttpRequestMethod method, final String requestTarget,
+                               final HttpProtocolVersion version, final HttpHeaders headers) {
         super(version, headers);
         this.method = requireNonNull(method);
         this.requestTarget = requireNonNull(requestTarget);
@@ -176,7 +177,8 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
         setRequestTarget(encodeRequestTarget(null, null, encoder.toString()));
     }
 
-    private String encodeRequestTarget(@Nullable final String path, @Nullable final String query, @Nullable final String file) {
+    private String encodeRequestTarget(@Nullable final String path, @Nullable final String query,
+                                       @Nullable final String file) {
         final HttpUri uri = lazyParseRequestTarget();
         return buildRequestTarget(
                 uri.isSsl() ? "https" : "http",
@@ -194,7 +196,8 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     }
 
     @Override
-    public String toString(final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> headerFilter) {
+    public final String toString(
+            final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> headerFilter) {
         return getMethod().toString() + " " + getRequestTarget() + " " + getVersion() + lineSeparator()
                 + getHeaders().toString(headerFilter);
     }

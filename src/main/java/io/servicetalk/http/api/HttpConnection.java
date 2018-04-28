@@ -24,8 +24,8 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Represents a single fixed connection to a HTTP server.
- * @param <I> The type of content of the request.
- * @param <O> The type of content of the response.
+ * @param <I> The type of payload of the request.
+ * @param <O> The type of payload of the response.
  */
 public interface HttpConnection<I, O> extends HttpRequester<I, O> {
     /**

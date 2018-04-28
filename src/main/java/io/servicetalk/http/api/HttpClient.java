@@ -21,8 +21,8 @@ import io.servicetalk.concurrent.api.Single;
 /**
  * Provides a means to issue requests against HTTP service. The implementation is free to maintain a collection of
  * {@link HttpConnection} instances and distribute calls to {@link #request(HttpRequest)} amongst this collection.
- * @param <I> The type of content of the request.
- * @param <O> The type of content of the response.
+ * @param <I> The type of payload of the request.
+ * @param <O> The type of payload of the response.
  */
 public interface HttpClient<I, O> extends HttpRequester<I, O> {
     /**
@@ -48,8 +48,8 @@ public interface HttpClient<I, O> extends HttpRequester<I, O> {
 
     /**
      * A special type of {@link HttpConnection} for the exclusive use of the caller of {@link #reserveConnection(HttpRequest)}.
-     * @param <I> The type of content of the request.
-     * @param <O> The type of content of the response.
+     * @param <I> The type of payload of the request.
+     * @param <O> The type of payload of the response.
      */
     interface ReservedHttpConnection<I, O> extends HttpConnection<I, O> {
         /**
@@ -64,8 +64,8 @@ public interface HttpClient<I, O> extends HttpRequester<I, O> {
     /**
      * A special type of response returned by upgrade requests {@link #upgradeConnection(HttpRequest)}. This objects
      * allows the upgrade code to inform the HTTP implementation if the {@link HttpConnection} can continue using the HTTP protocol or not.
-     * @param <I> The type of content of the request.
-     * @param <O> The type of content of the response.
+     * @param <I> The type of payload of the request.
+     * @param <O> The type of payload of the response.
      */
     interface UpgradableHttpResponse<I, O> extends HttpResponse<O> {
         /**

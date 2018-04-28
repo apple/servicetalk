@@ -20,8 +20,8 @@ import io.servicetalk.concurrent.api.Single;
 
 /**
  * Provides a means to make a HTTP request.
- * @param <I> The type of content of the request.
- * @param <O> The type of content of the response.
+ * @param <I> The type of payload of the request.
+ * @param <O> The type of payload of the response.
  */
 public interface HttpRequester<I, O> extends ListenableAsyncCloseable {
     /**

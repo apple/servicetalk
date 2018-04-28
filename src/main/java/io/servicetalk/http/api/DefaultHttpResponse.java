@@ -24,11 +24,11 @@ import static java.util.Objects.requireNonNull;
 /**
  * Default implementation of {@link HttpResponse}.
  *
- * @param <O> The type of content of the response.
+ * @param <O> The type of payload of the response.
  */
 final class DefaultHttpResponse<O> extends DefaultHttpResponseMetaData implements HttpResponse<O> {
 
-    private final Publisher<O> messageBody;
+    private final Publisher<O> payloadBody;
 
     /**
      * Create a new instance.
@@ -36,16 +36,17 @@ final class DefaultHttpResponse<O> extends DefaultHttpResponseMetaData implement
      * @param status the {@link HttpResponseStatus} of the response.
      * @param version the {@link HttpProtocolVersion} of the response.
      * @param headers the {@link HttpHeaders} of the response.
-     * @param messageBody a {@link Publisher} of the message body of the response.
+     * @param payloadBody a {@link Publisher} of the payload body of the response.
      */
-    DefaultHttpResponse(final HttpResponseStatus status, final HttpProtocolVersion version, final HttpHeaders headers, final Publisher<O> messageBody) {
+    DefaultHttpResponse(final HttpResponseStatus status, final HttpProtocolVersion version, final HttpHeaders headers,
+                        final Publisher<O> payloadBody) {
         super(status, version, headers);
-        this.messageBody = requireNonNull(messageBody);
+        this.payloadBody = requireNonNull(payloadBody);
     }
 
-    private DefaultHttpResponse(final DefaultHttpResponse<?> responseMetaData, final Publisher<O> messageBody) {
+    private DefaultHttpResponse(final DefaultHttpResponse<?> responseMetaData, final Publisher<O> payloadBody) {
         super(responseMetaData);
-        this.messageBody = requireNonNull(messageBody);
+        this.payloadBody = requireNonNull(payloadBody);
     }
 
     @Override
@@ -61,13 +62,13 @@ final class DefaultHttpResponse<O> extends DefaultHttpResponseMetaData implement
     }
 
     @Override
-    public Publisher<O> getMessageBody() {
-        return messageBody;
+    public Publisher<O> getPayloadBody() {
+        return payloadBody;
     }
 
     @Override
-    public <R> HttpResponse<R> transformMessageBody(final Function<Publisher<O>, Publisher<R>> transformer) {
-        return new DefaultHttpResponse<>(this, transformer.apply(messageBody));
+    public <R> HttpResponse<R> transformPayloadBody(final Function<Publisher<O>, Publisher<R>> transformer) {
+        return new DefaultHttpResponse<>(this, transformer.apply(payloadBody));
     }
 
     @Override
@@ -84,11 +85,11 @@ final class DefaultHttpResponse<O> extends DefaultHttpResponseMetaData implement
 
         final DefaultHttpResponse<?> that = (DefaultHttpResponse<?>) o;
 
-        return messageBody.equals(that.messageBody);
+        return payloadBody.equals(that.payloadBody);
     }
 
     @Override
     public int hashCode() {
-        return 31 * super.hashCode() + messageBody.hashCode();
+        return 31 * super.hashCode() + payloadBody.hashCode();
     }
 }

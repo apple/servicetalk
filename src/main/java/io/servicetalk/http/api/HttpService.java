@@ -20,13 +20,14 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 
+import java.util.function.BiFunction;
+
 /**
- * A service contract for HTTP protocol.
- * @param <I> Type of content of a request handled by this service.
- * @param <O> Type of content of a response handled by this service.
+ * A service contract for the HTTP protocol.
+ * @param <I> Type of payload of a request handled by this service.
+ * @param <O> Type of payload of a response handled by this service.
  */
-@FunctionalInterface
-public interface HttpService<I, O> extends AsyncCloseable {
+public abstract class HttpService<I, O> implements AsyncCloseable {
     /**
      * Handles a single HTTP request.
      *
@@ -34,14 +35,52 @@ public interface HttpService<I, O> extends AsyncCloseable {
      * @param request to handle.
      * @return {@link Single} of HTTP response.
      */
-    Single<HttpResponse<O>> handle(ConnectionContext ctx, HttpRequest<I> request);
+    public abstract Single<HttpResponse<O>> handle(ConnectionContext ctx, HttpRequest<I> request);
 
     /**
      * Closes this {@link HttpService} asynchronously.
      *
      * @return {@link Completable} that when subscribed will close this {@link HttpService}.
      */
-    default Completable closeAsync() {
+    @Override
+    public Completable closeAsync() {
         return Completable.completed();
+    }
+
+    /**
+     * Convert this {@link HttpService} to the {@link BlockingHttpService} API.
+     * <p>
+     * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
+     * filters are implemented using the {@link HttpService} asynchronous API for maximum portability.
+     * @return a {@link BlockingHttpService} representation of this {@link HttpService}.
+     */
+    public final BlockingHttpService<I, O> asBlockingService() {
+        return asBlockingServiceInternal();
+    }
+
+    /**
+     * Provides a means to override the behavior of {@link #asBlockingService()} for internal classes.
+     * @return a {@link BlockingHttpService} representation of this {@link HttpService}.
+     */
+    BlockingHttpService<I, O> asBlockingServiceInternal() {
+        return new HttpServiceToBlockingHttpService<>(this);
+    }
+
+    /**
+     * Create a new {@link HttpService} from a {@link BiFunction}.
+     * @param handleFunc Provides the functionality for the {@link #handle(ConnectionContext, HttpRequest)} method.
+     * @param <I> Type of payload of a request handled by this service.
+     * @param <O> Type of payload of a response handled by this service.
+     * @return a new {@link HttpService}.
+     */
+    public static <I, O> HttpService<I, O> fromAsync(BiFunction<ConnectionContext,
+                                                                HttpRequest<I>,
+                                                                Single<HttpResponse<O>>> handleFunc) {
+        return new HttpService<I, O>() {
+            @Override
+            public Single<HttpResponse<O>> handle(final ConnectionContext ctx, final HttpRequest<I> request) {
+                return handleFunc.apply(ctx, request);
+            }
+        };
     }
 }

@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 
 /**
@@ -32,11 +33,12 @@ public final class HttpRequests {
     }
 
     /**
-     * Create a new instance using HTTP 1.1 with empty message body and headers.
+     * Create a new instance using HTTP 1.1 with empty payload body and headers.
      *
      * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the request.
-     * @param <I> Type of the content of the request.
+     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
+     * request.
+     * @param <I> Type of the payload of the request.
      * @return a new {@link HttpRequest}.
      */
     public static <I> HttpRequest<I> newRequest(final HttpRequestMethod method, final String requestTarget) {
@@ -44,15 +46,17 @@ public final class HttpRequests {
     }
 
     /**
-     * Create a new instance with empty message body and headers.
+     * Create a new instance with empty payload body and headers.
      *
      * @param version the {@link HttpProtocolVersion} of the request.
      * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the request.
-     * @param <I> Type of the content of the request.
+     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
+     * request.
+     * @param <I> Type of the payload of the request.
      * @return a new {@link HttpRequest}.
      */
-    public static <I> HttpRequest<I> newRequest(final HttpProtocolVersion version, final HttpRequestMethod method, final String requestTarget) {
+    public static <I> HttpRequest<I> newRequest(final HttpProtocolVersion version, final HttpRequestMethod method,
+                                                final String requestTarget) {
         return newRequest(version, method, requestTarget, empty(immediate()));
     }
 
@@ -60,13 +64,15 @@ public final class HttpRequests {
      * Create a new instance using HTTP 1.1 with empty headers.
      *
      * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the request.
-     * @param messageBody the message body of the request.
-     * @param <I> Type of the content of the request.
+     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
+     * request.
+     * @param payloadBody the payload body of the request.
+     * @param <I> Type of the payload of the request.
      * @return a new {@link HttpRequest}.
      */
-    public static <I> HttpRequest<I> newRequest(final HttpRequestMethod method, final String requestTarget, final I messageBody) {
-        return newRequest(HTTP_1_1, method, requestTarget, messageBody);
+    public static <I> HttpRequest<I> newRequest(final HttpRequestMethod method, final String requestTarget,
+                                                final I payloadBody) {
+        return newRequest(HTTP_1_1, method, requestTarget, payloadBody);
     }
 
     /**
@@ -74,26 +80,30 @@ public final class HttpRequests {
      *
      * @param version the {@link HttpProtocolVersion} of the request.
      * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the request.
-     * @param messageBody the message body of the request.
-     * @param <I> Type of the content of the request.
+     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
+     * request.
+     * @param payloadBody the payload body of the request.
+     * @param <I> Type of the payload of the request.
      * @return a new {@link HttpRequest}.
      */
-    public static <I> HttpRequest<I> newRequest(final HttpProtocolVersion version, final HttpRequestMethod method, final String requestTarget, final I messageBody) {
-        return newRequest(version, method, requestTarget, just(messageBody, immediate()));
+    public static <I> HttpRequest<I> newRequest(final HttpProtocolVersion version, final HttpRequestMethod method,
+                                                final String requestTarget, final I payloadBody) {
+        return newRequest(version, method, requestTarget, just(payloadBody, immediate()));
     }
 
     /**
      * Create a new instance using HTTP 1.1 with empty headers.
      *
      * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the request.
-     * @param messageBody a {@link Publisher} of the message body of the request.
-     * @param <I> Type of the content of the request.
+     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
+     * request.
+     * @param payloadBody a {@link Publisher} of the payload body of the request.
+     * @param <I> Type of the payload of the request.
      * @return a new {@link HttpRequest}.
      */
-    public static <I> HttpRequest<I> newRequest(final HttpRequestMethod method, final String requestTarget, final Publisher<I> messageBody) {
-        return newRequest(HTTP_1_1, method, requestTarget, messageBody);
+    public static <I> HttpRequest<I> newRequest(final HttpRequestMethod method, final String requestTarget,
+                                                final Publisher<I> payloadBody) {
+        return newRequest(HTTP_1_1, method, requestTarget, payloadBody);
     }
 
     /**
@@ -101,13 +111,15 @@ public final class HttpRequests {
      *
      * @param version the {@link HttpProtocolVersion} of the request.
      * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the request.
-     * @param messageBody a {@link Publisher} of the message body of the request.
-     * @param <I> Type of the content of the request.
+     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
+     * request.
+     * @param payloadBody a {@link Publisher} of the payload body of the request.
+     * @param <I> Type of the payload of the request.
      * @return a new {@link HttpRequest}.
      */
-    public static <I> HttpRequest<I> newRequest(final HttpProtocolVersion version, final HttpRequestMethod method, final String requestTarget, final Publisher<I> messageBody) {
-        return newRequest(version, method, requestTarget, messageBody, DefaultHttpHeadersFactory.INSTANCE.newHeaders());
+    public static <I> HttpRequest<I> newRequest(final HttpProtocolVersion version, final HttpRequestMethod method,
+                                                final String requestTarget, final Publisher<I> payloadBody) {
+        return newRequest(version, method, requestTarget, payloadBody, INSTANCE.newHeaders());
     }
 
     /**
@@ -115,13 +127,16 @@ public final class HttpRequests {
      *
      * @param version the {@link HttpProtocolVersion} of the request.
      * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the request.
-     * @param messageBody a {@link Publisher} of the message body of the request.
+     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
+     * request.
+     * @param payloadBody a {@link Publisher} of the payload body of the request.
      * @param headers the {@link HttpHeaders} of the request.
-     * @param <I> Type of the content of the request.
+     * @param <I> Type of the payload of the request.
      * @return a new {@link HttpRequest}.
      */
-    public static <I> HttpRequest<I> newRequest(final HttpProtocolVersion version, final HttpRequestMethod method, final String requestTarget, final Publisher<I> messageBody, final HttpHeaders headers) {
-        return new DefaultHttpRequest<>(method, requestTarget, version, messageBody, headers);
+    public static <I> HttpRequest<I> newRequest(final HttpProtocolVersion version, final HttpRequestMethod method,
+                                                final String requestTarget, final Publisher<I> payloadBody,
+                                                final HttpHeaders headers) {
+        return new DefaultHttpRequest<>(method, requestTarget, version, payloadBody, headers);
     }
 }

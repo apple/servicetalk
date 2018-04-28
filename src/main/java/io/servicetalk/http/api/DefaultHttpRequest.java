@@ -24,29 +24,31 @@ import static java.util.Objects.requireNonNull;
 /**
  * Default implementation of {@link HttpRequest}.
  *
- * @param <I> The type of content of the request.
+ * @param <I> The type of payload of the request.
  */
 final class DefaultHttpRequest<I> extends DefaultHttpRequestMetaData implements HttpRequest<I> {
 
-    private final Publisher<I> messageBody;
+    private final Publisher<I> payloadBody;
 
     /**
      * Create a new instance.
      *
      * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the request.
+     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
+     * request.
      * @param version the {@link HttpProtocolVersion} of the request.
-     * @param messageBody a {@link Publisher} of the message body of the request.
+     * @param payloadBody a {@link Publisher} of the payload body of the request.
      * @param headers the {@link HttpHeaders} of the request.
      */
-    DefaultHttpRequest(final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version, final Publisher<I> messageBody, final HttpHeaders headers) {
+    DefaultHttpRequest(final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
+                       final Publisher<I> payloadBody, final HttpHeaders headers) {
         super(method, requestTarget, version, headers);
-        this.messageBody = requireNonNull(messageBody);
+        this.payloadBody = requireNonNull(payloadBody);
     }
 
-    private DefaultHttpRequest(final DefaultHttpRequest<?> request, final Publisher<I> messageBody) {
+    private DefaultHttpRequest(final DefaultHttpRequest<?> request, final Publisher<I> payloadBody) {
         super(request);
-        this.messageBody = requireNonNull(messageBody);
+        this.payloadBody = requireNonNull(payloadBody);
     }
 
     @Override
@@ -86,13 +88,13 @@ final class DefaultHttpRequest<I> extends DefaultHttpRequestMetaData implements 
     }
 
     @Override
-    public Publisher<I> getMessageBody() {
-        return messageBody;
+    public Publisher<I> getPayloadBody() {
+        return payloadBody;
     }
 
     @Override
-    public <R> HttpRequest<R> transformMessageBody(final Function<Publisher<I>, Publisher<R>> transformer) {
-        return new DefaultHttpRequest<>(this, transformer.apply(messageBody));
+    public <R> HttpRequest<R> transformPayloadBody(final Function<Publisher<I>, Publisher<R>> transformer) {
+        return new DefaultHttpRequest<>(this, transformer.apply(payloadBody));
     }
 
     @Override
@@ -109,11 +111,11 @@ final class DefaultHttpRequest<I> extends DefaultHttpRequestMetaData implements 
 
         final DefaultHttpRequest<?> that = (DefaultHttpRequest<?>) o;
 
-        return messageBody.equals(that.messageBody);
+        return payloadBody.equals(that.payloadBody);
     }
 
     @Override
     public int hashCode() {
-        return 31 * super.hashCode() + messageBody.hashCode();
+        return 31 * super.hashCode() + payloadBody.hashCode();
     }
 }
