@@ -35,7 +35,7 @@ import static java.util.Objects.requireNonNull;
  * first one which returns {@code true} is used to handle the request. If no predicates match, the fallback service
  * specified is used.
  */
-final class InOrderRouter<I, O> implements HttpService<I, O> {
+final class InOrderRouter<I, O> extends HttpService<I, O> {
 
     private final HttpService<I, O> fallbackService;
     private final PredicateServicePair<I, O>[] predicateServicePairs;

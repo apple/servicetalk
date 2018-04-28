@@ -27,7 +27,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpResponseStatuses.NOT_FOUND;
 
-final class DefaultFallbackService<I, O> implements HttpService<I, O> {
+final class DefaultFallbackService<I, O> extends HttpService<I, O> {
 
     private static final DefaultFallbackService INSTANCE = new DefaultFallbackService();
 
