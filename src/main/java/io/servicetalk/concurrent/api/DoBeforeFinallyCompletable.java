@@ -33,32 +33,32 @@ final class DoBeforeFinallyCompletable extends Completable {
 
     @Override
     protected void handleSubscribe(Subscriber subscriber) {
-        original.subscribe(new DoFinallySubscriber(subscriber, runnable));
+        original.subscribe(new DoBeforeFinallyCompletableSubscriber(subscriber, runnable));
     }
 
-    private static final class DoFinallySubscriber implements Subscriber {
+    private static final class DoBeforeFinallyCompletableSubscriber implements Subscriber {
         private final Subscriber original;
         private final Runnable runnable;
 
-        private static final AtomicIntegerFieldUpdater<DoFinallySubscriber> completeUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(DoFinallySubscriber.class, "complete");
+        private static final AtomicIntegerFieldUpdater<DoBeforeFinallyCompletableSubscriber> completeUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(DoBeforeFinallyCompletableSubscriber.class, "complete");
         @SuppressWarnings("unused")
         private volatile int complete;
 
-        DoFinallySubscriber(Subscriber original, Runnable runnable) {
+        DoBeforeFinallyCompletableSubscriber(Subscriber original, Runnable runnable) {
             this.original = original;
             this.runnable = runnable;
         }
 
         @Override
         public void onSubscribe(Cancellable originalCancellable) {
-            original.onSubscribe(new DoBeforeCancellable(this::doFinally, originalCancellable));
+            original.onSubscribe(new DoBeforeCancellable(this::doBeforeFinally, originalCancellable));
         }
 
         @Override
         public void onComplete() {
             try {
-                doFinally();
+                doBeforeFinally();
             } catch (Throwable error) {
                 original.onError(error);
                 return;
@@ -69,7 +69,7 @@ final class DoBeforeFinallyCompletable extends Completable {
         @Override
         public void onError(Throwable cause) {
             try {
-                doFinally();
+                doBeforeFinally();
             } catch (Throwable error) {
                 error.addSuppressed(cause);
                 original.onError(error);
@@ -78,7 +78,7 @@ final class DoBeforeFinallyCompletable extends Completable {
             original.onError(cause);
         }
 
-        private void doFinally() {
+        private void doBeforeFinally() {
             if (completeUpdater.compareAndSet(this, 0, 1)) {
                 runnable.run();
             }

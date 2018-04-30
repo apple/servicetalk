@@ -32,14 +32,14 @@ final class DoBeforeSubscriberSingle<T> extends Single<T> {
 
     @Override
     protected void handleSubscribe(Subscriber<? super T> subscriber) {
-        original.subscribe(new DoBeforeSubscriberCompletableSubscriber<>(subscriber, subscriberSupplier.get()));
+        original.subscribe(new DoBeforeSubscriberSingleSubscriber<>(subscriber, subscriberSupplier.get()));
     }
 
-    private static final class DoBeforeSubscriberCompletableSubscriber<T> implements Subscriber<T> {
+    private static final class DoBeforeSubscriberSingleSubscriber<T> implements Subscriber<T> {
         private final Subscriber<? super T> original;
         private final Subscriber<? super T> subscriber;
 
-        DoBeforeSubscriberCompletableSubscriber(Subscriber<? super T> original, Subscriber<? super T> subscriber) {
+        DoBeforeSubscriberSingleSubscriber(Subscriber<? super T> original, Subscriber<? super T> subscriber) {
             this.original = original;
             this.subscriber = requireNonNull(subscriber);
         }

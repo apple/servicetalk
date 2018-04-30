@@ -32,14 +32,14 @@ final class DoCancellableSingle<T> extends Single<T> {
 
     @Override
     protected void handleSubscribe(Subscriber<? super T> subscriber) {
-        original.subscribe(new DoBeforeCancellableSubscriber<>(subscriber, this));
+        original.subscribe(new DoCancellableSingleSubscriber<>(subscriber, this));
     }
 
-    private static final class DoBeforeCancellableSubscriber<T> implements Subscriber<T> {
+    private static final class DoCancellableSingleSubscriber<T> implements Subscriber<T> {
         private final Subscriber<? super T> original;
         private final DoCancellableSingle parent;
 
-        DoBeforeCancellableSubscriber(Subscriber<? super T> original, DoCancellableSingle parent) {
+        DoCancellableSingleSubscriber(Subscriber<? super T> original, DoCancellableSingle parent) {
             this.original = original;
             this.parent = parent;
         }

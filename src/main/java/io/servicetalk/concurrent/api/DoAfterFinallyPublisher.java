@@ -33,19 +33,19 @@ final class DoAfterFinallyPublisher<T> extends AbstractSynchronousPublisherOpera
 
     @Override
     public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
-        return new DoFinallySubscriber<>(subscriber, runnable);
+        return new DoAfterFinallyPublisherSubscriber<>(subscriber, runnable);
     }
 
-    private static final class DoFinallySubscriber<T> implements Subscriber<T> {
+    private static final class DoAfterFinallyPublisherSubscriber<T> implements Subscriber<T> {
         private final Subscriber<? super T> original;
         private final Runnable runnable;
 
-        private static final AtomicIntegerFieldUpdater<DoFinallySubscriber> completeUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(DoFinallySubscriber.class, "complete");
+        private static final AtomicIntegerFieldUpdater<DoAfterFinallyPublisherSubscriber> completeUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(DoAfterFinallyPublisherSubscriber.class, "complete");
         @SuppressWarnings("unused")
         private volatile int complete;
 
-        DoFinallySubscriber(Subscriber<? super T> original, Runnable runnable) {
+        DoAfterFinallyPublisherSubscriber(Subscriber<? super T> original, Runnable runnable) {
             this.original = original;
             this.runnable = runnable;
         }
@@ -63,7 +63,7 @@ final class DoAfterFinallyPublisher<T> extends AbstractSynchronousPublisherOpera
                     try {
                         s.cancel();
                     } finally {
-                        doFinally();
+                        doAfterFinally();
                     }
                 }
             });
@@ -79,7 +79,7 @@ final class DoAfterFinallyPublisher<T> extends AbstractSynchronousPublisherOpera
             try {
                 original.onComplete();
             } finally {
-                doFinally();
+                doAfterFinally();
             }
         }
 
@@ -88,11 +88,11 @@ final class DoAfterFinallyPublisher<T> extends AbstractSynchronousPublisherOpera
             try {
                 original.onError(cause);
             } finally {
-                doFinally();
+                doAfterFinally();
             }
         }
 
-        private void doFinally() {
+        private void doAfterFinally() {
             if (completeUpdater.compareAndSet(this, 0, 1)) {
                 runnable.run();
             }

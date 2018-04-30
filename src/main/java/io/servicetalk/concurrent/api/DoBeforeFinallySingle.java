@@ -33,32 +33,32 @@ final class DoBeforeFinallySingle<T> extends Single<T> {
 
     @Override
     protected void handleSubscribe(Subscriber<? super T> subscriber) {
-        original.subscribe(new DoFinallySubscriber<>(subscriber, runnable));
+        original.subscribe(new DoBeforeFinallySingleSubscriber<>(subscriber, runnable));
     }
 
-    private static final class DoFinallySubscriber<T> implements Subscriber<T> {
+    private static final class DoBeforeFinallySingleSubscriber<T> implements Subscriber<T> {
         private final Subscriber<? super T> original;
         private final Runnable runnable;
 
-        private static final AtomicIntegerFieldUpdater<DoFinallySubscriber> completeUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(DoFinallySubscriber.class, "complete");
+        private static final AtomicIntegerFieldUpdater<DoBeforeFinallySingleSubscriber> completeUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(DoBeforeFinallySingleSubscriber.class, "complete");
         @SuppressWarnings("unused")
         private volatile int complete;
 
-        DoFinallySubscriber(Subscriber<? super T> original, Runnable runnable) {
+        DoBeforeFinallySingleSubscriber(Subscriber<? super T> original, Runnable runnable) {
             this.original = original;
             this.runnable = runnable;
         }
 
         @Override
         public void onSubscribe(Cancellable originalCancellabe) {
-            original.onSubscribe(new DoBeforeCancellable(this::doFinally, originalCancellabe));
+            original.onSubscribe(new DoBeforeCancellable(this::doBeforeFinally, originalCancellabe));
         }
 
         @Override
         public void onSuccess(T value) {
             try {
-                doFinally();
+                doBeforeFinally();
             } catch (Throwable error) {
                 original.onError(error);
                 return;
@@ -69,7 +69,7 @@ final class DoBeforeFinallySingle<T> extends Single<T> {
         @Override
         public void onError(Throwable cause) {
             try {
-                doFinally();
+                doBeforeFinally();
             } catch (Throwable err) {
                 err.addSuppressed(cause);
                 original.onError(err);
@@ -78,7 +78,7 @@ final class DoBeforeFinallySingle<T> extends Single<T> {
             original.onError(cause);
         }
 
-        private void doFinally() {
+        private void doBeforeFinally() {
             if (completeUpdater.compareAndSet(this, 0, 1)) {
                 runnable.run();
             }

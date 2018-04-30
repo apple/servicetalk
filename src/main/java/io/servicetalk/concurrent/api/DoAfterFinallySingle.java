@@ -33,26 +33,26 @@ final class DoAfterFinallySingle<T> extends Single<T> {
 
     @Override
     protected void handleSubscribe(Subscriber<? super T> subscriber) {
-        original.subscribe(new DoFinallySubscriber<>(subscriber, runnable));
+        original.subscribe(new DoAfterFinallySingleSubscriber<>(subscriber, runnable));
     }
 
-    private static final class DoFinallySubscriber<T> implements Subscriber<T> {
+    private static final class DoAfterFinallySingleSubscriber<T> implements Subscriber<T> {
         private final Subscriber<? super T> original;
         private final Runnable runnable;
 
-        private static final AtomicIntegerFieldUpdater<DoFinallySubscriber> completeUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(DoFinallySubscriber.class, "complete");
+        private static final AtomicIntegerFieldUpdater<DoAfterFinallySingleSubscriber> completeUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(DoAfterFinallySingleSubscriber.class, "complete");
         @SuppressWarnings("unused")
         private volatile int complete;
 
-        DoFinallySubscriber(Subscriber<? super T> original, Runnable runnable) {
+        DoAfterFinallySingleSubscriber(Subscriber<? super T> original, Runnable runnable) {
             this.original = original;
             this.runnable = runnable;
         }
 
         @Override
         public void onSubscribe(Cancellable originalCancellable) {
-            original.onSubscribe(new DoBeforeCancellable(originalCancellable, this::doFinally));
+            original.onSubscribe(new DoBeforeCancellable(originalCancellable, this::doAfterFinally));
         }
 
         @Override
@@ -60,7 +60,7 @@ final class DoAfterFinallySingle<T> extends Single<T> {
             try {
                 original.onSuccess(value);
             } finally {
-                doFinally();
+                doAfterFinally();
             }
         }
 
@@ -69,11 +69,11 @@ final class DoAfterFinallySingle<T> extends Single<T> {
             try {
                 original.onError(cause);
             } finally {
-                doFinally();
+                doAfterFinally();
             }
         }
 
-        private void doFinally() {
+        private void doAfterFinally() {
             if (completeUpdater.compareAndSet(this, 0, 1)) {
                 runnable.run();
             }

@@ -32,14 +32,14 @@ final class DoCancellableCompletable extends Completable {
 
     @Override
     protected void handleSubscribe(Subscriber subscriber) {
-        original.subscribe(new DoBeforeCancellableSubscriber(subscriber, this));
+        original.subscribe(new DoCancellableCompletableSubscriber(subscriber, this));
     }
 
-    private static final class DoBeforeCancellableSubscriber implements Subscriber {
+    private static final class DoCancellableCompletableSubscriber implements Subscriber {
         private final Completable.Subscriber original;
         private final DoCancellableCompletable parent;
 
-        DoBeforeCancellableSubscriber(Completable.Subscriber original, DoCancellableCompletable parent) {
+        DoCancellableCompletableSubscriber(Completable.Subscriber original, DoCancellableCompletable parent) {
             this.original = original;
             this.parent = parent;
         }

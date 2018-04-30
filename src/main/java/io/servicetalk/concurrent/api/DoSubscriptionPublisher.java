@@ -35,14 +35,14 @@ final class DoSubscriptionPublisher<T> extends AbstractSynchronousPublisherOpera
 
     @Override
     public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
-        return new DoBeforeSubscriberCompletableSubscriber<>(subscriber, this);
+        return new DoSubscriptionPublisherSubscriber<>(subscriber, this);
     }
 
-    private static final class DoBeforeSubscriberCompletableSubscriber<T> implements Subscriber<T> {
+    private static final class DoSubscriptionPublisherSubscriber<T> implements Subscriber<T> {
         private final Subscriber<? super T> original;
         private final DoSubscriptionPublisher<T> parent;
 
-        DoBeforeSubscriberCompletableSubscriber(Subscriber<? super T> original, DoSubscriptionPublisher<T> parent) {
+        DoSubscriptionPublisherSubscriber(Subscriber<? super T> original, DoSubscriptionPublisher<T> parent) {
             this.original = original;
             this.parent = parent;
         }

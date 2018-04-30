@@ -33,19 +33,19 @@ final class DoBeforeFinallyPublisher<T> extends AbstractSynchronousPublisherOper
 
     @Override
     public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
-        return new DoFinallySubscriber<>(subscriber, runnable);
+        return new DoBeforeFinallyPublisherSubscriber<>(subscriber, runnable);
     }
 
-    private static final class DoFinallySubscriber<T> implements Subscriber<T> {
+    private static final class DoBeforeFinallyPublisherSubscriber<T> implements Subscriber<T> {
         private final Subscriber<? super T> original;
         private final Runnable runnable;
 
-        private static final AtomicIntegerFieldUpdater<DoFinallySubscriber> completeUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(DoFinallySubscriber.class, "complete");
+        private static final AtomicIntegerFieldUpdater<DoBeforeFinallyPublisherSubscriber> completeUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(DoBeforeFinallyPublisherSubscriber.class, "complete");
         @SuppressWarnings("unused")
         private volatile int complete;
 
-        DoFinallySubscriber(Subscriber<? super T> original, Runnable runnable) {
+        DoBeforeFinallyPublisherSubscriber(Subscriber<? super T> original, Runnable runnable) {
             this.original = original;
             this.runnable = runnable;
         }
@@ -61,7 +61,7 @@ final class DoBeforeFinallyPublisher<T> extends AbstractSynchronousPublisherOper
                 @Override
                 public void cancel() {
                     try {
-                        doFinally();
+                        doBeforeFinally();
                     } finally {
                         s.cancel();
                     }
@@ -77,7 +77,7 @@ final class DoBeforeFinallyPublisher<T> extends AbstractSynchronousPublisherOper
         @Override
         public void onComplete() {
             try {
-                doFinally();
+                doBeforeFinally();
             } catch (Throwable err) {
                 original.onError(err);
                 return;
@@ -88,7 +88,7 @@ final class DoBeforeFinallyPublisher<T> extends AbstractSynchronousPublisherOper
         @Override
         public void onError(Throwable cause) {
             try {
-                doFinally();
+                doBeforeFinally();
             } catch (Throwable err) {
                 err.addSuppressed(cause);
                 original.onError(err);
@@ -97,7 +97,7 @@ final class DoBeforeFinallyPublisher<T> extends AbstractSynchronousPublisherOper
             original.onError(cause);
         }
 
-        private void doFinally() {
+        private void doBeforeFinally() {
             if (completeUpdater.compareAndSet(this, 0, 1)) {
                 runnable.run();
             }

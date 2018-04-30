@@ -32,14 +32,14 @@ final class DoBeforeSubscriberPublisher<T> extends AbstractSynchronousPublisherO
 
     @Override
     public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
-        return new DoBeforeSubscriberCompletableSubscriber<>(subscriber, subscriberSupplier.get());
+        return new DoBeforeSubscriberPublisherSubscriber<>(subscriber, subscriberSupplier.get());
     }
 
-    private static final class DoBeforeSubscriberCompletableSubscriber<T> implements Subscriber<T> {
+    private static final class DoBeforeSubscriberPublisherSubscriber<T> implements Subscriber<T> {
         private final Subscriber<? super T> original;
         private final Subscriber<? super T> subscriber;
 
-        DoBeforeSubscriberCompletableSubscriber(Subscriber<? super T> original, Subscriber<? super T> subscriber) {
+        DoBeforeSubscriberPublisherSubscriber(Subscriber<? super T> original, Subscriber<? super T> subscriber) {
             this.original = original;
             this.subscriber = requireNonNull(subscriber);
         }

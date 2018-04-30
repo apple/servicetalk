@@ -25,33 +25,33 @@ final class DoAfterSubscriberCompletable extends Completable {
     private final Completable original;
     private final Supplier<Subscriber> subscriberSupplier;
 
-    DoAfterSubscriberCompletable(Completable original, Supplier<Subscriber> subscriberSupplier) {
+    DoAfterSubscriberCompletable(final Completable original, final Supplier<Subscriber> subscriberSupplier) {
         this.original = requireNonNull(original);
         this.subscriberSupplier = requireNonNull(subscriberSupplier);
     }
 
     @Override
-    protected void handleSubscribe(Subscriber subscriber) {
-        original.subscribe(new DoBeforeSubscriberCompletableSubscriber(subscriber, subscriberSupplier.get()));
+    protected void handleSubscribe(final Subscriber subscriber) {
+        original.subscribe(new DoAfterSubscriberCompletableSubscriber(subscriber, subscriberSupplier.get()));
     }
 
-    private static final class DoBeforeSubscriberCompletableSubscriber implements Subscriber {
+    private static final class DoAfterSubscriberCompletableSubscriber implements Subscriber {
         private final Subscriber original;
         private final Subscriber subscriber;
 
-        DoBeforeSubscriberCompletableSubscriber(Subscriber original, Subscriber subscriber) {
+        DoAfterSubscriberCompletableSubscriber(final Subscriber original, final Subscriber subscriber) {
             this.original = original;
             this.subscriber = requireNonNull(subscriber);
         }
 
         @Override
-        public void onSubscribe(Cancellable cancellable) {
+        public void onSubscribe(final Cancellable cancellable) {
             try {
                 original.onSubscribe(cancellable);
-            } catch (Throwable cause) {
+            } catch (final Throwable cause) {
                 try {
                     subscriber.onSubscribe(cancellable);
-                } catch (Throwable err) {
+                } catch (final Throwable err) {
                     err.addSuppressed(cause);
                     throw err;
                 }
@@ -67,7 +67,7 @@ final class DoAfterSubscriberCompletable extends Completable {
         }
 
         @Override
-        public void onError(Throwable t) {
+        public void onError(final Throwable t) {
             original.onError(t);
             subscriber.onError(t);
         }
