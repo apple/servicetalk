@@ -19,6 +19,7 @@ import io.servicetalk.buffer.Buffer;
 
 import static io.servicetalk.buffer.ReadOnlyBufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.toStatusClass;
+import static java.util.Objects.requireNonNull;
 
 final class DefaultHttpResponseStatus implements HttpResponseStatus {
 
@@ -34,7 +35,7 @@ final class DefaultHttpResponseStatus implements HttpResponseStatus {
     DefaultHttpResponseStatus(final int statusCode, final Buffer reasonPhrase, final StatusClass statusClass) {
         this.statusCode = statusCode;
         this.reasonPhrase = reasonPhrase;
-        this.statusClass = statusClass;
+        this.statusClass = requireNonNull(statusClass);
         this.statusCodeBuffer = statusCodeToBuffer(statusCode);
     }
 

@@ -26,6 +26,7 @@ import javax.annotation.Nullable;
 
 import static java.util.Collections.addAll;
 import static java.util.Collections.emptyIterator;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Default implementation of {@link HttpQuery}.
@@ -39,12 +40,13 @@ public final class DefaultHttpQuery implements HttpQuery {
 
     /**
      * Create a new instance.
+     *
      * @param params Map of query parameters.
      * @param queryParamsUpdater callback for setting the query parameters on a request.
      */
     public DefaultHttpQuery(final Map<String, List<String>> params, final Consumer<Map<String, List<String>>> queryParamsUpdater) {
-        this.queryParamsUpdater = queryParamsUpdater;
-        this.params = params;
+        this.queryParamsUpdater = requireNonNull(queryParamsUpdater);
+        this.params = requireNonNull(params);
     }
 
     @Override

@@ -19,6 +19,7 @@ import io.servicetalk.buffer.Buffer;
 
 import static io.servicetalk.http.api.HttpRequestMethods.HttpRequestMethodProperties.NONE;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.util.Objects.requireNonNull;
 
 final class DefaultHttpRequestMethod implements HttpRequestMethod {
 
@@ -30,8 +31,8 @@ final class DefaultHttpRequestMethod implements HttpRequestMethod {
     }
 
     DefaultHttpRequestMethod(final Buffer name, final Properties properties) {
-        this.name = name;
-        this.properties = properties;
+        this.name = requireNonNull(name);
+        this.properties = requireNonNull(properties);
     }
 
     @Override

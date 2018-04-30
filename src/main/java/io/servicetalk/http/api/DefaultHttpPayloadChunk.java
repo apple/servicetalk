@@ -17,6 +17,8 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.Buffer;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * The default implementation of {@link HttpPayloadChunk}.
  */
@@ -30,7 +32,7 @@ class DefaultHttpPayloadChunk implements HttpPayloadChunk {
      * @param content {@link Buffer} payload.
      */
     DefaultHttpPayloadChunk(final Buffer content) {
-        this.content = content;
+        this.content = requireNonNull(content);
     }
 
     @Override

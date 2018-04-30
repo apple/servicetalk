@@ -20,6 +20,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
+import static java.util.Objects.requireNonNull;
 
 final class DefaultHttpCookie implements HttpCookie {
     private final CharSequence name;
@@ -39,8 +40,8 @@ final class DefaultHttpCookie implements HttpCookie {
     DefaultHttpCookie(final CharSequence name, final CharSequence value, @Nullable final CharSequence path,
                       @Nullable final CharSequence domain, @Nullable final CharSequence expires,
                       @Nullable final Long maxAge, final boolean wrapped, final boolean secure, final boolean httpOnly) {
-        this.name = name;
-        this.value = value;
+        this.name = requireNonNull(name);
+        this.value = requireNonNull(value);
         this.path = path;
         this.domain = domain;
         this.expires = expires;
