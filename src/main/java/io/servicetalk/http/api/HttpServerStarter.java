@@ -33,8 +33,11 @@ public interface HttpServerStarter {
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
      * @param address Listen address for the server.
-     * @param executor The {@link Executor} for invoking {@code service}. (The caller is responsible for closing the executor.)
-     * @param service Service invoked for every request received by this server.
+     * @param executor The {@link Executor} for invoking {@code service}. The returned {@link ServerContext} manages the
+     * lifecycle of the {@code executor}, ensuring it is closed when the {@link ServerContext} is closed. Note: This
+     * may change as this API is refined.
+     * @param service Service invoked for every request received by this server.  The returned {@link ServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
@@ -47,9 +50,13 @@ public interface HttpServerStarter {
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
      * @param address Listen address for the server.
-     * @param contextFilter to use for filtering accepted connections.
-     * @param executor The {@link Executor} for invoking {@code service}. (The caller is responsible for closing the executor.)
-     * @param service Service invoked for every request received by this server (that pass the provided {@code contextFilter}).
+     * @param contextFilter to use for filtering accepted connections.  The returned {@link ServerContext} manages the
+     * lifecycle of the {@code contextFilter}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @param executor The {@link Executor} for invoking {@code service}. The returned {@link ServerContext} manages the
+     * lifecycle of the {@code executor}, ensuring it is closed when the {@link ServerContext} is closed. Note: This
+     * may change as this API is refined.
+     * @param service Service invoked for every request received by this server.  The returned {@link ServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
