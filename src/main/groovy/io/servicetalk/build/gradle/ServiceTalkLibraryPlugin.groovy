@@ -228,6 +228,17 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       File spotbugsMainExclusionsFile = file("$rootDir/gradle/spotbugs/main-exclusions.xml")
       File spotbugsTestExclusionsFile = file("$rootDir/gradle/spotbugs/test-exclusions.xml")
       File spotbugsTestFixturesExclusionsFile = file("$rootDir/gradle/spotbugs/testFixtures-exclusions.xml")
+
+      // This task defaults to XML reporting for CI, but humans like HTML
+      if (!System.getProperty("CI")) {
+        tasks.withType(com.github.spotbugs.SpotBugsTask) {
+          reports {
+            xml.enabled = false
+            html.enabled = true
+          }
+        }
+      }
+
       spotbugs {
         toolVersion = "3.1.1"
         sourceSets = [sourceSets.main]
