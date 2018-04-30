@@ -35,6 +35,8 @@ import java.net.SocketOption;
 import java.util.Map;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.netty.NettyHttpServer.bind;
+
 /**
  * Netty implementation of {@link HttpServerStarter}.
  */
@@ -226,10 +228,8 @@ public final class NettyHttpServerStarter implements HttpServerStarter {
         return start(address, ContextFilter.ACCEPT_ALL, executor, service);
     }
 
-    @SuppressWarnings("PMD.UnusedLocalVariable")
     @Override
     public Single<ServerContext> start(final SocketAddress address, final ContextFilter contextFilter, final Executor executor, final HttpService<HttpPayloadChunk, HttpPayloadChunk> service) {
-        final ReadOnlyHttpServerConfig readOnlyHttpServerConfig = config.asReadOnly();
-        throw new UnsupportedOperationException("Not yet implemented"); // TODO
+        return bind(config.asReadOnly(), address, contextFilter, executor, service);
     }
 }

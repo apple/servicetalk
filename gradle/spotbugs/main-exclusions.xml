@@ -21,11 +21,4 @@
     <Method name="equals"/>
     <Bug pattern="EQ_CHECK_FOR_OPERAND_NOT_COMPATIBLE_WITH_THIS"/>
   </Match>
-
-  <!-- TODO: Remove this when starting an HTTP server is implemented. -->
-  <Match>
-    <Class name="io.servicetalk.http.netty.NettyHttpServerStarter"/>
-    <LocalVariable name="readOnlyHttpServerConfig" role="LOCAL_VARIABLE_NAMED"/>
-    <Bug pattern="DLS_DEAD_LOCAL_STORE"/>
-  </Match>
 </FindBugsFilter>
