@@ -27,14 +27,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.addAll;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
+import static java.util.Spliterators.spliteratorUnknownSize;
+import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 
 public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaData> {
@@ -66,7 +66,7 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
 
     // https://tools.ietf.org/html/rfc7230#section-5.3.2
     @Test
-    public void testParseUriAbsoluteForm() {
+    public void testParseHttpUriAbsoluteForm() {
         // TODO: need to include user-info
         createFixture("http://my.site.com/some/path?foo=bar&abc=def&foo=baz");
 
@@ -74,6 +74,17 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals("/some/path", fixture.getRawPath());
         assertEquals("foo=bar&abc=def&foo=baz", fixture.getRawQuery());
         assertEquals("http://my.site.com/some/path?foo=bar&abc=def&foo=baz", fixture.getRequestTarget());
+    }
+
+    @Test
+    public void testParseHttpsUriAbsoluteForm() {
+        // TODO: need to include user-info
+        createFixture("https://my.site.com/some/path?foo=bar&abc=def&foo=baz");
+
+        assertEquals("/some/path", fixture.getPath());
+        assertEquals("/some/path", fixture.getRawPath());
+        assertEquals("foo=bar&abc=def&foo=baz", fixture.getRawQuery());
+        assertEquals("https://my.site.com/some/path?foo=bar&abc=def&foo=baz", fixture.getRequestTarget());
     }
 
     @Test
@@ -152,11 +163,11 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         createFixture("/some/path?foo=bar&abc=def&foo=baz");
         final HttpQuery query = fixture.parseQuery();
 
-        assertEquals(iteratorAsList(query.getKeys().iterator()), asList("foo", "abc"));
-        assertEquals(query.get("foo"), "bar");
-        assertEquals(iteratorAsList(query.getAll("foo")), asList("bar", "baz"));
-        assertEquals(query.get("abc"), "def");
-        assertEquals(iteratorAsList(query.getAll("abc")), singletonList("def"));
+        assertEquals(asList("foo", "abc"), iteratorAsList(query.getKeys().iterator()));
+        assertEquals("bar", query.get("foo"));
+        assertEquals(asList("bar", "baz"), iteratorAsList(query.getAll("foo")));
+        assertEquals("def", query.get("abc"));
+        assertEquals(singletonList("def"), iteratorAsList(query.getAll("abc")));
     }
 
     @Test
@@ -191,8 +202,8 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals("/some/path", fixture.getPath());
         assertEquals("foo=bar&abc=def&foo=baz", fixture.getRawQuery());
         final HttpQuery query = fixture.parseQuery();
-        assertEquals(iteratorAsList(query.getAll("foo")), asList("bar", "baz"));
-        assertEquals(iteratorAsList(query.getAll("abc")), singletonList("def"));
+        assertEquals(asList("bar", "baz"), iteratorAsList(query.getAll("foo")));
+        assertEquals(singletonList("def"), iteratorAsList(query.getAll("abc")));
 
         // change it
         fixture.setPath("/new/$path$");
@@ -203,8 +214,8 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals("/new/$path$", fixture.getPath());
         assertEquals("foo=bar&abc=def&foo=baz", fixture.getRawQuery());
         final HttpQuery newQuery = fixture.parseQuery();
-        assertEquals(iteratorAsList(newQuery.getAll("foo")), asList("bar", "baz"));
-        assertEquals(iteratorAsList(newQuery.getAll("abc")), singletonList("def"));
+        assertEquals(asList("bar", "baz"), iteratorAsList(newQuery.getAll("foo")));
+        assertEquals(singletonList("def"), iteratorAsList(newQuery.getAll("abc")));
     }
 
     @Test
@@ -217,8 +228,8 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals("/some/path", fixture.getPath());
         assertEquals("foo=bar&abc=def&foo=baz", fixture.getRawQuery());
         final HttpQuery query = fixture.parseQuery();
-        assertEquals(iteratorAsList(query.getAll("foo")), asList("bar", "baz"));
-        assertEquals(iteratorAsList(query.getAll("abc")), singletonList("def"));
+        assertEquals(asList("bar", "baz"), iteratorAsList(query.getAll("foo")));
+        assertEquals(singletonList("def"), iteratorAsList(query.getAll("abc")));
 
         // change it
         fixture.setRawQuery("abc=new");
@@ -229,8 +240,8 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         assertEquals("/some/path", fixture.getPath());
         assertEquals("abc=new", fixture.getRawQuery());
         final HttpQuery newQuery = fixture.parseQuery();
-        assertEquals(newQuery.getKeys(), singleton("abc"));
-        assertEquals(iteratorAsList(newQuery.getAll("abc")), singletonList("new"));
+        assertEquals(singleton("abc"), newQuery.getKeys());
+        assertEquals(singletonList("new"), iteratorAsList(newQuery.getAll("abc")));
     }
 
     @Test
@@ -279,15 +290,15 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     }
 
     @SuppressWarnings("unchecked")
-    private <T> List<T> newList(final T... elements) {
+    private static <T> List<T> newList(final T... elements) {
         final List<T> list = new ArrayList<>(elements.length);
         addAll(list, elements);
         return list;
     }
 
-    private <T> List<T> iteratorAsList(final Iterator<T> iterator) {
+    private static <T> List<T> iteratorAsList(final Iterator<T> iterator) {
         return StreamSupport
-                .stream(Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false)
-                .collect(Collectors.toList());
+                .stream(spliteratorUnknownSize(iterator, Spliterator.ORDERED), false)
+                .collect(toList());
     }
 }
