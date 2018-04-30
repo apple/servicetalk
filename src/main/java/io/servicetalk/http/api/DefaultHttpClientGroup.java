@@ -106,14 +106,14 @@ final class DefaultHttpClientGroup<UnresolvedAddress, I, O> implements HttpClien
     }
 
     @Override
-    public Single<ReservedHttpConnection<I, O>> reserveConnection(final GroupKey<UnresolvedAddress> key,
+    public Single<? extends ReservedHttpConnection<I, O>> reserveConnection(final GroupKey<UnresolvedAddress> key,
                                                                   final HttpRequest<I> request) {
         requireNonNull(key);
         requireNonNull(request);
         return new Single<ReservedHttpConnection<I, O>>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super ReservedHttpConnection<I, O>> subscriber) {
-                final Single<ReservedHttpConnection<I, O>> reservedHttpConnection;
+                final Single<? extends ReservedHttpConnection<I, O>> reservedHttpConnection;
                 try {
                     reservedHttpConnection = selectClient(key).reserveConnection(request);
                 } catch (final Throwable t) {

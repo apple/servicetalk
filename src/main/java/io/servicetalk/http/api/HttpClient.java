@@ -32,7 +32,7 @@ public interface HttpClient<I, O> extends HttpRequester<I, O> {
      *                this may provide some insight into shard or other info.
      * @return a {@link ReservedHttpConnection}.
      */
-    Single<ReservedHttpConnection<I, O>> reserveConnection(HttpRequest<I> request);
+    Single<? extends ReservedHttpConnection<I, O>> reserveConnection(HttpRequest<I> request);
 
     /**
      * Attempt a <a href="https://tools.ietf.org/html/rfc7230.html#section-6.7">protocol upgrade</a>.
@@ -44,7 +44,7 @@ public interface HttpClient<I, O> extends HttpRequester<I, O> {
      * @param request the request which initiates the upgrade.
      * @return An object that provides the {@link HttpResponse} for the upgrade attempt and also contains the {@link HttpConnection} used for the upgrade.
      */
-    Single<UpgradableHttpResponse<I, O>> upgradeConnection(HttpRequest<I> request);
+    Single<? extends UpgradableHttpResponse<I, O>> upgradeConnection(HttpRequest<I> request);
 
     /**
      * A special type of {@link HttpConnection} for the exclusive use of the caller of {@link #reserveConnection(HttpRequest)}.

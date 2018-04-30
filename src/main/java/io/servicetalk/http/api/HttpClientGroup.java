@@ -50,5 +50,6 @@ public interface HttpClientGroup<UnresolvedAddress, I, O> extends ListenableAsyn
      * @return A {@link ReservedHttpConnection}.
      * @see HttpClient#reserveConnection(HttpRequest)
      */
-    Single<ReservedHttpConnection<I, O>> reserveConnection(GroupKey<UnresolvedAddress> key, HttpRequest<I> request);
+    Single<? extends ReservedHttpConnection<I, O>> reserveConnection(GroupKey<UnresolvedAddress> key,
+                                                                     HttpRequest<I> request);
 }
