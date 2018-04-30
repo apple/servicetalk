@@ -39,7 +39,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class MockedSingleListenerRule<T> implements TestRule {
     @Nullable
-    private Single.Subscriber<T> subscriber;
+    private Single.Subscriber<? super T> subscriber;
     @Nullable
     private volatile Cancellable onSubscribeResult;
 
@@ -72,7 +72,7 @@ public class MockedSingleListenerRule<T> implements TestRule {
         return this;
     }
 
-    public MockedSingleListenerRule<T> listen(Single<T> src) {
+    public MockedSingleListenerRule<T> listen(Single<? extends T> src) {
         assert subscriber != null;
         src.subscribe(subscriber);
         return this;
