@@ -233,7 +233,7 @@ public class HttpResponseDecoderTest {
         assertTrue(channel.writeInbound(wrappedBuffer(afterContentBytes)));
         channel.close();
         validateHttpResponse(channel, -uberContent.length);
-        channel.finishAndReleaseAll();
+        assertFalse(channel.finishAndReleaseAll());
     }
 
     @Test(expected = DecoderException.class)

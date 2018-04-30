@@ -25,7 +25,9 @@ import io.servicetalk.http.api.LastHttpPayloadChunk;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.DecoderException;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -42,11 +44,15 @@ import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static java.lang.Integer.toHexString;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class HttpRequestDecoderTest {
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
+
     @Test
     public void contentLengthNoTrailers() {
         EmbeddedChannel channel = newEmbeddedChannel();
@@ -210,23 +216,17 @@ public class HttpRequestDecoderTest {
     }
 
     @Test
-    public void variableNoTrailers() {
+    public void variableNoTrailersWithInvalidContent() {
         EmbeddedChannel channel = newEmbeddedChannel();
-        byte[] content = new byte[128];
-        ThreadLocalRandom.current().nextBytes(content);
+        byte[] content = new byte[] {'h', 'e', 'l', 'l', 'o', '\r', '\n'};
         byte[] beforeContentBytes = new String(
                 "GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
                         "Connection: keep-alive" + "\r\n" +
                         "User-Agent: unit-test" + "\r\n" + "\r\n").getBytes(US_ASCII);
         assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
-        assertTrue(channel.writeInbound(wrappedBuffer(content)));
-
-        HttpRequestMetaData request = channel.readInbound();
-        assertStandardHeaders(request.getHeaders());
-        LastHttpPayloadChunk lastChunk = channel.readInbound();
-        assertTrue(lastChunk.getTrailers().isEmpty());
-        assertEquals(0, lastChunk.getContent().getReadableBytes());
-        assertFalse(channel.finishAndReleaseAll());
+        expectedException.expect(instanceOf(DecoderException.class));
+        expectedException.expectCause(instanceOf(IllegalArgumentException.class));
+        channel.writeInbound(wrappedBuffer(content));
     }
 
     @Test(expected = DecoderException.class)
