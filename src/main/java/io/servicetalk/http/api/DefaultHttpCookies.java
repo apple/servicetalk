@@ -413,9 +413,7 @@ final class DefaultHttpCookies extends MultiMap<CharSequence, HttpCookie> implem
             }
         }
 
-        addCookie(new DefaultHttpCookie(name.toString(), value.toString(), path == null ? null : path.toString(),
-                domain == null ? null : domain.toString(), expires == null ? null : expires.toString(),
-                maxAge, isWrapped, isSecure, isHttpOnly));
+        addCookie(new DefaultHttpCookie(name, value, path, domain, expires, maxAge, isWrapped, isSecure, isHttpOnly));
     }
 
     private final class CookiesByNameDomainPathIterator extends ValuesByNameIterator {
