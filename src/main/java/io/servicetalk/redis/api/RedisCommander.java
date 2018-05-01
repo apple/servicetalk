@@ -1595,6 +1595,68 @@ public interface RedisCommander extends AsyncCloseable {
     Single<String> ltrim(@RedisProtocolSupport.Key CharSequence key, long start, long stop);
 
     /**
+     * Outputs memory problems report.
+     * @return a {@link Single} result
+     */
+    @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MEMORY)
+    @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.DOCTOR)
+    Single<String> memoryDoctor();
+
+    /**
+     * Show helpful text about the different subcommands.
+     * @return a {@link Single} result
+     * @param <T> the type of elements
+     */
+    @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MEMORY)
+    @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.HELP)
+    <T> Single<List<T>> memoryHelp();
+
+    /**
+     * Show allocator internal stats.
+     * @return a {@link Single} result
+     */
+    @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MEMORY)
+    @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.MALLOC_STATS)
+    Single<String> memoryMallocStats();
+
+    /**
+     * Ask the allocator to release memory.
+     * @return a {@link Single} result
+     */
+    @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MEMORY)
+    @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.PURGE)
+    Single<String> memoryPurge();
+
+    /**
+     * Show memory usage details.
+     * @return a {@link Single} result
+     * @param <T> the type of elements
+     */
+    @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MEMORY)
+    @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STATS)
+    <T> Single<List<T>> memoryStats();
+
+    /**
+     * Estimate the memory usage of a key.
+     * @param key the key
+     * @return a {@link Single} result
+     */
+    @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MEMORY)
+    @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.USAGE)
+    Single<Long> memoryUsage(@RedisProtocolSupport.Key CharSequence key);
+
+    /**
+     * Estimate the memory usage of a key.
+     * @param key the key
+     * @param samplesCount the samplesCount
+     * @return a {@link Single} result
+     */
+    @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MEMORY)
+    @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.USAGE)
+    Single<Long> memoryUsage(@RedisProtocolSupport.Key CharSequence key,
+                             @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SAMPLES) @Nullable Long samplesCount);
+
+    /**
      * Get the values of all the given keys.
      * @param key the key
      * @return a {@link Single} result

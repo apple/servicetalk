@@ -2628,6 +2628,101 @@ final class DefaultTransactedBufferRedisCommander implements TransactedBufferRed
     }
 
     @Override
+    public Single<String> memoryDoctor() {
+        final BufferAllocator allocator = reservedCnx.getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 2;
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
+                    RedisProtocolSupport.SubCommand.DOCTOR, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
+        final Single<String> result = reservedCnx.request(request, String.class);
+        return result;
+    }
+
+    @Override
+    public Single<String> memoryHelp() {
+        final BufferAllocator allocator = reservedCnx.getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 2;
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
+                    RedisProtocolSupport.SubCommand.HELP, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
+        final Single<String> result = reservedCnx.request(request, String.class);
+        return result;
+    }
+
+    @Override
+    public Single<String> memoryMallocStats() {
+        final BufferAllocator allocator = reservedCnx.getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 2;
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
+                    RedisProtocolSupport.SubCommand.MALLOC_STATS, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
+        final Single<String> result = reservedCnx.request(request, String.class);
+        return result;
+    }
+
+    @Override
+    public Single<String> memoryPurge() {
+        final BufferAllocator allocator = reservedCnx.getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 2;
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
+                    RedisProtocolSupport.SubCommand.PURGE, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
+        final Single<String> result = reservedCnx.request(request, String.class);
+        return result;
+    }
+
+    @Override
+    public Single<String> memoryStats() {
+        final BufferAllocator allocator = reservedCnx.getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 2;
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
+                    RedisProtocolSupport.SubCommand.STATS, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
+        final Single<String> result = reservedCnx.request(request, String.class);
+        return result;
+    }
+
+    @Override
+    public Single<String> memoryUsage(@RedisProtocolSupport.Key final Buffer key) {
+        requireNonNull(key);
+        final BufferAllocator allocator = reservedCnx.getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 3;
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
+                    RedisProtocolSupport.SubCommand.USAGE, allocator);
+        addRequestArgument(key, cb, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
+        final Single<String> result = reservedCnx.request(request, String.class);
+        return result;
+    }
+
+    @Override
+    public Single<String> memoryUsage(@RedisProtocolSupport.Key final Buffer key, @Nullable final Long samplesCount) {
+        requireNonNull(key);
+        final BufferAllocator allocator = reservedCnx.getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 3;
+        if (samplesCount != null) {
+            len += 2;
+        }
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
+                    RedisProtocolSupport.SubCommand.USAGE, allocator);
+        addRequestArgument(key, cb, allocator);
+        if (samplesCount != null) {
+            addRequestArgument(RedisProtocolSupport.SubCommand.SAMPLES, cb, allocator);
+            addRequestArgument(samplesCount, cb, allocator);
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
+        final Single<String> result = reservedCnx.request(request, String.class);
+        return result;
+    }
+
+    @Override
     public Single<String> mget(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getBufferAllocator();
