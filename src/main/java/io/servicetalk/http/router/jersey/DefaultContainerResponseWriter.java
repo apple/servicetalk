@@ -22,12 +22,13 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatus;
 
 import org.glassfish.jersey.internal.util.collection.Ref;
 import org.glassfish.jersey.server.ContainerException;
+import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.ContainerResponse;
 import org.glassfish.jersey.server.spi.ContainerResponseWriter;
 
@@ -52,6 +53,7 @@ import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
+import static javax.ws.rs.HttpMethod.HEAD;
 
 final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     private static final Map<Status, HttpResponseStatus> RESPONSE_STATUSES =
@@ -63,7 +65,8 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     private static final int UNKNOWN_RESPONSE_LENGTH = -1;
     private static final int EMPTY_RESPONSE = 0;
 
-    private final HttpRequest<HttpPayloadChunk> request;
+    private final ContainerRequest request;
+    private final HttpProtocolVersion protocolVersion;
     private final BufferAllocator allocator;
     private final Executor executor;
     private final Ref<Publisher<HttpPayloadChunk>> chunkPublisherRef;
@@ -75,12 +78,14 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     @Nullable
     private volatile Runnable suspendedTimeoutRunnable;
 
-    DefaultContainerResponseWriter(final HttpRequest<HttpPayloadChunk> request,
+    DefaultContainerResponseWriter(final ContainerRequest request,
+                                   final HttpProtocolVersion protocolVersion,
                                    final BufferAllocator allocator,
                                    final Executor executor,
                                    final Ref<Publisher<HttpPayloadChunk>> chunkPublisherRef,
                                    final Subscriber<? super HttpResponse<HttpPayloadChunk>> responseSubscriber) {
-        this.request = request;
+        this.request = requireNonNull(request);
+        this.protocolVersion = requireNonNull(protocolVersion);
         this.allocator = requireNonNull(allocator);
         this.executor = requireNonNull(executor);
         this.chunkPublisherRef = requireNonNull(chunkPublisherRef);
@@ -96,14 +101,17 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         final Publisher<HttpPayloadChunk> chunkPublisher = chunkPublisherRef.get();
         // contentLength is >= 0 if the entity content length in bytes is known to Jersey, otherwise -1
         if (chunkPublisher != null) {
-            sendResponse(request, UNKNOWN_RESPONSE_LENGTH, chunkPublisher, responseContext);
+            sendResponse(UNKNOWN_RESPONSE_LENGTH, chunkPublisher, responseContext);
             return null;
         } else if (contentLength == 0) {
-            sendResponse(request, EMPTY_RESPONSE, null, responseContext);
+            sendResponse(EMPTY_RESPONSE, null, responseContext);
+            return null;
+        } else if (HEAD.equals(request.getMethod())) {
+            sendResponse(contentLength, null, responseContext);
             return null;
         } else {
             final DummyChunkPublisherOutputStream bpos = new DummyChunkPublisherOutputStream(allocator);
-            sendResponse(request, contentLength, bpos.getChunkPublisher(), responseContext);
+            sendResponse(contentLength, bpos.getChunkPublisher(), responseContext);
             return bpos;
         }
 
@@ -182,17 +190,16 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         return true;
     }
 
-    private void sendResponse(final HttpRequest<HttpPayloadChunk> request,
-                              final long contentLength,
+    private void sendResponse(final long contentLength,
                               @Nullable final Publisher<HttpPayloadChunk> content,
                               final ContainerResponse containerResponse) {
 
         final HttpResponse<HttpPayloadChunk> response;
         final HttpResponseStatus status = getStatus(containerResponse);
         if (content != null) {
-            response = newResponse(request.getVersion(), status, content);
+            response = newResponse(protocolVersion, status, content);
         } else {
-            response = newResponse(request.getVersion(), status);
+            response = newResponse(protocolVersion, status);
         }
 
         final HttpHeaders headers = response.getHeaders();

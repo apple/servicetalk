@@ -19,17 +19,25 @@ import io.servicetalk.concurrent.api.DeliberateException;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.HttpResponseStatuses;
 
 import org.junit.Test;
 
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpResponseStatuses.GATEWAY_TIMEOUT;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponseStatuses.SERVICE_UNAVAILABLE;
 import static io.servicetalk.http.router.jersey.TestUtil.assertResponse;
+import static io.servicetalk.http.router.jersey.TestUtil.getContentAsString;
 import static io.servicetalk.http.router.jersey.TestUtil.newH11Request;
 import static io.servicetalk.http.router.jersey.resources.AsynchronousResources.PATH;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.IntStream.range;
+import static javax.ws.rs.core.MediaType.SERVER_SENT_EVENTS;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 public class AsynchronousResourceTest extends AbstractResourceTest {
@@ -131,6 +139,35 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
         service.handle(ctx, req)
                 .subscribe(res -> fail("No response expected, got: " + res))
                 .cancel();
+    }
+
+    @Test
+    public void sseStream() {
+        final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, getResourcePath() + "/sse/stream");
+
+        final String messages = getContentAsString(service.handle(ctx, req)
+                .flatmapPublisher(res -> {
+                    assertThat(res.getStatus(), is(HttpResponseStatuses.OK));
+                    assertThat(res.getHeaders().get(CONTENT_TYPE), is(SERVER_SENT_EVENTS));
+                    return res.getPayloadBody();
+                }));
+
+        assertThat(messages, is(range(0, 10).mapToObj(i -> "data: foo" + i + "\n\n").collect(joining())));
+    }
+
+    @Test
+    public void sseBroadcast() {
+        final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, getResourcePath() + "/sse/broadcast");
+
+        final String messages = getContentAsString(service.handle(ctx, req)
+                .flatmapPublisher(res -> {
+                    assertThat(res.getStatus(), is(HttpResponseStatuses.OK));
+                    assertThat(res.getHeaders().get(CONTENT_TYPE), is(SERVER_SENT_EVENTS));
+                    return res.getPayloadBody();
+                }));
+
+        assertThat(messages,
+                is("data: bar\n\n" + range(0, 10).mapToObj(i -> "data: foo" + i + "\n\n").collect(joining())));
     }
 
     // TODO test support for Single responses

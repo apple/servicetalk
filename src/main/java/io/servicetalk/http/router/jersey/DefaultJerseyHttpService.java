@@ -37,14 +37,13 @@ import javax.annotation.Nullable;
 import javax.ws.rs.core.SecurityContext;
 
 import static io.servicetalk.http.router.jersey.CharSequenceUtil.ensureNoLeadingSlash;
-import static io.servicetalk.http.router.jersey.Context.CHUNK_PUBLISHER_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.CONNECTION_CONTEXT_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.EXECUTOR_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.HTTP_REQUEST_REF_TYPE;
+import static io.servicetalk.http.router.jersey.Context.setContextProperties;
 import static io.servicetalk.http.router.jersey.DummyHttpUtil.getBaseUri;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
-import static org.glassfish.jersey.internal.util.collection.Refs.emptyRef;
 import static org.glassfish.jersey.server.internal.ContainerUtils.encodeUnsafeCharacters;
 
 final class DefaultJerseyHttpService extends HttpService<HttpPayloadChunk, HttpPayloadChunk> {
@@ -136,19 +135,20 @@ final class DefaultJerseyHttpService extends HttpService<HttpPayloadChunk, HttpP
         req.getHeaders().forEach(h ->
                 containerRequest.getHeaders().add(h.getKey().toString(), h.getValue().toString()));
 
-        final DummyChunkPublisherInputStream entityStream = new DummyChunkPublisherInputStream(req.getPayloadBody());
-        containerRequest.setEntityStream(entityStream);
+        // TODO support optionally configurable queueCapacity
+        containerRequest.setEntityStream(new ChunkPublisherInputStream(req.getPayloadBody(), 16));
 
-        final Ref<Publisher<HttpPayloadChunk>> chunkPublisherRef = emptyRef();
-        final DefaultContainerResponseWriter responseWriter =
-                new DefaultContainerResponseWriter(req, ctx.getAllocator(), executor, chunkPublisherRef, subscriber);
+        final Ref<Publisher<HttpPayloadChunk>> responseChunkPublisherRef =
+                setContextProperties(containerRequest, ctx, executor);
+
+        final DefaultContainerResponseWriter responseWriter = new DefaultContainerResponseWriter(containerRequest,
+                req.getVersion(), ctx.getAllocator(), executor, responseChunkPublisherRef, subscriber);
+
         containerRequest.setWriter(responseWriter);
 
         containerRequest.setRequestScopedInitializer(injectionManager -> {
             injectionManager.<Ref<ConnectionContext>>getInstance(CONNECTION_CONTEXT_REF_TYPE).set(ctx);
             injectionManager.<Ref<HttpRequest<HttpPayloadChunk>>>getInstance(HTTP_REQUEST_REF_TYPE).set(req);
-            injectionManager.<Ref<Ref<Publisher<HttpPayloadChunk>>>>getInstance(CHUNK_PUBLISHER_REF_TYPE)
-                    .set(chunkPublisherRef);
             injectionManager.<Ref<Executor>>getInstance(EXECUTOR_REF_TYPE).set(executor);
         });
 

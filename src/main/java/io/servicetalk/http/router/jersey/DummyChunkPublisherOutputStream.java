@@ -19,11 +19,13 @@ import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
 
-import java.io.ByteArrayOutputStream;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.api.Publisher.defer;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import javax.annotation.Nullable;
+
 import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static java.util.Objects.requireNonNull;
 
@@ -33,13 +35,51 @@ import static java.util.Objects.requireNonNull;
 final class DummyChunkPublisherOutputStream extends ByteArrayOutputStream {
     private final BufferAllocator allocator;
 
+    @Nullable
+    private volatile Subscriber<? super HttpPayloadChunk> subscriber;
+
+    @Nullable
+    private volatile HttpPayloadChunk content;
+
     DummyChunkPublisherOutputStream(final BufferAllocator allocator) {
         this.allocator = requireNonNull(allocator);
     }
 
     Publisher<HttpPayloadChunk> getChunkPublisher() {
-        return defer(() ->
-                just(newPayloadChunk(
-                        allocator.wrap(DummyChunkPublisherOutputStream.this.toByteArray())), immediate()));
+        return new Publisher<HttpPayloadChunk>() {
+            @Override
+            protected void handleSubscribe(final Subscriber<? super HttpPayloadChunk> subscriber) {
+                DummyChunkPublisherOutputStream.this.subscriber = subscriber;
+                subscriber.onSubscribe(new Subscription() {
+                    @Override
+                    public void request(final long l) {
+                        // close() may have been called already
+                        tryEmitContent();
+                    }
+
+                    @Override
+                    public void cancel() {
+                        // NOOP
+                    }
+                });
+            }
+        };
+    }
+
+    @Override
+    public void close() throws IOException {
+        super.close();
+
+        content = newPayloadChunk(allocator.wrap(toByteArray()));
+        tryEmitContent();
+    }
+
+    private void tryEmitContent() {
+        final HttpPayloadChunk c = content;
+        final Subscriber<? super HttpPayloadChunk> s = subscriber;
+        if (c != null && s != null) {
+            s.onNext(newPayloadChunk(allocator.wrap(toByteArray())));
+            s.onComplete();
+        }
     }
 }

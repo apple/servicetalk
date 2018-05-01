@@ -70,11 +70,15 @@ public final class TestUtil {
     }
 
     public static Publisher<HttpPayloadChunk> asChunkPublisher(final String content, final BufferAllocator allocator) {
-        return just(newPayloadChunk(allocator.fromUtf8(content)), immediate());
+        return asChunkPublisher(allocator.fromUtf8(content));
     }
 
     public static Publisher<HttpPayloadChunk> asChunkPublisher(final byte[] content, final BufferAllocator allocator) {
-        return just(newPayloadChunk(allocator.wrap(content)), immediate());
+        return asChunkPublisher(allocator.wrap(content));
+    }
+
+    private static Publisher<HttpPayloadChunk> asChunkPublisher(final Buffer content) {
+        return just(newPayloadChunk(content), immediate());
     }
 
     static HttpRequest<HttpPayloadChunk> newH10Request(final HttpRequestMethod method,
@@ -94,7 +98,6 @@ public final class TestUtil {
                                                        final Buffer content) {
         final HttpRequest<HttpPayloadChunk> request = newRequest(HTTP_1_1, method, requestTarget,
                 just(newPayloadChunk(content), immediate()));
-
         request.getHeaders().add(HOST, TEST_HOST);
         request.getHeaders().add(CONTENT_LENGTH, Integer.toString(content.getReadableBytes()));
         return request;

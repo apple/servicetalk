@@ -27,9 +27,17 @@ import org.glassfish.jersey.internal.util.collection.Ref;
 import java.lang.reflect.Type;
 import javax.inject.Inject;
 import javax.inject.Provider;
+import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.GenericType;
 
+import static org.glassfish.jersey.internal.util.collection.Refs.emptyRef;
+
 final class Context {
+    private static final String CONNECTION_CONTEXT = ConnectionContext.class.getName();
+    private static final String EXECUTOR = Executor.class.getName();
+    private static final String RESPONSE_CHUNK_PUBLISHER_REF = new GenericType<Ref<Publisher<HttpPayloadChunk>>>() {
+        // NOOP
+    }.getType().toString();
 
     static final GenericType<Ref<ConnectionContext>> CONNECTION_CONTEXT_REF_GENERIC_TYPE =
             new GenericType<Ref<ConnectionContext>>() {
@@ -45,16 +53,6 @@ final class Context {
 
     static final GenericType<HttpRequest<HttpPayloadChunk>> HTTP_REQUEST_GENERIC_TYPE =
             new GenericType<HttpRequest<HttpPayloadChunk>>() {
-            };
-
-    static final GenericType<Ref<Ref<Publisher<HttpPayloadChunk>>>> CHUNK_PUBLISHER_REF_REF_GENERIC_TYPE =
-            new GenericType<Ref<Ref<Publisher<HttpPayloadChunk>>>>() {
-            };
-
-    static final Type CHUNK_PUBLISHER_REF_TYPE = CHUNK_PUBLISHER_REF_REF_GENERIC_TYPE.getType();
-
-    static final GenericType<Ref<Publisher<HttpPayloadChunk>>> CHUNK_PUBLISHER_REF_GENERIC_TYPE =
-            new GenericType<Ref<Publisher<HttpPayloadChunk>>>() {
             };
 
     static final GenericType<Ref<Executor>> EXECUTOR_REF_GENERIC_TYPE =
@@ -77,15 +75,6 @@ final class Context {
         }
     }
 
-    static final class ChunkPublisherRefReferencingFactory
-            extends ReferencingFactory<Ref<Publisher<HttpPayloadChunk>>> {
-        @Inject
-        ChunkPublisherRefReferencingFactory(
-                final Provider<Ref<Ref<Publisher<HttpPayloadChunk>>>> referenceFactory) {
-            super(referenceFactory);
-        }
-    }
-
     static final class ExecutorReferencingFactory extends ReferencingFactory<Executor> {
         @Inject
         ExecutorReferencingFactory(final Provider<Ref<Executor>> referenceFactory) {
@@ -95,5 +84,28 @@ final class Context {
 
     private Context() {
         // no instances
+    }
+
+    static Ref<Publisher<HttpPayloadChunk>> setContextProperties(final ContainerRequestContext requestContext,
+                                                                 final ConnectionContext ctx,
+                                                                 final Executor executor) {
+        final Ref<Publisher<HttpPayloadChunk>> responseChunkPublisherRef = emptyRef();
+        requestContext.setProperty(CONNECTION_CONTEXT, ctx);
+        requestContext.setProperty(EXECUTOR, executor);
+        requestContext.setProperty(RESPONSE_CHUNK_PUBLISHER_REF, responseChunkPublisherRef);
+        return responseChunkPublisherRef;
+    }
+
+    static ConnectionContext getConnectionContext(final ContainerRequestContext requestContext) {
+        return (ConnectionContext) requestContext.getProperty(CONNECTION_CONTEXT);
+    }
+
+    static Executor getExecutor(final ContainerRequestContext requestContext) {
+        return (Executor) requestContext.getProperty(EXECUTOR);
+    }
+
+    @SuppressWarnings("unchecked")
+    static Ref<Publisher<HttpPayloadChunk>> getResponseChunkPublisherRef(final ContainerRequestContext requestContext) {
+        return (Ref<Publisher<HttpPayloadChunk>>) requestContext.getProperty(RESPONSE_CHUNK_PUBLISHER_REF);
     }
 }

@@ -22,6 +22,9 @@ import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.router.jersey.AbstractResourceTest.TestFiltered;
 import io.servicetalk.transport.api.ConnectionContext;
 
+import org.glassfish.jersey.internal.util.collection.Ref;
+import org.glassfish.jersey.internal.util.collection.Refs;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
@@ -44,6 +47,10 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.sse.OutboundSseEvent;
+import javax.ws.rs.sse.Sse;
+import javax.ws.rs.sse.SseBroadcaster;
+import javax.ws.rs.sse.SseEventSink;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.router.jersey.TestUtil.asChunkPublisher;
@@ -55,6 +62,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.MediaType.SERVER_SENT_EVENTS;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.GATEWAY_TIMEOUT;
@@ -234,5 +242,68 @@ public class AsynchronousResources {
     @GET
     public void getAsyncResponseBusy(@Suspended final AsyncResponse ar) {
         // Neither resume nor cancel -> busy for ever
+    }
+
+    @Produces(SERVER_SENT_EVENTS)
+    @Path("/sse/stream")
+    @GET
+    public void getSseStream(@Context final SseEventSink eventSink,
+                             @Context final Sse sse) {
+        scheduleSseEventSend(new SseEmitter() {
+            @Override
+            public CompletionStage<?> emit(final OutboundSseEvent event) {
+                return eventSink.send(event);
+            }
+
+            @Override
+            public void close() {
+                eventSink.close();
+            }
+        }, sse, Refs.of(0));
+    }
+
+    @Produces(SERVER_SENT_EVENTS)
+    @Path("/sse/broadcast")
+    @GET
+    public void getSseBroadcast(@Context final SseEventSink eventSink,
+                                @Context final Sse sse) {
+        eventSink.send(sse.newEvent("bar"));
+        final SseBroadcaster sseBroadcaster = sse.newBroadcaster();
+        sseBroadcaster.register(eventSink);
+
+        scheduleSseEventSend(new SseEmitter() {
+            @Override
+            public CompletionStage<?> emit(final OutboundSseEvent event) {
+                // This returns null :( for the moment (JerseySseBroadcaster not fully implemented yet)
+                sseBroadcaster.broadcast(event);
+                return completedFuture(null);
+            }
+
+            @Override
+            public void close() {
+                sseBroadcaster.close();
+            }
+        }, sse, Refs.of(0));
+    }
+
+    private interface SseEmitter {
+        CompletionStage<?> emit(OutboundSseEvent event);
+
+        void close();
+    }
+
+    private void scheduleSseEventSend(final SseEmitter emmitter, final Sse sse, final Ref<Integer> iRef) {
+        executor.schedule(10, MILLISECONDS)
+                .doAfterComplete(() -> {
+                    final int i = iRef.get();
+                    emmitter.emit(sse.newEvent("foo" + i)).whenComplete((r, t) -> {
+                        if (t == null && i < 9) {
+                            iRef.set(i + 1);
+                            scheduleSseEventSend(emmitter, sse, iRef);
+                        } else {
+                            emmitter.close();
+                        }
+                    });
+                }).subscribe();
     }
 }
