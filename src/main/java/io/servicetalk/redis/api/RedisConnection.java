@@ -34,7 +34,7 @@ public abstract class RedisConnection extends RedisRequester {
 
     @Override
     public BufferAllocator getBufferAllocator() {
-        return getConnectionContext().getAllocator();
+        return getConnectionContext().getBufferAllocator();
     }
 
     /**
