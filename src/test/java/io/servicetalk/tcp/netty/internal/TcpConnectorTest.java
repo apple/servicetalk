@@ -95,7 +95,7 @@ public final class TcpConnectorTest {
 
     private static void testWriteAndRead(Connection<Buffer, Buffer> connection)
             throws ExecutionException, InterruptedException {
-        awaitIndefinitely(connection.writeAndFlush(connection.getAllocator().fromAscii("Hello")));
+        awaitIndefinitely(connection.writeAndFlush(connection.getBufferAllocator().fromAscii("Hello")));
         String response = awaitIndefinitely(connection.read().first().map(buffer -> buffer.toString(defaultCharset())));
         assertThat("Unexpected response.", response, is("Hello"));
         awaitIndefinitely(connection.onClose());
