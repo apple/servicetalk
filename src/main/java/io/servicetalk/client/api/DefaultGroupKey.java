@@ -15,8 +15,7 @@
  */
 package io.servicetalk.client.api;
 
-import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import static java.util.Objects.requireNonNull;
 
@@ -26,20 +25,18 @@ import static java.util.Objects.requireNonNull;
 public final class DefaultGroupKey<Address> implements GroupKey<Address> {
 
     private final Address address;
-    private final IoExecutor ioExecutor;
-    private final Executor executor;
+    private final ExecutionContext executionContext;
 
     /**
      * Create a new instance.
      *
      * @param address The address of the remote peer to connect to.
-     * @param ioExecutor The {@link IoExecutor} to used in {@link #getIoExecutor()}.
-     * @param executor The {@link Executor} to used in {@link #getExecutor()}.
+     * @param executionContext The {@link ExecutionContext} to use for {@link #getExecutionContext()}.
      */
-    public DefaultGroupKey(final Address address, final IoExecutor ioExecutor, final Executor executor) {
+    public DefaultGroupKey(final Address address,
+                           final ExecutionContext executionContext) {
         this.address = requireNonNull(address);
-        this.ioExecutor = requireNonNull(ioExecutor);
-        this.executor = requireNonNull(executor);
+        this.executionContext = requireNonNull(executionContext);
     }
 
     @Override
@@ -48,13 +45,8 @@ public final class DefaultGroupKey<Address> implements GroupKey<Address> {
     }
 
     @Override
-    public IoExecutor getIoExecutor() {
-        return ioExecutor;
-    }
-
-    @Override
-    public Executor getExecutor() {
-        return executor;
+    public ExecutionContext getExecutionContext() {
+        return executionContext;
     }
 
     @Override
@@ -68,14 +60,11 @@ public final class DefaultGroupKey<Address> implements GroupKey<Address> {
 
         final DefaultGroupKey<?> that = (DefaultGroupKey<?>) o;
 
-        return address.equals(that.address) && ioExecutor.equals(that.ioExecutor) && executor.equals(that.executor);
+        return address.equals(that.address) && executionContext.equals(that.executionContext);
     }
 
     @Override
     public int hashCode() {
-        int result = address.hashCode();
-        result = 31 * result + ioExecutor.hashCode();
-        result = 31 * result + executor.hashCode();
-        return result;
+        return 31 * address.hashCode() + executionContext.hashCode();
     }
 }
