@@ -21,8 +21,8 @@ import java.util.function.BiFunction;
 
 /**
  * The equivalent of {@link HttpService} but with synchronous/blocking APIs instead of asynchronous APIs.
- * @param <I> Type of payload of a request handled by this service.
- * @param <O> Type of payload of a response handled by this service.
+ * @param <I> Type of payload of a request handled by this {@link BlockingHttpService}.
+ * @param <O> Type of payload of a response handled by this {@link BlockingHttpService}.
  */
 public abstract class BlockingHttpService<I, O> implements AutoCloseable {
     /**

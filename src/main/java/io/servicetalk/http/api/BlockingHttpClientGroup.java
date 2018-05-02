@@ -1,0 +1,70 @@
+/*
+ * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.servicetalk.http.api;
+
+import io.servicetalk.client.api.GroupKey;
+import io.servicetalk.http.api.BlockingHttpClient.BlockingReservedHttpConnection;
+
+/**
+ * The equivalent of {@link HttpClientGroup} but with synchronous/blocking APIs instead of asynchronous APIs.
+ * @param <UnresolvedAddress> The address type used to create new {@link BlockingHttpClient}s.
+ * @param <I> Type of payload of a request handled by this {@link BlockingHttpClient}.
+ * @param <O> Type of payload of a response handled by this {@link BlockingHttpClient}.
+ */
+public abstract class BlockingHttpClientGroup<UnresolvedAddress, I, O> implements AutoCloseable {
+    /**
+     * Locate or create a client and delegate to {@link BlockingHttpClient#request(BlockingHttpRequest)}.
+     *
+     * @param key Identifies the {@link BlockingHttpClient} to use, or provides enough information to create
+     * an {@link BlockingHttpClient} if non exist.
+     * @param request The {@link BlockingHttpRequest} to send.
+     * @return The received {@link BlockingHttpResponse}.
+     * @throws Exception if an exception occurs during the request processing.
+     * @see BlockingHttpClient#request(BlockingHttpRequest)
+     */
+    public abstract BlockingHttpResponse<O> request(GroupKey<UnresolvedAddress> key, BlockingHttpRequest<I> request)
+            throws Exception;
+
+    /**
+     * Locate or create a client and delegate to {@link BlockingHttpClient#reserveConnection(BlockingHttpRequest)}.
+     *
+     * @param key Identifies the {@link BlockingHttpClient} to use, or provides enough information to create
+     * an {@link BlockingHttpClient} if non exist.
+     * @param request The {@link HttpRequest} which may provide more information about which
+     * {@link BlockingHttpConnection} to reserve.
+     * @return A {@link BlockingReservedHttpConnection}.
+     * @throws Exception if a exception occurs during the reservation process.
+     * @see BlockingHttpClient#reserveConnection(BlockingHttpRequest)
+     */
+    public abstract BlockingReservedHttpConnection<I, O> reserveConnection(GroupKey<UnresolvedAddress> key,
+                                                                           BlockingHttpRequest<I> request)
+            throws Exception;
+
+    /**
+     * Convert this {@link BlockingHttpClientGroup} to the {@link HttpClientGroup} asynchronous API.
+     * <p>
+     * Note that the resulting {@link HttpClientGroup} will still be subject to any blocking, in memory aggregation, and
+     * other behavior as this {@link BlockingHttpClientGroup}.
+     * @return a {@link HttpClientGroup} representation of this {@link BlockingHttpClientGroup}.
+     */
+    public final HttpClientGroup<UnresolvedAddress, I, O> asAsynchronousClientGroup() {
+        return asAsynchronousClientGroupInternal();
+    }
+
+    HttpClientGroup<UnresolvedAddress, I, O> asAsynchronousClientGroupInternal() {
+        return new BlockingHttpClientGroupToHttpClientGroup<>(this);
+    }
+}

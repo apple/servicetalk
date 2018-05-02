@@ -28,7 +28,7 @@ import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
  * @param <I> The type of payload of the request.
  * @param <O> The type of payload of the response.
  */
-public interface HttpClientGroup<UnresolvedAddress, I, O> extends ListenableAsyncCloseable {
+public abstract class HttpClientGroup<UnresolvedAddress, I, O> implements ListenableAsyncCloseable {
     /**
      * Locate or create a client and delegate to {@link HttpClient#request(HttpRequest)}.
      *
@@ -38,7 +38,7 @@ public interface HttpClientGroup<UnresolvedAddress, I, O> extends ListenableAsyn
      * @return The received {@link HttpResponse}.
      * @see HttpClient#request(HttpRequest)
      */
-    Single<HttpResponse<O>> request(GroupKey<UnresolvedAddress> key, HttpRequest<I> request);
+    public abstract Single<HttpResponse<O>> request(GroupKey<UnresolvedAddress> key, HttpRequest<I> request);
 
     /**
      * Locate or create a client and delegate to {@link HttpClient#reserveConnection(HttpRequest)}.
@@ -50,6 +50,21 @@ public interface HttpClientGroup<UnresolvedAddress, I, O> extends ListenableAsyn
      * @return A {@link ReservedHttpConnection}.
      * @see HttpClient#reserveConnection(HttpRequest)
      */
-    Single<? extends ReservedHttpConnection<I, O>> reserveConnection(GroupKey<UnresolvedAddress> key,
-                                                                     HttpRequest<I> request);
+    public abstract Single<? extends ReservedHttpConnection<I, O>> reserveConnection(GroupKey<UnresolvedAddress> key,
+                                                                                     HttpRequest<I> request);
+
+    /**
+     * Convert this {@link HttpClientGroup} to the {@link BlockingHttpClientGroup} asynchronous API.
+     * <p>
+     * Note that the resulting {@link BlockingHttpClientGroup} will still be subject to any blocking, in memory
+     * aggregation, and other behavior as this {@link HttpClientGroup}.
+     * @return a {@link BlockingHttpClientGroup} representation of this {@link HttpClientGroup}.
+     */
+    public final BlockingHttpClientGroup<UnresolvedAddress, I, O> asBlockingClientGroup() {
+        return asBlockingClientGroupInternal();
+    }
+
+    BlockingHttpClientGroup<UnresolvedAddress, I, O> asBlockingClientGroupInternal() {
+        return new HttpClientGroupToBlockingHttpClientGroup<>(this);
+    }
 }

@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 
@@ -23,11 +24,32 @@ import io.servicetalk.concurrent.api.Single;
  * @param <I> The type of payload of the request.
  * @param <O> The type of payload of the response.
  */
-public interface HttpRequester<I, O> extends ListenableAsyncCloseable {
+public abstract class HttpRequester<I, O> implements ListenableAsyncCloseable {
     /**
      * Send a {@code request}.
      * @param request the request to send.
      * @return The response.
      */
-    Single<HttpResponse<O>> request(HttpRequest<I> request);
+    public abstract Single<HttpResponse<O>> request(HttpRequest<I> request);
+
+    /**
+     * Get the {@link Executor} associated with this object.
+     * @return the {@link Executor} associated with this object.
+     */
+    public abstract Executor getExecutor();
+
+    /**
+     * Convert this {@link HttpRequester} to the {@link BlockingHttpRequester} API.
+     * <p>
+     * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
+     * filters are implemented using the {@link HttpRequester} asynchronous API for maximum portability.
+     * @return a {@link BlockingHttpRequester} representation of this {@link HttpRequester}.
+     */
+    public final BlockingHttpRequester<I, O> asBlockingRequester() {
+        return asBlockingRequesterInternal();
+    }
+
+    BlockingHttpRequester<I, O> asBlockingRequesterInternal() {
+        return new HttpRequesterToBlockingHttpRequester<>(this);
+    }
 }

@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ConnectionContext;
 
@@ -27,29 +28,49 @@ import static java.util.Objects.requireNonNull;
  * @param <I> The type of payload of the request.
  * @param <O> The type of payload of the response.
  */
-public interface HttpConnection<I, O> extends HttpRequester<I, O> {
+public abstract class HttpConnection<I, O> extends HttpRequester<I, O> {
     /**
      * Get the {@link ConnectionContext}.
      * @return the {@link ConnectionContext}.
      */
-    ConnectionContext getConnectionContext();
+    public abstract ConnectionContext getConnectionContext();
 
     /**
-     * Returns a {@link Publisher} that gives the current value of the setting as well as subsequent changes to the setting
-     * value as long as the {@link Subscriber} has expressed enough demand.
+     * Returns a {@link Publisher} that gives the current value of the setting as well as subsequent changes to the
+     * setting value as long as the {@link Subscriber} has expressed enough demand.
      *
      * @param settingKey Name of the setting to fetch.
      * @param <T> Type of the setting value.
      * @return {@link Publisher} for the setting values.
      */
-    <T> Publisher<T> getSettingStream(SettingKey<T> settingKey);
+    public abstract <T> Publisher<T> getSettingStream(SettingKey<T> settingKey);
+
+    @Override
+    public final Executor getExecutor() {
+        return getConnectionContext().getExecutor();
+    }
+
+    /**
+     * Convert this {@link HttpConnection} to the {@link BlockingHttpConnection} API.
+     * <p>
+     * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
+     * filters are implemented using the {@link HttpConnection} asynchronous API for maximum portability.
+     * @return a {@link BlockingHttpConnection} representation of this {@link HttpConnection}.
+     */
+    public final BlockingHttpConnection<I, O> asBlockingConnection() {
+        return asBlockingConnectionInternal();
+    }
+
+    BlockingHttpConnection<I, O> asBlockingConnectionInternal() {
+        return new HttpConnectionToBlockingHttpConnection<>(this);
+    }
 
     /**
      * A key which identifies a configuration setting for a connection. Setting values may change over time.
      * @param <T> Type of the value of this setting.
      */
     @SuppressWarnings("unused")
-    final class SettingKey<T> {
+    public static final class SettingKey<T> {
         /**
          * Option to define max concurrent requests allowed on a connection.
          */

@@ -15,10 +15,12 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.empty;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
@@ -138,5 +140,13 @@ public final class HttpRequests {
                                                 final String requestTarget, final Publisher<I> payloadBody,
                                                 final HttpHeaders headers) {
         return new DefaultHttpRequest<>(method, requestTarget, version, payloadBody, headers);
+    }
+
+    static <I> HttpRequest<I> fromBlockingRequest(BlockingHttpRequest<I> request, Executor executor) {
+        return new DefaultHttpRequest<>(request.getMethod(),
+                request.getRequestTarget(), request.getVersion(),
+                // The from(..) operator will take care of propagating cancel.
+                from(executor, request.getPayloadBody()),
+                request.getHeaders());
     }
 }

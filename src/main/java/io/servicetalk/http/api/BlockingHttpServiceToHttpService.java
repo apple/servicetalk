@@ -20,9 +20,8 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
 import io.servicetalk.transport.api.ConnectionContext;
 
-import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Completable.error;
-import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
+import static io.servicetalk.http.api.HttpResponses.fromBlockingResponse;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
@@ -38,35 +37,31 @@ final class BlockingHttpServiceToHttpService<I, O> extends HttpService<I, O> {
         return new Single<HttpResponse<O>>() {
             @Override
             protected void handleSubscribe(Subscriber<? super HttpResponse<O>> subscriber) {
-                ThreadInterruptingCancellable blockingCancellable = new ThreadInterruptingCancellable(currentThread());
-                subscriber.onSubscribe(blockingCancellable);
-                final BlockingHttpResponse<O> syncResponse;
+                ThreadInterruptingCancellable cancellable = new ThreadInterruptingCancellable(currentThread());
+                subscriber.onSubscribe(cancellable);
+                final HttpResponse<O> response;
                 try {
-                    syncResponse = blockingHttpService.handle(ctx, new DefaultBlockingHttpRequest<>(request));
+                    // Do the conversion inside the try/catch in case there is an exception.
+                    response = fromBlockingResponse(blockingHttpService.handle(ctx,
+                            new DefaultBlockingHttpRequest<>(request)), ctx.getExecutor());
                 } catch (Throwable cause) {
-                    blockingCancellable.setDone();
+                    cancellable.setDone();
                     subscriber.onError(cause);
                     return;
                 }
                 // It is safe to set this outside the scope of the try/catch above because we don't do any blocking
                 // operations which may be interrupted between the completion of the blockingHttpService call and here.
-                blockingCancellable.setDone();
+                cancellable.setDone();
 
                 // The from(..) operator will take care of propagating cancel.
-                subscriber.onSuccess(new DefaultHttpResponse<>(syncResponse.getStatus(), syncResponse.getVersion(),
-                        syncResponse.getHeaders(), from(ctx.getExecutor(), syncResponse.getPayloadBody())));
+                subscriber.onSuccess(response);
             }
         };
     }
 
     @Override
     public Completable closeAsync() {
-        try {
-            blockingHttpService.close();
-        } catch (Throwable cause) {
-            return error(cause);
-        }
-        return completed();
+        return blockingToCompletable(blockingHttpService::close);
     }
 
     @Override

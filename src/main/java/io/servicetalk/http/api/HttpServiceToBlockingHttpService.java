@@ -17,8 +17,8 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.transport.api.ConnectionContext;
 
-import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.http.api.HttpRequests.fromBlockingRequest;
 import static java.util.Objects.requireNonNull;
 
 final class HttpServiceToBlockingHttpService<I, O> extends BlockingHttpService<I, O> {
@@ -33,14 +33,8 @@ final class HttpServiceToBlockingHttpService<I, O> extends BlockingHttpService<I
             throws Exception {
         // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
-        HttpResponse<O> response = awaitIndefinitely(service.handle(ctx, new DefaultHttpRequest<>(request.getMethod(),
-                // The from(..) operator will take care of propagating cancel.
-                request.getRequestTarget(), request.getVersion(), from(ctx.getExecutor(), request.getPayloadBody()),
-                request.getHeaders())));
-        if (response == null) {
-            throw new IllegalStateException("null response received");
-        }
-        return new DefaultBlockingHttpResponse<>(response);
+        return new DefaultBlockingHttpResponse<>(awaitIndefinitely(service.handle(ctx,
+                fromBlockingRequest(request, ctx.getExecutor()))));
     }
 
     @Override

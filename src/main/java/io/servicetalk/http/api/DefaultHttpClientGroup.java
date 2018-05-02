@@ -19,6 +19,7 @@ import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
 
@@ -36,7 +37,7 @@ import static io.servicetalk.concurrent.api.Completable.completed;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
-final class DefaultHttpClientGroup<UnresolvedAddress, I, O> implements HttpClientGroup<UnresolvedAddress, I, O> {
+final class DefaultHttpClientGroup<UnresolvedAddress, I, O> extends HttpClientGroup<UnresolvedAddress, I, O> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultHttpClientGroup.class);
 
@@ -59,6 +60,11 @@ final class DefaultHttpClientGroup<UnresolvedAddress, I, O> implements HttpClien
         @Override
         public Single<UpgradableHttpResponse<I, O>> upgradeConnection(final HttpRequest<I> request) {
             return Single.error(new UnsupportedOperationException(PLACEHOLDER_EXCEPTION_MSG));
+        }
+
+        @Override
+        public Executor getExecutor() {
+            throw new UnsupportedOperationException(PLACEHOLDER_EXCEPTION_MSG);
         }
 
         @Override
