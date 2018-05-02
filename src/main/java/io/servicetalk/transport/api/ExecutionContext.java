@@ -27,7 +27,7 @@ public interface ExecutionContext {
      * Return the {@link BufferAllocator} that can be used to allocate {@link Buffer}s if needed.
      * @return the {@link BufferAllocator} to use
      */
-    BufferAllocator getAllocator();
+    BufferAllocator getBufferAllocator();
 
     /**
      * Get the {@link IoExecutor} that is used to handle the IO.
