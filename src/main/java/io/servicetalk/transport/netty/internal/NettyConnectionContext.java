@@ -78,7 +78,7 @@ public final class NettyConnectionContext implements ConnectionContext {
     }
 
     @Override
-    public BufferAllocator getAllocator() {
+    public BufferAllocator getBufferAllocator() {
         return allocator;
     }
 

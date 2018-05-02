@@ -263,8 +263,8 @@ public final class NettyConnection<Read, Write> implements Connection<Read, Writ
     }
 
     @Override
-    public BufferAllocator getAllocator() {
-        return context.getAllocator();
+    public BufferAllocator getBufferAllocator() {
+        return context.getBufferAllocator();
     }
 
     @Override

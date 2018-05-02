@@ -207,8 +207,8 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
     }
 
     @Override
-    public BufferAllocator getAllocator() {
-        return connection.getAllocator();
+    public BufferAllocator getBufferAllocator() {
+        return connection.getBufferAllocator();
     }
 
     @Override

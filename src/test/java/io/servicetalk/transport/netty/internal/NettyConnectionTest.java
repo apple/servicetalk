@@ -287,8 +287,8 @@ public class NettyConnectionTest {
 
     @Test
     public void testContextDelegation() {
-        conn.getAllocator();
-        verify(context).getAllocator();
+        conn.getBufferAllocator();
+        verify(context).getBufferAllocator();
         verifyNoMoreInteractions(context);
         conn.getLocalAddress();
         verify(context).getLocalAddress();
