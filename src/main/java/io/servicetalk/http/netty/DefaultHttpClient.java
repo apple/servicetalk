@@ -33,8 +33,10 @@ import io.servicetalk.transport.api.IoExecutor;
 
 import java.util.function.Function;
 
+import static java.util.Objects.requireNonNull;
+
 final class DefaultHttpClient<ResolvedAddress, EventType extends ServiceDiscoverer.Event<ResolvedAddress>>
-        implements HttpClient<HttpPayloadChunk, HttpPayloadChunk> {
+        extends HttpClient<HttpPayloadChunk, HttpPayloadChunk> {
 
     private static final Function<LoadBalancedHttpConnection, LoadBalancedHttpConnection> SELECTOR_FOR_REQUEST =
             conn -> conn.tryRequest() ? conn : null;
@@ -43,6 +45,7 @@ final class DefaultHttpClient<ResolvedAddress, EventType extends ServiceDiscover
 
     // TODO Proto specific LB after upgrade and worry about SSL
     private final LoadBalancer<LoadBalancedHttpConnection> loadBalancer;
+    private final Executor executor;
 
     @SuppressWarnings("unchecked")
     DefaultHttpClient(IoExecutor ioExecutor, Executor executor,
@@ -52,7 +55,7 @@ final class DefaultHttpClient<ResolvedAddress, EventType extends ServiceDiscover
                                  HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilter,
                          LoadBalancerFactory<ResolvedAddress, HttpConnection<HttpPayloadChunk, HttpPayloadChunk>>
                                  loadBalancerFactory) {
-
+        this.executor = requireNonNull(executor);
         ConnectionFactory<ResolvedAddress, LoadBalancedHttpConnection> connectionFactory =
                 connectionBuilder.asConnectionFactory(ioExecutor, executor,
                                 connectionFilter.andThen(LoadBalancedHttpConnection::new));
@@ -80,6 +83,11 @@ final class DefaultHttpClient<ResolvedAddress, EventType extends ServiceDiscover
     public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
         // TODO should we do smart things here, add encoding headers etc. ?
         return loadBalancer.selectConnection(SELECTOR_FOR_REQUEST).flatmap(c -> c.request(request));
+    }
+
+    @Override
+    public Executor getExecutor() {
+        return executor;
     }
 
     @Override

@@ -37,7 +37,7 @@ import static io.servicetalk.http.netty.SpliceFlatStreamToMetaSingle.flatten;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractHttpConnection<CC extends ConnectionContext>
-        implements HttpConnection<HttpPayloadChunk, HttpPayloadChunk> {
+        extends HttpConnection<HttpPayloadChunk, HttpPayloadChunk> {
 
     // TODO consolidate with http server logic
     private static final Predicate<HttpPayloadChunk> LAST_CHUNK_PREDICATE = p -> p instanceof LastHttpPayloadChunk;

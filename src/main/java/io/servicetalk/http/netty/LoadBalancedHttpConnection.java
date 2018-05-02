@@ -34,7 +34,7 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 /**
  * Makes the wrapped {@link HttpConnection} aware of the {@link LoadBalancer}.
  */
-class LoadBalancedHttpConnection implements ReservedHttpConnection<HttpPayloadChunk, HttpPayloadChunk> {
+class LoadBalancedHttpConnection extends ReservedHttpConnection<HttpPayloadChunk, HttpPayloadChunk> {
 
     private final ConcurrentReservedResource reserved;
     private final HttpConnection<HttpPayloadChunk, HttpPayloadChunk> delegate;
@@ -56,7 +56,7 @@ class LoadBalancedHttpConnection implements ReservedHttpConnection<HttpPayloadCh
     }
 
     @Override
-    public Completable release() {
+    public Completable releaseAsync() {
         return reserved.release();
     }
 
