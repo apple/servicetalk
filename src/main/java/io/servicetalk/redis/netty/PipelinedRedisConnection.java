@@ -87,7 +87,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
 
     @SuppressWarnings("unchecked")
     public Completable doClose() {
-        return request0(newRequest(QUIT, newRequestCompositeBuffer(1, QUIT.toRESPArgument(connection.getAllocator()), connection.getAllocator())), true, false)
+        return request0(newRequest(QUIT, newRequestCompositeBuffer(1, QUIT.toRESPArgument(connection.getBufferAllocator()), connection.getBufferAllocator())), true, false)
                 .ignoreElements()
                 .onErrorResume(th -> matches(th, ClosedChannelException.class) ? completed() : connection.closeAsync().andThen(error(th)))
                 .andThen(connection.closeAsync());
@@ -154,7 +154,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
                     if (internalPing && potentiallyConflictingCommand != null) {
                         return Completable.error(new PingRejectedException(potentiallyConflictingCommand));
                     }
-                    return rawConnection.write(encodeRequestContent(request, connection.getAllocator()), request.getFlushStrategy());
+                    return rawConnection.write(encodeRequestContent(request, connection.getBufferAllocator()), request.getFlushStrategy());
                 }, () -> predicate)
                         .doBeforeNext(predicate::trackMessage)
                         .doBeforeFinally(() -> {

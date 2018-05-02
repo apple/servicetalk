@@ -161,7 +161,7 @@ public class RedisAuthConnectionFactoryClientTest {
         serviceDiscoverer = new DefaultDnsServiceDiscoverer.Builder(executor.next(), immediate()).build()
                 .toHostAndPortDiscoverer();
         client = new RetryingRedisClient(
-                new DefaultRedisClientBuilder<InetSocketAddress>((eventPublisher, connectionFactory) -> new RoundRobinLoadBalancer<>(eventPublisher, new RedisAuthConnectionFactory<>(connectionFactory, ctx -> ctx.getAllocator().fromAscii(password)), comparingInt(Object::hashCode)))
+                new DefaultRedisClientBuilder<InetSocketAddress>((eventPublisher, connectionFactory) -> new RoundRobinLoadBalancer<>(eventPublisher, new RedisAuthConnectionFactory<>(connectionFactory, ctx -> ctx.getBufferAllocator().fromAscii(password)), comparingInt(Object::hashCode)))
                         .setMaxPipelinedRequests(10)
                         .setIdleConnectionTimeout(ofSeconds(2))
                         .build(executor, immediate(), serviceDiscoverer.discover(new DefaultHostAndPort(redisHost, redisPort))),

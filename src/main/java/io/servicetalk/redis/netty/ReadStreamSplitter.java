@@ -108,7 +108,7 @@ final class ReadStreamSplitter {
     ReadStreamSplitter(Connection<RedisData, ByteBuf> connection, int maxConcurrentRequests, int maxBufferPerGroup, Function<RedisRequest, Completable> unsubscribeWriter) {
         this.connection = requireNonNull(connection);
         this.unsubscribeWriter = requireNonNull(unsubscribeWriter);
-        this.original = new SubscribedChannelReadStream(connection.read(), connection.getAllocator(),
+        this.original = new SubscribedChannelReadStream(connection.read(), connection.getBufferAllocator(),
                 connection.getExecutor())
                 .groupBy(new GroupSelector(), maxBufferPerGroup, maxConcurrentRequests);
         Connection.TerminalPredicate<RedisData> terminalMsgPredicate = connection.getTerminalMsgPredicate();
@@ -276,8 +276,8 @@ final class ReadStreamSplitter {
                 @Override
                 public void cancel() {
                     final Command command = isPatternSubscribe ? PUNSUBSCRIBE : UNSUBSCRIBE;
-                    final CompositeBuffer buf = newRequestCompositeBuffer(2, command.toRESPArgument(connection.getAllocator()), connection.getAllocator());
-                    addRequestArgument(channel, buf, connection.getAllocator());
+                    final CompositeBuffer buf = newRequestCompositeBuffer(2, command.toRESPArgument(connection.getBufferAllocator()), connection.getBufferAllocator());
+                    addRequestArgument(channel, buf, connection.getBufferAllocator());
                     final RedisRequest request = newRequest(command, buf);
                     unsubscribeWriter.apply(request).subscribe(new Completable.Subscriber() {
                         @Override

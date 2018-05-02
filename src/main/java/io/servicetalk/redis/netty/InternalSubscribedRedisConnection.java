@@ -99,7 +99,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
 
     private Publisher<RedisData> request0(RedisRequest request) {
         final RedisProtocolSupport.Command command = request.getCommand();
-        final Publisher<ByteBuf> reqContent = RedisUtils.encodeRequestContent(request, connection.getAllocator());
+        final Publisher<ByteBuf> reqContent = RedisUtils.encodeRequestContent(request, connection.getBufferAllocator());
         return new Publisher<RedisData>(connection.getExecutor()) {
             @SuppressWarnings("unchecked")
             @Override
@@ -152,7 +152,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
 
     @Override
     Completable doClose() {
-        return writeQueue.quit(request(newRequest(QUIT, newRequestCompositeBuffer(1, QUIT.toRESPArgument(connection.getAllocator()), connection.getAllocator()))).ignoreElements())
+        return writeQueue.quit(request(newRequest(QUIT, newRequestCompositeBuffer(1, QUIT.toRESPArgument(connection.getBufferAllocator()), connection.getBufferAllocator()))).ignoreElements())
                 .onErrorResume(th -> matches(th, ClosedChannelException.class) ? completed() : connection.closeAsync().andThen(error(th)))
                 .andThen(connection.closeAsync());
     }
