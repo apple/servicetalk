@@ -15,9 +15,6 @@
  */
 package io.servicetalk.transport.api;
 
-import io.servicetalk.buffer.Buffer;
-import io.servicetalk.buffer.BufferAllocator;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 import java.net.SocketAddress;
@@ -27,7 +24,7 @@ import javax.net.ssl.SSLSession;
 /**
  * A service execution context.
  */
-public interface ConnectionContext extends ListenableAsyncCloseable {
+public interface ConnectionContext extends ExecutionContext, ListenableAsyncCloseable {
     /**
      * The {@link SocketAddress} to which the associated connection is bound.
      * @return The {@link SocketAddress} to which the associated connection is bound.
@@ -41,28 +38,10 @@ public interface ConnectionContext extends ListenableAsyncCloseable {
     SocketAddress getRemoteAddress();
 
     /**
-     * Return the {@link BufferAllocator} that can be used to allocate {@link Buffer}s if needed.
-     * @return the {@link BufferAllocator} to use
-     */
-    BufferAllocator getAllocator();
-
-    /**
      * Get the {@link SSLSession} for this connection.
      *
      * @return The {@link SSLSession} if SSL/TLS is enabled, or {@code null} otherwise.
      */
     @Nullable
     SSLSession getSslSession();
-
-    /**
-     * Get the {@link IoExecutor} that is used to handle the IO for the connection.
-     * @return The {@link IoExecutor} that is used to handle the IO for the connection.
-     */
-    IoExecutor getIoExecutor();
-
-    /**
-     * Get the {@link Executor} that is used to create any asynchronous sources by the connection.
-     * @return The {@link Executor} that is used to create any asynchronous sources by the connection.
-     */
-    Executor getExecutor();
 }
