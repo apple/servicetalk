@@ -35,6 +35,7 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
@@ -123,7 +124,7 @@ public class RedisAuthConnectionFactoryConnectionTest {
         connectionSingle = new RedisAuthConnectionFactory<>(
                 DefaultRedisConnectionBuilder.<InetSocketAddress>forPipeline()
                         .setMaxPipelinedRequests(10)
-                        .asConnectionFactory(executor),
+                        .asConnectionFactory(executor, immediate()),
                 ctx -> ctx.getAllocator().fromAscii(password))
                 .newConnection(new InetSocketAddress(redisHost, redisPort));
         connectionConsumer.accept(connectionSingle);

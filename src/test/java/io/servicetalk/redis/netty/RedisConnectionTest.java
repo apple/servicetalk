@@ -40,6 +40,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
@@ -283,7 +284,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
     private static void rawConnectionToCommanderWithFilterDoesNotThrowClassCast(boolean monitor) throws ExecutionException, InterruptedException {
         RedisConnection rawConnection =
                 awaitIndefinitely(DefaultRedisConnectionBuilder.<InetSocketAddress>forPipeline()
-                        .build(executor, new InetSocketAddress(redisHost, redisPort)));
+                        .build(executor, immediate(), new InetSocketAddress(redisHost, redisPort)));
         try {
             final AtomicBoolean requestCalled = new AtomicBoolean();
             final AtomicBoolean closeCalled = new AtomicBoolean();

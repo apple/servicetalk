@@ -42,6 +42,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.SUBSCRIBE;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
@@ -99,7 +100,7 @@ public class InternalSubscribedRedisConnectionTest {
         assert builder != null && redisAddress != null && executor != null;
         CountDownLatch requestStreamCancelled = new CountDownLatch(1);
 
-        RedisConnection connection = awaitIndefinitely(builder.build(executor, redisAddress));
+        RedisConnection connection = awaitIndefinitely(builder.build(executor, immediate(), redisAddress));
         assert connection != null;
 
         final RedisRequest subReq = newRequest(SUBSCRIBE,
@@ -119,7 +120,7 @@ public class InternalSubscribedRedisConnectionTest {
     public void testReadCancelAndClose() throws ExecutionException, InterruptedException {
         assert builder != null && redisAddress != null && executor != null;
 
-        RedisConnection connection = awaitIndefinitely(builder.build(executor, redisAddress));
+        RedisConnection connection = awaitIndefinitely(builder.build(executor, immediate(), redisAddress));
         assert connection != null;
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -136,7 +137,7 @@ public class InternalSubscribedRedisConnectionTest {
         subscription.request(1);
         latch.await();
 
-        RedisConnection publishConnection = awaitIndefinitely(forPipeline().build(executor, redisAddress));
+        RedisConnection publishConnection = awaitIndefinitely(forPipeline().build(executor, immediate(), redisAddress));
         assert publishConnection != null;
 
         awaitIndefinitely(publishConnection.asCommander().publish(channelToSubscribe, randomStringOfLength(32)));

@@ -57,6 +57,7 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.INFO;
 import static io.servicetalk.redis.api.RedisProtocolSupport.CommandFlag.PUBSUB;
@@ -154,7 +155,7 @@ public class PartitionedRedisClientTest {
                 partitionAttributesBuilderFactory)
                 .setMaxPipelinedRequests(10)
                 .setPingPeriod(ofSeconds(1))
-                .build(executor, serviceDiscoveryPublisher.getPublisher());
+                .build(executor, immediate(), serviceDiscoveryPublisher.getPublisher());
 
         sendHost1ServiceDiscoveryEvent(true);
 

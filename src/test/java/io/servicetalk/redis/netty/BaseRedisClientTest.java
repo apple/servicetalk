@@ -102,7 +102,7 @@ public abstract class BaseRedisClientTest {
                         .setMaxPipelinedRequests(10)
                         .setIdleConnectionTimeout(ofSeconds(2))
                         .setPingPeriod(ofSeconds(PING_PERIOD_SECONDS))
-                        .build(executor, serviceDiscoverer.discover(new DefaultHostAndPort(redisHost, redisPort))),
+                        .build(executor, immediate(), serviceDiscoverer.discover(new DefaultHostAndPort(redisHost, redisPort))),
                 retryWithExponentialBackoff(10, cause -> cause instanceof RetryableException, ofMillis(10),
                         backoffNanos -> executor.next().scheduleOnEventloop(backoffNanos, NANOSECONDS)));
 
