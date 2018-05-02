@@ -54,7 +54,7 @@ public abstract class AbstractJerseyHttpServiceTest {
 
     @Before
     public void init() {
-        when(ctx.getAllocator()).thenReturn(DEFAULT_ALLOCATOR);
+        when(ctx.getBufferAllocator()).thenReturn(DEFAULT_ALLOCATOR);
 
         service = new DefaultJerseyHttpService(new ApplicationHandler(getApplication()), newCachedThreadExecutor());
 

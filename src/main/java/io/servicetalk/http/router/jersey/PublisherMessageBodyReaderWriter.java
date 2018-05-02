@@ -79,7 +79,7 @@ final class PublisherMessageBodyReaderWriter
         // from closing wrappedStream.
         final ContainerRequestContext requestContext = requestContextProvider.get();
         return asCloseableChunkPublisher(wrappedStream,
-                getConnectionContext(requestContext).getAllocator(),
+                getConnectionContext(requestContext).getBufferAllocator(),
                 getExecutor(requestContext));
     }
 

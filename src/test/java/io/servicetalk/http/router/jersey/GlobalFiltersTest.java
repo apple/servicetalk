@@ -56,7 +56,7 @@ public class GlobalFiltersTest extends AbstractFilterInterceptorTest {
             if (responseCtx.getEntity() instanceof Publisher) {
                 final Publisher<HttpPayloadChunk> contentWithBang =
                         ((Publisher<HttpPayloadChunk>) responseCtx.getEntity())
-                                .concatWith(asChunkPublisher("!", ctx.getAllocator()));
+                                .concatWith(asChunkPublisher("!", ctx.getBufferAllocator()));
                 responseCtx.setEntity(new GenericEntity<Publisher<HttpPayloadChunk>>(contentWithBang) {
                 });
             } else {

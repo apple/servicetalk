@@ -181,7 +181,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyHttpServiceTest
     public void postText() {
         // Small payload
         HttpRequest<HttpPayloadChunk> req =
-                newH11Request(POST, getResourcePath() + "/text", ctx.getAllocator().fromUtf8("foo"));
+                newH11Request(POST, getResourcePath() + "/text", ctx.getBufferAllocator().fromUtf8("foo"));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
 
         HttpResponse<HttpPayloadChunk> res = handler.apply(req);
@@ -189,7 +189,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyHttpServiceTest
 
         // Large payload that goes above default buffer size
         final String payload = new String(new char[2 * DEFAULT_BUFFER_SIZE]).replace('\0', 'A');
-        req = newH11Request(POST, PATH + "/text", ctx.getAllocator().fromUtf8(payload));
+        req = newH11Request(POST, PATH + "/text", ctx.getBufferAllocator().fromUtf8(payload));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
 
         res = handler.apply(req);
@@ -209,7 +209,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyHttpServiceTest
     @Test
     public void postTextResponse() {
         final HttpRequest<HttpPayloadChunk> req =
-                newH11Request(POST, getResourcePath() + "/text-response", ctx.getAllocator().fromUtf8("foo"));
+                newH11Request(POST, getResourcePath() + "/text-response", ctx.getBufferAllocator().fromUtf8("foo"));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
 
         final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
@@ -219,13 +219,13 @@ public abstract class AbstractResourceTest extends AbstractJerseyHttpServiceTest
     @Test
     public void filtered() {
         HttpRequest<HttpPayloadChunk> req =
-                newH11Request(POST, getResourcePath() + "/filtered", ctx.getAllocator().fromUtf8("foo1"));
+                newH11Request(POST, getResourcePath() + "/filtered", ctx.getBufferAllocator().fromUtf8("foo1"));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
         HttpResponse<HttpPayloadChunk> res = handler.apply(req);
         assertResponse(res, OK, TEXT_PLAIN, "GOT: foo1");
         assertThat(res.getHeaders().get("X-Foo-Prop"), is("barProp"));
 
-        req = newH11Request(POST, getResourcePath() + "/filtered", ctx.getAllocator().fromUtf8("foo2"));
+        req = newH11Request(POST, getResourcePath() + "/filtered", ctx.getBufferAllocator().fromUtf8("foo2"));
         req.getHeaders().set("X-Abort-With-Status", "451");
         res = handler.apply(req);
         assertResponse(res, getResponseStatus(451, EMPTY_BUFFER), null, "");
@@ -242,7 +242,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyHttpServiceTest
     @Test
     public void putJsonResponse() {
         final HttpRequest<HttpPayloadChunk> req = newH11Request(PUT, getResourcePath() + "/json-response",
-                ctx.getAllocator().fromUtf8("{\"key\":\"val1\"}"));
+                ctx.getBufferAllocator().fromUtf8("{\"key\":\"val1\"}"));
         req.getHeaders().add(CONTENT_TYPE, APPLICATION_JSON);
 
         final HttpResponse<HttpPayloadChunk> res = handler.apply(req);

@@ -142,7 +142,7 @@ final class DefaultJerseyHttpService extends HttpService<HttpPayloadChunk, HttpP
                 setContextProperties(containerRequest, ctx, executor);
 
         final DefaultContainerResponseWriter responseWriter = new DefaultContainerResponseWriter(containerRequest,
-                req.getVersion(), ctx.getAllocator(), executor, responseChunkPublisherRef, subscriber);
+                req.getVersion(), ctx.getBufferAllocator(), executor, responseChunkPublisherRef, subscriber);
 
         containerRequest.setWriter(responseWriter);
 

@@ -99,7 +99,7 @@ public class SynchronousResourceTest extends AbstractResourceTest {
     @Test
     public void postTextStrInPubOut() {
         final HttpRequest<HttpPayloadChunk> req = newH11Request(POST, PATH + "/text-strin-pubout",
-                ctx.getAllocator().fromUtf8("bar2"));
+                ctx.getBufferAllocator().fromUtf8("bar2"));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
 
         final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
@@ -109,7 +109,7 @@ public class SynchronousResourceTest extends AbstractResourceTest {
     @Test
     public void postTextPubInStrOut() {
         final HttpRequest<HttpPayloadChunk> req = newH11Request(POST, PATH + "/text-pubin-strout",
-                ctx.getAllocator().fromUtf8("bar3"));
+                ctx.getBufferAllocator().fromUtf8("bar3"));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
 
         final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
@@ -119,7 +119,7 @@ public class SynchronousResourceTest extends AbstractResourceTest {
     @Test
     public void postTextPubInPubOut() {
         final HttpRequest<HttpPayloadChunk> req = newH11Request(POST, PATH + "/text-pubin-pubout",
-                ctx.getAllocator().fromUtf8("bar23"));
+                ctx.getBufferAllocator().fromUtf8("bar23"));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
 
         final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
@@ -139,7 +139,7 @@ public class SynchronousResourceTest extends AbstractResourceTest {
     public void postTextOioStreams() {
         // Small payload
         HttpRequest<HttpPayloadChunk> req = newH11Request(POST, PATH + "/text-oio-streams",
-                ctx.getAllocator().fromUtf8("bar4"));
+                ctx.getBufferAllocator().fromUtf8("bar4"));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
 
         HttpResponse<HttpPayloadChunk> res = handler.apply(req);
@@ -147,7 +147,7 @@ public class SynchronousResourceTest extends AbstractResourceTest {
 
         // Large payload that goes above default buffer size
         final String payload = new String(new char[2 * DEFAULT_BUFFER_SIZE]).replace('\0', 'A');
-        req = newH11Request(POST, PATH + "/text-oio-streams", ctx.getAllocator().fromUtf8(payload));
+        req = newH11Request(POST, PATH + "/text-oio-streams", ctx.getBufferAllocator().fromUtf8(payload));
         req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
 
         res = handler.apply(req);
@@ -157,7 +157,7 @@ public class SynchronousResourceTest extends AbstractResourceTest {
     @Test
     public void postJsonMapInPubOut() {
         final HttpRequest<HttpPayloadChunk> req = newH11Request(POST, PATH + "/json-mapin-pubout",
-                ctx.getAllocator().fromUtf8("{\"key\":\"val2\"}"));
+                ctx.getBufferAllocator().fromUtf8("{\"key\":\"val2\"}"));
         req.getHeaders().add(CONTENT_TYPE, APPLICATION_JSON);
 
         final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
@@ -167,7 +167,7 @@ public class SynchronousResourceTest extends AbstractResourceTest {
     @Test
     public void postJsonPubInMapOut() {
         final HttpRequest<HttpPayloadChunk> req = newH11Request(POST, PATH + "/json-pubin-mapout",
-                ctx.getAllocator().fromUtf8("{\"key\":\"val3\"}"));
+                ctx.getBufferAllocator().fromUtf8("{\"key\":\"val3\"}"));
         req.getHeaders().add(CONTENT_TYPE, APPLICATION_JSON);
 
         final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
