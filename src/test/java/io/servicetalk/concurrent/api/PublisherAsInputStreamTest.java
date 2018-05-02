@@ -21,6 +21,7 @@ import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.io.InputStream;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.empty;
@@ -38,6 +39,8 @@ public final class PublisherAsInputStreamTest {
 
     @Rule
     public final ExpectedException expected = none();
+    @Rule
+    public final PublisherRule<String> publisherRule = new PublisherRule<>();
 
     @Test
     public void streamEmitsAllDataInSingleRead() throws IOException {
@@ -182,6 +185,39 @@ public final class PublisherAsInputStreamTest {
         byte[] data = new byte[32];
         int read = stream.read(data, 0, 32);
         assertThat("Unexpected bytes read.", read, equalTo(-1));
+    }
+
+    @Test
+    public void testEmptyIteratorValue() throws IOException {
+        testNullAndEmptyIteratorValue(new byte[0]);
+    }
+
+    @Test
+    public void testNullIteratorValue() throws IOException {
+        testNullAndEmptyIteratorValue(null);
+    }
+
+    private void testNullAndEmptyIteratorValue(@Nullable byte[] emptyConversionValue) throws IOException {
+        String realStringData = "hello!";
+        final int midWayPoint = 3;
+        byte[] data = new byte[realStringData.length()];
+        InputStream is = publisherRule.getPublisher().toInputStream(str ->
+                str == null ? emptyConversionValue : str.getBytes(US_ASCII));
+
+        // Split the real data up into 2 chunks and send null/empty in between
+        publisherRule.sendItems((String[]) null);
+        publisherRule.sendItems("");
+        publisherRule.sendItems(realStringData.substring(0, midWayPoint));
+        assertThat(is.read(data, 0, midWayPoint), is(midWayPoint));
+
+        // send the second chunk
+        publisherRule.sendItems((String[]) null);
+        publisherRule.sendItems("");
+        publisherRule.sendItems(realStringData.substring(midWayPoint));
+        final int len = realStringData.length() - midWayPoint;
+        assertThat(is.read(data, midWayPoint, len), is(len));
+
+        assertThat(data, is(realStringData.getBytes(US_ASCII)));
     }
 
     private Character[] bytesToCharArray(final byte[] data, final int length) {

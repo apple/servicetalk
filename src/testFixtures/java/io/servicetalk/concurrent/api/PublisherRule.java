@@ -24,6 +24,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import java.util.concurrent.atomic.AtomicLong;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Executors.immediate;
@@ -87,17 +88,25 @@ public class PublisherRule<T> implements TestRule {
         capturedSubscriber.onSubscribe(subscription);
     }
 
-    public PublisherRule<T> sendItems(T... items) {
+    public PublisherRule<T> sendItems(@Nullable T... items) {
         verifySubscriber(false);
         return sendItemsNoVerify(items);
     }
 
-    public PublisherRule<T> sendItemsNoVerify(T... items) {
-        assertThat("Subscriber has not requested enough.", outstandingRequest.get(), is(greaterThanOrEqualTo((long) items.length)));
-        for (T item : items) {
+    public PublisherRule<T> sendItemsNoVerify(@Nullable T... items) {
+        if (items != null) {
+            assertThat("Subscriber has not requested enough.", outstandingRequest.get(),
+                    is(greaterThanOrEqualTo((long) items.length)));
+            for (T item : items) {
+                outstandingRequest.decrementAndGet();
+                capturedSubscriber.onNext(item);
+            }
+        } else {
+            assertThat("Subscriber has not requested enough.", outstandingRequest.get(), is(greaterThanOrEqualTo(1L)));
             outstandingRequest.decrementAndGet();
-            capturedSubscriber.onNext(item);
+            capturedSubscriber.onNext(null);
         }
+
         return this;
     }
 
