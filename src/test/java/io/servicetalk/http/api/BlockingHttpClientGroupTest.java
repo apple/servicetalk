@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -67,13 +68,16 @@ public class BlockingHttpClientGroupTest {
     private BlockingIterator<String> mockIterator;
     @Mock
     private GroupKey<String> mockKey;
+    @Mock
+    private ExecutionContext mockExecutionContext;
 
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
         when(mockCtx.getExecutor()).thenReturn(immediate());
         when(mockIterable.iterator()).thenReturn(mockIterator);
-        when(mockKey.getExecutor()).thenReturn(immediate());
+        when(mockExecutionContext.getExecutor()).thenReturn(immediate());
+        when(mockKey.getExecutionContext()).thenReturn(mockExecutionContext);
     }
 
     @Test

@@ -19,9 +19,9 @@ import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +63,7 @@ final class DefaultHttpClientGroup<UnresolvedAddress, I, O> extends HttpClientGr
         }
 
         @Override
-        public Executor getExecutor() {
+        public ExecutionContext getExecutionContext() {
             throw new UnsupportedOperationException(PLACEHOLDER_EXCEPTION_MSG);
         }
 

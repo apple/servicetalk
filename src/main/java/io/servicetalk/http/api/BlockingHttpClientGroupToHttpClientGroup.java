@@ -48,7 +48,7 @@ final class BlockingHttpClientGroupToHttpClientGroup<UnresolvedAddress, I, O> ex
                     // Do the conversion inside the try/catch in case there is an exception.
                     response = fromBlockingResponse(blockingClientGroup.request(key,
                             new DefaultBlockingHttpRequest<>(request)),
-                            key.getExecutor());
+                            key.getExecutionContext().getExecutor());
                 } catch (Throwable cause) {
                     cancellable.setDone();
                     subscriber.onError(cause);

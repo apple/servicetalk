@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.transport.api.ExecutionContext;
 
 /**
  * The equivalent of {@link HttpRequester} but with synchronous/blocking APIs instead of asynchronous APIs.
@@ -32,10 +32,10 @@ public abstract class BlockingHttpRequester<I, O> implements AutoCloseable {
     public abstract BlockingHttpResponse<O> request(BlockingHttpRequest<I> request) throws Exception;
 
     /**
-     * Get the {@link Executor} associated with this object.
-     * @return the {@link Executor} associated with this object.
+     * Get the {@link ExecutionContext} associated with this object.
+     * @return the {@link ExecutionContext} associated with this object.
      */
-    public abstract Executor getExecutor();
+    public abstract ExecutionContext getExecutionContext();
 
     /**
      * Convert this {@link BlockingHttpRequester} to the {@link HttpRequester} asynchronous API.

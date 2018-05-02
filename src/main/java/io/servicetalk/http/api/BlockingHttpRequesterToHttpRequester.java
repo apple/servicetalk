@@ -16,8 +16,8 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
@@ -36,8 +36,8 @@ final class BlockingHttpRequesterToHttpRequester<I, O> extends HttpRequester<I, 
     }
 
     @Override
-    public Executor getExecutor() {
-        return blockingHttpRequester.getExecutor();
+    public ExecutionContext getExecutionContext() {
+        return blockingHttpRequester.getExecutionContext();
     }
 
     @Override

@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
 import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -45,8 +46,8 @@ final class HttpClientToBlockingHttpClient<I, O> extends BlockingHttpClient<I, O
     }
 
     @Override
-    public Executor getExecutor() {
-        return client.getExecutor();
+    public ExecutionContext getExecutionContext() {
+        return client.getExecutionContext();
     }
 
     @Override
@@ -55,7 +56,7 @@ final class HttpClientToBlockingHttpClient<I, O> extends BlockingHttpClient<I, O
         // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
         return new ReservedHttpConnectionToBlocking<>(awaitIndefinitely(client.reserveConnection(
-                fromBlockingRequest(request, getExecutor()))));
+                fromBlockingRequest(request, getExecutionContext().getExecutor()))));
     }
 
     @Override
@@ -64,7 +65,8 @@ final class HttpClientToBlockingHttpClient<I, O> extends BlockingHttpClient<I, O
         // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
         return new UpgradableHttpResponseToBlocking<>(awaitIndefinitely(client.upgradeConnection(
-                fromBlockingRequest(request, getExecutor()))), getExecutor());
+                fromBlockingRequest(request, getExecutionContext().getExecutor()))),
+                getExecutionContext().getExecutor());
     }
 
     @Override

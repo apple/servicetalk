@@ -17,9 +17,9 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -32,7 +32,7 @@ public class BlockingHttpClientTest extends AbstractBlockingHttpRequesterTest {
     @Override
     protected <I, O, T extends HttpRequester<I, O> & TestHttpRequester> T newAsyncRequester(
             final ConnectionContext ctx, final Function<HttpRequest<I>, Single<HttpResponse<O>>> doRequest) {
-        return (T) new TestHttpClient<I, O>(ctx.getExecutor()) {
+        return (T) new TestHttpClient<I, O>(ctx) {
             @Override
             public Single<HttpResponse<O>> request(final HttpRequest<I> request) {
                 return doRequest.apply(request);
@@ -54,7 +54,7 @@ public class BlockingHttpClientTest extends AbstractBlockingHttpRequesterTest {
     @Override
     protected <I, O, T extends BlockingHttpRequester<I, O> & TestHttpRequester> T newBlockingRequester(
             final ConnectionContext ctx, final Function<BlockingHttpRequest<I>, BlockingHttpResponse<O>> doRequest) {
-        return (T) new TestBlockingHttpClient<I, O>(ctx.getExecutor()) {
+        return (T) new TestBlockingHttpClient<I, O>(ctx) {
             @Override
             public BlockingHttpResponse<O> request(final BlockingHttpRequest<I> request) {
                 return doRequest.apply(request);
@@ -75,15 +75,15 @@ public class BlockingHttpClientTest extends AbstractBlockingHttpRequesterTest {
     private abstract static class TestHttpClient<I, O> extends HttpClient<I, O> implements TestHttpRequester {
         private final AtomicBoolean closed = new AtomicBoolean();
         private final CompletableProcessor onClose = new CompletableProcessor();
-        private final Executor executor;
+        private final ExecutionContext executionContext;
 
-        TestHttpClient(Executor executor) {
-            this.executor = requireNonNull(executor);
+        TestHttpClient(ExecutionContext executionContext) {
+            this.executionContext = requireNonNull(executionContext);
         }
 
         @Override
-        public Executor getExecutor() {
-            return executor;
+        public ExecutionContext getExecutionContext() {
+            return executionContext;
         }
 
         @Override
@@ -113,10 +113,10 @@ public class BlockingHttpClientTest extends AbstractBlockingHttpRequesterTest {
     private abstract static class TestBlockingHttpClient<I, O> extends BlockingHttpClient<I, O>
                                                                implements TestHttpRequester {
         private final AtomicBoolean closed = new AtomicBoolean();
-        private final Executor executor;
+        private final ExecutionContext executionContext;
 
-        TestBlockingHttpClient(Executor executor) {
-            this.executor = requireNonNull(executor);
+        TestBlockingHttpClient(ExecutionContext executionContext) {
+            this.executionContext = requireNonNull(executionContext);
         }
 
         @Override
@@ -130,8 +130,8 @@ public class BlockingHttpClientTest extends AbstractBlockingHttpRequesterTest {
         }
 
         @Override
-        public Executor getExecutor() {
-            return executor;
+        public ExecutionContext getExecutionContext() {
+            return executionContext;
         }
     }
 }

@@ -25,6 +25,7 @@ import io.servicetalk.http.api.BlockingHttpClient.BlockingReservedHttpConnection
 import io.servicetalk.http.api.BlockingHttpClient.BlockingUpgradableHttpResponse;
 import io.servicetalk.http.api.HttpClientToBlockingHttpClient.ReservedHttpConnectionToBlocking;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -84,7 +85,7 @@ final class BlockingHttpClientToHttpClient<I, O> extends HttpClient<I, O> {
                 try {
                     // Do the conversion here in case there is a null value returned by the upgradeConnection.
                     response = new BlockingToUpgradableHttpResponse<>(blockingClient.upgradeConnection(
-                            new DefaultBlockingHttpRequest<>(request)), getExecutor());
+                            new DefaultBlockingHttpRequest<>(request)), getExecutionContext().getExecutor());
                 } catch (Throwable cause) {
                     cancellable.setDone();
                     subscriber.onError(cause);
@@ -100,8 +101,8 @@ final class BlockingHttpClientToHttpClient<I, O> extends HttpClient<I, O> {
     }
 
     @Override
-    public Executor getExecutor() {
-        return blockingClient.getExecutor();
+    public ExecutionContext getExecutionContext() {
+        return blockingClient.getExecutionContext();
     }
 
     @Override
@@ -141,7 +142,7 @@ final class BlockingHttpClientToHttpClient<I, O> extends HttpClient<I, O> {
 
         @Override
         public <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
-            return from(getExecutor(), blockingReservedConnection.getSettingIterable(settingKey));
+            return from(getExecutionContext().getExecutor(), blockingReservedConnection.getSettingIterable(settingKey));
         }
 
         @Override

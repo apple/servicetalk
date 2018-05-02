@@ -69,7 +69,7 @@ final class BlockingUtils {
         // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
         return new DefaultBlockingHttpResponse<>(awaitIndefinitely(requester.request(fromBlockingRequest(request,
-                requester.getExecutor()))));
+                requester.getExecutionContext().getExecutor()))));
     }
 
     static <I, O> Single<HttpResponse<O>> request(final BlockingHttpRequester<I, O> blockingHttpRequester,
@@ -83,7 +83,8 @@ final class BlockingUtils {
                 try {
                     // Do the conversion inside the try/catch in case there is an exception.
                     response = fromBlockingResponse(blockingHttpRequester.request(
-                            new DefaultBlockingHttpRequest<>(request)), blockingHttpRequester.getExecutor());
+                            new DefaultBlockingHttpRequest<>(request)),
+                            blockingHttpRequester.getExecutionContext().getExecutor());
                 } catch (Throwable cause) {
                     cancellable.setDone();
                     subscriber.onError(cause);

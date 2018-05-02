@@ -15,9 +15,9 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.transport.api.ExecutionContext;
 
 /**
  * Provides a means to make a HTTP request.
@@ -33,10 +33,10 @@ public abstract class HttpRequester<I, O> implements ListenableAsyncCloseable {
     public abstract Single<HttpResponse<O>> request(HttpRequest<I> request);
 
     /**
-     * Get the {@link Executor} associated with this object.
-     * @return the {@link Executor} associated with this object.
+     * Get the {@link ExecutionContext} associated with this object.
+     * @return the {@link ExecutionContext} associated with this object.
      */
-    public abstract Executor getExecutor();
+    public abstract ExecutionContext getExecutionContext();
 
     /**
      * Convert this {@link HttpRequester} to the {@link BlockingHttpRequester} API.

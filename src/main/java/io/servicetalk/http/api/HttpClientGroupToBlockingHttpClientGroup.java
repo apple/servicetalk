@@ -38,7 +38,8 @@ final class HttpClientGroupToBlockingHttpClientGroup<UnresolvedAddress, I, O> ex
         // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
         return new DefaultBlockingHttpResponse<>(
-                awaitIndefinitely(clientGroup.request(key, fromBlockingRequest(request, key.getExecutor()))));
+                awaitIndefinitely(clientGroup.request(key, fromBlockingRequest(request,
+                        key.getExecutionContext().getExecutor()))));
     }
 
     @Override
@@ -48,7 +49,7 @@ final class HttpClientGroupToBlockingHttpClientGroup<UnresolvedAddress, I, O> ex
         // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
         return new ReservedHttpConnectionToBlocking<>(awaitIndefinitely(clientGroup.reserveConnection(key,
-                fromBlockingRequest(request, key.getExecutor()))));
+                fromBlockingRequest(request, key.getExecutionContext().getExecutor()))));
     }
 
     @Override

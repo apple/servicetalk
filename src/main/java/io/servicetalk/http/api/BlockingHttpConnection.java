@@ -16,9 +16,9 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.BlockingIterable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.http.api.HttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import org.reactivestreams.Subscriber;
 
@@ -45,8 +45,8 @@ public abstract class BlockingHttpConnection<I, O> extends BlockingHttpRequester
     public abstract <T> BlockingIterable<T> getSettingIterable(SettingKey<T> settingKey);
 
     @Override
-    public final Executor getExecutor() {
-        return getConnectionContext().getExecutor();
+    public final ExecutionContext getExecutionContext() {
+        return getConnectionContext();
     }
 
     /**
