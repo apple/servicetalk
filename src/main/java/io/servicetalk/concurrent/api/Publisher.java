@@ -451,7 +451,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * <p>
      * Depending on {@link Subscription#request(long)} demand it is possible that data maybe queued before being delivered
      * to each {@link Subscriber}! For example if there are 2 {@link Subscriber}s and the first calls
-     * {@link Subscription#request(long) request(10)}, and the second only calls {@link Subscription#request(long) request(10)},
+     * {@link Subscription#request(long) request(10)}, and the second only calls {@link Subscription#request(long) request(1)},
      * then 9 elements will be queued to deliver to second when more {@link Subscription#request(long)} demand is made.
      * @param expectedSubscribers The number of expected {@link #subscribe(Subscriber)} calls required on the returned
      *          {@link Publisher} before calling {@link #subscribe(Subscriber)} on this {@link Publisher}.
