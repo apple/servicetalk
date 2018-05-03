@@ -23,7 +23,6 @@ import io.servicetalk.transport.netty.NettyIoExecutors;
 
 import java.net.InetSocketAddress;
 
-import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 
 /**
@@ -46,7 +45,11 @@ public final class HelloWorldServer {
         IoExecutor ioExecutor = NettyIoExecutors.createExecutor();
         try {
             HttpServerStarter starter = new NettyHttpServerStarter(ioExecutor);
-            ServerContext serverContext = awaitIndefinitely(starter.start(new InetSocketAddress(8080), newCachedThreadExecutor(), new HelloWorldService()));
+            // Note that ServiceTalk is safe to block by default. An Application Executor is created by default and is
+            // used to execute user code. The Executor can be manually created and shared if desirable too.
+            ServerContext serverContext = awaitIndefinitely(starter.start(
+                    new InetSocketAddress(8080),
+                    new HelloWorldService()));
             assert serverContext != null;
             awaitIndefinitely(serverContext.onClose());
         } finally {

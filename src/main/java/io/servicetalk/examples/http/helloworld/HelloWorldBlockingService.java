@@ -32,7 +32,10 @@ import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 final class HelloWorldBlockingService extends BlockingHttpService<HttpPayloadChunk, HttpPayloadChunk> {
 
     @Override
-    public BlockingHttpResponse<HttpPayloadChunk> handle(final ConnectionContext ctx, final BlockingHttpRequest<HttpPayloadChunk> request) {
-        return newResponse(OK, newPayloadChunk(ctx.getBufferAllocator().fromAscii("Hello World!")), ctx.getExecutor());
+    public BlockingHttpResponse<HttpPayloadChunk> handle(final ConnectionContext ctx,
+                                                         final BlockingHttpRequest<HttpPayloadChunk> request) {
+        return newResponse(OK,
+                           newPayloadChunk(ctx.getBufferAllocator().fromAscii("Hello World!")),
+                           ctx.getExecutor());
     }
 }

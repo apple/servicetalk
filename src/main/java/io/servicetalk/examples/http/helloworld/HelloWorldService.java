@@ -32,9 +32,11 @@ import static io.servicetalk.http.api.HttpResponses.newResponse;
  * This is an asynchronous service, for blocking style see
  */
 final class HelloWorldService extends HttpService<HttpPayloadChunk, HttpPayloadChunk> {
-
     @Override
-    public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx, final HttpRequest<HttpPayloadChunk> request) {
-        return success(newResponse(OK, newPayloadChunk(ctx.getBufferAllocator().fromAscii("Hello World!"))));
+    public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
+                                                         final HttpRequest<HttpPayloadChunk> request) {
+        return success(newResponse(OK,
+                                   newPayloadChunk(ctx.getBufferAllocator().fromAscii("Hello World!")),
+                                   ctx.getExecutor()));
     }
 }
