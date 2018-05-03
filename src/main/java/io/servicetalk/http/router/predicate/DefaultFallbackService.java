@@ -37,7 +37,7 @@ final class DefaultFallbackService<I, O> extends HttpService<I, O> {
 
     @Override
     public Single<HttpResponse<O>> handle(final ConnectionContext ctx, final HttpRequest<I> request) {
-        final HttpResponse<O> response = HttpResponses.newResponse(request.getVersion(), NOT_FOUND);
+        final HttpResponse<O> response = HttpResponses.newResponse(request.getVersion(), NOT_FOUND, ctx.getExecutor());
         response.getHeaders().set(CONTENT_LENGTH, "0")
                 .set(CONTENT_TYPE, TEXT_PLAIN);
         // TODO(derek): Set keepalive once we have an isKeepAlive helper method.

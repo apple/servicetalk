@@ -29,6 +29,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
@@ -48,6 +49,7 @@ public class DefaultFallbackServiceTest {
     @Before
     public void setUp() {
         when(request.getVersion()).thenReturn(HTTP_1_1);
+        when(ctx.getExecutor()).thenReturn(immediate());
     }
 
     @Test
