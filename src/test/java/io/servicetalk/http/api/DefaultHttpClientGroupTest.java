@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.client.api.DefaultGroupKey;
 import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -251,7 +252,8 @@ public class DefaultHttpClientGroupTest {
 
     @Test
     public void asRequester() {
-        final HttpRequester<String, String> requester = clientGroup.asRequester(r -> "address", executionContext);
+        final HttpRequester<String, String> requester = clientGroup.asRequester(r ->
+                new DefaultGroupKey<>("address", executionContext), executionContext);
         assertNotNull(requester);
         assertEquals(executionContext, requester.getExecutionContext());
     }
@@ -259,7 +261,8 @@ public class DefaultHttpClientGroupTest {
     @Test
     public void asRequesterOnClosedClientGroup() {
         clientGroup.closeAsync().subscribe();
-        assertNotNull(clientGroup.asRequester(r -> "address", executionContext));
+        assertNotNull(clientGroup.asRequester(r ->
+                new DefaultGroupKey<>("address", executionContext), executionContext));
     }
 
     @Test(expected = NullPointerException.class)
@@ -269,12 +272,14 @@ public class DefaultHttpClientGroupTest {
 
     @Test(expected = NullPointerException.class)
     public void asRequesterWithNullExecutionContext() {
-        clientGroup.asRequester(r -> "address", null);
+        clientGroup.asRequester(r ->
+                new DefaultGroupKey<>("address", executionContext), null);
     }
 
     @Test
     public void successfulRequestViaRequester() {
-        final HttpRequester<String, String> requester = clientGroup.asRequester(r -> "address", executionContext);
+        final HttpRequester<String, String> requester = clientGroup.asRequester(r ->
+                new DefaultGroupKey<>("address", executionContext), executionContext);
         httpResponseListener.listen(requester.request(request))
                 .verifySuccess(expectedResponse);
     }

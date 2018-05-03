@@ -15,35 +15,26 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.client.api.DefaultGroupKey;
 import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static java.util.Objects.requireNonNull;
 
-/**
- * Class for {@link HttpClientGroup#asRequester(Function, ExecutionContext)} transformation.
- */
 final class HttpClientGroupToHttpRequester<UnresolvedAddress, I, O> extends HttpRequester<I, O> {
-
-    private final ConcurrentMap<UnresolvedAddress, GroupKey<UnresolvedAddress>> keysMap = new ConcurrentHashMap<>();
-
     private final HttpClientGroup<UnresolvedAddress, I, O> clientGroup;
-    private final Function<HttpRequest<I>, UnresolvedAddress> addressExtractor;
+    private final Function<HttpRequest<I>, GroupKey<UnresolvedAddress>> requestToGroupKeyFunc;
     private final ExecutionContext executionContext;
 
     HttpClientGroupToHttpRequester(final HttpClientGroup<UnresolvedAddress, I, O> clientGroup,
-                                           final Function<HttpRequest<I>, UnresolvedAddress> addressExtractor,
-                                           final ExecutionContext executionContext) {
+                                   final Function<HttpRequest<I>, GroupKey<UnresolvedAddress>> requestToGroupKeyFunc,
+                                   final ExecutionContext executionContext) {
         this.clientGroup = requireNonNull(clientGroup);
-        this.addressExtractor = requireNonNull(addressExtractor);
+        this.requestToGroupKeyFunc = requireNonNull(requestToGroupKeyFunc);
         this.executionContext = requireNonNull(executionContext);
     }
 
@@ -54,11 +45,7 @@ final class HttpClientGroupToHttpRequester<UnresolvedAddress, I, O> extends Http
             protected void handleSubscribe(final Subscriber<? super HttpResponse<O>> subscriber) {
                 final Single<HttpResponse<O>> response;
                 try {
-                    final UnresolvedAddress address = addressExtractor.apply(request);
-                    GroupKey<UnresolvedAddress> key = keysMap.get(address);
-                    key = key != null ? key : keysMap.computeIfAbsent(address,
-                            a -> new DefaultGroupKey<>(a, executionContext));
-                    response = clientGroup.request(key, request);
+                    response = clientGroup.request(requestToGroupKeyFunc.apply(request), request);
                 } catch (final Throwable t) {
                     subscriber.onSubscribe(IGNORE_CANCEL);
                     subscriber.onError(t);
@@ -76,7 +63,7 @@ final class HttpClientGroupToHttpRequester<UnresolvedAddress, I, O> extends Http
 
     @Override
     public Completable onClose() {
-        return clientGroup.onClose().doAfterComplete(keysMap::clear);
+        return clientGroup.onClose();
     }
 
     @Override

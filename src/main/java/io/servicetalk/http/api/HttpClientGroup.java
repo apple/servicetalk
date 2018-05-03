@@ -62,14 +62,14 @@ public abstract class HttpClientGroup<UnresolvedAddress, I, O> implements Listen
      * <p>
      * <b>Note:</b> close of any created {@link HttpRequester} will close existing {@link HttpClientGroup} instance.
      *
-     * @param addressExtractor The {@link Function} to extract unresolved address information from {@link HttpRequest}s.
-     * @param executionContext The {@link ExecutionContext} that will be used for each
-     * {@link HttpRequester#request(HttpRequest)}
+     * @param requestToGroupKeyFunc A {@link Function} to {@link GroupKey} from the {@link HttpRequest}s.
+     * @param executionContext the {@link ExecutionContext} to use for {@link HttpRequester#getExecutionContext()}.
      * @return A {@link HttpRequester}, which is backed by this {@link HttpClientGroup}.
      */
-    public final HttpRequester<I, O> asRequester(final Function<HttpRequest<I>, UnresolvedAddress> addressExtractor,
+    public final HttpRequester<I, O> asRequester(final Function<HttpRequest<I>,
+                                                                GroupKey<UnresolvedAddress>> requestToGroupKeyFunc,
                                                  final ExecutionContext executionContext) {
-        return new HttpClientGroupToHttpRequester<>(this, addressExtractor, executionContext);
+        return new HttpClientGroupToHttpRequester<>(this, requestToGroupKeyFunc, executionContext);
     }
 
     /**
