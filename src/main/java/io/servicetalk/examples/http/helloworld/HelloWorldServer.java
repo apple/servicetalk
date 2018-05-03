@@ -44,10 +44,13 @@ public final class HelloWorldServer {
     public static void main(String[] args) throws Exception {
         // Shared IoExecutor for the application.
         IoExecutor ioExecutor = NettyIoExecutors.createExecutor();
-
-        HttpServerStarter starter = new NettyHttpServerStarter(ioExecutor);
-        ServerContext serverContext = awaitIndefinitely(starter.start(new InetSocketAddress(8080), newCachedThreadExecutor(), new HelloWorldService()));
-        assert serverContext != null;
-        awaitIndefinitely(serverContext.onClose());
+        try {
+            HttpServerStarter starter = new NettyHttpServerStarter(ioExecutor);
+            ServerContext serverContext = awaitIndefinitely(starter.start(new InetSocketAddress(8080), newCachedThreadExecutor(), new HelloWorldService()));
+            assert serverContext != null;
+            awaitIndefinitely(serverContext.onClose());
+        } finally {
+            awaitIndefinitely(ioExecutor.closeAsync());
+        }
     }
 }
