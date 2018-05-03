@@ -90,7 +90,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress>
                 final TcpConnector<Object, Object> connector = new TcpConnector<>(roConfig.getTcpClientConfig(),
                         initializer, DefaultHttpConnectionBuilder::getLastChunkPredicate);
 
-                connector.connect(nettyIoExecutor, executor, resolvedAddress)
+                connector.connect(nettyIoExecutor, executor, resolvedAddress, false)
                         .map(c -> connectionStrategy(c, roConfig, executor))
                         .subscribe(subscriber);
             }
