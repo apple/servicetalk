@@ -74,7 +74,8 @@ public class BlockingHttpServiceTest {
 
     @Test
     public void asyncToSyncNoPayload() throws Exception {
-        HttpService<String, String> asyncService = fromAsync((ctx, request) -> success(newResponse(HTTP_1_1, OK)));
+        HttpService<String, String> asyncService = fromAsync((ctx, request) ->
+                success(newResponse(HTTP_1_1, OK, immediate())));
         BlockingHttpService<String, String> syncService = asyncService.asBlockingService();
         BlockingHttpResponse<String> syncResponse = syncService.handle(mockCtx,
                 BlockingHttpRequests.newRequest(HTTP_1_1, GET, "/", immediate()));
@@ -139,7 +140,7 @@ public class BlockingHttpServiceTest {
                 BlockingHttpResponses.newResponse(HTTP_1_1, OK, immediate()));
         HttpService<String, String> asyncService = syncService.asAsynchronousService();
         HttpResponse<String> asyncResponse = awaitIndefinitely(asyncService.handle(mockCtx,
-                HttpRequests.newRequest(HTTP_1_1, GET, "/")));
+                HttpRequests.newRequest(HTTP_1_1, GET, "/", immediate())));
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.getVersion());
         assertEquals(OK, asyncResponse.getStatus());
@@ -151,7 +152,7 @@ public class BlockingHttpServiceTest {
                 BlockingHttpResponses.newResponse(HTTP_1_1, OK, singleton("hello"), immediate()));
         HttpService<String, String> asyncService = syncService.asAsynchronousService();
         HttpResponse<String> asyncResponse = awaitIndefinitely(asyncService.handle(mockCtx,
-                HttpRequests.newRequest(HTTP_1_1, GET, "/")));
+                HttpRequests.newRequest(HTTP_1_1, GET, "/", immediate())));
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.getVersion());
         assertEquals(OK, asyncResponse.getStatus());
@@ -185,7 +186,7 @@ public class BlockingHttpServiceTest {
             BlockingHttpResponses.newResponse(HTTP_1_1, OK, mockIterable, immediate()));
         HttpService<String, String> asyncService = syncService.asAsynchronousService();
         HttpResponse<String> asyncResponse = awaitIndefinitely(asyncService.handle(mockCtx,
-                HttpRequests.newRequest(HTTP_1_1, GET, "/")));
+                HttpRequests.newRequest(HTTP_1_1, GET, "/", immediate())));
         assertNotNull(asyncResponse);
         CountDownLatch latch = new CountDownLatch(1);
         asyncResponse.getPayloadBody().subscribe(new Subscriber<String>() {

@@ -83,7 +83,7 @@ public class BlockingHttpClientGroupTest {
     @Test
     public void asyncToSyncNoPayload() throws Exception {
         HttpClientGroup<String, String, String> asyncGroup = newAsyncGroup(
-                (key, req) -> success(newResponse(HTTP_1_1, OK)));
+                (key, req) -> success(newResponse(HTTP_1_1, OK, immediate())));
         BlockingHttpClientGroup<String, String, String> syncGroup = asyncGroup.asBlockingClientGroup();
         BlockingHttpResponse<String> syncResponse = syncGroup.request(mockKey,
                 BlockingHttpRequests.newRequest(HTTP_1_1, GET, "/", immediate()));
@@ -137,7 +137,7 @@ public class BlockingHttpClientGroupTest {
                 (key, req) -> BlockingHttpResponses.newResponse(HTTP_1_1, OK, immediate()));
         HttpClientGroup<String, String, String> asyncRequester = syncGroup.asAsynchronousClientGroup();
         HttpResponse<String> asyncResponse = awaitIndefinitely(asyncRequester.request(mockKey,
-                HttpRequests.newRequest(HTTP_1_1, GET, "/")));
+                HttpRequests.newRequest(HTTP_1_1, GET, "/", immediate())));
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.getVersion());
         assertEquals(OK, asyncResponse.getStatus());
@@ -149,7 +149,7 @@ public class BlockingHttpClientGroupTest {
                 (key, req) -> BlockingHttpResponses.newResponse(HTTP_1_1, OK, singleton("hello"), immediate()));
         HttpClientGroup<String, String, String> asyncRequester = syncGroup.asAsynchronousClientGroup();
         HttpResponse<String> asyncResponse = awaitIndefinitely(asyncRequester.request(mockKey,
-                HttpRequests.newRequest(HTTP_1_1, GET, "/")));
+                HttpRequests.newRequest(HTTP_1_1, GET, "/", immediate())));
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.getVersion());
         assertEquals(OK, asyncResponse.getStatus());
@@ -173,7 +173,7 @@ public class BlockingHttpClientGroupTest {
                 BlockingHttpResponses.newResponse(HTTP_1_1, OK, mockIterable, immediate()));
         HttpClientGroup<String, String, String> asyncRequester = syncGroup.asAsynchronousClientGroup();
         HttpResponse<String> asyncResponse = awaitIndefinitely(asyncRequester.request(mockKey,
-                HttpRequests.newRequest(HTTP_1_1, GET, "/")));
+                HttpRequests.newRequest(HTTP_1_1, GET, "/", immediate())));
         assertNotNull(asyncResponse);
         CountDownLatch latch = new CountDownLatch(1);
         asyncResponse.getPayloadBody().subscribe(new Subscriber<String>() {

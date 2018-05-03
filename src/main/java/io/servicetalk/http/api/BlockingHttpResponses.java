@@ -35,7 +35,7 @@ public final class BlockingHttpResponses {
 
     /**
      * Create a new instance using HTTP 1.1 with empty payload body and headers.
-     *BlockingHttpServiceToHttpService.java
+     *
      * @param status the {@link HttpResponseStatus} of the response.
      * @param executor The {@link Executor} used to consume the empty payload. Note this is typically
      * consumed by ServiceTalk so if there are any blocking transformations (e.g. filters) and you are unsure if

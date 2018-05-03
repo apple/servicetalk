@@ -16,9 +16,9 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.just;
@@ -40,11 +40,16 @@ public final class HttpRequests {
      * @param method the {@link HttpRequestMethod} of the request.
      * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
      * request.
+     * @param executor The {@link Executor} used to consume the empty payload. Note this is typically
+     * consumed by ServiceTalk so if there are any blocking transformations (e.g. filters) and you are unsure if
+     * ServiceTalk is consuming {@code payloadBody} it is wise to avoid {@link Executors#immediate()}.
      * @param <I> Type of the payload of the request.
      * @return a new {@link HttpRequest}.
      */
-    public static <I> HttpRequest<I> newRequest(final HttpRequestMethod method, final String requestTarget) {
-        return newRequest(HTTP_1_1, method, requestTarget);
+    public static <I> HttpRequest<I> newRequest(final HttpRequestMethod method,
+                                                final String requestTarget,
+                                                final Executor executor) {
+        return newRequest(HTTP_1_1, method, requestTarget, executor);
     }
 
     /**
@@ -54,12 +59,17 @@ public final class HttpRequests {
      * @param method the {@link HttpRequestMethod} of the request.
      * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
      * request.
+     * @param executor The {@link Executor} used to consume the empty payload. Note this is typically
+     * consumed by ServiceTalk so if there are any blocking transformations (e.g. filters) and you are unsure if
+     * ServiceTalk is consuming {@code payloadBody} it is wise to avoid {@link Executors#immediate()}.
      * @param <I> Type of the payload of the request.
      * @return a new {@link HttpRequest}.
      */
-    public static <I> HttpRequest<I> newRequest(final HttpProtocolVersion version, final HttpRequestMethod method,
-                                                final String requestTarget) {
-        return newRequest(version, method, requestTarget, empty(immediate()));
+    public static <I> HttpRequest<I> newRequest(final HttpProtocolVersion version,
+                                                final HttpRequestMethod method,
+                                                final String requestTarget,
+                                                final Executor executor) {
+        return newRequest(version, method, requestTarget, empty(executor));
     }
 
     /**
@@ -69,12 +79,17 @@ public final class HttpRequests {
      * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
      * request.
      * @param payloadBody the payload body of the request.
+     * @param executor The {@link Executor} used to consume data from {@code payloadBody}. Note this is typically
+     * consumed by ServiceTalk so if there are any blocking transformations (e.g. filters) and you are unsure if
+     * ServiceTalk is consuming {@code payloadBody} it is wise to avoid {@link Executors#immediate()}.
      * @param <I> Type of the payload of the request.
      * @return a new {@link HttpRequest}.
      */
-    public static <I> HttpRequest<I> newRequest(final HttpRequestMethod method, final String requestTarget,
-                                                final I payloadBody) {
-        return newRequest(HTTP_1_1, method, requestTarget, payloadBody);
+    public static <I> HttpRequest<I> newRequest(final HttpRequestMethod method,
+                                                final String requestTarget,
+                                                final I payloadBody,
+                                                final Executor executor) {
+        return newRequest(HTTP_1_1, method, requestTarget, payloadBody, executor);
     }
 
     /**
@@ -85,12 +100,18 @@ public final class HttpRequests {
      * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
      * request.
      * @param payloadBody the payload body of the request.
+     * @param executor The {@link Executor} used to consume data from {@code payloadBody}. Note this is typically
+     * consumed by ServiceTalk so if there are any blocking transformations (e.g. filters) and you are unsure if
+     * ServiceTalk is consuming {@code payloadBody} it is wise to avoid {@link Executors#immediate()}.
      * @param <I> Type of the payload of the request.
      * @return a new {@link HttpRequest}.
      */
-    public static <I> HttpRequest<I> newRequest(final HttpProtocolVersion version, final HttpRequestMethod method,
-                                                final String requestTarget, final I payloadBody) {
-        return newRequest(version, method, requestTarget, just(payloadBody, immediate()));
+    public static <I> HttpRequest<I> newRequest(final HttpProtocolVersion version,
+                                                final HttpRequestMethod method,
+                                                final String requestTarget,
+                                                final I payloadBody,
+                                                final Executor executor) {
+        return newRequest(version, method, requestTarget, just(payloadBody, executor));
     }
 
     /**
@@ -100,27 +121,34 @@ public final class HttpRequests {
      * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
      * request.
      * @param payloadBody a {@link Publisher} of the payload body of the request.
+     * @param executor The {@link Executor} used to consume data from {@code payloadBody}. Note this is typically
+     * consumed by ServiceTalk so if there are any blocking transformations (e.g. filters) and you are unsure if
+     * ServiceTalk is consuming {@code payloadBody} it is wise to avoid {@link Executors#immediate()}.
      * @param <I> Type of the payload of the request.
      * @return a new {@link HttpRequest}.
      */
-    public static <I> HttpRequest<I> newRequest(final HttpRequestMethod method, final String requestTarget,
+    public static <I> HttpRequest<I> newRequest(final HttpRequestMethod method,
+                                                final String requestTarget,
+                                                final Publisher<I> payloadBody,
+                                                final Executor executor) {
+        return newRequest(HTTP_1_1, method, requestTarget, payloadBody);
+    }
+
+    /**
+     * Create a new instance with empty headers.
+     *
+     * @param version the {@link HttpProtocolVersion} of the request.
+     * @param method the {@link HttpRequestMethod} of the request.
+     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
+     * request.
+     * @param payloadBody a {@link Publisher} of the payload body of the request.
+     * @param <I> Type of the payload of the request.
+     * @return a new {@link HttpRequest}.
+     */
+    public static <I> HttpRequest<I> newRequest(final HttpProtocolVersion version,
+                                                final HttpRequestMethod method,
+                                                final String requestTarget,
                                                 final Publisher<I> payloadBody) {
-        return newRequest(HTTP_1_1, method, requestTarget, payloadBody);
-    }
-
-    /**
-     * Create a new instance with empty headers.
-     *
-     * @param version the {@link HttpProtocolVersion} of the request.
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody a {@link Publisher} of the payload body of the request.
-     * @param <I> Type of the payload of the request.
-     * @return a new {@link HttpRequest}.
-     */
-    public static <I> HttpRequest<I> newRequest(final HttpProtocolVersion version, final HttpRequestMethod method,
-                                                final String requestTarget, final Publisher<I> payloadBody) {
         return newRequest(version, method, requestTarget, payloadBody, INSTANCE.newHeaders());
     }
 
@@ -136,8 +164,10 @@ public final class HttpRequests {
      * @param <I> Type of the payload of the request.
      * @return a new {@link HttpRequest}.
      */
-    public static <I> HttpRequest<I> newRequest(final HttpProtocolVersion version, final HttpRequestMethod method,
-                                                final String requestTarget, final Publisher<I> payloadBody,
+    public static <I> HttpRequest<I> newRequest(final HttpProtocolVersion version,
+                                                final HttpRequestMethod method,
+                                                final String requestTarget,
+                                                final Publisher<I> payloadBody,
                                                 final HttpHeaders headers) {
         return new DefaultHttpRequest<>(method, requestTarget, version, payloadBody, headers);
     }
