@@ -74,7 +74,8 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
     @Override
     public HttpClient<HttpPayloadChunk, HttpPayloadChunk> build(final IoExecutor ioExecutor, final Executor executor,
         final Publisher<Event<ResolvedAddress>> addressEventStream) {
-        return new DefaultHttpClient<>(ioExecutor, executor, builder, addressEventStream, connFilter, lbFactory);
+        return new DefaultHttpClient<>(ioExecutor, executor, builder.getAllocator(), builder, addressEventStream,
+                    connFilter, lbFactory);
     }
 
     /**

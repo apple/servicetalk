@@ -114,6 +114,10 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress>
         return this;
     }
 
+    BufferAllocator getAllocator() {
+        return config.getTcpClientConfig().getAllocator();
+    }
+
     /**
      * Enable SSL/TLS using the provided {@link SslConfig}. To disable it pass in {@code null}.
      *
