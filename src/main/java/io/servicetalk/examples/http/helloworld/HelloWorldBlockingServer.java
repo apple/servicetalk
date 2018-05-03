@@ -16,7 +16,7 @@
 package io.servicetalk.examples.http.helloworld;
 
 import io.servicetalk.http.api.HttpServerStarter;
-import io.servicetalk.http.netty.NettyHttpServerStarter;
+import io.servicetalk.http.netty.DefaultHttpServerStarter;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.NettyIoExecutors;
@@ -44,7 +44,7 @@ public final class HelloWorldBlockingServer {
         // Shared IoExecutor for the application.
         IoExecutor ioExecutor = NettyIoExecutors.createExecutor();
         try {
-            HttpServerStarter starter = new NettyHttpServerStarter(ioExecutor);
+            HttpServerStarter starter = new DefaultHttpServerStarter(ioExecutor);
             // Note that ServiceTalk is safe to block by default. An Application Executor is created by default and is
             // used to execute user code. The Executor can be manually created and shared if desirable too.
             ServerContext serverContext = awaitIndefinitely(starter.start(
