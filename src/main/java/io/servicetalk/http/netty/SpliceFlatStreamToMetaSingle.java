@@ -93,10 +93,11 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
                 Object.class, "maybePayloadSub");
 
         /* Visible for testing */
-        static final Throwable CANCELED = unknownStackTrace(
-                new CancellationException("Canceled prematurely from Data"),
+        static final Throwable CANCELED = unknownStackTrace(new CancellationException("Canceled prematurely from Data"),
                 SplicingSubscriber.class, "cancelData(..)");
-        private static final Object COMPLETED = new Object();
+        private static final String PENDING = "PENDING";
+        private static final String COMPLETED = "COMPLETED";
+        private static final String COMPLETED_DELIVERED = "COMPLETED_DELIVERED";
 
         /**
          * A field that assumes various types and states depending on the state of the operator.
@@ -105,7 +106,9 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
          *     <li>{@code null} – initial pending state before the {@link Single} is completed</li>
          *     <li>{@link org.reactivestreams.Subscriber}&lt;{@code Payload}&gt; - when subscribed to the payload</li>
          *     <li>{@link #CANCELED} - when the {@link Single} is canceled prematurely</li>
+         *     <li>{@link #PENDING} - when the {@link Single} will complete and {@code Payload} pending subscribe</li>
          *     <li>{@link #COMPLETED} - when the stream completed prematurely (empty) payload</li>
+         *     <li>{@link #COMPLETED_DELIVERED} - when the completion event was delivered to a subscriber</li>
          *     <li>{@link Throwable} - the error that occurred in the stream</li>
          * </ul>
          */
@@ -199,8 +202,9 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
             } else {
                 MetaData meta = (MetaData) obj;
                 metaSeenInOnNext = true;
-                Publisher<Payload> payloadPublisher = newPayloadPublisher();
-                Data data = parent.packer.apply(meta, payloadPublisher);
+                // When the upstream Publisher is canceled we don't give it to any Payload Subscribers
+                Data data = parent.packer.apply(meta, maybePayloadSubUpdater.compareAndSet(this, null, PENDING) ?
+                        newPayloadPublisher() : Publisher.error(CANCELED, parent.executor));
                 dataSubscriber.onSuccess(data);
             }
         }
@@ -210,17 +214,26 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
             return new Publisher<Payload>(parent.executor) {
                 @Override
                 protected void handleSubscribe(org.reactivestreams.Subscriber<? super Payload> newSubscriber) {
-                    if (maybePayloadSubUpdater.compareAndSet(SplicingSubscriber.this, null, newSubscriber)) {
+                    if (maybePayloadSubUpdater.compareAndSet(SplicingSubscriber.this, PENDING, newSubscriber)) {
                         // TODO risk of a race here with terminal events, will be addressed in follow-up PR
                         newSubscriber.onSubscribe(rawSubscription);
                     } else {
+                        // Entering this branch means either a duplicate subscriber or a stream that completed or failed
+                        // without a subscriber present. The consequence is that unless we've seen payload data we may
+                        // not send onComplete() or onError() to the original subscriber, but that is OK as long as one
+                        // subscriber of them gets the correct signal and all others get a duplicate subscriber error.
                         Object maybeSubscriber = SplicingSubscriber.this.maybePayloadSub;
                         newSubscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-                        if (maybeSubscriber == COMPLETED) { // Prematurely completed (header + empty payload)
+                        if (maybeSubscriber == COMPLETED && maybePayloadSubUpdater
+                                .compareAndSet(SplicingSubscriber.this, COMPLETED, COMPLETED_DELIVERED)) {
+                            // Prematurely completed (header + empty payload)
                             newSubscriber.onComplete();
-                        } else if (maybeSubscriber instanceof Throwable) { // Premature error or cancel
+                        } else if (maybeSubscriber instanceof Throwable && maybePayloadSubUpdater
+                                .compareAndSet(SplicingSubscriber.this, maybeSubscriber, COMPLETED_DELIVERED)) {
+                            // Premature error or cancel
                             newSubscriber.onError((Throwable) maybeSubscriber);
                         } else {
+                            // Existing subscriber or terminal event consumed by other subscriber (COMPLETED_DELIVERED)
                             newSubscriber.onError(new IllegalStateException("Duplicate Subscribers are not allowed. " +
                                     "Existing: " + maybeSubscriber + ", new: " + newSubscriber));
                         }
@@ -232,26 +245,44 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
         @SuppressWarnings("unchecked")
         @Override
         public void onError(Throwable t) {
-            if (!maybePayloadSubUpdater.compareAndSet(this, null, t)) {
-                Object maybeSubscriber = maybePayloadSub;
-                if (maybeSubscriber == CANCELED) {
-                    dataSubscriber.onError(t);
-                } else {
-                    ((org.reactivestreams.Subscriber<Payload>) maybeSubscriber).onError(t);
-                }
+            if (payloadSubscriber != null) { // We have a subscriber that has seen onNext()
+                maybePayloadSub = COMPLETED_DELIVERED;
+                payloadSubscriber.onError(t);
             } else {
-                dataSubscriber.onError(t);
+                final Object maybeSubscriber = maybePayloadSubUpdater.getAndSet(this, t);
+                if (maybeSubscriber == CANCELED || !metaSeenInOnNext) {
+                    dataSubscriber.onError(t);
+                } else if (maybeSubscriber instanceof org.reactivestreams.Subscriber) {
+                    if (maybePayloadSubUpdater.compareAndSet(SplicingSubscriber.this, t, COMPLETED_DELIVERED)) {
+                        ((org.reactivestreams.Subscriber<Payload>) maybeSubscriber).onError(t);
+                    } else {
+                        ((org.reactivestreams.Subscriber<Payload>) maybeSubscriber).onError(new IllegalStateException(
+                                "Duplicate Subscribers are not allowed. Existing: " + maybeSubscriber +
+                                        ", failed the race with a duplicate, but neither has seen onNext()"));
+                    }
+                }
             }
         }
 
         @SuppressWarnings("unchecked")
         @Override
         public void onComplete() {
-            final Object maybeSubscriber = maybePayloadSubUpdater.getAndSet(this, COMPLETED);
-            if (maybeSubscriber instanceof org.reactivestreams.Subscriber) {
-                ((org.reactivestreams.Subscriber<Payload>) maybeSubscriber).onComplete();
-            } else if (!metaSeenInOnNext) {
-                dataSubscriber.onError(new IllegalStateException("Empty stream"));
+            if (payloadSubscriber != null) { // We have a subscriber that has seen onNext()
+                maybePayloadSub = COMPLETED_DELIVERED;
+                payloadSubscriber.onComplete();
+            } else {
+                final Object maybeSubscriber = maybePayloadSubUpdater.getAndSet(this, COMPLETED);
+                if (maybeSubscriber instanceof org.reactivestreams.Subscriber) {
+                    if (maybePayloadSubUpdater.compareAndSet(SplicingSubscriber.this, COMPLETED, COMPLETED_DELIVERED)) {
+                        ((org.reactivestreams.Subscriber<Payload>) maybeSubscriber).onComplete();
+                    } else {
+                        ((org.reactivestreams.Subscriber<Payload>) maybeSubscriber).onError(new IllegalStateException(
+                                "Duplicate Subscribers are not allowed. Existing: " + maybeSubscriber +
+                                        ", failed the race with a duplicate, but neither has seen onNext()"));
+                    }
+                } else if (!metaSeenInOnNext) {
+                    dataSubscriber.onError(new IllegalStateException("Empty stream"));
+                }
             }
         }
     }

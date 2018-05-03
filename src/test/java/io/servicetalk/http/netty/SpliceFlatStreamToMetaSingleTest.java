@@ -96,7 +96,6 @@ public class SpliceFlatStreamToMetaSingleTest {
         Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
         assertThat(data.getMeta(), equalTo(data.getMeta()));
         upstream.complete();
-        payloadSubscriber.subscribe(data.getPayload());
         assertThat(awaitIndefinitely(data.getPayload()), empty());
     }
 
@@ -110,9 +109,22 @@ public class SpliceFlatStreamToMetaSingleTest {
         dataSubscriber.verifyFailure(IllegalStateException.class);
     }
 
-    // We want to provide visibility to the user when data is available rather than dropping it.
     @Test
-    public void cancelDataAfterDataCompleteShouldFailPublisherOnSubscribe() {
+    public void cancelDataRacingWithDataShouldCompleteAndFailPublisherOnSubscribe() {
+        Publisher<Object> stream = upstream.getPublisher();
+        SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
+                EXECUTOR, stream, Data::new);
+        dataSubscriber.listen(op);
+        dataSubscriber.cancel();
+        upstream.sendItemsNoVerify(metaData); // noverify -> send regardless of cancel to simulate race
+        Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
+        assertThat(data.getMeta(), equalTo(data.getMeta()));
+        payloadSubscriber.subscribe(data.getPayload());
+        payloadSubscriber.verifyFailure(SpliceFlatStreamToMetaSingle.SplicingSubscriber.CANCELED);
+    }
+
+    @Test
+    public void cancelDataAfterDataCompleteShouldIgnoreCancelAndDeliverPublisherOnComplete() {
         Publisher<Object> stream = upstream.getPublisher();
         SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
                 EXECUTOR, stream, Data::new);
@@ -122,7 +134,10 @@ public class SpliceFlatStreamToMetaSingleTest {
         assertThat(data.getMeta(), equalTo(data.getMeta()));
         dataSubscriber.cancel();
         payloadSubscriber.subscribe(data.getPayload());
-        payloadSubscriber.verifyFailure(SpliceFlatStreamToMetaSingle.SplicingSubscriber.CANCELED);
+        payloadSubscriber.request(3);
+        upstream.sendItems(one, two, last);
+        upstream.complete();
+        payloadSubscriber.verifySuccess(one, two, last);
     }
 
     @Test
@@ -213,6 +228,24 @@ public class SpliceFlatStreamToMetaSingleTest {
         dupePayloadSubscriber.verifyFailure(IllegalStateException.class);
         upstream.complete();
         payloadSubscriber.verifySuccess(one, two, last);
+    }
+
+    @Test
+    public void publisherSubscribeAgainAfterCompletingInitialSubscriberShouldFailSecondSubscriber() {
+        Publisher<Object> stream = upstream.getPublisher();
+        SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
+                EXECUTOR, stream, Data::new);
+        dataSubscriber.listen(op);
+        upstream.sendItems(metaData);
+        Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
+        assertThat(data.getMeta(), equalTo(data.getMeta()));
+        payloadSubscriber.subscribe(data.getPayload());
+        payloadSubscriber.request(3);
+        upstream.sendItems(one, two, last);
+        upstream.complete();
+        payloadSubscriber.verifySuccess(one, two, last);
+        dupePayloadSubscriber.subscribe(data.getPayload());
+        dupePayloadSubscriber.verifyFailure(IllegalStateException.class);
     }
 
     private static class MetaData {
