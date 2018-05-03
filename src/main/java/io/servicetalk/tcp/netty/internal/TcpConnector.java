@@ -28,6 +28,7 @@ import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
+import io.servicetalk.transport.netty.internal.RefCountedTrapper;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -108,14 +109,37 @@ public final class TcpConnector<Read, Write> {
         return new Single<Connection<Read, Write>>() {
             @Override
             protected void handleSubscribe(Subscriber<? super Connection<Read, Write>> subscriber) {
-                connectFutureToListener(connect0(remote, eventLoopAwareNettyIoExecutor, executor, subscriber),
+                connectFutureToListener(connect0(remote, eventLoopAwareNettyIoExecutor, executor, subscriber, true),
                         subscriber, remote);
             }
         };
     }
 
+    /**
+     * Connects to the passed {@code remote} address, resolving the address, if required.
+     *
+     * @param ioExecutor Determines which {@link NettyIoExecutor} should be used for the connection.
+     * @param executor {@link Executor} to used to create the returned {@link Single}.
+     * @param remote address to connect.
+     * @param checkForRefCountedTrapper log a warning if a {@link RefCountedTrapper} is not found in the pipeline
+     * @return {@link Single} that contains the {@link ConnectionContext} for the connection.
+     */
+    public Single<Connection<Read, Write>> connect(NettyIoExecutor ioExecutor, Executor executor,
+                                                   Object remote, boolean checkForRefCountedTrapper) {
+        EventLoopAwareNettyIoExecutor eventLoopAwareNettyIoExecutor = toEventLoopAwareNettyIoExecutor(ioExecutor);
+        requireNonNull(remote);
+        return new Single<Connection<Read, Write>>() {
+            @Override
+            protected void handleSubscribe(Subscriber<? super Connection<Read, Write>> subscriber) {
+                connectFutureToListener(connect0(remote, eventLoopAwareNettyIoExecutor, executor, subscriber,
+                        checkForRefCountedTrapper), subscriber, remote);
+            }
+        };
+    }
+
     private ChannelFuture connect0(Object resolvedAddress, EventLoopAwareNettyIoExecutor ioExecutor, Executor executor,
-                                   Single.Subscriber<? super Connection<Read, Write>> subscriber) {
+                                   Single.Subscriber<? super Connection<Read, Write>> subscriber,
+                                   boolean checkForRefCountedTrapper) {
         EventLoop loop = ioExecutor.getEventLoopGroup().next();
 
         // We have to subscribe before any possibility that we complete the single, so subscribe now and hookup the
@@ -128,7 +152,7 @@ public final class TcpConnector<Read, Write> {
             @Override
             protected void initChannel(Channel channel) {
                 ConnectionContext context = newContext(channel, ioExecutor, executor, config.getAllocator(),
-                        channelInitializer);
+                        channelInitializer, checkForRefCountedTrapper);
                 AbstractChannelReadHandler readHandler = channel.pipeline().get(AbstractChannelReadHandler.class);
                 if (readHandler != null) {
                     subscriber.onError(new IllegalStateException(
