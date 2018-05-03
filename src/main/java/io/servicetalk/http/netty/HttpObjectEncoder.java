@@ -41,7 +41,6 @@ import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
-import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.concurrent.PromiseCombiner;
 
 import java.util.Map;
@@ -208,7 +207,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                     throw new Error();
             }
 
-            if (msg instanceof LastHttpContent) {
+            if (msg instanceof LastHttpPayloadChunk) {
                 state = ST_INIT;
             }
         } else if (byteBuf != null) {

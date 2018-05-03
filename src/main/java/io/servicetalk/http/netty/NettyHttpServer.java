@@ -162,11 +162,16 @@ final class NettyHttpServer {
             try {
                 return service.handle(context, request).map(response -> {
                     addResponseTransferEncodingIfNecessary(response, requestMethod);
-                    return response;
+
+                    // When the response payload publisher completes, read any of the request payload that hasn't already
+                    // been read. This is necessary for using a persistent connection to send multiple requests.
+                    return response.transformPayloadBody(responsePayload -> responsePayload.concatWith(request.getPayloadBody().ignoreElements().onErrorResume(
+                            t -> Completable.completed()
+                            /* ignore error from SpliceFlatStreamToMetaSingle about duplicate subscriptions. */)));
                 });
-            } catch (Throwable cause) {
+            } catch (final Throwable cause) {
                 LOGGER.error("internal server error service={} connection={}", service, context, cause);
-                HttpResponse<HttpPayloadChunk> response = newResponse(request.getVersion(), INTERNAL_SERVER_ERROR,
+                final HttpResponse<HttpPayloadChunk> response = newResponse(request.getVersion(), INTERNAL_SERVER_ERROR,
                         // Using immediate is OK here because the user will never touch this response and it will
                         // only be consumed by ServiceTalk at this point.
                         just(newLastPayloadChunk(EMPTY_BUFFER, INSTANCE), immediate()));
@@ -194,7 +199,7 @@ final class NettyHttpServer {
         private final CompletableProcessor onClose = new CompletableProcessor();
         private final Completable closeAsync;
 
-        NettyHttpServerContext(final ServerContext delegate, HttpService service, Executor executor) {
+        NettyHttpServerContext(final ServerContext delegate, final HttpService service, final Executor executor) {
             this.delegate = delegate;
             // TODO: To ensure ordering when closing, we should use Completable.concatDelayError here, once it exists.
             closeAsync = completed().mergeDelayError(
@@ -211,7 +216,7 @@ final class NettyHttpServer {
         @Override
         public Completable closeAsync() {
             return new Completable() {
-                protected void handleSubscribe(Subscriber subscriber) {
+                protected void handleSubscribe(final Subscriber subscriber) {
                     if (closedUpdater.compareAndSet(NettyHttpServerContext.this, 0, 1)) {
                         closeAsync.subscribe(onClose);
                     }
