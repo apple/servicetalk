@@ -19,6 +19,9 @@ import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
+import io.servicetalk.transport.api.ExecutionContext;
+
+import java.util.function.Function;
 
 /**
  * Logically this interface provides a <pre>{@code Map<GroupKey, HttpClient>}</pre>, and also the ability to create new
@@ -52,6 +55,22 @@ public abstract class HttpClientGroup<UnresolvedAddress, I, O> implements Listen
      */
     public abstract Single<? extends ReservedHttpConnection<I, O>> reserveConnection(GroupKey<UnresolvedAddress> key,
                                                                                      HttpRequest<I> request);
+
+    /**
+     * Convert this {@link HttpClientGroup} to the {@link HttpRequester} API. This can simplify the request APIs and
+     * usage pattern of this {@link HttpClientGroup} assuming the address can be extracted from the {@link HttpRequest}.
+     * <p>
+     * <b>Note:</b> close of any created {@link HttpRequester} will close existing {@link HttpClientGroup} instance.
+     *
+     * @param addressExtractor The {@link Function} to extract unresolved address information from {@link HttpRequest}s.
+     * @param executionContext The {@link ExecutionContext} that will be used for each
+     * {@link HttpRequester#request(HttpRequest)}
+     * @return A {@link HttpRequester}, which is backed by this {@link HttpClientGroup}.
+     */
+    public final HttpRequester<I, O> asRequester(final Function<HttpRequest<I>, UnresolvedAddress> addressExtractor,
+                                                 final ExecutionContext executionContext) {
+        return new HttpClientGroupToHttpRequester<>(this, addressExtractor, executionContext);
+    }
 
     /**
      * Convert this {@link HttpClientGroup} to the {@link BlockingHttpClientGroup} asynchronous API.

@@ -19,6 +19,7 @@ import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -36,7 +37,9 @@ import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpClientGroups.newHttpClientGroup;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -56,6 +59,8 @@ public class DefaultHttpClientGroupTest {
 
     @Rule
     public final MockedSingleListenerRule<HttpResponse<String>> httpResponseListener = new MockedSingleListenerRule<>();
+
+    private final ExecutionContext executionContext = mock(ExecutionContext.class);
 
     @SuppressWarnings("unchecked")
     private final Function<GroupKey<String>, HttpClient<String, String>> clientFactory = mock(Function.class);
@@ -242,5 +247,44 @@ public class DefaultHttpClientGroupTest {
         }
         clientGroup.closeAsync().subscribe();
         verify(httpClient, times(n)).closeAsync();
+    }
+
+    @Test
+    public void asRequester() {
+        final HttpRequester<String, String> requester = clientGroup.asRequester(r -> "address", executionContext);
+        assertNotNull(requester);
+        assertEquals(executionContext, requester.getExecutionContext());
+    }
+
+    @Test
+    public void asRequesterOnClosedClientGroup() {
+        clientGroup.closeAsync().subscribe();
+        assertNotNull(clientGroup.asRequester(r -> "address", executionContext));
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void asRequesterWithNullKeyFactory() {
+        clientGroup.asRequester(null, executionContext);
+    }
+
+    @Test(expected = NullPointerException.class)
+    public void asRequesterWithNullExecutionContext() {
+        clientGroup.asRequester(r -> "address", null);
+    }
+
+    @Test
+    public void successfulRequestViaRequester() {
+        final HttpRequester<String, String> requester = clientGroup.asRequester(r -> "address", executionContext);
+        httpResponseListener.listen(requester.request(request))
+                .verifySuccess(expectedResponse);
+    }
+
+    @Test
+    public void failedRequestViaRequester() {
+        final HttpRequester<String, String> requester = clientGroup.asRequester(r -> {
+            throw DELIBERATE_EXCEPTION;
+        }, executionContext);
+        httpResponseListener.listen(requester.request(request))
+                .verifyFailure(DELIBERATE_EXCEPTION);
     }
 }

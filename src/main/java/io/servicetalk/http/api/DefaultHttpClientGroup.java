@@ -165,9 +165,7 @@ final class DefaultHttpClientGroup<UnresolvedAddress, I, O> extends HttpClientGr
         }
 
         try {
-            if (closed != 0) {
-                throw new IllegalStateException(CLOSED_EXCEPTION_MSG);
-            }
+            throwIfClosed();
 
             client = clientFactory.apply(key);
             if (client == null) {
@@ -177,9 +175,7 @@ final class DefaultHttpClientGroup<UnresolvedAddress, I, O> extends HttpClientGr
             clientMap.put(key, client);
             LOGGER.debug("A new {} was created", client);
 
-            if (closed != 0) {
-                throw new IllegalStateException(CLOSED_EXCEPTION_MSG);
-            }
+            throwIfClosed();
         } catch (final Throwable t) {
             final HttpClient<I, O> closeCandidate = clientMap.remove(key);
             if (closeCandidate != null && closeCandidate == client) {
@@ -191,6 +187,12 @@ final class DefaultHttpClientGroup<UnresolvedAddress, I, O> extends HttpClientGr
             throw t;
         }
         return client;
+    }
+
+    private void throwIfClosed() {
+        if (closed != 0) {
+            throw new IllegalStateException(CLOSED_EXCEPTION_MSG);
+        }
     }
 
     @Override
