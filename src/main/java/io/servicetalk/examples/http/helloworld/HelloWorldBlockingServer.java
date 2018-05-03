@@ -21,8 +21,6 @@ import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.NettyIoExecutors;
 
-import java.net.InetSocketAddress;
-
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 
 /**
@@ -47,10 +45,7 @@ public final class HelloWorldBlockingServer {
             HttpServerStarter starter = new DefaultHttpServerStarter(ioExecutor);
             // Note that ServiceTalk is safe to block by default. An Application Executor is created by default and is
             // used to execute user code. The Executor can be manually created and shared if desirable too.
-            ServerContext serverContext = awaitIndefinitely(starter.start(
-                    new InetSocketAddress(8080),
-                    new HelloWorldBlockingService().asAsynchronousService()));
-            assert serverContext != null;
+            ServerContext serverContext = starter.start(8080, new HelloWorldBlockingService());
             awaitIndefinitely(serverContext.onClose());
         } finally {
             awaitIndefinitely(ioExecutor.closeAsync());
