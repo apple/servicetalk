@@ -121,16 +121,12 @@ public final class HttpRequests {
      * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
      * request.
      * @param payloadBody a {@link Publisher} of the payload body of the request.
-     * @param executor The {@link Executor} used to consume data from {@code payloadBody}. Note this is typically
-     * consumed by ServiceTalk so if there are any blocking transformations (e.g. filters) and you are unsure if
-     * ServiceTalk is consuming {@code payloadBody} it is wise to avoid {@link Executors#immediate()}.
      * @param <I> Type of the payload of the request.
      * @return a new {@link HttpRequest}.
      */
     public static <I> HttpRequest<I> newRequest(final HttpRequestMethod method,
                                                 final String requestTarget,
-                                                final Publisher<I> payloadBody,
-                                                final Executor executor) {
+                                                final Publisher<I> payloadBody) {
         return newRequest(HTTP_1_1, method, requestTarget, payloadBody);
     }
 
