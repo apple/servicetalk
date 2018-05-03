@@ -49,10 +49,13 @@ final class MaxPendingRequestsEnforcingRedisConnection extends RedisConnection {
     private final LatestValueSubscriber<Integer> maxConcurrencyHolder;
     private final RedisConnection connection;
     private final Executor executor;
+    private final int defaultMaxPipelinedRequests;
 
-    MaxPendingRequestsEnforcingRedisConnection(RedisConnection connection, Executor executor) {
+    MaxPendingRequestsEnforcingRedisConnection(RedisConnection connection, Executor executor,
+                                               int defaultMaxPipelinedRequests) {
         this.connection = connection;
         this.executor = executor;
+        this.defaultMaxPipelinedRequests = defaultMaxPipelinedRequests;
         maxConcurrencyHolder = new LatestValueSubscriber<>();
         connection.getSettingStream(MAX_CONCURRENCY).subscribe(maxConcurrencyHolder);
     }
@@ -72,13 +75,15 @@ final class MaxPendingRequestsEnforcingRedisConnection extends RedisConnection {
         return new Publisher<RedisData>(executor) {
             @Override
             protected void handleSubscribe(Subscriber<? super RedisData> subscriber) {
-                final int maxPendingRequests = maxConcurrencyHolder.getLastSeenValue(0);
+                final int maxPendingRequests = maxConcurrencyHolder.getLastSeenValue(defaultMaxPipelinedRequests);
                 if (!incrementPendingIfNotSaturated(maxPendingRequests)) {
                     subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
                     subscriber.onError(new MaxRequestLimitExceededException(connection, maxPendingRequests));
                     return;
                 }
-                connection.request(request).doBeforeFinally(MaxPendingRequestsEnforcingRedisConnection.this::decrementPending).subscribe(subscriber);
+                connection.request(request)
+                        .doBeforeFinally(MaxPendingRequestsEnforcingRedisConnection.this::decrementPending)
+                        .subscribe(subscriber);
             }
         };
     }

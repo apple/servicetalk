@@ -195,7 +195,8 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
         final ReadOnlyRedisClientConfig roConfig = config.asReadOnly();
         return (forSubscribe ? buildForSubscribe(ioExecutor, executor, resolvedAddress, roConfig)
                 : buildForPipelined(ioExecutor, executor, resolvedAddress, roConfig))
-                .map(connection -> new MaxPendingRequestsEnforcingRedisConnection(connection, executor));
+                .map(connection -> new MaxPendingRequestsEnforcingRedisConnection(connection, executor,
+                        roConfig.getMaxPipelinedRequests()));
     }
 
     static <ResolvedAddress> Single<RedisConnection> buildForSubscribe(IoExecutor ioExecutor, Executor executor,
