@@ -50,8 +50,18 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.http.api.EmptyHttpHeaders.INSTANCE;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
+import static io.servicetalk.http.api.HttpPayloadChunks.newLastPayloadChunk;
 import static io.servicetalk.http.api.HttpRequests.newRequest;
+import static io.servicetalk.http.api.HttpResponseStatuses.INTERNAL_SERVER_ERROR;
+import static io.servicetalk.http.api.HttpResponses.newResponse;
 import static io.servicetalk.http.netty.HeaderUtils.addResponseTransferEncodingIfNecessary;
 
 final class NettyHttpServer {
@@ -112,9 +122,9 @@ final class NettyHttpServer {
     }
 
     private static void handleAcceptedConnection(final ReadOnlyHttpServerConfig config, final Executor executor, final HttpService<HttpPayloadChunk, HttpPayloadChunk> service, final Channel channel, final ConnectionContext context) {
-        channel.pipeline().addLast("decoder", new HttpRequestDecoder(config.getHeadersFactory(),
+        channel.pipeline().addLast(new HttpRequestDecoder(config.getHeadersFactory(),
                 config.getMaxInitialLineLength(), config.getMaxHeaderSize(), config.getMaxChunkSize(), true));
-        channel.pipeline().addLast("encoder", new HttpResponseEncoder(config.getHeadersEncodedSizeEstimate(),
+        channel.pipeline().addLast(new HttpResponseEncoder(config.getHeadersEncodedSizeEstimate(),
                 config.getTrailersEncodedSizeEstimate()));
         channel.pipeline().addLast(new AbstractChannelReadHandler<Object>(LAST_HTTP_PAYLOAD_CHUNK_PREDICATE, executor) {
             @Override
@@ -149,11 +159,20 @@ final class NettyHttpServer {
     private static Single<HttpResponse<HttpPayloadChunk>> handleRequest(final HttpService<HttpPayloadChunk, HttpPayloadChunk> service, final Single<HttpRequest<HttpPayloadChunk>> requestSingle, final ConnectionContext context) {
         return requestSingle.flatmap(request -> {
             final HttpRequestMethod requestMethod = request.getMethod();
-            final Single<HttpResponse<HttpPayloadChunk>> responseSingle = service.handle(context, request);
-            return responseSingle.map(response -> {
-                addResponseTransferEncodingIfNecessary(response, requestMethod);
-                return response;
-            });
+            try {
+                return service.handle(context, request).map(response -> {
+                    addResponseTransferEncodingIfNecessary(response, requestMethod);
+                    return response;
+                });
+            } catch (Throwable cause) {
+                LOGGER.error("internal server error service={} connection={}", service, context, cause);
+                HttpResponse<HttpPayloadChunk> response = newResponse(request.getVersion(), INTERNAL_SERVER_ERROR,
+                        // Using immediate is OK here because the user will never touch this response and it will
+                        // only be consumed by ServiceTalk at this point.
+                        just(newLastPayloadChunk(EMPTY_BUFFER, INSTANCE), immediate()));
+                response.getHeaders().set(CONTENT_LENGTH, ZERO);
+                return success(response);
+            }
         });
     }
 
