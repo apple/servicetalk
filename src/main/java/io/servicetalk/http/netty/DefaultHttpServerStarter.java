@@ -40,7 +40,7 @@ import static io.servicetalk.http.netty.NettyHttpServer.bind;
 /**
  * Netty implementation of {@link HttpServerStarter}.
  */
-public final class NettyHttpServerStarter implements HttpServerStarter {
+public final class DefaultHttpServerStarter implements HttpServerStarter {
 
     private final HttpServerConfig config;
 
@@ -49,7 +49,7 @@ public final class NettyHttpServerStarter implements HttpServerStarter {
      *
      * @param ioExecutor {@link NettyIoExecutor} to use for the server.
      */
-    public NettyHttpServerStarter(final IoExecutor ioExecutor) {
+    public DefaultHttpServerStarter(final IoExecutor ioExecutor) {
         this.config = new HttpServerConfig(ioExecutor);
     }
 
@@ -59,7 +59,7 @@ public final class NettyHttpServerStarter implements HttpServerStarter {
      * @param headersFactory the {@link HttpHeadersFactory} to use.
      * @return this
      */
-    public NettyHttpServerStarter setHeadersFactory(final HttpHeadersFactory headersFactory) {
+    public DefaultHttpServerStarter setHeadersFactory(final HttpHeadersFactory headersFactory) {
         config.setHeadersFactory(headersFactory);
         return this;
     }
@@ -72,7 +72,7 @@ public final class NettyHttpServerStarter implements HttpServerStarter {
      * {@code > 0} if a wait time should be used.
      * @return this
      */
-    public NettyHttpServerStarter setClientCloseTimeout(final long clientCloseTimeoutMs) {
+    public DefaultHttpServerStarter setClientCloseTimeout(final long clientCloseTimeoutMs) {
         config.setClientCloseTimeout(clientCloseTimeoutMs);
         return this;
     }
@@ -84,7 +84,7 @@ public final class NettyHttpServerStarter implements HttpServerStarter {
      * length.
      * @return this.
      */
-    public NettyHttpServerStarter setMaxInitialLineLength(final int maxInitialLineLength) {
+    public DefaultHttpServerStarter setMaxInitialLineLength(final int maxInitialLineLength) {
         config.setMaxInitialLineLength(maxInitialLineLength);
         return this;
     }
@@ -96,7 +96,7 @@ public final class NettyHttpServerStarter implements HttpServerStarter {
      * this length.
      * @return this.
      */
-    public NettyHttpServerStarter setMaxHeaderSize(final int maxHeaderSize) {
+    public DefaultHttpServerStarter setMaxHeaderSize(final int maxHeaderSize) {
         config.setMaxHeaderSize(maxHeaderSize);
         return this;
     }
@@ -108,7 +108,7 @@ public final class NettyHttpServerStarter implements HttpServerStarter {
      * @param headersEncodedSizeEstimate estimated initial value.
      * @return this
      */
-    public NettyHttpServerStarter setHeadersEncodedSizeEstimate(final int headersEncodedSizeEstimate) {
+    public DefaultHttpServerStarter setHeadersEncodedSizeEstimate(final int headersEncodedSizeEstimate) {
         config.setHeadersEncodedSizeEstimate(headersEncodedSizeEstimate);
         return this;
     }
@@ -120,7 +120,7 @@ public final class NettyHttpServerStarter implements HttpServerStarter {
      * @param trailersEncodedSizeEstimate estimated initial value.
      * @return this;
      */
-    public NettyHttpServerStarter setTrailersEncodedSizeEstimate(final int trailersEncodedSizeEstimate) {
+    public DefaultHttpServerStarter setTrailersEncodedSizeEstimate(final int trailersEncodedSizeEstimate) {
         config.setTrailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
         return this;
     }
@@ -133,7 +133,7 @@ public final class NettyHttpServerStarter implements HttpServerStarter {
      * into multiple {@link HttpPayloadChunk}s whose length is less than maxChunkSize.
      * @return this.
      */
-    public NettyHttpServerStarter setMaxChunkSize(final int maxChunkSize) {
+    public DefaultHttpServerStarter setMaxChunkSize(final int maxChunkSize) {
         config.setMaxChunkSize(maxChunkSize);
         return this;
     }
@@ -145,7 +145,7 @@ public final class NettyHttpServerStarter implements HttpServerStarter {
      * @param backlog the backlog to use when accepting connections.
      * @return this.
      */
-    public NettyHttpServerStarter setBacklog(final int backlog) {
+    public DefaultHttpServerStarter setBacklog(final int backlog) {
         config.getTcpConfig().setBacklog(backlog);
         return this;
     }
@@ -156,7 +156,7 @@ public final class NettyHttpServerStarter implements HttpServerStarter {
      * @param allocator the {@link BufferAllocator} to use for allocate new buffers.
      * @return this.
      */
-    public NettyHttpServerStarter setAllocator(final BufferAllocator allocator) {
+    public DefaultHttpServerStarter setAllocator(final BufferAllocator allocator) {
         config.getTcpConfig().setAllocator(allocator);
         return this;
     }
@@ -171,7 +171,7 @@ public final class NettyHttpServerStarter implements HttpServerStarter {
      * @throws IllegalStateException if the {@link SslConfig#getKeyCertChainSupplier()}, {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()}
      * throws when {@link InputStream#close()} is called.
      */
-    public NettyHttpServerStarter sni(@Nullable final Map<String, SslConfig> mappings, final SslConfig defaultConfig) {
+    public DefaultHttpServerStarter sni(@Nullable final Map<String, SslConfig> mappings, final SslConfig defaultConfig) {
         config.getTcpConfig().sni(mappings, defaultConfig);
         return this;
     }
@@ -184,7 +184,7 @@ public final class NettyHttpServerStarter implements HttpServerStarter {
      * @throws IllegalStateException if the {@link SslConfig#getKeyCertChainSupplier()}, {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()}
      * throws when {@link InputStream#close()} is called.
      */
-    public NettyHttpServerStarter setSslConfig(@Nullable final SslConfig sslConfig) {
+    public DefaultHttpServerStarter setSslConfig(@Nullable final SslConfig sslConfig) {
         config.getTcpConfig().setSslConfig(sslConfig);
         return this;
     }
@@ -197,7 +197,7 @@ public final class NettyHttpServerStarter implements HttpServerStarter {
      * @param value the value.
      * @return this.
      */
-    public <T> NettyHttpServerStarter setSocketOption(final SocketOption<T> option, final T value) {
+    public <T> DefaultHttpServerStarter setSocketOption(final SocketOption<T> option, final T value) {
         config.getTcpConfig().setOption(option, value);
         return this;
     }
@@ -208,7 +208,7 @@ public final class NettyHttpServerStarter implements HttpServerStarter {
      * @param loggerName Name of the logger.
      * @return {@code this}.
      */
-    public NettyHttpServerStarter setWireLoggerName(final String loggerName) {
+    public DefaultHttpServerStarter setWireLoggerName(final String loggerName) {
         config.getTcpConfig().setWireLoggerName(loggerName);
         return this;
     }
@@ -218,18 +218,15 @@ public final class NettyHttpServerStarter implements HttpServerStarter {
      *
      * @return {@code this}.
      */
-    public NettyHttpServerStarter disableWireLog() {
+    public DefaultHttpServerStarter disableWireLog() {
         config.getTcpConfig().disableWireLog();
         return this;
     }
 
     @Override
-    public Single<ServerContext> start(final SocketAddress address, final Executor executor, final HttpService<HttpPayloadChunk, HttpPayloadChunk> service) {
-        return start(address, ContextFilter.ACCEPT_ALL, executor, service);
-    }
-
-    @Override
-    public Single<ServerContext> start(final SocketAddress address, final ContextFilter contextFilter, final Executor executor, final HttpService<HttpPayloadChunk, HttpPayloadChunk> service) {
+    public Single<ServerContext> start(final SocketAddress address, final ContextFilter contextFilter,
+                                       final Executor executor,
+                                       final HttpService<HttpPayloadChunk, HttpPayloadChunk> service) {
         return bind(config.asReadOnly(), address, contextFilter, executor, service);
     }
 }
