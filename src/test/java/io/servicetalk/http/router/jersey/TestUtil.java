@@ -83,12 +83,12 @@ public final class TestUtil {
 
     static HttpRequest<HttpPayloadChunk> newH10Request(final HttpRequestMethod method,
                                                        final String requestTarget) {
-        return newRequest(HTTP_1_0, method, "http://" + TEST_HOST + requestTarget);
+        return newRequest(HTTP_1_0, method, "http://" + TEST_HOST + requestTarget, immediate());
     }
 
     static HttpRequest<HttpPayloadChunk> newH11Request(final HttpRequestMethod method,
                                                        final String requestTarget) {
-        final HttpRequest<HttpPayloadChunk> request = newRequest(HTTP_1_1, method, requestTarget);
+        final HttpRequest<HttpPayloadChunk> request = newRequest(HTTP_1_1, method, requestTarget, immediate());
         request.getHeaders().add(HOST, TEST_HOST);
         return request;
     }
