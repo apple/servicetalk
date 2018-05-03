@@ -44,6 +44,15 @@ public final class TcpClientConfig extends ReadOnlyTcpClientConfig {
     }
 
     /**
+     * Copy constructor.
+     *
+     * @param from The original {@link TcpClientConfig} to copy from.
+     */
+    public TcpClientConfig(TcpClientConfig from) {
+        super(from, false);
+    }
+
+    /**
      * Specify the {@link BufferAllocator} to use.
      * @param allocator the {@link BufferAllocator} to use for allocate new buffers.
      * @return this.
@@ -115,6 +124,6 @@ public final class TcpClientConfig extends ReadOnlyTcpClientConfig {
      * @return {@link ReadOnlyTcpClientConfig}.
      */
     public ReadOnlyTcpClientConfig asReadOnly() {
-        return new ReadOnlyTcpClientConfig(this);
+        return new ReadOnlyTcpClientConfig(this, true);
     }
 }

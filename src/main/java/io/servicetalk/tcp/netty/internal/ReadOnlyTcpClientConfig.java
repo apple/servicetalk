@@ -64,9 +64,11 @@ public class ReadOnlyTcpClientConfig {
      *
      * @param from Source to copy from.
      */
-    ReadOnlyTcpClientConfig(TcpClientConfig from) {
+    @SuppressWarnings("rawtypes")
+    protected ReadOnlyTcpClientConfig(TcpClientConfig from, boolean readOnlyMap) {
         autoRead = from.autoRead;
-        optionMap = unmodifiableMap(new HashMap<>(from.optionMap));
+        final Map<ChannelOption, Object> optionMap = new HashMap<>(from.optionMap);
+        this.optionMap = readOnlyMap ? unmodifiableMap(optionMap) : optionMap;
         allocator = from.allocator;
         sslContext = from.sslContext;
         this.hostnameVerificationAlgorithm = from.hostnameVerificationAlgorithm;
