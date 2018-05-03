@@ -16,7 +16,6 @@
 package io.servicetalk.examples.http.helloworld;
 
 import io.servicetalk.http.api.BlockingHttpConnection;
-import io.servicetalk.http.api.BlockingHttpRequests;
 import io.servicetalk.http.api.BlockingHttpResponse;
 import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpPayloadChunk;
@@ -24,36 +23,40 @@ import io.servicetalk.http.netty.DefaultHttpConnectionBuilder;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.NettyIoExecutors;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.net.InetSocketAddress;
-import java.nio.charset.Charset;
-import java.util.stream.StreamSupport;
 
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.http.api.BlockingHttpRequests.newRequest;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 
 public final class HelloWorldBlockingClient {
+    private static final Logger LOGGER = LogManager.getLogger(HelloWorldBlockingClient.class);
 
     public static void main(String[] args) throws Exception {
         // Shared IoExecutor for the application.
         IoExecutor ioExecutor = NettyIoExecutors.createExecutor();
-        InetSocketAddress serverAddress = new InetSocketAddress(8080);
+        try {
+            DefaultHttpConnectionBuilder<InetSocketAddress> connectionBuilder = new DefaultHttpConnectionBuilder<>();
+            HttpConnection<HttpPayloadChunk, HttpPayloadChunk> connection = awaitIndefinitely(
+                    connectionBuilder.build(ioExecutor, newCachedThreadExecutor(), new InetSocketAddress(8080)));
+            assert connection != null;
 
-        DefaultHttpConnectionBuilder<InetSocketAddress> connectionBuilder = new DefaultHttpConnectionBuilder<>();
-        HttpConnection<HttpPayloadChunk, HttpPayloadChunk> connection =
-                awaitIndefinitely(connectionBuilder.build(ioExecutor, newCachedThreadExecutor(), serverAddress));
-        assert connection != null;
+            BlockingHttpConnection<HttpPayloadChunk, HttpPayloadChunk> conn = connection.asBlockingConnection();
 
-        BlockingHttpConnection<HttpPayloadChunk, HttpPayloadChunk> conn = connection.asBlockingConnection();
-
-        BlockingHttpResponse<HttpPayloadChunk> response =
-                conn.request(newRequest(GET, "/sayHello", connection.getExecutionContext().getExecutor()));
-        System.out.println(response.toString((name, value) -> value));
-        for (HttpPayloadChunk chunk : response.getPayloadBody()) {
-            System.out.println(chunk.getContent().toString(Charset.defaultCharset()));
+            BlockingHttpResponse<HttpPayloadChunk> response =
+                    conn.request(newRequest(GET, "/sayHello", connection.getExecutionContext().getExecutor()));
+            LOGGER.info("got response {}", response.toString((name, value) -> value));
+            for (HttpPayloadChunk chunk : response.getPayloadBody()) {
+                LOGGER.info("converted string chunk '{}'", chunk.getContent().toString(US_ASCII));
+            }
+            conn.close();
+        } finally {
+            awaitIndefinitely(ioExecutor.closeAsync());
         }
-        conn.close();
-        awaitIndefinitely(ioExecutor.closeAsync());
     }
 }

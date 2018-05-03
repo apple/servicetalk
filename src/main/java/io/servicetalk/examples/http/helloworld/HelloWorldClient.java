@@ -21,36 +21,42 @@ import io.servicetalk.http.netty.DefaultHttpConnectionBuilder;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.NettyIoExecutors;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.net.InetSocketAddress;
-import java.nio.charset.Charset;
 
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpRequests.newRequest;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 
 public final class HelloWorldClient {
+    private static final Logger LOGGER = LogManager.getLogger(HelloWorldClient.class);
 
     public static void main(String[] args) throws Exception {
         // Shared IoExecutor for the application.
         IoExecutor ioExecutor = NettyIoExecutors.createExecutor();
-        InetSocketAddress serverAddress = new InetSocketAddress(8080);
-
-        DefaultHttpConnectionBuilder<InetSocketAddress> connectionBuilder = new DefaultHttpConnectionBuilder<>();
-        HttpConnection<HttpPayloadChunk, HttpPayloadChunk> connection =
-                awaitIndefinitely(connectionBuilder.build(ioExecutor, newCachedThreadExecutor(), serverAddress));
-        assert connection != null;
-
         try {
+            InetSocketAddress serverAddress = new InetSocketAddress(8080);
+
+            DefaultHttpConnectionBuilder<InetSocketAddress> connectionBuilder = new DefaultHttpConnectionBuilder<>();
+            HttpConnection<HttpPayloadChunk, HttpPayloadChunk> connection =
+                    awaitIndefinitely(connectionBuilder.build(ioExecutor, newCachedThreadExecutor(), serverAddress));
+            assert connection != null;
+
+
             connection.request(newRequest(GET, "/sayHello", connection.getExecutionContext().getExecutor()))
                     .flatmapPublisher(resp -> {
-                        System.out.println(resp.toString((name, value)-> value));
-                        return resp.getPayloadBody().map(chunk -> chunk.getContent().toString(Charset.defaultCharset()));
+                        LOGGER.info("got response {}", resp.toString((name, value) -> value));
+                        return resp.getPayloadBody().map(chunk -> chunk.getContent().toString(US_ASCII));
                     })
                     .concatWith(connection.closeAsync()) // close connection after the response is completed.
-                    .forEach(System.out::println);
+                    .forEach(stringPayloadChunk -> LOGGER.info("converted string chunk '{}'", stringPayloadChunk));
 
-            awaitIndefinitely(connection.onClose()); // await connection close which will be done after response is complete
+            // await connection close which is done above after the response is processed.
+            awaitIndefinitely(connection.onClose());
         } finally {
             awaitIndefinitely(ioExecutor.closeAsync());
         }
