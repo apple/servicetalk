@@ -317,7 +317,7 @@ public class PartitionedRedisClientTest {
 
         // SUBSCRIBE uses reservedConnection()
         Single<PubSubRedisMessage.Pong<String>> subscribeAndPingCommand = commander.subscribe("somechan")
-                .flatmap(PubSubRedisConnection::ping)
+                .flatMap(PubSubRedisConnection::ping)
                 .retry((i, t) -> {
                     if (i > 1 || !(t instanceof UnknownPartitionException)) {
                         return false;

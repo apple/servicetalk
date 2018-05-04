@@ -224,7 +224,7 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
             RedisProtocolSupport.Command cmd = request.getCommand();
             LoadBalancer<RedisConnection> loadBalancer = getLbForCommand(cmd);
             return loadBalancer.selectConnection(SELECTOR_FOR_REQUEST)
-                    .flatmapPublisher(selectedConnection -> selectedConnection.request(request));
+                    .flatMapPublisher(selectedConnection -> selectedConnection.request(request));
         }
 
         @Override

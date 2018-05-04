@@ -239,18 +239,18 @@ public class RedisCommanderTest extends BaseRedisClientTest {
 
     @Test
     public void transactionEmpty() throws Exception {
-        final List<?> results = awaitIndefinitely(commandClient.multi().flatmap(TransactedRedisCommander::exec));
+        final List<?> results = awaitIndefinitely(commandClient.multi().flatMap(TransactedRedisCommander::exec));
         assertThat(results, is(empty()));
     }
 
     @Test
     public void transactionExec() throws Exception {
         final List<?> results = awaitIndefinitely(commandClient.multi()
-                .flatmap(tcc -> tcc.del(key("a-key"))
-                        .flatmap($ -> tcc.set(key("a-key"), "a-value3"))
-                        .flatmap($ -> tcc.ping("in-transac"))
-                        .flatmap($ -> tcc.get(key("a-key")))
-                        .flatmap($ -> tcc.exec())));
+                .flatMap(tcc -> tcc.del(key("a-key"))
+                        .flatMap($ -> tcc.set(key("a-key"), "a-value3"))
+                        .flatMap($ -> tcc.ping("in-transac"))
+                        .flatMap($ -> tcc.get(key("a-key")))
+                        .flatMap($ -> tcc.exec())));
 
         assertThat(results, contains(1L, "OK", "in-transac", "a-value3"));
     }
@@ -258,8 +258,8 @@ public class RedisCommanderTest extends BaseRedisClientTest {
     @Test
     public void transactionDiscard() throws Exception {
         final String result = awaitIndefinitely(commandClient.multi()
-                .flatmap(tcc -> tcc.ping("in-transac")
-                        .flatmap($ -> tcc.discard())));
+                .flatMap(tcc -> tcc.ping("in-transac")
+                        .flatMap($ -> tcc.discard())));
 
         assertThat(result, is("OK"));
     }
@@ -267,9 +267,9 @@ public class RedisCommanderTest extends BaseRedisClientTest {
     @Test
     public void transactionPartialFailure() throws Exception {
         final List<?> results = awaitIndefinitely(commandClient.multi()
-                .flatmap(tcc -> tcc.set(key("ptf"), "foo")
-                        .flatmap($ -> tcc.lpop(key("ptf")))
-                        .flatmap($ -> tcc.exec())));
+                .flatMap(tcc -> tcc.set(key("ptf"), "foo")
+                        .flatMap($ -> tcc.lpop(key("ptf")))
+                        .flatMap($ -> tcc.exec())));
 
         assertThat(results, contains(is("OK"), instanceOf(RedisException.class)));
         assertThat(((RedisException) results.get(1)).getMessage(), startsWith("WRONGTYPE"));
@@ -280,7 +280,7 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         thrown.expect(ExecutionException.class);
         thrown.expectCause(is(instanceOf(ClosedChannelException.class)));
 
-        awaitIndefinitely(commandClient.multi().flatmap(tcc -> tcc.closeAsync().andThen(tcc.ping())));
+        awaitIndefinitely(commandClient.multi().flatMap(tcc -> tcc.closeAsync().andThen(tcc.ping())));
     }
 
     @Test

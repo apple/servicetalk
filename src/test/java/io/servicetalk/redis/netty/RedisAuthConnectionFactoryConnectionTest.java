@@ -64,7 +64,7 @@ public class RedisAuthConnectionFactoryConnectionTest {
         if (connectionSingle != null) {
             assert executor != null;
             awaitIndefinitely(connectionSingle
-                    .flatmap(connection -> connection.closeAsync().onErrorResume(cause -> completed()).toSingle(connection))
+                    .flatMap(connection -> connection.closeAsync().onErrorResume(cause -> completed()).toSingle(connection))
                     .ignoreResult()
                     .onErrorResume(cause -> completed())
                     .andThen(executor.closeAsync(0, 0, SECONDS)));

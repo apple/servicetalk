@@ -152,7 +152,7 @@ public class PingerTest {
         awaitPingDurations(2); // Await for a few ping durations to verify no pings were sent before subscribe.
         assertThat("Unexpected command written.", commandsWritten, hasSize(0));
 
-        connection.asCommander().subscribe(randomStringOfLength(32)).flatmapPublisher(PubSubRedisConnection::getMessages)
+        connection.asCommander().subscribe(randomStringOfLength(32)).flatMapPublisher(PubSubRedisConnection::getMessages)
                 .subscribe(new Subscriber<PubSubRedisMessage>() {
                     @Override
                     public void onSubscribe(Subscription s) {

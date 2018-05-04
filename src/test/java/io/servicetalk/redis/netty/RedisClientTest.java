@@ -80,7 +80,7 @@ public class RedisClientTest extends BaseRedisClientTest {
     public void gracefulTerminationOnQuit() throws Exception {
         assert client != null;
         RedisRequest quit = newRequest(QUIT);
-        assertThat(awaitIndefinitely(client.reserveConnection(quit).flatmapPublisher(conn -> conn.request(newRequest(QUIT)).doAfterFinally(conn::release))), contains(redisSimpleString("OK")));
+        assertThat(awaitIndefinitely(client.reserveConnection(quit).flatMapPublisher(conn -> conn.request(newRequest(QUIT)).doAfterFinally(conn::release))), contains(redisSimpleString("OK")));
     }
 
     @Test
