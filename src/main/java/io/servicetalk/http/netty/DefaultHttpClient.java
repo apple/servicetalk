@@ -88,7 +88,7 @@ final class DefaultHttpClient<ResolvedAddress, EventType extends ServiceDiscover
     @Override
     public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
         // TODO should we do smart things here, add encoding headers etc. ?
-        return loadBalancer.selectConnection(SELECTOR_FOR_REQUEST).flatmap(c -> c.request(request));
+        return loadBalancer.selectConnection(SELECTOR_FOR_REQUEST).flatMap(c -> c.request(request));
     }
 
     @Override

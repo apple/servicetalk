@@ -150,14 +150,14 @@ final class NettyHttpServer {
     }
 
     private static Publisher<Object> ungroupResponse(final Executor executor, final Single<HttpResponse<HttpPayloadChunk>> responseSingle) {
-        final Publisher<Object> responseObjectPublisher = responseSingle.flatmapPublisher(resp -> SpliceFlatStreamToMetaSingle.flatten(executor, resp, HttpResponse::getPayloadBody));
+        final Publisher<Object> responseObjectPublisher = responseSingle.flatMapPublisher(resp -> SpliceFlatStreamToMetaSingle.flatten(executor, resp, HttpResponse::getPayloadBody));
         return responseObjectPublisher.liftSynchronous(new EnsureLastItemBeforeCompleteOperator<>(
                 LAST_HTTP_PAYLOAD_CHUNK_PREDICATE,
                 () -> EmptyLastHttpPayloadChunk.INSTANCE)).repeat(val -> true);
     }
 
     private static Single<HttpResponse<HttpPayloadChunk>> handleRequest(final HttpService<HttpPayloadChunk, HttpPayloadChunk> service, final Single<HttpRequest<HttpPayloadChunk>> requestSingle, final ConnectionContext context) {
-        return requestSingle.flatmap(request -> {
+        return requestSingle.flatMap(request -> {
             final HttpRequestMethod requestMethod = request.getMethod();
             try {
                 return service.handle(context, request).map(response -> {
