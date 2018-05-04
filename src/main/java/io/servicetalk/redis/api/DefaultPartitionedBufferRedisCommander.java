@@ -3287,7 +3287,7 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.MONITOR);
         return newConnectedClient(partitionedRedisClient, partitionAttributesBuilder.build(), request,
-                    (con, pub) -> pub.map(RedisCoercions::simpleStringToString)).flatmapPublisher(identity());
+                    (con, pub) -> pub.map(RedisCoercions::simpleStringToString)).flatMapPublisher(identity());
     }
 
     @Override

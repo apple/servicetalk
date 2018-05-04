@@ -2771,7 +2771,7 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MONITOR, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MONITOR, cb);
         return newConnectedClient(requester, request, (con, pub) -> pub.map(RedisCoercions::simpleStringToString))
-                    .flatmapPublisher(identity());
+                    .flatMapPublisher(identity());
     }
 
     @Override

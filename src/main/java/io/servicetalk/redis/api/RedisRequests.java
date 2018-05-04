@@ -378,7 +378,7 @@ public final class RedisRequests {
             return newConnectedClient((ReservedRedisConnection) requestor, false, request, responsePredicate, builder);
         } else if (requestor instanceof RedisClient) {
             return ((RedisClient) requestor).reserveConnection(request)
-                    .flatmap(reservedCnx -> newConnectedClient(reservedCnx, true, request, responsePredicate, builder));
+                    .flatMap(reservedCnx -> newConnectedClient(reservedCnx, true, request, responsePredicate, builder));
         } else {
             return newConnectedClient(new StandAloneReservedRedisConnection((RedisConnection) requestor), false, request, responsePredicate, builder);
         }
@@ -389,7 +389,7 @@ public final class RedisRequests {
                                             final Predicate<RedisData> responsePredicate,
                                             final BiFunction<ReservedRedisConnection, Boolean, C> builder) {
         return client.reserveConnection(partitionSelector, request)
-                .flatmap(reservedCnx -> newConnectedClient(reservedCnx, true, request, responsePredicate, builder));
+                .flatMap(reservedCnx -> newConnectedClient(reservedCnx, true, request, responsePredicate, builder));
     }
 
     static <C> Single<C> newConnectedClient(final RedisRequester requestor, final RedisRequest request,
@@ -398,7 +398,7 @@ public final class RedisRequests {
             return success(builder.apply((ReservedRedisConnection) requestor, requestor.request(request)));
         } else if (requestor instanceof RedisClient) {
             return ((RedisClient) requestor).reserveConnection(request)
-                    .flatmap(reservedCnx -> success(builder.apply(reservedCnx, reservedCnx.request(request))));
+                    .flatMap(reservedCnx -> success(builder.apply(reservedCnx, reservedCnx.request(request))));
         } else {
             final StandAloneReservedRedisConnection reservedCnx = new StandAloneReservedRedisConnection((RedisConnection) requestor);
             return success(builder.apply(reservedCnx, reservedCnx.request(request)));
@@ -409,7 +409,7 @@ public final class RedisRequests {
                                             final RedisRequest request,
                                             final BiFunction<ReservedRedisConnection, Publisher<RedisData>, C> builder) {
         return client.reserveConnection(partitionSelector, request)
-                .flatmap(reservedCnx -> success(builder.apply(reservedCnx, reservedCnx.request(request))));
+                .flatMap(reservedCnx -> success(builder.apply(reservedCnx, reservedCnx.request(request))));
     }
 
     private static <C> Single<C> newConnectedClient(final ReservedRedisConnection reservedCnx, final boolean closeCnx, final RedisRequest request,
