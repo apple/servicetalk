@@ -146,7 +146,7 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
         final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, getResourcePath() + "/sse/stream");
 
         final String messages = getContentAsString(service.handle(ctx, req)
-                .flatmapPublisher(res -> {
+                .flatMapPublisher(res -> {
                     assertThat(res.getStatus(), is(HttpResponseStatuses.OK));
                     assertThat(res.getHeaders().get(CONTENT_TYPE), is(SERVER_SENT_EVENTS));
                     return res.getPayloadBody();
@@ -160,7 +160,7 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
         final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, getResourcePath() + "/sse/broadcast");
 
         final String messages = getContentAsString(service.handle(ctx, req)
-                .flatmapPublisher(res -> {
+                .flatMapPublisher(res -> {
                     assertThat(res.getStatus(), is(HttpResponseStatuses.OK));
                     assertThat(res.getHeaders().get(CONTENT_TYPE), is(SERVER_SENT_EVENTS));
                     return res.getPayloadBody();
