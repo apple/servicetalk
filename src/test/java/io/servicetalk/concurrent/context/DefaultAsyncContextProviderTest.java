@@ -206,7 +206,7 @@ public class DefaultAsyncContextProviderTest {
             f2.complete(AsyncContext.current());
             AsyncContext.put(K2, "v2"); // this won't affect the operators below
             return v;
-        }).flatmap(v -> {
+        }).flatMap(v -> {
             f3.complete(AsyncContext.current());
             AsyncContext.put(K2, "v2"); // this will apply to the Single(b) created here
             return new Single<String>() {
