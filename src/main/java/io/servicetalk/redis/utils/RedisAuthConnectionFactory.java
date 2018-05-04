@@ -53,12 +53,12 @@ public class RedisAuthConnectionFactory<ResolvedAddress> implements ConnectionFa
     @Override
     public Single<RedisConnection> newConnection(ResolvedAddress resolvedAddress) {
         return delegate.newConnection(resolvedAddress)
-                .flatmap(cnx -> cnx.asBufferCommander().auth(addressToPassword.apply(cnx.getConnectionContext()))
+                .flatMap(cnx -> cnx.asBufferCommander().auth(addressToPassword.apply(cnx.getConnectionContext()))
                         .onErrorResume(cause -> {
                             cnx.closeAsync().subscribe();
                             return error(new RedisAuthorizationException("Failed to authenticate on connection " + cnx + " to address " + resolvedAddress, cause));
                         })
-                        .flatmap(response -> {
+                        .flatMap(response -> {
                             if (response.contentEquals(OK.getCharSequenceValue())) {
                                 return success(cnx);
                             }
