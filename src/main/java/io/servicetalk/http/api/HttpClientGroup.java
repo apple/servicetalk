@@ -62,7 +62,7 @@ public abstract class HttpClientGroup<UnresolvedAddress, I, O> implements Listen
      * <p>
      * <b>Note:</b> close of any created {@link HttpRequester} will close existing {@link HttpClientGroup} instance.
      *
-     * @param requestToGroupKeyFunc A {@link Function} to {@link GroupKey} from the {@link HttpRequest}s.
+     * @param requestToGroupKeyFunc A {@link Function} which returns the {@link GroupKey} give a {@link HttpRequest}.
      * @param executionContext the {@link ExecutionContext} to use for {@link HttpRequester#getExecutionContext()}.
      * @return A {@link HttpRequester}, which is backed by this {@link HttpClientGroup}.
      */
