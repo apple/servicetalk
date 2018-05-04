@@ -25,6 +25,6 @@ public class SingleFlatmapPublisherTckTest extends AbstractSingleTckTest<Integer
 
     @Override
     public Publisher<Integer> createPublisher(long elements) {
-        return Single.success(1).flatmapPublisher(Publisher::from);
+        return Single.success(1).flatMapPublisher(Publisher::from);
     }
 }

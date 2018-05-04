@@ -44,32 +44,32 @@ public final class SingleFlatmapCompletableTest {
 
     @Test
     public void testSuccess() throws Exception {
-        listener.listen(success(1).flatmapCompletable(s -> completed()));
+        listener.listen(success(1).flatMapCompletable(s -> completed()));
         listener.verifyCompletion();
     }
 
     @Test
     public void testFirstEmitsError() throws Exception {
-        listener.listen(Single.error(DELIBERATE_EXCEPTION).flatmapCompletable(s -> completable));
+        listener.listen(Single.error(DELIBERATE_EXCEPTION).flatMapCompletable(s -> completable));
         listener.verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
     public void testSecondEmitsError() throws Exception {
-        listener.listen(success(1).flatmapCompletable(s -> error(DELIBERATE_EXCEPTION)));
+        listener.listen(success(1).flatMapCompletable(s -> error(DELIBERATE_EXCEPTION)));
         listener.verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
     public void testCancelBeforeFirst() throws Exception {
-        listener.listen(single.flatmapCompletable(s -> completable));
+        listener.listen(single.flatMapCompletable(s -> completable));
         listener.cancel();
         single.verifyCancelled();
     }
 
     @Test
     public void testCancelBeforeSecond() throws Exception {
-        listener.listen(single.flatmapCompletable(s -> completable));
+        listener.listen(single.flatMapCompletable(s -> completable));
         single.onSuccess("Hello");
         listener.cancel();
         single.verifyNotCancelled();
@@ -78,7 +78,7 @@ public final class SingleFlatmapCompletableTest {
 
     @Test
     public void exceptionInTerminalCallsOnError() {
-        listener.listen(single.flatmapCompletable(s -> {
+        listener.listen(single.flatMapCompletable(s -> {
             throw DELIBERATE_EXCEPTION;
         }));
         single.onSuccess("Hello");
@@ -87,7 +87,7 @@ public final class SingleFlatmapCompletableTest {
 
     @Test
     public void nullInTerminalCallsOnError() {
-        listener.listen(single.flatmapCompletable(s -> null));
+        listener.listen(single.flatMapCompletable(s -> null));
         single.onSuccess("Hello");
         listener.verifyFailure(NullPointerException.class);
     }

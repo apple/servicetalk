@@ -25,7 +25,7 @@ import javax.annotation.Nullable;
 import static java.util.Objects.requireNonNull;
 
 /**
- * {@link Single} as returned by {@link Single#flatmapPublisher(Function)}.
+ * {@link Single} as returned by {@link Single#flatMapPublisher(Function)}.
  */
 final class SingleFlatmapPublisher<T, R> extends Publisher<R> {
     private final Single<T> original;

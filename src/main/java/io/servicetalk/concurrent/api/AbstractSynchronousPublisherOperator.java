@@ -24,7 +24,7 @@ import static java.util.Objects.requireNonNull;
  *
  * <h2>Caution</h2>
  * This is an optimized path that omits wrapping the {@link Subscriber} for each operator in an execution chain.
- * If this is used in an operator which creates/consumes new asynchronous sources (eg: flatmap), it will make the
+ * If this is used in an operator which creates/consumes new asynchronous sources (eg: flatMap), it will make the
  * processing chain (after this operator) susceptible to blocking code running on eventloops. Such operators MUST use
  * {@link AbstractAsynchronousPublisherOperator} instead.
  *

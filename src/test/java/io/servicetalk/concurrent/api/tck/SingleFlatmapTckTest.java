@@ -24,6 +24,6 @@ public class SingleFlatmapTckTest extends AbstractSingleOperatorTckTest<String> 
 
     @Override
     protected Single<String> composeSingle(Single<Integer> single) {
-        return single.flatmap(v -> Single.success(String.valueOf(v)));
+        return single.flatMap(v -> Single.success(String.valueOf(v)));
     }
 }

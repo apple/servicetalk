@@ -24,7 +24,7 @@ import javax.annotation.Nullable;
 import static java.util.Objects.requireNonNull;
 
 /**
- * {@link Single} as returned by {@link Single#flatmap(Function)}.
+ * {@link Single} as returned by {@link Single#flatMap(Function)}.
  */
 final class SingleFlatmapSingle<T, R> extends Single<R> {
     private final Single<T> first;

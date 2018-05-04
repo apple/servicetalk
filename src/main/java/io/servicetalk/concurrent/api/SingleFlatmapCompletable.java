@@ -24,7 +24,7 @@ import javax.annotation.Nullable;
 import static java.util.Objects.requireNonNull;
 
 /**
- * {@link Single} as returned by {@link Single#flatmapCompletable(Function)}.
+ * {@link Single} as returned by {@link Single#flatMapCompletable(Function)}.
  */
 final class SingleFlatmapCompletable<T> extends Completable {
     private final Single<T> first;

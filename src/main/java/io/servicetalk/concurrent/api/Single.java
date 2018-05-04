@@ -130,7 +130,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @param <R>  Type of the result of the resulting {@link Single}.
      * @return New {@link Single} that switches to the {@link Single} returned by {@code next} after this {@link Single} completes successfully.
      */
-    public final <R> Single<R> flatmap(Function<T, Single<R>> next) {
+    public final <R> Single<R> flatMap(Function<T, Single<R>> next) {
         return new SingleFlatmapSingle<>(this, next);
     }
 
@@ -141,7 +141,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @param next Function to give the next {@link Completable}.
      * @return New {@link Completable} that switches to the {@link Completable} returned by {@code next} after this {@link Single} completes successfully.
      */
-    public final Completable flatmapCompletable(Function<T, Completable> next) {
+    public final Completable flatMapCompletable(Function<T, Completable> next) {
         return new SingleFlatmapCompletable<>(this, next);
     }
 
@@ -153,7 +153,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @param <R>  Type of objects emitted by the returned {@link Publisher}.
      * @return New {@link Publisher} that switches to the {@link Publisher} returned by {@code next} after this {@link Single} completes successfully.
      */
-    public final <R> Publisher<R> flatmapPublisher(Function<T, Publisher<R>> next) {
+    public final <R> Publisher<R> flatMapPublisher(Function<T, Publisher<R>> next) {
         return new SingleFlatmapPublisher<>(this, next);
     }
 

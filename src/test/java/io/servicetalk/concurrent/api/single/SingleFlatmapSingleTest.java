@@ -41,38 +41,38 @@ public final class SingleFlatmapSingleTest {
 
     @Test
     public void testFirstAndSecondPropagate() throws Exception {
-        listener.listen(success(1).flatmap(s -> success("Hello" + s)));
+        listener.listen(success(1).flatMap(s -> success("Hello" + s)));
         listener.verifySuccess("Hello1");
     }
 
     @Test
     public void testSuccess() throws Exception {
-        listener.listen(success(1).flatmap(s -> success("Hello")));
+        listener.listen(success(1).flatMap(s -> success("Hello")));
         listener.verifySuccess("Hello");
     }
 
     @Test
     public void testFirstEmitsError() throws Exception {
-        listener.listen(error(DELIBERATE_EXCEPTION).flatmap(s -> success("Hello")));
+        listener.listen(error(DELIBERATE_EXCEPTION).flatMap(s -> success("Hello")));
         listener.verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
     public void testSecondEmitsError() throws Exception {
-        listener.listen(success(1).flatmap(s -> error(DELIBERATE_EXCEPTION)));
+        listener.listen(success(1).flatMap(s -> error(DELIBERATE_EXCEPTION)));
         listener.verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
     public void testCancelBeforeFirst() throws Exception {
-        listener.listen(first.flatmap(s -> second));
+        listener.listen(first.flatMap(s -> second));
         listener.cancel();
         first.verifyCancelled();
     }
 
     @Test
     public void testCancelBeforeSecond() throws Exception {
-        listener.listen(first.flatmap(s -> second));
+        listener.listen(first.flatMap(s -> second));
         first.onSuccess("Hello");
         listener.cancel();
         first.verifyNotCancelled();
@@ -81,7 +81,7 @@ public final class SingleFlatmapSingleTest {
 
     @Test
     public void exceptionInTerminalCallsOnError() {
-        listener.listen(first.flatmap(s -> {
+        listener.listen(first.flatMap(s -> {
             throw DELIBERATE_EXCEPTION;
         }));
         first.onSuccess("Hello");
@@ -90,7 +90,7 @@ public final class SingleFlatmapSingleTest {
 
     @Test
     public void nullInTerminalCallsOnError() {
-        listener.listen(first.flatmap(s -> null));
+        listener.listen(first.flatMap(s -> null));
         first.onSuccess("Hello");
         listener.verifyFailure(NullPointerException.class);
     }
