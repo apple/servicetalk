@@ -164,12 +164,34 @@ final class HttpUri {
             }
             parsedHostHeader = defaultHostHeader.get();
             if (parsedHostHeader != null) {
-                final int x = parsedHostHeader.indexOf(':');
+                // https://tools.ietf.org/html/rfc3986#section-3.2.2
+                // A host identified by an Internet Protocol literal address, version 6
+                //    [RFC3513] or later, is distinguished by enclosing the IP literal
+                //    within square brackets ("[" and "]").  This is the only place where
+                //    square bracket characters are allowed in the URI syntax.
+                int x = parsedHostHeader.indexOf('[');
                 if (x >= 0) {
-                    parsedHost = parsedHostHeader.substring(0, x);
-                    parsedPort = HttpUri.parsePort(parsedHostHeader, x + 1, parsedHostHeader.length());
-                } else {
-                    parsedHost = parsedHostHeader;
+                    int z = parsedHostHeader.indexOf(']', x);
+                    if (z <= 0) {
+                        throw new IllegalArgumentException("open [ in host header");
+                    }
+                    // we expect an authority component (minus the user info) in the host header, so we validate more
+                    // stringently.
+                    if (z + 2 <= parsedHostHeader.length()) {
+                        if (parsedHostHeader.charAt(z + 1) != ':') {
+                            throw new IllegalArgumentException("unexpected character after address");
+                        }
+                        parsedPort = HttpUri.parsePort(parsedHostHeader, z + 2, parsedHostHeader.length());
+                    }
+                    parsedHost = parsedHostHeader.substring(x, z + 1);
+                } else { // Try to parse ipv4 or other literal address
+                    x = parsedHostHeader.indexOf(':');
+                    if (x >= 0) {
+                        parsedHost = parsedHostHeader.substring(0, x);
+                        parsedPort = HttpUri.parsePort(parsedHostHeader, x + 1, parsedHostHeader.length());
+                    } else {
+                        parsedHost = parsedHostHeader;
+                    }
                 }
             }
         }

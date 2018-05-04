@@ -23,6 +23,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("PMD.AvoidUsingHardCodedIP")
 public class HttpUriTest {
     @Test
     public void fullHttpURI() {
@@ -449,6 +450,105 @@ public class HttpUriTest {
         assertEquals("", hp.getPath());
         assertTrue(hp.isSsl());
         assertEquals(HttpUri.DEFAULT_PORT_HTTPS, hp.getPort());
+    }
+
+    @Test
+    public void ipv4HostHeaderNoPort() {
+        final HttpUri hp = new HttpUri("/path?param=value", () -> "1.2.3.4");
+        assertEquals("1.2.3.4", hp.getHostHeader());
+        assertEquals("1.2.3.4", hp.getHost());
+        assertEquals(80, hp.getPort());
+        assertEquals("/path?param=value", hp.getRequestTarget());
+        assertEquals("/path", hp.getPath());
+        assertFalse(hp.isSsl());
+    }
+
+    @Test
+    public void ipv4HostHeaderWithPort() {
+        final HttpUri hp = new HttpUri("/path?param=value", () -> "1.2.3.4:2834");
+        assertEquals("1.2.3.4:2834", hp.getHostHeader());
+        assertEquals("1.2.3.4", hp.getHost());
+        assertEquals(2834, hp.getPort());
+        assertEquals("/path?param=value", hp.getRequestTarget());
+        assertEquals("/path", hp.getPath());
+        assertFalse(hp.isSsl());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void ipv4HostHeaderWithInvalidPort() {
+        new HttpUri("/path?param=value", () -> "1.2.3.4:65536");
+    }
+
+    @Test
+    public void ipv6HostHeaderNoPort() {
+        final HttpUri hp = new HttpUri("/path?param=value", () -> "[::1]");
+        assertEquals("[::1]", hp.getHostHeader());
+        assertEquals("[::1]", hp.getHost());
+        assertEquals(80, hp.getPort());
+        assertEquals("/path?param=value", hp.getRequestTarget());
+        assertEquals("/path", hp.getPath());
+        assertFalse(hp.isSsl());
+    }
+
+    @Test
+    public void ipv6HostHeaderWithPort() {
+        final HttpUri hp = new HttpUri("/path?param=value", () -> "[::1]:8080");
+        assertEquals("[::1]:8080", hp.getHostHeader());
+        assertEquals("[::1]", hp.getHost());
+        assertEquals(8080, hp.getPort());
+        assertEquals("/path?param=value", hp.getRequestTarget());
+        assertEquals("/path", hp.getPath());
+        assertFalse(hp.isSsl());
+    }
+
+    @Test
+    public void ipv6HostHeaderWithScope() {
+        final HttpUri hp = new HttpUri("/path?param=value", () -> "[12:3::1%2]:8081");
+        assertEquals("[12:3::1%2]:8081", hp.getHostHeader());
+        assertEquals("[12:3::1%2]", hp.getHost());
+        assertEquals(8081, hp.getPort());
+        assertEquals("/path?param=value", hp.getRequestTarget());
+        assertEquals("/path", hp.getPath());
+        assertFalse(hp.isSsl());
+    }
+
+    @Test
+    public void stringAddressHostHeader() {
+        final HttpUri hp = new HttpUri("/path?param=value", () -> "apple.com:8081");
+        assertEquals("apple.com:8081", hp.getHostHeader());
+        assertEquals("apple.com", hp.getHost());
+        assertEquals(8081, hp.getPort());
+        assertEquals("/path?param=value", hp.getRequestTarget());
+        assertEquals("/path", hp.getPath());
+        assertFalse(hp.isSsl());
+    }
+
+    @Test
+    public void literalAddressHostHeader() {
+        final HttpUri hp = new HttpUri("/path?param=value", () -> "apple:8081");
+        assertEquals("apple:8081", hp.getHostHeader());
+        assertEquals("apple", hp.getHost());
+        assertEquals(8081, hp.getPort());
+        assertEquals("/path?param=value", hp.getRequestTarget());
+        assertEquals("/path", hp.getPath());
+        assertFalse(hp.isSsl());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void ipv6HostHeaderNoPortTrailingColon() {
+        new HttpUri("/path?param=value", () -> "[12:3::1%2]:");
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void ipv6NonBracketWithScopeHostHeader() {
+        // https://tools.ietf.org/html/rfc3986#section-3.2.2
+        // IPv6 + future must be enclosed in []
+        new HttpUri("/path?param=value", () -> "0:0:0:0:0:0:0:0%0:49178");
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void ipv6NonBracketHostHeader() {
+        new HttpUri("/path?param=value", () -> "::1");
     }
 
     private static void verifyAppleString(final HttpUri hp, final boolean isSsl, final int port) {
