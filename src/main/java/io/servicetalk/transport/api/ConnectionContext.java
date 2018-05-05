@@ -15,6 +15,9 @@
  */
 package io.servicetalk.transport.api;
 
+import io.servicetalk.buffer.Buffer;
+import io.servicetalk.buffer.BufferAllocator;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 import java.net.SocketAddress;
@@ -24,7 +27,7 @@ import javax.net.ssl.SSLSession;
 /**
  * A service execution context.
  */
-public interface ConnectionContext extends ExecutionContext, ListenableAsyncCloseable {
+public interface ConnectionContext extends ListenableAsyncCloseable {
     /**
      * The {@link SocketAddress} to which the associated connection is bound.
      * @return The {@link SocketAddress} to which the associated connection is bound.
@@ -44,4 +47,38 @@ public interface ConnectionContext extends ExecutionContext, ListenableAsyncClos
      */
     @Nullable
     SSLSession getSslSession();
+
+    /**
+     * Get the {@link ExecutionContext} for this {@link ConnectionContext}.
+     * <p>
+     * The {@link ExecutionContext#getIoExecutor()} will represent the thread responsible for IO for this
+     * {@link ConnectionContext}. Note that this maybe different that what was used to create this object because
+     * at this time a specific {@link IoExecutor} has been selected.
+     * @return the {@link ExecutionContext} for this {@link ConnectionContext}.
+     */
+    ExecutionContext getExecutionContext();
+
+    /**
+     * Return the {@link BufferAllocator} used by this {@link ConnectionContext} to allocate {@link Buffer}s.
+     * @return the {@link BufferAllocator} used by this {@link ConnectionContext}.
+     */
+    default BufferAllocator getBufferAllocator() {
+        return getExecutionContext().getBufferAllocator();
+    }
+
+    /**
+     * Get the {@link IoExecutor} that is used to handle the IO for this {@link ConnectionContext}.
+     * @return The {@link IoExecutor} that is used to handle the IO for this {@link ConnectionContext}.
+     */
+    default IoExecutor getIoExecutor() {
+        return getExecutionContext().getIoExecutor();
+    }
+
+    /**
+     * Get the {@link Executor} that is used to create any asynchronous sources by this {@link ConnectionContext}.
+     * @return The {@link Executor} that is used to create any asynchronous sources by this {@link ConnectionContext}.
+     */
+    default Executor getExecutor() {
+        return getExecutionContext().getExecutor();
+    }
 }
