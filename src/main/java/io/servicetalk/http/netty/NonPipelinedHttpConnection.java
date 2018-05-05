@@ -15,8 +15,8 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.Connection;
 
 import static io.servicetalk.transport.api.FlushStrategy.flushBeforeEnd;
@@ -25,8 +25,8 @@ final class NonPipelinedHttpConnection extends AbstractHttpConnection<Connection
 
     NonPipelinedHttpConnection(Connection<Object, Object> connection,
                                ReadOnlyHttpClientConfig config,
-                               Executor executor) {
-        super(connection, config, executor);
+                               ExecutionContext executionContext) {
+        super(connection, config, executionContext);
     }
 
     @Override

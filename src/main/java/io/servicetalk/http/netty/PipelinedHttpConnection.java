@@ -15,13 +15,13 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.DefaultPipelinedConnection;
 
@@ -30,8 +30,9 @@ import static io.servicetalk.transport.api.FlushStrategy.flushBeforeEnd;
 
 final class PipelinedHttpConnection extends AbstractHttpConnection<DefaultPipelinedConnection<Object, Object>> {
 
-    PipelinedHttpConnection(Connection<Object, Object> connection, ReadOnlyHttpClientConfig config, Executor executor) {
-        super(new DefaultPipelinedConnection<>(connection, config.getMaxPipelinedRequests()), config, executor);
+    PipelinedHttpConnection(Connection<Object, Object> connection, ReadOnlyHttpClientConfig config,
+                            ExecutionContext executionContext) {
+        super(new DefaultPipelinedConnection<>(connection, config.getMaxPipelinedRequests()), config, executionContext);
     }
 
     @Override

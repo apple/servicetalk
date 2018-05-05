@@ -15,11 +15,9 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer.Event;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpClientBuilder;
@@ -27,7 +25,7 @@ import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.SslConfig;
 
 import java.io.InputStream;
@@ -72,20 +70,9 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
     }
 
     @Override
-    public HttpClient<HttpPayloadChunk, HttpPayloadChunk> build(final IoExecutor ioExecutor, final Executor executor,
-        final Publisher<Event<ResolvedAddress>> addressEventStream) {
-        return new DefaultHttpClient<>(ioExecutor, executor, builder.getAllocator(), builder, addressEventStream,
-                    connFilter, lbFactory);
-    }
-
-    /**
-     * Specify the {@link BufferAllocator} to use.
-     * @param allocator the {@link BufferAllocator} to use for allocating new buffers.
-     * @return this.
-     */
-    public DefaultHttpClientBuilder<ResolvedAddress> setAllocator(BufferAllocator allocator) {
-        builder.setAllocator(allocator);
-        return this;
+    public HttpClient<HttpPayloadChunk, HttpPayloadChunk> build(final ExecutionContext executionContext,
+                                                        final Publisher<Event<ResolvedAddress>> addressEventStream) {
+        return new DefaultHttpClient<>(executionContext, builder, addressEventStream, connFilter, lbFactory);
     }
 
     /**

@@ -15,8 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.BufferAllocator;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpConnection;
@@ -28,12 +26,10 @@ import io.servicetalk.http.api.LastHttpPayloadChunk;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
-import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.Connection;
-import io.servicetalk.transport.netty.internal.NettyIoExecutor;
-import io.servicetalk.transport.netty.internal.NettyIoExecutors;
 
 import java.io.InputStream;
 import java.net.SocketOption;
@@ -73,12 +69,10 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress>
     }
 
     @Override
-    public Single<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> build(
-            final IoExecutor ioExecutor, final Executor executor, final ResolvedAddress resolvedAddress) {
+    public Single<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> build(final ExecutionContext executionContext,
+                                                                            final ResolvedAddress resolvedAddress) {
 
         ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
-
-        NettyIoExecutor nettyIoExecutor = NettyIoExecutors.toNettyIoExecutor(ioExecutor);
         return new Single<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>>() {
             @Override
             protected void handleSubscribe(
@@ -90,32 +84,18 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress>
                 final TcpConnector<Object, Object> connector = new TcpConnector<>(roConfig.getTcpClientConfig(),
                         initializer, DefaultHttpConnectionBuilder::getLastChunkPredicate);
 
-                connector.connect(nettyIoExecutor, executor, resolvedAddress, false)
-                        .map(c -> connectionStrategy(c, roConfig, executor))
+                connector.connect(executionContext, resolvedAddress, false)
+                        .map(c -> connectionStrategy(c, roConfig, executionContext))
                         .subscribe(subscriber);
             }
         };
     }
 
     private static HttpConnection<HttpPayloadChunk, HttpPayloadChunk> connectionStrategy(
-            Connection<Object, Object> connection, ReadOnlyHttpClientConfig config, Executor executor) {
-
-        return config.getMaxPipelinedRequests() != 1 ? new PipelinedHttpConnection(connection, config, executor) :
-                new NonPipelinedHttpConnection(connection, config, executor);
-    }
-
-    /**
-     * Specify the {@link BufferAllocator} to use.
-     * @param allocator the {@link BufferAllocator} to use for allocate new buffers.
-     * @return this.
-     */
-    public DefaultHttpConnectionBuilder<ResolvedAddress> setAllocator(BufferAllocator allocator) {
-        config.getTcpClientConfig().setAllocator(allocator);
-        return this;
-    }
-
-    BufferAllocator getAllocator() {
-        return config.getTcpClientConfig().getAllocator();
+            Connection<Object, Object> connection, ReadOnlyHttpClientConfig config, ExecutionContext executionContext) {
+        return config.getMaxPipelinedRequests() != 1 ?
+                new PipelinedHttpConnection(connection, config, executionContext) :
+                new NonPipelinedHttpConnection(connection, config, executionContext);
     }
 
     /**

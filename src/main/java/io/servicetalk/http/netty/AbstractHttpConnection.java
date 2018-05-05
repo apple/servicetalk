@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpConnection;
@@ -27,6 +26,7 @@ import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponses;
 import io.servicetalk.http.api.LastHttpPayloadChunk;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -45,14 +45,14 @@ abstract class AbstractHttpConnection<CC extends ConnectionContext>
 
     protected final CC connection;
     protected final ReadOnlyHttpClientConfig config;
-    protected final Executor executor;
+    protected final ExecutionContext executionContext;
 
     protected AbstractHttpConnection(CC connection,
                                      ReadOnlyHttpClientConfig config,
-                                     Executor executor) {
+                                     ExecutionContext executionContext) {
         this.connection = requireNonNull(connection);
         this.config = requireNonNull(config);
-        this.executor = requireNonNull(executor);
+        this.executionContext = requireNonNull(executionContext);
     }
 
     @Override
@@ -64,16 +64,22 @@ abstract class AbstractHttpConnection<CC extends ConnectionContext>
     @Override
     public <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
         if (settingKey == SettingKey.MAX_CONCURRENCY) {
-            return (Publisher<T>) just(config.getMaxPipelinedRequests(), executor);
+            return (Publisher<T>) just(config.getMaxPipelinedRequests(), executionContext.getExecutor());
         }
-        return error(new IllegalArgumentException("Unknown setting: " + settingKey), executor);
+        return error(new IllegalArgumentException("Unknown setting: " + settingKey), executionContext.getExecutor());
     }
 
     @Override
     public Single<HttpResponse<HttpPayloadChunk>> request(HttpRequest<HttpPayloadChunk> request) {
         return new SpliceFlatStreamToMetaSingle<HttpResponse<HttpPayloadChunk>, HttpResponseMetaData, HttpPayloadChunk>(
-                executor, writeAndRead(flatten(executor, request, AbstractHttpConnection::unpack)),
+                executionContext.getExecutor(),
+                writeAndRead(flatten(executionContext.getExecutor(), request, AbstractHttpConnection::unpack)),
                 AbstractHttpConnection::newResponse);
+    }
+
+    @Override
+    public ExecutionContext getExecutionContext() {
+        return executionContext;
     }
 
     protected abstract Publisher<Object> writeAndRead(Publisher<Object> stream);

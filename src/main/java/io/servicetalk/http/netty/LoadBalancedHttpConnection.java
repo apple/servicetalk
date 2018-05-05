@@ -25,6 +25,7 @@ import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
@@ -73,6 +74,11 @@ class LoadBalancedHttpConnection extends ReservedHttpConnection<HttpPayloadChunk
     @Override
     public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
         return new RequestCompletionHelperSingle(delegate.request(request), reserved);
+    }
+
+    @Override
+    public ExecutionContext getExecutionContext() {
+        return delegate.getExecutionContext();
     }
 
     // TODO We can't make ConcurrentReservedResource#requestFinished() work reliably with cancel() of HttpResponse.

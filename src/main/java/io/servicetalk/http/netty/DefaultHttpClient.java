@@ -15,13 +15,11 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient;
@@ -31,14 +29,13 @@ import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.transport.api.ExecutionContext;
-import io.servicetalk.transport.api.IoExecutor;
 
 import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 
 final class DefaultHttpClient<ResolvedAddress, EventType extends ServiceDiscoverer.Event<ResolvedAddress>>
-        extends HttpClient<HttpPayloadChunk, HttpPayloadChunk> implements ExecutionContext {
+        extends HttpClient<HttpPayloadChunk, HttpPayloadChunk> {
 
     private static final Function<LoadBalancedHttpConnection, LoadBalancedHttpConnection> SELECTOR_FOR_REQUEST =
             conn -> conn.tryRequest() ? conn : null;
@@ -47,23 +44,19 @@ final class DefaultHttpClient<ResolvedAddress, EventType extends ServiceDiscover
 
     // TODO Proto specific LB after upgrade and worry about SSL
     private final LoadBalancer<LoadBalancedHttpConnection> loadBalancer;
-    private final Executor executor;
-    private final IoExecutor ioExecutor;
-    private final BufferAllocator allocator;
+    private final ExecutionContext executionContext;
 
     @SuppressWarnings("unchecked")
-    DefaultHttpClient(IoExecutor ioExecutor, Executor executor, BufferAllocator allocator,
+    DefaultHttpClient(ExecutionContext executionContext,
                          HttpConnectionBuilder<ResolvedAddress, HttpPayloadChunk, HttpPayloadChunk> connectionBuilder,
                          Publisher<EventType> addressEventStream,
                          Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>,
                                  HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilter,
                          LoadBalancerFactory<ResolvedAddress, HttpConnection<HttpPayloadChunk, HttpPayloadChunk>>
                                  loadBalancerFactory) {
-        this.executor = requireNonNull(executor);
-        this.ioExecutor = requireNonNull(ioExecutor);
-        this.allocator = requireNonNull(allocator);
+        this.executionContext = requireNonNull(executionContext);
         ConnectionFactory<ResolvedAddress, LoadBalancedHttpConnection> connectionFactory =
-                connectionBuilder.asConnectionFactory(ioExecutor, executor,
+                connectionBuilder.asConnectionFactory(executionContext,
                                 connectionFilter.andThen(LoadBalancedHttpConnection::new));
 
         // TODO addressEventStream.multicast(x) when feeding into multiple LBs
@@ -93,7 +86,7 @@ final class DefaultHttpClient<ResolvedAddress, EventType extends ServiceDiscover
 
     @Override
     public ExecutionContext getExecutionContext() {
-        return this;
+        return executionContext;
     }
 
     @Override
@@ -104,20 +97,5 @@ final class DefaultHttpClient<ResolvedAddress, EventType extends ServiceDiscover
     @Override
     public Completable closeAsync() {
         return loadBalancer.closeAsync();
-    }
-
-    @Override
-    public BufferAllocator getBufferAllocator() {
-        return allocator;
-    }
-
-    @Override
-    public IoExecutor getIoExecutor() {
-        return ioExecutor;
-    }
-
-    @Override
-    public Executor getExecutor() {
-        return executor;
     }
 }
