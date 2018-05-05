@@ -15,7 +15,6 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.netty.internal.WireLogInitializer;
 
@@ -27,7 +26,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.transport.netty.internal.WireLogInitializer.GLOBAL_WIRE_LOGGER;
 import static java.util.Collections.unmodifiableMap;
 
@@ -40,7 +38,6 @@ public class ReadOnlyTcpClientConfig {
     protected final boolean autoRead;
     @SuppressWarnings("rawtypes")
     protected final Map<ChannelOption, Object> optionMap;
-    protected BufferAllocator allocator = DEFAULT_ALLOCATOR;
     @Nullable
     protected SslContext sslContext;
     @Nullable
@@ -63,13 +60,13 @@ public class ReadOnlyTcpClientConfig {
      * Copy constructor.
      *
      * @param from Source to copy from.
+     * @param readOnlyMap {@code true} to make the {@link #getOptions()} unmodifiable.
      */
     @SuppressWarnings("rawtypes")
     protected ReadOnlyTcpClientConfig(TcpClientConfig from, boolean readOnlyMap) {
         autoRead = from.autoRead;
         final Map<ChannelOption, Object> optionMap = new HashMap<>(from.optionMap);
         this.optionMap = readOnlyMap ? unmodifiableMap(optionMap) : optionMap;
-        allocator = from.allocator;
         sslContext = from.sslContext;
         this.hostnameVerificationAlgorithm = from.hostnameVerificationAlgorithm;
         idleTimeoutMs = from.idleTimeoutMs;
@@ -83,14 +80,6 @@ public class ReadOnlyTcpClientConfig {
      */
     public boolean isAutoRead() {
         return autoRead;
-    }
-
-    /**
-     * Returns the {@link BufferAllocator}.
-     * @return allocator
-     */
-    public BufferAllocator getAllocator() {
-        return allocator;
     }
 
     /**

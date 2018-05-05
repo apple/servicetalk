@@ -17,6 +17,7 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.Buffer;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.NettyIoExecutors;
 import io.servicetalk.transport.netty.internal.Connection;
@@ -38,6 +39,7 @@ import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.transport.api.FlushStrategy.defaultFlushStrategy;
@@ -142,7 +144,8 @@ public final class TcpConnectorTest {
                     });
                     return context;
                 }, () -> v -> true);
-        Connection<Buffer, Buffer> connection = awaitIndefinitely(connector.connect(nettyIoExecutor, immediate(),
+        Connection<Buffer, Buffer> connection = awaitIndefinitely(connector.connect(
+                new DefaultExecutionContext(DEFAULT_ALLOCATOR, nettyIoExecutor, immediate()),
                 serverContext.getListenAddress()));
         assert connection != null;
         awaitIndefinitely(connection.closeAsync());

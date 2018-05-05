@@ -32,6 +32,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +43,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
-import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.wrapEventLoop;
 import static io.servicetalk.transport.netty.internal.NettyConnectionContext.newContext;
 import static java.util.Objects.requireNonNull;
 
@@ -53,7 +53,7 @@ public final class TcpServerInitializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TcpServerInitializer.class);
 
-    private final EventLoopGroup eventLoopGroup;
+    private final EventLoopAwareNettyIoExecutor nettyIoExecutor;
     private ReadOnlyTcpServerConfig config;
 
     /**
@@ -64,9 +64,10 @@ public final class TcpServerInitializer {
         this.config = config;
         NettyIoExecutor ioExecutor = config.getIoExecutor();
         if (!(ioExecutor instanceof EventLoopAwareNettyIoExecutor)) {
-            throw new IllegalArgumentException("Incompatible NettyIoExecutor: " + ioExecutor + ". Not aware of netty eventloops.");
+            throw new IllegalArgumentException("Incompatible NettyIoExecutor: " + ioExecutor +
+                    ". Not aware of netty eventloops.");
         }
-        eventLoopGroup = ((EventLoopAwareNettyIoExecutor) ioExecutor).getEventLoopGroup();
+        nettyIoExecutor = ((EventLoopAwareNettyIoExecutor) ioExecutor);
     }
 
     /**
@@ -117,14 +118,19 @@ public final class TcpServerInitializer {
         requireNonNull(contextFilter);
         listenAddress = toNettyAddress(requireNonNull(listenAddress));
         ServerBootstrap bs = new ServerBootstrap();
-        configure(bs, eventLoopGroup, listenAddress.getClass());
+        // The ConnectionContext should be given an IoExecutor which correlates to the specific thread used for IO,
+        // so we select it here up front.
+        EventLoopAwareNettyIoExecutor threadIoExecutor = nettyIoExecutor.next();
+        // next() of an EventLoop will just return itself, which is expected because we did the selection above.
+        EventLoop eventLoop = threadIoExecutor.getEventLoopGroup().next();
+        configure(bs, eventLoop, listenAddress.getClass());
         //TODO: AdvancedChannelGroup is missing from ST 1.x.
         bs.childHandler(new io.netty.channel.ChannelInitializer<Channel>() {
             @Override
             protected void initChannel(Channel channel) {
                 try {
                     // TODO: Use proper executor
-                    ConnectionContext context = newContext(channel, wrapEventLoop(channel.eventLoop()), immediate(),
+                    ConnectionContext context = newContext(channel, threadIoExecutor, immediate(),
                             config.getAllocator(), channelInitializer, checkForRefCountedTrapper);
                     //TODO 3.x: Use filter result.
                     contextFilter.filter(context);

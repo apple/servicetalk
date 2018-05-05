@@ -16,7 +16,10 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.Buffer;
+import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.transport.api.DefaultExecutionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.FileDescriptorSocketAddress;
 import io.servicetalk.transport.netty.internal.BufferHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
@@ -42,6 +45,7 @@ import java.net.StandardSocketOptions;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static java.util.Objects.requireNonNull;
@@ -55,9 +59,8 @@ import static org.junit.Assume.assumeTrue;
 public final class TcpClient {
 
     private final TcpConnector<Buffer, Buffer> connector;
-    private final Executor executor;
     private final ReadOnlyTcpClientConfig roConfig;
-    private final NettyIoExecutor nettyIoExecutor;
+    private final ExecutionContext executionContext;
 
     /**
      * New instance.
@@ -79,16 +82,36 @@ public final class TcpClient {
     /**
      * New instance.
      * @param nettyIoExecutor {@link NettyIoExecutor} for this client.
-     * @param executor {@link Executor} for this client.
+     * @param executor The {@link Executor} for this client.
      * @param config for the client.
      */
     public TcpClient(NettyIoExecutor nettyIoExecutor, Executor executor, TcpClientConfig config) {
-        this.nettyIoExecutor = requireNonNull(nettyIoExecutor);
-        this.executor = executor;
+        this(nettyIoExecutor, executor, DEFAULT_ALLOCATOR, config);
+    }
+
+    /**
+     * New instance.
+     * @param nettyIoExecutor {@link NettyIoExecutor} for this client.
+     * @param executor The {@link Executor} for this client.
+     * @param allocator the {@link BufferAllocator} for this client.
+     * @param config for the client.
+     */
+    public TcpClient(NettyIoExecutor nettyIoExecutor, Executor executor, BufferAllocator allocator,
+                     TcpClientConfig config) {
+        this(new DefaultExecutionContext(allocator, nettyIoExecutor, executor), config);
+    }
+
+    /**
+     * New instance.
+     * @param executionContext {@link NettyIoExecutor} for this client.
+     * @param config for the client.
+     */
+    public TcpClient(ExecutionContext executionContext, TcpClientConfig config) {
+        this.executionContext = requireNonNull(executionContext);
         roConfig = config.asReadOnly();
         ChannelInitializer initializer = new TcpClientChannelInitializer(roConfig);
         initializer = initializer.andThen((channel, context) -> {
-            channel.pipeline().addLast(new BufferHandler(roConfig.getAllocator()));
+            channel.pipeline().addLast(new BufferHandler(executionContext.getBufferAllocator()));
             return context;
         });
         connector = new TcpConnector<>(roConfig, initializer, () -> buffer -> false);
@@ -116,7 +139,7 @@ public final class TcpClient {
     public Connection<Buffer, Buffer> connectBlocking(SocketAddress address)
             throws ExecutionException, InterruptedException {
         //noinspection ConstantConditions
-        return awaitIndefinitely(connector.connect(nettyIoExecutor, executor, address));
+        return awaitIndefinitely(connector.connect(executionContext, address));
     }
 
     /**
@@ -129,7 +152,7 @@ public final class TcpClient {
      */
     public Connection<Buffer, Buffer> connectWithFdBlocking(SocketAddress address)
             throws ExecutionException, InterruptedException {
-        assumeTrue(nettyIoExecutor.isFileDescriptorSocketAddressSupported());
+        assumeTrue(executionContext.getIoExecutor().isFileDescriptorSocketAddressSupported());
         assumeTrue(Epoll.isAvailable() || KQueue.isAvailable());
 
         final Class<? extends Channel> channelClass;

@@ -15,7 +15,6 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
@@ -28,7 +27,6 @@ import java.net.SocketOption;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.netty.internal.SSLContextFactory.forClient;
-import static java.util.Objects.requireNonNull;
 
 /**
  * Configuration for TCP based servers. <p>Internal use only.</p>
@@ -50,16 +48,6 @@ public final class TcpClientConfig extends ReadOnlyTcpClientConfig {
      */
     public TcpClientConfig(TcpClientConfig from) {
         super(from, false);
-    }
-
-    /**
-     * Specify the {@link BufferAllocator} to use.
-     * @param allocator the {@link BufferAllocator} to use for allocate new buffers.
-     * @return this.
-     */
-    public TcpClientConfig setAllocator(BufferAllocator allocator) {
-        this.allocator = requireNonNull(allocator);
-        return this;
     }
 
     /**
