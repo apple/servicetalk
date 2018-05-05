@@ -17,9 +17,8 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscoverer.Event;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.ExecutionContext;
 
 /**
  * A builder of {@link HttpClient} objects.
@@ -35,11 +34,11 @@ public interface HttpClientBuilder<ResolvedAddress, EventType extends Event<Reso
     /**
      * Build a new {@link HttpClient}.
      *
-     * @param ioExecutor The {@link IoExecutor} to use for I/O
-     * @param executor {@link Executor} to use for any asynchronous source created by the returned {@link HttpClient}
+     * @param executionContext {@link ExecutionContext} used for {@link HttpClient#getExecutionContext()} and to build
+     * new {@link HttpConnection}s.
      * @param addressEventStream A stream of events (typically from a {@link ServiceDiscoverer#discover(Object)}) that
      *                           provides the addresses used to create new {@link HttpConnection}s
      * @return A new {@link HttpClient}
      */
-    HttpClient<I, O> build(IoExecutor ioExecutor, Executor executor, Publisher<EventType> addressEventStream);
+    HttpClient<I, O> build(ExecutionContext executionContext, Publisher<EventType> addressEventStream);
 }

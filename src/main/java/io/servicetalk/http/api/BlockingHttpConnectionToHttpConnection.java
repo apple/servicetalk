@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.Publisher.from;
@@ -45,6 +46,11 @@ final class BlockingHttpConnectionToHttpConnection<I, O> extends HttpConnection<
     @Override
     public Single<HttpResponse<O>> request(final HttpRequest<I> request) {
         return BlockingUtils.request(blockingConnection, request);
+    }
+
+    @Override
+    public ExecutionContext getExecutionContext() {
+        return blockingConnection.getExecutionContext();
     }
 
     @Override

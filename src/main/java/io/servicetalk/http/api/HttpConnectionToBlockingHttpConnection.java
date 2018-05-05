@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.BlockingIterable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.http.api.HttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import static java.util.Objects.requireNonNull;
 
@@ -42,6 +43,11 @@ final class HttpConnectionToBlockingHttpConnection<I, O> extends BlockingHttpCon
     @Override
     public BlockingHttpResponse<O> request(final BlockingHttpRequest<I> request) throws Exception {
         return BlockingUtils.request(connection, request);
+    }
+
+    @Override
+    public ExecutionContext getExecutionContext() {
+        return connection.getExecutionContext();
     }
 
     @Override

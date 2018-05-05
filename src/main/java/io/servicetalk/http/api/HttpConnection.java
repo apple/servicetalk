@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import org.reactivestreams.Subscriber;
 
@@ -44,11 +43,6 @@ public abstract class HttpConnection<I, O> extends HttpRequester<I, O> {
      * @return {@link Publisher} for the setting values.
      */
     public abstract <T> Publisher<T> getSettingStream(SettingKey<T> settingKey);
-
-    @Override
-    public final ExecutionContext getExecutionContext() {
-        return getConnectionContext();
-    }
 
     /**
      * Convert this {@link HttpConnection} to the {@link BlockingHttpConnection} API.

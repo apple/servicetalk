@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -53,6 +54,8 @@ public abstract class AbstractBlockingHttpRequesterTest {
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
     @Mock
+    private ExecutionContext mockExecutionCtx;
+    @Mock
     private ConnectionContext mockCtx;
     @Rule
     public final PublisherRule<String> publisherRule = new PublisherRule<>();
@@ -62,10 +65,11 @@ public abstract class AbstractBlockingHttpRequesterTest {
     private BlockingIterator<String> mockIterator;
 
     protected abstract <I, O, T extends HttpRequester<I, O> & TestHttpRequester>
-        T newAsyncRequester(ConnectionContext ctx, Function<HttpRequest<I>, Single<HttpResponse<O>>> doRequest);
+        T newAsyncRequester(ExecutionContext executionContext,
+                            Function<HttpRequest<I>, Single<HttpResponse<O>>> doRequest);
 
     protected abstract <I, O, T extends BlockingHttpRequester<I, O> & TestHttpRequester>
-        T newBlockingRequester(ConnectionContext ctx,
+        T newBlockingRequester(ExecutionContext executionContext,
                                Function<BlockingHttpRequest<I>, BlockingHttpResponse<O>> doRequest);
 
     protected interface TestHttpRequester {
@@ -75,13 +79,14 @@ public abstract class AbstractBlockingHttpRequesterTest {
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
-        when(mockCtx.getExecutor()).thenReturn(immediate());
+        when(mockExecutionCtx.getExecutor()).thenReturn(immediate());
+        when(mockCtx.getExecutionContext()).thenReturn(mockExecutionCtx);
         when(mockIterable.iterator()).thenReturn(mockIterator);
     }
 
     @Test
     public void asyncToSyncNoPayload() throws Exception {
-        HttpRequester<String, String> asyncRequester = newAsyncRequester(mockCtx,
+        HttpRequester<String, String> asyncRequester = newAsyncRequester(mockExecutionCtx,
                 req -> success(HttpResponses.<String>newResponse(HTTP_1_1, OK, immediate())));
         BlockingHttpRequester<String, String> syncRequester = asyncRequester.asBlockingRequester();
         BlockingHttpResponse<String> syncResponse = syncRequester.request(
@@ -92,7 +97,7 @@ public abstract class AbstractBlockingHttpRequesterTest {
 
     @Test
     public void asyncToSyncWithPayload() throws Exception {
-        HttpRequester<String, String> asyncRequester = newAsyncRequester(mockCtx,
+        HttpRequester<String, String> asyncRequester = newAsyncRequester(mockExecutionCtx,
                 req -> success(newResponse(HTTP_1_1, OK, just("hello", immediate()))));
         BlockingHttpRequester<String, String> syncRequester = asyncRequester.asBlockingRequester();
         BlockingHttpResponse<String> syncResponse = syncRequester.request(
@@ -107,7 +112,7 @@ public abstract class AbstractBlockingHttpRequesterTest {
 
     @Test
     public void asyncToSyncClose() throws Exception {
-        HttpRequester<String, String> asyncRequester = newAsyncRequester(mockCtx,
+        HttpRequester<String, String> asyncRequester = newAsyncRequester(mockExecutionCtx,
                 req -> Single.<HttpResponse<String>>error(new IllegalStateException("shouldn't be called!")));
         BlockingHttpRequester<String, String> syncRequester = asyncRequester.asBlockingRequester();
         syncRequester.close();
@@ -116,7 +121,7 @@ public abstract class AbstractBlockingHttpRequesterTest {
 
     @Test
     public void asyncToSyncCancelPropagated() throws Exception {
-        HttpRequester<String, String> asyncRequester = newAsyncRequester(mockCtx,
+        HttpRequester<String, String> asyncRequester = newAsyncRequester(mockExecutionCtx,
                 req -> success(newResponse(HTTP_1_1, OK, publisherRule.getPublisher())));
         BlockingHttpRequester<String, String> syncRequester = asyncRequester.asBlockingRequester();
         BlockingHttpResponse<String> syncResponse = syncRequester.request(
@@ -132,7 +137,7 @@ public abstract class AbstractBlockingHttpRequesterTest {
 
     @Test
     public void syncToAsyncNoPayload() throws Exception {
-        BlockingHttpRequester<String, String> syncRequester = newBlockingRequester(mockCtx,
+        BlockingHttpRequester<String, String> syncRequester = newBlockingRequester(mockExecutionCtx,
                 req -> BlockingHttpResponses.<String>newResponse(HTTP_1_1, OK, immediate()));
         HttpRequester<String, String> asyncRequester = syncRequester.asAsynchronousRequester();
         HttpResponse<String> asyncResponse = awaitIndefinitely(asyncRequester.request(
@@ -144,7 +149,7 @@ public abstract class AbstractBlockingHttpRequesterTest {
 
     @Test
     public void syncToAsyncWithPayload() throws Exception {
-        BlockingHttpRequester<String, String> syncRequester = newBlockingRequester(mockCtx,
+        BlockingHttpRequester<String, String> syncRequester = newBlockingRequester(mockExecutionCtx,
                 req -> BlockingHttpResponses.newResponse(HTTP_1_1, OK, singleton("hello"), immediate()));
         HttpRequester<String, String> asyncRequester = syncRequester.asAsynchronousRequester();
         HttpResponse<String> asyncResponse = awaitIndefinitely(asyncRequester.request(
@@ -158,7 +163,7 @@ public abstract class AbstractBlockingHttpRequesterTest {
 
     @Test
     public void syncToAsyncClose() throws Exception {
-        BlockingHttpRequester<String, String> syncRequester = newBlockingRequester(mockCtx,
+        BlockingHttpRequester<String, String> syncRequester = newBlockingRequester(mockExecutionCtx,
                 (Function<BlockingHttpRequest<String>, BlockingHttpResponse<String>>) req -> {
             throw new IllegalStateException("shouldn't be called!");
         });
@@ -169,7 +174,7 @@ public abstract class AbstractBlockingHttpRequesterTest {
 
     @Test
     public void syncToAsyncCancelPropagated() throws Exception {
-        BlockingHttpRequester<String, String> syncRequester = newBlockingRequester(mockCtx, req ->
+        BlockingHttpRequester<String, String> syncRequester = newBlockingRequester(mockExecutionCtx, req ->
                 BlockingHttpResponses.newResponse(HTTP_1_1, OK, mockIterable, immediate()));
         HttpRequester<String, String> asyncRequester = syncRequester.asAsynchronousRequester();
         HttpResponse<String> asyncResponse = awaitIndefinitely(asyncRequester.request(

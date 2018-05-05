@@ -18,9 +18,8 @@ package io.servicetalk.http.api;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.Function;
 
@@ -36,26 +35,24 @@ public interface HttpConnectionBuilder<ResolvedAddress, I, O> {
     /**
      * Create a new {@link HttpConnection}.
      *
-     * @param ioExecutor {@link IoExecutor} to use for the connections
-     * @param executor {@link Executor} to use for the connections
+     * @param executionContext {@link ExecutionContext} when building {@link HttpConnection}s.
      * @param resolvedAddress a resolved address to use when connecting
      * @return A single that will complete with the {@link HttpConnection}
      */
-    Single<HttpConnection<I, O>> build(IoExecutor ioExecutor, Executor executor, ResolvedAddress resolvedAddress);
+    Single<HttpConnection<I, O>> build(ExecutionContext executionContext, ResolvedAddress resolvedAddress);
 
     /**
      * Convert this {@link HttpConnectionBuilder} to a {@link ConnectionFactory}. This can be useful to take advantage
      * of connection filters targeted at the {@link ConnectionFactory} API.
      *
-     * @param ioExecutor {@link IoExecutor} to use for the connections.
-     * @param executor {@link Executor} to use for the connections.
+     * @param executionContext {@link ExecutionContext} to use for the connections.
      * @param connectionFilter {@link Function} to decorate an {@link HttpConnection} for the purpose of filtering.
      * @param <FilteredConnection> type of {@link HttpConnection} after filtering
-     * @return A {@link ConnectionFactory} that will use the {@link #build(IoExecutor, Executor, Object)}
+     * @return A {@link ConnectionFactory} that will use the {@link #build(ExecutionContext, Object)}
      * method to create new {@link HttpConnection} objects.
      */
     default <FilteredConnection extends HttpConnection<I, O>> ConnectionFactory<ResolvedAddress, FilteredConnection>
-        asConnectionFactory(IoExecutor ioExecutor, Executor executor,
+        asConnectionFactory(ExecutionContext executionContext,
                             Function<HttpConnection<I, O>, FilteredConnection> connectionFilter) {
 
         return new ConnectionFactory<ResolvedAddress, FilteredConnection>() {
@@ -70,7 +67,7 @@ public interface HttpConnectionBuilder<ResolvedAddress, I, O> {
 
             @Override
             public Single<FilteredConnection> newConnection(ResolvedAddress resolvedAddress) {
-                return build(ioExecutor, executor, resolvedAddress).map(connectionFilter);
+                return build(executionContext, resolvedAddress).map(connectionFilter);
             }
 
             @Override

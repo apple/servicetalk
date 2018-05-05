@@ -113,6 +113,11 @@ final class HttpClientToBlockingHttpClient<I, O> extends BlockingHttpClient<I, O
         }
 
         @Override
+        public ExecutionContext getExecutionContext() {
+            return reservedConnection.getExecutionContext();
+        }
+
+        @Override
         public void close() throws Exception {
             BlockingUtils.close(reservedConnection);
         }
@@ -293,6 +298,11 @@ final class HttpClientToBlockingHttpClient<I, O> extends BlockingHttpClient<I, O
         @Override
         public Single<HttpResponse<O2>> request(final HttpRequest<I> request) {
             return reservedConnection.request(request).map(resp -> resp.transformPayloadBody(transformer));
+        }
+
+        @Override
+        public ExecutionContext getExecutionContext() {
+            return reservedConnection.getExecutionContext();
         }
 
         @Override

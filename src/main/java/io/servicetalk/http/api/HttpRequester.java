@@ -33,8 +33,11 @@ public abstract class HttpRequester<I, O> implements ListenableAsyncCloseable {
     public abstract Single<HttpResponse<O>> request(HttpRequest<I> request);
 
     /**
-     * Get the {@link ExecutionContext} associated with this object.
-     * @return the {@link ExecutionContext} associated with this object.
+     * Get the {@link ExecutionContext} used during construction of this object.
+     * <p>
+     * Note that the {@link ExecutionContext#getIoExecutor()} will not necessarily be associated with a specific thread
+     * unless that was how this object was built.
+     * @return the {@link ExecutionContext} used during construction of this object.
      */
     public abstract ExecutionContext getExecutionContext();
 

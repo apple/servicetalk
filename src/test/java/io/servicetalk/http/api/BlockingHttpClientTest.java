@@ -18,7 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,7 +30,7 @@ public class BlockingHttpClientTest extends AbstractBlockingHttpRequesterTest {
     @SuppressWarnings("unchecked")
     @Override
     protected <I, O, T extends HttpRequester<I, O> & TestHttpRequester> T newAsyncRequester(
-            final ConnectionContext ctx, final Function<HttpRequest<I>, Single<HttpResponse<O>>> doRequest) {
+            final ExecutionContext ctx, final Function<HttpRequest<I>, Single<HttpResponse<O>>> doRequest) {
         return (T) new TestHttpClient<I, O>(ctx) {
             @Override
             public Single<HttpResponse<O>> request(final HttpRequest<I> request) {
@@ -53,7 +52,7 @@ public class BlockingHttpClientTest extends AbstractBlockingHttpRequesterTest {
     @SuppressWarnings("unchecked")
     @Override
     protected <I, O, T extends BlockingHttpRequester<I, O> & TestHttpRequester> T newBlockingRequester(
-            final ConnectionContext ctx, final Function<BlockingHttpRequest<I>, BlockingHttpResponse<O>> doRequest) {
+            final ExecutionContext ctx, final Function<BlockingHttpRequest<I>, BlockingHttpResponse<O>> doRequest) {
         return (T) new TestBlockingHttpClient<I, O>(ctx) {
             @Override
             public BlockingHttpResponse<O> request(final BlockingHttpRequest<I> request) {

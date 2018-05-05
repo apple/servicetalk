@@ -21,18 +21,20 @@ import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static java.util.Objects.requireNonNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class BlockingHttpConnectionTest extends AbstractBlockingHttpRequesterTest {
 
     @SuppressWarnings("unchecked")
     @Override
-    protected <I, O, T extends HttpRequester<I, O> & TestHttpRequester> T newAsyncRequester(final ConnectionContext ctx,
+    protected <I, O, T extends HttpRequester<I, O> & TestHttpRequester> T newAsyncRequester(final ExecutionContext ctx,
                                                final Function<HttpRequest<I>, Single<HttpResponse<O>>> doRequest) {
         return (T) new TestHttpConnection<I, O>(ctx) {
             @Override
@@ -45,7 +47,7 @@ public class BlockingHttpConnectionTest extends AbstractBlockingHttpRequesterTes
     @SuppressWarnings("unchecked")
     @Override
     protected <I, O, T extends BlockingHttpRequester<I, O> & TestHttpRequester> T newBlockingRequester(
-            final ConnectionContext ctx, final Function<BlockingHttpRequest<I>, BlockingHttpResponse<O>> doRequest) {
+            final ExecutionContext ctx, final Function<BlockingHttpRequest<I>, BlockingHttpResponse<O>> doRequest) {
         return (T) new TestBlockingHttpConnection<I, O>(ctx) {
             @Override
             public BlockingHttpResponse<O> request(final BlockingHttpRequest<I> request) {
@@ -57,10 +59,13 @@ public class BlockingHttpConnectionTest extends AbstractBlockingHttpRequesterTes
     private abstract static class TestHttpConnection<I, O> extends HttpConnection<I, O> implements TestHttpRequester {
         private final AtomicBoolean closed = new AtomicBoolean();
         private final CompletableProcessor onClose = new CompletableProcessor();
+        private final ExecutionContext executionContext;
         private final ConnectionContext connectionContext;
 
-        TestHttpConnection(ConnectionContext connectionContext) {
-            this.connectionContext = requireNonNull(connectionContext);
+        TestHttpConnection(ExecutionContext executionContext) {
+            this.executionContext = executionContext;
+            this.connectionContext = mock(ConnectionContext.class);
+            when(connectionContext.getExecutionContext()).thenReturn(executionContext);
         }
 
         @Override
@@ -92,6 +97,11 @@ public class BlockingHttpConnectionTest extends AbstractBlockingHttpRequesterTes
         }
 
         @Override
+        public ExecutionContext getExecutionContext() {
+            return executionContext;
+        }
+
+        @Override
         public final boolean isClosed() {
             return closed.get();
         }
@@ -100,15 +110,23 @@ public class BlockingHttpConnectionTest extends AbstractBlockingHttpRequesterTes
     private abstract static class TestBlockingHttpConnection<I, O> extends BlockingHttpConnection<I, O>
             implements TestHttpRequester {
         private final AtomicBoolean closed = new AtomicBoolean();
+        private final ExecutionContext executionContext;
         private final ConnectionContext connectionContext;
 
-        TestBlockingHttpConnection(ConnectionContext connectionContext) {
-            this.connectionContext = requireNonNull(connectionContext);
+        TestBlockingHttpConnection(ExecutionContext executionContext) {
+            this.executionContext = executionContext;
+            this.connectionContext = mock(ConnectionContext.class);
+            when(connectionContext.getExecutionContext()).thenReturn(executionContext);
         }
 
         @Override
         public ConnectionContext getConnectionContext() {
             return connectionContext;
+        }
+
+        @Override
+        public ExecutionContext getExecutionContext() {
+            return executionContext;
         }
 
         @Override

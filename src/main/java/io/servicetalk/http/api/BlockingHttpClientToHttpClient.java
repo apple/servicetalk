@@ -151,6 +151,11 @@ final class BlockingHttpClientToHttpClient<I, O> extends HttpClient<I, O> {
         }
 
         @Override
+        public ExecutionContext getExecutionContext() {
+            return blockingReservedConnection.getExecutionContext();
+        }
+
+        @Override
         public Completable onClose() {
             if (blockingReservedConnection instanceof ReservedHttpConnectionToBlocking) {
                 return ((ReservedHttpConnectionToBlocking) blockingReservedConnection).onClose();
@@ -338,6 +343,11 @@ final class BlockingHttpClientToHttpClient<I, O> extends HttpClient<I, O> {
         @Override
         public BlockingHttpResponse<O2> request(final BlockingHttpRequest<I> request) throws Exception {
             return reservedConnection.request(request).transformPayloadBody(transformer);
+        }
+
+        @Override
+        public ExecutionContext getExecutionContext() {
+            return reservedConnection.getExecutionContext();
         }
 
         @Override
