@@ -15,13 +15,13 @@
  */
 package io.servicetalk.redis.utils;
 
-import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisRequest;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import static java.util.Objects.requireNonNull;
 
@@ -47,8 +47,8 @@ public abstract class DelegatingRedisClient extends RedisClient {
     }
 
     @Override
-    public BufferAllocator getBufferAllocator() {
-        return wrapped.getBufferAllocator();
+    public ExecutionContext getExecutionContext() {
+        return wrapped.getExecutionContext();
     }
 
     @Override
