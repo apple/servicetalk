@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.QueueFullException;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Before;
@@ -62,9 +63,11 @@ public class DefaultPipelinedConnectionTest {
     @Before
     public void setUp() {
         EmbeddedChannel channel = new EmbeddedChannel();
+        ExecutionContext executionContext = mock(ExecutionContext.class);
         ConnectionContext context = mock(ConnectionContext.class);
         when(context.closeAsync()).thenReturn(new NettyFutureCompletable(channel::close));
-        when(context.getExecutor()).thenReturn(immediate());
+        when(context.getExecutionContext()).thenReturn(executionContext);
+        when(executionContext.getExecutor()).thenReturn(immediate());
         Connection.RequestNSupplier requestNSupplier = mock(Connection.RequestNSupplier.class);
         readPublisher = new TestPublisher<>(false, false);
         readPublisher.sendOnSubscribe();

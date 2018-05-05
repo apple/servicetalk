@@ -15,12 +15,11 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.FlushStrategy;
 import io.servicetalk.transport.api.FlushStrategyHolder;
 
@@ -263,23 +262,18 @@ public final class NettyConnection<Read, Write> implements Connection<Read, Writ
     }
 
     @Override
-    public BufferAllocator getBufferAllocator() {
-        return context.getBufferAllocator();
-    }
-
-    @Override
     public SSLSession getSslSession() {
         return context.getSslSession();
     }
 
     @Override
-    public NettyIoExecutor getIoExecutor() {
-        return toNettyIoExecutor(context.getIoExecutor());
+    public ExecutionContext getExecutionContext() {
+        return context.getExecutionContext();
     }
 
     @Override
-    public Executor getExecutor() {
-        return context.getExecutor();
+    public NettyIoExecutor getIoExecutor() {
+        return toNettyIoExecutor(context.getIoExecutor());
     }
 
     @Override

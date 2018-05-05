@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import io.netty.channel.ChannelOutboundBuffer;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -73,11 +74,13 @@ public class NettyConnectionTest {
 
     @Before
     public void setUp() {
+        ExecutionContext executionContext = mock(ExecutionContext.class);
         allocator = DEFAULT_ALLOCATOR;
         channel = new EmbeddedChannel();
         context = mock(ConnectionContext.class);
         when(context.closeAsync()).thenReturn(new NettyFutureCompletable(channel::close));
-        when(context.getExecutor()).thenReturn(immediate());
+        when(context.getExecutionContext()).thenReturn(executionContext);
+        when(executionContext.getExecutor()).thenReturn(immediate());
         requestNSupplier = mock(Connection.RequestNSupplier.class);
         when(requestNSupplier.getRequestNFor(anyLong())).then(invocation1 -> (long) requestNext);
         conn = new NettyConnection<>(channel, context, empty(immediate()), new Connection.TerminalPredicate<>(o -> false));
@@ -287,8 +290,8 @@ public class NettyConnectionTest {
 
     @Test
     public void testContextDelegation() {
-        conn.getBufferAllocator();
-        verify(context).getBufferAllocator();
+        conn.getExecutionContext();
+        verify(context).getExecutionContext();
         verifyNoMoreInteractions(context);
         conn.getLocalAddress();
         verify(context).getLocalAddress();

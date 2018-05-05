@@ -17,8 +17,6 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.IoExecutor;
 
-import io.netty.channel.EventLoop;
-
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -43,15 +41,5 @@ public final class EventLoopAwareNettyIoExecutors {
             return (EventLoopAwareNettyIoExecutor) executor;
         }
         throw new IllegalArgumentException("Incompatible IoExecutor: " + executor + ". Not a netty based IoExecutor.");
-    }
-
-    /**
-     * Wraps the passed {@link EventLoop} into an {@link EventLoopAwareNettyIoExecutor}.
-     *
-     * @param eventLoop {@link EventLoop} to wrap.
-     * @return {@link EventLoopAwareNettyIoExecutor} wrapping the passed {@link EventLoop}.
-     */
-    public static EventLoopAwareNettyIoExecutor wrapEventLoop(EventLoop eventLoop) {
-        return new EventLoopIoExecutor(eventLoop, true);
     }
 }

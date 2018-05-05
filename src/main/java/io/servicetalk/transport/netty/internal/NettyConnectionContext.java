@@ -19,6 +19,8 @@ import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.DefaultExecutionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 
 import io.netty.channel.Channel;
@@ -42,11 +44,9 @@ public final class NettyConnectionContext implements ConnectionContext {
 
     private static final AttributeKey<ConnectionContext> SVC_CONTEXT = AttributeKey.newInstance(NettyConnectionContext.class.getName() + "_attr_service_context");
 
-    private final IoExecutor ioExecutor;
-    private final Executor executor;
-    private final BufferAllocator allocator;
     private final NettyChannelListenableAsyncCloseable close;
     private final Channel channel;
+    private final ExecutionContext executionContext;
     @Nullable
     private volatile SSLSession sslSession;
 
@@ -62,9 +62,7 @@ public final class NettyConnectionContext implements ConnectionContext {
                                    BufferAllocator allocator) {
         this.channel = requireNonNull(channel);
         close = new NettyChannelListenableAsyncCloseable(channel);
-        this.ioExecutor = requireNonNull(ioExecutor);
-        this.executor = requireNonNull(executor);
-        this.allocator = requireNonNull(allocator);
+        executionContext = new DefaultExecutionContext(allocator, ioExecutor, executor);
     }
 
     @Override
@@ -78,23 +76,13 @@ public final class NettyConnectionContext implements ConnectionContext {
     }
 
     @Override
-    public BufferAllocator getBufferAllocator() {
-        return allocator;
-    }
-
-    @Override
     public SSLSession getSslSession() {
         return sslSession;
     }
 
     @Override
-    public IoExecutor getIoExecutor() {
-        return ioExecutor;
-    }
-
-    @Override
-    public Executor getExecutor() {
-        return executor;
+    public ExecutionContext getExecutionContext() {
+        return executionContext;
     }
 
     /**

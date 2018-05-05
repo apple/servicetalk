@@ -15,16 +15,14 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.QueueFullException;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.FlushStrategy;
-import io.servicetalk.transport.api.IoExecutor;
 
 import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
@@ -207,24 +205,14 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
     }
 
     @Override
-    public BufferAllocator getBufferAllocator() {
-        return connection.getBufferAllocator();
-    }
-
-    @Override
     @Nullable
     public SSLSession getSslSession() {
         return connection.getSslSession();
     }
 
     @Override
-    public IoExecutor getIoExecutor() {
-        return connection.getIoExecutor();
-    }
-
-    @Override
-    public Executor getExecutor() {
-        return connection.getExecutor();
+    public ExecutionContext getExecutionContext() {
+        return connection.getExecutionContext();
     }
 
     @Override
