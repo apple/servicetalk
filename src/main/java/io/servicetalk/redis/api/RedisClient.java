@@ -39,8 +39,8 @@ public abstract class RedisClient extends RedisRequester {
          * Releases this reserved {@link RedisConnection} to be used for subsequent requests.
          * This method must be idempotent, i.e. calling multiple times must not have side-effects.
          *
-         * @return the {@code Completable} that is notified on release.
+         * @return the {@code Completable} that is notified on releaseAsync.
          */
-        public abstract Completable release();
+        public abstract Completable releaseAsync();
     }
 }

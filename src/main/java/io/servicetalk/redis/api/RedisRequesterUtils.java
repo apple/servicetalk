@@ -159,7 +159,8 @@ final class RedisRequesterUtils {
                         aggregator = null;
                     } else if (aggregator == null) {
                         if (redisData instanceof RedisData.SimpleString) {
-                            aggregator = requester.getBufferAllocator().fromUtf8(redisData.getCharSequenceValue());
+                            aggregator = requester.getExecutionContext().getBufferAllocator()
+                                    .fromUtf8(redisData.getCharSequenceValue());
                         } else if (redisData instanceof RedisData.BulkStringChunk) {
                             aggregator = redisData.getBufferValue();
                         } else if (!ignoreRedisData(redisData)) {
@@ -200,7 +201,8 @@ final class RedisRequesterUtils {
 
                 private void reallocateAggregator(int extraBytes) {
                     assert aggregator != null;
-                    aggregator = requester.getBufferAllocator().newBuffer(extraBytes + aggregator.getReadableBytes()).writeBytes(aggregator);
+                    aggregator = requester.getExecutionContext().getBufferAllocator()
+                            .newBuffer(extraBytes + aggregator.getReadableBytes()).writeBytes(aggregator);
                 }
             });
         }
@@ -306,7 +308,8 @@ final class RedisRequesterUtils {
                         if (aggregator == null) {
                             aggregator = redisData.getBufferValue();
                             if (!aggregator.tryEnsureWritable(bulkStringSize - aggregator.getReadableBytes(), false)) {
-                                aggregator = requester.getBufferAllocator().newBuffer(bulkStringSize).writeBytes(aggregator);
+                                aggregator = requester.getExecutionContext().getBufferAllocator()
+                                        .newBuffer(bulkStringSize).writeBytes(aggregator);
                             }
                         } else {
                             aggregator.writeBytes(redisData.getBufferValue());

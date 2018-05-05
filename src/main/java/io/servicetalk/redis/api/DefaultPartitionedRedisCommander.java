@@ -62,7 +62,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> append(@RedisProtocolSupport.Key final CharSequence key, final CharSequence value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.APPEND, allocator);
@@ -79,7 +79,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> auth(final CharSequence password) {
         requireNonNull(password);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.AUTH, allocator);
@@ -93,7 +93,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> bgrewriteaof() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BGREWRITEAOF, allocator);
@@ -106,7 +106,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> bgsave() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BGSAVE, allocator);
@@ -120,7 +120,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> bitcount(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BITCOUNT, allocator);
@@ -137,7 +137,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> bitcount(@RedisProtocolSupport.Key final CharSequence key, @Nullable final Long start,
                                  @Nullable final Long end) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (start != null) {
@@ -167,7 +167,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                        final Collection<RedisProtocolSupport.BitfieldOperation> operations) {
         requireNonNull(key);
         requireNonNull(operations);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         final CompositeBuffer cbOps = allocator.newCompositeBuffer();
         final int len = 2 + operations.stream().mapToInt(op -> op.writeTo(cbOps, allocator)).sum();
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BITFIELD, allocator);
@@ -188,7 +188,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(operation);
         requireNonNull(destkey);
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BITOP, allocator);
@@ -212,7 +212,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(destkey);
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BITOP, allocator);
@@ -240,7 +240,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 6;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BITOP, allocator);
@@ -266,7 +266,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(operation);
         requireNonNull(destkey);
         requireNonNull(keys);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += keys.size();
@@ -286,7 +286,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> bitpos(@RedisProtocolSupport.Key final CharSequence key, final long bit) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BITPOS, allocator);
@@ -304,7 +304,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> bitpos(@RedisProtocolSupport.Key final CharSequence key, final long bit, @Nullable final Long start,
                                @Nullable final Long end) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         if (start != null) {
@@ -334,7 +334,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public <T> Single<List<T>> blpop(@RedisProtocolSupport.Key final Collection<? extends CharSequence> keys,
                                      final long timeout) {
         requireNonNull(keys);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += keys.size();
@@ -354,7 +354,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public <T> Single<List<T>> brpop(@RedisProtocolSupport.Key final Collection<? extends CharSequence> keys,
                                      final long timeout) {
         requireNonNull(keys);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += keys.size();
@@ -375,7 +375,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                      @RedisProtocolSupport.Key final CharSequence destination, final long timeout) {
         requireNonNull(source);
         requireNonNull(destination);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BRPOPLPUSH, allocator);
@@ -394,7 +394,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> clientKill(@Nullable final Long id, @Nullable final RedisProtocolSupport.ClientKillType type,
                                    @Nullable final CharSequence addrIpPort, @Nullable final CharSequence skipmeYesNo) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (id != null) {
@@ -435,7 +435,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> clientList() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLIENT,
@@ -449,7 +449,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> clientGetname() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLIENT,
@@ -463,7 +463,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> clientPause(final long timeout) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLIENT,
@@ -479,7 +479,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> clientReply(final RedisProtocolSupport.ClientReplyReplyMode replyMode) {
         requireNonNull(replyMode);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLIENT,
@@ -495,7 +495,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> clientSetname(final CharSequence connectionName) {
         requireNonNull(connectionName);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLIENT,
@@ -510,7 +510,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> clusterAddslots(final long slot) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -525,7 +525,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> clusterAddslots(final long slot1, final long slot2) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -541,7 +541,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> clusterAddslots(final long slot1, final long slot2, final long slot3) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -559,7 +559,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> clusterAddslots(final Collection<Long> slots) {
         requireNonNull(slots);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += slots.size();
@@ -576,7 +576,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> clusterCountFailureReports(final CharSequence nodeId) {
         requireNonNull(nodeId);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -591,7 +591,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<Long> clusterCountkeysinslot(final long slot) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -606,7 +606,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> clusterDelslots(final long slot) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -621,7 +621,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> clusterDelslots(final long slot1, final long slot2) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -637,7 +637,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> clusterDelslots(final long slot1, final long slot2, final long slot3) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -655,7 +655,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> clusterDelslots(final Collection<Long> slots) {
         requireNonNull(slots);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += slots.size();
@@ -671,7 +671,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> clusterFailover() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -685,7 +685,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> clusterFailover(@Nullable final RedisProtocolSupport.ClusterFailoverOptions options) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (options != null) {
@@ -706,7 +706,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> clusterForget(final CharSequence nodeId) {
         requireNonNull(nodeId);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -721,7 +721,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public <T> Single<List<T>> clusterGetkeysinslot(final long slot, final long count) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -738,7 +738,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> clusterInfo() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -753,7 +753,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> clusterKeyslot(final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -769,7 +769,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> clusterMeet(final CharSequence ip, final long port) {
         requireNonNull(ip);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -785,7 +785,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> clusterNodes() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -800,7 +800,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> clusterReplicate(final CharSequence nodeId) {
         requireNonNull(nodeId);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -815,7 +815,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> clusterReset() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -829,7 +829,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> clusterReset(@Nullable final RedisProtocolSupport.ClusterResetResetType resetType) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (resetType != null) {
@@ -849,7 +849,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> clusterSaveconfig() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -863,7 +863,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> clusterSetConfigEpoch(final long configEpoch) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -879,7 +879,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> clusterSetslot(final long slot, final RedisProtocolSupport.ClusterSetslotSubcommand subcommand) {
         requireNonNull(subcommand);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -897,7 +897,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<String> clusterSetslot(final long slot, final RedisProtocolSupport.ClusterSetslotSubcommand subcommand,
                                          @Nullable final CharSequence nodeId) {
         requireNonNull(subcommand);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         if (nodeId != null) {
@@ -920,7 +920,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> clusterSlaves(final CharSequence nodeId) {
         requireNonNull(nodeId);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -935,7 +935,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public <T> Single<List<T>> clusterSlots() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -950,7 +950,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public <T> Single<List<T>> command() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.COMMAND, allocator);
@@ -964,7 +964,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<Long> commandCount() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.COMMAND,
@@ -978,7 +978,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public <T> Single<List<T>> commandGetkeys() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.COMMAND,
@@ -994,7 +994,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> commandInfo(final CharSequence commandName) {
         requireNonNull(commandName);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.COMMAND,
@@ -1012,7 +1012,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public <T> Single<List<T>> commandInfo(final CharSequence commandName1, final CharSequence commandName2) {
         requireNonNull(commandName1);
         requireNonNull(commandName2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.COMMAND,
@@ -1033,7 +1033,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(commandName1);
         requireNonNull(commandName2);
         requireNonNull(commandName3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.COMMAND,
@@ -1052,7 +1052,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> commandInfo(final Collection<? extends CharSequence> commandNames) {
         requireNonNull(commandNames);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += commandNames.size();
@@ -1070,7 +1070,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> configGet(final CharSequence parameter) {
         requireNonNull(parameter);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CONFIG,
@@ -1086,7 +1086,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> configRewrite() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CONFIG,
@@ -1102,7 +1102,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<String> configSet(final CharSequence parameter, final CharSequence value) {
         requireNonNull(parameter);
         requireNonNull(value);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CONFIG,
@@ -1118,7 +1118,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> configResetstat() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CONFIG,
@@ -1132,7 +1132,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<Long> dbsize() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DBSIZE, allocator);
@@ -1146,7 +1146,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> debugObject(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DEBUG,
@@ -1162,7 +1162,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> debugSegfault() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DEBUG,
@@ -1177,7 +1177,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> decr(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DECR, allocator);
@@ -1193,7 +1193,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> decrby(@RedisProtocolSupport.Key final CharSequence key, final long decrement) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DECRBY, allocator);
@@ -1210,7 +1210,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> del(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DEL, allocator);
@@ -1228,7 +1228,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                             @RedisProtocolSupport.Key final CharSequence key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DEL, allocator);
@@ -1249,7 +1249,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DEL, allocator);
@@ -1269,7 +1269,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> del(@RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         len += keys.size();
@@ -1286,7 +1286,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> dump(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DUMP, allocator);
@@ -1302,7 +1302,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> echo(final CharSequence message) {
         requireNonNull(message);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ECHO, allocator);
@@ -1321,7 +1321,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(script);
         requireNonNull(keys);
         requireNonNull(args);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += keys.size();
@@ -1346,7 +1346,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(script);
         requireNonNull(keys);
         requireNonNull(args);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += keys.size();
@@ -1372,7 +1372,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(script);
         requireNonNull(keys);
         requireNonNull(args);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += keys.size();
@@ -1397,7 +1397,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(sha1);
         requireNonNull(keys);
         requireNonNull(args);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += keys.size();
@@ -1422,7 +1422,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(sha1);
         requireNonNull(keys);
         requireNonNull(args);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += keys.size();
@@ -1448,7 +1448,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(sha1);
         requireNonNull(keys);
         requireNonNull(args);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += keys.size();
@@ -1469,7 +1469,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> exists(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EXISTS, allocator);
@@ -1487,7 +1487,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                @RedisProtocolSupport.Key final CharSequence key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EXISTS, allocator);
@@ -1509,7 +1509,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EXISTS, allocator);
@@ -1529,7 +1529,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> exists(@RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         len += keys.size();
@@ -1546,7 +1546,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> expire(@RedisProtocolSupport.Key final CharSequence key, final long seconds) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EXPIRE, allocator);
@@ -1563,7 +1563,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> expireat(@RedisProtocolSupport.Key final CharSequence key, final long timestamp) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EXPIREAT, allocator);
@@ -1579,7 +1579,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> flushall() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.FLUSHALL, allocator);
@@ -1592,7 +1592,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> flushall(@Nullable final RedisProtocolSupport.FlushallAsync async) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         if (async != null) {
@@ -1611,7 +1611,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> flushdb() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.FLUSHDB, allocator);
@@ -1624,7 +1624,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> flushdb(@Nullable final RedisProtocolSupport.FlushdbAsync async) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         if (async != null) {
@@ -1646,7 +1646,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                final CharSequence member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOADD, allocator);
@@ -1669,7 +1669,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 8;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOADD, allocator);
@@ -1697,7 +1697,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         requireNonNull(member3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 11;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOADD, allocator);
@@ -1724,7 +1724,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                final Collection<RedisProtocolSupport.LongitudeLatitudeMember> longitudeLatitudeMembers) {
         requireNonNull(key);
         requireNonNull(longitudeLatitudeMembers);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += RedisProtocolSupport.LongitudeLatitudeMember.SIZE * longitudeLatitudeMembers.size();
@@ -1745,7 +1745,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEODIST, allocator);
@@ -1767,7 +1767,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         if (unit != null) {
@@ -1793,7 +1793,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public <T> Single<List<T>> geohash(@RedisProtocolSupport.Key final CharSequence key, final CharSequence member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOHASH, allocator);
@@ -1814,7 +1814,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOHASH, allocator);
@@ -1837,7 +1837,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         requireNonNull(member3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOHASH, allocator);
@@ -1859,7 +1859,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                        final Collection<? extends CharSequence> members) {
         requireNonNull(key);
         requireNonNull(members);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += members.size();
@@ -1879,7 +1879,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public <T> Single<List<T>> geopos(@RedisProtocolSupport.Key final CharSequence key, final CharSequence member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOPOS, allocator);
@@ -1900,7 +1900,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOPOS, allocator);
@@ -1923,7 +1923,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         requireNonNull(member3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOPOS, allocator);
@@ -1945,7 +1945,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                       final Collection<? extends CharSequence> members) {
         requireNonNull(key);
         requireNonNull(members);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += members.size();
@@ -1967,7 +1967,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                          final RedisProtocolSupport.GeoradiusUnit unit) {
         requireNonNull(key);
         requireNonNull(unit);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 6;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEORADIUS, allocator);
@@ -1997,7 +1997,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                          @Nullable @RedisProtocolSupport.Key final CharSequence storedistKey) {
         requireNonNull(key);
         requireNonNull(unit);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 6;
         if (withcoord != null) {
@@ -2072,7 +2072,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(member);
         requireNonNull(unit);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEORADIUSBYMEMBER, allocator);
@@ -2102,7 +2102,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(member);
         requireNonNull(unit);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         if (withcoord != null) {
@@ -2173,7 +2173,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> get(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GET, allocator);
@@ -2189,7 +2189,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> getbit(@RedisProtocolSupport.Key final CharSequence key, final long offset) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GETBIT, allocator);
@@ -2206,7 +2206,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> getrange(@RedisProtocolSupport.Key final CharSequence key, final long start, final long end) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GETRANGE, allocator);
@@ -2225,7 +2225,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<String> getset(@RedisProtocolSupport.Key final CharSequence key, final CharSequence value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GETSET, allocator);
@@ -2243,7 +2243,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> hdel(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field) {
         requireNonNull(key);
         requireNonNull(field);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HDEL, allocator);
@@ -2263,7 +2263,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(field1);
         requireNonNull(field2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HDEL, allocator);
@@ -2285,7 +2285,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(field1);
         requireNonNull(field2);
         requireNonNull(field3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HDEL, allocator);
@@ -2305,7 +2305,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> hdel(@RedisProtocolSupport.Key final CharSequence key, final Collection<? extends CharSequence> fields) {
         requireNonNull(key);
         requireNonNull(fields);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += fields.size();
@@ -2324,7 +2324,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> hexists(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field) {
         requireNonNull(key);
         requireNonNull(field);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HEXISTS, allocator);
@@ -2342,7 +2342,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<String> hget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field) {
         requireNonNull(key);
         requireNonNull(field);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HGET, allocator);
@@ -2359,7 +2359,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> hgetall(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HGETALL, allocator);
@@ -2378,7 +2378,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                 final long increment) {
         requireNonNull(key);
         requireNonNull(field);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HINCRBY, allocator);
@@ -2398,7 +2398,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                        final double increment) {
         requireNonNull(key);
         requireNonNull(field);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HINCRBYFLOAT, allocator);
@@ -2417,7 +2417,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> hkeys(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HKEYS, allocator);
@@ -2434,7 +2434,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> hlen(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HLEN, allocator);
@@ -2451,7 +2451,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field) {
         requireNonNull(key);
         requireNonNull(field);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HMGET, allocator);
@@ -2472,7 +2472,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(field1);
         requireNonNull(field2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HMGET, allocator);
@@ -2495,7 +2495,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(field1);
         requireNonNull(field2);
         requireNonNull(field3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HMGET, allocator);
@@ -2517,7 +2517,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                      final Collection<? extends CharSequence> fields) {
         requireNonNull(key);
         requireNonNull(fields);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += fields.size();
@@ -2539,7 +2539,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(field);
         requireNonNull(value);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HMSET, allocator);
@@ -2562,7 +2562,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(value1);
         requireNonNull(field2);
         requireNonNull(value2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 6;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HMSET, allocator);
@@ -2590,7 +2590,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(value2);
         requireNonNull(field3);
         requireNonNull(value3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 8;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HMSET, allocator);
@@ -2614,7 +2614,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                 final Collection<RedisProtocolSupport.FieldValue> fieldValues) {
         requireNonNull(key);
         requireNonNull(fieldValues);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += RedisProtocolSupport.FieldValue.SIZE * fieldValues.size();
@@ -2632,7 +2632,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> hscan(@RedisProtocolSupport.Key final CharSequence key, final long cursor) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HSCAN, allocator);
@@ -2651,7 +2651,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public <T> Single<List<T>> hscan(@RedisProtocolSupport.Key final CharSequence key, final long cursor,
                                      @Nullable final CharSequence matchPattern, @Nullable final Long count) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         if (matchPattern != null) {
@@ -2686,7 +2686,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(field);
         requireNonNull(value);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HSET, allocator);
@@ -2707,7 +2707,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(field);
         requireNonNull(value);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HSETNX, allocator);
@@ -2726,7 +2726,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> hstrlen(@RedisProtocolSupport.Key final CharSequence key, final CharSequence field) {
         requireNonNull(key);
         requireNonNull(field);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HSTRLEN, allocator);
@@ -2743,7 +2743,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> hvals(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HVALS, allocator);
@@ -2760,7 +2760,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> incr(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.INCR, allocator);
@@ -2776,7 +2776,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> incrby(@RedisProtocolSupport.Key final CharSequence key, final long increment) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.INCRBY, allocator);
@@ -2793,7 +2793,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Double> incrbyfloat(@RedisProtocolSupport.Key final CharSequence key, final double increment) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.INCRBYFLOAT, allocator);
@@ -2810,7 +2810,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> info() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.INFO, allocator);
@@ -2823,7 +2823,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> info(@Nullable final CharSequence section) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         if (section != null) {
@@ -2843,7 +2843,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> keys(final CharSequence pattern) {
         requireNonNull(pattern);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.KEYS, allocator);
@@ -2858,7 +2858,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<Long> lastsave() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LASTSAVE, allocator);
@@ -2872,7 +2872,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> lindex(@RedisProtocolSupport.Key final CharSequence key, final long index) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LINDEX, allocator);
@@ -2893,7 +2893,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(where);
         requireNonNull(pivot);
         requireNonNull(value);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LINSERT, allocator);
@@ -2912,7 +2912,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> llen(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LLEN, allocator);
@@ -2928,7 +2928,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> lpop(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LPOP, allocator);
@@ -2945,7 +2945,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> lpush(@RedisProtocolSupport.Key final CharSequence key, final CharSequence value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LPUSH, allocator);
@@ -2965,7 +2965,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(value1);
         requireNonNull(value2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LPUSH, allocator);
@@ -2987,7 +2987,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(value1);
         requireNonNull(value2);
         requireNonNull(value3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LPUSH, allocator);
@@ -3007,7 +3007,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> lpush(@RedisProtocolSupport.Key final CharSequence key, final Collection<? extends CharSequence> values) {
         requireNonNull(key);
         requireNonNull(values);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += values.size();
@@ -3026,7 +3026,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> lpushx(@RedisProtocolSupport.Key final CharSequence key, final CharSequence value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LPUSHX, allocator);
@@ -3043,7 +3043,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> lrange(@RedisProtocolSupport.Key final CharSequence key, final long start, final long stop) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LRANGE, allocator);
@@ -3063,7 +3063,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> lrem(@RedisProtocolSupport.Key final CharSequence key, final long count, final CharSequence value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LREM, allocator);
@@ -3082,7 +3082,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<String> lset(@RedisProtocolSupport.Key final CharSequence key, final long index, final CharSequence value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LSET, allocator);
@@ -3100,7 +3100,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> ltrim(@RedisProtocolSupport.Key final CharSequence key, final long start, final long stop) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LTRIM, allocator);
@@ -3117,7 +3117,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> memoryDoctor() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
@@ -3131,7 +3131,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public <T> Single<List<T>> memoryHelp() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
@@ -3146,7 +3146,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> memoryMallocStats() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
@@ -3160,7 +3160,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> memoryPurge() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
@@ -3174,7 +3174,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public <T> Single<List<T>> memoryStats() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
@@ -3190,7 +3190,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> memoryUsage(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
@@ -3207,7 +3207,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> memoryUsage(@RedisProtocolSupport.Key final CharSequence key, @Nullable final Long samplesCount) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         if (samplesCount != null) {
@@ -3231,7 +3231,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MGET, allocator);
@@ -3250,7 +3250,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                     @RedisProtocolSupport.Key final CharSequence key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MGET, allocator);
@@ -3273,7 +3273,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MGET, allocator);
@@ -3294,7 +3294,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         len += keys.size();
@@ -3311,7 +3311,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Publisher<String> monitor() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MONITOR, allocator);
@@ -3325,7 +3325,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> move(@RedisProtocolSupport.Key final CharSequence key, final long db) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MOVE, allocator);
@@ -3343,7 +3343,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<String> mset(@RedisProtocolSupport.Key final CharSequence key, final CharSequence value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MSET, allocator);
@@ -3364,7 +3364,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(value1);
         requireNonNull(key2);
         requireNonNull(value2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MSET, allocator);
@@ -3391,7 +3391,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(value2);
         requireNonNull(key3);
         requireNonNull(value3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 7;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MSET, allocator);
@@ -3414,7 +3414,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> mset(final Collection<RedisProtocolSupport.KeyValue> keyValues) {
         requireNonNull(keyValues);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         len += RedisProtocolSupport.KeyValue.SIZE * keyValues.size();
@@ -3431,7 +3431,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> msetnx(@RedisProtocolSupport.Key final CharSequence key, final CharSequence value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MSETNX, allocator);
@@ -3452,7 +3452,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(value1);
         requireNonNull(key2);
         requireNonNull(value2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MSETNX, allocator);
@@ -3479,7 +3479,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(value2);
         requireNonNull(key3);
         requireNonNull(value3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 7;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MSETNX, allocator);
@@ -3502,7 +3502,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> msetnx(final Collection<RedisProtocolSupport.KeyValue> keyValues) {
         requireNonNull(keyValues);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         len += RedisProtocolSupport.KeyValue.SIZE * keyValues.size();
@@ -3517,7 +3517,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<TransactedRedisCommander> multi() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MULTI, allocator);
@@ -3531,7 +3531,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> objectEncoding(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.OBJECT,
@@ -3548,7 +3548,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> objectFreq(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.OBJECT,
@@ -3564,7 +3564,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<List<String>> objectHelp() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.OBJECT,
@@ -3580,7 +3580,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> objectIdletime(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.OBJECT,
@@ -3597,7 +3597,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> objectRefcount(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.OBJECT,
@@ -3614,7 +3614,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> persist(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PERSIST, allocator);
@@ -3630,7 +3630,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> pexpire(@RedisProtocolSupport.Key final CharSequence key, final long milliseconds) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PEXPIRE, allocator);
@@ -3647,7 +3647,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> pexpireat(@RedisProtocolSupport.Key final CharSequence key, final long millisecondsTimestamp) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PEXPIREAT, allocator);
@@ -3665,7 +3665,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> pfadd(@RedisProtocolSupport.Key final CharSequence key, final CharSequence element) {
         requireNonNull(key);
         requireNonNull(element);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFADD, allocator);
@@ -3685,7 +3685,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(element1);
         requireNonNull(element2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFADD, allocator);
@@ -3707,7 +3707,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(element1);
         requireNonNull(element2);
         requireNonNull(element3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFADD, allocator);
@@ -3728,7 +3728,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                               final Collection<? extends CharSequence> elements) {
         requireNonNull(key);
         requireNonNull(elements);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += elements.size();
@@ -3746,7 +3746,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> pfcount(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFCOUNT, allocator);
@@ -3764,7 +3764,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                 @RedisProtocolSupport.Key final CharSequence key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFCOUNT, allocator);
@@ -3786,7 +3786,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFCOUNT, allocator);
@@ -3806,7 +3806,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> pfcount(@RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         len += keys.size();
@@ -3825,7 +3825,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                   @RedisProtocolSupport.Key final CharSequence sourcekey) {
         requireNonNull(destkey);
         requireNonNull(sourcekey);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFMERGE, allocator);
@@ -3847,7 +3847,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(destkey);
         requireNonNull(sourcekey1);
         requireNonNull(sourcekey2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFMERGE, allocator);
@@ -3873,7 +3873,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(sourcekey1);
         requireNonNull(sourcekey2);
         requireNonNull(sourcekey3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFMERGE, allocator);
@@ -3897,7 +3897,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                   @RedisProtocolSupport.Key final Collection<? extends CharSequence> sourcekeys) {
         requireNonNull(destkey);
         requireNonNull(sourcekeys);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += sourcekeys.size();
@@ -3915,7 +3915,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> ping() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PING, allocator);
@@ -3929,7 +3929,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> ping(final CharSequence message) {
         requireNonNull(message);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PING, allocator);
@@ -3946,7 +3946,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                  final CharSequence value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PSETEX, allocator);
@@ -3964,7 +3964,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<PubSubRedisConnection> psubscribe(final CharSequence pattern) {
         requireNonNull(pattern);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PSUBSCRIBE, allocator);
@@ -3979,7 +3979,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> pttl(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PTTL, allocator);
@@ -3996,7 +3996,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> publish(final CharSequence channel, final CharSequence message) {
         requireNonNull(channel);
         requireNonNull(message);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PUBLISH, allocator);
@@ -4011,7 +4011,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<List<String>> pubsubChannels() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PUBSUB,
@@ -4026,7 +4026,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<List<String>> pubsubChannels(@Nullable final CharSequence pattern) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (pattern != null) {
@@ -4047,7 +4047,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<List<String>> pubsubChannels(@Nullable final CharSequence pattern1, @Nullable final CharSequence pattern2) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (pattern1 != null) {
@@ -4075,7 +4075,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<List<String>> pubsubChannels(@Nullable final CharSequence pattern1, @Nullable final CharSequence pattern2,
                                                @Nullable final CharSequence pattern3) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (pattern1 != null) {
@@ -4109,7 +4109,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<List<String>> pubsubChannels(final Collection<? extends CharSequence> patterns) {
         requireNonNull(patterns);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += patterns.size();
@@ -4126,7 +4126,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public <T> Single<List<T>> pubsubNumsub() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PUBSUB,
@@ -4141,7 +4141,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public <T> Single<List<T>> pubsubNumsub(@Nullable final CharSequence channel) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (channel != null) {
@@ -4162,7 +4162,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public <T> Single<List<T>> pubsubNumsub(@Nullable final CharSequence channel1, @Nullable final CharSequence channel2) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (channel1 != null) {
@@ -4190,7 +4190,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> pubsubNumsub(@Nullable final CharSequence channel1, @Nullable final CharSequence channel2,
                                             @Nullable final CharSequence channel3) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (channel1 != null) {
@@ -4224,7 +4224,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> pubsubNumsub(final Collection<? extends CharSequence> channels) {
         requireNonNull(channels);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += channels.size();
@@ -4241,7 +4241,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<Long> pubsubNumpat() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PUBSUB,
@@ -4255,7 +4255,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> randomkey() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RANDOMKEY, allocator);
@@ -4268,7 +4268,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> readonly() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.READONLY, allocator);
@@ -4281,7 +4281,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> readwrite() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.READWRITE, allocator);
@@ -4297,7 +4297,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                  @RedisProtocolSupport.Key final CharSequence newkey) {
         requireNonNull(key);
         requireNonNull(newkey);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RENAME, allocator);
@@ -4317,7 +4317,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                  @RedisProtocolSupport.Key final CharSequence newkey) {
         requireNonNull(key);
         requireNonNull(newkey);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RENAMENX, allocator);
@@ -4337,7 +4337,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                   final CharSequence serializedValue) {
         requireNonNull(key);
         requireNonNull(serializedValue);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RESTORE, allocator);
@@ -4358,7 +4358,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                   @Nullable final RedisProtocolSupport.RestoreReplace replace) {
         requireNonNull(key);
         requireNonNull(serializedValue);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         if (replace != null) {
@@ -4381,7 +4381,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public <T> Single<List<T>> role() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ROLE, allocator);
@@ -4396,7 +4396,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> rpop(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RPOP, allocator);
@@ -4414,7 +4414,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                     @RedisProtocolSupport.Key final CharSequence destination) {
         requireNonNull(source);
         requireNonNull(destination);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RPOPLPUSH, allocator);
@@ -4433,7 +4433,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> rpush(@RedisProtocolSupport.Key final CharSequence key, final CharSequence value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RPUSH, allocator);
@@ -4453,7 +4453,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(value1);
         requireNonNull(value2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RPUSH, allocator);
@@ -4475,7 +4475,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(value1);
         requireNonNull(value2);
         requireNonNull(value3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RPUSH, allocator);
@@ -4495,7 +4495,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> rpush(@RedisProtocolSupport.Key final CharSequence key, final Collection<? extends CharSequence> values) {
         requireNonNull(key);
         requireNonNull(values);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += values.size();
@@ -4514,7 +4514,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> rpushx(@RedisProtocolSupport.Key final CharSequence key, final CharSequence value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RPUSHX, allocator);
@@ -4532,7 +4532,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> sadd(@RedisProtocolSupport.Key final CharSequence key, final CharSequence member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SADD, allocator);
@@ -4552,7 +4552,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SADD, allocator);
@@ -4574,7 +4574,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         requireNonNull(member3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SADD, allocator);
@@ -4594,7 +4594,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> sadd(@RedisProtocolSupport.Key final CharSequence key, final Collection<? extends CharSequence> members) {
         requireNonNull(key);
         requireNonNull(members);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += members.size();
@@ -4611,7 +4611,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> save() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SAVE, allocator);
@@ -4624,7 +4624,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public <T> Single<List<T>> scan(final long cursor) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCAN, allocator);
@@ -4639,7 +4639,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public <T> Single<List<T>> scan(final long cursor, @Nullable final CharSequence matchPattern, @Nullable final Long count) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (matchPattern != null) {
@@ -4669,7 +4669,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> scard(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCARD, allocator);
@@ -4685,7 +4685,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> scriptDebug(final RedisProtocolSupport.ScriptDebugMode mode) {
         requireNonNull(mode);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCRIPT,
@@ -4701,7 +4701,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> scriptExists(final CharSequence sha1) {
         requireNonNull(sha1);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCRIPT,
@@ -4719,7 +4719,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public <T> Single<List<T>> scriptExists(final CharSequence sha11, final CharSequence sha12) {
         requireNonNull(sha11);
         requireNonNull(sha12);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCRIPT,
@@ -4739,7 +4739,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(sha11);
         requireNonNull(sha12);
         requireNonNull(sha13);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCRIPT,
@@ -4758,7 +4758,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> scriptExists(final Collection<? extends CharSequence> sha1s) {
         requireNonNull(sha1s);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += sha1s.size();
@@ -4775,7 +4775,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> scriptFlush() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCRIPT,
@@ -4789,7 +4789,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> scriptKill() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCRIPT,
@@ -4804,7 +4804,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> scriptLoad(final CharSequence script) {
         requireNonNull(script);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCRIPT,
@@ -4820,7 +4820,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> sdiff(@RedisProtocolSupport.Key final CharSequence firstkey) {
         requireNonNull(firstkey);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFF, allocator);
@@ -4838,7 +4838,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public <T> Single<List<T>> sdiff(@RedisProtocolSupport.Key final CharSequence firstkey,
                                      @Nullable @RedisProtocolSupport.Key final CharSequence otherkey) {
         requireNonNull(firstkey);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (otherkey != null) {
@@ -4866,7 +4866,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                      @Nullable @RedisProtocolSupport.Key final CharSequence otherkey1,
                                      @Nullable @RedisProtocolSupport.Key final CharSequence otherkey2) {
         requireNonNull(firstkey);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (otherkey1 != null) {
@@ -4904,7 +4904,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                      @Nullable @RedisProtocolSupport.Key final CharSequence otherkey2,
                                      @Nullable @RedisProtocolSupport.Key final CharSequence otherkey3) {
         requireNonNull(firstkey);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (otherkey1 != null) {
@@ -4950,7 +4950,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                      @RedisProtocolSupport.Key final Collection<? extends CharSequence> otherkeys) {
         requireNonNull(firstkey);
         requireNonNull(otherkeys);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += otherkeys.size();
@@ -4972,7 +4972,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                    @RedisProtocolSupport.Key final CharSequence firstkey) {
         requireNonNull(destination);
         requireNonNull(firstkey);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFFSTORE, allocator);
@@ -4993,7 +4993,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                    @Nullable @RedisProtocolSupport.Key final CharSequence otherkey) {
         requireNonNull(destination);
         requireNonNull(firstkey);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         if (otherkey != null) {
@@ -5024,7 +5024,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                    @Nullable @RedisProtocolSupport.Key final CharSequence otherkey2) {
         requireNonNull(destination);
         requireNonNull(firstkey);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         if (otherkey1 != null) {
@@ -5065,7 +5065,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                    @Nullable @RedisProtocolSupport.Key final CharSequence otherkey3) {
         requireNonNull(destination);
         requireNonNull(firstkey);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         if (otherkey1 != null) {
@@ -5114,7 +5114,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(destination);
         requireNonNull(firstkey);
         requireNonNull(otherkeys);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += otherkeys.size();
@@ -5134,7 +5134,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> select(final long index) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SELECT, allocator);
@@ -5150,7 +5150,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<String> set(@RedisProtocolSupport.Key final CharSequence key, final CharSequence value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SET, allocator);
@@ -5170,7 +5170,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                               @Nullable final RedisProtocolSupport.SetCondition condition) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         if (expireDuration != null) {
@@ -5200,7 +5200,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> setbit(@RedisProtocolSupport.Key final CharSequence key, final long offset, final CharSequence value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SETBIT, allocator);
@@ -5219,7 +5219,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<String> setex(@RedisProtocolSupport.Key final CharSequence key, final long seconds, final CharSequence value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SETEX, allocator);
@@ -5238,7 +5238,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> setnx(@RedisProtocolSupport.Key final CharSequence key, final CharSequence value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SETNX, allocator);
@@ -5256,7 +5256,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> setrange(@RedisProtocolSupport.Key final CharSequence key, final long offset, final CharSequence value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SETRANGE, allocator);
@@ -5273,7 +5273,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> shutdown() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SHUTDOWN, allocator);
@@ -5286,7 +5286,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> shutdown(@Nullable final RedisProtocolSupport.ShutdownSaveMode saveMode) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         if (saveMode != null) {
@@ -5306,7 +5306,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> sinter(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SINTER, allocator);
@@ -5325,7 +5325,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                       @RedisProtocolSupport.Key final CharSequence key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SINTER, allocator);
@@ -5348,7 +5348,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SINTER, allocator);
@@ -5369,7 +5369,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> sinter(@RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         len += keys.size();
@@ -5389,7 +5389,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                     @RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(destination);
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SINTERSTORE, allocator);
@@ -5411,7 +5411,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(destination);
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SINTERSTORE, allocator);
@@ -5437,7 +5437,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SINTERSTORE, allocator);
@@ -5461,7 +5461,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                     @RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) {
         requireNonNull(destination);
         requireNonNull(keys);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += keys.size();
@@ -5481,7 +5481,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> sismember(@RedisProtocolSupport.Key final CharSequence key, final CharSequence member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SISMEMBER, allocator);
@@ -5499,7 +5499,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<String> slaveof(final CharSequence host, final CharSequence port) {
         requireNonNull(host);
         requireNonNull(port);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SLAVEOF, allocator);
@@ -5515,7 +5515,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> slowlog(final CharSequence subcommand) {
         requireNonNull(subcommand);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SLOWLOG, allocator);
@@ -5531,7 +5531,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> slowlog(final CharSequence subcommand, @Nullable final CharSequence argument) {
         requireNonNull(subcommand);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (argument != null) {
@@ -5553,7 +5553,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> smembers(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SMEMBERS, allocator);
@@ -5573,7 +5573,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(source);
         requireNonNull(destination);
         requireNonNull(member);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SMOVE, allocator);
@@ -5592,7 +5592,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> sort(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SORT, allocator);
@@ -5614,7 +5614,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                     @Nullable final RedisProtocolSupport.SortSorting sorting) {
         requireNonNull(key);
         requireNonNull(getPatterns);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (byPattern != null) {
@@ -5660,7 +5660,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                              @RedisProtocolSupport.Key final CharSequence storeDestination) {
         requireNonNull(key);
         requireNonNull(storeDestination);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SORT, allocator);
@@ -5686,7 +5686,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(storeDestination);
         requireNonNull(getPatterns);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         if (byPattern != null) {
@@ -5732,7 +5732,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> spop(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SPOP, allocator);
@@ -5748,7 +5748,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> spop(@RedisProtocolSupport.Key final CharSequence key, @Nullable final Long count) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (count != null) {
@@ -5770,7 +5770,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> srandmember(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SRANDMEMBER, allocator);
@@ -5786,7 +5786,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<List<String>> srandmember(@RedisProtocolSupport.Key final CharSequence key, final long count) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SRANDMEMBER, allocator);
@@ -5805,7 +5805,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> srem(@RedisProtocolSupport.Key final CharSequence key, final CharSequence member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SREM, allocator);
@@ -5825,7 +5825,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SREM, allocator);
@@ -5847,7 +5847,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         requireNonNull(member3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SREM, allocator);
@@ -5867,7 +5867,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> srem(@RedisProtocolSupport.Key final CharSequence key, final Collection<? extends CharSequence> members) {
         requireNonNull(key);
         requireNonNull(members);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += members.size();
@@ -5885,7 +5885,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> sscan(@RedisProtocolSupport.Key final CharSequence key, final long cursor) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SSCAN, allocator);
@@ -5904,7 +5904,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public <T> Single<List<T>> sscan(@RedisProtocolSupport.Key final CharSequence key, final long cursor,
                                      @Nullable final CharSequence matchPattern, @Nullable final Long count) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         if (matchPattern != null) {
@@ -5936,7 +5936,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> strlen(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.STRLEN, allocator);
@@ -5952,7 +5952,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<PubSubRedisConnection> subscribe(final CharSequence channel) {
         requireNonNull(channel);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUBSCRIBE, allocator);
@@ -5967,7 +5967,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> sunion(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUNION, allocator);
@@ -5986,7 +5986,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                       @RedisProtocolSupport.Key final CharSequence key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUNION, allocator);
@@ -6009,7 +6009,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUNION, allocator);
@@ -6030,7 +6030,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> sunion(@RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         len += keys.size();
@@ -6050,7 +6050,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                     @RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(destination);
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUNIONSTORE, allocator);
@@ -6072,7 +6072,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(destination);
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUNIONSTORE, allocator);
@@ -6098,7 +6098,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUNIONSTORE, allocator);
@@ -6122,7 +6122,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                     @RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) {
         requireNonNull(destination);
         requireNonNull(keys);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += keys.size();
@@ -6140,7 +6140,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> swapdb(final long index, final long index1) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SWAPDB, allocator);
@@ -6155,7 +6155,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public <T> Single<List<T>> time() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TIME, allocator);
@@ -6170,7 +6170,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> touch(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TOUCH, allocator);
@@ -6188,7 +6188,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                               @RedisProtocolSupport.Key final CharSequence key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TOUCH, allocator);
@@ -6210,7 +6210,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TOUCH, allocator);
@@ -6230,7 +6230,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> touch(@RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         len += keys.size();
@@ -6247,7 +6247,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> ttl(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TTL, allocator);
@@ -6263,7 +6263,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> type(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TYPE, allocator);
@@ -6279,7 +6279,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> unlink(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.UNLINK, allocator);
@@ -6297,7 +6297,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                @RedisProtocolSupport.Key final CharSequence key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.UNLINK, allocator);
@@ -6319,7 +6319,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.UNLINK, allocator);
@@ -6339,7 +6339,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> unlink(@RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         len += keys.size();
@@ -6355,7 +6355,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<String> unwatch() {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.UNWATCH, allocator);
@@ -6368,7 +6368,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
 
     @Override
     public Single<Long> wait(final long numslaves, final long timeout) {
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.WAIT, allocator);
@@ -6384,7 +6384,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> watch(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.WATCH, allocator);
@@ -6402,7 +6402,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                 @RedisProtocolSupport.Key final CharSequence key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.WATCH, allocator);
@@ -6424,7 +6424,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.WATCH, allocator);
@@ -6444,7 +6444,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<String> watch(@RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         len += keys.size();
@@ -6463,7 +6463,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                              final Collection<RedisProtocolSupport.ScoreMember> scoreMembers) {
         requireNonNull(key);
         requireNonNull(scoreMembers);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += RedisProtocolSupport.ScoreMember.SIZE * scoreMembers.size();
@@ -6485,7 +6485,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                              final CharSequence member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         if (condition != null) {
@@ -6520,7 +6520,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 6;
         if (condition != null) {
@@ -6559,7 +6559,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         requireNonNull(member3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 8;
         if (condition != null) {
@@ -6597,7 +6597,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                              final Collection<RedisProtocolSupport.ScoreMember> scoreMembers) {
         requireNonNull(key);
         requireNonNull(scoreMembers);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (condition != null) {
@@ -6629,7 +6629,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                    final Collection<RedisProtocolSupport.ScoreMember> scoreMembers) {
         requireNonNull(key);
         requireNonNull(scoreMembers);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += RedisProtocolSupport.ScoreMember.SIZE * scoreMembers.size();
@@ -6653,7 +6653,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                    final CharSequence member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         if (condition != null) {
@@ -6690,7 +6690,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 7;
         if (condition != null) {
@@ -6731,7 +6731,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         requireNonNull(member3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 9;
         if (condition != null) {
@@ -6771,7 +6771,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                    final Collection<RedisProtocolSupport.ScoreMember> scoreMembers) {
         requireNonNull(key);
         requireNonNull(scoreMembers);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         if (condition != null) {
@@ -6803,7 +6803,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> zcard(@RedisProtocolSupport.Key final CharSequence key) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZCARD, allocator);
@@ -6819,7 +6819,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> zcount(@RedisProtocolSupport.Key final CharSequence key, final double min, final double max) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZCOUNT, allocator);
@@ -6839,7 +6839,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                   final CharSequence member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZINCRBY, allocator);
@@ -6860,7 +6860,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                     @RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) {
         requireNonNull(destination);
         requireNonNull(keys);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += keys.size();
@@ -6885,7 +6885,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(destination);
         requireNonNull(keys);
         requireNonNull(weightses);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += keys.size();
@@ -6916,7 +6916,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(min);
         requireNonNull(max);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZLEXCOUNT, allocator);
@@ -6934,7 +6934,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> zrange(@RedisProtocolSupport.Key final CharSequence key, final long start, final long stop) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZRANGE, allocator);
@@ -6954,7 +6954,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public <T> Single<List<T>> zrange(@RedisProtocolSupport.Key final CharSequence key, final long start, final long stop,
                                       @Nullable final RedisProtocolSupport.ZrangeWithscores withscores) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         if (withscores != null) {
@@ -6982,7 +6982,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(min);
         requireNonNull(max);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZRANGEBYLEX, allocator);
@@ -7004,7 +7004,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(min);
         requireNonNull(max);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         if (offsetCount != null) {
@@ -7030,7 +7030,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public <T> Single<List<T>> zrangebyscore(@RedisProtocolSupport.Key final CharSequence key, final double min,
                                              final double max) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZRANGEBYSCORE, allocator);
@@ -7051,7 +7051,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                              @Nullable final RedisProtocolSupport.ZrangebyscoreWithscores withscores,
                                              @Nullable final RedisProtocolSupport.OffsetCount offsetCount) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         if (withscores != null) {
@@ -7083,7 +7083,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> zrank(@RedisProtocolSupport.Key final CharSequence key, final CharSequence member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZRANK, allocator);
@@ -7101,7 +7101,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> zrem(@RedisProtocolSupport.Key final CharSequence key, final CharSequence member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREM, allocator);
@@ -7121,7 +7121,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREM, allocator);
@@ -7143,7 +7143,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         requireNonNull(member3);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREM, allocator);
@@ -7163,7 +7163,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> zrem(@RedisProtocolSupport.Key final CharSequence key, final Collection<? extends CharSequence> members) {
         requireNonNull(key);
         requireNonNull(members);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += members.size();
@@ -7184,7 +7184,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(min);
         requireNonNull(max);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREMRANGEBYLEX, allocator);
@@ -7202,7 +7202,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> zremrangebyrank(@RedisProtocolSupport.Key final CharSequence key, final long start, final long stop) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREMRANGEBYRANK, allocator);
@@ -7220,7 +7220,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public Single<Long> zremrangebyscore(@RedisProtocolSupport.Key final CharSequence key, final double min, final double max) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREMRANGEBYSCORE, allocator);
@@ -7238,7 +7238,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> zrevrange(@RedisProtocolSupport.Key final CharSequence key, final long start, final long stop) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGE, allocator);
@@ -7258,7 +7258,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public <T> Single<List<T>> zrevrange(@RedisProtocolSupport.Key final CharSequence key, final long start, final long stop,
                                          @Nullable final RedisProtocolSupport.ZrevrangeWithscores withscores) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         if (withscores != null) {
@@ -7286,7 +7286,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(max);
         requireNonNull(min);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGEBYLEX, allocator);
@@ -7309,7 +7309,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(key);
         requireNonNull(max);
         requireNonNull(min);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         if (offsetCount != null) {
@@ -7335,7 +7335,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public <T> Single<List<T>> zrevrangebyscore(@RedisProtocolSupport.Key final CharSequence key, final double max,
                                                 final double min) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGEBYSCORE, allocator);
@@ -7357,7 +7357,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                                 @Nullable final RedisProtocolSupport.ZrevrangebyscoreWithscores withscores,
                                                 @Nullable final RedisProtocolSupport.OffsetCount offsetCount) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         if (withscores != null) {
@@ -7389,7 +7389,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Long> zrevrank(@RedisProtocolSupport.Key final CharSequence key, final CharSequence member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANK, allocator);
@@ -7406,7 +7406,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     @Override
     public <T> Single<List<T>> zscan(@RedisProtocolSupport.Key final CharSequence key, final long cursor) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZSCAN, allocator);
@@ -7425,7 +7425,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public <T> Single<List<T>> zscan(@RedisProtocolSupport.Key final CharSequence key, final long cursor,
                                      @Nullable final CharSequence matchPattern, @Nullable final Long count) {
         requireNonNull(key);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         if (matchPattern != null) {
@@ -7458,7 +7458,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     public Single<Double> zscore(@RedisProtocolSupport.Key final CharSequence key, final CharSequence member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZSCORE, allocator);
@@ -7478,7 +7478,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
                                     @RedisProtocolSupport.Key final Collection<? extends CharSequence> keys) {
         requireNonNull(destination);
         requireNonNull(keys);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += keys.size();
@@ -7503,7 +7503,7 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
         requireNonNull(destination);
         requireNonNull(keys);
         requireNonNull(weightses);
-        final BufferAllocator allocator = partitionedRedisClient.getBufferAllocator();
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += keys.size();

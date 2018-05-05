@@ -18,9 +18,8 @@ package io.servicetalk.redis.api;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.ExecutionContext;
 
 /**
  * A builder for {@link RedisConnection} objects.
@@ -31,25 +30,22 @@ public interface RedisConnectionBuilder<ResolvedAddress> {
     /**
      * Create a new {@link RedisConnection}.
      *
-     * @param ioExecutor {@link IoExecutor} to use for the connections.
-     * @param executor {@link Executor} to use for any asynchronous source created by the returned
+     * @param executionContext {@link ExecutionContext} to use when building {@link RedisConnection}s.
      * {@link RedisConnection}.
      * @param resolvedAddress a resolved address to use when connecting.
      * @return A single that will complete with the {@link RedisConnection}.
      */
-    Single<RedisConnection> build(IoExecutor ioExecutor, Executor executor, ResolvedAddress resolvedAddress);
+    Single<RedisConnection> build(ExecutionContext executionContext, ResolvedAddress resolvedAddress);
 
     /**
      * Convert this {@link RedisConnectionBuilder} to a {@link ConnectionFactory}. This can be useful to take advantage
      * of connection filters targeted at the {@link ConnectionFactory} API.
-     * @param ioExecutor {@link IoExecutor} to use for the connections.
-     * @param executor {@link Executor} to use for any asynchronous source created by the returned
+     * @param executionContext {@link ExecutionContext} to use when building {@link RedisConnection}s.
      * {@link ConnectionFactory}.
-     * @return A {@link ConnectionFactory} that will use the {@link #build(IoExecutor, Executor, Object)} method to
+     * @return A {@link ConnectionFactory} that will use the {@link #build(ExecutionContext, Object)} method to
      * create new {@link RedisConnection} objects.
      */
-    default ConnectionFactory<ResolvedAddress, RedisConnection> asConnectionFactory(IoExecutor ioExecutor,
-                                                                                    Executor executor) {
+    default ConnectionFactory<ResolvedAddress, RedisConnection> asConnectionFactory(ExecutionContext executionContext) {
         return new ConnectionFactory<ResolvedAddress, RedisConnection>() {
             private final CompletableProcessor onClose = new CompletableProcessor();
             private final Completable closeAsync = new Completable() {
@@ -62,7 +58,7 @@ public interface RedisConnectionBuilder<ResolvedAddress> {
 
             @Override
             public Single<RedisConnection> newConnection(ResolvedAddress resolvedAddress) {
-                return build(ioExecutor, executor, resolvedAddress);
+                return build(executionContext, resolvedAddress);
             }
 
             @Override

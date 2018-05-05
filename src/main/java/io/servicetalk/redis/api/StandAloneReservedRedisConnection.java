@@ -18,6 +18,7 @@ package io.servicetalk.redis.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
@@ -35,7 +36,7 @@ final class StandAloneReservedRedisConnection extends RedisClient.ReservedRedisC
     }
 
     @Override
-    public Completable release() {
+    public Completable releaseAsync() {
         return new Completable() {
             @Override
             protected void handleSubscribe(Subscriber subscriber) {
@@ -62,6 +63,11 @@ final class StandAloneReservedRedisConnection extends RedisClient.ReservedRedisC
     @Override
     public Publisher<RedisData> request(RedisRequest request) {
         return delegate.request(request);
+    }
+
+    @Override
+    public ExecutionContext getExecutionContext() {
+        return delegate.getExecutionContext();
     }
 
     @Override

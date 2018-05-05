@@ -15,7 +15,6 @@
  */
 package io.servicetalk.redis.api;
 
-import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ConnectionContext;
 
@@ -31,11 +30,6 @@ public abstract class RedisConnection extends RedisRequester {
      * @return the {@link ConnectionContext}.
      */
     public abstract ConnectionContext getConnectionContext();
-
-    @Override
-    public BufferAllocator getBufferAllocator() {
-        return getConnectionContext().getBufferAllocator();
-    }
 
     /**
      * Returns a {@link Publisher} that gives the current value of the setting as well as subsequent changes to the setting

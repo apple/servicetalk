@@ -16,13 +16,13 @@
 package io.servicetalk.redis.api;
 
 import io.servicetalk.buffer.Buffer;
-import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
@@ -42,11 +42,6 @@ public abstract class PartitionedRedisClient implements ListenableAsyncCloseable
     @SuppressWarnings("unused")
     @Nullable
     private volatile BufferRedisCommander redisBufferCommander;
-
-    /**
-     * @return the {@link BufferAllocator} used by this client.
-     */
-    public abstract BufferAllocator getBufferAllocator();
 
     /**
      * @param request the {@link RedisRequest} to send.
@@ -73,6 +68,15 @@ public abstract class PartitionedRedisClient implements ListenableAsyncCloseable
      * @return a {@link RedisConnection}.
      */
     public abstract Single<ReservedRedisConnection> reserveConnection(PartitionAttributes partitionSelector, RedisRequest request);
+
+    /**
+     * Get the {@link ExecutionContext} used during construction of this object.
+     * <p>
+     * Note that the {@link ExecutionContext#getIoExecutor()} will not necessarily be associated with a specific thread
+     * unless that was how this object was built.
+     * @return the {@link ExecutionContext} used during construction of this object.
+     */
+    public abstract ExecutionContext getExecutionContext();
 
     /**
      * Get the {@link Function} that is responsible for generating a {@link RedisPartitionAttributesBuilder} for each {@link Command}.

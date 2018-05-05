@@ -16,7 +16,6 @@
 package io.servicetalk.redis.api;
 
 import io.servicetalk.buffer.Buffer;
-import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -25,6 +24,7 @@ import io.servicetalk.redis.api.RedisRequesterUtils.ToListSingle;
 import io.servicetalk.redis.api.RedisRequesterUtils.ToLongSingle;
 import io.servicetalk.redis.api.RedisRequesterUtils.ToStringSingle;
 import io.servicetalk.redis.internal.RedisUtils.ListWithBuffersCoercedToCharSequences;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -49,15 +49,19 @@ public abstract class RedisRequester implements ListenableAsyncCloseable {
     private volatile BufferRedisCommander redisBufferCommander;
 
     /**
-     * @return the {@link BufferAllocator} used by this requestor.
-     */
-    public abstract BufferAllocator getBufferAllocator();
-
-    /**
      * @param request the {@link RedisRequest} to send.
      * @return the response as a {@link Publisher}.
      */
     public abstract Publisher<RedisData> request(RedisRequest request);
+
+    /**
+     * Get the {@link ExecutionContext} used during construction of this object.
+     * <p>
+     * Note that the {@link ExecutionContext#getIoExecutor()} will not necessarily be associated with a specific thread
+     * unless that was how this object was built.
+     * @return the {@link ExecutionContext} used during construction of this object.
+     */
+    public abstract ExecutionContext getExecutionContext();
 
     /**
      * @param request      the {@link RedisRequest} to send.

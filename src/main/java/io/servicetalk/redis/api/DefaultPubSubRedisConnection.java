@@ -57,7 +57,7 @@ final class DefaultPubSubRedisConnection implements PubSubRedisConnection {
     @Override
     public Single<PubSubRedisConnection> psubscribe(final CharSequence pattern) {
         requireNonNull(pattern);
-        final BufferAllocator allocator = reservedCnx.getBufferAllocator();
+        final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PSUBSCRIBE, allocator);
@@ -70,7 +70,7 @@ final class DefaultPubSubRedisConnection implements PubSubRedisConnection {
     @Override
     public Single<PubSubRedisConnection> subscribe(final CharSequence channel) {
         requireNonNull(channel);
-        final BufferAllocator allocator = reservedCnx.getBufferAllocator();
+        final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUBSCRIBE, allocator);
@@ -82,7 +82,7 @@ final class DefaultPubSubRedisConnection implements PubSubRedisConnection {
 
     @Override
     public Single<PubSubRedisMessage.Pong<String>> ping() {
-        final BufferAllocator allocator = reservedCnx.getBufferAllocator();
+        final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PING, allocator);
@@ -93,7 +93,7 @@ final class DefaultPubSubRedisConnection implements PubSubRedisConnection {
     @Override
     public Single<PubSubRedisMessage.Pong<String>> ping(final CharSequence message) {
         requireNonNull(message);
-        final BufferAllocator allocator = reservedCnx.getBufferAllocator();
+        final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PING, allocator);

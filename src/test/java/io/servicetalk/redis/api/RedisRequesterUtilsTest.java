@@ -27,6 +27,7 @@ import io.servicetalk.redis.api.RedisData.LastBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.SimpleString;
 import io.servicetalk.redis.api.RedisRequesterUtils.ToBufferSingle;
 import io.servicetalk.redis.api.RedisRequesterUtils.ToListSingle;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -69,10 +70,12 @@ public class RedisRequesterUtilsTest {
 
     @Before
     public void setup() {
+        ExecutionContext executionContext = mock(ExecutionContext.class);
         requestor = mock(RedisRequester.class);
         request = mock(RedisRequest.class);
         allocator = DEFAULT_ALLOCATOR;
-        when(requestor.getBufferAllocator()).thenReturn(allocator);
+        when(requestor.getExecutionContext()).thenReturn(executionContext);
+        when(requestor.getExecutionContext().getBufferAllocator()).thenReturn(allocator);
         when(requestor.request(any())).thenReturn(publisher.getPublisher());
     }
 

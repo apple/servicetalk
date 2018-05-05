@@ -17,11 +17,8 @@ package io.servicetalk.redis.api;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscoverer.Event;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.transport.api.IoExecutor;
-
-import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
+import io.servicetalk.transport.api.ExecutionContext;
 
 /**
  * A builder of {@link RedisClient} objects.
@@ -34,23 +31,11 @@ public interface RedisClientBuilder<ResolvedAddress, EventType extends Event<Res
     /**
      * Build a new {@link RedisClient}.
      *
-     * @param ioExecutor The {@link IoExecutor} to use for I/O.
+     * @param executionContext {@link ExecutionContext} used for {@link RedisConnection#getExecutionContext()} and to
+     * build new {@link RedisConnection}s.
      * @param addressEventStream A stream of events (typically from a {@link ServiceDiscoverer#discover(Object)}) that
      *                           provides the addresses used to create new {@link RedisConnection}s.
      * @return A new {@link RedisClient}.
      */
-    default RedisClient build(IoExecutor ioExecutor, Publisher<EventType> addressEventStream) {
-        return build(ioExecutor, newCachedThreadExecutor(), addressEventStream);
-    }
-
-    /**
-     * Build a new {@link RedisClient}.
-     *
-     * @param ioExecutor The {@link IoExecutor} to use for I/O.
-     * @param executor {@link Executor} to use for any asynchronous source created by the returned {@link RedisClient}.
-     * @param addressEventStream A stream of events (typically from a {@link ServiceDiscoverer#discover(Object)}) that
-     *                           provides the addresses used to create new {@link RedisConnection}s.
-     * @return A new {@link RedisClient}.
-     */
-    RedisClient build(IoExecutor ioExecutor, Executor executor, Publisher<EventType> addressEventStream);
+    RedisClient build(ExecutionContext executionContext, Publisher<EventType> addressEventStream);
 }
