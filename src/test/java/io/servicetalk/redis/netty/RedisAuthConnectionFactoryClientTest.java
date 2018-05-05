@@ -29,6 +29,7 @@ import io.servicetalk.redis.api.RedisException;
 import io.servicetalk.redis.utils.RedisAuthConnectionFactory;
 import io.servicetalk.redis.utils.RedisAuthorizationException;
 import io.servicetalk.redis.utils.RetryingRedisClient;
+import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
 import org.junit.After;
@@ -40,6 +41,7 @@ import java.net.InetSocketAddress;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoff;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
@@ -67,7 +69,7 @@ public class RedisAuthConnectionFactoryClientTest {
     @Nullable
     private ServiceDiscoverer<HostAndPort, InetSocketAddress> serviceDiscoverer;
     @Nullable
-    private EventLoopAwareNettyIoExecutor executor;
+    private EventLoopAwareNettyIoExecutor ioExecutor;
     @Nullable
     private RedisClient client;
 
@@ -78,9 +80,9 @@ public class RedisAuthConnectionFactoryClientTest {
                 awaitIndefinitely(serviceDiscoverer.closeAsync());
             }
         } else {
-            assert executor != null;
+            assert ioExecutor != null;
             assert serviceDiscoverer != null;
-            awaitIndefinitely(client.closeAsync().andThen(serviceDiscoverer.closeAsync()).andThen(executor.closeAsync(0, 0, SECONDS)));
+            awaitIndefinitely(client.closeAsync().andThen(serviceDiscoverer.closeAsync()).andThen(ioExecutor.closeAsync(0, 0, SECONDS)));
         }
     }
 
@@ -157,15 +159,16 @@ public class RedisAuthConnectionFactoryClientTest {
 
         redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
 
-        executor = toEventLoopAwareNettyIoExecutor(createExecutor());
-        serviceDiscoverer = new DefaultDnsServiceDiscoverer.Builder(executor.next(), immediate()).build()
+        ioExecutor = toEventLoopAwareNettyIoExecutor(createExecutor());
+        serviceDiscoverer = new DefaultDnsServiceDiscoverer.Builder(ioExecutor.next(), immediate()).build()
                 .toHostAndPortDiscoverer();
         client = new RetryingRedisClient(
                 new DefaultRedisClientBuilder<InetSocketAddress>((eventPublisher, connectionFactory) -> new RoundRobinLoadBalancer<>(eventPublisher, new RedisAuthConnectionFactory<>(connectionFactory, ctx -> ctx.getBufferAllocator().fromAscii(password)), comparingInt(Object::hashCode)))
                         .setMaxPipelinedRequests(10)
                         .setIdleConnectionTimeout(ofSeconds(2))
-                        .build(executor, immediate(), serviceDiscoverer.discover(new DefaultHostAndPort(redisHost, redisPort))),
-                retryWithExponentialBackoff(10, cause -> cause instanceof RetryableException, ofMillis(10), backoffNanos -> executor.next().scheduleOnEventloop(backoffNanos, NANOSECONDS)));
+                        .build(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()),
+                                serviceDiscoverer.discover(new DefaultHostAndPort(redisHost, redisPort))),
+                retryWithExponentialBackoff(10, cause -> cause instanceof RetryableException, ofMillis(10), backoffNanos -> ioExecutor.next().scheduleOnEventloop(backoffNanos, NANOSECONDS)));
         clientConsumer.accept(client);
     }
 }

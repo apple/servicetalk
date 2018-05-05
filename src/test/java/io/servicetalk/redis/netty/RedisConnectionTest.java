@@ -16,11 +16,10 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.buffer.Buffer;
-import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.redis.api.RedisClient;
+import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
 import io.servicetalk.redis.api.RedisCommander;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
@@ -29,6 +28,8 @@ import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.api.RedisException;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.DefaultExecutionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Test;
 import org.reactivestreams.Subscription;
@@ -40,6 +41,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
@@ -85,7 +87,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
 
     @Test
     public void unrecoverableError() throws Exception {
-        final Buffer reqBuf = client.getBufferAllocator().fromAscii("*1\r\n+PING\r\n");
+        final Buffer reqBuf = client.getExecutionContext().getBufferAllocator().fromAscii("*1\r\n+PING\r\n");
 
         thrown.expect(ExecutionException.class);
         thrown.expectCause(is(instanceOf(RedisException.class)));
@@ -249,7 +251,8 @@ public class RedisConnectionTest extends BaseRedisClientTest {
     public void reserveAndRelease() throws Exception {
         final RedisRequest pingRequest = newRequest(PING);
         assert client != null;
-        awaitIndefinitely(client.reserveConnection(pingRequest).flatMapCompletable(RedisClient.ReservedRedisConnection::release));
+        awaitIndefinitely(client.reserveConnection(pingRequest)
+                .flatMapCompletable(ReservedRedisConnection::releaseAsync));
         awaitIndefinitely(client.reserveConnection(pingRequest));
     }
 
@@ -284,7 +287,8 @@ public class RedisConnectionTest extends BaseRedisClientTest {
     private static void rawConnectionToCommanderWithFilterDoesNotThrowClassCast(boolean monitor) throws ExecutionException, InterruptedException {
         RedisConnection rawConnection =
                 awaitIndefinitely(DefaultRedisConnectionBuilder.<InetSocketAddress>forPipeline()
-                        .build(executor, immediate(), new InetSocketAddress(redisHost, redisPort)));
+                        .build(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()),
+                                new InetSocketAddress(redisHost, redisPort)));
         try {
             final AtomicBoolean requestCalled = new AtomicBoolean();
             final AtomicBoolean closeCalled = new AtomicBoolean();
@@ -326,11 +330,6 @@ public class RedisConnectionTest extends BaseRedisClientTest {
         }
 
         @Override
-        public BufferAllocator getBufferAllocator() {
-            return delegate.getBufferAllocator();
-        }
-
-        @Override
         public <T> Publisher<T> getSettingStream(SettingKey<T> settingKey) {
             return delegate.getSettingStream(settingKey);
         }
@@ -339,6 +338,11 @@ public class RedisConnectionTest extends BaseRedisClientTest {
         public Publisher<RedisData> request(RedisRequest request) {
             requestCalled.set(true);
             return delegate.request(request);
+        }
+
+        @Override
+        public ExecutionContext getExecutionContext() {
+            return delegate.getExecutionContext();
         }
 
         @Override

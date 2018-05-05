@@ -45,7 +45,7 @@ final class RedisClientChannelInitializer implements ChannelInitializer {
         final ChannelPipeline pipeline = channel.pipeline();
         // We only use the decoder, as encoding is trivial
         pipeline.addLast(new RedisDecoder());
-        // Add the RefCountTrapper to ensure we always release reference counted objects and also silence a warning.
+        // Add the RefCountTrapper to ensure we always releaseAsync reference counted objects and also silence a warning.
         pipeline.addLast(TRAPPER);
         return ctx;
     }

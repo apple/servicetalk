@@ -16,7 +16,6 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.buffer.Buffer;
-import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -33,6 +32,7 @@ import io.servicetalk.redis.api.RedisData.RequestRedisData;
 import io.servicetalk.redis.api.RedisException;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.redis.internal.RedisUtils.ListWithBuffersCoercedToCharSequences;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Test;
 
@@ -80,7 +80,8 @@ public class RedisClientTest extends BaseRedisClientTest {
     public void gracefulTerminationOnQuit() throws Exception {
         assert client != null;
         RedisRequest quit = newRequest(QUIT);
-        assertThat(awaitIndefinitely(client.reserveConnection(quit).flatMapPublisher(conn -> conn.request(newRequest(QUIT)).doAfterFinally(conn::release))), contains(redisSimpleString("OK")));
+        assertThat(awaitIndefinitely(client.reserveConnection(quit).flatMapPublisher(conn ->
+                conn.request(newRequest(QUIT)).doAfterFinally(conn::releaseAsync))), contains(redisSimpleString("OK")));
     }
 
     @Test
@@ -160,16 +161,16 @@ public class RedisClientTest extends BaseRedisClientTest {
 
     @Test
     public void bufferRequest() throws Exception {
-        Buffer reqBuf = client.getBufferAllocator().newBuffer(33);
+        Buffer reqBuf = client.getExecutionContext().getBufferAllocator().newBuffer(33);
         reqBuf.writeAscii("*2\r\n")
-                .writeBytes(PING.toRESPArgument(client.getBufferAllocator()))
+                .writeBytes(PING.toRESPArgument(client.getExecutionContext().getBufferAllocator()))
                 .writeAscii("$12\r\nbufreq-pong1\r\n");
 
         assertThat(awaitIndefinitely(client.request(newRequest(PING, reqBuf), Buffer.class)), is(buf("bufreq-pong1")));
 
-        reqBuf = client.getBufferAllocator().newBuffer(33);
+        reqBuf = client.getExecutionContext().getBufferAllocator().newBuffer(33);
         reqBuf.writeAscii("*2\r\n")
-                .writeBytes(PING.toRESPArgument(client.getBufferAllocator()))
+                .writeBytes(PING.toRESPArgument(client.getExecutionContext().getBufferAllocator()))
                 .writeAscii("$12\r\nbufreq-pong2\r\n");
 
         assertThat(awaitIndefinitely(client.request(newRequest(PING, reqBuf), CharSequence.class)), is("bufreq-pong2"));
@@ -177,7 +178,7 @@ public class RedisClientTest extends BaseRedisClientTest {
 
     @Test
     public void unknownCommandNoCoercion() throws Exception {
-        Buffer reqBuf = client.getBufferAllocator().newBuffer(33);
+        Buffer reqBuf = client.getExecutionContext().getBufferAllocator().newBuffer(33);
         reqBuf.writeAscii("*2\r\n$6\r\nFOOBAR\r\n$12\r\nbufreq-pong1\r\n");
 
         // We use PING to build the request object, which doesn't matter here: FOOBAR is the actual command sent on the wire
@@ -186,7 +187,7 @@ public class RedisClientTest extends BaseRedisClientTest {
 
     @Test
     public void unknownCommandAnyCoercion() throws Exception {
-        Buffer reqBuf = client.getBufferAllocator().newBuffer(33);
+        Buffer reqBuf = client.getExecutionContext().getBufferAllocator().newBuffer(33);
         reqBuf.writeAscii("*2\r\n$6\r\nFOOBAR\r\n$12\r\nbufreq-pong1\r\n");
 
         Class<?>[] coercionTypes = {CharSequence.class, Buffer.class, Long.class, ListWithBuffersCoercedToCharSequences.class, List.class};
@@ -213,14 +214,14 @@ public class RedisClientTest extends BaseRedisClientTest {
             }
 
             @Override
-            public BufferAllocator getBufferAllocator() {
-                return delegate.getBufferAllocator();
-            }
-
-            @Override
             public Publisher<RedisData> request(RedisRequest request) {
                 requestCalled.set(true);
                 return delegate.request(request);
+            }
+
+            @Override
+            public ExecutionContext getExecutionContext() {
+                return delegate.getExecutionContext();
             }
 
             @Override
@@ -272,9 +273,9 @@ public class RedisClientTest extends BaseRedisClientTest {
     @Test
     public void requestSingleBufferIsRepeatable() throws ExecutionException, InterruptedException {
         BufferRedisCommander commander = client.asBufferCommander();
-        final Buffer key = client.getBufferAllocator().newBuffer(4).writeInt(Integer.MAX_VALUE);
-        final Buffer v1 = client.getBufferAllocator().newBuffer(4).writeInt(Integer.MIN_VALUE);
-        final Buffer v2 = client.getBufferAllocator().newBuffer(4).writeInt(12345678);
+        final Buffer key = client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(Integer.MAX_VALUE);
+        final Buffer v1 = client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(Integer.MIN_VALUE);
+        final Buffer v2 = client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(12345678);
         awaitIndefinitely(commander.del(key.slice()));
         assertThat(awaitIndefinitely(commander.sadd(key.slice(), v1.slice())), is(1L));
         assertThat(awaitIndefinitely(commander.sadd(key.slice(), v2.slice())), is(1L));
@@ -289,12 +290,12 @@ public class RedisClientTest extends BaseRedisClientTest {
     @Test
     public void requestSingleListIsRepeatable() throws ExecutionException, InterruptedException {
         BufferRedisCommander commander = client.asBufferCommander();
-        final Buffer key1 = client.getBufferAllocator().newBuffer(4).writeInt(Integer.MAX_VALUE);
-        final Buffer v1 = client.getBufferAllocator().newBuffer(4).writeInt(Integer.MIN_VALUE);
-        final Buffer v2 = client.getBufferAllocator().newBuffer(4).writeInt(12345678);
-        final Buffer key2 = client.getBufferAllocator().newBuffer(4).writeInt(77777);
-        final Buffer v3 = client.getBufferAllocator().newBuffer(4).writeInt(123);
-        final Buffer v4 = client.getBufferAllocator().newBuffer(4).writeInt(55667);
+        final Buffer key1 = client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(Integer.MAX_VALUE);
+        final Buffer v1 = client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(Integer.MIN_VALUE);
+        final Buffer v2 = client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(12345678);
+        final Buffer key2 = client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(77777);
+        final Buffer v3 = client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(123);
+        final Buffer v4 = client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(55667);
         awaitIndefinitely(commander.del(key1.slice()));
         awaitIndefinitely(commander.del(key2.slice()));
         assertThat(awaitIndefinitely(commander.sadd(key1.slice(), v1.slice())), is(1L));

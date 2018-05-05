@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.redis.api.RedisConnection;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import org.slf4j.Logger;
 
@@ -43,6 +44,7 @@ abstract class AbstractRedisConnection extends RedisConnection {
 
     final int maxPendingRequests;
     private final LongFunction<Completable> timer;
+    private final ExecutionContext executionContext;
 
     private final AsyncCloseable pinger;
     private final Completable closeAsync = new Completable() {
@@ -57,10 +59,14 @@ abstract class AbstractRedisConnection extends RedisConnection {
      *
      * @param timer {@link Function} that takes timer duration in nanoseconds and returns a {@link Completable} which completes
      *              when the timer is done.
+     * @param executionContext The {@link ExecutionContext} used to build this {@link RedisConnection}.
      * @param roConfig for this connection.
      */
-    protected AbstractRedisConnection(LongFunction<Completable> timer, ReadOnlyRedisClientConfig roConfig) {
+    protected AbstractRedisConnection(LongFunction<Completable> timer,
+                                      ExecutionContext executionContext,
+                                      ReadOnlyRedisClientConfig roConfig) {
         this.timer = timer;
+        this.executionContext = executionContext;
         Duration pingPeriod = roConfig.getPingPeriod();
         final int maxPipelinedRequests = roConfig.getMaxPipelinedRequests();
         if (pingPeriod != null) {
@@ -77,6 +83,11 @@ abstract class AbstractRedisConnection extends RedisConnection {
             pinger = NOOP_PINGER;
             maxPendingRequests = maxPipelinedRequests;
         }
+    }
+
+    @Override
+    public final ExecutionContext getExecutionContext() {
+        return executionContext;
     }
 
     @SuppressWarnings("unchecked")

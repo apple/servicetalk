@@ -23,10 +23,10 @@ import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,12 +35,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.LongFunction;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Publisher.error;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.Is.is;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public final class AbstractRedisConnectionTest {
 
@@ -49,6 +52,8 @@ public final class AbstractRedisConnectionTest {
 
     @Before
     public void setUp() {
+        ExecutionContext executionContext = mock(ExecutionContext.class);
+        when(executionContext.getBufferAllocator()).thenReturn(DEFAULT_ALLOCATOR);
         timers = new ConcurrentLinkedQueue<>();
         RedisClientConfig config = new RedisClientConfig(new TcpClientConfig(true));
         config.setMaxPipelinedRequests(10);
@@ -56,7 +61,7 @@ public final class AbstractRedisConnectionTest {
             TestCompletable timer = new TestCompletable();
             timers.add(timer);
             return timer;
-        }, config.asReadOnly());
+        }, executionContext, config.asReadOnly());
         connection.startPings();
         assertThat("Unexpected ping timers found.", timers, hasSize(1));
     }
@@ -112,13 +117,15 @@ public final class AbstractRedisConnectionTest {
 
         private static final Logger LOGGER = LoggerFactory.getLogger(Connection.class);
 
-        private final ConnectionContext context = Mockito.mock(ConnectionContext.class);
+        private final ConnectionContext context = mock(ConnectionContext.class);
         private final AtomicInteger pingCount = new AtomicInteger();
         private final AtomicBoolean closed = new AtomicBoolean();
         private final ConcurrentLinkedQueue<TestCompletable> pings = new ConcurrentLinkedQueue<>();
 
-        protected Connection(LongFunction<Completable> timer, ReadOnlyRedisClientConfig roConfig) {
-            super(timer, roConfig);
+        protected Connection(LongFunction<Completable> timer,
+                             ExecutionContext executionContext,
+                             ReadOnlyRedisClientConfig roConfig) {
+            super(timer, executionContext, roConfig);
         }
 
         @Override

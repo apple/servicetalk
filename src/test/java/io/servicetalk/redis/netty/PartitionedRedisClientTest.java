@@ -16,7 +16,6 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.buffer.Buffer;
-import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionAttributes.Key;
 import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
@@ -38,6 +37,8 @@ import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisPartitionAttributesBuilder;
 import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisRequest;
+import io.servicetalk.transport.api.DefaultExecutionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
 import org.junit.After;
@@ -57,6 +58,7 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.INFO;
@@ -102,7 +104,7 @@ public class PartitionedRedisClientTest {
         keyToShardMap = Collections.unmodifiableMap(localMap);
     }
 
-    private NettyIoExecutor executor;
+    private NettyIoExecutor ioExecutor;
     private static final String redisPortString = System.getenv("REDIS_PORT");
     private static final int redisPort = redisPortString == null || redisPortString.isEmpty() ? -1 : Integer.parseInt(redisPortString);
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
@@ -115,7 +117,7 @@ public class PartitionedRedisClientTest {
     public void startClient() throws Exception {
         assumeThat(redisPortString, not(isEmptyOrNullString()));
 
-        executor = toNettyIoExecutor(createExecutor());
+        ioExecutor = toNettyIoExecutor(createExecutor());
 
         partitionAttributesBuilderFactory = command -> {
             final PartitionAttributesBuilder partitionAttributesBuilder;
@@ -155,7 +157,8 @@ public class PartitionedRedisClientTest {
                 partitionAttributesBuilderFactory)
                 .setMaxPipelinedRequests(10)
                 .setPingPeriod(ofSeconds(1))
-                .build(executor, immediate(), serviceDiscoveryPublisher.getPublisher());
+                .build(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()),
+                        serviceDiscoveryPublisher.getPublisher());
 
         sendHost1ServiceDiscoveryEvent(true);
 
@@ -178,7 +181,7 @@ public class PartitionedRedisClientTest {
             return;
         }
 
-        awaitIndefinitely(client.closeAsync().andThen(executor.closeAsync(0, 0, SECONDS)));
+        awaitIndefinitely(client.closeAsync().andThen(ioExecutor.closeAsync(0, 0, SECONDS)));
     }
 
     @Test
@@ -240,11 +243,6 @@ public class PartitionedRedisClientTest {
         final AtomicBoolean closeCalled = new AtomicBoolean();
         PartitionedRedisClient filteredClient = new PartitionedRedisClient() {
             @Override
-            public BufferAllocator getBufferAllocator() {
-                return delegate.getBufferAllocator();
-            }
-
-            @Override
             public Publisher<RedisData> request(PartitionAttributes partitionSelector, RedisRequest request) {
                 requestCalled.set(true);
                 return delegate.request(partitionSelector, request);
@@ -259,6 +257,11 @@ public class PartitionedRedisClientTest {
             @Override
             public Single<RedisClient.ReservedRedisConnection> reserveConnection(PartitionAttributes partitionSelector, RedisRequest request) {
                 return delegate.reserveConnection(partitionSelector, request);
+            }
+
+            @Override
+            public ExecutionContext getExecutionContext() {
+                return delegate.getExecutionContext();
             }
 
             @Override
@@ -365,6 +368,6 @@ public class PartitionedRedisClientTest {
     }
 
     protected Buffer buf(final CharSequence cs) {
-        return client.getBufferAllocator().fromUtf8(cs);
+        return client.getExecutionContext().getBufferAllocator().fromUtf8(cs);
     }
 }

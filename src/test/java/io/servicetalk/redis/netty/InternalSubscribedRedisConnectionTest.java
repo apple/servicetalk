@@ -23,6 +23,7 @@ import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
+import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
 import org.junit.AfterClass;
@@ -42,6 +43,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.SUBSCRIBE;
@@ -66,7 +68,7 @@ public class InternalSubscribedRedisConnectionTest {
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout(30, SECONDS);
 
     @Nullable
-    private static NettyIoExecutor executor;
+    private static NettyIoExecutor ioExecutor;
     @Nullable
     private static DefaultRedisConnectionBuilder<InetSocketAddress> builder;
     @Nullable
@@ -80,7 +82,7 @@ public class InternalSubscribedRedisConnectionTest {
         int redisPort = Integer.parseInt(tmpRedisPort);
         String redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
         redisAddress = InetSocketAddress.createUnresolved(redisHost, redisPort);
-        executor = toNettyIoExecutor(createExecutor());
+        ioExecutor = toNettyIoExecutor(createExecutor());
         builder = DefaultRedisConnectionBuilder.<InetSocketAddress>forSubscribe(
                 new RedisClientConfig(new TcpClientConfig(true))
                 .setDeferSubscribeTillConnect(true))
@@ -90,21 +92,22 @@ public class InternalSubscribedRedisConnectionTest {
 
     @AfterClass
     public static void tearDown() {
-        if (executor != null) {
-            executor.closeAsync(0, 0, SECONDS).subscribe();
+        if (ioExecutor != null) {
+            ioExecutor.closeAsync(0, 0, SECONDS).subscribe();
         }
     }
 
     @Test
     public void testWriteCancelAndClose() throws ExecutionException, InterruptedException {
-        assert builder != null && redisAddress != null && executor != null;
+        assert builder != null && redisAddress != null && ioExecutor != null;
         CountDownLatch requestStreamCancelled = new CountDownLatch(1);
 
-        RedisConnection connection = awaitIndefinitely(builder.build(executor, immediate(), redisAddress));
+        RedisConnection connection = awaitIndefinitely(builder.build(
+                new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()), redisAddress));
         assert connection != null;
 
         final RedisRequest subReq = newRequest(SUBSCRIBE,
-                new CompleteBulkString(connection.getBufferAllocator().fromUtf8("FOO")));
+                new CompleteBulkString(connection.getExecutionContext().getBufferAllocator().fromUtf8("FOO")));
 
         Publisher<RedisData> subscriptionRequest = connection.request(subReq)
                 .doAfterCancel(requestStreamCancelled::countDown);
@@ -118,16 +121,18 @@ public class InternalSubscribedRedisConnectionTest {
 
     @Test
     public void testReadCancelAndClose() throws ExecutionException, InterruptedException {
-        assert builder != null && redisAddress != null && executor != null;
+        assert builder != null && redisAddress != null && ioExecutor != null;
 
-        RedisConnection connection = awaitIndefinitely(builder.build(executor, immediate(), redisAddress));
+        RedisConnection connection = awaitIndefinitely(builder.build(
+                new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()), redisAddress));
         assert connection != null;
 
         final CountDownLatch latch = new CountDownLatch(1);
 
         CharSequence channelToSubscribe = randomStringOfLength(32);
         final RedisRequest subReq = newRequest(SUBSCRIBE,
-                new CompleteBulkString(connection.getBufferAllocator().fromUtf8(channelToSubscribe)));
+                new CompleteBulkString(connection.getExecutionContext().getBufferAllocator()
+                        .fromUtf8(channelToSubscribe)));
 
         Publisher<RedisData> subscriptionRequest = connection.request(subReq)
                 .doAfterSubscribe($ -> latch.countDown());
@@ -137,7 +142,8 @@ public class InternalSubscribedRedisConnectionTest {
         subscription.request(1);
         latch.await();
 
-        RedisConnection publishConnection = awaitIndefinitely(forPipeline().build(executor, immediate(), redisAddress));
+        RedisConnection publishConnection = awaitIndefinitely(forPipeline().build(
+                new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()), redisAddress));
         assert publishConnection != null;
 
         awaitIndefinitely(publishConnection.asCommander().publish(channelToSubscribe, randomStringOfLength(32)));

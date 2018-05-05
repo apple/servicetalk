@@ -27,6 +27,7 @@ import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.SequentialTaskQueue;
 
@@ -70,10 +71,11 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
     private final boolean deferSubscribeTillConnect;
 
     private InternalSubscribedRedisConnection(Connection<RedisData, ByteBuf> connection,
+                                              ExecutionContext executionContext,
                                               ReadOnlyRedisClientConfig roConfig, int initialQueueCapacity,
                                               int maxBufferPerGroup) {
         super(durationNanos -> connection.getIoExecutor().scheduleOnEventloop(durationNanos, TimeUnit.NANOSECONDS),
-                roConfig);
+                executionContext, roConfig);
         this.connection = connection;
         this.deferSubscribeTillConnect = roConfig.isDeferSubscribeTillConnect();
         writeQueue = new WriteQueue(maxPendingRequests, initialQueueCapacity);
@@ -184,14 +186,19 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
         return LOGGER;
     }
 
-    static RedisConnection newSubscribedConnection(Connection<RedisData, ByteBuf> connection, ReadOnlyRedisClientConfig roConfig) {
-        return newSubscribedConnection(connection, roConfig, 2, 256);
+    static RedisConnection newSubscribedConnection(Connection<RedisData, ByteBuf> connection,
+                                                   ExecutionContext executionContext,
+                                                   ReadOnlyRedisClientConfig roConfig) {
+        return newSubscribedConnection(connection, executionContext, roConfig, 2, 256);
     }
 
-    static RedisConnection newSubscribedConnection(Connection<RedisData, ByteBuf> connection, ReadOnlyRedisClientConfig roConfig,
-                                                   int initialQueueCapacity, int maxBufferPerGroup) {
-        InternalSubscribedRedisConnection toReturn = new InternalSubscribedRedisConnection(connection, roConfig,
-                initialQueueCapacity, maxBufferPerGroup);
+    static RedisConnection newSubscribedConnection(Connection<RedisData, ByteBuf> connection,
+                                                   ExecutionContext executionContext,
+                                                   ReadOnlyRedisClientConfig roConfig,
+                                                   int initialQueueCapacity,
+                                                   int maxBufferPerGroup) {
+        InternalSubscribedRedisConnection toReturn = new InternalSubscribedRedisConnection(connection, executionContext,
+                roConfig, initialQueueCapacity, maxBufferPerGroup);
         toReturn.startPings();
         return toReturn;
     }

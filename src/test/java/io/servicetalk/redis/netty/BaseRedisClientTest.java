@@ -28,6 +28,7 @@ import io.servicetalk.redis.api.RedisData.BulkStringChunk;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.utils.RetryingRedisClient;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
+import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
 import org.hamcrest.BaseMatcher;
@@ -43,6 +44,7 @@ import java.net.InetSocketAddress;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoff;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
@@ -71,7 +73,7 @@ public abstract class BaseRedisClientTest {
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
 
-    static EventLoopAwareNettyIoExecutor executor;
+    static EventLoopAwareNettyIoExecutor ioExecutor;
     static int redisPort;
     static String redisHost;
 
@@ -91,8 +93,8 @@ public abstract class BaseRedisClientTest {
 
         redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
 
-        executor = toEventLoopAwareNettyIoExecutor(createExecutor());
-        serviceDiscoverer = new DefaultDnsServiceDiscoverer.Builder(executor.next(), immediate()).build()
+        ioExecutor = toEventLoopAwareNettyIoExecutor(createExecutor());
+        serviceDiscoverer = new DefaultDnsServiceDiscoverer.Builder(ioExecutor.next(), immediate()).build()
                 .toHostAndPortDiscoverer();
         RedisClientConfig config = new RedisClientConfig(new TcpClientConfig(false))
                 .setDeferSubscribeTillConnect(true);
@@ -102,9 +104,10 @@ public abstract class BaseRedisClientTest {
                         .setMaxPipelinedRequests(10)
                         .setIdleConnectionTimeout(ofSeconds(2))
                         .setPingPeriod(ofSeconds(PING_PERIOD_SECONDS))
-                        .build(executor, immediate(), serviceDiscoverer.discover(new DefaultHostAndPort(redisHost, redisPort))),
+                        .build(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()),
+                                serviceDiscoverer.discover(new DefaultHostAndPort(redisHost, redisPort))),
                 retryWithExponentialBackoff(10, cause -> cause instanceof RetryableException, ofMillis(10),
-                        backoffNanos -> executor.next().scheduleOnEventloop(backoffNanos, NANOSECONDS)));
+                        backoffNanos -> ioExecutor.next().scheduleOnEventloop(backoffNanos, NANOSECONDS)));
 
         final String serverInfo = awaitIndefinitely(
                 client.request(newRequest(INFO, new CompleteBulkString(buf("SERVER"))))
@@ -127,11 +130,11 @@ public abstract class BaseRedisClientTest {
             return;
         }
 
-        awaitIndefinitely(client.closeAsync().andThen(serviceDiscoverer.closeAsync()).andThen(executor.closeAsync(0, 0, SECONDS)));
+        awaitIndefinitely(client.closeAsync().andThen(serviceDiscoverer.closeAsync()).andThen(ioExecutor.closeAsync(0, 0, SECONDS)));
     }
 
     protected static Buffer buf(final CharSequence cs) {
-        return client.getBufferAllocator().fromUtf8(cs);
+        return client.getExecutionContext().getBufferAllocator().fromUtf8(cs);
     }
 
     protected static Matcher<Buffer> bufStartingWith(final Buffer buf) {

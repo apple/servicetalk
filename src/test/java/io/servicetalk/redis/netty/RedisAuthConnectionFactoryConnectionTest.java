@@ -23,6 +23,7 @@ import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisException;
 import io.servicetalk.redis.utils.RedisAuthConnectionFactory;
 import io.servicetalk.redis.utils.RedisAuthorizationException;
+import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
 import org.junit.After;
@@ -34,6 +35,7 @@ import java.net.InetSocketAddress;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
@@ -55,19 +57,19 @@ public class RedisAuthConnectionFactoryConnectionTest {
     private static final String CORRECT_PASSWORD = "password";
 
     @Nullable
-    private NettyIoExecutor executor;
+    private NettyIoExecutor ioExecutor;
     @Nullable
     private Single<RedisConnection> connectionSingle;
 
     @After
     public void cleanup() throws Exception {
         if (connectionSingle != null) {
-            assert executor != null;
+            assert ioExecutor != null;
             awaitIndefinitely(connectionSingle
                     .flatMap(connection -> connection.closeAsync().onErrorResume(cause -> completed()).toSingle(connection))
                     .ignoreResult()
                     .onErrorResume(cause -> completed())
-                    .andThen(executor.closeAsync(0, 0, SECONDS)));
+                    .andThen(ioExecutor.closeAsync(0, 0, SECONDS)));
         }
     }
 
@@ -119,12 +121,12 @@ public class RedisAuthConnectionFactoryConnectionTest {
 
         redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
 
-        executor = toNettyIoExecutor(createExecutor());
+        ioExecutor = toNettyIoExecutor(createExecutor());
 
         connectionSingle = new RedisAuthConnectionFactory<>(
                 DefaultRedisConnectionBuilder.<InetSocketAddress>forPipeline()
                         .setMaxPipelinedRequests(10)
-                        .asConnectionFactory(executor, immediate()),
+                        .asConnectionFactory(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate())),
                 ctx -> ctx.getBufferAllocator().fromAscii(password))
                 .newConnection(new InetSocketAddress(redisHost, redisPort));
         connectionConsumer.accept(connectionSingle);

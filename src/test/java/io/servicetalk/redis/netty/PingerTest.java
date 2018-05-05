@@ -27,6 +27,7 @@ import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
+import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
@@ -52,6 +53,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.DISCARD;
@@ -111,7 +113,8 @@ public class PingerTest {
         assert config != null;
 
         BlockingQueue<Object> commandsWritten = new LinkedBlockingQueue<>();
-        RedisConnection connection = awaitIndefinitely(connect(commandsWritten).map(conn -> newPipelinedConnection(conn, config)));
+        RedisConnection connection = awaitIndefinitely(connect(commandsWritten)
+                .map(conn -> newPipelinedConnection(conn, conn.getExecutionContext(), config)));
         assert connection != null;
 
         Object command = commandsWritten.take();
@@ -146,7 +149,8 @@ public class PingerTest {
         assert config != null;
 
         BlockingQueue<Object> commandsWritten = new LinkedBlockingQueue<>();
-        RedisConnection connection = awaitIndefinitely(connect(commandsWritten).map(conn -> newSubscribedConnection(conn, config)));
+        RedisConnection connection = awaitIndefinitely(connect(commandsWritten)
+                .map(conn -> newSubscribedConnection(conn, conn.getExecutionContext(), config)));
         assert connection != null;
 
         awaitPingDurations(2); // Await for a few ping durations to verify no pings were sent before subscribe.
@@ -231,6 +235,7 @@ public class PingerTest {
                 });
 
         final TcpConnector<RedisData, ByteBuf> connector = new TcpConnector<>(roTcpConfig, initializer, () -> o -> false);
-        return connector.connect(nettyIoExecutor, immediate(), serverAddress);
+        return connector.connect(new DefaultExecutionContext(DEFAULT_ALLOCATOR, nettyIoExecutor, immediate()),
+                serverAddress);
     }
 }

@@ -15,7 +15,6 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -25,6 +24,7 @@ import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 
 import org.slf4j.Logger;
@@ -138,11 +138,6 @@ final class RedisIdleConnectionReaper implements UnaryOperator<RedisConnection> 
         }
 
         @Override
-        public BufferAllocator getBufferAllocator() {
-            return delegate.getBufferAllocator();
-        }
-
-        @Override
         public Completable onClose() {
             return delegate.onClose();
         }
@@ -157,6 +152,11 @@ final class RedisIdleConnectionReaper implements UnaryOperator<RedisConnection> 
             return delegate.request(request)
                     .doBeforeSubscribe($ -> onRequestStarted())
                     .doBeforeFinally(this::onRequestFinished);
+        }
+
+        @Override
+        public ExecutionContext getExecutionContext() {
+            return delegate.getExecutionContext();
         }
 
         @Override

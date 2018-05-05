@@ -18,13 +18,13 @@ package io.servicetalk.redis.netty;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.MaxRequestLimitExceededException;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.LatestValueSubscriber;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import org.reactivestreams.Subscriber;
 
@@ -48,13 +48,11 @@ final class MaxPendingRequestsEnforcingRedisConnection extends RedisConnection {
 
     private final LatestValueSubscriber<Integer> maxConcurrencyHolder;
     private final RedisConnection connection;
-    private final Executor executor;
     private final int defaultMaxPipelinedRequests;
 
-    MaxPendingRequestsEnforcingRedisConnection(RedisConnection connection, Executor executor,
+    MaxPendingRequestsEnforcingRedisConnection(RedisConnection connection,
                                                int defaultMaxPipelinedRequests) {
         this.connection = connection;
-        this.executor = executor;
         this.defaultMaxPipelinedRequests = defaultMaxPipelinedRequests;
         maxConcurrencyHolder = new LatestValueSubscriber<>();
         connection.getSettingStream(MAX_CONCURRENCY).subscribe(maxConcurrencyHolder);
@@ -72,7 +70,7 @@ final class MaxPendingRequestsEnforcingRedisConnection extends RedisConnection {
 
     @Override
     public Publisher<RedisData> request(RedisRequest request) {
-        return new Publisher<RedisData>(executor) {
+        return new Publisher<RedisData>(connection.getConnectionContext().getExecutor()) {
             @Override
             protected void handleSubscribe(Subscriber<? super RedisData> subscriber) {
                 final int maxPendingRequests = maxConcurrencyHolder.getLastSeenValue(defaultMaxPipelinedRequests);
@@ -86,6 +84,11 @@ final class MaxPendingRequestsEnforcingRedisConnection extends RedisConnection {
                         .subscribe(subscriber);
             }
         };
+    }
+
+    @Override
+    public ExecutionContext getExecutionContext() {
+        return connection.getExecutionContext();
     }
 
     @Override

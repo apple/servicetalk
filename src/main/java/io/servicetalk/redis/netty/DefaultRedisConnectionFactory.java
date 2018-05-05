@@ -18,10 +18,9 @@ package io.servicetalk.redis.netty;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.api.RedisConnection;
-import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.Function;
 
@@ -34,8 +33,7 @@ final class DefaultRedisConnectionFactory<ResolvedAddress>
 
     private final CompletableProcessor onClose = new CompletableProcessor();
     private final ReadOnlyRedisClientConfig config;
-    private final IoExecutor ioExecutor;
-    private final Executor executor;
+    private final ExecutionContext executionContext;
     private final boolean forSubscribe;
     private final Function<RedisConnection, RedisConnection> connectionFilterFactory;
     private final Completable closeAsync = new Completable() {
@@ -46,20 +44,19 @@ final class DefaultRedisConnectionFactory<ResolvedAddress>
         }
     };
 
-    DefaultRedisConnectionFactory(ReadOnlyRedisClientConfig config, IoExecutor ioExecutor, Executor executor,
+    DefaultRedisConnectionFactory(ReadOnlyRedisClientConfig config, ExecutionContext executionContext,
                                   boolean forSubscribe,
                                   Function<RedisConnection, RedisConnection> connectionFilterFactory) {
         this.config = config;
-        this.ioExecutor = ioExecutor;
-        this.executor = executor;
+        this.executionContext = executionContext;
         this.forSubscribe = forSubscribe;
         this.connectionFilterFactory = connectionFilterFactory;
     }
 
     @Override
     public Single<LoadBalancedRedisConnection> newConnection(ResolvedAddress address) {
-        return (forSubscribe ? buildForSubscribe(ioExecutor, executor, address, config)
-                : buildForPipelined(ioExecutor, executor, address, config))
+        return (forSubscribe ? buildForSubscribe(executionContext, address, config)
+                : buildForPipelined(executionContext, address, config))
                 .map(this::newConnection);
     }
 

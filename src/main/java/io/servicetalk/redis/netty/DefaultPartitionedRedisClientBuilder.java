@@ -15,7 +15,6 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer.Event;
@@ -27,7 +26,6 @@ import io.servicetalk.client.api.partition.UnknownPartitionException;
 import io.servicetalk.client.internal.partition.PowerSetPartitionMapFactory;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Publisher.Group;
 import io.servicetalk.concurrent.api.Single;
@@ -46,7 +44,7 @@ import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.redis.netty.DefaultRedisClientBuilder.DefaultRedisClient;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
-import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.SslConfig;
 
 import org.reactivestreams.Subscriber;
@@ -65,6 +63,7 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.api.Publisher.error;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
@@ -107,16 +106,6 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
         this.loadBalancerFactory = requireNonNull(loadBalancerFactory);
         this.partitionMapFactory = PowerSetPartitionMapFactory.INSTANCE;
         config = new RedisClientConfig(new TcpClientConfig(false));
-    }
-
-    /**
-     * Sets {@link BufferAllocator} to use for all {@link RedisClient}s built by this builder.
-     * @param allocator {@link BufferAllocator} to use.
-     * @return {@code this}.
-     */
-    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> setBufferAllocator(BufferAllocator allocator) {
-        config.getTcpClientConfig().setAllocator(allocator);
-        return this;
     }
 
     /**
@@ -245,28 +234,27 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
     }
 
     @Override
-    public PartitionedRedisClient build(IoExecutor ioExecutor, Executor executor,
+    public PartitionedRedisClient build(ExecutionContext executionContext,
                                         Publisher<PartitionedEvent<ResolvedAddress>> addressEventStream) {
-        return build(ioExecutor, executor, addressEventStream, requireNonNull(redisPartitionAttributesBuilderFactory));
+        return build(executionContext, addressEventStream, requireNonNull(redisPartitionAttributesBuilderFactory));
     }
 
-    protected PartitionedRedisClient build(IoExecutor ioExecutor, Executor executor,
+    protected PartitionedRedisClient build(ExecutionContext executionContext,
               Publisher<PartitionedEvent<ResolvedAddress>> addressEventStream,
               Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFactory) {
-        return new DefaultPartitionedRedisClient<>(ioExecutor, executor, addressEventStream, clientFilterFunction,
+        return new DefaultPartitionedRedisClient<>(executionContext, addressEventStream, clientFilterFunction,
                 config, connectionFilterFunction, loadBalancerFactory,
                 requireNonNull(redisPartitionAttributesBuilderFactory),
                 partitionMapFactory.newPartitionMap(Partition::new), serviceDiscoveryMaxQueueSize);
     }
 
     private static final class DefaultPartitionedRedisClient<ResolvedAddress> extends PartitionedRedisClient {
-        private final Executor executor;
         private final Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFactory;
         private final SequentialCancellable sequentialCancellable;
         private final PartitionMap<Partition> partitionMap;
-        private final BufferAllocator allocator;
+        private final ExecutionContext executionContext;
 
-        DefaultPartitionedRedisClient(IoExecutor ioExecutor, Executor executor,
+        DefaultPartitionedRedisClient(ExecutionContext executionContext,
                                       Publisher<PartitionedEvent<ResolvedAddress>> addressEventStream,
                                       Function<RedisClient, RedisClient> clientFilterFactory,
                                       RedisClientConfig config,
@@ -275,14 +263,13 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
                                       Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFactory,
                                       PartitionMap<Partition> partitionMap,
                                       int serviceDiscoveryMaxQueueSize) {
-            this.executor = executor;
+            this.executionContext = executionContext;
             this.redisPartitionAttributesBuilderFactory = redisPartitionAttributesBuilderFactory;
             this.partitionMap = partitionMap;
             ReadOnlyRedisClientConfig roConfig = config.asReadOnly();
-            this.allocator = roConfig.getTcpClientConfig().getAllocator();
             RedisClientBuilder<ResolvedAddress, PartitionedEvent<ResolvedAddress>> redisClientBuilder =
-                    (ioExecutor1, executor1, address) ->
-                            clientFilterFactory.apply(new DefaultRedisClient<>(ioExecutor1, executor1, roConfig,
+                    (executionContext1, address) ->
+                            clientFilterFactory.apply(new DefaultRedisClient<>(executionContext1, roConfig,
                                     address, connectionFilterFactory, loadBalancerFactory));
             sequentialCancellable = new SequentialCancellable();
 
@@ -304,7 +291,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
                         @Override
                         public void onNext(Group<Partition, PartitionedEvent<ResolvedAddress>> newGroup) {
                             final Partition partition = newGroup.getKey();
-                            partition.setClient(newRedisClient(ioExecutor, executor, redisClientBuilder, newGroup,
+                            partition.setClient(newRedisClient(executionContext, redisClientBuilder, newGroup,
                                     partition));
                         }
 
@@ -322,10 +309,10 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
                     });
         }
 
-        private static <ResolvedAddress> RedisClient newRedisClient(IoExecutor ioExecutor, Executor executor,
+        private static <ResolvedAddress> RedisClient newRedisClient(ExecutionContext executionContext,
                 RedisClientBuilder<ResolvedAddress, PartitionedEvent<ResolvedAddress>> redisClientBuilder,
                 Group<Partition, PartitionedEvent<ResolvedAddress>> newGroup, Partition partition) {
-            return redisClientBuilder.build(ioExecutor, executor,
+            return redisClientBuilder.build(executionContext,
                     newGroup.getPublisher().filter(new Predicate<PartitionedEvent<ResolvedAddress>>() {
                         // Use a mutable Count to avoid boxing-unboxing and put on each call.
                         private final Map<ResolvedAddress, MutableInteger> addressesToCount = new HashMap<>();
@@ -383,18 +370,18 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
         }
 
         @Override
+        public ExecutionContext getExecutionContext() {
+            return executionContext;
+        }
+
+        @Override
         protected Function<Command, RedisPartitionAttributesBuilder> getRedisPartitionAttributesBuilderFactory() {
             return redisPartitionAttributesBuilderFactory;
         }
 
         @Override
-        public BufferAllocator getBufferAllocator() {
-            return allocator;
-        }
-
-        @Override
         public Publisher<RedisData> request(PartitionAttributes partitionSelector, RedisRequest request) {
-            return new Publisher<RedisData>(executor) {
+            return new Publisher<RedisData>(executionContext.getExecutor()) {
                 @Override
                 protected void handleSubscribe(Subscriber<? super RedisData> subscriber) {
                     final Partition partition = partitionMap.getPartition(partitionSelector);
@@ -477,7 +464,8 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
             return new Completable() {
                 @Override
                 protected void handleSubscribe(Subscriber subscriber) {
-                    RedisClient oldClient = clientUpdater.getAndSet(Partition.this, NoopRedisClient.INSTANCE);
+                    RedisClient oldClient = clientUpdater.getAndSet(Partition.this,
+                            new NoopRedisClient(client.getExecutionContext()));
                     if (oldClient != null) {
                         oldClient.closeAsync().subscribe(subscriber);
                     } else {
@@ -495,9 +483,10 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
     }
 
     private static final class NoopRedisClient extends RedisClient {
-        static final RedisClient INSTANCE = new NoopRedisClient();
+        private final ExecutionContext executionContext;
 
-        private NoopRedisClient() {
+        private NoopRedisClient(ExecutionContext executionContext) {
+            this.executionContext = requireNonNull(executionContext);
         }
 
         @Override
@@ -506,13 +495,13 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
         }
 
         @Override
-        public BufferAllocator getBufferAllocator() {
-            throw new UnsupportedOperationException();
+        public Publisher<RedisData> request(RedisRequest request) {
+            return error(new UnsupportedOperationException(), executionContext.getExecutor());
         }
 
         @Override
-        public Publisher<RedisData> request(RedisRequest request) {
-            return Publisher.error(new UnsupportedOperationException());
+        public ExecutionContext getExecutionContext() {
+            return executionContext;
         }
 
         @Override

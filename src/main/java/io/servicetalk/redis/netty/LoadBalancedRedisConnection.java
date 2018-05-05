@@ -25,6 +25,7 @@ import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
@@ -106,10 +107,15 @@ final class LoadBalancedRedisConnection extends RedisClient.ReservedRedisConnect
         return delegate.request(request)
                 .doBeforeSubscribe(subscription -> {
                     if (isSubscribeModeCommand(request.getCommand()) && !subscribedConnection) {
-                        subscribedConnection = true; // Don't release if seen a subscribe request to disallow reuse post release.
+                        subscribedConnection = true; // Don't releaseAsync if seen a subscribe request to disallow reuse post releaseAsync.
                     }
                 })
                 .doBeforeFinally(() -> pendingRequestsUpdater.accumulateAndGet(this, -1, FlowControlUtil::addWithOverflowProtectionIfPositive));
+    }
+
+    @Override
+    public ExecutionContext getExecutionContext() {
+        return delegate.getExecutionContext();
     }
 
     @Override
@@ -128,7 +134,7 @@ final class LoadBalancedRedisConnection extends RedisClient.ReservedRedisConnect
     }
 
     @Override
-    public Completable release() {
+    public Completable releaseAsync() {
         return new Completable() {
             @Override
             protected void handleSubscribe(Subscriber subscriber) {

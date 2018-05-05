@@ -15,12 +15,10 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.servicetalk.buffer.BufferAllocator;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer.Event;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.api.RedisClient;
@@ -30,7 +28,7 @@ import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
-import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.SslConfig;
 
 import java.io.InputStream;
@@ -76,16 +74,6 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
                               RedisClientConfig config) {
         this.loadBalancerFactory = requireNonNull(loadBalancerFactory);
         this.config = requireNonNull(config);
-    }
-
-    /**
-     * Sets {@link BufferAllocator} to use for all {@link RedisClient}s built by this builder.
-     * @param allocator {@link BufferAllocator} to use.
-     * @return {@code this}.
-     */
-    public DefaultRedisClientBuilder<ResolvedAddress> setBufferAllocator(BufferAllocator allocator) {
-        config.getTcpClientConfig().setAllocator(allocator);
-        return this;
     }
 
     /**
@@ -180,29 +168,28 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
     }
 
     @Override
-    public RedisClient build(IoExecutor ioExecutor, Executor executor,
+    public RedisClient build(ExecutionContext executionContext,
                              Publisher<Event<ResolvedAddress>> addressEventStream) {
-        return new DefaultRedisClient<>(ioExecutor, executor, config.asReadOnly(), addressEventStream,
+        return new DefaultRedisClient<>(executionContext, config.asReadOnly(), addressEventStream,
                 connectionFilterFunction, loadBalancerFactory);
     }
 
     static final class DefaultRedisClient<ResolvedAddress, EventType extends Event<ResolvedAddress>>
             extends RedisClient {
-        private final BufferAllocator allocator;
+        private final ExecutionContext executionContext;
         private final LoadBalancer<RedisConnection> subscribeLb;
         private final LoadBalancer<RedisConnection> pipelineLb;
 
-        DefaultRedisClient(IoExecutor ioExecutor, Executor executor, ReadOnlyRedisClientConfig roConfig,
+        DefaultRedisClient(ExecutionContext executionContext, ReadOnlyRedisClientConfig roConfig,
                            Publisher<EventType> addressEventStream,
                            Function<RedisConnection, RedisConnection> connectionFilter,
                            LoadBalancerFactory<ResolvedAddress, RedisConnection> loadBalancerFactory) {
-            requireNonNull(ioExecutor);
-            this.allocator = roConfig.getTcpClientConfig().getAllocator();
+            this.executionContext = requireNonNull(executionContext);
             final Publisher<EventType> multicastAddressEventStream = addressEventStream.multicast(2);
             DefaultRedisConnectionFactory<ResolvedAddress> subscribeFactory =
-                    new DefaultRedisConnectionFactory<>(roConfig, ioExecutor, executor, true, connectionFilter);
+                    new DefaultRedisConnectionFactory<>(roConfig, executionContext, true, connectionFilter);
             DefaultRedisConnectionFactory<ResolvedAddress> pipelineFactory =
-                    new DefaultRedisConnectionFactory<>(roConfig, ioExecutor, executor, false, connectionFilter);
+                    new DefaultRedisConnectionFactory<>(roConfig, executionContext, false, connectionFilter);
             subscribeLb = loadBalancerFactory.newLoadBalancer(multicastAddressEventStream, subscribeFactory);
             pipelineLb = loadBalancerFactory.newLoadBalancer(multicastAddressEventStream, pipelineFactory);
         }
@@ -215,16 +202,16 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
         }
 
         @Override
-        public BufferAllocator getBufferAllocator() {
-            return allocator;
-        }
-
-        @Override
         public Publisher<RedisData> request(RedisRequest request) {
             RedisProtocolSupport.Command cmd = request.getCommand();
             LoadBalancer<RedisConnection> loadBalancer = getLbForCommand(cmd);
             return loadBalancer.selectConnection(SELECTOR_FOR_REQUEST)
                     .flatMapPublisher(selectedConnection -> selectedConnection.request(request));
+        }
+
+        @Override
+        public ExecutionContext getExecutionContext() {
+            return executionContext;
         }
 
         @Override

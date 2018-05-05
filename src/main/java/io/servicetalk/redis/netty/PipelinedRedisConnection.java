@@ -21,6 +21,7 @@ import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.DefaultPipelinedConnection;
 import io.servicetalk.transport.netty.internal.PipelinedConnection;
@@ -79,8 +80,11 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
     private volatile int skipQuitWhenClosed;
 
     @SuppressWarnings("unchecked")
-    private PipelinedRedisConnection(Connection<RedisData, ByteBuf> connection, ReadOnlyRedisClientConfig roConfig) {
-        super(durationNanos -> connection.getIoExecutor().scheduleOnEventloop(durationNanos, TimeUnit.NANOSECONDS), roConfig);
+    private PipelinedRedisConnection(Connection<RedisData, ByteBuf> connection,
+                                     ExecutionContext executionContext,
+                                     ReadOnlyRedisClientConfig roConfig) {
+        super(durationNanos -> connection.getIoExecutor().scheduleOnEventloop(durationNanos, TimeUnit.NANOSECONDS),
+                executionContext, roConfig);
         this.connection = new DefaultPipelinedConnection<>(connection, maxPendingRequests);
         rawConnection = connection;
     }
@@ -121,8 +125,10 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
         return request0(request, false, false);
     }
 
-    static PipelinedRedisConnection newPipelinedConnection(Connection<RedisData, ByteBuf> connection, ReadOnlyRedisClientConfig roConfig) {
-        PipelinedRedisConnection toReturn = new PipelinedRedisConnection(connection, roConfig);
+    static PipelinedRedisConnection newPipelinedConnection(Connection<RedisData, ByteBuf> connection,
+                                                           ExecutionContext executionContext,
+                                                           ReadOnlyRedisClientConfig roConfig) {
+        PipelinedRedisConnection toReturn = new PipelinedRedisConnection(connection, executionContext, roConfig);
         toReturn.startPings();
         return toReturn;
     }

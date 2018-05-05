@@ -196,7 +196,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         assert cnx != null : "Connection can not be null";
         // Ensure we can actually re-do all this a second time (i.e. that no old state lingered)
         testSubscribeUnsubscribe(cnx, cnx.request(subscribeRequest));
-        awaitIndefinitely(cnx.release());
+        awaitIndefinitely(cnx.releaseAsync());
     }
 
     private static void testSubscribeUnsubscribe(final RedisConnection cnx, final Publisher<RedisData> messages) throws Exception {
