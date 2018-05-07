@@ -20,6 +20,8 @@ import io.servicetalk.http.api.BlockingHttpResponse;
 import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.netty.DefaultHttpConnectionBuilder;
+import io.servicetalk.transport.api.DefaultExecutionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.NettyIoExecutors;
 
@@ -28,6 +30,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.net.InetSocketAddress;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.http.api.BlockingHttpRequests.newRequest;
@@ -42,8 +45,10 @@ public final class HelloWorldBlockingClient {
         IoExecutor ioExecutor = NettyIoExecutors.createExecutor();
         try {
             DefaultHttpConnectionBuilder<InetSocketAddress> connectionBuilder = new DefaultHttpConnectionBuilder<>();
+            ExecutionContext executionContext =
+                    new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, newCachedThreadExecutor());
             HttpConnection<HttpPayloadChunk, HttpPayloadChunk> connection = awaitIndefinitely(
-                    connectionBuilder.build(ioExecutor, newCachedThreadExecutor(), new InetSocketAddress(8080)));
+                    connectionBuilder.build(executionContext, new InetSocketAddress(8080)));
             assert connection != null;
 
             BlockingHttpConnection<HttpPayloadChunk, HttpPayloadChunk> conn = connection.asBlockingConnection();

@@ -15,9 +15,12 @@
  */
 package io.servicetalk.examples.http.helloworld;
 
+import io.servicetalk.buffer.netty.BufferAllocators;
 import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.netty.DefaultHttpConnectionBuilder;
+import io.servicetalk.transport.api.DefaultExecutionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.NettyIoExecutors;
 
@@ -26,6 +29,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.net.InetSocketAddress;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
@@ -42,13 +46,15 @@ public final class HelloWorldClient {
             InetSocketAddress serverAddress = new InetSocketAddress(8080);
 
             DefaultHttpConnectionBuilder<InetSocketAddress> connectionBuilder = new DefaultHttpConnectionBuilder<>();
+            ExecutionContext executionContext =
+                    new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, newCachedThreadExecutor());
             HttpConnection<HttpPayloadChunk, HttpPayloadChunk> connection =
-                    awaitIndefinitely(connectionBuilder.build(ioExecutor, newCachedThreadExecutor(), serverAddress));
+                    awaitIndefinitely(connectionBuilder.build(executionContext, serverAddress));
             assert connection != null;
 
 
             connection.request(newRequest(GET, "/sayHello", connection.getExecutionContext().getExecutor()))
-                    .flatmapPublisher(resp -> {
+                    .flatMapPublisher(resp -> {
                         LOGGER.info("got response {}", resp.toString((name, value) -> value));
                         return resp.getPayloadBody().map(chunk -> chunk.getContent().toString(US_ASCII));
                     })
