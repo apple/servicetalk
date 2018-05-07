@@ -26,11 +26,13 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.http.netty.SpliceFlatStreamToMetaSingle.flatten;
 import static org.hamcrest.Matchers.contains;
@@ -120,7 +122,7 @@ public class SpliceFlatStreamToMetaSingleTest {
         Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
         assertThat(data.getMeta(), equalTo(data.getMeta()));
         payloadSubscriber.subscribe(data.getPayload());
-        payloadSubscriber.verifyFailure(SpliceFlatStreamToMetaSingle.SplicingSubscriber.CANCELED);
+        payloadSubscriber.verifyFailure(CancellationException.class);
     }
 
     @Test
@@ -246,6 +248,17 @@ public class SpliceFlatStreamToMetaSingleTest {
         payloadSubscriber.verifySuccess(one, two, last);
         dupePayloadSubscriber.subscribe(data.getPayload());
         dupePayloadSubscriber.verifyFailure(IllegalStateException.class);
+    }
+
+    @Test
+    public void packerThrowsShouldSendErrorToSingle() {
+        Publisher<Object> stream = just(metaData, immediate());
+        SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
+                EXECUTOR, stream, (metaData, payload) -> {
+                    throw DELIBERATE_EXCEPTION;
+                });
+        dataSubscriber.listen(op);
+        dataSubscriber.verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     private static class MetaData {

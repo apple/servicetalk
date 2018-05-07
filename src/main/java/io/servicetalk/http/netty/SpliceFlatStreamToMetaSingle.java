@@ -15,10 +15,10 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 
 import org.reactivestreams.Subscription;
 
@@ -29,7 +29,9 @@ import java.util.function.Function;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
 import static java.util.Objects.requireNonNull;
 
@@ -65,7 +67,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
     }
 
     @Override
-    protected void handleSubscribe(Single.Subscriber<? super Data> dataSubscriber) {
+    protected void handleSubscribe(Subscriber<? super Data> dataSubscriber) {
         original.subscribe(new SplicingSubscriber<>(this, dataSubscriber));
     }
 
@@ -92,12 +94,12 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
                 maybePayloadSubUpdater = AtomicReferenceFieldUpdater.newUpdater(SplicingSubscriber.class,
                 Object.class, "maybePayloadSub");
 
-        /* Visible for testing */
-        static final Throwable CANCELED = unknownStackTrace(new CancellationException("Canceled prematurely from Data"),
-                SplicingSubscriber.class, "cancelData(..)");
+        private static final Throwable CANCELED =
+                unknownStackTrace(new CancellationException("Canceled prematurely from Data"),
+                        SplicingSubscriber.class, "cancelData(..)");
         private static final String PENDING = "PENDING";
-        private static final String COMPLETED = "COMPLETED";
-        private static final String COMPLETED_DELIVERED = "COMPLETED_DELIVERED";
+        private static final String EMPTY_COMPLETED = "EMPTY_COMPLETED";
+        private static final String EMPTY_COMPLETED_DELIVERED = "EMPTY_COMPLETED_DELIVERED";
 
         /**
          * A field that assumes various types and states depending on the state of the operator.
@@ -107,8 +109,9 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
          *     <li>{@link org.reactivestreams.Subscriber}&lt;{@code Payload}&gt; - when subscribed to the payload</li>
          *     <li>{@link #CANCELED} - when the {@link Single} is canceled prematurely</li>
          *     <li>{@link #PENDING} - when the {@link Single} will complete and {@code Payload} pending subscribe</li>
-         *     <li>{@link #COMPLETED} - when the stream completed prematurely (empty) payload</li>
-         *     <li>{@link #COMPLETED_DELIVERED} - when the completion event was delivered to a subscriber</li>
+         *     <li>{@link #EMPTY_COMPLETED} - when the stream completed prematurely (empty) payload</li>
+         *     <li>{@link #EMPTY_COMPLETED_DELIVERED} - when the premature (empty) completion event was delivered to a
+         *     subscriber</li>
          *     <li>{@link Throwable} - the error that occurred in the stream</li>
          * </ul>
          */
@@ -129,19 +132,20 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
         private boolean metaSeenInOnNext;
 
         /**
-         * Stores the upstream {@link Subscription} wrapped in a {@link ConcurrentSubscription} here until the
-         * {@link Single} completes and no longer expect concurrency, so we can use the {@link #rawSubscription}.
-         */
-        @Nullable
-        private Subscription concurrentSubscription;
-
-        /**
          * The {@link Subscription} before wrapping to pass it to the downstream {@link org.reactivestreams.Subscriber}.
          * Doesn't need to be {@code volatile}, as it should be visible wrt JMM according to
          * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#2.11>RS spec 2.11</a>
          */
         @Nullable
         private Subscription rawSubscription;
+
+        /**
+         * We request-1 first and then send {@link Subscriber#onSubscribe(Cancellable)} to {@code dataSubscriber}.
+         * If request-1 synchronously delivers {@link #onNext(Object)}, then we may send
+         * {@link Subscriber#onSuccess(Object)} before onSubscribe.
+         * This state makes sure we always send onSubscribe first and only once.
+         */
+        private boolean onSubscribeSent;
 
         private final SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> parent;
         private final Subscriber<? super Data> dataSubscriber;
@@ -168,21 +172,24 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
          * Guarded by the CAS to avoid concurrency with the {@link Subscription} on the contained {@link
          * Publisher}&lt;{@code Payload}&gt;
          */
-        private void cancelData() {
+        private void cancelData(Subscription subscription) {
             if (maybePayloadSubUpdater.compareAndSet(this, null, CANCELED)) {
-                concurrentSubscription.cancel();
+                subscription.cancel();
             }
         }
 
         @Override
-        public void onSubscribe(Subscription inStreamSubscription) {
+        public void onSubscribe(final Subscription inStreamSubscription) {
+            if (!checkDuplicateSubscription(rawSubscription, inStreamSubscription)) {
+                return;
+            }
             rawSubscription = inStreamSubscription;
-            // Prevent concurrency between request() and cancel()
-            concurrentSubscription = ConcurrentSubscription.wrap(inStreamSubscription);
-            // onSubscribe() before request() to avoid synchronous onNext() execution
-            dataSubscriber.onSubscribe(this::cancelData);
             // get the first element a MetaData that we consume to complete the Single<Data>
-            concurrentSubscription.request(1);
+            rawSubscription.request(1);
+            if (!onSubscribeSent) {
+                onSubscribeSent = true;
+                dataSubscriber.onSubscribe(() -> cancelData(inStreamSubscription));
+            }
         }
 
         @SuppressWarnings("unchecked")
@@ -193,18 +200,37 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
                 if (payloadSubscriber != null) {
                     payloadSubscriber.onNext(payload);
                 } else {
-                    Object subscriber = maybePayloadSub;
+                    final Object subscriber = maybePayloadSub;
                     if (subscriber instanceof org.reactivestreams.Subscriber) {
                         payloadSubscriber = ((org.reactivestreams.Subscriber<Payload>) subscriber);
                         payloadSubscriber.onNext(payload);
                     }
                 }
             } else {
+                if (!onSubscribeSent) {
+                    onSubscribeSent = true;
+                    // Since we are going to deliver data after this, there is no need for this to be cancellable.
+                    dataSubscriber.onSubscribe(IGNORE_CANCEL);
+                }
                 MetaData meta = (MetaData) obj;
-                metaSeenInOnNext = true;
                 // When the upstream Publisher is canceled we don't give it to any Payload Subscribers
-                Data data = parent.packer.apply(meta, maybePayloadSubUpdater.compareAndSet(this, null, PENDING) ?
-                        newPayloadPublisher() : Publisher.error(CANCELED, parent.executor));
+                metaSeenInOnNext = true;
+                final Data data;
+                try {
+                    data = parent.packer.apply(meta,
+                            maybePayloadSubUpdater.compareAndSet(this, null, PENDING) ?
+                                    newPayloadPublisher() : Publisher.error(CANCELED, parent.executor));
+                } catch (Throwable t) {
+                    assert rawSubscription != null;
+                    // We know that there is nothing else that can happen on this stream as we are not sending the
+                    // data to the dataSubscriber.
+                    rawSubscription.cancel();
+                    // Since we update our internal state before calling parent.packer, if parent.packer throws,
+                    // it will cause the assumptions to break in onError(). So, we catch and handle the error ourselves
+                    // as opposed to let the source call onError.
+                    dataSubscriber.onError(t);
+                    return;
+                }
                 dataSubscriber.onSuccess(data);
             }
         }
@@ -222,14 +248,14 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
                         // without a subscriber present. The consequence is that unless we've seen payload data we may
                         // not send onComplete() or onError() to the original subscriber, but that is OK as long as one
                         // subscriber of them gets the correct signal and all others get a duplicate subscriber error.
-                        Object maybeSubscriber = SplicingSubscriber.this.maybePayloadSub;
+                        final Object maybeSubscriber = SplicingSubscriber.this.maybePayloadSub;
                         newSubscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-                        if (maybeSubscriber == COMPLETED && maybePayloadSubUpdater
-                                .compareAndSet(SplicingSubscriber.this, COMPLETED, COMPLETED_DELIVERED)) {
+                        if (maybeSubscriber == EMPTY_COMPLETED && maybePayloadSubUpdater
+                                .compareAndSet(SplicingSubscriber.this, EMPTY_COMPLETED, EMPTY_COMPLETED_DELIVERED)) {
                             // Prematurely completed (header + empty payload)
                             newSubscriber.onComplete();
                         } else if (maybeSubscriber instanceof Throwable && maybePayloadSubUpdater
-                                .compareAndSet(SplicingSubscriber.this, maybeSubscriber, COMPLETED_DELIVERED)) {
+                                .compareAndSet(SplicingSubscriber.this, maybeSubscriber, EMPTY_COMPLETED_DELIVERED)) {
                             // Premature error or cancel
                             newSubscriber.onError((Throwable) maybeSubscriber);
                         } else {
@@ -246,14 +272,13 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
         @Override
         public void onError(Throwable t) {
             if (payloadSubscriber != null) { // We have a subscriber that has seen onNext()
-                maybePayloadSub = COMPLETED_DELIVERED;
                 payloadSubscriber.onError(t);
             } else {
                 final Object maybeSubscriber = maybePayloadSubUpdater.getAndSet(this, t);
                 if (maybeSubscriber == CANCELED || !metaSeenInOnNext) {
                     dataSubscriber.onError(t);
                 } else if (maybeSubscriber instanceof org.reactivestreams.Subscriber) {
-                    if (maybePayloadSubUpdater.compareAndSet(SplicingSubscriber.this, t, COMPLETED_DELIVERED)) {
+                    if (maybePayloadSubUpdater.compareAndSet(SplicingSubscriber.this, t, EMPTY_COMPLETED_DELIVERED)) {
                         ((org.reactivestreams.Subscriber<Payload>) maybeSubscriber).onError(t);
                     } else {
                         ((org.reactivestreams.Subscriber<Payload>) maybeSubscriber).onError(new IllegalStateException(
@@ -268,12 +293,12 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
         @Override
         public void onComplete() {
             if (payloadSubscriber != null) { // We have a subscriber that has seen onNext()
-                maybePayloadSub = COMPLETED_DELIVERED;
                 payloadSubscriber.onComplete();
             } else {
-                final Object maybeSubscriber = maybePayloadSubUpdater.getAndSet(this, COMPLETED);
+                final Object maybeSubscriber = maybePayloadSubUpdater.getAndSet(this, EMPTY_COMPLETED);
                 if (maybeSubscriber instanceof org.reactivestreams.Subscriber) {
-                    if (maybePayloadSubUpdater.compareAndSet(SplicingSubscriber.this, COMPLETED, COMPLETED_DELIVERED)) {
+                    if (maybePayloadSubUpdater.compareAndSet(SplicingSubscriber.this, EMPTY_COMPLETED,
+                            EMPTY_COMPLETED_DELIVERED)) {
                         ((org.reactivestreams.Subscriber<Payload>) maybeSubscriber).onComplete();
                     } else {
                         ((org.reactivestreams.Subscriber<Payload>) maybeSubscriber).onError(new IllegalStateException(
