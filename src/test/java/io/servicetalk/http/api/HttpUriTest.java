@@ -18,6 +18,8 @@ package io.servicetalk.http.api;
 
 import org.junit.Test;
 
+import static io.servicetalk.http.api.HttpUri.DEFAULT_PORT_HTTP;
+import static io.servicetalk.http.api.HttpUri.DEFAULT_PORT_HTTPS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -28,25 +30,25 @@ public class HttpUriTest {
     @Test
     public void fullHttpURI() {
         final HttpUri hp = new HttpUri("http://apple.com:8080/path/is/here?queryname=value#tag");
-        HttpUriTest.verifyAppleString(hp, false, 8080);
+        verifyAppleString(hp, false, 8080);
     }
 
     @Test
     public void fullHttpsURI() {
         final HttpUri hp = new HttpUri("https://apple.com:8080/path/is/here?queryname=value#tag");
-        HttpUriTest.verifyAppleString(hp, true, 8080);
+        verifyAppleString(hp, true, 8080);
     }
 
     @Test
     public void ignoreUserInfo() {
         final HttpUri hp = new HttpUri("http://user:password@apple.com:8080/path/is/here?queryname=value#tag");
-        HttpUriTest.verifyAppleString(hp, false, 8080);
+        verifyAppleString(hp, false, 8080);
     }
 
     @Test
     public void ignoreUserInfoPctEncoded() {
         final HttpUri hp = new HttpUri("http://user%20:passwo%2Frd@apple.com:8080/path/is/here?queryname=value#tag");
-        HttpUriTest.verifyAppleString(hp, false, 8080);
+        verifyAppleString(hp, false, 8080);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -174,7 +176,7 @@ public class HttpUriTest {
         assertEquals("/path?query#tag", hp.getRequestTarget());
         assertEquals("/path", hp.getPath());
         assertFalse(hp.isSsl());
-        assertEquals(HttpUri.DEFAULT_PORT_HTTP, hp.getPort());
+        assertEquals(DEFAULT_PORT_HTTP, hp.getPort());
     }
 
     @Test
@@ -185,7 +187,7 @@ public class HttpUriTest {
         assertEquals("f//foo.com/path?query#tag", hp.getRequestTarget());
         assertEquals("f//foo.com/path", hp.getPath());
         assertFalse(hp.isSsl());
-        assertEquals(HttpUri.DEFAULT_PORT_HTTP, hp.getPort());
+        assertEquals(DEFAULT_PORT_HTTP, hp.getPort());
     }
 
     @Test
@@ -196,7 +198,7 @@ public class HttpUriTest {
         assertEquals("user/mode@apple.com:8080/path/is/here?queryname=value#tag", hp.getRequestTarget());
         assertEquals("user/mode@apple.com:8080/path/is/here", hp.getPath());
         assertFalse(hp.isSsl());
-        assertEquals(HttpUri.DEFAULT_PORT_HTTP, hp.getPort());
+        assertEquals(DEFAULT_PORT_HTTP, hp.getPort());
     }
 
     @Test
@@ -207,7 +209,7 @@ public class HttpUriTest {
         assertEquals("user/apple.com/path/is/here?queryname=value#tag", hp.getRequestTarget());
         assertEquals("user/apple.com/path/is/here", hp.getPath());
         assertFalse(hp.isSsl());
-        assertEquals(HttpUri.DEFAULT_PORT_HTTP, hp.getPort());
+        assertEquals(DEFAULT_PORT_HTTP, hp.getPort());
     }
 
     @Test
@@ -218,7 +220,7 @@ public class HttpUriTest {
         assertEquals("apple.com#tag", hp.getRequestTarget());
         assertEquals("apple.com", hp.getPath());
         assertFalse(hp.isSsl());
-        assertEquals(HttpUri.DEFAULT_PORT_HTTP, hp.getPort());
+        assertEquals(DEFAULT_PORT_HTTP, hp.getPort());
     }
 
     @Test
@@ -229,7 +231,7 @@ public class HttpUriTest {
         assertEquals("/", hp.getRequestTarget());
         assertEquals("/", hp.getPath());
         assertFalse(hp.isSsl());
-        assertEquals(HttpUri.DEFAULT_PORT_HTTP, hp.getPort());
+        assertEquals(DEFAULT_PORT_HTTP, hp.getPort());
     }
 
     @Test
@@ -240,7 +242,7 @@ public class HttpUriTest {
         assertEquals("?", hp.getRequestTarget());
         assertEquals("", hp.getPath());
         assertFalse(hp.isSsl());
-        assertEquals(HttpUri.DEFAULT_PORT_HTTP, hp.getPort());
+        assertEquals(DEFAULT_PORT_HTTP, hp.getPort());
     }
 
     @Test
@@ -251,7 +253,7 @@ public class HttpUriTest {
         assertEquals("#", hp.getRequestTarget());
         assertEquals("", hp.getPath());
         assertFalse(hp.isSsl());
-        assertEquals(HttpUri.DEFAULT_PORT_HTTP, hp.getPort());
+        assertEquals(DEFAULT_PORT_HTTP, hp.getPort());
     }
 
     @Test
@@ -262,7 +264,7 @@ public class HttpUriTest {
         assertEquals("example.com", hp.getRequestTarget());
         assertEquals("example.com", hp.getPath());
         assertFalse(hp.isSsl());
-        assertEquals(HttpUri.DEFAULT_PORT_HTTP, hp.getPort());
+        assertEquals(DEFAULT_PORT_HTTP, hp.getPort());
     }
 
     @Test
@@ -284,7 +286,7 @@ public class HttpUriTest {
         assertEquals("/path/is/here?queryname=value#tag", hp.getRequestTarget());
         assertEquals("/path/is/here", hp.getPath());
         assertTrue(hp.isSsl());
-        assertEquals(HttpUri.DEFAULT_PORT_HTTPS, hp.getPort());
+        assertEquals(DEFAULT_PORT_HTTPS, hp.getPort());
     }
 
     @Test
@@ -295,7 +297,7 @@ public class HttpUriTest {
         assertEquals("/path/is/here?queryname=value#tag", hp.getRequestTarget());
         assertEquals("/path/is/here", hp.getPath());
         assertFalse(hp.isSsl());
-        assertEquals(HttpUri.DEFAULT_PORT_HTTP, hp.getPort());
+        assertEquals(DEFAULT_PORT_HTTP, hp.getPort());
     }
 
     @Test
@@ -306,7 +308,18 @@ public class HttpUriTest {
         assertEquals("/", hp.getRequestTarget());
         assertEquals("/", hp.getPath());
         assertFalse(hp.isSsl());
-        assertEquals(HttpUri.DEFAULT_PORT_HTTP, hp.getPort());
+        assertEquals(DEFAULT_PORT_HTTP, hp.getPort());
+    }
+
+    @Test
+    public void justAsterisk() {
+        final HttpUri hp = new HttpUri("*");
+        assertNull(hp.getHostHeader());
+        assertNull(hp.getHost());
+        assertEquals("*", hp.getRequestTarget());
+        assertEquals("*", hp.getPath());
+        assertFalse(hp.isSsl());
+        assertEquals(DEFAULT_PORT_HTTP, hp.getPort());
     }
 
     @Test
@@ -317,7 +330,7 @@ public class HttpUriTest {
         assertEquals("/path/is/here?queryname=value#tag", hp.getRequestTarget());
         assertEquals("/path/is/here", hp.getPath());
         assertFalse(hp.isSsl());
-        assertEquals(HttpUri.DEFAULT_PORT_HTTP, hp.getPort());
+        assertEquals(DEFAULT_PORT_HTTP, hp.getPort());
     }
 
     @Test
@@ -394,7 +407,7 @@ public class HttpUriTest {
         assertEquals("/html/rfc3986#section-3", hp.getRequestTarget());
         assertEquals("/html/rfc3986", hp.getPath());
         assertTrue(hp.isSsl());
-        assertEquals(HttpUri.DEFAULT_PORT_HTTPS, hp.getPort());
+        assertEquals(DEFAULT_PORT_HTTPS, hp.getPort());
     }
 
     @Test
@@ -416,7 +429,7 @@ public class HttpUriTest {
         assertEquals("", hp.getRequestTarget());
         assertEquals("", hp.getPath());
         assertTrue(hp.isSsl());
-        assertEquals(HttpUri.DEFAULT_PORT_HTTPS, hp.getPort());
+        assertEquals(DEFAULT_PORT_HTTPS, hp.getPort());
     }
 
     @Test
@@ -449,7 +462,29 @@ public class HttpUriTest {
         assertEquals("", hp.getRequestTarget());
         assertEquals("", hp.getPath());
         assertTrue(hp.isSsl());
-        assertEquals(HttpUri.DEFAULT_PORT_HTTPS, hp.getPort());
+        assertEquals(DEFAULT_PORT_HTTPS, hp.getPort());
+    }
+
+    @Test
+    public void ipv6HostWithScope() {
+        final HttpUri hp = new HttpUri("https://[0:0:0:0:0:0:0:0%0]/path?param=value");
+        assertEquals("[0:0:0:0:0:0:0:0%0]", hp.getHostHeader());
+        assertEquals("[0:0:0:0:0:0:0:0%0]", hp.getHost());
+        assertEquals(DEFAULT_PORT_HTTPS, hp.getPort());
+        assertEquals("/path?param=value", hp.getRequestTarget());
+        assertEquals("/path", hp.getPath());
+        assertTrue(hp.isSsl());
+    }
+
+    @Test
+    public void ipv6HostWithScopeAndPort() {
+        final HttpUri hp = new HttpUri("https://[0:0:0:0:0:0:0:0%0]:49178/path?param=value");
+        assertEquals("[0:0:0:0:0:0:0:0%0]:49178", hp.getHostHeader());
+        assertEquals("[0:0:0:0:0:0:0:0%0]", hp.getHost());
+        assertEquals(49178, hp.getPort());
+        assertEquals("/path?param=value", hp.getRequestTarget());
+        assertEquals("/path", hp.getPath());
+        assertTrue(hp.isSsl());
     }
 
     @Test
