@@ -25,7 +25,9 @@ import io.servicetalk.http.api.LastHttpPayloadChunk;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.DecoderException;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,11 +44,15 @@ import static io.servicetalk.http.netty.HttpRequestDecoderTest.assertSingleHeade
 import static java.lang.Integer.toHexString;
 import static java.lang.System.arraycopy;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class HttpResponseDecoderTest {
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
+
     @Test
     public void contentLengthNoTrailers() {
         EmbeddedChannel channel = newEmbeddedChannel();
@@ -118,6 +124,55 @@ public class HttpResponseDecoderTest {
         assertTrue(channel.writeInbound(wrappedBuffer(afterContentBytes)));
         validateHttpResponse(channel, -content.length, true);
         channel.finishAndReleaseAll();
+    }
+
+    @Test
+    public void chunkedNoTrailersMultipleLargeContent() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        byte[] content = new byte[4096];
+        final int numChunks = 5;
+        ThreadLocalRandom.current().nextBytes(content);
+        byte[] beforeContentBytes = new String(
+                "HTTP/1.1 200 OK" + "\r\n" +
+                        "Connection: keep-alive" + "\r\n" +
+                        "Server: unit-test" + "\r\n" +
+                        "Transfer-Encoding: chunked" + "\r\n" + "\r\n").getBytes(US_ASCII);
+        byte[] chunkHeaderBytes = new String(toHexString(content.length) + "\r\n").getBytes(US_ASCII);
+        byte[] afterContentBytes = new String("0\r\n\r\n").getBytes(US_ASCII);
+        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
+        for (int i = 0; i < numChunks; ++i) {
+            assertTrue(channel.writeInbound(wrappedBuffer(chunkHeaderBytes)));
+            assertTrue(channel.writeInbound(wrappedBuffer(content)));
+            assertTrue(channel.writeInbound(wrappedBuffer("\r\n".getBytes(US_ASCII))));
+        }
+        assertTrue(channel.writeInbound(wrappedBuffer(afterContentBytes)));
+        validateHttpResponse(channel, -(content.length * numChunks));
+        channel.finishAndReleaseAll();
+    }
+
+    @Test
+    public void chunkedNoTrailersMultipleLargeContentNoChunkCRLF() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        byte[] content = new byte[128];
+        ThreadLocalRandom.current().nextBytes(content);
+        byte[] beforeContentBytes = new String(
+                "HTTP/1.1 200 OK" + "\r\n" +
+                        "Connection: keep-alive" + "\r\n" +
+                        "Server: unit-test" + "\r\n" +
+                        "Transfer-Encoding: chunked" + "\r\n" + "\r\n").getBytes(US_ASCII);
+        byte[] chunkHeaderBytes = new String(toHexString(content.length) + "\r\n").getBytes(US_ASCII);
+        byte[] afterContentBytes = new String("0\r\n\r\n").getBytes(US_ASCII);
+        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
+        assertTrue(channel.writeInbound(wrappedBuffer(chunkHeaderBytes)));
+        assertTrue(channel.writeInbound(wrappedBuffer(content)));
+        // we omit writing the CRLF here intentionally
+        expectedException.expect(DecoderException.class);
+        expectedException.expectCause(instanceOf(IllegalStateException.class));
+        try {
+            assertTrue(channel.writeInbound(wrappedBuffer(afterContentBytes)));
+        } finally {
+            channel.finishAndReleaseAll();
+        }
     }
 
     @Test

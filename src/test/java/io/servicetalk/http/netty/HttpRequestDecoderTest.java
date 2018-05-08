@@ -107,6 +107,55 @@ public class HttpRequestDecoderTest {
     }
 
     @Test
+    public void chunkedNoTrailersMultipleLargeContent() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        byte[] content = new byte[4096];
+        final int numChunks = 5;
+        ThreadLocalRandom.current().nextBytes(content);
+        byte[] beforeContentBytes = new String(
+                "GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
+                        "Connection: keep-alive" + "\r\n" +
+                        "User-Agent: unit-test" + "\r\n" +
+                        "Transfer-Encoding: chunked" + "\r\n" + "\r\n").getBytes(US_ASCII);
+        byte[] chunkHeaderBytes = new String(toHexString(content.length) + "\r\n").getBytes(US_ASCII);
+        byte[] afterContentBytes = new String("0\r\n\r\n").getBytes(US_ASCII);
+        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
+        for (int i = 0; i < numChunks; ++i) {
+            assertTrue(channel.writeInbound(wrappedBuffer(chunkHeaderBytes)));
+            assertTrue(channel.writeInbound(wrappedBuffer(content)));
+            assertTrue(channel.writeInbound(wrappedBuffer("\r\n".getBytes(US_ASCII))));
+        }
+        assertTrue(channel.writeInbound(wrappedBuffer(afterContentBytes)));
+        validateHttpRequest(channel, -(content.length * numChunks));
+        channel.finishAndReleaseAll();
+    }
+
+    @Test
+    public void chunkedNoTrailersMultipleLargeContentNoChunkCRLF() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        byte[] content = new byte[128];
+        ThreadLocalRandom.current().nextBytes(content);
+        byte[] beforeContentBytes = new String(
+                "GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
+                        "Connection: keep-alive" + "\r\n" +
+                        "User-Agent: unit-test" + "\r\n" +
+                        "Transfer-Encoding: chunked" + "\r\n" + "\r\n").getBytes(US_ASCII);
+        byte[] chunkHeaderBytes = new String(toHexString(content.length) + "\r\n").getBytes(US_ASCII);
+        byte[] afterContentBytes = new String("0\r\n\r\n").getBytes(US_ASCII);
+        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
+        assertTrue(channel.writeInbound(wrappedBuffer(chunkHeaderBytes)));
+        assertTrue(channel.writeInbound(wrappedBuffer(content)));
+        // we omit writing the CRLF here intentionally
+        expectedException.expect(DecoderException.class);
+        expectedException.expectCause(instanceOf(IllegalStateException.class));
+        try {
+            assertTrue(channel.writeInbound(wrappedBuffer(afterContentBytes)));
+        } finally {
+            channel.finishAndReleaseAll();
+        }
+    }
+
+    @Test
     public void chunkedWithTrailers() {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];

@@ -94,9 +94,12 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
             value -> value != COLON_BYTE;
     private static final ByteProcessor SKIP_CONTROL_CHARS_PROCESSOR = value ->
         value == SPACE_BYTE || value == HTAB_BYTE || isISOControl((char) (value & 0xff));
+    private static final int MAX_HEX_CHARS_FOR_LONG = 16; // 0x7FFFFFFFFFFFFFFF == Long.MAX_INT
+    private static final int CHUNK_DELIMETER_SIZE = 2; // CRLF
 
     private final int maxChunkSize;
     private final int maxInitialLineSize;
+    private final int maxHeaderSize;
     private final boolean chunkedSupported;
 
     private final HttpHeadersFactory headersFactory;
@@ -147,6 +150,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
                             maxChunkSize);
         }
         this.headersFactory = requireNonNull(headersFactory);
+        this.maxHeaderSize = maxHeaderSize;
         this.maxChunkSize = maxChunkSize;
         this.chunkedSupported = chunkedSupported;
         this.maxInitialLineSize = maxInitialLineLength;
@@ -289,6 +293,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
                 int toRead = min(buffer.readableBytes(), maxChunkSize);
                 if (toRead > 0) {
                     ByteBuf content = buffer.readRetainedSlice(toRead);
+                    cumulationIndex = buffer.readerIndex();
                     ctx.fireChannelRead(newPayloadChunk(newBufferFrom(content)));
                 }
                 return;
@@ -312,6 +317,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
                 }
                 ByteBuf content = buffer.readRetainedSlice(toRead);
                 chunkSize -= toRead;
+                cumulationIndex = buffer.readerIndex();
 
                 if (chunkSize == 0) {
                     // Read all content.
@@ -328,11 +334,11 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
             // everything else after this point takes care of reading chunked content. basically, read chunk size,
             // read chunk, read and ignore the CRLF and repeat until 0
             case READ_CHUNK_SIZE: {
-                int lfIndex = findCRLF(buffer, maxInitialLineSize);
+                int lfIndex = findCRLF(buffer, MAX_HEX_CHARS_FOR_LONG);
                 if (lfIndex < 0) {
                     return;
                 }
-                int chunkSize = getChunkSize(buffer, lfIndex);
+                long chunkSize = getChunkSize(buffer, lfIndex);
                 consumeCRLF(buffer, lfIndex);
                 this.chunkSize = chunkSize;
                 if (chunkSize == 0) {
@@ -350,6 +356,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
                 }
                 HttpPayloadChunk chunk = newPayloadChunk(newBufferFrom(buffer.readRetainedSlice(toRead)));
                 chunkSize -= toRead;
+                cumulationIndex = buffer.readerIndex();
 
                 ctx.fireChannelRead(chunk);
 
@@ -361,7 +368,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
             }
             case READ_CHUNK_DELIMITER: {
                 // Read the chunk delimiter
-                int lfIndex = findCRLF(buffer, maxInitialLineSize);
+                int lfIndex = findCRLF(buffer, CHUNK_DELIMETER_SIZE);
                 if (lfIndex < 0) {
                     return;
                 }
@@ -385,7 +392,10 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
                     // other handler will replace this codec with the upgraded protocol codec to
                     // take the traffic over at some point then.
                     // See https://github.com/netty/netty/issues/2173
-                    ctx.fireChannelRead(buffer.readBytes(readableBytes));
+                    ByteBuf opaquePayload = buffer.readBytes(readableBytes);
+                    cumulationIndex = buffer.readerIndex();
+                    // TODO(scott): revisit how upgrades are going to be done. Do we use Netty buffers or not?
+                    ctx.fireChannelRead(opaquePayload);
                 }
                 break;
             }
@@ -591,13 +601,13 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
 
     @Nullable
     private State readHeaders(ByteBuf buffer) {
-        int lfIndex = findCRLF(buffer, maxInitialLineSize);
+        int lfIndex = findCRLF(buffer, maxHeaderSize);
         if (lfIndex < 0) {
             return null;
         }
         final HttpMetaData message = this.message;
         assert message != null;
-        if (!parseAllHeaders(buffer, message.getHeaders(), lfIndex, maxInitialLineSize)) {
+        if (!parseAllHeaders(buffer, message.getHeaders(), lfIndex, maxHeaderSize)) {
             return null;
         }
 
@@ -623,7 +633,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
 
     @Nullable
     private LastHttpPayloadChunk readTrailingHeaders(ByteBuf buffer) {
-        final int lfIndex = findCRLF(buffer, maxInitialLineSize);
+        final int lfIndex = findCRLF(buffer, maxHeaderSize);
         if (lfIndex < 0) {
             return null;
         }
@@ -633,7 +643,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
                 trailer = this.trailer = newLastPayloadChunk(EMPTY_BUFFER, headersFactory.newTrailers());
             }
 
-            return parseAllHeaders(buffer, trailer.getTrailers(), lfIndex, maxInitialLineSize) ? trailer : null;
+            return parseAllHeaders(buffer, trailer.getTrailers(), lfIndex, maxHeaderSize) ? trailer : null;
         }
 
         consumeCRLF(buffer, lfIndex);
@@ -644,13 +654,13 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
         // return new DefaultLastHttpPayloadChunk(EMPTY_BUFFER, newTrailers());
     }
 
-    private boolean parseAllHeaders(ByteBuf buffer, HttpHeaders headers, int lfIndex, int maxInitialLineSize) {
+    private boolean parseAllHeaders(ByteBuf buffer, HttpHeaders headers, int lfIndex, int maxHeaderSize) {
         for (;;) {
             if (lfIndex - 1 == buffer.readerIndex()) {
                 consumeCRLF(buffer, lfIndex);
                 return true;
             }
-            final int nextLFIndex = findCRLF(buffer, lfIndex + 1, maxInitialLineSize);
+            final int nextLFIndex = findCRLF(buffer, lfIndex + 1, maxHeaderSize);
             parseHeaderLine(headers, buffer, lfIndex);
             if (nextLFIndex < 0) {
                 return false;
@@ -662,7 +672,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
         }
     }
 
-    private static int getChunkSize(ByteBuf buffer, int lfIndex) {
+    private static long getChunkSize(ByteBuf buffer, int lfIndex) {
         if (lfIndex - 2 < buffer.readerIndex()) {
             throw new DecoderException("chunked encoding specified but chunk-size not found");
         }
@@ -670,7 +680,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
                 lfIndex - 1 - buffer.readerIndex(), US_ASCII));
     }
 
-    private static int getChunkSize(String hex) {
+    private static long getChunkSize(String hex) {
         hex = hex.trim();
         for (int i = 0; i < hex.length(); ++i) {
             char c = hex.charAt(i);
@@ -680,7 +690,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
             }
         }
 
-        return Integer.parseInt(hex, 16);
+        return Long.parseLong(hex, 16);
     }
 
     private void consumeCRLF(ByteBuf buffer, int lfIndex) {
@@ -694,25 +704,27 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
         }
     }
 
-    private int findCRLF(ByteBuf buffer, int maxInitialLineSize) {
+    private int findCRLF(ByteBuf buffer, int maxLineSize) {
         if (cumulationIndex < 0) {
             cumulationIndex = buffer.readerIndex();
         }
-        int lfIndex = findCRLF(buffer, cumulationIndex, maxInitialLineSize);
-        cumulationIndex = lfIndex < 0 ? buffer.writerIndex() : lfIndex;
+        int lfIndex = findCRLF(buffer, cumulationIndex, maxLineSize);
+        cumulationIndex = lfIndex < 0 ? min(buffer.writerIndex(), cumulationIndex + maxLineSize) : lfIndex;
         return lfIndex;
     }
 
-    private static int findCRLF(ByteBuf buffer, int startIndex, int maxInitialLineSize) {
-        int maxToIndex = startIndex + maxInitialLineSize;
+    private static int findCRLF(ByteBuf buffer, int startIndex, final int maxLineSize) {
+        final int maxToIndex = startIndex + maxLineSize;
         for (;;) {
             int toIndex = min(buffer.writerIndex(), maxToIndex);
             int lfIndex = buffer.indexOf(startIndex, toIndex, LF);
             if (lfIndex == -1) {
+                if (toIndex - startIndex == maxLineSize) {
+                    throw new IllegalStateException("could not find CRLF within " + maxLineSize + " bytes.");
+                }
                 return -2;
             } else if (lfIndex == buffer.readerIndex()) {
                 buffer.skipBytes(1);
-                ++maxToIndex;
                 ++startIndex;
             } else if (buffer.getByte(lfIndex - 1) == CR) {
                 return lfIndex;
@@ -723,7 +735,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
                 }
                 startIndex = lfIndex + 1;
             } else {
-                throw new TooLongFrameException("An HTTP line is larger than " + maxInitialLineSize + " bytes.");
+                throw new TooLongFrameException("An HTTP line is larger than " + maxLineSize + " bytes.");
             }
         }
     }
