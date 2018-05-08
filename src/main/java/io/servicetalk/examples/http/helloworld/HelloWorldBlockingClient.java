@@ -15,6 +15,7 @@
  */
 package io.servicetalk.examples.http.helloworld;
 
+import io.servicetalk.examples.http.aggregation.AggregatingPayloadClient;
 import io.servicetalk.http.api.BlockingHttpConnection;
 import io.servicetalk.http.api.BlockingHttpResponse;
 import io.servicetalk.http.api.HttpConnection;
@@ -25,8 +26,8 @@ import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.NettyIoExecutors;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 
@@ -38,7 +39,7 @@ import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
 public final class HelloWorldBlockingClient {
-    private static final Logger LOGGER = LogManager.getLogger(HelloWorldBlockingClient.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AggregatingPayloadClient.class);
 
     public static void main(String[] args) throws Exception {
         // Shared IoExecutor for the application.
