@@ -252,6 +252,9 @@ public class SpliceFlatStreamToMetaSingleTest {
 
     @Test
     public void packerThrowsShouldSendErrorToSingle() {
+        // We use Publisher.just() here to make sure the Publisher invokes onError when onNext throws.
+        // TestPublisher used in other cases, does not show that behavior. Instead it throws from sendItems() which is
+        // less obvious failure message than what we get with dataSubscriber.verifyFailure(DELIBERATE_EXCEPTION);
         Publisher<Object> stream = just(metaData, immediate());
         SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
                 EXECUTOR, stream, (metaData, payload) -> {
