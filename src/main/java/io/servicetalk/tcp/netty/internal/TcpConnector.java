@@ -48,7 +48,6 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
@@ -167,8 +166,7 @@ public final class TcpConnector<Read, Write> {
                     } else {
                         Connection.TerminalPredicate<Read> predicate =
                                 new Connection.TerminalPredicate<>(terminalItemPredicate.get());
-                        // TODO(scott): what executor should be used here?
-                        channel.pipeline().addLast(new AbstractChannelReadHandler<Read>(predicate, immediate()) {
+                        channel.pipeline().addLast(new AbstractChannelReadHandler<Read>(predicate, executionContext.getExecutor()) {
                             @Override
                             protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Read> newPublisher) {
                                 subscriber.onSuccess(new NettyConnection<>(channel, context, newPublisher, predicate));
