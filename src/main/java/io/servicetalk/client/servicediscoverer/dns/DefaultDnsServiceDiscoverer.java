@@ -35,6 +35,8 @@ import io.netty.resolver.dns.DnsNameResolverBuilder;
 import io.netty.util.concurrent.Future;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -61,6 +63,8 @@ import static java.util.function.Function.identity;
  * Default load balancer which will attempt to resolve A, AAAA, and CNAME type queries.
  */
 public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<String, InetAddress> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultDnsServiceDiscoverer.class);
 
     static final Comparator<InetAddress> INET_ADDRESS_COMPARATOR = Comparator.comparing(o -> ByteBuffer.wrap(o.getAddress()));
 
@@ -134,8 +138,8 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
         }
 
         /**
-         * Set the {@link DnsServerAddressStreamProvider} which deteremines which DNS server should be used per query.
-         * @param dnsServerAddressStreamProvider the {@link DnsServerAddressStreamProvider} which deteremines which DNS server should be used per query.
+         * Set the {@link DnsServerAddressStreamProvider} which determines which DNS server should be used per query.
+         * @param dnsServerAddressStreamProvider the {@link DnsServerAddressStreamProvider} which determines which DNS server should be used per query.
          * @return {@code this}.
          */
         public Builder setDnsServerAddressStreamProvider(@Nullable DnsServerAddressStreamProvider dnsServerAddressStreamProvider) {
@@ -201,7 +205,8 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
                                         @Nullable Integer ndots, @Nullable Boolean optResourceEnabled,
                                         @Nullable DnsResolverAddressTypes dnsResolverAddressTypes,
                                         @Nullable DnsServerAddressStreamProvider dnsServerAddressStreamProvider) {
-        this.nettyIoExecutor = toEventLoopAwareNettyIoExecutor(ioExecutor);
+        // Implementation of this class expects to use only single EventLoop from IoExecutor
+        this.nettyIoExecutor = toEventLoopAwareNettyIoExecutor(ioExecutor).next();
         this.executor = executor;
         this.retryStrategy = retryStrategy;
         EventLoop eventLoop = this.nettyIoExecutor.getEventLoopGroup().next();
@@ -308,18 +313,22 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
                     entry.completeSubscription();
                 } catch (Throwable cause) {
                     if (aggregateCause == null) {
-                        aggregateCause = new RuntimeException("unexpected exception completing " + entry + " when closing " + this, cause);
+                        aggregateCause = new RuntimeException(
+                                "Unexpected exception completing " + entry + " when closing " + this, cause);
                     } else {
                         aggregateCause.addSuppressed(cause);
                     }
                 }
             }
         }
-        if (aggregateCause != null) {
-            throw aggregateCause;
-        }
         registerMap.clear();
-        closeCompletable.onComplete();
+        if (aggregateCause != null) {
+            LOGGER.debug("Closed with error", aggregateCause);
+            closeCompletable.onError(aggregateCause);
+        } else {
+            LOGGER.debug("Successfully closed");
+            closeCompletable.onComplete();
+        }
     }
 
     /**
@@ -358,21 +367,13 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
         DiscoverEntry(String inetHost, Executor executor) {
             super(executor);
             this.inetHost = inetHost;
-            if (retryStrategy != null) {
-                publisher = new Publisher<Event<InetAddress>>(executor) {
-                    @Override
-                    protected void handleSubscribe(org.reactivestreams.Subscriber<? super Event<InetAddress>> subscriber) {
-                        initializeSubscriber(subscriber);
-                    }
-                }.retryWhen(retryStrategy);
-            } else {
-                publisher = new Publisher<Event<InetAddress>>(executor) {
-                    @Override
-                    protected void handleSubscribe(org.reactivestreams.Subscriber<? super Event<InetAddress>> subscriber) {
-                        initializeSubscriber(subscriber);
-                    }
-                };
-            }
+            Publisher<Event<InetAddress>> publisher = new Publisher<Event<InetAddress>>(executor) {
+                @Override
+                protected void handleSubscribe(org.reactivestreams.Subscriber<? super Event<InetAddress>> subscriber) {
+                    initializeSubscriber(subscriber);
+                }
+            };
+            this.publisher = retryStrategy == null ? publisher : publisher.retryWhen(retryStrategy);
         }
 
         void completeSubscription() {
@@ -537,7 +538,7 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
         }
     }
 
-    private static io.netty.resolver.ResolvedAddressTypes toNettyType(DnsResolverAddressTypes dnsResolverAddressTypes) {
+    private static ResolvedAddressTypes toNettyType(DnsResolverAddressTypes dnsResolverAddressTypes) {
         switch (dnsResolverAddressTypes) {
             case IPV4_ONLY:
                 return ResolvedAddressTypes.IPV4_ONLY;

@@ -17,6 +17,8 @@ package io.servicetalk.client.servicediscoverer.dns;
 
 import io.servicetalk.client.api.ServiceDiscoverer.Event;
 import io.servicetalk.client.servicediscoverer.ServiceDiscovererTestSubscriber;
+import io.servicetalk.concurrent.api.BiIntFunction;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
@@ -31,84 +33,82 @@ import org.junit.rules.Timeout;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
+import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 
 public class DefaultDnsServiceDiscovererTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    private static EventLoopAwareNettyIoExecutor executor;
+    private static EventLoopAwareNettyIoExecutor nettyIoExecutor;
     private static TestDnsServer dnsServer;
     private DefaultDnsServiceDiscoverer discoverer;
 
     @BeforeClass
-    public static void beforeClass() throws IOException {
-        executor = toEventLoopAwareNettyIoExecutor(createExecutor());
-        dnsServer = new TestDnsServer(new HashSet<>(Arrays.asList("apple.com", "servicetalk.io")));
+    public static void beforeClass() throws Exception {
+        nettyIoExecutor = toEventLoopAwareNettyIoExecutor(createExecutor());
+        dnsServer = new TestDnsServer(new HashSet<>(asList("apple.com", "servicetalk.io")));
         dnsServer.start();
     }
 
     @AfterClass
-    public static void afterClass() throws InterruptedException, ExecutionException {
+    public static void afterClass() throws Exception {
         dnsServer.stop();
-        awaitIndefinitely(executor.closeAsync());
+        awaitIndefinitely(nettyIoExecutor.closeAsync());
     }
 
     @Before
     public void setup() {
-        discoverer = new DefaultDnsServiceDiscoverer.Builder(executor.next(), immediate())
-                .setDnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_ONLY)
-                .setOptResourceEnabled(false)
-                .setDnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(new SingletonDnsServerAddresses(dnsServer.localAddress())))
-                .setNdots(1)
-                .build();
+        discoverer = buildServiceDiscoverer(null);
     }
 
     @After
-    public void tearDown() throws InterruptedException, ExecutionException {
+    public void tearDown() throws Exception {
         awaitIndefinitely(discoverer.closeAsync());
     }
 
     @Test
-    public void testRetry() throws InterruptedException {
+    public void testRetry() throws Exception {
         AtomicInteger retryStrategyCalledCount = new AtomicInteger();
-        discoverer = new DefaultDnsServiceDiscoverer.Builder(executor.next(), immediate())
-                .setDnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_ONLY)
-                .setOptResourceEnabled(false)
-                .setDnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(new SingletonDnsServerAddresses(dnsServer.localAddress())))
-                .retryDnsFailures((retryCount, cause) -> {
-                    retryStrategyCalledCount.incrementAndGet();
-                    return retryCount == 1 && cause instanceof UnknownHostException ? completed() : error(cause);
-                })
-                .setNdots(1)
-                .build();
+        DefaultDnsServiceDiscoverer retryingDiscoverer = buildServiceDiscoverer((retryCount, cause) -> {
+            retryStrategyCalledCount.incrementAndGet();
+            return retryCount == 1 && cause instanceof UnknownHostException ? completed() : error(cause);
+        });
+
         try {
-            awaitIndefinitely(discoverer.discover("unknown.com"));
+            awaitIndefinitely(retryingDiscoverer.discover("unknown.com"));
             fail("Unknown host lookup did not fail.");
         } catch (ExecutionException e) {
             assertThat("Unexpected calls to retry strategy.", retryStrategyCalledCount.get(), equalTo(2));
-            assertThat("Unexpected exception during DNS lookup.", e.getCause(), instanceOf(UnknownHostException.class));
+            assertThat("Unexpected exception during DNS lookup.",
+                    e.getCause(), instanceOf(UnknownHostException.class));
+        } finally {
+            awaitIndefinitely(retryingDiscoverer.closeAsync());
         }
     }
 
@@ -150,7 +150,8 @@ public class DefaultDnsServiceDiscovererTest {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
         Publisher<Event<InetAddress>> publisher = discoverer.discover("apple.com");
-        ServiceDiscovererTestSubscriber<InetAddress> subscriber = new ServiceDiscovererTestSubscriber<>(latch, throwableRef, 1);
+        ServiceDiscovererTestSubscriber<InetAddress> subscriber =
+                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, 1);
         publisher.subscribe(subscriber);
 
         latch.await();
@@ -164,7 +165,8 @@ public class DefaultDnsServiceDiscovererTest {
         CountDownLatch latch = new CountDownLatch(2);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
         Publisher<Event<InetAddress>> publisher = discoverer.discover("apple.com");
-        ServiceDiscovererTestSubscriber<InetAddress> subscriber = new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
+        ServiceDiscovererTestSubscriber<InetAddress> subscriber =
+                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, Long.MAX_VALUE);
         publisher.subscribe(subscriber);
 
         latch.await();
@@ -175,13 +177,17 @@ public class DefaultDnsServiceDiscovererTest {
 
     @Test
     public void repeatDiscoverMultipleHosts() throws InterruptedException {
+        DefaultDnsServiceDiscoverer discoverer = buildServiceDiscoverer(null);
+
         CountDownLatch appleLatch = new CountDownLatch(2);
         CountDownLatch stLatch = new CountDownLatch(2);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
         Publisher<Event<InetAddress>> applePublisher = discoverer.discover("apple.com");
         Publisher<Event<InetAddress>> stPublisher = discoverer.discover("servicetalk.io");
-        ServiceDiscovererTestSubscriber<InetAddress> appleSubscriber = new ServiceDiscovererTestSubscriber<>(appleLatch, throwableRef, Long.MAX_VALUE);
-        ServiceDiscovererTestSubscriber<InetAddress> stSubscriber = new ServiceDiscovererTestSubscriber<>(stLatch, throwableRef, Long.MAX_VALUE);
+        ServiceDiscovererTestSubscriber<InetAddress> appleSubscriber =
+                new ServiceDiscovererTestSubscriber<>(appleLatch, throwableRef, Long.MAX_VALUE);
+        ServiceDiscovererTestSubscriber<InetAddress> stSubscriber =
+                new ServiceDiscovererTestSubscriber<>(stLatch, throwableRef, Long.MAX_VALUE);
         applePublisher.subscribe(appleSubscriber);
         stPublisher.subscribe(stSubscriber);
 
@@ -192,5 +198,45 @@ public class DefaultDnsServiceDiscovererTest {
         assertThat(appleSubscriber.getInActiveCount(), greaterThanOrEqualTo(1));
         assertThat(stSubscriber.getActiveCount(), greaterThanOrEqualTo(2));
         assertThat(stSubscriber.getInActiveCount(), greaterThanOrEqualTo(1));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test(expected = ExecutionException.class)
+    public void exceptionInSubscriberOnErrorWhileClose() throws Exception {
+        CountDownLatch latchOnSubscribe = new CountDownLatch(1);
+        DefaultDnsServiceDiscoverer discoverer = buildServiceDiscoverer(null);
+        Subscriber<Event<InetAddress>> subscriber = mock(Subscriber.class);
+
+        try {
+            doAnswer(a -> {
+                Subscription s = a.getArgument(0);
+                s.request(1);
+                latchOnSubscribe.countDown();
+                return null;
+            }).when(subscriber).onSubscribe(any(Subscription.class));
+            doThrow(DELIBERATE_EXCEPTION).when(subscriber).onError(any());
+
+            discoverer.discover("apple.com").subscribe(subscriber);
+            latchOnSubscribe.await();
+        } finally {
+            awaitIndefinitely(discoverer.closeAsync());
+        }
+    }
+
+    private static DefaultDnsServiceDiscoverer buildServiceDiscoverer(
+            @Nullable BiIntFunction<Throwable, Completable> retryStrategy) {
+
+        DefaultDnsServiceDiscoverer.Builder builder =
+                new DefaultDnsServiceDiscoverer.Builder(nettyIoExecutor, immediate())
+                .setDnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_ONLY)
+                .setOptResourceEnabled(false)
+                .setDnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(
+                        new SingletonDnsServerAddresses(dnsServer.localAddress())))
+                .setNdots(1);
+
+        if (retryStrategy != null) {
+            builder.retryDnsFailures(retryStrategy);
+        }
+        return builder.build();
     }
 }
