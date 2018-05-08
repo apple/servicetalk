@@ -34,11 +34,24 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
 
 /**
  * Utilities to await results of an asynchronous computation either by blocking the calling thread.
  */
 public final class Await {
+    private static final NullPointerException AWAIT_PUBLISHER_NPE =
+            unknownStackTrace(new NullPointerException(), Await.class,
+                    "awaitIndefinitelyNonNull(" + Publisher.class.getSimpleName() + ")");
+    private static final NullPointerException AWAIT_PUBLISHER_TIMEOUT_NPE =
+            unknownStackTrace(new NullPointerException(), Await.class,
+                    "awaitNonNull(" + Publisher.class.getSimpleName() + ", ..)");
+    private static final NullPointerException AWAIT_SINGLE_NPE =
+            unknownStackTrace(new NullPointerException(), Await.class,
+                    "awaitIndefinitelyNonNull(" + Single.class.getSimpleName() + ")");
+    private static final NullPointerException AWAIT_SINGLE_TIMEOUT_NPE =
+            unknownStackTrace(new NullPointerException(), Await.class,
+                    "awaitNonNull(" + Single.class.getSimpleName() + ", ..)");
 
     private Await() {
         // No instances.
@@ -63,6 +76,23 @@ public final class Await {
      * Awaits termination of the passed {@link Publisher} by blocking the calling thread.
      *
      * @param source to await for.
+     * @param <T> Type of items produced by the {@link Publisher}.
+     *
+     * @return {@link List} of all elements emitted by the {@link Publisher}, iff it terminated successfully.
+     * @throws ExecutionException if the passed {@link Publisher} terminates with a failure, or if the result of
+     * {@link #awaitIndefinitely(Publisher)} is {@code null}.
+     * @throws InterruptedException if the thread was interrupted while waiting for termination.
+     * @see #awaitIndefinitely(Publisher)
+     */
+    public static <T> List<T> awaitIndefinitelyNonNull(Publisher<T> source)
+            throws ExecutionException, InterruptedException {
+        return enforceNonNull(awaitIndefinitely(source), AWAIT_PUBLISHER_NPE);
+    }
+
+    /**
+     * Awaits termination of the passed {@link Publisher} by blocking the calling thread.
+     *
+     * @param source to await for.
      * @param timeout maximum time to wait for termination.
      * @param timeoutUnit {@link TimeUnit} for timeout.
      * @param <T> Type of items produced by the {@link Publisher}.
@@ -70,11 +100,34 @@ public final class Await {
      * @return {@link List} of all elements emitted by the {@link Publisher}, iff it terminated successfully.
      * @throws ExecutionException if the passed {@link Publisher} terminates with a failure.
      * @throws InterruptedException if the thread was interrupted while waiting for termination.
-     * @throws TimeoutException If the {@link Publisher} isn't terminated after waiting for the passed {@code timeout} duration.
+     * @throws TimeoutException If the {@link Publisher} isn't terminated after waiting for the passed {@code timeout}
+     * duration.
      */
     @Nullable
-    public static <T> List<T> await(Publisher<T> source, long timeout, TimeUnit timeoutUnit) throws ExecutionException, InterruptedException, TimeoutException {
+    public static <T> List<T> await(Publisher<T> source, long timeout, TimeUnit timeoutUnit)
+            throws ExecutionException, InterruptedException, TimeoutException {
         return subscribe(source).blockingGet(timeout, timeoutUnit);
+    }
+
+    /**
+     * Awaits termination of the passed {@link Publisher} by blocking the calling thread.
+     *
+     * @param source to await for.
+     * @param timeout maximum time to wait for termination.
+     * @param timeoutUnit {@link TimeUnit} for timeout.
+     * @param <T> Type of items produced by the {@link Publisher}.
+     *
+     * @return {@link List} of all elements emitted by the {@link Publisher}, iff it terminated successfully.
+     * @throws ExecutionException if the passed {@link Publisher} terminates with a failure, or if the result of
+     * {@link #await(Publisher, long, TimeUnit)} is {@code null}.
+     * @throws InterruptedException if the thread was interrupted while waiting for termination.
+     * @throws TimeoutException If the {@link Publisher} isn't terminated after waiting for the passed {@code timeout}
+     * duration.
+     * @see #await(Publisher, long, TimeUnit)
+     */
+    public static <T> List<T> awaitNonNull(Publisher<T> source, long timeout, TimeUnit timeoutUnit)
+            throws ExecutionException, InterruptedException, TimeoutException {
+        return enforceNonNull(await(source, timeout, timeoutUnit), AWAIT_PUBLISHER_TIMEOUT_NPE);
     }
 
     /**
@@ -96,6 +149,22 @@ public final class Await {
      * Awaits termination of the passed {@link Single} by blocking the calling thread.
      *
      * @param source to await for.
+     * @param <T> Type of the result of {@link Single}.
+     *
+     * @return Result of the {@link Single}. {@code null} if the {@code source} is of type {@link Void}.
+     * @throws ExecutionException if the passed {@link Publisher} terminates with a failure, or if the result of
+     * {@link #awaitIndefinitely(Single)} is {@code null}.
+     * @throws InterruptedException if the thread was interrupted while waiting for termination.
+     * @see #awaitIndefinitely(Single)
+     */
+    public static <T> T awaitIndefinitelyNonNull(Single<T> source) throws ExecutionException, InterruptedException {
+        return enforceNonNull(awaitIndefinitely(source), AWAIT_SINGLE_NPE);
+    }
+
+    /**
+     * Awaits termination of the passed {@link Single} by blocking the calling thread.
+     *
+     * @param source to await for.
      * @param timeout maximum time to wait for termination.
      * @param timeoutUnit {@link TimeUnit} for timeout.
      * @param <T> Type of the result of {@link Single}.
@@ -106,8 +175,29 @@ public final class Await {
      * @throws TimeoutException If the result isn't available after waiting for the passed {@code timeout} duration.
      */
     @Nullable
-    public static <T> T await(Single<T> source, long timeout, TimeUnit timeoutUnit) throws ExecutionException, InterruptedException, TimeoutException {
+    public static <T> T await(Single<T> source, long timeout, TimeUnit timeoutUnit)
+            throws ExecutionException, InterruptedException, TimeoutException {
         return subscribe(source).blockingGet(timeout, timeoutUnit);
+    }
+
+    /**
+     * Awaits termination of the passed {@link Single} by blocking the calling thread.
+     *
+     * @param source to await for.
+     * @param timeout maximum time to wait for termination.
+     * @param timeoutUnit {@link TimeUnit} for timeout.
+     * @param <T> Type of the result of {@link Single}.
+     *
+     * @return Result of the {@link Single}. {@code null} if the {@code source} is of type {@link Void}.
+     * @throws ExecutionException if the passed {@link Publisher} terminates with a failure, or if the result of
+     * {@link #await(Single, long, TimeUnit)} is {@code null}.
+     * @throws InterruptedException if the thread was interrupted while waiting for termination.
+     * @throws TimeoutException If the result isn't available after waiting for the passed {@code timeout} duration.
+     * @see #await(Single, long, TimeUnit)
+     */
+    public static <T> T awaitNonNull(Single<T> source, long timeout, TimeUnit timeoutUnit)
+            throws ExecutionException, InterruptedException, TimeoutException {
+        return enforceNonNull(await(source, timeout, timeoutUnit), AWAIT_SINGLE_TIMEOUT_NPE);
     }
 
     /**
@@ -145,9 +235,11 @@ public final class Await {
      *
      * @throws ExecutionException if the passed {@link Publisher} terminates with a failure.
      * @throws InterruptedException if the thread was interrupted while waiting for termination.
-     * @throws TimeoutException If the {@link Completable} isn't terminated after waiting for the passed {@code timeout} duration.
+     * @throws TimeoutException If the {@link Completable} isn't terminated after waiting for the passed
+     * {@code timeout} duration.
      */
-    public static void await(Completable source, long timeout, TimeUnit timeoutUnit) throws ExecutionException, InterruptedException, TimeoutException {
+    public static void await(Completable source, long timeout, TimeUnit timeoutUnit)
+            throws ExecutionException, InterruptedException, TimeoutException {
         subscribe(source).blockAndThrowIfFailed(timeout, timeoutUnit);
     }
 
@@ -174,6 +266,13 @@ public final class Await {
 
     private static void assertNotInEventloop() {
         //TODO: Check if the current thread is an eventloop, if so, throw.
+    }
+
+    private static <T> T enforceNonNull(T result, NullPointerException npe) throws ExecutionException {
+        if (result == null) {
+            throw new ExecutionException("null return value not supported", npe);
+        }
+        return result;
     }
 
     private abstract static class ResultProvider<T> {
