@@ -586,6 +586,11 @@ public class HttpUriTest {
         new HttpUri("/path?param=value", () -> "::1");
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void onlyPortInHostHeader() {
+        new HttpUri("/path?param=value", () -> ":8080");
+    }
+
     private static void verifyAppleString(final HttpUri hp, final boolean isSsl, final int port) {
         assertEquals("apple.com:8080", hp.getHostHeader());
         assertEquals("apple.com", hp.getHost());

@@ -122,7 +122,7 @@ final class HttpUri {
                 break;
             } else if (c == '@') {
                 if (begin == 0 || parsedScheme < 0 && uri.charAt(begin - 1) == '/') {
-                    HttpUri.invalidAuthority();
+                    invalidAuthority();
                 }
                 begin = i += 1;
                 lastColon = -1;
@@ -147,14 +147,14 @@ final class HttpUri {
         }
 
         if (lastColon > ipliteral) {
-            parsedPort = HttpUri.parsePort(uri, lastColon + 1, i);
+            parsedPort = parsePort(uri, lastColon + 1, i);
             parsedHost = uri.substring(begin, lastColon);
             parsedHostHeader = uri.substring(begin, i);
         } else if (begin != i &&
                 ((begin > 1 && uri.charAt(begin - 1) == '/' && uri.charAt(begin - 2) == '/') ||
                         (begin > 0 && uri.charAt(begin - 1) == '@'))) {
-            if (i > uri.length() || parsedScheme < 0 && begin > 0 && uri.charAt(begin) == '@' && uri.charAt(begin - 1) == '/') {
-                HttpUri.invalidAuthority();
+            if (i > uri.length() || parsedScheme < 0 && uri.charAt(begin) == '@' && uri.charAt(begin - 1) == '/') {
+                invalidAuthority();
             }
             parsedHost = uri.substring(begin, i);
             parsedHostHeader = uri.substring(begin, i);
@@ -164,43 +164,47 @@ final class HttpUri {
             }
             parsedHostHeader = defaultHostHeader.get();
             if (parsedHostHeader != null) {
-                // https://tools.ietf.org/html/rfc3986#section-3.2.2
-                // A host identified by an Internet Protocol literal address, version 6
-                //    [RFC3513] or later, is distinguished by enclosing the IP literal
-                //    within square brackets ("[" and "]").  This is the only place where
-                //    square bracket characters are allowed in the URI syntax.
-                int x = parsedHostHeader.indexOf('[');
-                if (x >= 0) {
-                    int z = parsedHostHeader.indexOf(']', x);
-                    if (z <= 0) {
-                        throw new IllegalArgumentException("open [ in host header");
-                    }
-                    // we expect an authority component (minus the user info) in the host header, so we validate more
-                    // stringently.
-                    if (z + 2 <= parsedHostHeader.length()) {
-                        if (parsedHostHeader.charAt(z + 1) != ':') {
-                            throw new IllegalArgumentException("unexpected character after address");
+                final int x = parsedHostHeader.lastIndexOf(':');
+                if (x > 0) {
+                    final int y = parsedHostHeader.lastIndexOf(':', x - 1);
+                    if (y >= 0) {
+                        // IPv6 address is present in the header
+                        // https://tools.ietf.org/html/rfc3986#section-3.2.2
+                        // A host identified by an Internet Protocol literal address, version 6
+                        // [RFC3513] or later, is distinguished by enclosing the IP literal
+                        // within square brackets ("[" and "]").  This is the only place where
+                        // square bracket characters are allowed in the URI syntax.
+                        final int cb;
+                        if (parsedHostHeader.charAt(0) != '[' || (cb = parsedHostHeader.lastIndexOf(']')) < 0) {
+                            throw new IllegalArgumentException("IPv6 address should be in square brackets");
                         }
-                        parsedPort = HttpUri.parsePort(parsedHostHeader, z + 2, parsedHostHeader.length());
-                    }
-                    parsedHost = parsedHostHeader.substring(x, z + 1);
-                } else { // Try to parse ipv4 or other literal address
-                    x = parsedHostHeader.indexOf(':');
-                    if (x >= 0) {
-                        parsedHost = parsedHostHeader.substring(0, x);
-                        parsedPort = HttpUri.parsePort(parsedHostHeader, x + 1, parsedHostHeader.length());
+                        if (cb < x) {
+                            parsedHost = parsedHostHeader.substring(0, x);
+                            parsedPort = parsePort(parsedHostHeader, x + 1, parsedHostHeader.length());
+                        } else if (cb != parsedHostHeader.length() - 1) {
+                            throw new IllegalArgumentException(
+                                    "']' should be at the end of IPv6 address or before port number");
+                        } else {
+                            parsedHost = parsedHostHeader;
+                        }
                     } else {
-                        parsedHost = parsedHostHeader;
+                        // IPv4 or literal host with port number
+                        parsedHost = parsedHostHeader.substring(0, x);
+                        parsedPort = parsePort(parsedHostHeader, x + 1, parsedHostHeader.length());
                     }
+                } else if (x < 0) {
+                    parsedHost = parsedHostHeader;
+                } else {
+                    throw new IllegalArgumentException("Illegal position of colon in the host header");
                 }
             }
         }
 
         if (requestTargetStart == 0 || (begin == 0 && i == uri.length())) {
-            HttpUri.verifyFirstPathSegment(uri, 0);
+            verifyFirstPathSegment(uri, 0);
             requestTarget = uri;
         } else if (requestTargetStart > 0) {
-            HttpUri.verifyFirstPathSegment(uri, requestTargetStart);
+            verifyFirstPathSegment(uri, requestTargetStart);
             requestTarget = uri.substring(requestTargetStart);
         } else {
             requestTarget = "";
@@ -208,7 +212,7 @@ final class HttpUri {
         host = parsedHost;
         hostHeader = parsedHostHeader;
         isSsl = parsedScheme == 1;
-        port = parsedPort > 0 ? parsedPort : (isSsl ? HttpUri.DEFAULT_PORT_HTTPS : HttpUri.DEFAULT_PORT_HTTP);
+        port = parsedPort > 0 ? parsedPort : (isSsl ? DEFAULT_PORT_HTTPS : DEFAULT_PORT_HTTP);
         explicitPort = parsedPort > 0;
         this.uri = uri;
     }
@@ -298,7 +302,7 @@ final class HttpUri {
 
     @Override
     public int hashCode() {
-        return 31 * ((31 + port) + (Objects.hashCode(host)));
+        return 31 * (31 + port + Objects.hashCode(host));
     }
 
     @Override
@@ -309,29 +313,29 @@ final class HttpUri {
     private static int parsePort(final String uri, final int begin, final int end) {
         final int len = end - begin;
         if (len == 4) {
-            return (1000 * HttpUri.toDecimal(uri.charAt(begin))) +
-                    (100 * HttpUri.toDecimal(uri.charAt(begin + 1))) +
-                    (10 * HttpUri.toDecimal(uri.charAt(begin + 2))) +
-                    HttpUri.toDecimal(uri.charAt(begin + 3));
+            return (1000 * toDecimal(uri.charAt(begin))) +
+                    (100 * toDecimal(uri.charAt(begin + 1))) +
+                    (10 * toDecimal(uri.charAt(begin + 2))) +
+                    toDecimal(uri.charAt(begin + 3));
         } else if (len == 3) {
-            return (100 * HttpUri.toDecimal(uri.charAt(begin))) +
-                    (10 * HttpUri.toDecimal(uri.charAt(begin + 1))) +
-                    HttpUri.toDecimal(uri.charAt(begin + 2));
+            return (100 * toDecimal(uri.charAt(begin))) +
+                    (10 * toDecimal(uri.charAt(begin + 1))) +
+                    toDecimal(uri.charAt(begin + 2));
         } else if (len == 2) {
-            return (10 * HttpUri.toDecimal(uri.charAt(begin))) +
-                    HttpUri.toDecimal(uri.charAt(begin + 1));
+            return (10 * toDecimal(uri.charAt(begin))) +
+                    toDecimal(uri.charAt(begin + 1));
         } else if (len == 5) {
-            final int port = (10000 * HttpUri.toDecimal(uri.charAt(begin))) +
-                    (1000 * HttpUri.toDecimal(uri.charAt(begin + 1))) +
-                    (100 * HttpUri.toDecimal(uri.charAt(begin + 2))) +
-                    (10 * HttpUri.toDecimal(uri.charAt(begin + 3))) +
-                    HttpUri.toDecimal(uri.charAt(begin + 4));
+            final int port = (10000 * toDecimal(uri.charAt(begin))) +
+                    (1000 * toDecimal(uri.charAt(begin + 1))) +
+                    (100 * toDecimal(uri.charAt(begin + 2))) +
+                    (10 * toDecimal(uri.charAt(begin + 3))) +
+                    toDecimal(uri.charAt(begin + 4));
             if (port > 65535) {
                 throw new IllegalArgumentException("port out of bounds");
             }
             return port;
         } else if (len == 1) {
-            return HttpUri.toDecimal(uri.charAt(begin));
+            return toDecimal(uri.charAt(begin));
         } else {
             throw new IllegalArgumentException("invalid port");
         }
