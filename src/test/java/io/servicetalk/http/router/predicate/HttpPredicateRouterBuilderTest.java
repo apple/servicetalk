@@ -23,7 +23,6 @@ import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpService;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.net.SocketAddress;
@@ -64,7 +63,6 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
         assertSame(fallbackResponse, service.handle(ctx, request));
     }
 
-    @Ignore("This won't work until there's an implementation of HttpResponse to return.")
     @Test
     public void testDefaultFallback() throws Exception {
         final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()

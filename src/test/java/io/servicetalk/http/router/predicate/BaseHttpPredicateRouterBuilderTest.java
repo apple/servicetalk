@@ -36,6 +36,7 @@ import org.mockito.stubbing.Answer;
 import java.util.Iterator;
 import java.util.Spliterator;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static java.util.Arrays.asList;
 import static org.mockito.Mockito.when;
@@ -64,6 +65,7 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
 
     @Before
     public void setUp() {
+        when(ctx.getExecutor()).thenReturn(immediate());
         when(request.getVersion()).thenReturn(HTTP_1_1);
         when(request.getHeaders()).thenReturn(headers);
         when(request.parseQuery()).thenReturn(query);
