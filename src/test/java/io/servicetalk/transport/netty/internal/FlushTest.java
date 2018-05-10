@@ -16,49 +16,34 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.transport.api.FlushStrategyHolder;
 
-import io.netty.channel.Channel;
-import io.netty.channel.EventLoop;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.InOrder;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.transport.netty.internal.Flush.composeFlushes;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-public class FlushTest {
+public class FlushTest extends AbstractFlushTest {
 
     @Rule
     public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
     @Rule
     public final PublisherRule<String> source = new PublisherRule<>();
 
-    private FlushStrategyHolder.FlushSignals flushSignals;
-    private Channel channel;
-    private InOrder verifier;
-
     @Before
     public void setUp() {
-        channel = mock(Channel.class);
-        EventLoop eventLoop = mock(EventLoop.class);
-        when(eventLoop.inEventLoop()).thenReturn(true);
-        when(channel.eventLoop()).thenReturn(eventLoop);
-        flushSignals = new FlushStrategyHolder.FlushSignals();
-        Publisher<String> flushedStream = composeFlushes(channel, source.getPublisher(), immediate(), flushSignals)
-                .doBeforeNext(s -> channel.write(s));
-        subscriber.subscribe(flushedStream);
-        verifier = inOrder(channel);
+        @SuppressWarnings("unchecked")
+        FlushStrategyHolder<String> holder = (FlushStrategyHolder<String>) mock(FlushStrategyHolder.class);
+        when(holder.getSource()).thenReturn(source.getPublisher());
+        when(holder.getFlushSignals()).thenReturn(new FlushStrategyHolder.FlushSignals());
+        subscriber.subscribe(super.setup(holder));
     }
 
     @Test
@@ -124,16 +109,9 @@ public class FlushTest {
         flushSignals.signalFlush();
     }
 
-    private void verifyWriteAndFlushAfter(String... items) {
-        for (String item : items) {
-            verifier.verify(channel).write(item);
-        }
-        verifier.verify(channel).flush();
-        verify(channel).eventLoop();
+    @Override
+    void verifyWriteAndFlushAfter(final String... items) {
+        super.verifyWriteAndFlushAfter(items);
         subscriber.verifyItems(items);
-    }
-
-    private void verifyFlushSignalListenerRemoved() {
-        flushSignals.listen(() -> { }).cancel(); // verifies the completableSubscriber was removed.
     }
 }

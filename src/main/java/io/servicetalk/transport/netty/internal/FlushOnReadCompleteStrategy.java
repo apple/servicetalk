@@ -15,7 +15,6 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.FlushStrategy;
 import io.servicetalk.transport.api.FlushStrategyHolder;
@@ -43,10 +42,10 @@ final class FlushOnReadCompleteStrategy implements FlushStrategy {
     }
 
     @Override
-    public <T> FlushStrategyHolder<T> apply(Publisher<T> source, Executor executor) {
+    public <T> FlushStrategyHolder<T> apply(Publisher<T> source) {
         requireNonNull(source);
         FlushStrategyHolder.FlushSignals signals = new FlushStrategyHolder.FlushSignals();
-        return new ReadAwareFlushStrategyHolderImpl<>(source, signals, maxPendingWrites, executor);
+        return new ReadAwareFlushStrategyHolderImpl<>(source, signals, maxPendingWrites);
     }
 
     private static class ReadAwareFlushStrategyHolderImpl<T> implements ReadAwareFlushStrategyHolder<T> {
@@ -62,9 +61,9 @@ final class FlushOnReadCompleteStrategy implements FlushStrategy {
         private final Publisher<T> src;
         private final FlushStrategyHolder.FlushSignals signals;
 
-        ReadAwareFlushStrategyHolderImpl(Publisher<T> src, FlushStrategyHolder.FlushSignals signals, int maxPendingWrites,
-                                         Executor executor) {
-            this.src = new Publisher<T>(executor) {
+        ReadAwareFlushStrategyHolderImpl(Publisher<T> src, FlushStrategyHolder.FlushSignals signals,
+                                         int maxPendingWrites) {
+            this.src = new Publisher<T>() {
                 @Override
                 protected void handleSubscribe(Subscriber<? super T> subscriber) {
                     ReadAwareSubscriber<T> rasub = new ReadAwareSubscriber<>(ReadAwareFlushStrategyHolderImpl.this, subscriber, signals, maxPendingWrites);

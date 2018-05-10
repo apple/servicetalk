@@ -24,7 +24,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.transport.netty.internal.ReadAwareFlushStrategyHolder.flushOnReadComplete;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -75,7 +74,7 @@ public class ReadAwareFlushStrategiesTest {
 
     private ReadAwareFlushStrategyHolder<String> setupForReadOnly(int maxPendingWrite) {
         ReadAwareFlushStrategyHolder<String> holder =
-                (ReadAwareFlushStrategyHolder<String>) flushOnReadComplete(maxPendingWrite).apply(source, immediate());
+                (ReadAwareFlushStrategyHolder<String>) flushOnReadComplete(maxPendingWrite).apply(source);
         setupFor(holder);
         holder.setReadInProgressSupplier(() -> readInProgress);
         return holder;

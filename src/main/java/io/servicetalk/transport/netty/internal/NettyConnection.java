@@ -186,7 +186,7 @@ public final class NettyConnection<Read, Write> implements Connection<Read, Writ
 
     @Override
     public Completable write(Publisher<Write> write, FlushStrategy flushStrategy, Supplier<RequestNSupplier> requestNSupplierFactory) {
-        return write(flushStrategy.apply(requireNonNull(write), getExecutor()), requestNSupplierFactory);
+        return write(flushStrategy.apply(requireNonNull(write)), requestNSupplierFactory);
     }
 
     private Completable write(FlushStrategyHolder<Write> writeWithFlush, Supplier<RequestNSupplier> requestNSupplierFactory) {
@@ -200,7 +200,7 @@ public final class NettyConnection<Read, Write> implements Connection<Read, Writ
                         holder.setReadInProgressSupplier(readInProgressSupplier);
                         readAwareFlushStrategyHolder = holder;
                     }
-                    composeFlushes(channel, writeWithFlush.getSource(), getExecutor(), writeWithFlush.getFlushSignals())
+                    composeFlushes(channel, writeWithFlush.getSource(), writeWithFlush.getFlushSignals())
                             .subscribe(subscriber);
                 }
             }

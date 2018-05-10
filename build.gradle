@@ -47,4 +47,6 @@ dependencies {
   testImplementation "junit:junit"
   testImplementation "org.hamcrest:hamcrest-library"
   testImplementation "org.mockito:mockito-core"
+
+  testFixturesImplementation "junit:junit"
 }
