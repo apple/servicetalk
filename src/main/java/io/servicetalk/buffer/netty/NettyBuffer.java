@@ -15,8 +15,8 @@
  */
 package io.servicetalk.buffer.netty;
 
-import io.servicetalk.buffer.Buffer;
-import io.servicetalk.buffer.ByteProcessor;
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.ByteProcessor;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;

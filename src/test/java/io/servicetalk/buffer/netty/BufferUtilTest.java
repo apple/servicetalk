@@ -15,11 +15,11 @@
  */
 package io.servicetalk.buffer.netty;
 
-import io.servicetalk.buffer.Buffer;
+import io.servicetalk.buffer.api.Buffer;
 
 import org.junit.Test;
 
-import static io.servicetalk.buffer.EmptyBuffer.EMPTY_BUFFER;
+import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferUtil.toByteBufNoThrow;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
