@@ -15,9 +15,9 @@
  */
 package io.servicetalk.transport.api;
 
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.TerminalNotification;
+import io.servicetalk.transport.api.FlushStrategyHolder.FlushSignals;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -31,10 +31,9 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.checkTerminatio
 import static io.servicetalk.concurrent.internal.SubscriberUtils.sendOnNextWithConcurrentTerminationCheck;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
-import static io.servicetalk.transport.api.FlushStrategyHolder.from;
 import static java.util.Objects.requireNonNull;
 
-final class BatchFlush implements FlushStrategy {
+final class BatchFlush extends AbstractFlushStrategy {
 
     private final Publisher<?> durationBoundaries;
     private final int batchSize;
@@ -48,16 +47,9 @@ final class BatchFlush implements FlushStrategy {
     }
 
     @Override
-    public <T> FlushStrategyHolder<T> apply(Publisher<T> source, Executor executor) {
-        requireNonNull(source);
-        FlushStrategyHolder.FlushSignals signals = new FlushStrategyHolder.FlushSignals();
-        Publisher<T> src = new Publisher<T>(executor) {
-            @Override
-            protected void handleSubscribe(Subscriber<? super T> subscriber) {
-                source.subscribe(new MultiSourceBatchSubscriber<>(subscriber, durationBoundaries, signals, batchSize));
-            }
-        };
-        return from(src, signals);
+    <T> Subscriber<? super T> newFlushSourceSubscriber(final Subscriber<? super T> original,
+                                                       final FlushSignals flushSignals) {
+        return new MultiSourceBatchSubscriber<>(original, durationBoundaries, flushSignals, batchSize);
     }
 
     static final class MultiSourceBatchSubscriber<T> implements Subscriber<T> {
@@ -71,7 +63,7 @@ final class BatchFlush implements FlushStrategy {
 
         private final Subscriber<? super T> subscriber;
         private final Publisher<?> durationBoundaries;
-        private final FlushStrategyHolder.FlushSignals signals;
+        private final FlushSignals signals;
         private final int batchSize;
 
         @Nullable
@@ -84,7 +76,7 @@ final class BatchFlush implements FlushStrategy {
         @SuppressWarnings("unused")
         private volatile TerminalNotification terminalNotification;
 
-        MultiSourceBatchSubscriber(Subscriber<? super T> subscriber, Publisher<?> durationBoundaries, FlushStrategyHolder.FlushSignals signals,
+        MultiSourceBatchSubscriber(Subscriber<? super T> subscriber, Publisher<?> durationBoundaries, FlushSignals signals,
                                    int batchSize) {
             this.subscriber = requireNonNull(subscriber);
             this.durationBoundaries = durationBoundaries;
@@ -167,7 +159,7 @@ final class BatchFlush implements FlushStrategy {
         }
 
         /**
-         * Sends a flush signal, using configured {@link FlushStrategyHolder.FlushSignals#signalFlush()}.
+         * Sends a flush signal, using configured {@link FlushSignals#signalFlush()}.
          */
         void sendFlush() {
             int oldUnflushedCount = unflushedCountUpdater.getAndSet(this, 0);

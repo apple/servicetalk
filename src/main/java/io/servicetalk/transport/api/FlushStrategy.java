@@ -15,7 +15,6 @@
  */
 package io.servicetalk.transport.api;
 
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 
 import static io.servicetalk.transport.api.FlushBeforeEnd.FLUSH_BEFORE_END;
@@ -37,10 +36,9 @@ public interface FlushStrategy {
      *
      * @param <T> The type of data being flushed.
      * @param source {@link Publisher} to apply this strategy on.
-     * @param executor {@link Executor} for the connection on which write is being flushed.
      * @return A {@link FlushStrategyHolder} that contains flush signals and the decorated {@link Publisher} to emit the signals.
      */
-    <T> FlushStrategyHolder<T> apply(Publisher<T> source, Executor executor);
+    <T> FlushStrategyHolder<T> apply(Publisher<T> source);
 
     /**
      * Creates a default {@link FlushStrategy}.<p>

@@ -15,16 +15,14 @@
  */
 package io.servicetalk.transport.api;
 
-import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.transport.api.FlushStrategyHolder.FlushSignals;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import static io.servicetalk.transport.api.FlushStrategyHolder.from;
 import static java.util.Objects.requireNonNull;
 
-final class FlushOnEach implements FlushStrategy {
+final class FlushOnEach extends AbstractFlushStrategy {
 
     static final FlushOnEach FLUSH_ON_EACH = new FlushOnEach();
 
@@ -33,22 +31,17 @@ final class FlushOnEach implements FlushStrategy {
     }
 
     @Override
-    public <T> FlushStrategyHolder<T> apply(Publisher<T> source, Executor executor) {
-        FlushStrategyHolder.FlushSignals signals = new FlushStrategyHolder.FlushSignals();
-        return from(new Publisher<T>(executor) {
-            @Override
-            protected void handleSubscribe(Subscriber<? super T> s) {
-                source.subscribe(new FlushOnEachSubscriber<>(s, signals));
-            }
-        }, signals);
+    <T> Subscriber<? super T> newFlushSourceSubscriber(final Subscriber<? super T> original,
+                                                       final FlushSignals flushSignals) {
+        return new FlushOnEachSubscriber<>(original, flushSignals);
     }
 
     private static final class FlushOnEachSubscriber<T> implements Subscriber<T> {
 
         private final Subscriber<T> original;
-        private final FlushStrategyHolder.FlushSignals signals;
+        private final FlushSignals signals;
 
-        FlushOnEachSubscriber(Subscriber<T> original, FlushStrategyHolder.FlushSignals signals) {
+        FlushOnEachSubscriber(Subscriber<T> original, FlushSignals signals) {
             this.original = requireNonNull(original);
             this.signals = requireNonNull(signals);
         }

@@ -13,12 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.transport;
+package io.servicetalk.transport.api;
 
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.transport.api.FlushStrategy;
-import io.servicetalk.transport.api.FlushStrategyHolder;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -26,7 +24,6 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
@@ -147,15 +144,15 @@ public class FlushStrategiesTest {
     }
 
     private void setupForEach() {
-        setupFor(FlushStrategy.<String>flushOnEach().apply(source, immediate()));
+        setupFor(FlushStrategy.<String>flushOnEach().apply(source));
     }
 
     private void setupForBatch(int batchSize) {
-        setupFor(FlushStrategy.<String>batchFlush(batchSize, durationSource.map(s -> 1L)).apply(source, immediate()));
+        setupFor(FlushStrategy.<String>batchFlush(batchSize, durationSource.map(s -> 1L)).apply(source));
     }
 
     private void setupForEnd() {
-        setupFor(FlushStrategy.<String>flushBeforeEnd().apply(source, immediate()));
+        setupFor(FlushStrategy.<String>flushBeforeEnd().apply(source));
     }
 
     private void setupFor(FlushStrategyHolder<String> strategy) {

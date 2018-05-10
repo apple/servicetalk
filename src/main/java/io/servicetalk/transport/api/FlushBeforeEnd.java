@@ -15,17 +15,14 @@
  */
 package io.servicetalk.transport.api;
 
-import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.FlushStrategyHolder.FlushSignals;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import static io.servicetalk.transport.api.FlushStrategyHolder.from;
 import static java.util.Objects.requireNonNull;
 
-final class FlushBeforeEnd implements FlushStrategy {
+final class FlushBeforeEnd extends AbstractFlushStrategy {
 
     static final FlushBeforeEnd FLUSH_BEFORE_END = new FlushBeforeEnd();
 
@@ -34,14 +31,9 @@ final class FlushBeforeEnd implements FlushStrategy {
     }
 
     @Override
-    public <T> FlushStrategyHolder<T> apply(Publisher<T> source, Executor executor) {
-        FlushSignals signals = new FlushSignals();
-        return from(new Publisher<T>(executor) {
-            @Override
-            protected void handleSubscribe(Subscriber<? super T> s) {
-                source.subscribe(new FlushBeforeEndSubscriber<>(s, signals));
-            }
-        }, signals);
+    <T> Subscriber<? super T> newFlushSourceSubscriber(final Subscriber<? super T> original,
+                                                       final FlushSignals flushSignals) {
+        return new FlushBeforeEndSubscriber<>(original, flushSignals);
     }
 
     private static final class FlushBeforeEndSubscriber<T> implements Subscriber<T> {
