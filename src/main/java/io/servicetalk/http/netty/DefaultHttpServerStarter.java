@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.BufferAllocator;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpHeaders;

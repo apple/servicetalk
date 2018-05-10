@@ -15,8 +15,8 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.Buffer;
-import io.servicetalk.buffer.EmptyBuffer;
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.EmptyBuffer;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpPayloadChunks;
