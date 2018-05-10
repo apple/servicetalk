@@ -15,8 +15,8 @@
  */
 package io.servicetalk.redis.api;
 
-import io.servicetalk.buffer.Buffer;
-import io.servicetalk.buffer.BufferAllocator;
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 
 import java.util.List;
 

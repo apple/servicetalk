@@ -15,7 +15,7 @@
  */
 package io.servicetalk.redis.api;
 
-import io.servicetalk.buffer.Buffer;
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.redis.api.RedisData.CompleteRedisData;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 

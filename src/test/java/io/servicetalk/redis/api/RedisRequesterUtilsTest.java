@@ -15,8 +15,8 @@
  */
 package io.servicetalk.redis.api;
 
-import io.servicetalk.buffer.Buffer;
-import io.servicetalk.buffer.BufferAllocator;
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.redis.api.RedisData.ArraySize;
