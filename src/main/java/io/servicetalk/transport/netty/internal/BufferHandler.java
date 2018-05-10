@@ -15,9 +15,9 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.buffer.Buffer;
-import io.servicetalk.buffer.BufferAllocator;
-import io.servicetalk.buffer.BufferHolder;
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.buffer.api.BufferHolder;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;

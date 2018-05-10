@@ -15,8 +15,8 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.buffer.Buffer;
-import io.servicetalk.buffer.BufferAllocator;
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
