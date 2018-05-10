@@ -15,8 +15,8 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.Buffer;
-import io.servicetalk.buffer.BufferHolder;
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferHolder;
 
 /**
  * A chunk of the <a href="https://tools.ietf.org/html/rfc7230.html#section-3.3">HTTP Message Body</a>.

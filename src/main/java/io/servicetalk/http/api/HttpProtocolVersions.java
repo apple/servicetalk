@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.Buffer;
+import io.servicetalk.buffer.api.Buffer;
 
 import static io.servicetalk.http.api.DefaultHttpProtocolVersion.httpVersionToBuffer;
 import static java.lang.Integer.parseInt;

@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.Buffer;
+import io.servicetalk.buffer.api.Buffer;
 
 /**
  * HTTP <a href="https://tools.ietf.org/html/rfc7231#section-4">Request Methods</a>.

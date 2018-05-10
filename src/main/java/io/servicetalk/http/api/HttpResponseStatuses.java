@@ -15,11 +15,11 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.Buffer;
+import io.servicetalk.buffer.api.Buffer;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.ReadOnlyBufferAllocators.PREFER_DIRECT_ALLOCATOR;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_DIRECT_ALLOCATOR;
 import static io.servicetalk.http.api.DefaultHttpResponseStatus.statusCodeToBuffer;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.toStatusClass;
 

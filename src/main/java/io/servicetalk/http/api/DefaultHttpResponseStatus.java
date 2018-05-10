@@ -15,9 +15,9 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.Buffer;
+import io.servicetalk.buffer.api.Buffer;
 
-import static io.servicetalk.buffer.ReadOnlyBufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.toStatusClass;
 import static java.util.Objects.requireNonNull;
 

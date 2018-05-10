@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.ByteProcessor;
+import io.servicetalk.buffer.api.ByteProcessor;
 
 import java.util.Iterator;
 import java.util.Map;

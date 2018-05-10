@@ -19,7 +19,7 @@ import org.junit.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-import static io.servicetalk.buffer.ReadOnlyBufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.http.api.CharSequences.contentEquals;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;

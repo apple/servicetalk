@@ -30,12 +30,12 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.Buffer;
-import io.servicetalk.buffer.ByteProcessor;
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.ByteProcessor;
 
 import java.nio.ByteOrder;
 
-import static io.servicetalk.buffer.EmptyBuffer.EMPTY_BUFFER;
+import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCaseUnknownTypes;
 import static io.servicetalk.http.api.CharSequences.contentEqualsUnknownTypes;
 import static java.nio.charset.StandardCharsets.US_ASCII;

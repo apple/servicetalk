@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.Buffer;
+import io.servicetalk.buffer.api.Buffer;
 
 /**
  * A special instance of {@link HttpPayloadChunk} that terminates the payload and contains

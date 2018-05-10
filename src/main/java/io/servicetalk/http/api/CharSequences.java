@@ -15,11 +15,11 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.Buffer;
+import io.servicetalk.buffer.api.Buffer;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.ReadOnlyBufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.AsciiBuffer.EMPTY_ASCII_BUFFER;
 import static io.servicetalk.http.api.AsciiBuffer.hashCodeAscii;
 import static java.lang.Character.toUpperCase;

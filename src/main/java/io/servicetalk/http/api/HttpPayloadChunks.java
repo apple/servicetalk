@@ -15,9 +15,9 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.Buffer;
-import io.servicetalk.buffer.BufferAllocator;
-import io.servicetalk.buffer.CompositeBuffer;
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 

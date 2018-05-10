@@ -15,10 +15,10 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.Buffer;
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.http.api.DefaultHttpRequestMethod.DefaultHttpRequestMethodProperties;
 
-import static io.servicetalk.buffer.ReadOnlyBufferAllocators.PREFER_DIRECT_ALLOCATOR;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_DIRECT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpRequestMethods.HttpRequestMethodProperties.CACHEABLE;
 import static io.servicetalk.http.api.HttpRequestMethods.HttpRequestMethodProperties.IDEMPOTENT;
 import static io.servicetalk.http.api.HttpRequestMethods.HttpRequestMethodProperties.NONE;
