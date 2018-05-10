@@ -40,9 +40,11 @@ class LoadBalancedHttpConnection extends ReservedHttpConnection<HttpPayloadChunk
     private final ConcurrentReservedResource reserved;
     private final HttpConnection<HttpPayloadChunk, HttpPayloadChunk> delegate;
 
-    LoadBalancedHttpConnection(HttpConnection<HttpPayloadChunk, HttpPayloadChunk> delegate) {
+    LoadBalancedHttpConnection(HttpConnection<HttpPayloadChunk, HttpPayloadChunk> delegate,
+                               int defaultMaxPipelinedRequests) {
         this.delegate = requireNonNull(delegate);
-        reserved = new ConcurrentReservedResource(getSettingStream(SettingKey.MAX_CONCURRENCY), this);
+        reserved = new ConcurrentReservedResource(defaultMaxPipelinedRequests,
+                getSettingStream(SettingKey.MAX_CONCURRENCY), onClose0(delegate));
     }
 
     /**
@@ -123,7 +125,7 @@ class LoadBalancedHttpConnection extends ReservedHttpConnection<HttpPayloadChunk
 
     @Override
     public Completable onClose() {
-        return delegate.onClose();
+        return onClose0(delegate);
     }
 
     @Override
@@ -137,5 +139,17 @@ class LoadBalancedHttpConnection extends ReservedHttpConnection<HttpPayloadChunk
 
     public boolean tryRequest() {
         return reserved.tryRequest();
+    }
+
+    /**
+     * Common method to be used from {@link #onClose()} and the constructor to create {@link ConcurrentReservedResource}.
+     * Intent here is to make sure what we return from {@link #onClose()} is what we give to
+     * {@link ConcurrentReservedResource} and hence avoid discrepancies between the two entities.
+     * @param delegate {@link HttpConnection} that is used for providing the return {@link Completable}.
+     *
+     * @return {@link Comparable} which completes when the {@code delegate} closes.
+     */
+    private static Completable onClose0(HttpConnection<HttpPayloadChunk, HttpPayloadChunk> delegate) {
+        return delegate.onClose();
     }
 }

@@ -18,7 +18,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
 import io.servicetalk.concurrent.internal.LatestValueSubscriber;
@@ -42,6 +41,7 @@ class ConcurrentReservedResource {
     private static final int STATE_QUIT = -2;
     private static final int STATE_RESERVED = -1;
     private static final int STATE_IDLE = 0;
+    private final int defaultMaxPipelinedRequests;
 
     /*
      * Following semantics:
@@ -55,11 +55,13 @@ class ConcurrentReservedResource {
 
     private final LatestValueSubscriber<Integer> maxConcurrencyHolder;
 
-    ConcurrentReservedResource(final Publisher<Integer> maxConcurrencySettingStream,
-                               final ListenableAsyncCloseable closeable) {
+    ConcurrentReservedResource(final int defaultMaxPipelinedRequests,
+                               final Publisher<Integer> maxConcurrencySettingStream,
+                               final Completable onClose) {
+        this.defaultMaxPipelinedRequests = defaultMaxPipelinedRequests;
         maxConcurrencyHolder = new LatestValueSubscriber<>();
         maxConcurrencySettingStream.subscribe(maxConcurrencyHolder);
-        closeable.onClose().subscribe(new Completable.Subscriber() {
+        onClose.subscribe(new Completable.Subscriber() {
             @Override
             public void onSubscribe(Cancellable cancellable) {
                 // No op
@@ -94,7 +96,7 @@ class ConcurrentReservedResource {
      * @return {@code true} if this connection is available and reserved for performing a single request
      */
     boolean tryRequest() {
-        final int lastSeenValue = maxConcurrencyHolder.getLastSeenValue(STATE_IDLE);
+        final int lastSeenValue = maxConcurrencyHolder.getLastSeenValue(defaultMaxPipelinedRequests);
         for (;;) {
             final int currentPending = pendingRequests;
             if (currentPending < STATE_IDLE || currentPending >= lastSeenValue) {

@@ -24,7 +24,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpConnection;
-import io.servicetalk.http.api.HttpConnectionBuilder;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
@@ -48,16 +47,17 @@ final class DefaultHttpClient<ResolvedAddress, EventType extends ServiceDiscover
 
     @SuppressWarnings("unchecked")
     DefaultHttpClient(ExecutionContext executionContext,
-                         HttpConnectionBuilder<ResolvedAddress, HttpPayloadChunk, HttpPayloadChunk> connectionBuilder,
-                         Publisher<EventType> addressEventStream,
-                         Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>,
-                                 HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilter,
-                         LoadBalancerFactory<ResolvedAddress, HttpConnection<HttpPayloadChunk, HttpPayloadChunk>>
-                                 loadBalancerFactory) {
+                      DefaultHttpConnectionBuilder<ResolvedAddress> connectionBuilder,
+                      Publisher<EventType> addressEventStream,
+                      Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>,
+                              HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilter,
+                      LoadBalancerFactory<ResolvedAddress, HttpConnection<HttpPayloadChunk, HttpPayloadChunk>>
+                              loadBalancerFactory) {
         this.executionContext = requireNonNull(executionContext);
+        int maxPipelinedRequests = connectionBuilder.getMaxPipelinedRequests();
         ConnectionFactory<ResolvedAddress, LoadBalancedHttpConnection> connectionFactory =
                 connectionBuilder.asConnectionFactory(executionContext,
-                                connectionFilter.andThen(LoadBalancedHttpConnection::new));
+                        connectionFilter.andThen(delegate -> new LoadBalancedHttpConnection(delegate, maxPipelinedRequests)));
 
         // TODO addressEventStream.multicast(x) when feeding into multiple LBs
         // TODO we should revisit generics on LoadBalancerFactory to avoid casts

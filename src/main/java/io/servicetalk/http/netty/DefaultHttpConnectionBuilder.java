@@ -98,6 +98,10 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress>
                 new NonPipelinedHttpConnection(connection, config, executionContext);
     }
 
+    int getMaxPipelinedRequests() {
+        return config.getMaxPipelinedRequests();
+    }
+
     /**
      * Enable SSL/TLS using the provided {@link SslConfig}. To disable it pass in {@code null}.
      *
