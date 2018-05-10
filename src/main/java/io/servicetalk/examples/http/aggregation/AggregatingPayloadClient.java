@@ -15,7 +15,7 @@
  */
 package io.servicetalk.examples.http.aggregation;
 
-import io.servicetalk.buffer.Buffer;
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpPayloadChunk;

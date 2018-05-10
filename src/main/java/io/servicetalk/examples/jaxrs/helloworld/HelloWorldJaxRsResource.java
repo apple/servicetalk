@@ -15,7 +15,7 @@
  */
 package io.servicetalk.examples.jaxrs.helloworld;
 
-import io.servicetalk.buffer.BufferAllocator;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpPayloadChunk;
