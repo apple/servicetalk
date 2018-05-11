@@ -32,7 +32,7 @@ public abstract class RedisClient extends RedisRequester {
      *                this may provide some insight into shard or other info.
      * @return a {@link ReservedRedisConnection}.
      */
-    public abstract Single<ReservedRedisConnection> reserveConnection(RedisRequest request);
+    public abstract Single<? extends ReservedRedisConnection> reserveConnection(RedisRequest request);
 
     public abstract static class ReservedRedisConnection extends RedisConnection {
         /**
