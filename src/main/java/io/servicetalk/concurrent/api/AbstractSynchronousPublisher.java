@@ -24,6 +24,9 @@ import org.reactivestreams.Subscriber;
  */
 abstract class AbstractSynchronousPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
+    AbstractSynchronousPublisher() {
+    }
+
     AbstractSynchronousPublisher(Executor executor) {
         super(executor);
     }

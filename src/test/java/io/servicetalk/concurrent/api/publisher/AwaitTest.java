@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.internal.Await.await;
@@ -94,7 +93,7 @@ public class AwaitTest {
     }
 
     private static Publisher<String> newSource(int size, boolean terminateWithError) {
-        return new Publisher<String>(immediate()) {
+        return new Publisher<String>() {
             @Override
             protected void handleSubscribe(Subscriber<? super String> s) {
                 s.onSubscribe(EmptySubscription.EMPTY_SUBSCRIPTION);

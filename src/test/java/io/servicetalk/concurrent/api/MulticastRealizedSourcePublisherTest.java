@@ -78,7 +78,7 @@ public class MulticastRealizedSourcePublisherTest {
     @Test
     public void testOnSubscribeCompletesWithItems() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
-        Publisher<Integer> multicast = Publisher.from(immediate(), 1, 2).multicast(2);
+        Publisher<Integer> multicast = Publisher.from(1, 2).multicast(2);
         MulticastSubscriber subscriber1 = new MulticastSubscriber(latch);
         MulticastSubscriber subscriber2 = new MulticastSubscriber(latch);
         multicast.subscribe(subscriber1);
@@ -91,7 +91,7 @@ public class MulticastRealizedSourcePublisherTest {
     @Test
     public void testOnSubscribeCompletesWithSingleItem() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
-        Publisher<Integer> multicast = Publisher.just(1, immediate()).multicast(2);
+        Publisher<Integer> multicast = Publisher.just(1).multicast(2);
         MulticastSubscriber subscriber1 = new MulticastSubscriber(latch);
         MulticastSubscriber subscriber2 = new MulticastSubscriber(latch);
         multicast.subscribe(subscriber1);

@@ -33,8 +33,7 @@ final class FromArrayPublisher<T> extends AbstractSynchronousPublisher<T> {
     private final T[] values;
 
     @SafeVarargs
-    FromArrayPublisher(Executor executor, T... values) {
-        super(executor);
+    FromArrayPublisher(T... values) {
         this.values = requireNonNull(values);
     }
 

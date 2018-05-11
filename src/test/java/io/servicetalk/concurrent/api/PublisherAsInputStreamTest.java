@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -45,7 +44,7 @@ public final class PublisherAsInputStreamTest {
     @Test
     public void streamEmitsAllDataInSingleRead() throws IOException {
         Character[] src = {'1', '2', '3', '4'};
-        InputStream stream = from(immediate(), src).toInputStream(c -> new byte[]{(byte) c.charValue()});
+        InputStream stream = from(src).toInputStream(c -> new byte[]{(byte) c.charValue()});
         byte[] data = new byte[4];
         int read = stream.read(data, 0, 4);
         assertThat("Unexpected number of bytes read.", read, is(4));
@@ -56,7 +55,7 @@ public final class PublisherAsInputStreamTest {
     @Test
     public void streamEmitsAllDataInMultipleReads() throws IOException {
         Character[] src = {'1', '2', '3', '4'};
-        InputStream stream = from(immediate(), src).toInputStream(c -> new byte[]{(byte) c.charValue()});
+        InputStream stream = from(src).toInputStream(c -> new byte[]{(byte) c.charValue()});
         byte[] data = new byte[2];
 
         int read = stream.read(data, 0, 2);
@@ -74,7 +73,7 @@ public final class PublisherAsInputStreamTest {
     @Test
     public void incrementallyFillAnArray() throws IOException {
         Character[] src = {'1', '2', '3', '4'};
-        InputStream stream = from(immediate(), src).toInputStream(c -> new byte[]{(byte) c.charValue()});
+        InputStream stream = from(src).toInputStream(c -> new byte[]{(byte) c.charValue()});
         byte[] data = new byte[4];
 
         int read = stream.read(data, 0, 2);
@@ -91,7 +90,7 @@ public final class PublisherAsInputStreamTest {
     @Test
     public void readRequestMoreThanDataBuffer() throws IOException {
         Character[] src = {'1', '2', '3', '4'};
-        InputStream stream = from(immediate(), src).toInputStream(c -> new byte[]{(byte) c.charValue()});
+        InputStream stream = from(src).toInputStream(c -> new byte[]{(byte) c.charValue()});
         byte[] data = new byte[16];
         int read = stream.read(data, 0, 16);
         assertThat("Unexpected number of bytes read.", read, is(4));
@@ -102,7 +101,7 @@ public final class PublisherAsInputStreamTest {
     @Test
     public void readRequestLessThanDataBuffer() throws IOException {
         String src = "1234";
-        InputStream stream = from(immediate(), src).toInputStream(str -> str.getBytes(US_ASCII));
+        InputStream stream = from(src).toInputStream(str -> str.getBytes(US_ASCII));
         byte[] data = new byte[2];
         int read = stream.read(data, 0, 2);
         assertThat("Unexpected number of bytes read.", read, is(2));
@@ -111,7 +110,7 @@ public final class PublisherAsInputStreamTest {
 
     @Test
     public void largerSizeItems() throws IOException {
-        InputStream stream = from(immediate(), "123", "45678")
+        InputStream stream = from("123", "45678")
                 .toInputStream(str -> str.getBytes(US_ASCII));
         byte[] data = new byte[4];
         int read = stream.read(data, 0, 4);
@@ -124,7 +123,7 @@ public final class PublisherAsInputStreamTest {
     public void streamErrorShouldBeEmittedPostData() throws IOException {
         DeliberateException de = new DeliberateException();
         Character[] src = {'1', '2', '3', '4'};
-        InputStream stream = from(immediate(), src).concatWith(Completable.error(de))
+        InputStream stream = from(src).concatWith(Completable.error(de))
                 .toInputStream(c -> new byte[]{(byte) c.charValue()});
         byte[] data = new byte[4];
 
@@ -139,7 +138,7 @@ public final class PublisherAsInputStreamTest {
     @Test
     public void closeThenReadShouldBeInvalid() throws IOException {
         Character[] src = {'1', '2', '3', '4'};
-        InputStream stream = from(immediate(), src).toInputStream(c -> new byte[]{(byte) c.charValue()});
+        InputStream stream = from(src).toInputStream(c -> new byte[]{(byte) c.charValue()});
         stream.close();
         expected.expect(instanceOf(IOException.class));
         stream.read();
@@ -148,7 +147,7 @@ public final class PublisherAsInputStreamTest {
     @Test
     public void singleByteRead() throws IOException {
         Character[] src = {'1'};
-        InputStream stream = from(immediate(), src).toInputStream(c -> new byte[]{(byte) c.charValue()});
+        InputStream stream = from(src).toInputStream(c -> new byte[]{(byte) c.charValue()});
         int read = stream.read();
         assertThat("Unexpected bytes read.", (char) read, equalTo('1'));
         assertThat("Bytes read after complete.", stream.read(), is(-1));
@@ -157,7 +156,7 @@ public final class PublisherAsInputStreamTest {
     @Test
     public void zeroLengthReadShouldBeValid() throws IOException {
         Character[] src = {'1'};
-        InputStream stream = from(immediate(), src).toInputStream(c -> new byte[]{(byte) c.charValue()});
+        InputStream stream = from(src).toInputStream(c -> new byte[]{(byte) c.charValue()});
         byte[] data = new byte[0];
         int read = stream.read(data, 0, 0);
         assertThat("Unexpected bytes read.", read, equalTo(0));
@@ -181,7 +180,7 @@ public final class PublisherAsInputStreamTest {
 
     @Test
     public void completionAndEmptyReadShouldIndicateEOF() throws IOException {
-        InputStream stream = from(immediate(), empty(immediate())).toInputStream(obj -> new byte[0]);
+        InputStream stream = from(empty()).toInputStream(obj -> new byte[0]);
         byte[] data = new byte[32];
         int read = stream.read(data, 0, 32);
         assertThat("Unexpected bytes read.", read, equalTo(-1));

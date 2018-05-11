@@ -23,8 +23,7 @@ final class ReactiveStreamsPublisher<T> extends AbstractNoHandleSubscribePublish
 
     private final org.reactivestreams.Publisher<T> publisher;
 
-    ReactiveStreamsPublisher(org.reactivestreams.Publisher<T> publisher, Executor executor) {
-        super(executor);
+    ReactiveStreamsPublisher(org.reactivestreams.Publisher<T> publisher) {
         this.publisher = requireNonNull(publisher);
     }
 

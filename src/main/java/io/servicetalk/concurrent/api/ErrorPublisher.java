@@ -23,8 +23,7 @@ import static java.util.Objects.requireNonNull;
 final class ErrorPublisher<T> extends AbstractSynchronousPublisher<T> {
     private final Throwable cause;
 
-    ErrorPublisher(Throwable cause, Executor executor) {
-        super(executor);
+    ErrorPublisher(Throwable cause) {
         this.cause = requireNonNull(cause);
     }
 

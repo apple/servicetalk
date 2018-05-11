@@ -28,7 +28,6 @@ import java.util.NoSuchElementException;
 import java.util.Spliterator;
 import java.util.concurrent.TimeoutException;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
@@ -67,7 +66,7 @@ public final class PublisherAsBlockingIterableTest {
 
     @Test
     public void allItemsAreReturned() {
-        Spliterator<Integer> iterator = from(immediate(), 1, 2, 3, 4).toIterable().spliterator();
+        Spliterator<Integer> iterator = from(1, 2, 3, 4).toIterable().spliterator();
         List<Integer> result = stream(iterator, false).collect(toList());
         assertThat("Unexpected result.", result, contains(1, 2, 3, 4));
     }
@@ -75,7 +74,7 @@ public final class PublisherAsBlockingIterableTest {
     @Test
     public void errorEmittedIsThrown() {
         DeliberateException de = new DeliberateException();
-        Iterator<Integer> iterator = Publisher.<Integer>error(de, immediate()).toIterable().iterator();
+        Iterator<Integer> iterator = Publisher.<Integer>error(de).toIterable().iterator();
         assertThat("Item expected but not found.", iterator.hasNext(), is(true));
         expected.expect(sameInstance(de));
         iterator.next();
@@ -84,7 +83,7 @@ public final class PublisherAsBlockingIterableTest {
     @Test
     public void doubleHashNextWithError() {
         DeliberateException de = new DeliberateException();
-        Iterator<Integer> iterator = Publisher.<Integer>error(de, immediate())
+        Iterator<Integer> iterator = Publisher.<Integer>error(de)
                 .toIterable().iterator();
         assertThat("Item expected but not found.", iterator.hasNext(), is(true));
         assertThat("Second hasNext inconsistent with first.", iterator.hasNext(), is(true));
@@ -94,13 +93,13 @@ public final class PublisherAsBlockingIterableTest {
 
     @Test
     public void hasNextWithEmpty() {
-        Iterator<Integer> iterator = Publisher.<Integer>empty(immediate()).toIterable().iterator();
+        Iterator<Integer> iterator = Publisher.<Integer>empty().toIterable().iterator();
         assertThat("Item not expected but found.", iterator.hasNext(), is(false));
     }
 
     @Test
     public void nextWithEmpty() {
-        Iterator<Integer> iterator = Publisher.<Integer>empty(immediate()).toIterable().iterator();
+        Iterator<Integer> iterator = Publisher.<Integer>empty().toIterable().iterator();
         assertThat("Item not expected but found.", iterator.hasNext(), is(false));
         expected.expect(instanceOf(NoSuchElementException.class));
         iterator.next();
@@ -213,8 +212,8 @@ public final class PublisherAsBlockingIterableTest {
     @Test
     public void errorEmittedIsThrownAfterEmittingAllItems() {
         DeliberateException de = new DeliberateException();
-        Iterator<Integer> iterator = from(immediate(), 1, 2, 3, 4)
-                .concatWith(Publisher.error(de, immediate())).toIterable().iterator();
+        Iterator<Integer> iterator = from(1, 2, 3, 4)
+                .concatWith(Publisher.error(de)).toIterable().iterator();
         List<Integer> result = new ArrayList<>(4);
         try {
             while (iterator.hasNext()) {
@@ -352,7 +351,7 @@ public final class PublisherAsBlockingIterableTest {
     @Test
     public void nullShouldBeEmitted() {
         @SuppressWarnings("ConstantConditions")
-        Iterator<Void> iterator = Publisher.<Void>just(null, immediate()).toIterable().iterator();
+        Iterator<Void> iterator = Publisher.<Void>just(null).toIterable().iterator();
         assertThat("Item expected but not found.", iterator.hasNext(), is(true));
         assertThat("Unexpected item found.", iterator.next(), is(nullValue()));
     }

@@ -43,7 +43,7 @@ public class FromBlockingIterableTest extends FromInMemoryPublisherAbstractTest 
                                         BiConsumer<Long, TimeUnit> nextConsumer,
                                         AutoCloseable closeable) {
         return new InMemorySource(values) {
-            private final Publisher<String> publisher = from(executor,
+            private final Publisher<String> publisher = from(
                     new TestIterableToBlockingIterable<>(asList(values), hashNextConsumer, nextConsumer,
                             closeable), () -> 1, SECONDS);
             @Override

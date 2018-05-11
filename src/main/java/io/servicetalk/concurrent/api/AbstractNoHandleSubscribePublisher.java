@@ -27,6 +27,9 @@ import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRI
  */
 abstract class AbstractNoHandleSubscribePublisher<T> extends Publisher<T> {
 
+    AbstractNoHandleSubscribePublisher() {
+    }
+
     AbstractNoHandleSubscribePublisher(Executor executor) {
         super(executor);
     }

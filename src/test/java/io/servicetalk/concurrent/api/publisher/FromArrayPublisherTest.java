@@ -29,7 +29,7 @@ public final class FromArrayPublisherTest extends FromInMemoryPublisherAbstractT
     @Override
     protected InMemorySource newPublisher(final Executor executor, final String[] values) {
         return new InMemorySource(values) {
-            private final Publisher<String> publisher = from(executor, values);
+            private final Publisher<String> publisher = from(values);
             @Override
             protected Publisher<String> getPublisher() {
                 return publisher;

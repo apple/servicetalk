@@ -15,18 +15,21 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.EmptySubscription;
-
 import org.reactivestreams.Subscriber;
+
+import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 
 final class NeverPublisher<T> extends AbstractSynchronousPublisher<T> {
 
-    NeverPublisher(Executor executor) {
-        super(executor);
-    }
+    private static final NeverPublisher NEVER_PUBLISHER = new NeverPublisher();
 
     @Override
     void doSubscribe(Subscriber<? super T> subscriber) {
-        subscriber.onSubscribe(EmptySubscription.EMPTY_SUBSCRIPTION);
+        subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+    }
+
+    @SuppressWarnings("unchecked")
+    static <T> Publisher<T> neverPublisher() {
+        return (Publisher<T>) NEVER_PUBLISHER;
     }
 }

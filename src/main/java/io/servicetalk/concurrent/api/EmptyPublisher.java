@@ -21,13 +21,20 @@ import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRI
 
 final class EmptyPublisher<T> extends AbstractSynchronousPublisher<T> {
 
-    EmptyPublisher(Executor executor) {
-        super(executor);
+    private static final EmptyPublisher EMPTY_PUBLISHER = new EmptyPublisher();
+
+    private EmptyPublisher() {
+        // singleton
     }
 
     @Override
     void doSubscribe(Subscriber<? super T> subscriber) {
         subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
         subscriber.onComplete();
+    }
+
+    @SuppressWarnings("unchecked")
+    static <T> Publisher<T> emptyPublisher() {
+        return (Publisher<T>) EMPTY_PUBLISHER;
     }
 }

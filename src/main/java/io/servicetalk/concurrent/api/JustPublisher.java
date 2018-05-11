@@ -23,8 +23,7 @@ final class JustPublisher<T> extends AbstractSynchronousPublisher<T> {
 
     private final T value;
 
-    JustPublisher(T value, Executor executor) {
-        super(executor);
+    JustPublisher(T value) {
         this.value = value;
     }
 

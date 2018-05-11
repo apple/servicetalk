@@ -28,9 +28,10 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionFor
 import static java.util.Objects.requireNonNull;
 
 final class FromIterablePublisher<T> extends AbstractSynchronousPublisher<T> {
+
     private final Iterable<T> iterable;
-    FromIterablePublisher(Executor executor, Iterable<T> iterable) {
-        super(executor);
+
+    FromIterablePublisher(Iterable<T> iterable) {
         this.iterable = requireNonNull(iterable);
     }
 

@@ -22,18 +22,19 @@ import org.reactivestreams.Subscriber;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.LongSupplier;
+import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
 final class FromBlockingIterablePublisher<T> extends AbstractSynchronousPublisher<T> {
+
     private final BlockingIterable<T> iterable;
     private final LongSupplier timeoutSupplier;
     private final TimeUnit unit;
-    FromBlockingIterablePublisher(final Executor executor,
-                                  final BlockingIterable<T> iterable,
+
+    FromBlockingIterablePublisher(final BlockingIterable<T> iterable,
                                   final LongSupplier timeoutSupplier,
                                   final TimeUnit unit) {
-        super(executor);
         this.iterable = requireNonNull(iterable);
         this.timeoutSupplier = requireNonNull(timeoutSupplier);
         this.unit = requireNonNull(unit);
@@ -60,6 +61,7 @@ final class FromBlockingIterablePublisher<T> extends AbstractSynchronousPublishe
             return iterator.hasNext(iterablePublisher.timeoutSupplier.getAsLong(), iterablePublisher.unit);
         }
 
+        @Nullable
         @Override
         T next(final BlockingIterator<T> iterator) throws TimeoutException {
             return iterator.next(iterablePublisher.timeoutSupplier.getAsLong(), iterablePublisher.unit);
