@@ -396,7 +396,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
 
         @Override
         public Publisher<RedisData> request(PartitionAttributes partitionSelector, RedisRequest request) {
-            return new Publisher<RedisData>(executionContext.getExecutor()) {
+            return new Publisher<RedisData>() {
                 @Override
                 protected void handleSubscribe(Subscriber<? super RedisData> subscriber) {
                     final Partition partition = partitionMap.getPartition(partitionSelector);
@@ -511,7 +511,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
 
         @Override
         public Publisher<RedisData> request(RedisRequest request) {
-            return error(new UnsupportedOperationException(), executionContext.getExecutor());
+            return error(new UnsupportedOperationException());
         }
 
         @Override

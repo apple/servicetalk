@@ -93,7 +93,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
         final RedisProtocolSupport.Command command = request.getCommand();
         if (!isSubscribeModeCommand(command) && command != PING && command != QUIT && command != AUTH) {
             return Publisher.error(new IllegalArgumentException("Invalid command: " + command
-                    + ". This command is not allowed in subscribe mode."), connection.getExecutor());
+                    + ". This command is not allowed in subscribe mode."));
         }
 
         return request0(request);
@@ -102,7 +102,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
     private Publisher<RedisData> request0(RedisRequest request) {
         final RedisProtocolSupport.Command command = request.getCommand();
         final Publisher<ByteBuf> reqContent = RedisUtils.encodeRequestContent(request, connection.getBufferAllocator());
-        return new Publisher<RedisData>(connection.getExecutor()) {
+        return new Publisher<RedisData>() {
             @SuppressWarnings("unchecked")
             @Override
             protected void handleSubscribe(Subscriber<? super RedisData> subscriber) {
@@ -355,7 +355,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
                                                                           Publisher<PubSubChannelMessage> next,
                                                                           Executor executor) {
 
-        return new Publisher<PubSubChannelMessage>(executor) {
+        return new Publisher<PubSubChannelMessage>() {
             @Override
             protected void handleSubscribe(org.reactivestreams.Subscriber<? super PubSubChannelMessage> subscriber) {
                 queuedWrite.subscribe(new io.servicetalk.concurrent.Completable.Subscriber() {
