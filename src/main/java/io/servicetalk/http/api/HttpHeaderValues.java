@@ -23,6 +23,10 @@ import static io.servicetalk.http.api.CharSequences.newAsciiString;
  */
 public final class HttpHeaderValues {
     /**
+     * {@code "application/json"}
+     */
+    public static final CharSequence APPLICATION_JSON = newAsciiString("application/json");
+    /**
      * {@code "application/x-www-form-urlencoded"}
      */
     public static final CharSequence APPLICATION_X_WWW_FORM_URLENCODED =
