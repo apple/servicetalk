@@ -25,6 +25,7 @@ import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.SslConfig;
 
@@ -43,10 +44,12 @@ import static java.util.function.Function.identity;
 public final class DefaultHttpClientBuilder<ResolvedAddress>
         implements HttpClientBuilder<ResolvedAddress, Event<ResolvedAddress>, HttpPayloadChunk, HttpPayloadChunk> {
 
-    private final DefaultHttpConnectionBuilder<ResolvedAddress> builder;
+    private final HttpClientConfig config;
     private final LoadBalancerFactory<ResolvedAddress, HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> lbFactory;
+    private Function<HttpClient<HttpPayloadChunk, HttpPayloadChunk>,
+            HttpClient<HttpPayloadChunk, HttpPayloadChunk>> clientFilterFactory = identity();
     private Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>,
-            HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connFilter = identity();
+            HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory = identity();
 
     /**
      * Create a new instance.
@@ -54,8 +57,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      */
     public DefaultHttpClientBuilder(final LoadBalancerFactory<ResolvedAddress,
             HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> loadBalancerFactory) {
-        builder = new DefaultHttpConnectionBuilder<>();
-        this.lbFactory = requireNonNull(loadBalancerFactory);
+        this(loadBalancerFactory, new HttpClientConfig(new TcpClientConfig(false)));
     }
 
     /**
@@ -65,14 +67,15 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
     DefaultHttpClientBuilder(final LoadBalancerFactory<ResolvedAddress,
                              HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> loadBalancerFactory,
                              final HttpClientConfig config) {
-        builder = new DefaultHttpConnectionBuilder<>(config);
         this.lbFactory = requireNonNull(loadBalancerFactory);
+        this.config = requireNonNull(config);
     }
 
     @Override
     public HttpClient<HttpPayloadChunk, HttpPayloadChunk> build(final ExecutionContext executionContext,
                                                         final Publisher<Event<ResolvedAddress>> addressEventStream) {
-        return new DefaultHttpClient<>(executionContext, builder, addressEventStream, connFilter, lbFactory);
+        return clientFilterFactory.apply(new DefaultHttpClient<>(executionContext, config.asReadOnly(),
+                addressEventStream, connectionFilterFactory, lbFactory));
     }
 
     /**
@@ -85,7 +88,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * throws when {@link InputStream#close()} is called.
      */
     public DefaultHttpClientBuilder<ResolvedAddress> setSslConfig(@Nullable SslConfig sslConfig) {
-        builder.setSslConfig(sslConfig);
+        this.config.getTcpClientConfig().setSslConfig(sslConfig);
         return this;
     }
 
@@ -98,7 +101,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * @return this.
      */
     public <T> DefaultHttpClientBuilder<ResolvedAddress> setOption(SocketOption<T> option, T value) {
-        builder.setOption(option, value);
+        config.getTcpClientConfig().setOption(option, value);
         return this;
     }
 
@@ -109,7 +112,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * @return {@code this}.
      */
     public DefaultHttpClientBuilder<ResolvedAddress> setWireLoggerName(String loggerName) {
-        builder.setWireLoggerName(loggerName);
+        config.getTcpClientConfig().setWireLoggerName(loggerName);
         return this;
     }
 
@@ -119,7 +122,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * @return {@code this}.
      */
     public DefaultHttpClientBuilder<ResolvedAddress> disableWireLog() {
-        builder.disableWireLog();
+        config.getTcpClientConfig().disableWireLog();
         return this;
     }
 
@@ -130,7 +133,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * @return {@code this}.
      */
     public DefaultHttpClientBuilder<ResolvedAddress> setHeadersFactory(final HttpHeadersFactory headersFactory) {
-        builder.setHeadersFactory(headersFactory);
+        config.setHeadersFactory(headersFactory);
         return this;
     }
 
@@ -142,7 +145,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * @return {@code this}.
      */
     public DefaultHttpClientBuilder<ResolvedAddress> setMaxInitialLineLength(final int maxInitialLineLength) {
-        builder.setMaxInitialLineLength(maxInitialLineLength);
+        config.setMaxInitialLineLength(maxInitialLineLength);
         return this;
     }
 
@@ -154,7 +157,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * @return {@code this}.
      */
     public DefaultHttpClientBuilder<ResolvedAddress> setMaxHeaderSize(final int maxHeaderSize) {
-        builder.setMaxHeaderSize(maxHeaderSize);
+        config.setMaxHeaderSize(maxHeaderSize);
         return this;
     }
 
@@ -166,7 +169,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * @return {@code this}.
      */
     public DefaultHttpClientBuilder<ResolvedAddress> setMaxChunkSize(final int maxChunkSize) {
-        builder.setMaxChunkSize(maxChunkSize);
+        config.setMaxChunkSize(maxChunkSize);
         return this;
     }
 
@@ -179,7 +182,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      */
     public DefaultHttpClientBuilder<ResolvedAddress> setHeadersEncodedSizeEstimate(
             final int headersEncodedSizeEstimate) {
-        builder.setHeadersEncodedSizeEstimate(headersEncodedSizeEstimate);
+        config.setHeadersEncodedSizeEstimate(headersEncodedSizeEstimate);
         return this;
     }
 
@@ -192,7 +195,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      */
     public DefaultHttpClientBuilder<ResolvedAddress> setTrailersEncodedSizeEstimate(
             final int trailersEncodedSizeEstimate) {
-        builder.setTrailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
+        config.setTrailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
         return this;
     }
 
@@ -206,22 +209,38 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * @return {@code this}.
      */
     public DefaultHttpClientBuilder<ResolvedAddress> setMaxPipelinedRequests(final int maxPipelinedRequests) {
-        builder.setMaxPipelinedRequests(maxPipelinedRequests);
+        config.setMaxPipelinedRequests(maxPipelinedRequests);
         return this;
     }
 
     /**
-     * Defines a filter {@link Function} to decorate {@link HttpConnection} created by this builder.
+     * Set the {@link Function} which is used as a factory to filter/decorate {@link HttpConnection} created by this
+     * builder.
      * <p>
      * Filtering allows you to wrap a {@link HttpConnection} and modify behavior during request/response processing
      * Some potential candidates for filtering include logging, metrics, and decorating responses
-     * @param connFilter {@link Function} to decorate a {@link HttpConnection} for the purpose of filtering
+     * @param connectionFilterFactory {@link Function} to decorate a {@link HttpConnection} for the purpose of filtering
      * @return {@code this}
      */
-    public DefaultHttpClientBuilder<ResolvedAddress> setConnectionFilter(
+    public DefaultHttpClientBuilder<ResolvedAddress> setConnectionFilterFactory(
             Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>,
-                    HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connFilter) {
-        this.connFilter = requireNonNull(connFilter);
+                     HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory) {
+        this.connectionFilterFactory = requireNonNull(connectionFilterFactory);
+        return this;
+    }
+
+    /**
+     * Set the filter factory that is used to decorate {@link HttpClient} created by this builder.
+     * <p>
+     * Note this method will be used to decorate the result of {@link #build(ExecutionContext, Publisher)} before it is
+     * returned to the user.
+     * @param clientFilterFactory {@link Function} to decorate a {@link HttpClient} for the purpose of filtering
+     * @return {@code this}
+     */
+    public DefaultHttpClientBuilder<ResolvedAddress> setClientFilterFactory(
+            Function<HttpClient<HttpPayloadChunk, HttpPayloadChunk>,
+                    HttpClient<HttpPayloadChunk, HttpPayloadChunk>> clientFilterFactory) {
+        this.clientFilterFactory = requireNonNull(clientFilterFactory);
         return this;
     }
 }

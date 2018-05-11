@@ -16,6 +16,8 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.LoadBalancer;
+import io.servicetalk.client.internal.RequestConcurrencyController;
+import io.servicetalk.client.internal.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -35,32 +37,15 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 /**
  * Makes the wrapped {@link HttpConnection} aware of the {@link LoadBalancer}.
  */
-class LoadBalancedHttpConnection extends ReservedHttpConnection<HttpPayloadChunk, HttpPayloadChunk> {
-
-    private final ConcurrentReservedResource reserved;
+final class LoadBalancedHttpConnection extends ReservedHttpConnection<HttpPayloadChunk, HttpPayloadChunk>
+        implements ReservableRequestConcurrencyController {
     private final HttpConnection<HttpPayloadChunk, HttpPayloadChunk> delegate;
+    private final ReservableRequestConcurrencyController limiter;
 
     LoadBalancedHttpConnection(HttpConnection<HttpPayloadChunk, HttpPayloadChunk> delegate,
-                               int defaultMaxPipelinedRequests) {
+                               ReservableRequestConcurrencyController limiter) {
         this.delegate = requireNonNull(delegate);
-        reserved = new ConcurrentReservedResource(defaultMaxPipelinedRequests,
-                getSettingStream(SettingKey.MAX_CONCURRENCY), onClose0(delegate));
-    }
-
-    /**
-     * Visible for testing.
-     * @param delegate the {@link HttpConnection} to delegate requests to
-     * @param reserved the reserved resource manager used for mocking behavior
-     */
-    LoadBalancedHttpConnection(HttpConnection<HttpPayloadChunk, HttpPayloadChunk> delegate,
-                               ConcurrentReservedResource reserved) {
-        this.delegate = requireNonNull(delegate);
-        this.reserved = requireNonNull(reserved);
-    }
-
-    @Override
-    public Completable releaseAsync() {
-        return reserved.release();
+        this.limiter = requireNonNull(limiter);
     }
 
     @Override
@@ -75,7 +60,7 @@ class LoadBalancedHttpConnection extends ReservedHttpConnection<HttpPayloadChunk
 
     @Override
     public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
-        return new RequestCompletionHelperSingle(delegate.request(request), reserved);
+        return new RequestCompletionHelperSingle(delegate.request(request), limiter);
     }
 
     @Override
@@ -83,7 +68,7 @@ class LoadBalancedHttpConnection extends ReservedHttpConnection<HttpPayloadChunk
         return delegate.getExecutionContext();
     }
 
-    // TODO We can't make ConcurrentReservedResource#requestFinished() work reliably with cancel() of HttpResponse.
+    // TODO We can't make RequestConcurrencyController#requestFinished() work reliably with cancel() of HttpResponse.
     // This code will prematurely release connections when the cancel event is racing with the onComplete() of the
     // HttpRequest and gets ignored. This means that from the LoadBalancer's perspective the connection is free however
     // the user may still be subscribing and consume the payload.
@@ -95,22 +80,22 @@ class LoadBalancedHttpConnection extends ReservedHttpConnection<HttpPayloadChunk
         private static final AtomicIntegerFieldUpdater<RequestCompletionHelperSingle> terminatedUpdater =
                 newUpdater(RequestCompletionHelperSingle.class, "terminated");
 
-        private final ConcurrentReservedResource reserved;
+        private final RequestConcurrencyController limiter;
         private final Single<HttpResponse<HttpPayloadChunk>> response;
 
         @SuppressWarnings("unused")
         private volatile int terminated;
 
         RequestCompletionHelperSingle(Single<HttpResponse<HttpPayloadChunk>> response,
-                                              ConcurrentReservedResource reserved) {
+                                      RequestConcurrencyController limiter) {
             this.response = requireNonNull(response);
-            this.reserved = requireNonNull(reserved);
+            this.limiter = requireNonNull(limiter);
         }
 
         private void finished() {
             // Avoid double counting
             if (terminatedUpdater.compareAndSet(this, 0, 1)) {
-                reserved.requestFinished();
+                limiter.requestFinished();
             }
         }
 
@@ -125,7 +110,7 @@ class LoadBalancedHttpConnection extends ReservedHttpConnection<HttpPayloadChunk
 
     @Override
     public Completable onClose() {
-        return onClose0(delegate);
+        return delegate.onClose();
     }
 
     @Override
@@ -133,23 +118,28 @@ class LoadBalancedHttpConnection extends ReservedHttpConnection<HttpPayloadChunk
         return delegate.closeAsync();
     }
 
+    @Override
     public boolean tryReserve() {
-        return reserved.tryReserve();
+        return limiter.tryReserve();
     }
 
+    @Override
     public boolean tryRequest() {
-        return reserved.tryRequest();
+        return limiter.tryRequest();
     }
 
-    /**
-     * Common method to be used from {@link #onClose()} and the constructor to create {@link ConcurrentReservedResource}.
-     * Intent here is to make sure what we return from {@link #onClose()} is what we give to
-     * {@link ConcurrentReservedResource} and hence avoid discrepancies between the two entities.
-     * @param delegate {@link HttpConnection} that is used for providing the return {@link Completable}.
-     *
-     * @return {@link Comparable} which completes when the {@code delegate} closes.
-     */
-    private static Completable onClose0(HttpConnection<HttpPayloadChunk, HttpPayloadChunk> delegate) {
-        return delegate.onClose();
+    @Override
+    public void requestFinished() {
+        limiter.requestFinished();
+    }
+
+    @Override
+    public Completable releaseAsync() {
+        return limiter.releaseAsync();
+    }
+
+    @Override
+    public String toString() {
+        return LoadBalancedHttpConnection.class.getSimpleName() + "(" + delegate + ")";
     }
 }

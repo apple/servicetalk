@@ -33,10 +33,12 @@ import io.servicetalk.transport.netty.internal.Connection;
 
 import java.io.InputStream;
 import java.net.SocketOption;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.function.Function.identity;
 
 /**
  * A builder for instances of {@link HttpConnectionBuilder}.
@@ -49,6 +51,8 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress>
     private static final Predicate<Object> LAST_CHUNK_PREDICATE = p -> p instanceof LastHttpPayloadChunk;
 
     private final HttpClientConfig config;
+    private Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>,
+            HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory = identity();
 
     /**
      * Create a new builder.
@@ -71,35 +75,46 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress>
     @Override
     public Single<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> build(final ExecutionContext executionContext,
                                                                             final ResolvedAddress resolvedAddress) {
-
         ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
+        return (roConfig.getMaxPipelinedRequests() == 1 ?
+                  buildForNonPipelined(executionContext, resolvedAddress, roConfig, connectionFilterFactory) :
+                  buildForPipelined(executionContext, resolvedAddress, roConfig, connectionFilterFactory))
+                        .map(filteredConnection -> new HttpConnectionConcurrentRequestsFilter(filteredConnection,
+                                roConfig.getMaxPipelinedRequests()));
+    }
+
+    static <ResolvedAddress> Single<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> buildForPipelined(
+        ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
+        Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>, HttpConnection<HttpPayloadChunk, HttpPayloadChunk>>
+                                                  connectionFilterFactory) {
+        return build(executionContext, resolvedAddress, roConfig, conn ->
+                connectionFilterFactory.apply(new PipelinedHttpConnection(conn, roConfig, executionContext)));
+    }
+
+    static <ResolvedAddress> Single<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> buildForNonPipelined(
+            ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
+            Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>, HttpConnection<HttpPayloadChunk, HttpPayloadChunk>>
+                    connectionFilterFactory) {
+        return build(executionContext, resolvedAddress, roConfig, conn ->
+                connectionFilterFactory.apply(new NonPipelinedHttpConnection(conn, roConfig, executionContext)));
+    }
+
+    private static <ResolvedAddress> Single<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> build(
+            ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
+            Function<Connection<Object, Object>, HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> mapper) {
         return new Single<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>>() {
             @Override
             protected void handleSubscribe(
                     Subscriber<? super HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> subscriber) {
-
                 final ChannelInitializer initializer = new TcpClientChannelInitializer(roConfig.getTcpClientConfig())
                         .andThen(new HttpClientChannelInitializer(roConfig));
 
                 final TcpConnector<Object, Object> connector = new TcpConnector<>(roConfig.getTcpClientConfig(),
                         initializer, DefaultHttpConnectionBuilder::getLastChunkPredicate);
 
-                connector.connect(executionContext, resolvedAddress, false)
-                        .map(c -> connectionStrategy(c, roConfig, executionContext))
-                        .subscribe(subscriber);
+                connector.connect(executionContext, resolvedAddress, false).map(mapper).subscribe(subscriber);
             }
         };
-    }
-
-    private static HttpConnection<HttpPayloadChunk, HttpPayloadChunk> connectionStrategy(
-            Connection<Object, Object> connection, ReadOnlyHttpClientConfig config, ExecutionContext executionContext) {
-        return config.getMaxPipelinedRequests() != 1 ?
-                new PipelinedHttpConnection(connection, config, executionContext) :
-                new NonPipelinedHttpConnection(connection, config, executionContext);
-    }
-
-    int getMaxPipelinedRequests() {
-        return config.getMaxPipelinedRequests();
     }
 
     /**
@@ -234,6 +249,21 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress>
      */
     public DefaultHttpConnectionBuilder<ResolvedAddress> setMaxPipelinedRequests(final int maxPipelinedRequests) {
         config.setMaxPipelinedRequests(maxPipelinedRequests);
+        return this;
+    }
+
+    /**
+     * Set the filter factory that is used to decorate {@link HttpConnection} created by this builder.
+     * <p>
+     * Note this method will be used to decorate the result of {@link #build(ExecutionContext, Object)} before it is
+     * returned to the user.
+     * @param connectionFilterFactory {@link Function} to decorate a {@link HttpConnection} for the purpose of filtering
+     * @return {@code this}
+     */
+    public DefaultHttpConnectionBuilder<ResolvedAddress> setConnectionFilterFactory(
+            Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>,
+                     HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory) {
+        this.connectionFilterFactory = requireNonNull(connectionFilterFactory);
         return this;
     }
 }

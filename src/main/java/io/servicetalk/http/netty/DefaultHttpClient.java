@@ -47,19 +47,18 @@ final class DefaultHttpClient<ResolvedAddress, EventType extends ServiceDiscover
 
     @SuppressWarnings("unchecked")
     DefaultHttpClient(ExecutionContext executionContext,
-                      DefaultHttpConnectionBuilder<ResolvedAddress> connectionBuilder,
+                      ReadOnlyHttpClientConfig roConfig,
                       Publisher<EventType> addressEventStream,
                       Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>,
-                              HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilter,
+                               HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilter,
                       LoadBalancerFactory<ResolvedAddress, HttpConnection<HttpPayloadChunk, HttpPayloadChunk>>
-                              loadBalancerFactory) {
+                                 loadBalancerFactory) {
         this.executionContext = requireNonNull(executionContext);
-        int maxPipelinedRequests = connectionBuilder.getMaxPipelinedRequests();
         ConnectionFactory<ResolvedAddress, LoadBalancedHttpConnection> connectionFactory =
-                connectionBuilder.asConnectionFactory(executionContext,
-                        connectionFilter.andThen(delegate -> new LoadBalancedHttpConnection(delegate, maxPipelinedRequests)));
+                roConfig.getMaxPipelinedRequests() == 1 ?
+                        new NonPipelinedLBHttpConnectionFactory<>(roConfig, executionContext, connectionFilter) :
+                        new PipelinedLBHttpConnectionFactory<>(roConfig, executionContext, connectionFilter);
 
-        // TODO addressEventStream.multicast(x) when feeding into multiple LBs
         // TODO we should revisit generics on LoadBalancerFactory to avoid casts
         LoadBalancer<? extends HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> lbfUntypedForCast =
                 loadBalancerFactory.newLoadBalancer(addressEventStream, connectionFactory);
