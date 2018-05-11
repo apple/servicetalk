@@ -26,29 +26,29 @@ public class CharSequenceUtilTest {
     @Test
     public void asCharSequence() {
         String s = "foo";
-        assertThat(CharSequenceUtil.asCharSequence(s), is(sameInstance(s)));
+        assertThat(CharSequenceUtils.asCharSequence(s), is(sameInstance(s)));
         CharSequence cs = newAsciiString("bar");
-        assertThat(CharSequenceUtil.asCharSequence(cs), is(sameInstance(cs)));
-        assertThat(CharSequenceUtil.asCharSequence(123), is("123"));
+        assertThat(CharSequenceUtils.asCharSequence(cs), is(sameInstance(cs)));
+        assertThat(CharSequenceUtils.asCharSequence(123), is("123"));
     }
 
     @Test
     public void ensureNoLeadingSlash() {
-        assertThat(CharSequenceUtil.ensureNoLeadingSlash(""), is(""));
-        assertThat(CharSequenceUtil.ensureNoLeadingSlash("/"), is(""));
-        assertThat(CharSequenceUtil.ensureNoLeadingSlash("//"), is(""));
-        assertThat(CharSequenceUtil.ensureNoLeadingSlash("foo"), is("foo"));
-        assertThat(CharSequenceUtil.ensureNoLeadingSlash("/bar/"), is("bar/"));
-        assertThat(CharSequenceUtil.ensureNoLeadingSlash("//baz//"), is("baz//"));
+        assertThat(CharSequenceUtils.ensureNoLeadingSlash(""), is(""));
+        assertThat(CharSequenceUtils.ensureNoLeadingSlash("/"), is(""));
+        assertThat(CharSequenceUtils.ensureNoLeadingSlash("//"), is(""));
+        assertThat(CharSequenceUtils.ensureNoLeadingSlash("foo"), is("foo"));
+        assertThat(CharSequenceUtils.ensureNoLeadingSlash("/bar/"), is("bar/"));
+        assertThat(CharSequenceUtils.ensureNoLeadingSlash("//baz//"), is("baz//"));
     }
 
     @Test
     public void ensureTrailingSlash() {
-        assertThat(CharSequenceUtil.ensureTrailingSlash("").toString(), is("/"));
-        assertThat(CharSequenceUtil.ensureTrailingSlash("/").toString(), is("/"));
-        assertThat(CharSequenceUtil.ensureTrailingSlash("//").toString(), is("//"));
-        assertThat(CharSequenceUtil.ensureTrailingSlash("foo").toString(), is("foo/"));
-        assertThat(CharSequenceUtil.ensureTrailingSlash("/bar/").toString(), is("/bar/"));
-        assertThat(CharSequenceUtil.ensureTrailingSlash("//baz//").toString(), is("//baz//"));
+        assertThat(CharSequenceUtils.ensureTrailingSlash("").toString(), is("/"));
+        assertThat(CharSequenceUtils.ensureTrailingSlash("/").toString(), is("/"));
+        assertThat(CharSequenceUtils.ensureTrailingSlash("//").toString(), is("//"));
+        assertThat(CharSequenceUtils.ensureTrailingSlash("foo").toString(), is("foo/"));
+        assertThat(CharSequenceUtils.ensureTrailingSlash("/bar/").toString(), is("/bar/"));
+        assertThat(CharSequenceUtils.ensureTrailingSlash("//baz//").toString(), is("//baz//"));
     }
 }

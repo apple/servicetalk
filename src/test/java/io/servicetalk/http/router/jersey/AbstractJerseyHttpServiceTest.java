@@ -68,7 +68,7 @@ import static io.servicetalk.http.api.HttpRequestMethods.OPTIONS;
 import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.http.api.HttpRequestMethods.PUT;
 import static io.servicetalk.http.api.HttpRequests.newRequest;
-import static io.servicetalk.http.router.jersey.TestUtil.getContentAsString;
+import static io.servicetalk.http.router.jersey.TestUtils.getContentAsString;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.concurrent.TimeUnit.SECONDS;

@@ -24,16 +24,16 @@ import java.util.Iterator;
 
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
-import static io.servicetalk.http.router.jersey.CharSequenceUtil.ensureTrailingSlash;
+import static io.servicetalk.http.router.jersey.CharSequenceUtils.ensureTrailingSlash;
 
 /**
  * Temporary HTTP helpers.
  */
-final class DummyHttpUtil {
+final class DummyHttpUtils {
     private static final String HTTP_PREFIX = "http://";
     private static final String HTTPS_PREFIX = "https://";
 
-    private DummyHttpUtil() {
+    private DummyHttpUtils() {
         // no instances
     }
 

@@ -52,8 +52,8 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.http.router.jersey.TestUtil.asChunkPublisher;
-import static io.servicetalk.http.router.jersey.TestUtil.getContentAsString;
+import static io.servicetalk.http.router.jersey.TestUtils.asChunkPublisher;
+import static io.servicetalk.http.router.jersey.TestUtils.getContentAsString;
 import static io.servicetalk.http.router.jersey.resources.SynchronousResources.PATH;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonMap;

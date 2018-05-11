@@ -29,8 +29,8 @@ import static io.servicetalk.http.api.HttpPayloadChunks.aggregateChunks;
 import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public final class TestUtil {
-    private TestUtil() {
+public final class TestUtils {
+    private TestUtils() {
         // no instances
     }
 

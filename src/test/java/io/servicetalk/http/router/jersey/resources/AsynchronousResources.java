@@ -53,7 +53,7 @@ import javax.ws.rs.sse.SseBroadcaster;
 import javax.ws.rs.sse.SseEventSink;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.http.router.jersey.TestUtil.asChunkPublisher;
+import static io.servicetalk.http.router.jersey.TestUtils.asChunkPublisher;
 import static io.servicetalk.http.router.jersey.resources.AsynchronousResources.PATH;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.CompletableFuture.completedFuture;

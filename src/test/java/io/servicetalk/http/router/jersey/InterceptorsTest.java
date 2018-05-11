@@ -36,7 +36,7 @@ import javax.ws.rs.ext.ReaderInterceptorContext;
 import javax.ws.rs.ext.WriterInterceptor;
 import javax.ws.rs.ext.WriterInterceptorContext;
 
-import static io.servicetalk.http.router.jersey.TestUtil.asChunkPublisher;
+import static io.servicetalk.http.router.jersey.TestUtils.asChunkPublisher;
 import static javax.ws.rs.Priorities.ENTITY_CODER;
 
 @Ignore("Publisher#toInputStream deadlock")

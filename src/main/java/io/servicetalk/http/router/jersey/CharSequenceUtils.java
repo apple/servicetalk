@@ -18,8 +18,8 @@ package io.servicetalk.http.router.jersey;
 /**
  * CharSequence helpers.
  */
-final class CharSequenceUtil {
-    private CharSequenceUtil() {
+final class CharSequenceUtils {
+    private CharSequenceUtils() {
         // no instances
     }
 

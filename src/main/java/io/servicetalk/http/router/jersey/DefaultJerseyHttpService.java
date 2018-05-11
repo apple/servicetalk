@@ -35,11 +35,11 @@ import java.security.Principal;
 import javax.annotation.Nullable;
 import javax.ws.rs.core.SecurityContext;
 
-import static io.servicetalk.http.router.jersey.CharSequenceUtil.ensureNoLeadingSlash;
+import static io.servicetalk.http.router.jersey.CharSequenceUtils.ensureNoLeadingSlash;
 import static io.servicetalk.http.router.jersey.Context.CONNECTION_CONTEXT_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.HTTP_REQUEST_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.initResponseChunkPublisherRef;
-import static io.servicetalk.http.router.jersey.DummyHttpUtil.getBaseUri;
+import static io.servicetalk.http.router.jersey.DummyHttpUtils.getBaseUri;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.glassfish.jersey.server.internal.ContainerUtils.encodeUnsafeCharacters;
 
