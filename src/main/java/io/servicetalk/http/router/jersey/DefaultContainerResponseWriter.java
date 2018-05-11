@@ -47,7 +47,6 @@ import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
 import static io.servicetalk.http.api.HttpResponses.newResponse;
 import static io.servicetalk.http.router.jersey.CharSequenceUtils.asCharSequence;
-import static io.servicetalk.http.router.jersey.DummyHttpUtils.removeHeader;
 import static java.util.Arrays.stream;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
@@ -213,7 +212,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
             }
         } else {
             headers.set(CONTENT_LENGTH, Long.toString(contentLength));
-            removeHeader(headers, TRANSFER_ENCODING, CHUNKED);
+            headers.remove(TRANSFER_ENCODING, CHUNKED, true);
         }
 
         responseSubscriber.onSuccess(response);
