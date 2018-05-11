@@ -75,10 +75,10 @@ public class BlockingHttpServiceTest {
     @Test
     public void asyncToSyncNoPayload() throws Exception {
         HttpService<String, String> asyncService = fromAsync((ctx, request) ->
-                success(newResponse(HTTP_1_1, OK, immediate())));
+                success(newResponse(HTTP_1_1, OK)));
         BlockingHttpService<String, String> syncService = asyncService.asBlockingService();
         BlockingHttpResponse<String> syncResponse = syncService.handle(mockCtx,
-                BlockingHttpRequests.newRequest(HTTP_1_1, GET, "/", immediate()));
+                BlockingHttpRequests.newRequest(HTTP_1_1, GET, "/"));
         assertEquals(HTTP_1_1, syncResponse.getVersion());
         assertEquals(OK, syncResponse.getStatus());
     }
@@ -86,10 +86,10 @@ public class BlockingHttpServiceTest {
     @Test
     public void asyncToSyncWithPayload() throws Exception {
         HttpService<String, String> asyncService = fromAsync((ctx, request) -> success(newResponse(HTTP_1_1, OK,
-                just("hello", immediate()))));
+                just("hello"))));
         BlockingHttpService<String, String> syncService = asyncService.asBlockingService();
         BlockingHttpResponse<String> syncResponse = syncService.handle(mockCtx,
-                BlockingHttpRequests.newRequest(HTTP_1_1, GET, "/", immediate()));
+                BlockingHttpRequests.newRequest(HTTP_1_1, GET, "/"));
         assertEquals(HTTP_1_1, syncResponse.getVersion());
         assertEquals(OK, syncResponse.getStatus());
         BlockingIterator<String> iterator = syncResponse.getPayloadBody().iterator();
@@ -124,7 +124,7 @@ public class BlockingHttpServiceTest {
                 publisherRule.getPublisher())));
         BlockingHttpService<String, String> syncService = asyncService.asBlockingService();
         BlockingHttpResponse<String> syncResponse = syncService.handle(mockCtx,
-                BlockingHttpRequests.newRequest(HTTP_1_1, GET, "/", immediate()));
+                BlockingHttpRequests.newRequest(HTTP_1_1, GET, "/"));
         assertEquals(HTTP_1_1, syncResponse.getVersion());
         assertEquals(OK, syncResponse.getStatus());
         BlockingIterator<String> iterator = syncResponse.getPayloadBody().iterator();
@@ -137,10 +137,10 @@ public class BlockingHttpServiceTest {
     @Test
     public void syncToAsyncNoPayload() throws Exception {
         BlockingHttpService<String, String> syncService = fromBlocking((ctx, request) ->
-                BlockingHttpResponses.newResponse(HTTP_1_1, OK, immediate()));
+                BlockingHttpResponses.newResponse(HTTP_1_1, OK));
         HttpService<String, String> asyncService = syncService.asAsynchronousService();
         HttpResponse<String> asyncResponse = awaitIndefinitely(asyncService.handle(mockCtx,
-                HttpRequests.newRequest(HTTP_1_1, GET, "/", immediate())));
+                HttpRequests.newRequest(HTTP_1_1, GET, "/")));
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.getVersion());
         assertEquals(OK, asyncResponse.getStatus());
@@ -149,10 +149,10 @@ public class BlockingHttpServiceTest {
     @Test
     public void syncToAsyncWithPayload() throws Exception {
         BlockingHttpService<String, String> syncService = fromBlocking((ctx, request) ->
-                BlockingHttpResponses.newResponse(HTTP_1_1, OK, singleton("hello"), immediate()));
+                BlockingHttpResponses.newResponse(HTTP_1_1, OK, singleton("hello")));
         HttpService<String, String> asyncService = syncService.asAsynchronousService();
         HttpResponse<String> asyncResponse = awaitIndefinitely(asyncService.handle(mockCtx,
-                HttpRequests.newRequest(HTTP_1_1, GET, "/", immediate())));
+                HttpRequests.newRequest(HTTP_1_1, GET, "/")));
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.getVersion());
         assertEquals(OK, asyncResponse.getStatus());
@@ -183,10 +183,10 @@ public class BlockingHttpServiceTest {
     @Test
     public void syncToAsyncCancelPropagated() throws Exception {
         BlockingHttpService<String, String> syncService = fromBlocking((ctx, request) ->
-            BlockingHttpResponses.newResponse(HTTP_1_1, OK, mockIterable, immediate()));
+            BlockingHttpResponses.newResponse(HTTP_1_1, OK, mockIterable));
         HttpService<String, String> asyncService = syncService.asAsynchronousService();
         HttpResponse<String> asyncResponse = awaitIndefinitely(asyncService.handle(mockCtx,
-                HttpRequests.newRequest(HTTP_1_1, GET, "/", immediate())));
+                HttpRequests.newRequest(HTTP_1_1, GET, "/")));
         assertNotNull(asyncResponse);
         CountDownLatch latch = new CountDownLatch(1);
         asyncResponse.getPayloadBody().subscribe(new Subscriber<String>() {

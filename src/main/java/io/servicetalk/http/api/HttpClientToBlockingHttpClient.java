@@ -30,6 +30,7 @@ import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpRequests.fromBlockingRequest;
 import static java.util.Objects.requireNonNull;
 
@@ -55,7 +56,7 @@ final class HttpClientToBlockingHttpClient<I, O> extends BlockingHttpClient<I, O
             throws Exception {
         // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
-        return new ReservedHttpConnectionToBlocking<>(awaitIndefinitely(client.reserveConnection(
+        return new ReservedHttpConnectionToBlocking<>(awaitIndefinitelyNonNull(client.reserveConnection(
                 fromBlockingRequest(request, getExecutionContext().getExecutor()))));
     }
 
@@ -64,7 +65,7 @@ final class HttpClientToBlockingHttpClient<I, O> extends BlockingHttpClient<I, O
             throws Exception {
         // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
-        return new UpgradableHttpResponseToBlocking<>(awaitIndefinitely(client.upgradeConnection(
+        return new UpgradableHttpResponseToBlocking<>(awaitIndefinitelyNonNull(client.upgradeConnection(
                 fromBlockingRequest(request, getExecutionContext().getExecutor()))),
                 getExecutionContext().getExecutor());
     }
@@ -199,8 +200,8 @@ final class HttpClientToBlockingHttpClient<I, O> extends BlockingHttpClient<I, O
             final BlockingIterable<R> transformedPayload = transformer.apply(payloadBody);
             return new UpgradableHttpResponseToBlocking<>(
                     new UpgradableHttpResponseToBlockingConverter<>(upgradeResponse,
-                            pub -> from(executor, transformer.apply(pub.toIterable())),
-                            from(executor, transformedPayload)),
+                            pub -> from(transformer.apply(pub.toIterable())),
+                            from(transformedPayload)),
                     transformedPayload, executor);
         }
     }

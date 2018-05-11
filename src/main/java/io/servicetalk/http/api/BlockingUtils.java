@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
 import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpRequests.fromBlockingRequest;
 import static io.servicetalk.http.api.HttpResponses.fromBlockingResponse;
 import static java.lang.Thread.currentThread;
@@ -68,7 +69,7 @@ final class BlockingUtils {
                                                   final BlockingHttpRequest<I> request) throws Exception {
         // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
-        return new DefaultBlockingHttpResponse<>(awaitIndefinitely(requester.request(fromBlockingRequest(request,
+        return new DefaultBlockingHttpResponse<>(awaitIndefinitelyNonNull(requester.request(fromBlockingRequest(request,
                 requester.getExecutionContext().getExecutor()))));
     }
 
@@ -83,8 +84,7 @@ final class BlockingUtils {
                 try {
                     // Do the conversion inside the try/catch in case there is an exception.
                     response = fromBlockingResponse(blockingHttpRequester.request(
-                            new DefaultBlockingHttpRequest<>(request)),
-                            blockingHttpRequester.getExecutionContext().getExecutor());
+                            new DefaultBlockingHttpRequest<>(request)));
                 } catch (Throwable cause) {
                     cancellable.setDone();
                     subscriber.onError(cause);

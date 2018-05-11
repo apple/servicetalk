@@ -40,7 +40,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_READY_EVENT;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
@@ -75,7 +74,7 @@ public class LoadBalancerReadyHttpClientTest {
 
     @Test
     public void requestsAreDelayed() throws InterruptedException {
-        when(mockClient.request(any())).thenReturn(defer(new DeferredSuccessSupplier<>(newResponse(OK, immediate()))));
+        when(mockClient.request(any())).thenReturn(defer(new DeferredSuccessSupplier<>(newResponse(OK))));
         verifyActionIsDelayedUntilAfterInitialized(filter -> filter.request(newDummyRequest()));
     }
 
@@ -94,7 +93,7 @@ public class LoadBalancerReadyHttpClientTest {
 
     @Test
     public void initializedFailedAlsoFailsRequest() throws InterruptedException {
-        when(mockClient.request(any())).thenReturn(defer(new DeferredSuccessSupplier<>(newResponse(OK, immediate()))));
+        when(mockClient.request(any())).thenReturn(defer(new DeferredSuccessSupplier<>(newResponse(OK))));
         verifyOnInitializedFailedFailsAction(filter -> filter.request(newDummyRequest()));
     }
 
@@ -160,7 +159,7 @@ public class LoadBalancerReadyHttpClientTest {
     }
 
     private static HttpRequest<String> newDummyRequest() {
-        return newRequest(GET, "/noop", immediate());
+        return newRequest(GET, "/noop");
     }
 
     private static final class DeferredSuccessSupplier<T> implements Supplier<Single<T>> {

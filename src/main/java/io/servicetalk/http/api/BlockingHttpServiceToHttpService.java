@@ -43,7 +43,7 @@ final class BlockingHttpServiceToHttpService<I, O> extends HttpService<I, O> {
                 try {
                     // Do the conversion inside the try/catch in case there is an exception.
                     response = fromBlockingResponse(blockingHttpService.handle(ctx,
-                            new DefaultBlockingHttpRequest<>(request)), ctx.getExecutor());
+                            new DefaultBlockingHttpRequest<>(request)));
                 } catch (Throwable cause) {
                     cancellable.setDone();
                     subscriber.onError(cause);

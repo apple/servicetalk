@@ -143,7 +143,7 @@ final class BlockingHttpClientToHttpClient<I, O> extends HttpClient<I, O> {
 
         @Override
         public <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
-            return from(getExecutionContext().getExecutor(), blockingReservedConnection.getSettingIterable(settingKey));
+            return from(blockingReservedConnection.getSettingIterable(settingKey));
         }
 
         @Override
@@ -183,7 +183,7 @@ final class BlockingHttpClientToHttpClient<I, O> extends HttpClient<I, O> {
 
         BlockingToUpgradableHttpResponse(BlockingUpgradableHttpResponse<I, O> upgradeResponse,
                                          Executor executor) {
-            this(upgradeResponse, from(executor, upgradeResponse.getPayloadBody()), executor);
+            this(upgradeResponse, from(upgradeResponse.getPayloadBody()), executor);
         }
 
         private BlockingToUpgradableHttpResponse(BlockingUpgradableHttpResponse<I, O> upgradeResponse,
@@ -244,7 +244,7 @@ final class BlockingHttpClientToHttpClient<I, O> extends HttpClient<I, O> {
             final Publisher<R> transformedPayload = transformer.apply(payloadBody);
             return new BlockingToUpgradableHttpResponse<>(
                     new BlockingUpgradableHttpResponseConverter<>(upgradeResponse,
-                            itr -> transformer.apply(from(executor, itr)).toIterable(),
+                            itr -> transformer.apply(from(itr)).toIterable(),
                             transformedPayload.toIterable()),
                     transformedPayload, executor);
         }

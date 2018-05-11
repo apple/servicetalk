@@ -87,10 +87,10 @@ public abstract class AbstractBlockingHttpRequesterTest {
     @Test
     public void asyncToSyncNoPayload() throws Exception {
         HttpRequester<String, String> asyncRequester = newAsyncRequester(mockExecutionCtx,
-                req -> success(HttpResponses.<String>newResponse(HTTP_1_1, OK, immediate())));
+                req -> success(HttpResponses.<String>newResponse(HTTP_1_1, OK)));
         BlockingHttpRequester<String, String> syncRequester = asyncRequester.asBlockingRequester();
         BlockingHttpResponse<String> syncResponse = syncRequester.request(
-                BlockingHttpRequests.newRequest(HTTP_1_1, GET, "/", immediate()));
+                BlockingHttpRequests.newRequest(HTTP_1_1, GET, "/"));
         assertEquals(HTTP_1_1, syncResponse.getVersion());
         assertEquals(OK, syncResponse.getStatus());
     }
@@ -98,10 +98,10 @@ public abstract class AbstractBlockingHttpRequesterTest {
     @Test
     public void asyncToSyncWithPayload() throws Exception {
         HttpRequester<String, String> asyncRequester = newAsyncRequester(mockExecutionCtx,
-                req -> success(newResponse(HTTP_1_1, OK, just("hello", immediate()))));
+                req -> success(newResponse(HTTP_1_1, OK, just("hello"))));
         BlockingHttpRequester<String, String> syncRequester = asyncRequester.asBlockingRequester();
         BlockingHttpResponse<String> syncResponse = syncRequester.request(
-                BlockingHttpRequests.newRequest(HTTP_1_1, GET, "/", immediate()));
+                BlockingHttpRequests.newRequest(HTTP_1_1, GET, "/"));
         assertEquals(HTTP_1_1, syncResponse.getVersion());
         assertEquals(OK, syncResponse.getStatus());
         BlockingIterator<String> iterator = syncResponse.getPayloadBody().iterator();
@@ -125,7 +125,7 @@ public abstract class AbstractBlockingHttpRequesterTest {
                 req -> success(newResponse(HTTP_1_1, OK, publisherRule.getPublisher())));
         BlockingHttpRequester<String, String> syncRequester = asyncRequester.asBlockingRequester();
         BlockingHttpResponse<String> syncResponse = syncRequester.request(
-                BlockingHttpRequests.newRequest(HTTP_1_1, GET, "/", immediate()));
+                BlockingHttpRequests.newRequest(HTTP_1_1, GET, "/"));
         assertEquals(HTTP_1_1, syncResponse.getVersion());
         assertEquals(OK, syncResponse.getStatus());
         BlockingIterator<String> iterator = syncResponse.getPayloadBody().iterator();
@@ -138,10 +138,10 @@ public abstract class AbstractBlockingHttpRequesterTest {
     @Test
     public void syncToAsyncNoPayload() throws Exception {
         BlockingHttpRequester<String, String> syncRequester = newBlockingRequester(mockExecutionCtx,
-                req -> BlockingHttpResponses.<String>newResponse(HTTP_1_1, OK, immediate()));
+                req -> BlockingHttpResponses.<String>newResponse(HTTP_1_1, OK));
         HttpRequester<String, String> asyncRequester = syncRequester.asAsynchronousRequester();
         HttpResponse<String> asyncResponse = awaitIndefinitely(asyncRequester.request(
-                HttpRequests.newRequest(HTTP_1_1, GET, "/", immediate())));
+                HttpRequests.newRequest(HTTP_1_1, GET, "/")));
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.getVersion());
         assertEquals(OK, asyncResponse.getStatus());
@@ -150,10 +150,10 @@ public abstract class AbstractBlockingHttpRequesterTest {
     @Test
     public void syncToAsyncWithPayload() throws Exception {
         BlockingHttpRequester<String, String> syncRequester = newBlockingRequester(mockExecutionCtx,
-                req -> BlockingHttpResponses.newResponse(HTTP_1_1, OK, singleton("hello"), immediate()));
+                req -> BlockingHttpResponses.newResponse(HTTP_1_1, OK, singleton("hello")));
         HttpRequester<String, String> asyncRequester = syncRequester.asAsynchronousRequester();
         HttpResponse<String> asyncResponse = awaitIndefinitely(asyncRequester.request(
-                HttpRequests.newRequest(HTTP_1_1, GET, "/", immediate())));
+                HttpRequests.newRequest(HTTP_1_1, GET, "/")));
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.getVersion());
         assertEquals(OK, asyncResponse.getStatus());
@@ -175,10 +175,10 @@ public abstract class AbstractBlockingHttpRequesterTest {
     @Test
     public void syncToAsyncCancelPropagated() throws Exception {
         BlockingHttpRequester<String, String> syncRequester = newBlockingRequester(mockExecutionCtx, req ->
-                BlockingHttpResponses.newResponse(HTTP_1_1, OK, mockIterable, immediate()));
+                BlockingHttpResponses.newResponse(HTTP_1_1, OK, mockIterable));
         HttpRequester<String, String> asyncRequester = syncRequester.asAsynchronousRequester();
         HttpResponse<String> asyncResponse = awaitIndefinitely(asyncRequester.request(
-                HttpRequests.newRequest(HTTP_1_1, GET, "/", immediate())));
+                HttpRequests.newRequest(HTTP_1_1, GET, "/")));
         assertNotNull(asyncResponse);
         CountDownLatch latch = new CountDownLatch(1);
         asyncResponse.getPayloadBody().subscribe(new Subscriber<String>() {

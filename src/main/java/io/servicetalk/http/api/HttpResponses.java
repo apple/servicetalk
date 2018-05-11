@@ -39,32 +39,24 @@ public final class HttpResponses {
      * Create a new instance using HTTP 1.1 with empty payload body and headers.
      *
      * @param status the {@link HttpResponseStatus} of the response.
-     * @param executor The {@link Executor} used to consume the empty payload. Note this is typically
-     * consumed by ServiceTalk so if there are any blocking transformations (e.g. filters) and you are unsure if
-     * ServiceTalk is consuming {@code payloadBody} it is wise to avoid {@link Executors#immediate()}.
      * @param <O> Type of the content of the response.
      * @return a new {@link HttpResponse}.
      */
-    public static <O> HttpResponse<O> newResponse(final HttpResponseStatus status,
-                                                  final Executor executor) {
-        return newResponse(HTTP_1_1, status, executor);
+    public static <O> HttpResponse<O> newResponse(final HttpResponseStatus status) {
+        return newResponse(HTTP_1_1, status);
     }
 
     /**
      * Create a new instance using HTTP 1.1 with empty payload body.
      *
      * @param status the {@link HttpResponseStatus} of the response.
-     * @param executor The {@link Executor} used to consume the empty payload. Note this is typically
-     * consumed by ServiceTalk so if there are any blocking transformations (e.g. filters) and you are unsure if
-     * ServiceTalk is consuming {@code payloadBody} it is wise to avoid {@link Executors#immediate()}.
      * @param headers the {@link HttpHeaders} of the response.
      * @param <O> Type of the content of the response.
      * @return a new {@link HttpResponse}.
      */
     public static <O> HttpResponse<O> newResponse(final HttpResponseStatus status,
-                                                  final Executor executor,
                                                   final HttpHeaders headers) {
-        return newResponse(HTTP_1_1, status, executor, headers);
+        return newResponse(HTTP_1_1, status, headers);
     }
 
     /**
@@ -72,16 +64,12 @@ public final class HttpResponses {
      *
      * @param version the {@link HttpProtocolVersion} of the response.
      * @param status the {@link HttpResponseStatus} of the response.
-     * @param executor The {@link Executor} used to consume the empty payload. Note this is typically
-     * consumed by ServiceTalk so if there are any blocking transformations (e.g. filters) and you are unsure if
-     * ServiceTalk is consuming {@code payloadBody} it is wise to avoid {@link Executors#immediate()}.
      * @param <O> Type of the content of the response.
      * @return a new {@link HttpResponse}.
      */
     public static <O> HttpResponse<O> newResponse(final HttpProtocolVersion version,
-                                                  final HttpResponseStatus status,
-                                                  final Executor executor) {
-        return newResponse(version, status, empty(executor));
+                                                  final HttpResponseStatus status) {
+        return newResponse(version, status, empty());
     }
 
     /**
@@ -89,18 +77,14 @@ public final class HttpResponses {
      *
      * @param version the {@link HttpProtocolVersion} of the response.
      * @param status the {@link HttpResponseStatus} of the response.
-     * @param executor The {@link Executor} used to consume the empty payload. Note this is typically
-     * consumed by ServiceTalk so if there are any blocking transformations (e.g. filters) and you are unsure if
-     * ServiceTalk is consuming {@code payloadBody} it is wise to avoid {@link Executors#immediate()}.
      * @param headers the {@link HttpHeaders} of the response.
      * @param <O> Type of the content of the response.
      * @return a new {@link HttpResponse}.
      */
     public static <O> HttpResponse<O> newResponse(final HttpProtocolVersion version,
                                                   final HttpResponseStatus status,
-                                                  final Executor executor,
                                                   final HttpHeaders headers) {
-        return newResponse(version, status, empty(executor), headers);
+        return newResponse(version, status, empty(), headers);
     }
 
     /**
@@ -108,16 +92,12 @@ public final class HttpResponses {
      *
      * @param status the {@link HttpResponseStatus} of the response.
      * @param payloadBody the payload body of the response.
-     * @param executor The {@link Executor} used to consume data from {@code payloadBody}. Note this is typically
-     * consumed by ServiceTalk so if there are any blocking transformations (e.g. filters) and you are unsure if
-     * ServiceTalk is consuming {@code payloadBody} it is wise to avoid {@link Executors#immediate()}.
      * @param <O> Type of the content of the response.
      * @return a new {@link HttpResponse}.
      */
     public static <O> HttpResponse<O> newResponse(final HttpResponseStatus status,
-                                                  final O payloadBody,
-                                                  final Executor executor) {
-        return newResponse(HTTP_1_1, status, payloadBody, executor);
+                                                  final O payloadBody) {
+        return newResponse(HTTP_1_1, status, payloadBody);
     }
 
     /**
@@ -136,47 +116,39 @@ public final class HttpResponses {
                                                   final O payloadBody,
                                                   final Executor executor,
                                                   final HttpHeaders headers) {
-        return newResponse(HTTP_1_1, status, payloadBody, executor, headers);
+        return newResponse(HTTP_1_1, status, payloadBody, headers);
     }
 
     /**
      * Create a new instance with empty headers.
      *
+     * @param <O> Type of the content of the response.
      * @param version the {@link HttpProtocolVersion} of the response.
      * @param status the {@link HttpResponseStatus} of the response.
      * @param payloadBody the payload body of the response.
-     * @param executor The {@link Executor} used to consume data from {@code payloadBody}. Note this is typically
-     * consumed by ServiceTalk so if there are any blocking transformations (e.g. filters) and you are unsure if
-     * ServiceTalk is consuming {@code payloadBody} it is wise to avoid {@link Executors#immediate()}.
-     * @param <O> Type of the content of the response.
      * @return a new {@link HttpResponse}.
      */
     public static <O> HttpResponse<O> newResponse(final HttpProtocolVersion version,
                                                   final HttpResponseStatus status,
-                                                  final O payloadBody,
-                                                  final Executor executor) {
-        return newResponse(version, status, just(payloadBody, executor));
+                                                  final O payloadBody) {
+        return newResponse(version, status, just(payloadBody));
     }
 
     /**
      * Create a new instance.
      *
+     * @param <O> Type of the content of the response.
      * @param version the {@link HttpProtocolVersion} of the response.
      * @param status the {@link HttpResponseStatus} of the response.
      * @param payloadBody the payload body of the response.
-     * @param executor The {@link Executor} used to consume data from {@code payloadBody}. Note this is typically
-     * consumed by ServiceTalk so if there are any blocking transformations (e.g. filters) and you are unsure if
-     * ServiceTalk is consuming {@code payloadBody} it is wise to avoid {@link Executors#immediate()}.
      * @param headers the {@link HttpHeaders} of the response.
-     * @param <O> Type of the content of the response.
      * @return a new {@link HttpResponse}.
      */
     public static <O> HttpResponse<O> newResponse(final HttpProtocolVersion version,
                                                   final HttpResponseStatus status,
                                                   final O payloadBody,
-                                                  final Executor executor,
                                                   final HttpHeaders headers) {
-        return newResponse(version, status, just(payloadBody, executor), headers);
+        return newResponse(version, status, just(payloadBody), headers);
     }
 
     /**
@@ -299,9 +271,9 @@ public final class HttpResponses {
         return new DefaultHttpResponse<>(status, version, headers, payloadBody);
     }
 
-    static <O> HttpResponse<O> fromBlockingResponse(BlockingHttpResponse<O> response, Executor executor) {
+    static <O> HttpResponse<O> fromBlockingResponse(BlockingHttpResponse<O> response) {
         return new DefaultHttpResponse<>(response.getStatus(), response.getVersion(), response.getHeaders(),
                 // The from(..) operator will take care of propagating cancel.
-                from(executor, response.getPayloadBody()));
+                from(response.getPayloadBody()));
     }
 }

@@ -30,7 +30,6 @@ import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.error;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.just;
@@ -64,7 +63,7 @@ public class ChunkAggregatorPublisherTest {
     public void errorStream() throws Exception {
         expected.expect(instanceOf(ExecutionException.class));
         expected.expectCause(sameInstance(DELIBERATE_EXCEPTION));
-        aggregate(error(DELIBERATE_EXCEPTION, immediate()));
+        aggregate(error(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -122,8 +121,7 @@ public class ChunkAggregatorPublisherTest {
     @Test
     public void chunksAndThenError() throws Exception {
         final Buffer data = DEFAULT_ALLOCATOR.fromAscii("Hello");
-        Publisher<HttpPayloadChunk> chunks =
-                just(newPayloadChunk(data), immediate()).concatWith(error(DELIBERATE_EXCEPTION, immediate()));
+        Publisher<HttpPayloadChunk> chunks = just(newPayloadChunk(data)).concatWith(error(DELIBERATE_EXCEPTION));
         expected.expect(instanceOf(ExecutionException.class));
         expected.expectCause(sameInstance(DELIBERATE_EXCEPTION));
         aggregate(chunks);
@@ -144,7 +142,7 @@ public class ChunkAggregatorPublisherTest {
     }
 
     private LastHttpPayloadChunk aggregate(HttpPayloadChunk... chunks) throws Exception {
-        return aggregate(from(immediate(), chunks));
+        return aggregate(from(chunks));
     }
 
     private LastHttpPayloadChunk aggregate(Publisher<HttpPayloadChunk> chunks) throws Exception {

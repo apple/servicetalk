@@ -40,7 +40,7 @@ final class BlockingHttpConnectionToHttpConnection<I, O> extends HttpConnection<
 
     @Override
     public <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
-        return from(getExecutionContext().getExecutor(), blockingConnection.getSettingIterable(settingKey));
+        return from(blockingConnection.getSettingIterable(settingKey));
     }
 
     @Override

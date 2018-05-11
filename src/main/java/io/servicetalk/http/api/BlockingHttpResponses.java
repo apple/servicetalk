@@ -15,8 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 
 import static io.servicetalk.concurrent.api.Publisher.empty;
@@ -37,15 +35,11 @@ public final class BlockingHttpResponses {
      * Create a new instance using HTTP 1.1 with empty payload body and headers.
      *
      * @param status the {@link HttpResponseStatus} of the response.
-     * @param executor The {@link Executor} used to consume the empty payload. Note this is typically
-     * consumed by ServiceTalk so if there are any blocking transformations (e.g. filters) and you are unsure if
-     * ServiceTalk is consuming {@code payloadBody} it is wise to avoid {@link Executors#immediate()}.
      * @param <O> Type of the content of the response.
      * @return a new {@link BlockingHttpResponse}.
      */
-    public static <O> BlockingHttpResponse<O> newResponse(final HttpResponseStatus status,
-                                                          final Executor executor) {
-        return newResponse(HTTP_1_1, status, executor);
+    public static <O> BlockingHttpResponse<O> newResponse(final HttpResponseStatus status) {
+        return newResponse(HTTP_1_1, status);
     }
 
     /**
@@ -53,16 +47,12 @@ public final class BlockingHttpResponses {
      *
      * @param version the {@link HttpProtocolVersion} of the response.
      * @param status the {@link HttpResponseStatus} of the response.
-     * @param executor The {@link Executor} used to consume the empty payload. Note this is typically
-     * consumed by ServiceTalk so if there are any blocking transformations (e.g. filters) and you are unsure if
-     * ServiceTalk is consuming {@code payloadBody} it is wise to avoid {@link Executors#immediate()}.
      * @param <O> Type of the content of the response.
      * @return a new {@link BlockingHttpResponse}.
      */
     public static <O> BlockingHttpResponse<O> newResponse(final HttpProtocolVersion version,
-                                                          final HttpResponseStatus status,
-                                                          final Executor executor) {
-        return newResponse(version, status, empty(executor));
+                                                          final HttpResponseStatus status) {
+        return newResponse(version, status, empty());
     }
 
     /**
@@ -70,16 +60,12 @@ public final class BlockingHttpResponses {
      *
      * @param status the {@link HttpResponseStatus} of the response.
      * @param payloadBody the payload body of the response.
-     * @param executor The {@link Executor} used to consume data from {@code payloadBody}. Note this is typically
-     * consumed by ServiceTalk so if there are any blocking transformations (e.g. filters) and you are unsure if
-     * ServiceTalk is consuming {@code payloadBody} it is wise to avoid {@link Executors#immediate()}.
      * @param <O> Type of the content of the response.
      * @return a new {@link BlockingHttpResponse}.
      */
     public static <O> BlockingHttpResponse<O> newResponse(final HttpResponseStatus status,
-                                                          final O payloadBody,
-                                                          final Executor executor) {
-        return newResponse(HTTP_1_1, status, payloadBody, executor);
+                                                          final O payloadBody) {
+        return newResponse(HTTP_1_1, status, payloadBody);
     }
 
     /**
@@ -88,17 +74,13 @@ public final class BlockingHttpResponses {
      * @param version the {@link HttpProtocolVersion} of the response.
      * @param status the {@link HttpResponseStatus} of the response.
      * @param payloadBody the payload body of the response.
-     * @param executor The {@link Executor} used to consume data from {@code payloadBody}. Note this is typically
-     * consumed by ServiceTalk so if there are any blocking transformations (e.g. filters) and you are unsure if
-     * ServiceTalk is consuming {@code payloadBody} it is wise to avoid {@link Executors#immediate()}.
      * @param <O> Type of the content of the response.
      * @return a new {@link BlockingHttpResponse}.
      */
     public static <O> BlockingHttpResponse<O> newResponse(final HttpProtocolVersion version,
                                                           final HttpResponseStatus status,
-                                                          final O payloadBody,
-                                                          final Executor executor) {
-        return newResponse(version, status, just(payloadBody, executor));
+                                                          final O payloadBody) {
+        return newResponse(version, status, just(payloadBody));
     }
 
     /**
@@ -106,16 +88,12 @@ public final class BlockingHttpResponses {
      *
      * @param status the {@link HttpResponseStatus} of the response.
      * @param payloadBody a {@link Iterable} of the payload body of the response.
-     * @param executor The {@link Executor} used to consume data from {@code payloadBody}. Note this is typically
-     * consumed by ServiceTalk so if there are any blocking transformations (e.g. filters) and you are unsure if
-     * ServiceTalk is consuming {@code payloadBody} it is wise to avoid {@link Executors#immediate()}.
      * @param <O> Type of the content of the response.
      * @return a new {@link BlockingHttpResponse}.
      */
     public static <O> BlockingHttpResponse<O> newResponse(final HttpResponseStatus status,
-                                                          final Iterable<O> payloadBody,
-                                                          final Executor executor) {
-        return newResponse(HTTP_1_1, status, payloadBody, executor);
+                                                          final Iterable<O> payloadBody) {
+        return newResponse(HTTP_1_1, status, payloadBody);
     }
 
     /**
@@ -124,17 +102,13 @@ public final class BlockingHttpResponses {
      * @param status the {@link HttpResponseStatus} of the response.
      * @param version the {@link HttpProtocolVersion} of the response.
      * @param payloadBody a {@link Iterable} of the payload body of the response.
-     * @param executor The {@link Executor} used to consume data from {@code payloadBody}. Note this is typically
-     * consumed by ServiceTalk so if there are any blocking transformations (e.g. filters) and you are unsure if
-     * ServiceTalk is consuming {@code payloadBody} it is wise to avoid {@link Executors#immediate()}.
      * @param <O> Type of the content of the response.
      * @return a new {@link BlockingHttpResponse}.
      */
     public static <O> BlockingHttpResponse<O> newResponse(final HttpProtocolVersion version,
                                                           final HttpResponseStatus status,
-                                                          final Iterable<O> payloadBody,
-                                                          final Executor executor) {
-        return newResponse(version, status, payloadBody, executor, INSTANCE.newHeaders());
+                                                          final Iterable<O> payloadBody) {
+        return newResponse(version, status, payloadBody, INSTANCE.newHeaders());
     }
 
     /**
@@ -143,9 +117,6 @@ public final class BlockingHttpResponses {
      * @param version the {@link HttpProtocolVersion} of the response.
      * @param status the {@link HttpResponseStatus} of the response.
      * @param payloadBody a {@link Iterable} of the payload body of the response.
-     * @param executor The {@link Executor} used to consume data from {@code payloadBody}. Note this is typically
-     * consumed by ServiceTalk so if there are any blocking transformations (e.g. filters) and you are unsure if
-     * ServiceTalk is consuming {@code payloadBody} it is wise to avoid {@link Executors#immediate()}.
      * @param headers the {@link HttpHeaders} of the response.
      * @param <O> Type of the content of the response.
      * @return a new {@link BlockingHttpResponse}.
@@ -153,9 +124,8 @@ public final class BlockingHttpResponses {
     public static <O> BlockingHttpResponse<O> newResponse(final HttpProtocolVersion version,
                                                           final HttpResponseStatus status,
                                                           final Iterable<O> payloadBody,
-                                                          final Executor executor,
                                                           final HttpHeaders headers) {
-        return newResponse(version, status, from(executor, payloadBody), headers);
+        return newResponse(version, status, from(payloadBody), headers);
     }
 
     private static <O> BlockingHttpResponse<O> newResponse(final HttpProtocolVersion version,

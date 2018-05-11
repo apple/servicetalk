@@ -26,7 +26,6 @@ import io.servicetalk.transport.api.ExecutionContext;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -75,7 +74,7 @@ public class BlockingHttpConnectionTest extends AbstractBlockingHttpRequesterTes
 
         @Override
         public final <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
-            return Publisher.error(new IllegalStateException("unsupported"), immediate());
+            return Publisher.error(new IllegalStateException("unsupported"));
         }
 
         @Override
