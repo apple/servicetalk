@@ -13,44 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.context.rxjava;
+package io.servicetalk.rxjava.context;
 
 import io.servicetalk.concurrent.context.AsyncContext;
 import io.servicetalk.concurrent.context.AsyncContextMap;
 
-import io.reactivex.ObservableSource;
-import io.reactivex.Observer;
-import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Consumer;
-import io.reactivex.internal.fuseable.HasUpstreamObservableSource;
-import io.reactivex.observables.ConnectableObservable;
+import io.reactivex.Flowable;
+import io.reactivex.internal.fuseable.HasUpstreamPublisher;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
 
 import static java.util.Objects.requireNonNull;
 
-final class ConnectableObservableContextWrapper<T> extends ConnectableObservable<T> implements HasUpstreamObservableSource<T> {
-    private final ConnectableObservable<T> source;
+final class FlowableContextWrapper<T> extends Flowable<T> implements HasUpstreamPublisher<T> {
+    private final Flowable<T> source;
 
-    ConnectableObservableContextWrapper(ConnectableObservable<T> source) {
+    FlowableContextWrapper(Flowable<T> source) {
         this.source = requireNonNull(source);
     }
 
     @Override
-    protected void subscribeActual(Observer<? super T> actual) {
+    protected void subscribeActual(Subscriber<? super T> actual) {
         AsyncContextMap saved = AsyncContext.current();
         try {
-            source.subscribe(new ContextPreservingObserver<>(saved, actual));
+            source.subscribe(new ContextPreservingSubscriber<>(saved, actual));
         } finally {
             AsyncContext.replace(saved);
         }
     }
 
     @Override
-    public ObservableSource<T> source() {
+    public Publisher<T> source() {
         return source;
-    }
-
-    @Override
-    public void connect(Consumer<? super Disposable> connection) {
-        source.connect(connection);
     }
 }

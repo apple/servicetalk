@@ -13,21 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.context.rxjava;
+package io.servicetalk.rxjava.context;
 
 import io.servicetalk.concurrent.context.AsyncContext;
 import io.servicetalk.concurrent.context.AsyncContextMap;
 
-import io.reactivex.MaybeObserver;
+import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
 
 import static java.util.Objects.requireNonNull;
 
-final class ContextPreservingMaybeObserver<T> implements MaybeObserver<T> {
+final class ContextPreservingObserver<T> implements Observer<T> {
     private final AsyncContextMap saved;
-    private final MaybeObserver<? super T> actual;
+    private final Observer<? super T> actual;
 
-    ContextPreservingMaybeObserver(AsyncContextMap saved, MaybeObserver<? super T> actual) {
+    ContextPreservingObserver(AsyncContextMap saved, Observer<? super T> actual) {
         this.saved = requireNonNull(saved);
         this.actual = requireNonNull(actual);
     }
@@ -44,11 +44,11 @@ final class ContextPreservingMaybeObserver<T> implements MaybeObserver<T> {
     }
 
     @Override
-    public void onSuccess(T t) {
+    public void onNext(T t) {
         AsyncContextMap prev = AsyncContext.current();
         try {
             AsyncContext.replace(saved);
-            actual.onSuccess(t);
+            actual.onNext(t);
         } finally {
             AsyncContext.replace(prev);
         }

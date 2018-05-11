@@ -13,37 +13,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.context.rxjava;
+package io.servicetalk.rxjava.context;
 
 import io.servicetalk.concurrent.context.AsyncContext;
 import io.servicetalk.concurrent.context.AsyncContextMap;
 
-import io.reactivex.Completable;
-import io.reactivex.CompletableObserver;
-import io.reactivex.CompletableSource;
-import io.reactivex.internal.fuseable.HasUpstreamCompletableSource;
+import io.reactivex.ObservableSource;
+import io.reactivex.Observer;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
+import io.reactivex.internal.fuseable.HasUpstreamObservableSource;
+import io.reactivex.observables.ConnectableObservable;
 
 import static java.util.Objects.requireNonNull;
 
-final class CompletableContextWrapper extends Completable implements HasUpstreamCompletableSource {
-    private final Completable source;
+final class ConnectableObservableContextWrapper<T> extends ConnectableObservable<T> implements HasUpstreamObservableSource<T> {
+    private final ConnectableObservable<T> source;
 
-    CompletableContextWrapper(Completable source) {
+    ConnectableObservableContextWrapper(ConnectableObservable<T> source) {
         this.source = requireNonNull(source);
     }
 
     @Override
-    protected void subscribeActual(CompletableObserver actual) {
+    protected void subscribeActual(Observer<? super T> actual) {
         AsyncContextMap saved = AsyncContext.current();
         try {
-            source.subscribe(new ContextPreservingCompletableObserver(saved, actual));
+            source.subscribe(new ContextPreservingObserver<>(saved, actual));
         } finally {
             AsyncContext.replace(saved);
         }
     }
 
     @Override
-    public CompletableSource source() {
+    public ObservableSource<T> source() {
         return source;
+    }
+
+    @Override
+    public void connect(Consumer<? super Disposable> connection) {
+        source.connect(connection);
     }
 }

@@ -13,21 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.context.rxjava;
+package io.servicetalk.rxjava.context;
 
 import io.servicetalk.concurrent.context.AsyncContext;
 import io.servicetalk.concurrent.context.AsyncContextMap;
 
-import io.reactivex.Observer;
+import io.reactivex.CompletableObserver;
 import io.reactivex.disposables.Disposable;
 
 import static java.util.Objects.requireNonNull;
 
-final class ContextPreservingObserver<T> implements Observer<T> {
+final class ContextPreservingCompletableObserver implements CompletableObserver {
     private final AsyncContextMap saved;
-    private final Observer<? super T> actual;
+    private final CompletableObserver actual;
 
-    ContextPreservingObserver(AsyncContextMap saved, Observer<? super T> actual) {
+    ContextPreservingCompletableObserver(AsyncContextMap saved, CompletableObserver actual) {
         this.saved = requireNonNull(saved);
         this.actual = requireNonNull(actual);
     }
@@ -44,11 +44,11 @@ final class ContextPreservingObserver<T> implements Observer<T> {
     }
 
     @Override
-    public void onNext(T t) {
+    public void onComplete() {
         AsyncContextMap prev = AsyncContext.current();
         try {
             AsyncContext.replace(saved);
-            actual.onNext(t);
+            actual.onComplete();
         } finally {
             AsyncContext.replace(prev);
         }
@@ -60,17 +60,6 @@ final class ContextPreservingObserver<T> implements Observer<T> {
         try {
             AsyncContext.replace(saved);
             actual.onError(e);
-        } finally {
-            AsyncContext.replace(prev);
-        }
-    }
-
-    @Override
-    public void onComplete() {
-        AsyncContextMap prev = AsyncContext.current();
-        try {
-            AsyncContext.replace(saved);
-            actual.onComplete();
         } finally {
             AsyncContext.replace(prev);
         }

@@ -13,37 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.context.rxjava;
+package io.servicetalk.rxjava.context;
 
 import io.servicetalk.concurrent.context.AsyncContext;
 import io.servicetalk.concurrent.context.AsyncContextMap;
 
-import io.reactivex.Flowable;
-import io.reactivex.internal.fuseable.HasUpstreamPublisher;
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
+import io.reactivex.Completable;
+import io.reactivex.CompletableObserver;
+import io.reactivex.CompletableSource;
+import io.reactivex.internal.fuseable.HasUpstreamCompletableSource;
 
 import static java.util.Objects.requireNonNull;
 
-final class FlowableContextWrapper<T> extends Flowable<T> implements HasUpstreamPublisher<T> {
-    private final Flowable<T> source;
+final class CompletableContextWrapper extends Completable implements HasUpstreamCompletableSource {
+    private final Completable source;
 
-    FlowableContextWrapper(Flowable<T> source) {
+    CompletableContextWrapper(Completable source) {
         this.source = requireNonNull(source);
     }
 
     @Override
-    protected void subscribeActual(Subscriber<? super T> actual) {
+    protected void subscribeActual(CompletableObserver actual) {
         AsyncContextMap saved = AsyncContext.current();
         try {
-            source.subscribe(new ContextPreservingSubscriber<>(saved, actual));
+            source.subscribe(new ContextPreservingCompletableObserver(saved, actual));
         } finally {
             AsyncContext.replace(saved);
         }
     }
 
     @Override
-    public Publisher<T> source() {
+    public CompletableSource source() {
         return source;
     }
 }

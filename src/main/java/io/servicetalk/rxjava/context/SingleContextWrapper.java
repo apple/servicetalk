@@ -13,44 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.context.rxjava;
+package io.servicetalk.rxjava.context;
 
 import io.servicetalk.concurrent.context.AsyncContext;
 import io.servicetalk.concurrent.context.AsyncContextMap;
 
-import io.reactivex.disposables.Disposable;
-import io.reactivex.flowables.ConnectableFlowable;
-import io.reactivex.functions.Consumer;
-import io.reactivex.internal.fuseable.HasUpstreamPublisher;
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
+import io.reactivex.Single;
+import io.reactivex.SingleObserver;
+import io.reactivex.SingleSource;
+import io.reactivex.internal.fuseable.HasUpstreamSingleSource;
 
 import static java.util.Objects.requireNonNull;
 
-final class ConnectableFlowableContextWrapper<T> extends ConnectableFlowable<T> implements HasUpstreamPublisher<T> {
-    private final ConnectableFlowable<T> source;
+final class SingleContextWrapper<T> extends Single<T> implements HasUpstreamSingleSource<T> {
+    private final Single<T> source;
 
-    ConnectableFlowableContextWrapper(ConnectableFlowable<T> source) {
+    SingleContextWrapper(Single<T> source) {
         this.source = requireNonNull(source);
     }
 
     @Override
-    protected void subscribeActual(Subscriber<? super T> actual) {
+    protected void subscribeActual(SingleObserver<? super T> actual) {
         AsyncContextMap saved = AsyncContext.current();
         try {
-            source.subscribe(new ContextPreservingSubscriber<>(saved, actual));
+            source.subscribe(new ContextPreservingSingleObserver<>(saved, actual));
         } finally {
             AsyncContext.replace(saved);
         }
     }
 
     @Override
-    public Publisher<T> source() {
+    public SingleSource<T> source() {
         return source;
-    }
-
-    @Override
-    public void connect(Consumer<? super Disposable> connection) {
-        source.connect(connection);
     }
 }

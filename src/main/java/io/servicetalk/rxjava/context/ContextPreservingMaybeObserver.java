@@ -13,21 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.context.rxjava;
+package io.servicetalk.rxjava.context;
 
 import io.servicetalk.concurrent.context.AsyncContext;
 import io.servicetalk.concurrent.context.AsyncContextMap;
 
-import io.reactivex.CompletableObserver;
+import io.reactivex.MaybeObserver;
 import io.reactivex.disposables.Disposable;
 
 import static java.util.Objects.requireNonNull;
 
-final class ContextPreservingCompletableObserver implements CompletableObserver {
+final class ContextPreservingMaybeObserver<T> implements MaybeObserver<T> {
     private final AsyncContextMap saved;
-    private final CompletableObserver actual;
+    private final MaybeObserver<? super T> actual;
 
-    ContextPreservingCompletableObserver(AsyncContextMap saved, CompletableObserver actual) {
+    ContextPreservingMaybeObserver(AsyncContextMap saved, MaybeObserver<? super T> actual) {
         this.saved = requireNonNull(saved);
         this.actual = requireNonNull(actual);
     }
@@ -44,11 +44,11 @@ final class ContextPreservingCompletableObserver implements CompletableObserver 
     }
 
     @Override
-    public void onComplete() {
+    public void onSuccess(T t) {
         AsyncContextMap prev = AsyncContext.current();
         try {
             AsyncContext.replace(saved);
-            actual.onComplete();
+            actual.onSuccess(t);
         } finally {
             AsyncContext.replace(prev);
         }
@@ -60,6 +60,17 @@ final class ContextPreservingCompletableObserver implements CompletableObserver 
         try {
             AsyncContext.replace(saved);
             actual.onError(e);
+        } finally {
+            AsyncContext.replace(prev);
+        }
+    }
+
+    @Override
+    public void onComplete() {
+        AsyncContextMap prev = AsyncContext.current();
+        try {
+            AsyncContext.replace(saved);
+            actual.onComplete();
         } finally {
             AsyncContext.replace(prev);
         }
