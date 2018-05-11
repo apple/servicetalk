@@ -29,6 +29,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,14 +48,24 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_NOT_READY_EVENT;
+import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_READY_EVENT;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.SUBSCRIBER_STATE_TERMINATED;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.checkTerminationValidWithConcurrentOnNextCheck;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.sendOnNextWithConcurrentTerminationCheck;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
 import static java.util.Collections.binarySearch;
 import static java.util.Collections.emptyList;
 import static java.util.Comparator.comparing;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
+import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.concat;
 
@@ -82,7 +93,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
             unknownStackTrace(new NoAvailableHostException("No hosts are available to connect."), RoundRobinLoadBalancer.class, "selectConnection0(...)");
 
     private static final AtomicReferenceFieldUpdater<RoundRobinLoadBalancer, List> activeHostsUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(RoundRobinLoadBalancer.class, List.class, "activeHosts");
+            newUpdater(RoundRobinLoadBalancer.class, List.class, "activeHosts");
     private static final AtomicIntegerFieldUpdater<RoundRobinLoadBalancer> closedUpdater =
             newUpdater(RoundRobinLoadBalancer.class, "closed");
     private static final AtomicIntegerFieldUpdater<RoundRobinLoadBalancer> indexUpdater =
@@ -94,6 +105,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
     private volatile int index;
     private volatile List<Host<ResolvedAddress, C>> activeHosts = emptyList();
 
+    private final PublisherProcessorSingle<Object> eventStream = new PublisherProcessorSingle<>();
     private final CompletableProcessor closeCompletable = new CompletableProcessor();
     private final SequentialCancellable discoveryCancellable = new SequentialCancellable();
     private final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory;
@@ -153,6 +165,14 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                             return refreshedAddresses;
                         });
 
+                if (event.isAvailable()) {
+                    if (activeAddresses.size() == 1) {
+                        eventStream.sendOnNext(LOAD_BALANCER_READY_EVENT);
+                    }
+                } else if (activeAddresses.isEmpty()) {
+                    eventStream.sendOnNext(LOAD_BALANCER_NOT_READY_EVENT);
+                }
+
                 LOGGER.debug("Running with {} active addresses", activeAddresses.size());
             }
 
@@ -176,6 +196,11 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                 selectConnection0(selector).subscribe(subscriber);
             }
         };
+    }
+
+    @Override
+    public Publisher<Object> getEventStream() {
+        return eventStream;
     }
 
     private <CC extends C> Single<CC> selectConnection0(Function<? super C, CC> selector) {
@@ -243,6 +268,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
             protected void handleSubscribe(final Subscriber subscriber) {
                 if (closedUpdater.compareAndSet(RoundRobinLoadBalancer.this, 0, 1)) {
                     discoveryCancellable.cancel();
+                    eventStream.sendOnComplete();
                     @SuppressWarnings("unchecked")
                     List<Host<ResolvedAddress, C>> currentList = activeHostsUpdater.getAndSet(RoundRobinLoadBalancer.this, Collections.<Host<ResolvedAddress, C>>emptyList());
                     completed().mergeDelayError(concat(currentList.stream().map(AsyncCloseable::closeAsync), Stream.of(connectionFactory.closeAsync()))::iterator).subscribe(closeCompletable);
@@ -321,5 +347,153 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
     private static final class MutableAddressHost<Addr, C extends ListenableAsyncCloseable> extends Host<Addr, C> {
         @Nullable
         Addr mutableAddress;
+    }
+
+    /**
+     * Eventually this will be replaced by a PublisherProcessor which is backed by a queue and allows for
+     * arbitrary events being published.
+     * @param <T> The type of data delivered to {@link Subscriber}s.
+     */
+    private static final class PublisherProcessorSingle<T> extends Publisher<T> {
+        private static final AtomicIntegerFieldUpdater<PublisherProcessorSingle> subscriberStateUpdater =
+                newUpdater(PublisherProcessorSingle.class, "subscriberState");
+        private static final AtomicReferenceFieldUpdater<PublisherProcessorSingle, Object> terminalNotificationUpdater =
+                newUpdater(PublisherProcessorSingle.class, Object.class, "terminalNotification");
+        private static final AtomicReferenceFieldUpdater<PublisherProcessorSingle, Object> eventUpdater =
+                newUpdater(PublisherProcessorSingle.class, Object.class, "event");
+        private static final Object REQUESTED = new Object();
+        private static final Object DELIVERED = new Object();
+        private static final Object COMPLETED = new Object();
+        @Nullable
+        private volatile Subscriber<? super T> subscriber;
+        @Nullable
+        private volatile Object event;
+        @SuppressWarnings("unused")
+        private volatile int subscriberState;
+        @SuppressWarnings("unused")
+        @Nullable
+        private volatile Object terminalNotification;
+
+        @Override
+        protected void handleSubscribe(final Subscriber<? super T> subscriber) {
+            if (this.subscriber == null) {
+                this.subscriber = subscriber;
+                subscriber.onSubscribe(new Subscription() {
+                    @Override
+                    public void request(final long n) {
+                        if (isRequestNValid(n)) {
+                            for (;;) {
+                                Object event = PublisherProcessorSingle.this.event;
+                                if (event == REQUESTED || event == DELIVERED || event == COMPLETED) {
+                                    break;
+                                } else if (event != null) {
+                                    if (eventUpdater.compareAndSet(PublisherProcessorSingle.this, event, DELIVERED)) {
+                                        @SuppressWarnings("unchecked")
+                                        final T finalT = (T) event;
+                                        deliverOnNext(finalT, subscriber);
+                                        break;
+                                    }
+                                } else if (eventUpdater.compareAndSet(PublisherProcessorSingle.this, null, REQUESTED)) {
+                                    // Check if sendOnComplete was called but the Subscriber was not visible, and then
+                                    // deliver the terminal notification if we change the event to COMPLETED.
+                                    if (subscriberState == SUBSCRIBER_STATE_TERMINATED &&
+                                        eventUpdater.compareAndSet(PublisherProcessorSingle.this, REQUESTED, COMPLETED)) {
+                                        subscriber.onComplete();
+                                    }
+                                    break;
+                                }
+                            }
+                        } else {
+                            Throwable cause = newExceptionForInvalidRequestN(n);
+                            if (checkTerminationValidWithConcurrentOnNextCheck(null, cause, subscriberStateUpdater,
+                                    terminalNotificationUpdater, PublisherProcessorSingle.this)) {
+                                for (;;) {
+                                    Object event = PublisherProcessorSingle.this.event;
+                                    if (event == null || event == REQUESTED || event == DELIVERED) {
+                                        if (eventUpdater.compareAndSet(PublisherProcessorSingle.this, event, COMPLETED)) {
+                                            subscriber.onError(cause);
+                                            break;
+                                        }
+                                    } else {
+                                        // If there is data pending we will deliver the error after the data.
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void cancel() {
+                        // This will ensure the event is GCed (if it exists) and will swallow any terminal events which
+                        // also maybe pending.
+                        event = COMPLETED;
+                    }
+                });
+            } else {
+                subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+                subscriber.onError(new IllegalStateException("only a single subscriber is supported"));
+            }
+        }
+
+        void sendOnNext(T next) {
+            for (;;) {
+                Object event = this.event;
+                if (event == null) {
+                    if (eventUpdater.compareAndSet(this, null, next)) {
+                        break;
+                    }
+                } else if (event == REQUESTED) {
+                    if (eventUpdater.compareAndSet(this, REQUESTED, DELIVERED)) {
+                        Subscriber<? super T> subscriber = this.subscriber;
+                        assert subscriber != null;
+                        deliverOnNext(next, subscriber);
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+
+        void sendOnComplete() {
+            if (checkTerminationValidWithConcurrentOnNextCheck(null, complete(),
+                    subscriberStateUpdater, terminalNotificationUpdater, this)) {
+                Subscriber<? super T> subscriber = this.subscriber;
+                // If the subscriber is not null, deliver the event now, otherwise we deliver in the Subscription.
+                if (subscriber != null) {
+                    // Make a best effort to terminate early, if there is data pending we will let the Subscription
+                    // deliver the terminal event after it delivers the data.
+                    for (;;) {
+                        Object event = this.event;
+                        if (event == null || event == REQUESTED || event == DELIVERED) {
+                            if (eventUpdater.compareAndSet(this, event, COMPLETED)) {
+                                subscriber.onComplete();
+                                break;
+                            }
+                        } else {
+                            // Note that the Subscription may have requested data in the mean time, but we let the
+                            // Subscription handle that.
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void deliverOnNext(T next, Subscriber<? super T> subscriber) {
+            sendOnNextWithConcurrentTerminationCheck(() -> subscriber.onNext(next), this::terminate,
+                    subscriberStateUpdater, terminalNotificationUpdater, this);
+        }
+
+        private void terminate(Object terminalNotification) {
+            Subscriber<? super T> subscriber = this.subscriber;
+            assert subscriber != null;
+            if (terminalNotification instanceof Throwable) {
+                subscriber.onError((Throwable) terminalNotification);
+            } else {
+                subscriber.onComplete();
+            }
+        }
     }
 }

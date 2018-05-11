@@ -17,6 +17,7 @@ package io.servicetalk.client.loadbalancer;
 
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
+import io.servicetalk.client.api.LoadBalancerReadyEvent;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.concurrent.api.Completable;
@@ -36,6 +37,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 
 import java.util.List;
 import java.util.Map;
@@ -44,12 +47,14 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
@@ -57,6 +62,7 @@ import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toSet;
@@ -69,6 +75,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -117,6 +124,55 @@ public class RoundRobinLoadBalancerTest {
         });
     }
 
+    @Test
+    public void streamEventJustClose() throws InterruptedException {
+        CountDownLatch readyLatch = new CountDownLatch(1);
+        CountDownLatch completeLatch = new CountDownLatch(1);
+        lb.getEventStream().doAfterComplete(completeLatch::countDown).first().subscribe(next -> readyLatch.countDown());
+        lb.closeAsync().subscribe();
+
+        assertThat(readyLatch.await(100, MILLISECONDS), is(false));
+        completeLatch.await();
+    }
+
+    @Test
+    public void streamEventReadyAndCompleteOnClose() throws InterruptedException {
+        CountDownLatch readyLatch = new CountDownLatch(1);
+        CountDownLatch completeLatch = new CountDownLatch(1);
+        AtomicReference<Throwable> causeRef = new AtomicReference<>();
+        lb.getEventStream().subscribe(new Subscriber<Object>() {
+            @Override
+            public void onSubscribe(final Subscription s) {
+                s.request(1);
+            }
+
+            @Override
+            public void onNext(final Object event) {
+                if (event instanceof LoadBalancerReadyEvent && ((LoadBalancerReadyEvent) event).isReady()) {
+                    readyLatch.countDown();
+                }
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+                causeRef.set(t);
+                completeLatch.countDown();
+            }
+
+            @Override
+            public void onComplete() {
+                completeLatch.countDown();
+            }
+        });
+        assertThat(readyLatch.await(100, MILLISECONDS), is(false));
+        sendServiceDiscoveryEvents(upEvent("address-1"));
+        readyLatch.await();
+
+        lb.closeAsync().subscribe();
+        completeLatch.await();
+        assertNull(causeRef.get());
+    }
+
     @SuppressWarnings("unchecked")
     @Test
     public void handleDiscoveryEvents() {
@@ -163,7 +219,7 @@ public class RoundRobinLoadBalancerTest {
 
     @Test
     public void noServiceDiscoveryEvent() {
-        selectConnectionListener.listen(lb.selectConnection());
+        selectConnectionListener.listen(lb.selectConnection(identity()));
         selectConnectionListener.verifyFailure(NoAvailableHostException.class);
 
         assertThat(connectionsCreated, is(empty()));
@@ -242,11 +298,11 @@ public class RoundRobinLoadBalancerTest {
     public void roundRobining() throws Exception {
         sendServiceDiscoveryEvents(upEvent("address-1"));
         sendServiceDiscoveryEvents(upEvent("address-2"));
-        final List<String> connections = awaitIndefinitely((lb.selectConnection()
-                .concatWith(lb.selectConnection())
-                .concatWith(lb.selectConnection())
-                .concatWith(lb.selectConnection())
-                .concatWith(lb.selectConnection())
+        final List<String> connections = awaitIndefinitely((lb.selectConnection(identity())
+                .concatWith(lb.selectConnection(identity()))
+                .concatWith(lb.selectConnection(identity()))
+                .concatWith(lb.selectConnection(identity()))
+                .concatWith(lb.selectConnection(identity()))
                 .map(TestLoadBalancedConnection::getAddress)));
 
         assertThat(connections, contains("address-1", "address-2", "address-1", "address-2", "address-1"));
@@ -263,7 +319,7 @@ public class RoundRobinLoadBalancerTest {
     public void closedConnectionPruning() throws Exception {
         sendServiceDiscoveryEvents(upEvent("address-1"));
 
-        final TestLoadBalancedConnection connection = awaitIndefinitely(lb.selectConnection());
+        final TestLoadBalancedConnection connection = awaitIndefinitely(lb.selectConnection(identity()));
         assert connection != null;
         List<Map.Entry<String, List<TestLoadBalancedConnection>>> activeAddresses = lb.getActiveAddresses();
 
@@ -286,7 +342,7 @@ public class RoundRobinLoadBalancerTest {
         connectionFactory = new DelegatingConnectionFactory($ -> error(DELIBERATE_EXCEPTION));
         lb = newTestLoadBalancer(connectionFactory);
         sendServiceDiscoveryEvents(upEvent("address-1"));
-        awaitIndefinitely(lb.selectConnection());
+        awaitIndefinitely(lb.selectConnection(identity()));
     }
 
     @Test
@@ -298,7 +354,7 @@ public class RoundRobinLoadBalancerTest {
         awaitIndefinitely(lb.closeAsync());
 
         try {
-            awaitIndefinitely(lb.selectConnection());
+            awaitIndefinitely(lb.selectConnection(identity()));
         } finally {
             assertThat(connectionsCreated, is(empty()));
         }
