@@ -25,7 +25,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.error;
 import static java.util.Objects.requireNonNull;
 
@@ -88,12 +87,7 @@ public final class LoadBalancerReadyHttpClient<I, O> extends HttpClient<I, O> {
     }
 
     private BiIntFunction<Throwable, Completable> retryWhenFunction() {
-        return (count, cause) -> {
-            if (count <= maxRetryCount && cause instanceof RetryableException) {
-                Completable onHostsAvailable = loadBalancerReadySubscriber.onHostsAvailable();
-                return onHostsAvailable != null ? onHostsAvailable : completed();
-            }
-            return error(cause);
-        };
+        return (count, cause) -> count <= maxRetryCount && cause instanceof RetryableException ?
+                loadBalancerReadySubscriber.onHostsAvailable() : error(cause);
     }
 }
