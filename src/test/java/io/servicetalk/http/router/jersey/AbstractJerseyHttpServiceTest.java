@@ -153,7 +153,7 @@ public abstract class AbstractJerseyHttpServiceTest {
     }
 
     protected HttpRequest<HttpPayloadChunk> noPayloadRequest(final HttpRequestMethod method, final String path) {
-        final HttpRequest<HttpPayloadChunk> req = newRequest(method, testUri(path), clientExecutor);
+        final HttpRequest<HttpPayloadChunk> req = newRequest(method, testUri(path));
         req.getHeaders().set(HOST, host());
         return req;
     }
@@ -163,7 +163,7 @@ public abstract class AbstractJerseyHttpServiceTest {
                                                            final String payload,
                                                            final CharSequence contentType) {
         final Buffer content = DEFAULT_ALLOCATOR.fromUtf8(payload);
-        final HttpRequest<HttpPayloadChunk> req = newRequest(method, testUri(path), newPayloadChunk(content), clientExecutor);
+        final HttpRequest<HttpPayloadChunk> req = newRequest(method, testUri(path), newPayloadChunk(content));
         req.getHeaders().set(HOST, host());
         req.getHeaders().set(CONTENT_TYPE, contentType);
         req.getHeaders().set(CONTENT_LENGTH, Integer.toString(content.getReadableBytes()));

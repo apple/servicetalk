@@ -61,6 +61,6 @@ public final class TestUtils {
 
     private static Publisher<HttpPayloadChunk> asChunkPublisher(final Buffer content,
                                                                 final Executor executor) {
-        return just(newPayloadChunk(content), executor);
+        return just(newPayloadChunk(content));
     }
 }

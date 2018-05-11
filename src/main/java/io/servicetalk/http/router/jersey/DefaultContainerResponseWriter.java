@@ -198,7 +198,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         if (content != null) {
             response = newResponse(protocolVersion, status, content);
         } else {
-            response = newResponse(protocolVersion, status, executor);
+            response = newResponse(protocolVersion, status);
         }
 
         final HttpHeaders headers = response.getHeaders();

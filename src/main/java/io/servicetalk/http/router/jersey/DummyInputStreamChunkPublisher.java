@@ -45,7 +45,7 @@ final class DummyInputStreamChunkPublisher extends Publisher<HttpPayloadChunk> i
         requireNonNull(allocator);
 
         return new DummyInputStreamChunkPublisher(
-                Publisher.from(executor, () -> new DummyInputStreamIterator(is, allocator))
+                Publisher.from(() -> new DummyInputStreamIterator(is, allocator))
                         .doAfterFinally(() -> {
                             try {
                                 is.close();
