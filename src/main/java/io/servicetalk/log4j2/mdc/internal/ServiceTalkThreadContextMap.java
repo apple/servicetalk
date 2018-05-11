@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.context.log4j2;
+package io.servicetalk.log4j2.mdc.internal;
 
 import io.servicetalk.concurrent.context.AsyncContext;
 import io.servicetalk.concurrent.context.AsyncContextMap;

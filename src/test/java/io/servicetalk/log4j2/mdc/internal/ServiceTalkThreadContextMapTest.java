@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.context.log4j2;
+package io.servicetalk.log4j2.mdc.internal;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.context.ConcurrentPlugins;
@@ -30,8 +30,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static io.servicetalk.concurrent.context.log4j2.ServiceTalkThreadContextMap.getStorage;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.log4j2.mdc.internal.ServiceTalkThreadContextMap.getStorage;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;

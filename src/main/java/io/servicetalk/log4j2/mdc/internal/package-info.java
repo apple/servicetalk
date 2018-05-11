@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 @ElementsAreNonnullByDefault
-package io.servicetalk.concurrent.context.log4j2;
+package io.servicetalk.log4j2.mdc.internal;
 
 import io.servicetalk.annotations.ElementsAreNonnullByDefault;

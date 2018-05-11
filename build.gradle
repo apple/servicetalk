@@ -41,5 +41,5 @@ dependencies {
 }
 
 test {
-  jvmArgs '-Dlog4j2.threadContextMap=io.servicetalk.concurrent.context.log4j2.ServiceTalkThreadContextMap'
+  jvmArgs '-Dlog4j2.threadContextMap=io.servicetalk.log4j2.mdc.internal.ServiceTalkThreadContextMap'
 }
