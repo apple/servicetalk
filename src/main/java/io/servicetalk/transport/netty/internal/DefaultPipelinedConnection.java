@@ -18,7 +18,6 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.QueueFullException;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -35,7 +34,6 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
@@ -49,39 +47,29 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultPipelinedConnection.class);
 
-    private static final AtomicIntegerFieldUpdater<DefaultPipelinedConnection> pendingRequestsCountUpdater =
-            newUpdater(DefaultPipelinedConnection.class, "pendingRequestsCount");
-
     private final Connection<Resp, Req> connection;
     private final Connection.TerminalPredicate<Resp> terminalMsgPredicate;
     private final WriteQueue<Resp> writeQueue;
-    private final int maxPendingRequests;
-
-    @SuppressWarnings("unused")
-    private volatile int pendingRequestsCount;
 
     /**
      * New instance.
      *
      * @param connection {@link Connection} requests to which are to be pipelined.
-     * @param maxPendingRequests Max requests that can be pending waiting for a response.
      */
-    public DefaultPipelinedConnection(Connection<Resp, Req> connection, int maxPendingRequests) {
-        this(connection, maxPendingRequests, 2);
+    public DefaultPipelinedConnection(Connection<Resp, Req> connection) {
+        this(connection, 2);
     }
 
     /**
      * New instance.
      *
      * @param connection {@link Connection} requests to which are to be pipelined.
-     * @param maxPendingRequests Max requests that can be pending waiting for a response.
      * @param initialQueueSize Initial size for the write and read queues.
      */
-    public DefaultPipelinedConnection(Connection<Resp, Req> connection, int maxPendingRequests, int initialQueueSize) {
+    public DefaultPipelinedConnection(Connection<Resp, Req> connection, int initialQueueSize) {
         this.connection = requireNonNull(connection);
         this.terminalMsgPredicate = connection.getTerminalMsgPredicate();
         writeQueue = new WriteQueue<>(terminalMsgPredicate, initialQueueSize);
-        this.maxPendingRequests = maxPendingRequests;
     }
 
     @Override
@@ -158,40 +146,19 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
         return new Completable() {
             @Override
             protected void handleSubscribe(Subscriber subscriber) {
-                subscriber.onSubscribe(IGNORE_CANCEL);
-                for (;;) {
-                    final int current = pendingRequestsCount;
-                    if (current == maxPendingRequests) {
-                        subscriber.onError(new QueueFullException("pipelined-requests", maxPendingRequests));
-                        return;
-                    }
-                    if (pendingRequestsCountUpdater.compareAndSet(DefaultPipelinedConnection.this, current, current + 1)) {
-                        break;
-                    }
+                Task<Resp> task = new Task<>(completable, subscriber, terminalMsgPredicate);
+                subscriber.onSubscribe(task);
+                if (!writeQueue.offerAndTryExecute(task)) {
+                    task.cancel();
+                    subscriber.onError(new IllegalStateException(
+                            "Unexpected reject from an unbounded pending requests queue."));
                 }
-                subscriber.onComplete();
             }
-        }.andThen(new Completable() {
-                    @Override
-                    protected void handleSubscribe(Subscriber subscriber) {
-                        Task<Resp> task = new Task<>(completable, subscriber, terminalMsgPredicate);
-                        subscriber.onSubscribe(task);
-                        if (!writeQueue.offerAndTryExecute(task)) {
-                            task.cancel();
-                            subscriber.onError(new IllegalStateException("Unexpected reject from an unbounded pending requests queue."));
-                        }
-                    }
-                }.andThen(connection.read()).doBeforeFinally(() -> {
-                    pendingRequestsCountUpdater.decrementAndGet(this);
-                    if (terminalMsgPredicate != null) {
-                        this.terminalMsgPredicate.discardIfCurrent(terminalMsgPredicate);
-                    }
-                }).doAfterFinally(writeQueue.responseQueue::postTaskTermination)
-        );
-    }
-
-    int getPendingRequestsCount() {
-        return pendingRequestsCount;
+        }.andThen(connection.read()).doBeforeFinally(() -> {
+            if (terminalMsgPredicate != null) {
+                this.terminalMsgPredicate.discardIfCurrent(terminalMsgPredicate);
+            }
+        }).doAfterFinally(writeQueue.responseQueue::postTaskTermination);
     }
 
     @Override

@@ -16,9 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
-import io.servicetalk.concurrent.api.QueueFullException;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -33,12 +31,9 @@ import org.mockito.stubbing.Answer;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.transport.api.FlushStrategy.defaultFlushStrategy;
 import static java.lang.Integer.MAX_VALUE;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -102,7 +97,6 @@ public class DefaultPipelinedConnectionTest {
         readSubscriber.subscribe(requester.request(1)).request(1);
         readPublisher.onComplete();
         readSubscriber.verifySuccess();
-        dispose();
     }
 
     @Test
@@ -110,7 +104,6 @@ public class DefaultPipelinedConnectionTest {
         readSubscriber.subscribe(requester.request(success(1))).request(1);
         readPublisher.onComplete();
         readSubscriber.verifySuccess();
-        dispose();
     }
 
     @Test
@@ -118,7 +111,6 @@ public class DefaultPipelinedConnectionTest {
         readSubscriber.subscribe(requester.request(just(1, immediate()), defaultFlushStrategy())).request(1);
         readPublisher.onComplete();
         readSubscriber.verifySuccess();
-        dispose();
     }
 
     @Test
@@ -131,7 +123,6 @@ public class DefaultPipelinedConnectionTest {
         writePublisher2.sendItems(1).onComplete();
         readPublisher.onComplete();
         secondReadSubscriber.verifySuccess();
-        dispose();
     }
 
     @Test
@@ -143,7 +134,6 @@ public class DefaultPipelinedConnectionTest {
         writePublisher2.verifySubscribed().sendItems(1).onComplete();
         readPublisher.onComplete();
         secondReadSubscriber.verifySuccess();
-        dispose();
     }
 
     @Test
@@ -155,51 +145,6 @@ public class DefaultPipelinedConnectionTest {
         writePublisher2.verifySubscribed().sendItems(1).onComplete();
         readPublisher.onComplete();
         secondReadSubscriber.verifySuccess();
-        dispose();
-    }
-
-    @Test
-    public void testEnforceLimitWithWritesPending() {
-        MockedCompletableListenerRule[] subs = new MockedCompletableListenerRule[MAX_PENDING_REQUESTS];
-        for (int i = 0; i < MAX_PENDING_REQUESTS; i++) {
-            MockedCompletableListenerRule sub = new MockedCompletableListenerRule();
-            subs[i] = sub;
-            sub.listen(requester.request(never()).ignoreElements());
-            sub.verifyNoEmissions();
-        }
-        MockedCompletableListenerRule sub = new MockedCompletableListenerRule();
-        sub.listen(requester.request(never()).ignoreElements());
-        sub.verifyFailure(QueueFullException.class);
-        for (MockedCompletableListenerRule aSub : subs) {
-            aSub.verifyNoEmissions();
-        }
-    }
-
-    @Test
-    public void testEnforceLimitWithReadsPending() {
-        enforceLimitWhenReadsPending();
-    }
-
-    @Test
-    public void testPipelineLimitExceededFailureDoesNotDecrementPendingCount() {
-        MockedCompletableListenerRule[] subs = enforceLimitWhenReadsPending();
-
-        MockedCompletableListenerRule sub = new MockedCompletableListenerRule();
-        sub.listen(requester.request(never()).ignoreElements());
-        sub.verifyFailure(QueueFullException.class);
-        for (MockedCompletableListenerRule aSub : subs) {
-            aSub.verifyNoEmissions();
-        }
-    }
-
-    @Test
-    public void testReusePostLimitExceeded() {
-        MockedCompletableListenerRule[] subs = enforceLimitWhenReadsPending();
-        readPublisher.verifySubscribed().sendItems(1);
-        subs[0].verifyCompletion();
-        // Since we completed previous requests, this should pass.
-        MockedCompletableListenerRule sub = new MockedCompletableListenerRule();
-        sub.listen(requester.request(never()).ignoreElements());
     }
 
     @Test
@@ -210,27 +155,5 @@ public class DefaultPipelinedConnectionTest {
         verify(writer).write();
         readPublisher.onComplete();
         readSubscriber.verifySuccess();
-        dispose();
-    }
-
-    private void dispose() {
-        assertThat("Active requests found on the requester.", requester.getPendingRequestsCount(), is(0));
-    }
-
-    private MockedCompletableListenerRule[] enforceLimitWhenReadsPending() {
-        MockedCompletableListenerRule[] subs = new MockedCompletableListenerRule[MAX_PENDING_REQUESTS];
-        for (int i = 0; i < MAX_PENDING_REQUESTS; i++) {
-            MockedCompletableListenerRule sub = new MockedCompletableListenerRule();
-            subs[i] = sub;
-            sub.listen(requester.request(success(1)).take(1).ignoreElements());
-            sub.verifyNoEmissions();
-        }
-        MockedCompletableListenerRule sub = new MockedCompletableListenerRule();
-        sub.listen(requester.request(never()).ignoreElements());
-        sub.verifyFailure(QueueFullException.class);
-        for (MockedCompletableListenerRule aSub : subs) {
-            aSub.verifyNoEmissions();
-        }
-        return subs;
     }
 }
