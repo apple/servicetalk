@@ -49,7 +49,6 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.context.DefaultAsyncContextProvider.INSTANCE;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
@@ -496,10 +495,6 @@ public class DefaultAsyncContextProviderTest {
         final List<AsyncContextMap> requestNContexts = new ArrayList<>();
         @Nullable
         AsyncContextMap cancelContext;
-
-        ContextCaptureTestPublisher() {
-            super(immediate());
-        }
 
         @Override
         protected void handleSubscribe(org.reactivestreams.Subscriber s) {
