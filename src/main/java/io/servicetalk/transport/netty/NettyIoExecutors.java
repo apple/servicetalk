@@ -36,7 +36,7 @@ public final class NettyIoExecutors {
      *
      * @param ioThreads number of threads
      * @param threadFactory the {@link ThreadFactory} to use. If possible you should use an instance of {@link IoThreadFactory} as
-     *                      it allows internal optimizations.
+     * it allows internal optimizations.
      * @return The created {@link IoExecutor}
      */
     public static IoExecutor createExecutor(int ioThreads, ThreadFactory threadFactory) {
@@ -51,6 +51,18 @@ public final class NettyIoExecutors {
      */
     public static IoExecutor createExecutor(int ioThreads) {
         return createExecutor(ioThreads, new IoThreadFactory(NettyIoExecutor.class.getSimpleName()));
+    }
+
+    /**
+     * Creates a new {@link IoExecutor} with the default number of {@code ioThreads}
+     * ({@code Runtime.getRuntime().availableProcessors() * 2}).
+     *
+     * @param threadFactory the {@link ThreadFactory} to use. If possible you should use an instance of {@link IoThreadFactory} as
+     * it allows internal optimizations.
+     * @return The created {@link IoExecutor}
+     */
+    public static IoExecutor createExecutor(ThreadFactory threadFactory) {
+        return createExecutor(getRuntime().availableProcessors() * 2, threadFactory);
     }
 
     /**
