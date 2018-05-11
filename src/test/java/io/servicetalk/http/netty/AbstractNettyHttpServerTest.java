@@ -64,7 +64,7 @@ public abstract class AbstractNettyHttpServerTest {
 
         final Executor executor = newCachedThreadExecutor(new DefaultThreadFactory("server-executor", true,
                 NORM_PRIORITY));
-        final TestService service = new TestService(executor);
+        final TestService service = new TestService();
 
         serverContext = awaitIndefinitelyNonNull(
                 new DefaultHttpServerStarter(ioExecutor)

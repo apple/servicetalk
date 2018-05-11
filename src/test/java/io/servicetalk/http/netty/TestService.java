@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.Buffer;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpPayloadChunk;
@@ -54,11 +53,6 @@ final class TestService extends HttpService<HttpPayloadChunk, HttpPayloadChunk> 
     static final String SVC_ERROR_DURING_READ = "/errorDuringRead";
 
     private int counter;
-    private final Executor executor;
-
-    TestService(final Executor executor) {
-        this.executor = executor;
-    }
 
     @Override
     public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext context,
@@ -112,7 +106,7 @@ final class TestService extends HttpService<HttpPayloadChunk, HttpPayloadChunk> 
         final Buffer responseContent = context.getBufferAllocator().fromUtf8(
                 "Testing" + ++counter + "\n");
         final HttpPayloadChunk responseBody = HttpPayloadChunks.newPayloadChunk(responseContent);
-        return newResponse(req.getVersion(), OK, responseBody, executor);
+        return newResponse(req.getVersion(), OK, responseBody);
     }
 
     private HttpResponse<HttpPayloadChunk> newTestCounterResponseWithLastPayloadChunk(
@@ -121,11 +115,11 @@ final class TestService extends HttpService<HttpPayloadChunk, HttpPayloadChunk> 
                 "Testing" + ++counter + "\n");
         final HttpPayloadChunk responseBody = HttpPayloadChunks.newLastPayloadChunk(responseContent,
                 INSTANCE.newEmptyTrailers());
-        return newResponse(req.getVersion(), OK, responseBody, executor);
+        return newResponse(req.getVersion(), OK, responseBody);
     }
 
     private HttpResponse<HttpPayloadChunk> newNoContentResponse(final HttpRequest<HttpPayloadChunk> req) {
-        return newResponse(req.getVersion(), HttpResponseStatuses.NO_CONTENT, executor);
+        return newResponse(req.getVersion(), HttpResponseStatuses.NO_CONTENT);
     }
 
     private HttpResponse<HttpPayloadChunk> newRot13Response(final HttpRequest<HttpPayloadChunk> req) {
@@ -146,7 +140,7 @@ final class TestService extends HttpService<HttpPayloadChunk, HttpPayloadChunk> 
     }
 
     private HttpResponse<HttpPayloadChunk> newNotFoundResponse(final HttpRequest<HttpPayloadChunk> req) {
-        return newResponse(req.getVersion(), NOT_FOUND, executor);
+        return newResponse(req.getVersion(), NOT_FOUND);
     }
 
     private HttpResponse<HttpPayloadChunk> throwErrorSynchronously() {
@@ -155,7 +149,7 @@ final class TestService extends HttpService<HttpPayloadChunk, HttpPayloadChunk> 
 
     private HttpResponse<HttpPayloadChunk> throwErrorBeforeRead(final HttpRequest<HttpPayloadChunk> req) {
         final Publisher<HttpPayloadChunk> responseBodyPublisher = Publisher.error(
-                DELIBERATE_EXCEPTION, executor);
+                DELIBERATE_EXCEPTION);
         return newResponse(req.getVersion(), OK, responseBodyPublisher);
     }
 

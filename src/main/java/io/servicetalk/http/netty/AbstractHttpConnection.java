@@ -64,15 +64,14 @@ abstract class AbstractHttpConnection<CC extends ConnectionContext>
     @Override
     public <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
         if (settingKey == SettingKey.MAX_CONCURRENCY) {
-            return (Publisher<T>) just(config.getMaxPipelinedRequests(), executionContext.getExecutor());
+            return (Publisher<T>) just(config.getMaxPipelinedRequests());
         }
-        return error(new IllegalArgumentException("Unknown setting: " + settingKey), executionContext.getExecutor());
+        return error(new IllegalArgumentException("Unknown setting: " + settingKey));
     }
 
     @Override
     public Single<HttpResponse<HttpPayloadChunk>> request(HttpRequest<HttpPayloadChunk> request) {
         return new SpliceFlatStreamToMetaSingle<HttpResponse<HttpPayloadChunk>, HttpResponseMetaData, HttpPayloadChunk>(
-                executionContext.getExecutor(),
                 writeAndRead(flatten(executionContext.getExecutor(), request, AbstractHttpConnection::unpack)),
                 AbstractHttpConnection::newResponse);
     }

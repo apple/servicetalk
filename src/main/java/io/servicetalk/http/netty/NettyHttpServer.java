@@ -53,7 +53,6 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -154,7 +153,7 @@ final class NettyHttpServer {
                 final Publisher<Object> connRequestObjectPublisher = conn.read();
                 final Single<HttpRequest<HttpPayloadChunk>> requestSingle =
                  new SpliceFlatStreamToMetaSingle<HttpRequest<HttpPayloadChunk>, HttpRequestMetaData, HttpPayloadChunk>(
-                                executor, connRequestObjectPublisher,
+                                connRequestObjectPublisher,
                                 (hr, pub) -> newRequest(
                                         hr.getVersion(), hr.getMethod(), hr.getRequestTarget(), pub, hr.getHeaders()));
                 handleRequestAndWriteResponse(executor, service, conn, context, requestSingle).subscribe();
@@ -215,7 +214,7 @@ final class NettyHttpServer {
         final HttpResponse<HttpPayloadChunk> response = newResponse(request.getVersion(), INTERNAL_SERVER_ERROR,
                 // Using immediate is OK here because the user will never touch this response and it will
                 // only be consumed by ServiceTalk at this point.
-                just(newLastPayloadChunk(EMPTY_BUFFER, EmptyHttpHeaders.INSTANCE), immediate()));
+                just(newLastPayloadChunk(EMPTY_BUFFER, EmptyHttpHeaders.INSTANCE)));
         response.getHeaders().set(CONTENT_LENGTH, ZERO);
         return success(response);
     }

@@ -45,7 +45,6 @@ import static java.util.Objects.requireNonNull;
  */
 final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single<Data> {
 
-    private final Executor executor;
     private final BiFunction<MetaData, Publisher<Payload>, Data> packer;
     private final Publisher<?> original;
 
@@ -54,14 +53,11 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
      * MetaData} header as first element into a {@code Data}&lt;{@code Payload}&gt; eg. {@code
      * HttpResponse}&lt;{@code HttpPayloadChunk}&gt;.
      *
-     * @param executor the executor to use for the new {@link Publisher}
      * @param original the stream of {@link Object}s to splice in a {@code Data}&lt;{@code Payload}&gt;
      * @param packer function to pack the {@link Publisher}&lt;{@code Payload}&gt; and {@code MetaData} into a
      * {@code Data}
      */
-    SpliceFlatStreamToMetaSingle(Executor executor, Publisher<?> original,
-                                 BiFunction<MetaData, Publisher<Payload>, Data> packer) {
-        this.executor = requireNonNull(executor);
+    SpliceFlatStreamToMetaSingle(Publisher<?> original, BiFunction<MetaData, Publisher<Payload>, Data> packer) {
         this.packer = requireNonNull(packer);
         this.original = requireNonNull(original);
     }
@@ -84,7 +80,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
     @SuppressWarnings("unchecked")
     static <Data, Payload> Publisher<Object> flatten(Executor executor, Data data,
                                                      Function<Data, Publisher<Payload>> unpack) {
-        return ((Publisher) Publisher.just(data, executor)).concatWith(unpack.apply(data));
+        return ((Publisher) Publisher.just(data)).concatWith(unpack.apply(data));
     }
 
     /* Visible for testing */
@@ -219,7 +215,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
                 try {
                     data = parent.packer.apply(meta,
                             maybePayloadSubUpdater.compareAndSet(this, null, PENDING) ?
-                                    newPayloadPublisher() : Publisher.error(CANCELED, parent.executor));
+                                    newPayloadPublisher() : Publisher.error(CANCELED));
                 } catch (Throwable t) {
                     assert rawSubscription != null;
                     // We know that there is nothing else that can happen on this stream as we are not sending the
@@ -237,7 +233,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
 
         @Nonnull
         private Publisher<Payload> newPayloadPublisher() {
-            return new Publisher<Payload>(parent.executor) {
+            return new Publisher<Payload>() {
                 @Override
                 protected void handleSubscribe(org.reactivestreams.Subscriber<? super Payload> newSubscriber) {
                     if (maybePayloadSubUpdater.compareAndSet(SplicingSubscriber.this, PENDING, newSubscriber)) {

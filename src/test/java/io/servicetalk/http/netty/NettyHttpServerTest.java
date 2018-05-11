@@ -130,14 +130,14 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void testGetNoRequestPayloadWithoutResponseLastChunk() throws Exception {
-        final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_COUNTER_NO_LAST_CHUNK, executor);
+        final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_COUNTER_NO_LAST_CHUNK);
         final HttpResponse<HttpPayloadChunk> response = makeRequest(request);
         assertResponse(response, HTTP_1_1, OK, asList("Testing1\n", ""));
     }
 
     @Test
     public void testGetNoRequestPayload() throws Exception {
-        final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_COUNTER, executor);
+        final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_COUNTER);
         final HttpResponse<HttpPayloadChunk> response = makeRequest(request);
         assertResponse(response, HTTP_1_1, OK, asList("Testing1\n", ""));
     }
@@ -180,29 +180,29 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void testGetNoRequestPayloadNoResponsePayload() throws Exception {
-        final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_NO_CONTENT, executor);
+        final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_NO_CONTENT);
         final HttpResponse<HttpPayloadChunk> response = makeRequest(request);
         assertResponse(response, HTTP_1_1, NO_CONTENT, singletonList(""));
     }
 
     @Test
     public void testMultipleGetsNoRequestPayloadWithoutResponseLastChunk() throws Exception {
-        final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_COUNTER_NO_LAST_CHUNK, executor);
+        final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_COUNTER_NO_LAST_CHUNK);
         final HttpResponse<HttpPayloadChunk> response1 = makeRequest(request1);
         assertResponse(response1, HTTP_1_1, OK, asList("Testing1\n", ""));
 
-        final HttpRequest<HttpPayloadChunk> request2 = newRequest(GET, SVC_COUNTER_NO_LAST_CHUNK, executor);
+        final HttpRequest<HttpPayloadChunk> request2 = newRequest(GET, SVC_COUNTER_NO_LAST_CHUNK);
         final HttpResponse<HttpPayloadChunk> response2 = makeRequest(request2);
         assertResponse(response2, HTTP_1_1, OK, asList("Testing2\n", ""));
     }
 
     @Test
     public void testMultipleGetsNoRequestPayload() throws Exception {
-        final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_COUNTER, executor);
+        final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_COUNTER);
         final HttpResponse<HttpPayloadChunk> response1 = makeRequest(request1);
         assertResponse(response1, HTTP_1_1, OK, asList("Testing1\n", ""));
 
-        final HttpRequest<HttpPayloadChunk> request2 = newRequest(GET, SVC_COUNTER, executor);
+        final HttpRequest<HttpPayloadChunk> request2 = newRequest(GET, SVC_COUNTER);
         final HttpResponse<HttpPayloadChunk> response2 = makeRequest(request2);
         assertResponse(response2, HTTP_1_1, OK, asList("Testing2\n", ""));
     }
@@ -254,7 +254,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void testSynchronousError() throws Exception {
-        final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_THROW_ERROR, executor);
+        final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_THROW_ERROR);
         final HttpResponse<HttpPayloadChunk> response = makeRequest(request);
         assertResponse(response, HTTP_1_1, INTERNAL_SERVER_ERROR, singletonList(""));
         assertTrue(response.getHeaders().contains(CONTENT_LENGTH, ZERO));
@@ -262,7 +262,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void testSingleError() throws Exception {
-        final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_SINGLE_ERROR, executor);
+        final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_SINGLE_ERROR);
         final HttpResponse<HttpPayloadChunk> response = makeRequest(request);
         assertResponse(response, HTTP_1_1, INTERNAL_SERVER_ERROR, singletonList(""));
         assertTrue(response.getHeaders().contains(CONTENT_LENGTH, ZERO));
@@ -335,7 +335,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
             chunks.add(HttpPayloadChunks.newPayloadChunk(DEFAULT_ALLOCATOR.fromAscii(texts[i])));
         }
         chunks.add(HttpPayloadChunks.newLastPayloadChunk(DEFAULT_ALLOCATOR.fromAscii(texts[end]), EmptyHttpHeaders.INSTANCE));
-        return Publisher.from(executor, chunks);
+        return Publisher.from(chunks);
     }
 
     private static List<String> getBodyAsListOfStrings(final HttpResponse<HttpPayloadChunk> response)
