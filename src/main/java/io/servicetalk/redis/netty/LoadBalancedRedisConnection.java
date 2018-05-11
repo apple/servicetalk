@@ -15,11 +15,9 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.client.internal.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.internal.FlowControlUtil;
-import io.servicetalk.concurrent.internal.LatestValueSubscriber;
 import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
@@ -27,61 +25,17 @@ import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import static java.util.Objects.requireNonNull;
 
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static io.servicetalk.redis.api.RedisConnection.SettingKey.MAX_CONCURRENCY;
-import static io.servicetalk.redis.netty.RedisUtils.isSubscribeModeCommand;
-import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
-
-final class LoadBalancedRedisConnection extends RedisClient.ReservedRedisConnection {
-
-    private static final AtomicIntegerFieldUpdater<LoadBalancedRedisConnection> pendingRequestsUpdater =
-            newUpdater(LoadBalancedRedisConnection.class, "pendingRequests");
-
-    private static final int STATE_QUIT = -2;
-    private static final int STATE_RESERVED = -1;
-    private static final int STATE_IDLE = 0;
-
-    /*
-     * Following semantics:
-     * STATE_RESERVED if this is reserved.
-     * STATE_QUIT if quit command issued.
-     * STATE_IDLE if connection is not used.
-     * pending request count if none of the above states.
-     */
-    @SuppressWarnings("unused")
-    private volatile int pendingRequests;
-
-    private volatile boolean subscribedConnection;
-
+final class LoadBalancedRedisConnection extends RedisClient.ReservedRedisConnection
+        implements ReservableRequestConcurrencyController {
     private final RedisConnection delegate;
-    private final LatestValueSubscriber<Integer> maxConcurrencyHolder;
+    private final ReservableRequestConcurrencyController limiter;
 
-    LoadBalancedRedisConnection(RedisConnection delegate) {
-        this.delegate = delegate;
-        maxConcurrencyHolder = new LatestValueSubscriber<>();
-        delegate.getSettingStream(MAX_CONCURRENCY).subscribe(maxConcurrencyHolder);
-        delegate.onClose().subscribe(new Completable.Subscriber() {
-            @Override
-            public void onSubscribe(Cancellable cancellable) {
-                // No op
-            }
-
-            @Override
-            public void onComplete() {
-                pendingRequests = STATE_QUIT;
-            }
-
-            @Override
-            public void onError(Throwable ignored) {
-                pendingRequests = STATE_QUIT;
-            }
-        });
-    }
-
-    boolean tryReserve() {
-        return pendingRequestsUpdater.compareAndSet(this, STATE_IDLE, STATE_RESERVED);
+    LoadBalancedRedisConnection(RedisConnection delegate,
+                                ReservableRequestConcurrencyController limiter) {
+        this.delegate = requireNonNull(delegate);
+        this.limiter = requireNonNull(limiter);
     }
 
     @Override
@@ -89,28 +43,9 @@ final class LoadBalancedRedisConnection extends RedisClient.ReservedRedisConnect
         return delegate.getSettingStream(settingKey);
     }
 
-    boolean reserveForRequest() {
-        final int lastSeenValue = maxConcurrencyHolder.getLastSeenValue(0);
-        for (;;) {
-            final int currentPending = pendingRequests;
-            if (currentPending < STATE_IDLE || currentPending >= lastSeenValue) {
-                return false;
-            }
-            if (pendingRequestsUpdater.compareAndSet(this, currentPending, currentPending + 1)) {
-                return true;
-            }
-        }
-    }
-
     @Override
     public Publisher<RedisData> request(RedisRequest request) {
-        return delegate.request(request)
-                .doBeforeSubscribe(subscription -> {
-                    if (isSubscribeModeCommand(request.getCommand()) && !subscribedConnection) {
-                        subscribedConnection = true; // Don't releaseAsync if seen a subscribe request to disallow reuse post releaseAsync.
-                    }
-                })
-                .doBeforeFinally(() -> pendingRequestsUpdater.accumulateAndGet(this, -1, FlowControlUtil::addWithOverflowProtectionIfPositive));
+        return delegate.request(request).doBeforeFinally(this::requestFinished);
     }
 
     @Override
@@ -130,25 +65,27 @@ final class LoadBalancedRedisConnection extends RedisClient.ReservedRedisConnect
 
     @Override
     public Completable closeAsync() {
-        return delegate.closeAsync().doBeforeSubscribe(cancellable -> pendingRequests = STATE_QUIT);
+        return delegate.closeAsync();
+    }
+
+    @Override
+    public boolean tryReserve() {
+        return limiter.tryReserve();
+    }
+
+    @Override
+    public boolean tryRequest() {
+        return limiter.tryRequest();
+    }
+
+    @Override
+    public void requestFinished() {
+        limiter.requestFinished();
     }
 
     @Override
     public Completable releaseAsync() {
-        return new Completable() {
-            @Override
-            protected void handleSubscribe(Subscriber subscriber) {
-                subscriber.onSubscribe(IGNORE_CANCEL);
-                // Ownership is maintained by the caller.
-                // We do not reuse connections which are used for subscribe mode as after all subscriptions are unsubscribed,
-                // we close the connection.
-                if (pendingRequestsUpdater.compareAndSet(LoadBalancedRedisConnection.this, STATE_RESERVED, subscribedConnection ? STATE_QUIT : STATE_IDLE)) {
-                    subscriber.onComplete();
-                } else {
-                    subscriber.onError(new IllegalStateException("Connection " + LoadBalancedRedisConnection.this + (pendingRequests == STATE_QUIT ? " is closed." : " was not reserved.")));
-                }
-            }
-        };
+        return limiter.releaseAsync();
     }
 
     @Override

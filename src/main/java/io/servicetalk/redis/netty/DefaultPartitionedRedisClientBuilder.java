@@ -78,8 +78,9 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
     private final PartitionMapFactory partitionMapFactory;
     private final RedisClientConfig config;
     private int serviceDiscoveryMaxQueueSize = 32;
-    private Function<RedisClient, RedisClient> clientFilterFunction = identity();
-    private Function<RedisConnection, RedisConnection> connectionFilterFunction = identity();
+    private Function<RedisClient, RedisClient> clientFilterFactory = identity();
+    private Function<RedisConnection, RedisConnection> connectionFilterFactory = identity();
+    private Function<PartitionedRedisClient, PartitionedRedisClient> partitionedClientFilterFactory = identity();
 
     /**
      * Create a new instance.
@@ -210,12 +211,12 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
      * <p>
      * Filtering allows you to wrap a {@link RedisClient} and modify behavior during request/response processing.
      * Some potential candidates for filtering include logging, metrics, and decorating responses.
-     * @param clientFilterFunction {@link Function} to filter the used {@link RedisClient}.
+     * @param clientFilterFactory {@link Function} to filter the used {@link RedisClient}.
      * @return {@code this}.
      */
-    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> setClientFilterFunction(
-            Function<RedisClient, RedisClient> clientFilterFunction) {
-        this.clientFilterFunction = requireNonNull(clientFilterFunction);
+    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> setClientFilterFactory(
+            Function<RedisClient, RedisClient> clientFilterFactory) {
+        this.clientFilterFactory = requireNonNull(clientFilterFactory);
         return this;
     }
 
@@ -224,12 +225,26 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
      * <p>
      * Filtering allows you to wrap a {@link RedisConnection} and modify behavior during request/response processing.
      * Some potential candidates for filtering include logging, metrics, and decorating responses.
-     * @param connectionFilterFunction {@link Function} to filter the used {@link RedisConnection}.
+     * @param connectionFilterFactory {@link Function} to filter the used {@link RedisConnection}.
      * @return {@code this}.
      */
-    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> setConnectionFilterFunction(
-            Function<RedisConnection, RedisConnection> connectionFilterFunction) {
-        this.connectionFilterFunction = requireNonNull(connectionFilterFunction);
+    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> setConnectionFilterFactory(
+            Function<RedisConnection, RedisConnection> connectionFilterFactory) {
+        this.connectionFilterFactory = requireNonNull(connectionFilterFactory);
+        return this;
+    }
+
+    /**
+     * Set the filter factory that is used to decorate {@link PartitionedRedisClient} created by this builder.
+     * <p>
+     * Note this method will be used to decorate the result of {@link #build(ExecutionContext, Publisher)} before it is
+     * returned to the user.
+     * @param partitionedClientFilterFactory {@link Function} to filter the used {@link PartitionedRedisClient}.
+     * @return {@code this}.
+     */
+    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> setPartitionedClientFilterFactory(
+            Function<PartitionedRedisClient, PartitionedRedisClient> partitionedClientFilterFactory) {
+        this.partitionedClientFilterFactory = requireNonNull(partitionedClientFilterFactory);
         return this;
     }
 
@@ -242,10 +257,10 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
     protected PartitionedRedisClient build(ExecutionContext executionContext,
               Publisher<PartitionedEvent<ResolvedAddress>> addressEventStream,
               Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFactory) {
-        return new DefaultPartitionedRedisClient<>(executionContext, addressEventStream, clientFilterFunction,
-                config, connectionFilterFunction, loadBalancerFactory,
+        return partitionedClientFilterFactory.apply(new DefaultPartitionedRedisClient<>(executionContext,
+                addressEventStream, clientFilterFactory, config, connectionFilterFactory, loadBalancerFactory,
                 requireNonNull(redisPartitionAttributesBuilderFactory),
-                partitionMapFactory.newPartitionMap(Partition::new), serviceDiscoveryMaxQueueSize);
+                partitionMapFactory.newPartitionMap(Partition::new), serviceDiscoveryMaxQueueSize));
     }
 
     private static final class DefaultPartitionedRedisClient<ResolvedAddress> extends PartitionedRedisClient {

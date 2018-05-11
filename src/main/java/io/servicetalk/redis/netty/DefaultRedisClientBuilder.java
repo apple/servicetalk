@@ -49,13 +49,14 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
         implements RedisClientBuilder<ResolvedAddress, Event<ResolvedAddress>> {
 
     public static final Function<RedisConnection, RedisConnection> SELECTOR_FOR_REQUEST =
-            conn -> ((LoadBalancedRedisConnection) conn).reserveForRequest() ? conn : null;
+            conn -> ((LoadBalancedRedisConnection) conn).tryRequest() ? conn : null;
     public static final Function<RedisConnection, RedisConnection> SELECTOR_FOR_RESERVE =
             conn -> ((LoadBalancedRedisConnection) conn).tryReserve() ? conn : null;
 
     private final LoadBalancerFactory<ResolvedAddress, RedisConnection> loadBalancerFactory;
     private final RedisClientConfig config;
-    private Function<RedisConnection, RedisConnection> connectionFilterFunction = identity();
+    private Function<RedisConnection, RedisConnection> connectionFilterFactory = identity();
+    private Function<RedisClient, RedisClient> clientFilterFactory = identity();
 
     /**
      * Create a new instance.
@@ -155,23 +156,39 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
     }
 
     /**
-     * Defines a filter {@link Function} to decorate {@link RedisConnection} created by this builder.
+     * Set the {@link Function} which is used as a factory to filter/decorate {@link RedisConnection} created by this
+     * builder.
      * <p>
      * Filtering allows you to wrap a {@link RedisConnection} and modify behavior during request/response processing.
      * Some potential candidates for filtering include logging, metrics, and decorating responses.
      * @param connectionFilterFunction {@link Function} to decorate a {@link RedisConnection} for the purpose of filtering.
      * @return {@code this}.
      */
-    public DefaultRedisClientBuilder<ResolvedAddress> setConnectionFilterFactory(Function<RedisConnection, RedisConnection> connectionFilterFunction) {
-        this.connectionFilterFunction = requireNonNull(connectionFilterFunction);
+    public DefaultRedisClientBuilder<ResolvedAddress> setConnectionFilterFactory(
+            Function<RedisConnection, RedisConnection> connectionFilterFunction) {
+        this.connectionFilterFactory = requireNonNull(connectionFilterFunction);
+        return this;
+    }
+
+    /**
+     * Set the filter factory that is used to decorate {@link RedisClient} created by this builder.
+     * <p>
+     * Note this method will be used to decorate the result of {@link #build(ExecutionContext, Publisher)} before it is
+     * returned to the user.
+     * @param clientFilterFactory {@link Function} to decorate a {@link RedisClient} for the purpose of filtering
+     * @return {@code this}
+     */
+    public DefaultRedisClientBuilder<ResolvedAddress> setClientFilterFactory(
+            Function<RedisClient, RedisClient> clientFilterFactory) {
+        this.clientFilterFactory = requireNonNull(clientFilterFactory);
         return this;
     }
 
     @Override
     public RedisClient build(ExecutionContext executionContext,
                              Publisher<Event<ResolvedAddress>> addressEventStream) {
-        return new DefaultRedisClient<>(executionContext, config.asReadOnly(), addressEventStream,
-                connectionFilterFunction, loadBalancerFactory);
+        return clientFilterFactory.apply(new DefaultRedisClient<>(executionContext, config.asReadOnly(),
+                addressEventStream, connectionFilterFactory, loadBalancerFactory));
     }
 
     static final class DefaultRedisClient<ResolvedAddress, EventType extends Event<ResolvedAddress>>
@@ -186,10 +203,10 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
                            LoadBalancerFactory<ResolvedAddress, RedisConnection> loadBalancerFactory) {
             this.executionContext = requireNonNull(executionContext);
             final Publisher<EventType> multicastAddressEventStream = addressEventStream.multicast(2);
-            DefaultRedisConnectionFactory<ResolvedAddress> subscribeFactory =
-                    new DefaultRedisConnectionFactory<>(roConfig, executionContext, true, connectionFilter);
-            DefaultRedisConnectionFactory<ResolvedAddress> pipelineFactory =
-                    new DefaultRedisConnectionFactory<>(roConfig, executionContext, false, connectionFilter);
+            AbstractLBRedisConnectionFactory<ResolvedAddress> subscribeFactory =
+                    new SubscribedLBRedisConnectionFactory<>(roConfig, executionContext, connectionFilter);
+            AbstractLBRedisConnectionFactory<ResolvedAddress> pipelineFactory =
+                    new PipelinedLBRedisConnectionFactory<>(roConfig, executionContext, connectionFilter);
             subscribeLb = loadBalancerFactory.newLoadBalancer(multicastAddressEventStream, subscribeFactory);
             pipelineLb = loadBalancerFactory.newLoadBalancer(multicastAddressEventStream, pipelineFactory);
         }
@@ -225,10 +242,7 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
         }
 
         private LoadBalancer<RedisConnection> getLbForCommand(RedisProtocolSupport.Command cmd) {
-            if (isSubscribeModeCommand(cmd)) {
-                return subscribeLb;
-            }
-            return pipelineLb;
+            return isSubscribeModeCommand(cmd) ? subscribeLb : pipelineLb;
         }
     }
 }

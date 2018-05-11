@@ -20,21 +20,13 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.api.RedisConnection;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.Function;
 
-import static io.servicetalk.redis.netty.DefaultRedisConnectionBuilder.buildForPipelined;
-import static io.servicetalk.redis.netty.DefaultRedisConnectionBuilder.buildForSubscribe;
-import static java.util.Objects.requireNonNull;
-
-final class DefaultRedisConnectionFactory<ResolvedAddress>
+abstract class AbstractLBRedisConnectionFactory<ResolvedAddress>
         implements ConnectionFactory<ResolvedAddress, LoadBalancedRedisConnection> {
 
     private final CompletableProcessor onClose = new CompletableProcessor();
-    private final ReadOnlyRedisClientConfig config;
-    private final ExecutionContext executionContext;
-    private final boolean forSubscribe;
     private final Function<RedisConnection, RedisConnection> connectionFilterFactory;
     private final Completable closeAsync = new Completable() {
         @Override
@@ -44,33 +36,25 @@ final class DefaultRedisConnectionFactory<ResolvedAddress>
         }
     };
 
-    DefaultRedisConnectionFactory(ReadOnlyRedisClientConfig config, ExecutionContext executionContext,
-                                  boolean forSubscribe,
-                                  Function<RedisConnection, RedisConnection> connectionFilterFactory) {
-        this.config = config;
-        this.executionContext = executionContext;
-        this.forSubscribe = forSubscribe;
+    AbstractLBRedisConnectionFactory(Function<RedisConnection, RedisConnection> connectionFilterFactory) {
         this.connectionFilterFactory = connectionFilterFactory;
     }
 
-    @Override
-    public Single<LoadBalancedRedisConnection> newConnection(ResolvedAddress address) {
-        return (forSubscribe ? buildForSubscribe(executionContext, address, config)
-                : buildForPipelined(executionContext, address, config))
-                .map(this::newConnection);
-    }
+    abstract Single<LoadBalancedRedisConnection> newConnection(ResolvedAddress resolvedAddress,
+                                           Function<RedisConnection, RedisConnection> connectionFilterFactory);
 
-    private LoadBalancedRedisConnection newConnection(RedisConnection conn) {
-        return new LoadBalancedRedisConnection(requireNonNull(connectionFilterFactory.apply(conn)));
+    @Override
+    public final Single<LoadBalancedRedisConnection> newConnection(ResolvedAddress address) {
+        return newConnection(address, connectionFilterFactory);
     }
 
     @Override
-    public Completable onClose() {
+    public final Completable onClose() {
         return onClose;
     }
 
     @Override
-    public Completable closeAsync() {
+    public final Completable closeAsync() {
         return closeAsync;
     }
 }

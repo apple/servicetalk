@@ -26,17 +26,20 @@ import io.servicetalk.tcp.netty.internal.TcpConnector;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
+import io.servicetalk.transport.netty.internal.Connection;
 
 import io.netty.buffer.ByteBuf;
 
 import java.io.InputStream;
 import java.net.SocketOption;
 import java.time.Duration;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.redis.netty.InternalSubscribedRedisConnection.newSubscribedConnection;
 import static io.servicetalk.redis.netty.PipelinedRedisConnection.newPipelinedConnection;
 import static java.util.Objects.requireNonNull;
+import static java.util.function.Function.identity;
 
 /**
  * A builder for instances of {@link RedisConnection}.
@@ -45,6 +48,7 @@ import static java.util.Objects.requireNonNull;
  */
 public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements RedisConnectionBuilder<ResolvedAddress> {
     private final RedisClientConfig config;
+    private Function<RedisConnection, RedisConnection> connectionFilterFactory = identity();
     private final boolean forSubscribe;
 
     private DefaultRedisConnectionBuilder(boolean forSubscribe) {
@@ -136,6 +140,21 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
     }
 
     /**
+     * Set the filter factory that is used to decorate {@link RedisConnection} created by this builder.
+     * <p>
+     * Note this method will be used to decorate the result of {@link #build(ExecutionContext, Object)} before it is
+     * returned to the user.
+     * @param connectionFilterFactory {@link Function} to decorate a {@link RedisConnection} for the purpose of
+     * filtering
+     * @return {@code this}
+     */
+    public DefaultRedisConnectionBuilder<ResolvedAddress> setConnectionFilterFactory(
+            Function<RedisConnection, RedisConnection> connectionFilterFactory) {
+        this.connectionFilterFactory = requireNonNull(connectionFilterFactory);
+        return this;
+    }
+
+    /**
      * Creates a new {@link DefaultRedisConnectionBuilder} to build connections only for
      * <a href="https://redis.io/topics/pubsub">Redis Subscribe mode</a>.
      *
@@ -178,34 +197,43 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
     public Single<RedisConnection> build(final ExecutionContext executionContext,
                                          final ResolvedAddress resolvedAddress) {
         final ReadOnlyRedisClientConfig roConfig = config.asReadOnly();
-        return (forSubscribe ? buildForSubscribe(executionContext, resolvedAddress, roConfig)
-                : buildForPipelined(executionContext, resolvedAddress, roConfig))
-                .map(connection -> new MaxPendingRequestsEnforcingRedisConnection(connection,
-                        roConfig.getMaxPipelinedRequests()));
+        // ConcurrencyFilter -> User Filters -> IdleReaper -> Connection
+        return forSubscribe ?
+                buildForSubscribe(executionContext, resolvedAddress, roConfig, connectionFilterFactory)
+                        .map(RedisSubscribedConcurrencyLimitingFilter::new) :
+                buildForPipelined(executionContext, resolvedAddress, roConfig, connectionFilterFactory)
+                        .map(filteredConnection -> new RedisConnectionConcurrentRequestsFilter(filteredConnection,
+                                roConfig.getMaxPipelinedRequests()));
     }
 
     static <ResolvedAddress> Single<RedisConnection> buildForSubscribe(ExecutionContext executionContext,
                                                                        ResolvedAddress resolvedAddress,
-                                                                       ReadOnlyRedisClientConfig roConfig) {
-        return new Single<RedisConnection>() {
-            @Override
-            protected void handleSubscribe(final Subscriber<? super RedisConnection> subscriber) {
-                final ReadOnlyTcpClientConfig roTcpConfig = roConfig.getTcpClientConfig();
-                final ChannelInitializer initializer = new TcpClientChannelInitializer(roTcpConfig)
-                        .andThen(new RedisClientChannelInitializer());
-
-                final TcpConnector<RedisData, ByteBuf> connector =
-                        new TcpConnector<>(roTcpConfig, initializer, () -> o -> false);
-                connector.connect(executionContext, resolvedAddress)
-                        .map(conn -> addFilters(newSubscribedConnection(conn, executionContext, roConfig), roConfig))
-                        .subscribe(subscriber);
-            }
-        };
+                                                                       ReadOnlyRedisClientConfig roConfig,
+                                               Function<RedisConnection, RedisConnection> connectionFilterFactory) {
+        return roConfig.getIdleConnectionTimeout() == null ? build(executionContext, resolvedAddress, roConfig, conn ->
+                connectionFilterFactory.apply(newSubscribedConnection(conn, executionContext, roConfig))) :
+                // User Filters -> IdleReaper -> Connection
+                build(executionContext, resolvedAddress, roConfig, conn -> connectionFilterFactory.apply(
+                        new RedisIdleConnectionReaper(roConfig.getIdleConnectionTimeout()).apply(
+                                newSubscribedConnection(conn, executionContext, roConfig))));
     }
 
     static <ResolvedAddress> Single<RedisConnection> buildForPipelined(ExecutionContext executionContext,
                                                                        ResolvedAddress resolvedAddress,
-                                                                       ReadOnlyRedisClientConfig roConfig) {
+                                                                       ReadOnlyRedisClientConfig roConfig,
+                                               Function<RedisConnection, RedisConnection> connectionFilterFactory) {
+        return roConfig.getIdleConnectionTimeout() == null ? build(executionContext, resolvedAddress, roConfig, conn ->
+                connectionFilterFactory.apply(newPipelinedConnection(conn, executionContext, roConfig))) :
+                // User Filters -> IdleReaper -> Connection
+                build(executionContext, resolvedAddress, roConfig, conn -> connectionFilterFactory.apply(
+                        new RedisIdleConnectionReaper(roConfig.getIdleConnectionTimeout()).apply(
+                                newPipelinedConnection(conn, executionContext, roConfig))));
+    }
+
+    private static <ResolvedAddress> Single<RedisConnection> build(ExecutionContext executionContext,
+                                                 ResolvedAddress resolvedAddress,
+                                                 ReadOnlyRedisClientConfig roConfig,
+                                   Function<Connection<RedisData, ByteBuf>, RedisConnection> mapper) {
         return new Single<RedisConnection>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super RedisConnection> subscriber) {
@@ -215,15 +243,8 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
 
                 final TcpConnector<RedisData, ByteBuf> connector =
                         new TcpConnector<>(roTcpConfig, initializer, () -> o -> false);
-                connector.connect(executionContext, resolvedAddress)
-                        .map(conn -> addFilters(newPipelinedConnection(conn, executionContext, roConfig), roConfig))
-                        .subscribe(subscriber);
+                connector.connect(executionContext, resolvedAddress).map(mapper).subscribe(subscriber);
             }
         };
-    }
-
-    private static RedisConnection addFilters(final RedisConnection connection, ReadOnlyRedisClientConfig roConfig) {
-        return roConfig.getIdleConnectionTimeout() == null ? connection :
-                new RedisIdleConnectionReaper(roConfig.getIdleConnectionTimeout()).apply(connection);
     }
 }
