@@ -16,12 +16,11 @@
 package io.servicetalk.client.api;
 
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
 import java.net.SocketAddress;
 import java.util.function.Function;
-
-import static java.util.function.Function.identity;
 
 /**
  * Given multiple {@link SocketAddress}es select the most desired {@link SocketAddress} to use. This is typically used
@@ -41,11 +40,9 @@ public interface LoadBalancer<C extends ListenableAsyncCloseable> extends Listen
     <CC extends C> Single<CC> selectConnection(Function<C, CC> selector);
 
     /**
-     * A connection selector with no custom selector as {@link #selectConnection(Function)}.
-     *
-     * @return a {@link Single} that completes with the most appropriate connection to use.
+     * A {@link Publisher} of events provided by this {@link LoadBalancer}. This maybe used to broadcast internal state
+     * of this {@link LoadBalancer} to provide hints/visibility for external usage.
+     * @return A {@link Publisher} of events provided by this {@link LoadBalancer}.
      */
-    default Single<C> selectConnection() {
-        return selectConnection(identity());
-    }
+    Publisher<Object> getEventStream();
 }
