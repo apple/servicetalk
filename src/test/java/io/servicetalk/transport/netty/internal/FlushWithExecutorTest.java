@@ -17,6 +17,7 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.Publisher;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,6 +36,7 @@ import static io.servicetalk.transport.netty.internal.FlushStrategyAndVerifier.f
 import static io.servicetalk.transport.netty.internal.FlushStrategyAndVerifier.flushOnEach;
 import static io.servicetalk.transport.netty.internal.FlushStrategyAndVerifier.flushOnReadComplete;
 
+@Ignore("TODO: Re-enable once we can create an offloading Publisher")
 @RunWith(Parameterized.class)
 public class FlushWithExecutorTest extends AbstractFlushTest {
 

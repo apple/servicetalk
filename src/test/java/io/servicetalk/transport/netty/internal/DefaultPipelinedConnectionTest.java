@@ -108,7 +108,7 @@ public class DefaultPipelinedConnectionTest {
 
     @Test
     public void testPublisherWrite() {
-        readSubscriber.subscribe(requester.request(just(1, immediate()), defaultFlushStrategy())).request(1);
+        readSubscriber.subscribe(requester.request(just(1), defaultFlushStrategy())).request(1);
         readPublisher.onComplete();
         readSubscriber.verifySuccess();
     }

@@ -36,7 +36,6 @@ import java.util.concurrent.CompletableFuture;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.transport.api.FlushStrategy.defaultFlushStrategy;
@@ -80,16 +79,15 @@ public class NettyConnectionTest {
         context = mock(ConnectionContext.class);
         when(context.closeAsync()).thenReturn(new NettyFutureCompletable(channel::close));
         when(context.getExecutionContext()).thenReturn(executionContext);
-        when(executionContext.getExecutor()).thenReturn(immediate());
         requestNSupplier = mock(Connection.RequestNSupplier.class);
         when(requestNSupplier.getRequestNFor(anyLong())).then(invocation1 -> (long) requestNext);
-        conn = new NettyConnection<>(channel, context, empty(immediate()), new Connection.TerminalPredicate<>(o -> false));
+        conn = new NettyConnection<>(channel, context, empty(), new Connection.TerminalPredicate<>(o -> false));
         publisher = new TestPublisher<Buffer>().sendOnSubscribe();
     }
 
     @Test
     public void testWritePublisher() {
-        writeListener.listen(conn.write(from(immediate(), newBuffer("Hello1"), newBuffer("Hello2")), defaultFlushStrategy()))
+        writeListener.listen(conn.write(from(newBuffer("Hello1"), newBuffer("Hello2")), defaultFlushStrategy()))
                 .verifyCompletion();
         pollChannelAndVerifyWrites("Hello1", "Hello2");
     }
@@ -115,26 +113,26 @@ public class NettyConnectionTest {
 
     @Test
     public void testConcurrentWritePubAndPub() {
-        writeListener.listen(conn.write(Publisher.never(immediate()), defaultFlushStrategy())).verifyNoEmissions();
-        secondWriteListener.listen(conn.write(Publisher.never(immediate()), defaultFlushStrategy())).verifyFailure(IllegalStateException.class);
+        writeListener.listen(conn.write(Publisher.never(), defaultFlushStrategy())).verifyNoEmissions();
+        secondWriteListener.listen(conn.write(Publisher.never(), defaultFlushStrategy())).verifyFailure(IllegalStateException.class);
     }
 
     @Test
     public void testConcurrentWritePubAndSingle() {
-        writeListener.listen(conn.write(Publisher.never(immediate()), defaultFlushStrategy())).verifyNoEmissions();
+        writeListener.listen(conn.write(Publisher.never(), defaultFlushStrategy())).verifyNoEmissions();
         secondWriteListener.listen(conn.writeAndFlush(Single.never())).verifyFailure(IllegalStateException.class);
     }
 
     @Test
     public void testConcurrentWritePubAndItem() {
-        writeListener.listen(conn.write(Publisher.never(immediate()), defaultFlushStrategy())).verifyNoEmissions();
+        writeListener.listen(conn.write(Publisher.never(), defaultFlushStrategy())).verifyNoEmissions();
         secondWriteListener.listen(conn.writeAndFlush(newBuffer("Hello"))).verifyFailure(IllegalStateException.class);
     }
 
     @Test
     public void testConcurrentWriteSingleAndPub() {
         writeListener.listen(conn.writeAndFlush(Single.never())).verifyNoEmissions();
-        secondWriteListener.listen(conn.write(Publisher.never(immediate()), defaultFlushStrategy())).verifyFailure(IllegalStateException.class);
+        secondWriteListener.listen(conn.write(Publisher.never(), defaultFlushStrategy())).verifyFailure(IllegalStateException.class);
     }
 
     @Test
@@ -243,7 +241,7 @@ public class NettyConnectionTest {
 
     @Test
     public void testPublisherErrorFailsWrite() {
-        writeListener.listen(conn.write(Publisher.error(DELIBERATE_EXCEPTION, immediate()), defaultFlushStrategy()))
+        writeListener.listen(conn.write(Publisher.error(DELIBERATE_EXCEPTION), defaultFlushStrategy()))
                 .verifyFailure(DELIBERATE_EXCEPTION);
     }
 

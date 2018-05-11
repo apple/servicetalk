@@ -18,6 +18,7 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.FlushStrategyHolder;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,6 +38,7 @@ import static io.servicetalk.transport.netty.internal.FlushStrategyAndVerifier.f
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
+@Ignore("TODO: Re-enable once we can create an offloading Publisher")
 @RunWith(Parameterized.class)
 public class FlushStrategiesWithExecutorTest {
 

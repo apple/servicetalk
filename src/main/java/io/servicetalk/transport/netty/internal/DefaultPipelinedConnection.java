@@ -133,7 +133,7 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
     }
 
     private Publisher<Resp> writeOrQueue(Completable completable, @Nullable Supplier<Predicate<Resp>> terminalMsgPredicateSupplier) {
-        return new Publisher<Resp>(getExecutor()) {
+        return new Publisher<Resp>() {
             @Override
             protected void handleSubscribe(Subscriber<? super Resp> subscriber) {
                 writeOrQueueRequest(completable, terminalMsgPredicateSupplier == null ? null : terminalMsgPredicateSupplier.get())

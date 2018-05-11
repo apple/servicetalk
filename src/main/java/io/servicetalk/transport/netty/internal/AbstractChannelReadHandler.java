@@ -76,7 +76,7 @@ public abstract class AbstractChannelReadHandler<T> extends ChannelInboundHandle
     }
 
     private void createPublisher(ChannelHandlerContext ctx) {
-        publisher = new NettyChannelPublisher<>(ctx.channel(), executor, isTerminal);
+        publisher = new NettyChannelPublisher<>(ctx.channel(), isTerminal);
         onPublisherCreation(ctx, publisher);
     }
 

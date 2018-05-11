@@ -15,7 +15,6 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
@@ -58,8 +57,7 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
     private final EventLoop eventLoop;
     private final Predicate<T> isLastElement;
 
-    NettyChannelPublisher(Channel channel, Executor executor, Predicate<T> isLastElement) {
-        super(executor);
+    NettyChannelPublisher(Channel channel, Predicate<T> isLastElement) {
         this.eventLoop = channel.eventLoop();
         this.isLastElement = requireNonNull(isLastElement);
         this.channel = channel;
