@@ -24,6 +24,8 @@ import org.reactivestreams.Subscription;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Completable.completed;
+
 /**
  * Designed to listen for {@link LoadBalancerReadyEvent}s and provide notification when a {@link LoadBalancerReadyEvent}
  * returns {@code true} from {@link LoadBalancerReadyEvent#isReady()}.
@@ -39,9 +41,9 @@ public final class LoadBalancerReadySubscriber implements Subscriber<Object> {
      * from {@link LoadBalancerReadyEvent#isReady()}, or {@code null} if this event has already been seen and a
      * a {@link LoadBalancerReadyEvent} that returns {@code true} has not been seend.
      */
-    @Nullable
     public Completable onHostsAvailable() {
-        return onHostsAvailable;
+        CompletableProcessor onHostsAvailable = this.onHostsAvailable;
+        return onHostsAvailable == null ? completed() : onHostsAvailable;
     }
 
     @Override
