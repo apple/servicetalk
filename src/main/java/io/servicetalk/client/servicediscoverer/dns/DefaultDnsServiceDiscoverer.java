@@ -52,6 +52,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.client.internal.ServiceDiscovererUtils.calculateDifference;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.api.Publisher.error;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChannel;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
@@ -234,13 +235,12 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
         final DiscoverEntry entry;
         if (nettyIoExecutor.isCurrentThreadEventLoop()) {
             if (closed) {
-                return Publisher.error(new IllegalStateException(DefaultDnsServiceDiscoverer.class.getSimpleName() + " closed!"),
-                        executor);
+                return error(new IllegalStateException(DefaultDnsServiceDiscoverer.class.getSimpleName() + " closed!"));
             }
-            entry = new DiscoverEntry(address, executor);
+            entry = new DiscoverEntry(address);
             addEntry(entry);
         } else {
-            entry = new DiscoverEntry(address, executor);
+            entry = new DiscoverEntry(address);
             nettyIoExecutor.executeOnEventloop(() -> {
                 if (closed) {
                     entry.completeSubscription();
@@ -364,10 +364,9 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
         final String inetHost;
         final Publisher<Event<InetAddress>> publisher;
 
-        DiscoverEntry(String inetHost, Executor executor) {
-            super(executor);
+        DiscoverEntry(String inetHost) {
             this.inetHost = inetHost;
-            Publisher<Event<InetAddress>> publisher = new Publisher<Event<InetAddress>>(executor) {
+            Publisher<Event<InetAddress>> publisher = new Publisher<Event<InetAddress>>() {
                 @Override
                 protected void handleSubscribe(org.reactivestreams.Subscriber<? super Event<InetAddress>> subscriber) {
                     initializeSubscriber(subscriber);
