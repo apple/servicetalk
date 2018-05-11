@@ -55,7 +55,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
-public class HttpClientInitializationFilterTest {
+public class LoadBalancerReadyHttpClientTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
@@ -114,8 +114,8 @@ public class HttpClientInitializationFilterTest {
     private void verifyOnInitializedFailedFailsAction(Function<HttpClient<String, String>,
             Single<?>> action) throws InterruptedException {
         TestPublisher<Object> loadBalancerPublisher = new TestPublisher<>();
-        HttpClientInitializationFilter<String, String> filter =
-                new HttpClientInitializationFilter<>(1, loadBalancerPublisher, mockClient);
+        LoadBalancerReadyHttpClient<String, String> filter =
+                new LoadBalancerReadyHttpClient<>(1, loadBalancerPublisher, mockClient);
         CountDownLatch latch = new CountDownLatch(2);
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
         action.apply(filter).subscribe(new Subscriber<Object>() {
@@ -147,8 +147,8 @@ public class HttpClientInitializationFilterTest {
 
     private void verifyActionIsDelayedUntilAfterInitialized(Function<HttpClient<String, String>, Single<?>> action)
             throws InterruptedException {
-        HttpClientInitializationFilter<String, String> filter =
-                new HttpClientInitializationFilter<>(1, loadBalancerPublisher.getPublisher(), mockClient);
+        LoadBalancerReadyHttpClient<String, String> filter =
+                new LoadBalancerReadyHttpClient<>(1, loadBalancerPublisher.getPublisher(), mockClient);
         CountDownLatch latch = new CountDownLatch(1);
         action.apply(filter).subscribe(resp -> latch.countDown());
 

@@ -35,6 +35,7 @@ dependencies {
   api "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
   api "io.servicetalk:servicetalk-buffer-api:0.1.0-SNAPSHOT"
   api "io.servicetalk:servicetalk-client-api:0.1.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-client-internal:0.1.0-SNAPSHOT"
   api "io.servicetalk:servicetalk-concurrent-api:0.1.0-SNAPSHOT"
   api "io.servicetalk:servicetalk-transport-api:0.1.0-SNAPSHOT"
 
