@@ -812,6 +812,100 @@ public abstract class AbstractHttpHeadersTest {
         assertFalse(headersItr.hasNext());
     }
 
+    @Test
+    public void removeByNameAndValuePairWhichDoesNotExist() {
+        final HttpHeaders headers = newHeaders();
+        headers.add("name1", "value1");
+        headers.add("name2", asList("value1", "value2"));
+        headers.add("name3", "value1");
+        assertEquals(4, headers.size());
+
+        assertFalse(headers.remove("nameX", "valueX", false));
+        assertFalse(headers.remove("nameX", "valueX", true));
+        assertFalse(headers.remove("nameX", "value1", false));
+        assertFalse(headers.remove("nameX", "value1", true));
+        assertFalse(headers.remove("name1", "valueX", false));
+        assertFalse(headers.remove("name1", "valueX", true));
+        assertNotNull(headers.get("name1"));
+        assertEquals(4, headers.size());
+    }
+
+    @Test
+    public void removeByNameValueAndCase() {
+        final HttpHeaders headers = newHeaders();
+        headers.add("name1", "value1");
+        headers.add("name2", asList("value1", "value2"));
+        headers.add("name3", "value1");
+        headers.add("name4", asList("value1", "Value1", "vAlUe1", "vaLue1", "value1"));
+        assertEquals(9, headers.size());
+
+        assertTrue(headers.remove("name2", "value2"));
+        assertNotNull(headers.get("name2"));
+        assertEquals(8, headers.size());
+
+        assertFalse(headers.remove("name2", "value2"));
+        assertNotNull(headers.get("name2"));
+        assertEquals(8, headers.size());
+
+        assertFalse(headers.remove("name2", "VaLue1"));
+        assertNotNull(headers.get("name2"));
+        assertEquals(8, headers.size());
+
+        assertTrue(headers.remove("name2", "value1"));
+        assertNull(headers.get("name2"));
+        assertEquals(7, headers.size());
+
+        assertFalse(headers.remove("name2", "value1"));
+        assertNull(headers.get("name2"));
+        assertEquals(7, headers.size());
+
+        assertTrue(headers.remove("NaMe1", "value1"));
+        assertNull(headers.get("name1"));
+        assertEquals(6, headers.size());
+
+        assertTrue(headers.remove("name4", "value1"));
+        assertNotNull(headers.get("name4"));
+        assertEquals(4, headers.size());
+    }
+
+    @Test
+    public void removeByNameAndValueCaseInsensitive() {
+        final HttpHeaders headers = newHeaders();
+        headers.add("name1", "value1");
+        headers.add("name2", asList("value1", "value2"));
+        headers.add("name3", "value1");
+        headers.add("name4", asList("value1", "Value1", "vAlUe1", "vaLue1", "value1"));
+        assertEquals(9, headers.size());
+
+        assertTrue(headers.remove("name2", "value2", true));
+        assertNotNull(headers.get("name2"));
+        assertEquals(8, headers.size());
+
+        assertFalse(headers.remove("name2", "value2", true));
+        assertNotNull(headers.get("name2"));
+        assertEquals(8, headers.size());
+
+        assertTrue(headers.remove("name2", "VaLue1", true));
+        assertNull(headers.get("name2"));
+        assertEquals(7, headers.size());
+
+        assertFalse(headers.remove("name2", "value1", true));
+        assertNull(headers.get("name2"));
+        assertEquals(7, headers.size());
+
+        assertTrue(headers.remove("NaMe1", "value1", true));
+        assertNull(headers.get("name1"));
+        assertEquals(6, headers.size());
+
+        assertTrue(headers.remove("NaMe3", "VaLue1", true));
+        assertNull(headers.get("name3"));
+        assertEquals(5, headers.size());
+
+        assertTrue(headers.remove("name4", "value1", true));
+        assertNull(headers.get("name4"));
+        assertTrue(headers.isEmpty());
+    }
+
     @SafeVarargs
     private static <T> void assertIteratorIs(final Iterator<? extends T> iterator, final T... elements) {
         final List<T> list = new ArrayList<>();

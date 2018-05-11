@@ -132,6 +132,16 @@ public final class EmptyHttpHeaders implements HttpHeaders {
     }
 
     @Override
+    public boolean remove(final CharSequence name, final CharSequence value) {
+        return false;
+    }
+
+    @Override
+    public boolean remove(CharSequence name, CharSequence value, boolean caseInsensitive) {
+        return false;
+    }
+
+    @Override
     public HttpHeaders clear() {
         return this;
     }

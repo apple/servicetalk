@@ -182,6 +182,16 @@ final class ReadOnlyHttpHeaders implements HttpHeaders {
     }
 
     @Override
+    public boolean remove(final CharSequence name, final CharSequence value) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean remove(CharSequence name, CharSequence value, boolean caseInsensitive) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public HttpHeaders clear() {
         throw new UnsupportedOperationException();
     }

@@ -572,7 +572,7 @@ abstract class MultiMap<K, V> {
                 throw new IllegalStateException();
             }
             final int i = index(previous.keyHash);
-            removeEntry(MultiMap.this.entries[i], previous, i);
+            removeEntry(entries[i], previous, i);
             previous = null;
         }
 
@@ -636,7 +636,7 @@ abstract class MultiMap<K, V> {
                 throw new IllegalStateException();
             }
             final int i = index(keyHashCode);
-            removeEntry(MultiMap.this.entries[i], previous, i);
+            removeEntry(entries[i], previous, i);
             previous = null;
         }
 
