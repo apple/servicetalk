@@ -16,7 +16,6 @@
 package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.concurrent.Single.Subscriber;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
@@ -38,12 +37,10 @@ import javax.ws.rs.core.SecurityContext;
 
 import static io.servicetalk.http.router.jersey.CharSequenceUtil.ensureNoLeadingSlash;
 import static io.servicetalk.http.router.jersey.Context.CONNECTION_CONTEXT_REF_TYPE;
-import static io.servicetalk.http.router.jersey.Context.EXECUTOR_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.HTTP_REQUEST_REF_TYPE;
-import static io.servicetalk.http.router.jersey.Context.setContextProperties;
+import static io.servicetalk.http.router.jersey.Context.initResponseChunkPublisherRef;
 import static io.servicetalk.http.router.jersey.DummyHttpUtil.getBaseUri;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.util.Objects.requireNonNull;
 import static org.glassfish.jersey.server.internal.ContainerUtils.encodeUnsafeCharacters;
 
 final class DefaultJerseyHttpService extends HttpService<HttpPayloadChunk, HttpPayloadChunk> {
@@ -73,17 +70,14 @@ final class DefaultJerseyHttpService extends HttpService<HttpPayloadChunk, HttpP
     };
 
     private final ApplicationHandler applicationHandler;
-    // TODO will be replaced more granular (per-resource) executors
-    private final Executor executor;
 
-    DefaultJerseyHttpService(final ApplicationHandler applicationHandler, final Executor executor) {
+    DefaultJerseyHttpService(final ApplicationHandler applicationHandler) {
         if (!applicationHandler.getConfiguration().isEnabled(ServiceTalkFeature.class)) {
             throw new IllegalStateException("The " + ServiceTalkFeature.class.getSimpleName()
                     + " needs to be enabled for this application.");
         }
 
         this.applicationHandler = applicationHandler;
-        this.executor = requireNonNull(executor);
     }
 
     @Override
@@ -138,18 +132,16 @@ final class DefaultJerseyHttpService extends HttpService<HttpPayloadChunk, HttpP
         // TODO support optionally configurable queueCapacity
         containerRequest.setEntityStream(new ChunkPublisherInputStream(req.getPayloadBody(), 16));
 
-        final Ref<Publisher<HttpPayloadChunk>> responseChunkPublisherRef =
-                setContextProperties(containerRequest, ctx, executor);
+        final Ref<Publisher<HttpPayloadChunk>> responseChunkPublisherRef = initResponseChunkPublisherRef(containerRequest);
 
         final DefaultContainerResponseWriter responseWriter = new DefaultContainerResponseWriter(containerRequest,
-                req.getVersion(), ctx.getBufferAllocator(), executor, responseChunkPublisherRef, subscriber);
+                req.getVersion(), ctx.getBufferAllocator(), ctx.getExecutor(), responseChunkPublisherRef, subscriber);
 
         containerRequest.setWriter(responseWriter);
 
         containerRequest.setRequestScopedInitializer(injectionManager -> {
             injectionManager.<Ref<ConnectionContext>>getInstance(CONNECTION_CONTEXT_REF_TYPE).set(ctx);
             injectionManager.<Ref<HttpRequest<HttpPayloadChunk>>>getInstance(HTTP_REQUEST_REF_TYPE).set(req);
-            injectionManager.<Ref<Executor>>getInstance(EXECUTOR_REF_TYPE).set(executor);
         });
 
         delayedCancellable.setDelayedCancellable(responseWriter::cancelSuspendedTimer);

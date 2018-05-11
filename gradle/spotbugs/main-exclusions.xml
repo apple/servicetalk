@@ -20,6 +20,7 @@
     <Class name="io.servicetalk.http.router.jersey.PublisherMessageBodyReaderWriter"/>
     <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
     <Or>
+      <Field name="ctx"/>
       <Field name="requestContextProvider"/>
     </Or>
   </Match>

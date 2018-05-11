@@ -15,9 +15,6 @@
  */
 package io.servicetalk.http.router.jersey;
 
-import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
-import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.router.jersey.resources.SynchronousResources;
 
 import org.glassfish.jersey.server.ResourceConfig;
@@ -32,12 +29,9 @@ import javax.ws.rs.core.Application;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.ext.Provider;
 
-import static io.servicetalk.http.api.HttpRequestMethods.GET;
+import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.router.jersey.TestUtil.assertResponse;
-import static io.servicetalk.http.router.jersey.TestUtil.newH11Request;
 import static javax.ws.rs.Priorities.AUTHENTICATION;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 
 public class SecurityFilterTest extends AbstractJerseyHttpServiceTest {
@@ -86,10 +80,7 @@ public class SecurityFilterTest extends AbstractJerseyHttpServiceTest {
 
     @Test
     public void defaultSecurityContext() {
-        final HttpRequest<HttpPayloadChunk> req = newH11Request(GET, SynchronousResources.PATH + "/security-context");
-
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
-        assertResponse(res, OK, APPLICATION_JSON,
+        sendAndAssertResponse(get(SynchronousResources.PATH + "/security-context"), OK, APPLICATION_JSON,
                 jsonEquals("{\"authenticationScheme\":\"bar\",\"secure\":true,\"userPrincipal\":{\"name\":\"foo\"}}"),
                 String::length);
     }

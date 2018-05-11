@@ -15,9 +15,7 @@
  */
 package io.servicetalk.http.router.jersey;
 
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.http.router.jersey.Context.ConnectionContextReferencingFactory;
-import io.servicetalk.http.router.jersey.Context.ExecutorReferencingFactory;
 import io.servicetalk.http.router.jersey.Context.HttpRequestReferencingFactory;
 import io.servicetalk.transport.api.ConnectionContext;
 
@@ -28,7 +26,6 @@ import javax.ws.rs.core.Feature;
 import javax.ws.rs.core.FeatureContext;
 
 import static io.servicetalk.http.router.jersey.Context.CONNECTION_CONTEXT_REF_GENERIC_TYPE;
-import static io.servicetalk.http.router.jersey.Context.EXECUTOR_REF_GENERIC_TYPE;
 import static io.servicetalk.http.router.jersey.Context.HTTP_REQUEST_GENERIC_TYPE;
 import static io.servicetalk.http.router.jersey.Context.HTTP_REQUEST_REF_GENERIC_TYPE;
 import static org.glassfish.jersey.internal.inject.ReferencingFactory.referenceFactory;
@@ -52,10 +49,6 @@ public final class ServiceTalkFeature implements Feature {
                 bindFactory(HttpRequestReferencingFactory.class).to(HTTP_REQUEST_GENERIC_TYPE)
                         .proxy(true).proxyForSameScope(false).in(RequestScoped.class);
                 bindFactory(referenceFactory()).to(HTTP_REQUEST_REF_GENERIC_TYPE).in(RequestScoped.class);
-
-                bindFactory(ExecutorReferencingFactory.class).to(Executor.class)
-                        .proxy(true).proxyForSameScope(false).in(RequestScoped.class);
-                bindFactory(referenceFactory()).to(EXECUTOR_REF_GENERIC_TYPE).in(RequestScoped.class);
             }
         });
 

@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.router.jersey;
 
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
@@ -33,8 +32,6 @@ import javax.ws.rs.core.GenericType;
 import static org.glassfish.jersey.internal.util.collection.Refs.emptyRef;
 
 final class Context {
-    private static final String CONNECTION_CONTEXT = ConnectionContext.class.getName();
-    private static final String EXECUTOR = Executor.class.getName();
     private static final String RESPONSE_CHUNK_PUBLISHER_REF = new GenericType<Ref<Publisher<HttpPayloadChunk>>>() {
         // NOOP
     }.getType().toString();
@@ -55,12 +52,6 @@ final class Context {
             new GenericType<HttpRequest<HttpPayloadChunk>>() {
             };
 
-    static final GenericType<Ref<Executor>> EXECUTOR_REF_GENERIC_TYPE =
-            new GenericType<Ref<Executor>>() {
-            };
-
-    static final Type EXECUTOR_REF_TYPE = EXECUTOR_REF_GENERIC_TYPE.getType();
-
     static final class ConnectionContextReferencingFactory extends ReferencingFactory<ConnectionContext> {
         @Inject
         ConnectionContextReferencingFactory(final Provider<Ref<ConnectionContext>> referenceFactory) {
@@ -75,33 +66,14 @@ final class Context {
         }
     }
 
-    static final class ExecutorReferencingFactory extends ReferencingFactory<Executor> {
-        @Inject
-        ExecutorReferencingFactory(final Provider<Ref<Executor>> referenceFactory) {
-            super(referenceFactory);
-        }
-    }
-
     private Context() {
         // no instances
     }
 
-    static Ref<Publisher<HttpPayloadChunk>> setContextProperties(final ContainerRequestContext requestContext,
-                                                                 final ConnectionContext ctx,
-                                                                 final Executor executor) {
+    static Ref<Publisher<HttpPayloadChunk>> initResponseChunkPublisherRef(final ContainerRequestContext requestContext) {
         final Ref<Publisher<HttpPayloadChunk>> responseChunkPublisherRef = emptyRef();
-        requestContext.setProperty(CONNECTION_CONTEXT, ctx);
-        requestContext.setProperty(EXECUTOR, executor);
         requestContext.setProperty(RESPONSE_CHUNK_PUBLISHER_REF, responseChunkPublisherRef);
         return responseChunkPublisherRef;
-    }
-
-    static ConnectionContext getConnectionContext(final ContainerRequestContext requestContext) {
-        return (ConnectionContext) requestContext.getProperty(CONNECTION_CONTEXT);
-    }
-
-    static Executor getExecutor(final ContainerRequestContext requestContext) {
-        return (Executor) requestContext.getProperty(EXECUTOR);
     }
 
     @SuppressWarnings("unchecked")

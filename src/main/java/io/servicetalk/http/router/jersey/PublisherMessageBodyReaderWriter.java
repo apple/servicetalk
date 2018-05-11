@@ -17,6 +17,7 @@ package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.transport.api.ConnectionContext;
 
 import org.glassfish.jersey.message.internal.EntityInputStream;
 
@@ -35,8 +36,6 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
-import static io.servicetalk.http.router.jersey.Context.getConnectionContext;
-import static io.servicetalk.http.router.jersey.Context.getExecutor;
 import static io.servicetalk.http.router.jersey.Context.getResponseChunkPublisherRef;
 import static io.servicetalk.http.router.jersey.DummyInputStreamChunkPublisher.asCloseableChunkPublisher;
 import static org.glassfish.jersey.message.internal.ReaderInterceptorExecutor.closeableInputStream;
@@ -47,6 +46,9 @@ import static org.glassfish.jersey.message.internal.ReaderInterceptorExecutor.cl
  */
 final class PublisherMessageBodyReaderWriter
         implements MessageBodyReader<Publisher<HttpPayloadChunk>>, MessageBodyWriter<Publisher<HttpPayloadChunk>> {
+
+    @Context
+    private ConnectionContext ctx;
 
     @Context
     private Provider<ContainerRequestContext> requestContextProvider;
@@ -77,10 +79,7 @@ final class PublisherMessageBodyReaderWriter
         // The wrappedStream has been replaced with a user stream (via filtering) so we use it to build a new
         // publisher, being careful to return a publisher instance that implements Closeable to prevent Jersey
         // from closing wrappedStream.
-        final ContainerRequestContext requestContext = requestContextProvider.get();
-        return asCloseableChunkPublisher(wrappedStream,
-                getConnectionContext(requestContext).getBufferAllocator(),
-                getExecutor(requestContext));
+        return asCloseableChunkPublisher(wrappedStream, ctx.getBufferAllocator(), ctx.getExecutor());
     }
 
     @Override

@@ -15,9 +15,6 @@
  */
 package io.servicetalk.http.router.jersey;
 
-import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
-import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.router.jersey.resources.AsynchronousResources;
 import io.servicetalk.http.router.jersey.resources.SynchronousResources;
 
@@ -29,76 +26,46 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
-import static io.servicetalk.http.api.HttpRequestMethods.POST;
+import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpResponseStatuses.ACCEPTED;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.router.jersey.TestUtil.assertResponse;
-import static io.servicetalk.http.router.jersey.TestUtil.newH11Request;
 import static java.lang.Character.toUpperCase;
-import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 import static org.hamcrest.Matchers.is;
 
 public abstract class AbstractFilterInterceptorTest extends AbstractJerseyHttpServiceTest {
     @Test
     public void synchronousResource() {
-        HttpRequest<HttpPayloadChunk> req =
-                newH11Request(POST, SynchronousResources.PATH + "/text", ctx.getBufferAllocator().fromUtf8("foo1"));
-        req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
-
-        HttpResponse<HttpPayloadChunk> res = handler.apply(req);
-        assertResponse(res, OK, TEXT_PLAIN, "GOT: FOO1!");
-
-        req = newH11Request(POST, SynchronousResources.PATH + "/text-response", ctx.getBufferAllocator().fromUtf8("foo2"));
-        req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
-        res = handler.apply(req);
-        assertResponse(res, ACCEPTED, TEXT_PLAIN, "GOT: FOO2!");
+        sendAndAssertResponse(post(SynchronousResources.PATH + "/text", "foo1", TEXT_PLAIN),
+                OK, TEXT_PLAIN, "GOT: FOO1!");
+        sendAndAssertResponse(post(SynchronousResources.PATH + "/text-response", "foo2", TEXT_PLAIN),
+                ACCEPTED, TEXT_PLAIN, "GOT: FOO2!");
     }
 
     @Test
     public void publisherResources() {
-        HttpRequest<HttpPayloadChunk> req = newH11Request(POST, SynchronousResources.PATH + "/text-strin-pubout",
-                ctx.getBufferAllocator().fromUtf8("foo1"));
-        req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
-        HttpResponse<HttpPayloadChunk> res = handler.apply(req);
-        assertResponse(res, OK, TEXT_PLAIN, is("GOT: FOO1!"), $ -> null);
+        sendAndAssertResponse(post(SynchronousResources.PATH + "/text-strin-pubout", "foo1", TEXT_PLAIN),
+                OK, TEXT_PLAIN, is("GOT: FOO1!"), $ -> null);
 
-        req = newH11Request(POST, SynchronousResources.PATH + "/text-pubin-strout",
-                ctx.getBufferAllocator().fromUtf8("foo2"));
-        req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
-        res = handler.apply(req);
-        assertResponse(res, OK, TEXT_PLAIN, "GOT: FOO2!");
+        sendAndAssertResponse(post(SynchronousResources.PATH + "/text-pubin-strout", "foo2", TEXT_PLAIN),
+                OK, TEXT_PLAIN, "GOT: FOO2!");
 
-        req = newH11Request(POST, SynchronousResources.PATH + "/text-pubin-pubout",
-                ctx.getBufferAllocator().fromUtf8("foo3"));
-        req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
-        res = handler.apply(req);
-        assertResponse(res, OK, TEXT_PLAIN, is("GOT: FOO3!"), $ -> null);
+        sendAndAssertResponse(post(SynchronousResources.PATH + "/text-pubin-pubout", "foo3", TEXT_PLAIN),
+                OK, TEXT_PLAIN, is("GOT: FOO3!"), $ -> null);
     }
 
     @Test
     public void oioStreamsResource() {
-        final HttpRequest<HttpPayloadChunk> req =
-                newH11Request(POST, SynchronousResources.PATH + "/text-oio-streams",
-                        ctx.getBufferAllocator().fromUtf8("bar"));
-        req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
-
-        final HttpResponse<HttpPayloadChunk> res = handler.apply(req);
-        assertResponse(res, OK, TEXT_PLAIN, "GOT: BAR!");
+        sendAndAssertResponse(post(SynchronousResources.PATH + "/text-oio-streams", "bar", TEXT_PLAIN),
+                OK, TEXT_PLAIN, "GOT: BAR!");
     }
 
     @Test
     public void asynchronousResource() {
-        HttpRequest<HttpPayloadChunk> req =
-                newH11Request(POST, AsynchronousResources.PATH + "/text", ctx.getBufferAllocator().fromUtf8("baz1"));
-        req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
-        HttpResponse<HttpPayloadChunk> res = handler.apply(req);
-        assertResponse(res, OK, TEXT_PLAIN, "GOT: BAZ1!");
+        sendAndAssertResponse(post(AsynchronousResources.PATH + "/text", "baz1", TEXT_PLAIN),
+                OK, TEXT_PLAIN, "GOT: BAZ1!");
 
-        req = newH11Request(POST, AsynchronousResources.PATH + "/text-response", ctx.getBufferAllocator().fromUtf8("baz2"));
-        req.getHeaders().add(CONTENT_TYPE, TEXT_PLAIN);
-        res = handler.apply(req);
-        assertResponse(res, ACCEPTED, TEXT_PLAIN, "GOT: BAZ2!");
+        sendAndAssertResponse(post(AsynchronousResources.PATH + "/text-response", "baz2", TEXT_PLAIN),
+                ACCEPTED, TEXT_PLAIN, "GOT: BAZ2!");
     }
 
     protected static class UpperCaseInputStream extends FilterInputStream {

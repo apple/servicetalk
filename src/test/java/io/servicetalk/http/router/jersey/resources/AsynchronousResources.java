@@ -16,7 +16,6 @@
 package io.servicetalk.http.router.jersey.resources;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.router.jersey.AbstractResourceTest.TestFiltered;
@@ -31,6 +30,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -68,6 +68,7 @@ import static javax.ws.rs.core.Response.Status.CONFLICT;
 import static javax.ws.rs.core.Response.Status.GATEWAY_TIMEOUT;
 import static javax.ws.rs.core.Response.accepted;
 import static javax.ws.rs.core.Response.noContent;
+import static javax.ws.rs.core.Response.ok;
 import static javax.ws.rs.core.Response.status;
 
 /**
@@ -78,7 +79,7 @@ public class AsynchronousResources {
     public static final String PATH = "/async";
 
     @Context
-    private Executor executor;
+    private ConnectionContext ctx;
 
     @Produces(TEXT_PLAIN)
     @Path("/text")
@@ -110,10 +111,10 @@ public class AsynchronousResources {
     @Produces(TEXT_PLAIN)
     @Path("/delayed-text")
     @GET
-    public CompletionStage<String> getDelayedText(@QueryParam("delay") final long delay,
-                                                  @QueryParam("unit") final TimeUnit unit) {
+    public CompletionStage<String> getDelayedText(@Nonnull @QueryParam("delay") final long delay,
+                                                  @Nonnull @QueryParam("unit") final TimeUnit unit) {
         final CompletableFuture<String> cf = new CompletableFuture<>();
-        final Cancellable cancellable = executor.schedule(delay, unit)
+        final Cancellable cancellable = ctx.getExecutor().schedule(delay, unit)
                 .doAfterComplete(() -> cf.complete("DONE"))
                 .subscribe();
 
@@ -122,6 +123,30 @@ public class AsynchronousResources {
                 cancellable.cancel();
             }
         });
+    }
+
+    @Produces(TEXT_PLAIN)
+    @Path("/response-comsta")
+    @GET
+    public Response getResponseCompletionStage(@Context final HttpHeaders headers) {
+        return ok(completedFuture("DONE")).build();
+    }
+
+    @Produces(TEXT_PLAIN)
+    @Path("/delayed-response-comsta")
+    @GET
+    public Response getDelayedResponseCompletionStage(@Nonnull @QueryParam("delay") final long delay,
+                                                      @Nonnull @QueryParam("unit") final TimeUnit unit) {
+        final CompletableFuture<String> cf = new CompletableFuture<>();
+        final Cancellable cancellable = ctx.getExecutor().schedule(delay, unit)
+                .doAfterComplete(() -> cf.complete("DONE"))
+                .subscribe();
+
+        return ok(cf.whenComplete((r, t) -> {
+            if (t instanceof CancellationException) {
+                cancellable.cancel();
+            }
+        })).build();
     }
 
     @Consumes(TEXT_PLAIN)
@@ -149,10 +174,11 @@ public class AsynchronousResources {
     @Produces(TEXT_PLAIN)
     @Path("/text-pub-response")
     @GET
-    public CompletionStage<Response> getTextPubResponse(@QueryParam("i") final int i,
-                                                        final @Context ConnectionContext ctx) {
+    public CompletionStage<Response> getTextPubResponse(@QueryParam("i") final int i) {
         final String contentString = "GOT: " + i;
-        final Publisher<HttpPayloadChunk> responseContent = asChunkPublisher(contentString, ctx.getBufferAllocator());
+        final Publisher<HttpPayloadChunk> responseContent =
+                asChunkPublisher(contentString, ctx.getBufferAllocator(), ctx.getExecutor());
+
         // Wrap content Publisher to capture its generic type (i.e. HttpPayloadChunk)
         final GenericEntity<Publisher<HttpPayloadChunk>> entity = new GenericEntity<Publisher<HttpPayloadChunk>>(responseContent) {
         };
@@ -207,7 +233,7 @@ public class AsynchronousResources {
     @GET
     public void getAsyncResponseTimeoutResume(@Suspended final AsyncResponse ar) {
         ar.setTimeout(1, MINUTES);
-        executor.schedule(10, MILLISECONDS)
+        ctx.getExecutor().schedule(10, MILLISECONDS)
                 .doAfterComplete(() -> ar.resume("DONE"))
                 .subscribe();
     }
@@ -242,6 +268,15 @@ public class AsynchronousResources {
     @GET
     public void getAsyncResponseBusy(@Suspended final AsyncResponse ar) {
         // Neither resume nor cancel -> busy for ever
+    }
+
+    @Produces(APPLICATION_JSON)
+    @Path("/suspended/json")
+    @GET
+    public void getJsonAsyncResponse(@Suspended final AsyncResponse ar) {
+        ctx.getExecutor().schedule(10, MILLISECONDS)
+                .doAfterComplete(() -> ar.resume(singletonMap("foo", "bar3")))
+                .subscribe();
     }
 
     @Produces(SERVER_SENT_EVENTS)
@@ -293,7 +328,7 @@ public class AsynchronousResources {
     }
 
     private void scheduleSseEventSend(final SseEmitter emmitter, final Sse sse, final Ref<Integer> iRef) {
-        executor.schedule(10, MILLISECONDS)
+        ctx.getExecutor().schedule(10, MILLISECONDS)
                 .doAfterComplete(() -> {
                     final int i = iRef.get();
                     emmitter.emit(sse.newEvent("foo" + i)).whenComplete((r, t) -> {
