@@ -35,6 +35,7 @@ dependencies {
   api "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
   api "io.servicetalk:servicetalk-buffer-netty:0.1.0-SNAPSHOT"
   api "io.servicetalk:servicetalk-client-api:0.1.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-client-internal:0.1.0-SNAPSHOT"
   api "io.servicetalk:servicetalk-redis-internal:0.1.0-SNAPSHOT"
   api "org.slf4j:slf4j-api"
 
