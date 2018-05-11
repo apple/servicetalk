@@ -505,7 +505,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
         }
 
         @Override
-        public Single<ReservedRedisConnection> reserveConnection(RedisRequest request) {
+        public Single<? extends ReservedRedisConnection> reserveConnection(RedisRequest request) {
             return Single.error(new UnsupportedOperationException());
         }
 

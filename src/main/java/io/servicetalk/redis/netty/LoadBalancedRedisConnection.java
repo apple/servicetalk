@@ -18,7 +18,7 @@ package io.servicetalk.redis.netty;
 import io.servicetalk.client.internal.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.redis.api.RedisClient;
+import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisRequest;
@@ -27,7 +27,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 import static java.util.Objects.requireNonNull;
 
-final class LoadBalancedRedisConnection extends RedisClient.ReservedRedisConnection
+final class LoadBalancedRedisConnection extends ReservedRedisConnection
         implements ReservableRequestConcurrencyController {
     private final RedisConnection delegate;
     private final ReservableRequestConcurrencyController limiter;
@@ -45,7 +45,7 @@ final class LoadBalancedRedisConnection extends RedisClient.ReservedRedisConnect
 
     @Override
     public Publisher<RedisData> request(RedisRequest request) {
-        return delegate.request(request).doBeforeFinally(this::requestFinished);
+        return delegate.request(request);
     }
 
     @Override

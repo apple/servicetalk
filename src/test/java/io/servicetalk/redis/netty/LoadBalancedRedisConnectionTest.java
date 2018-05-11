@@ -50,6 +50,7 @@ public class LoadBalancedRedisConnectionTest {
                 ReservableRequestConcurrencyControllers.newController(just(1), never(), 1));
         assertTrue(connection.tryRequest());
         awaitIndefinitely(connection.request(newRequest(PING)));
+        connection.requestFinished();
         assertTrue(connection.tryRequest());
         connection.closeAsync().subscribe();
     }

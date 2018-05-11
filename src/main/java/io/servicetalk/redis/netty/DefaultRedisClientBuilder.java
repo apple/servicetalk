@@ -48,10 +48,10 @@ import static java.util.function.Function.identity;
 public final class DefaultRedisClientBuilder<ResolvedAddress>
         implements RedisClientBuilder<ResolvedAddress, Event<ResolvedAddress>> {
 
-    public static final Function<RedisConnection, RedisConnection> SELECTOR_FOR_REQUEST =
-            conn -> ((LoadBalancedRedisConnection) conn).tryRequest() ? conn : null;
-    public static final Function<RedisConnection, RedisConnection> SELECTOR_FOR_RESERVE =
-            conn -> ((LoadBalancedRedisConnection) conn).tryReserve() ? conn : null;
+    public static final Function<LoadBalancedRedisConnection, LoadBalancedRedisConnection> SELECTOR_FOR_REQUEST =
+            conn -> conn.tryRequest() ? conn : null;
+    public static final Function<LoadBalancedRedisConnection, LoadBalancedRedisConnection> SELECTOR_FOR_RESERVE =
+            conn -> conn.tryReserve() ? conn : null;
 
     private final LoadBalancerFactory<ResolvedAddress, RedisConnection> loadBalancerFactory;
     private final RedisClientConfig config;
@@ -194,8 +194,8 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
     static final class DefaultRedisClient<ResolvedAddress, EventType extends Event<ResolvedAddress>>
             extends RedisClient {
         private final ExecutionContext executionContext;
-        private final LoadBalancer<RedisConnection> subscribeLb;
-        private final LoadBalancer<RedisConnection> pipelineLb;
+        private final LoadBalancer<LoadBalancedRedisConnection> subscribeLb;
+        private final LoadBalancer<LoadBalancedRedisConnection> pipelineLb;
 
         DefaultRedisClient(ExecutionContext executionContext, ReadOnlyRedisClientConfig roConfig,
                            Publisher<EventType> addressEventStream,
@@ -207,23 +207,27 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
                     new SubscribedLBRedisConnectionFactory<>(roConfig, executionContext, connectionFilter);
             AbstractLBRedisConnectionFactory<ResolvedAddress> pipelineFactory =
                     new PipelinedLBRedisConnectionFactory<>(roConfig, executionContext, connectionFilter);
-            subscribeLb = loadBalancerFactory.newLoadBalancer(multicastAddressEventStream, subscribeFactory);
-            pipelineLb = loadBalancerFactory.newLoadBalancer(multicastAddressEventStream, pipelineFactory);
+            LoadBalancer<? extends RedisConnection> lbfUntypedForCast =
+                    loadBalancerFactory.newLoadBalancer(multicastAddressEventStream, subscribeFactory);
+            subscribeLb = (LoadBalancer<LoadBalancedRedisConnection>) lbfUntypedForCast;
+            lbfUntypedForCast = loadBalancerFactory.newLoadBalancer(multicastAddressEventStream, pipelineFactory);
+            pipelineLb = (LoadBalancer<LoadBalancedRedisConnection>) lbfUntypedForCast;
         }
 
         @Override
-        public Single<ReservedRedisConnection> reserveConnection(RedisRequest request) {
-            RedisProtocolSupport.Command cmd = request.getCommand();
-            LoadBalancer<RedisConnection> loadBalancer = getLbForCommand(cmd);
-            return loadBalancer.selectConnection(SELECTOR_FOR_RESERVE).map(conn -> (ReservedRedisConnection) conn);
+        public Single<? extends ReservedRedisConnection> reserveConnection(RedisRequest request) {
+            return getLbForCommand(request.getCommand()).selectConnection(SELECTOR_FOR_RESERVE);
         }
 
         @Override
         public Publisher<RedisData> request(RedisRequest request) {
-            RedisProtocolSupport.Command cmd = request.getCommand();
-            LoadBalancer<RedisConnection> loadBalancer = getLbForCommand(cmd);
-            return loadBalancer.selectConnection(SELECTOR_FOR_REQUEST)
-                    .flatMapPublisher(selectedConnection -> selectedConnection.request(request));
+            // We have to do the incrementing/decrementing in the Client instead of LoadBalancedRedisConnection because
+            // it is possible that someone can use the ConnectionFactory exported by this Client before the LoadBalancer
+            // takes ownership of it (e.g. connection initialization) and in that case they will not be following the
+            // LoadBalancer API which this Client depends upon to ensure the concurrent request count state is correct.
+            return getLbForCommand(request.getCommand()).selectConnection(SELECTOR_FOR_REQUEST)
+                    .flatMapPublisher(selectedConnection -> selectedConnection.request(request)
+                            .doBeforeFinally(selectedConnection::requestFinished));
         }
 
         @Override
@@ -241,7 +245,7 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
             return subscribeLb.closeAsync().mergeDelayError(pipelineLb.closeAsync());
         }
 
-        private LoadBalancer<RedisConnection> getLbForCommand(RedisProtocolSupport.Command cmd) {
+        private LoadBalancer<LoadBalancedRedisConnection> getLbForCommand(RedisProtocolSupport.Command cmd) {
             return isSubscribeModeCommand(cmd) ? subscribeLb : pipelineLb;
         }
     }

@@ -81,7 +81,7 @@ public class RedisClientTest extends BaseRedisClientTest {
         assert client != null;
         RedisRequest quit = newRequest(QUIT);
         assertThat(awaitIndefinitely(client.reserveConnection(quit).flatMapPublisher(conn ->
-                conn.request(newRequest(QUIT)).doAfterFinally(conn::releaseAsync))), contains(redisSimpleString("OK")));
+                conn.request(newRequest(QUIT)).doAfterFinally(() -> conn.releaseAsync()))), contains(redisSimpleString("OK")));
     }
 
     @Test
@@ -209,7 +209,7 @@ public class RedisClientTest extends BaseRedisClientTest {
         final AtomicBoolean closeCalled = new AtomicBoolean();
         RedisClient filteredClient = new RedisClient() {
             @Override
-            public Single<ReservedRedisConnection> reserveConnection(RedisRequest request) {
+            public Single<? extends ReservedRedisConnection> reserveConnection(RedisRequest request) {
                 return delegate.reserveConnection(request);
             }
 
