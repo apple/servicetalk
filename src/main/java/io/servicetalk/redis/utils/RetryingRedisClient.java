@@ -74,7 +74,7 @@ public final class RetryingRedisClient extends DelegatingRedisClient {
     }
 
     @Override
-    public Single<ReservedRedisConnection> reserveConnection(final RedisRequest request) {
+    public Single<? extends ReservedRedisConnection> reserveConnection(final RedisRequest request) {
         return super.reserveConnection(request).retryWhen((i, t) -> retryStrategy.apply(i, t, request));
     }
 }

@@ -42,7 +42,7 @@ public abstract class DelegatingRedisClient extends RedisClient {
     }
 
     @Override
-    public Single<ReservedRedisConnection> reserveConnection(final RedisRequest request) {
+    public Single<? extends ReservedRedisConnection> reserveConnection(final RedisRequest request) {
         return wrapped.reserveConnection(request);
     }
 
