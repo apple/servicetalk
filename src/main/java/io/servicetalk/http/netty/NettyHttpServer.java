@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMetaData;
@@ -55,7 +56,6 @@ import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.EmptyHttpHeaders.INSTANCE;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpPayloadChunks.newLastPayloadChunk;
@@ -63,20 +63,37 @@ import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.http.api.HttpResponseStatuses.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponses.newResponse;
 import static io.servicetalk.http.netty.HeaderUtils.addResponseTransferEncodingIfNecessary;
+import static io.servicetalk.http.netty.SpliceFlatStreamToMetaSingle.flatten;
 
 final class NettyHttpServer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NettyHttpServer.class);
-    private static final Predicate<Object> LAST_HTTP_PAYLOAD_CHUNK_PREDICATE = p -> p instanceof LastHttpPayloadChunk;
+    private static final Predicate<Object> LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE =
+            p -> p instanceof LastHttpPayloadChunk;
+    private static final Predicate<HttpPayloadChunk> LAST_HTTP_PAYLOAD_CHUNK_PREDICATE =
+            p -> p instanceof LastHttpPayloadChunk;
 
     private NettyHttpServer() {
         // No instances
     }
 
-    static Single<ServerContext> bind(final ReadOnlyHttpServerConfig config, final SocketAddress address, final ContextFilter contextFilter, final Executor executor, final HttpService<HttpPayloadChunk, HttpPayloadChunk> service) {
+    static Single<ServerContext> bind(final ReadOnlyHttpServerConfig config, final SocketAddress address,
+                                      final ContextFilter contextFilter, final Executor executor,
+                                      final HttpService<HttpPayloadChunk, HttpPayloadChunk> service) {
         final TcpServerInitializer initializer = new TcpServerInitializer(config.getTcpConfig());
 
-        final ChannelInitializer channelInitializer = new TcpServerChannelInitializer(config.getTcpConfig()).andThen((channel, context) -> {
+        final ChannelInitializer channelInitializer = new TcpServerChannelInitializer(config.getTcpConfig())
+                .andThen(getChannelInitializer(config, contextFilter, executor, service));
+
+        // The ServerContext returned by TcpServerInitializer takes care of closing the contextFilter.
+        return initializer.start(address, contextFilter, channelInitializer, false)
+                .map((ServerContext delegate) -> new NettyHttpServerContext(delegate, service, executor));
+    }
+
+    private static ChannelInitializer getChannelInitializer(
+            final ReadOnlyHttpServerConfig config, final ContextFilter contextFilter, final Executor executor,
+            final HttpService<HttpPayloadChunk, HttpPayloadChunk> service) {
+        return (channel, context) -> {
 
             // TODO: Context filtering should be moved somewhere central. Maybe TcpServerInitializer.start?
             final Single<Boolean> filterResultSingle = contextFilter.filter(context);
@@ -110,23 +127,22 @@ final class NettyHttpServer {
             });
 
             return context;
-        });
-
-        // The ServerContext returned by TcpServerInitializer takes care of closing the contextFilter.
-        return initializer.start(address, contextFilter, channelInitializer, false).map(
-                (ServerContext delegate) -> new NettyHttpServerContext(delegate, service, executor));
+        };
     }
 
     private static void handleRejectedConnection(final ConnectionContext context) {
         context.closeAsync().subscribe();
     }
 
-    private static void handleAcceptedConnection(final ReadOnlyHttpServerConfig config, final Executor executor, final HttpService<HttpPayloadChunk, HttpPayloadChunk> service, final Channel channel, final ConnectionContext context) {
+    private static void handleAcceptedConnection(final ReadOnlyHttpServerConfig config, final Executor executor,
+                                                 final HttpService<HttpPayloadChunk, HttpPayloadChunk> service,
+                                                 final Channel channel, final ConnectionContext context) {
         channel.pipeline().addLast(new HttpRequestDecoder(config.getHeadersFactory(),
                 config.getMaxInitialLineLength(), config.getMaxHeaderSize(), config.getMaxChunkSize(), true));
         channel.pipeline().addLast(new HttpResponseEncoder(config.getHeadersEncodedSizeEstimate(),
                 config.getTrailersEncodedSizeEstimate()));
-        channel.pipeline().addLast(new AbstractChannelReadHandler<Object>(LAST_HTTP_PAYLOAD_CHUNK_PREDICATE, executor) {
+        channel.pipeline().addLast(new AbstractChannelReadHandler<Object>(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE,
+                executor) {
             @Override
             protected void onPublisherCreation(final ChannelHandlerContext channelHandlerContext,
                                                final Publisher<Object> requestObjectPublisher) {
@@ -134,56 +150,79 @@ final class NettyHttpServer {
                         channelHandlerContext.channel(),
                         context,
                         requestObjectPublisher,
-                        new TerminalPredicate<>(LAST_HTTP_PAYLOAD_CHUNK_PREDICATE));
+                        new TerminalPredicate<>(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE));
                 final Publisher<Object> connRequestObjectPublisher = conn.read();
-                final Single<HttpRequest<HttpPayloadChunk>> requestSingle = groupRequest(executor, connRequestObjectPublisher);
-                final Single<HttpResponse<HttpPayloadChunk>> responseSingle = handleRequest(service, requestSingle, context);
-                final Publisher<Object> responseObjectPublisher = ungroupResponse(executor, responseSingle);
-                writeResponse(conn, responseObjectPublisher);
+                final Single<HttpRequest<HttpPayloadChunk>> requestSingle =
+                 new SpliceFlatStreamToMetaSingle<HttpRequest<HttpPayloadChunk>, HttpRequestMetaData, HttpPayloadChunk>(
+                                executor, connRequestObjectPublisher,
+                                (hr, pub) -> newRequest(
+                                        hr.getVersion(), hr.getMethod(), hr.getRequestTarget(), pub, hr.getHeaders()));
+                handleRequestAndWriteResponse(executor, service, conn, context, requestSingle).subscribe();
             }
         });
     }
 
-    private static Single<HttpRequest<HttpPayloadChunk>> groupRequest(final Executor executor, final Publisher<Object> requestObjectPublisher) {
-        return new SpliceFlatStreamToMetaSingle<HttpRequest<HttpPayloadChunk>, HttpRequestMetaData, HttpPayloadChunk>(executor, requestObjectPublisher,
-                (hr, pub) -> newRequest(hr.getVersion(), hr.getMethod(), hr.getRequestTarget(), pub, hr.getHeaders()));
+    private static Completable handleRequestAndWriteResponse(
+            final Executor executor, final HttpService<HttpPayloadChunk, HttpPayloadChunk> service,
+            final Connection<Object, Object> conn, final ConnectionContext context,
+            final Single<HttpRequest<HttpPayloadChunk>> requestSingle) {
+        final Publisher<Object> responseObjectPublisher = requestSingle.flatMapPublisher(request -> {
+            final HttpRequestMethod requestMethod = request.getMethod();
+            final Completable drainRequestPayloadBody = request.getPayloadBody().ignoreElements().onErrorResume(
+                    t -> completed()
+                    /* ignore error from SpliceFlatStreamToMetaSingle about duplicate subscriptions. */);
+
+            return handleRequest(service, context, request)
+                    .map(response -> processResponse(requestMethod, drainRequestPayloadBody, response))
+                    .flatMapPublisher(resp -> flatten(executor, resp, HttpResponse::getPayloadBody));
+        });
+        return writeResponse(conn, responseObjectPublisher.repeat(val -> true));
     }
 
-    private static Publisher<Object> ungroupResponse(final Executor executor, final Single<HttpResponse<HttpPayloadChunk>> responseSingle) {
-        final Publisher<Object> responseObjectPublisher = responseSingle.flatMapPublisher(resp -> SpliceFlatStreamToMetaSingle.flatten(executor, resp, HttpResponse::getPayloadBody));
+    private static Single<HttpResponse<HttpPayloadChunk>> handleRequest(
+            final HttpService<HttpPayloadChunk, HttpPayloadChunk> service, final ConnectionContext context,
+            final HttpRequest<HttpPayloadChunk> request) {
+        try {
+            return service.handle(context, request)
+                    .onErrorResume(cause -> newErrorResponse(service, context, cause, request));
+        } catch (final Throwable cause) {
+            return newErrorResponse(service, context, cause, request);
+        }
+    }
+
+    private static HttpResponse<HttpPayloadChunk> processResponse(final HttpRequestMethod requestMethod,
+                                                                  final Completable drainRequestPayloadBody,
+                                                                  final HttpResponse<HttpPayloadChunk> response) {
+        addResponseTransferEncodingIfNecessary(response, requestMethod);
+
+        // When the response payload publisher completes, read any of the request payload that hasn't already
+        // been read. This is necessary for using a persistent connection to send multiple requests.
+        return response.transformPayloadBody(responsePayload -> ensureLastPayloadChunk(responsePayload)
+                .concatWith(drainRequestPayloadBody));
+    }
+
+    private static Publisher<HttpPayloadChunk> ensureLastPayloadChunk(
+            final Publisher<HttpPayloadChunk> responseObjectPublisher) {
         return responseObjectPublisher.liftSynchronous(new EnsureLastItemBeforeCompleteOperator<>(
                 LAST_HTTP_PAYLOAD_CHUNK_PREDICATE,
-                () -> EmptyLastHttpPayloadChunk.INSTANCE)).repeat(val -> true);
+                () -> EmptyLastHttpPayloadChunk.INSTANCE));
     }
 
-    private static Single<HttpResponse<HttpPayloadChunk>> handleRequest(final HttpService<HttpPayloadChunk, HttpPayloadChunk> service, final Single<HttpRequest<HttpPayloadChunk>> requestSingle, final ConnectionContext context) {
-        return requestSingle.flatMap(request -> {
-            final HttpRequestMethod requestMethod = request.getMethod();
-            try {
-                return service.handle(context, request).map(response -> {
-                    addResponseTransferEncodingIfNecessary(response, requestMethod);
-
-                    // When the response payload publisher completes, read any of the request payload that hasn't already
-                    // been read. This is necessary for using a persistent connection to send multiple requests.
-                    return response.transformPayloadBody(responsePayload -> responsePayload.concatWith(request.getPayloadBody().ignoreElements().onErrorResume(
-                            t -> Completable.completed()
-                            /* ignore error from SpliceFlatStreamToMetaSingle about duplicate subscriptions. */)));
-                });
-            } catch (final Throwable cause) {
-                LOGGER.error("internal server error service={} connection={}", service, context, cause);
-                final HttpResponse<HttpPayloadChunk> response = newResponse(request.getVersion(), INTERNAL_SERVER_ERROR,
-                        // Using immediate is OK here because the user will never touch this response and it will
-                        // only be consumed by ServiceTalk at this point.
-                        just(newLastPayloadChunk(EMPTY_BUFFER, INSTANCE), immediate()));
-                response.getHeaders().set(CONTENT_LENGTH, ZERO);
-                return success(response);
-            }
-        });
+    private static Single<HttpResponse<HttpPayloadChunk>> newErrorResponse(
+            final HttpService<HttpPayloadChunk, HttpPayloadChunk> service, final ConnectionContext context,
+            final Throwable cause, final HttpRequest<HttpPayloadChunk> request) {
+        LOGGER.error("internal server error service={} connection={}", service, context, cause);
+        final HttpResponse<HttpPayloadChunk> response = newResponse(request.getVersion(), INTERNAL_SERVER_ERROR,
+                // Using immediate is OK here because the user will never touch this response and it will
+                // only be consumed by ServiceTalk at this point.
+                just(newLastPayloadChunk(EMPTY_BUFFER, EmptyHttpHeaders.INSTANCE), immediate()));
+        response.getHeaders().set(CONTENT_LENGTH, ZERO);
+        return success(response);
     }
 
-    private static void writeResponse(final Connection<Object, Object> conn, final Publisher<Object> responseObjectPublisher) {
-        conn.write(responseObjectPublisher, FlushStrategy.flushOnEach())
-                .subscribe();
+    private static Completable writeResponse(
+            final Connection<Object, Object> conn, final Publisher<Object> responseObjectPublisher) {
+        return conn.write(responseObjectPublisher, FlushStrategy.flushOnEach());
     }
 
     private static final class NettyHttpServerContext implements ServerContext {

@@ -15,23 +15,22 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.Buffer;
+import io.servicetalk.concurrent.api.BlockingIterator;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.DefaultHttpHeadersFactory;
+import io.servicetalk.http.api.EmptyHttpHeaders;
+import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpPayloadChunks;
+import io.servicetalk.http.api.HttpProtocolVersions;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatuses;
-import io.servicetalk.http.api.HttpResponses;
-import io.servicetalk.http.api.HttpService;
-import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.netty.IoThreadFactory;
 import io.servicetalk.transport.netty.NettyIoExecutors;
 
 import org.junit.After;
@@ -40,448 +39,311 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-import java.io.DataInputStream;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.nio.channels.ClosedChannelException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
+import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
+import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
+import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
+import static io.servicetalk.http.api.HttpRequestMethods.GET;
+import static io.servicetalk.http.api.HttpRequests.newRequest;
+import static io.servicetalk.http.api.HttpResponseStatuses.INTERNAL_SERVER_ERROR;
+import static io.servicetalk.http.api.HttpResponseStatuses.NO_CONTENT;
+import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static io.servicetalk.http.netty.TestService.SVC_COUNTER;
+import static io.servicetalk.http.netty.TestService.SVC_COUNTER_NO_LAST_CHUNK;
+import static io.servicetalk.http.netty.TestService.SVC_ECHO;
+import static io.servicetalk.http.netty.TestService.SVC_ERROR_BEFORE_READ;
+import static io.servicetalk.http.netty.TestService.SVC_ERROR_DURING_READ;
+import static io.servicetalk.http.netty.TestService.SVC_NO_CONTENT;
+import static io.servicetalk.http.netty.TestService.SVC_ROT13;
+import static io.servicetalk.http.netty.TestService.SVC_SINGLE_ERROR;
+import static io.servicetalk.http.netty.TestService.SVC_THROW_ERROR;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.util.Objects.requireNonNull;
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-public class NettyHttpServerTest {
+@RunWith(Parameterized.class)
+public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
     @Rule
-    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
+    public final ExpectedException thrown = ExpectedException.none();
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(NettyHttpServerTest.class);
+    private static IoExecutor ioExecutor;
+    private final Executor executor;
 
-    private static final InetAddress loopbackAddress = InetAddress.getLoopbackAddress();
-    private static final InetSocketAddress socketAddress = new InetSocketAddress(loopbackAddress, 0);
-    private static final TestService service = new TestService();
-    private static final Executor executor = Executors.newCachedThreadExecutor();
-    private static final IoExecutor ioExecutor = NettyIoExecutors.createExecutor();
+    private HttpConnection<HttpPayloadChunk, HttpPayloadChunk> httpConnection;
 
-    private static ServerContext serverContext;
-    private static int port;
-
-    private Socket socket;
-    private OutputStream writer;
-    private DataInputStream reader;
-
-    @BeforeClass
-    public static void startServer() throws Exception {
-        serverContext = requireNonNull(awaitIndefinitely(
-                new DefaultHttpServerStarter(ioExecutor)
-                        .start(socketAddress, executor, service)
-                        .doBeforeSuccess(ctx -> LOGGER.info("Server started on {}.", ctx.getListenAddress()))
-                        .doBeforeError(throwable -> LOGGER.error("Failed starting server on {}.", socketAddress))));
-        final InetSocketAddress listenAddress = (InetSocketAddress) serverContext.getListenAddress();
-        port = listenAddress.getPort();
+    public NettyHttpServerTest(final Executor executor) {
+        this.executor = executor;
     }
 
-    @AfterClass
-    public static void stopServer() throws Exception {
-        awaitIndefinitely(serverContext.closeAsync());
-        awaitIndefinitely(ioExecutor.closeAsync());
+    @BeforeClass
+    public static void createClientIoExecutor() {
+        ioExecutor = NettyIoExecutors.createExecutor(2, new IoThreadFactory("client-io-executor"));
+    }
+
+    @Parameters
+    public static Collection<Executor> clientExecutors() {
+        // TODO: Using immediate() here is required until a deadlock in the client is fixed.
+        return Arrays.asList(Executors.immediate()/*,
+                Executors.newCachedThreadExecutor(new DefaultThreadFactory("client-executor", true, NORM_PRIORITY))*/);
     }
 
     @Before
     public void beforeTest() throws Exception {
-        service.counter.set(1);
-
-        socket = new Socket(loopbackAddress, port);
-        writer = socket.getOutputStream();
-        reader = new DataInputStream(socket.getInputStream());
+        httpConnection = awaitIndefinitelyNonNull(new DefaultHttpConnectionBuilder<>()
+                .build(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, executor),
+                        getServerSocketAddress()));
     }
 
     @After
     public void afterTest() throws Exception {
-        socket.close();
+        try {
+            awaitIndefinitely(httpConnection.closeAsync());
+        } finally {
+            awaitIndefinitely(executor.closeAsync());
+        }
+    }
+
+    @AfterClass
+    public static void shutdownClientIoExecutor() throws Exception {
+        awaitIndefinitely(ioExecutor.closeAsync());
+    }
+
+    @Test
+    public void testGetNoRequestPayloadWithoutResponseLastChunk() throws Exception {
+        final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_COUNTER_NO_LAST_CHUNK, executor);
+        final HttpResponse<HttpPayloadChunk> response = makeRequest(request);
+        assertResponse(response, HTTP_1_1, OK, asList("Testing1\n", ""));
     }
 
     @Test
     public void testGetNoRequestPayload() throws Exception {
-        send("GET /counterNoLastChunk HTTP/1.1\r\n\r\n");
-
-        expect("HTTP/1.1 200 OK\r\n");
-        expect("transfer-encoding: chunked\r\n");
-        expect("\r\n");
-        expect("9\r\n");
-        expect("Testing1\n");
-        expect("\r\n");
-        expect("0\r\n");
-        expect("\r\n");
-
-        assertEquals(0, reader.available());
-        assertFalse(socket.isClosed());
-    }
-
-    @Test
-    public void testGetNoRequestPayloadResponseHasLastChunk() throws Exception {
-        send("GET /counter HTTP/1.1\r\n\r\n");
-
-        expect("HTTP/1.1 200 OK\r\n");
-        expect("transfer-encoding: chunked\r\n");
-        expect("\r\n");
-        expect("9\r\n");
-        expect("Testing1\n");
-        expect("\r\n");
-        expect("0\r\n");
-        expect("\r\n");
-
-        assertEquals(0, reader.available());
-        assertFalse(socket.isClosed());
+        final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_COUNTER, executor);
+        final HttpResponse<HttpPayloadChunk> response = makeRequest(request);
+        assertResponse(response, HTTP_1_1, OK, asList("Testing1\n", ""));
     }
 
     @Test
     public void testGetEchoPayloadContentLength() throws Exception {
-        send("GET /echo HTTP/1.1\r\n");
-        send("content-length: 5\r\n");
-        send("\r\n");
-        send("hello");
-
-        expect("HTTP/1.1 200 OK\r\n");
-        expect("content-length: 5\r\n");
-        expect("\r\n");
-        expect("hello");
-
-        assertEquals(0, reader.available());
-        assertFalse(socket.isClosed());
-    }
-
-    @Test
-    public void testGetRot13Payload() throws Exception {
-        send("GET /rot13 HTTP/1.1\r\n");
-        send("content-length: 5\r\n");
-        send("\r\n");
-        send("hello");
-
-        expect("HTTP/1.1 200 OK\r\n");
-        expect("transfer-encoding: chunked\r\n");
-        expect("\r\n");
-        expect("5\r\n");
-        expect("uryyb");
-        expect("\r\n");
-        expect("0\r\n");
-        expect("\r\n");
-
-        assertEquals(0, reader.available());
-        assertFalse(socket.isClosed());
+        final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_ECHO,
+                getChunkPublisherFromStrings("hello"));
+        request.getHeaders().set(CONTENT_LENGTH, "5");
+        final HttpResponse<HttpPayloadChunk> response = makeRequest(request);
+        assertResponse(response, HTTP_1_1, OK, singletonList("hello"));
     }
 
     @Test
     public void testGetEchoPayloadChunked() throws Exception {
-        send("GET /echo HTTP/1.1\r\n");
-        send("transfer-encoding: chunked\r\n");
-        send("\r\n");
-        send("5\r\n");
-        send("hello");
-        send("\r\n");
-        send("0\r\n");
-        send("\r\n");
+        final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_ECHO,
+                getChunkPublisherFromStrings("hello"));
+        request.getHeaders().set(TRANSFER_ENCODING, CHUNKED); // TODO: Eventually, this won't be necessary.
+        final HttpResponse<HttpPayloadChunk> response = makeRequest(request);
+        assertResponse(response, HTTP_1_1, OK, asList("hello", ""));
+    }
 
-        expect("HTTP/1.1 200 OK\r\n");
-        expect("transfer-encoding: chunked\r\n");
-        expect("\r\n");
-        expect("5\r\n");
-        expect("hello");
-        expect("\r\n");
-        expect("0\r\n");
-        expect("\r\n");
-
-        assertEquals(0, reader.available());
-        assertFalse(socket.isClosed());
+    @Test
+    public void testGetRot13Payload() throws Exception {
+        final Publisher<HttpPayloadChunk> payload = getChunkPublisherFromStrings("hello");
+        final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_ROT13, payload);
+        request.getHeaders().set(CONTENT_LENGTH, "5");
+        final HttpResponse<HttpPayloadChunk> response = makeRequest(request);
+        assertResponse(response, HTTP_1_1, OK, asList("uryyb", ""));
     }
 
     @Test
     public void testGetIgnoreRequestPayload() throws Exception {
-        send("GET /counterNoLastChunk HTTP/1.1\r\n");
-        send("transfer-encoding: chunked\r\n");
-        send("\r\n");
-        send("5\r\n");
-        send("hello");
-        send("\r\n");
-        send("0\r\n");
-        send("\r\n");
-
-        expect("HTTP/1.1 200 OK\r\n");
-        expect("transfer-encoding: chunked\r\n");
-        expect("\r\n");
-        expect("9\r\n");
-        expect("Testing1\n");
-        expect("\r\n");
-        expect("0\r\n");
-        expect("\r\n");
-
-        assertEquals(0, reader.available());
-        assertFalse(socket.isClosed());
+        final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_COUNTER,
+                getChunkPublisherFromStrings("hello"));
+        request.getHeaders().set(TRANSFER_ENCODING, CHUNKED); // TODO: Eventually, this won't be necessary.
+        final HttpResponse<HttpPayloadChunk> response = makeRequest(request);
+        assertResponse(response, HTTP_1_1, OK, asList("Testing1\n", ""));
     }
 
     @Test
     public void testGetNoRequestPayloadNoResponsePayload() throws Exception {
-        send("GET /nocontent HTTP/1.1\r\n");
-        send("\r\n");
+        final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_NO_CONTENT, executor);
+        final HttpResponse<HttpPayloadChunk> response = makeRequest(request);
+        assertResponse(response, HTTP_1_1, NO_CONTENT, singletonList(""));
+    }
 
-        expect("HTTP/1.1 204 No Content\r\n");
-        expect("\r\n");
+    @Test
+    public void testMultipleGetsNoRequestPayloadWithoutResponseLastChunk() throws Exception {
+        final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_COUNTER_NO_LAST_CHUNK, executor);
+        final HttpResponse<HttpPayloadChunk> response1 = makeRequest(request1);
+        assertResponse(response1, HTTP_1_1, OK, asList("Testing1\n", ""));
 
-        assertEquals(0, reader.available());
-        assertFalse(socket.isClosed());
+        final HttpRequest<HttpPayloadChunk> request2 = newRequest(GET, SVC_COUNTER_NO_LAST_CHUNK, executor);
+        final HttpResponse<HttpPayloadChunk> response2 = makeRequest(request2);
+        assertResponse(response2, HTTP_1_1, OK, asList("Testing2\n", ""));
     }
 
     @Test
     public void testMultipleGetsNoRequestPayload() throws Exception {
-        send("GET /counterNoLastChunk HTTP/1.1\r\n\r\n");
+        final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_COUNTER, executor);
+        final HttpResponse<HttpPayloadChunk> response1 = makeRequest(request1);
+        assertResponse(response1, HTTP_1_1, OK, asList("Testing1\n", ""));
 
-        expect("HTTP/1.1 200 OK\r\n");
-        expect("transfer-encoding: chunked\r\n");
-        expect("\r\n");
-        expect("9\r\n");
-        expect("Testing1\n");
-        expect("\r\n");
-        expect("0\r\n");
-        expect("\r\n");
-
-        send("GET /counterNoLastChunk HTTP/1.1\r\n\r\n");
-
-        expect("HTTP/1.1 200 OK\r\n");
-        expect("transfer-encoding: chunked\r\n");
-        expect("\r\n");
-        expect("9\r\n");
-        expect("Testing2\n");
-        expect("\r\n");
-        expect("0\r\n");
-        expect("\r\n");
-
-        assertEquals(0, reader.available());
-        assertFalse(socket.isClosed());
-    }
-
-    @Test
-    public void testMultipleGetsNoRequestPayloadResponseHasLastChunk() throws Exception {
-        send("GET /counter HTTP/1.1\r\n\r\n");
-
-        expect("HTTP/1.1 200 OK\r\n");
-        expect("transfer-encoding: chunked\r\n");
-        expect("\r\n");
-        expect("9\r\n");
-        expect("Testing1\n");
-        expect("\r\n");
-        expect("0\r\n");
-        expect("\r\n");
-
-        send("GET /counter HTTP/1.1\r\n\r\n");
-
-        expect("HTTP/1.1 200 OK\r\n");
-        expect("transfer-encoding: chunked\r\n");
-        expect("\r\n");
-        expect("9\r\n");
-        expect("Testing2\n");
-        expect("\r\n");
-        expect("0\r\n");
-        expect("\r\n");
-
-        assertEquals(0, reader.available());
-        assertFalse(socket.isClosed());
+        final HttpRequest<HttpPayloadChunk> request2 = newRequest(GET, SVC_COUNTER, executor);
+        final HttpResponse<HttpPayloadChunk> response2 = makeRequest(request2);
+        assertResponse(response2, HTTP_1_1, OK, asList("Testing2\n", ""));
     }
 
     @Test
     public void testMultipleGetsEchoPayloadContentLength() throws Exception {
-        send("GET /echo HTTP/1.1\r\n");
-        send("content-length: 5\r\n");
-        send("\r\n");
-        send("hello");
+        final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_ECHO,
+                getChunkPublisherFromStrings("hello"));
+        request1.getHeaders().set(CONTENT_LENGTH, "5");
+        final HttpResponse<HttpPayloadChunk> response1 = makeRequest(request1);
+        assertResponse(response1, HTTP_1_1, OK, singletonList("hello"));
 
-        expect("HTTP/1.1 200 OK\r\n");
-        expect("content-length: 5\r\n");
-        expect("\r\n");
-        expect("hello");
-
-        send("GET /echo HTTP/1.1\r\n");
-        send("content-length: 6\r\n");
-        send("\r\n");
-        send("world!");
-
-        expect("HTTP/1.1 200 OK\r\n");
-        expect("content-length: 6\r\n");
-        expect("\r\n");
-        expect("world!");
-
-        assertEquals(0, reader.available());
-        assertFalse(socket.isClosed());
+        final HttpRequest<HttpPayloadChunk> request2 = newRequest(GET, SVC_ECHO,
+                getChunkPublisherFromStrings("hello"));
+        request2.getHeaders().set(CONTENT_LENGTH, "5");
+        final HttpResponse<HttpPayloadChunk> response2 = makeRequest(request2);
+        assertResponse(response2, HTTP_1_1, OK, singletonList("hello"));
     }
 
     @Test
     public void testMultipleGetsEchoPayloadChunked() throws Exception {
-        send("GET /echo HTTP/1.1\r\n");
-        send("transfer-encoding: chunked\r\n");
-        send("\r\n");
-        send("5\r\n");
-        send("hello");
-        send("\r\n");
-        send("0\r\n");
-        send("\r\n");
+        final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_ECHO,
+                getChunkPublisherFromStrings("hello"));
+        request1.getHeaders().set(TRANSFER_ENCODING, CHUNKED); // TODO: Eventually, this won't be necessary.
+        final HttpResponse<HttpPayloadChunk> response1 = makeRequest(request1);
+        assertResponse(response1, HTTP_1_1, OK, asList("hello", ""));
 
-        expect("HTTP/1.1 200 OK\r\n");
-        expect("transfer-encoding: chunked\r\n");
-        expect("\r\n");
-        expect("5\r\n");
-        expect("hello");
-        expect("\r\n");
-        expect("0\r\n");
-        expect("\r\n");
-
-        send("GET /echo HTTP/1.1\r\n");
-        send("transfer-encoding: chunked\r\n");
-        send("\r\n");
-        send("6\r\n");
-        send("world!");
-        send("\r\n");
-        send("0\r\n");
-        send("\r\n");
-
-        expect("HTTP/1.1 200 OK\r\n");
-        expect("transfer-encoding: chunked\r\n");
-        expect("\r\n");
-        expect("6\r\n");
-        expect("world!");
-        expect("\r\n");
-        expect("0\r\n");
-        expect("\r\n");
-
-        assertEquals(0, reader.available());
-        assertFalse(socket.isClosed());
+        final HttpRequest<HttpPayloadChunk> request2 = newRequest(GET, SVC_ECHO,
+                getChunkPublisherFromStrings("hello"));
+        request2.getHeaders().set(TRANSFER_ENCODING, CHUNKED); // TODO: Eventually, this won't be necessary.
+        final HttpResponse<HttpPayloadChunk> response2 = makeRequest(request2);
+        assertResponse(response2, HTTP_1_1, OK, asList("hello", ""));
     }
 
     @Test
     public void testMultipleGetsIgnoreRequestPayload() throws Exception {
-        send("GET /counterNoLastChunk HTTP/1.1\r\n");
-        send("content-length: 5\r\n");
-        send("\r\n");
-        send("hello");
+        final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_COUNTER,
+                getChunkPublisherFromStrings("hello"));
+        request1.getHeaders().set(CONTENT_LENGTH, "5");
+        final HttpResponse<HttpPayloadChunk> response1 = makeRequest(request1);
+        assertResponse(response1, HTTP_1_1, OK, asList("Testing1\n", ""));
 
-        expect("HTTP/1.1 200 OK\r\n");
-        expect("transfer-encoding: chunked\r\n");
-        expect("\r\n");
-        expect("9\r\n");
-        expect("Testing1\n");
-        expect("\r\n");
-        expect("0\r\n");
-        expect("\r\n");
-
-        send("GET /counterNoLastChunk HTTP/1.1\r\n");
-        send("content-length: 6\r\n");
-        send("\r\n");
-        send("world!");
-
-        expect("HTTP/1.1 200 OK\r\n");
-        expect("transfer-encoding: chunked\r\n");
-        expect("\r\n");
-        expect("9\r\n");
-        expect("Testing2\n");
-        expect("\r\n");
-        expect("0\r\n");
-        expect("\r\n");
-
-        assertEquals(0, reader.available());
-        assertFalse(socket.isClosed());
+        final HttpRequest<HttpPayloadChunk> request2 = newRequest(GET, SVC_COUNTER,
+                getChunkPublisherFromStrings("hello"));
+        request2.getHeaders().set(CONTENT_LENGTH, "5");
+        final HttpResponse<HttpPayloadChunk> response2 = makeRequest(request2);
+        assertResponse(response2, HTTP_1_1, OK, asList("Testing2\n", ""));
     }
 
-    private void send(final String text) throws Exception {
-        writer.write(text.getBytes(US_ASCII));
-        writer.flush();
+    @Test
+    public void testSynchronousError() throws Exception {
+        final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_THROW_ERROR, executor);
+        final HttpResponse<HttpPayloadChunk> response = makeRequest(request);
+        assertResponse(response, HTTP_1_1, INTERNAL_SERVER_ERROR, singletonList(""));
+        assertTrue(response.getHeaders().contains(CONTENT_LENGTH, ZERO));
     }
 
-    private void expect(final String expected) throws Exception {
-        final byte[] actualBytes = new byte[expected.length()];
-        reader.readFully(actualBytes);
-        final String actual = new String(actualBytes, US_ASCII);
-        assertEquals(expected, actual);
+    @Test
+    public void testSingleError() throws Exception {
+        final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_SINGLE_ERROR, executor);
+        final HttpResponse<HttpPayloadChunk> response = makeRequest(request);
+        assertResponse(response, HTTP_1_1, INTERNAL_SERVER_ERROR, singletonList(""));
+        assertTrue(response.getHeaders().contains(CONTENT_LENGTH, ZERO));
     }
 
-    private static final class TestService extends HttpService<HttpPayloadChunk, HttpPayloadChunk> {
-        private final AtomicInteger counter = new AtomicInteger(1);
+    @Test
+    public void testErrorBeforeRead() throws Exception {
+        final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_ERROR_BEFORE_READ,
+                getChunkPublisherFromStrings("Goodbye", "cruel", "world!"));
+        request.getHeaders().set(TRANSFER_ENCODING, CHUNKED); // TODO: Eventually, this won't be necessary.
+        final HttpResponse<HttpPayloadChunk> response = makeRequest(request);
 
-        public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext context,
-                                                             final HttpRequest<HttpPayloadChunk> req) {
-            LOGGER.info("({}) Handling {}", counter, req.toString((a, b) -> b));
-            final HttpResponse<HttpPayloadChunk> response;
-            switch (req.getPath()) {
-                case "/echo":
-                    response = newEchoResponse(req);
-                    break;
-                case "/counterNoLastChunk":
-                    response = newTestCounterResponse(context, req);
-                    break;
-                case "/counter":
-                    response = newTestCounterResponseWithLastPayloadChunk(context, req);
-                    break;
-                case "/nocontent":
-                    response = newNoContentResponse(req);
-                    break;
-                case "/rot13":
-                    response = newRot13Response(req);
-                    break;
-                default:
-                    response = newNotFoundResponse(req);
-                    break;
-            }
-            return Single.success(response);
-        }
+        assertEquals(OK, response.getStatus());
+        assertEquals(HTTP_1_1, response.getVersion());
 
-        private HttpResponse<HttpPayloadChunk> newEchoResponse(final HttpRequest<HttpPayloadChunk> req) {
-            final HttpResponse<HttpPayloadChunk> response = HttpResponses.newResponse(req.getVersion(), HttpResponseStatuses.OK, req.getPayloadBody());
-            final CharSequence contentLength = req.getHeaders().get(CONTENT_LENGTH);
-            if (contentLength != null) {
-                response.getHeaders().set(CONTENT_LENGTH, contentLength);
-            }
-            return response;
-        }
+        final BlockingIterator<HttpPayloadChunk> httpPayloadChunks = response.getPayloadBody().toIterable().iterator();
 
-        private HttpResponse<HttpPayloadChunk> newTestCounterResponse(final ConnectionContext context, final HttpRequest<HttpPayloadChunk> req) {
-            final Buffer responseContent = context.getBufferAllocator().fromUtf8("Testing" + counter.getAndIncrement() + "\n");
-            final HttpPayloadChunk responseBody = HttpPayloadChunks.newPayloadChunk(responseContent);
-            return HttpResponses.newResponse(req.getVersion(), HttpResponseStatuses.OK, responseBody, executor);
+        thrown.expect(RuntimeException.class);
+        thrown.expectCause(instanceOf(ClosedChannelException.class));
+        try {
+            httpPayloadChunks.next();
+        } finally {
+            awaitIndefinitely(httpConnection.onClose());
         }
+    }
 
-        private HttpResponse<HttpPayloadChunk> newTestCounterResponseWithLastPayloadChunk(final ConnectionContext context, final HttpRequest<HttpPayloadChunk> req) {
-            final Buffer responseContent = context.getBufferAllocator().fromUtf8("Testing" + counter.getAndIncrement() + "\n");
-            final HttpPayloadChunk responseBody = HttpPayloadChunks.newLastPayloadChunk(responseContent, DefaultHttpHeadersFactory.INSTANCE.newEmptyTrailers());
-            return HttpResponses.newResponse(req.getVersion(), HttpResponseStatuses.OK, responseBody, executor);
-        }
+    @Test
+    public void testErrorDuringRead() throws Exception {
+        final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_ERROR_DURING_READ,
+                getChunkPublisherFromStrings("Goodbye", "cruel", "world!"));
+        request.getHeaders().set(TRANSFER_ENCODING, CHUNKED); // TODO: Eventually, this won't be necessary.
+        final HttpResponse<HttpPayloadChunk> response = makeRequest(request);
 
-        private HttpResponse<HttpPayloadChunk> newNoContentResponse(final HttpRequest<HttpPayloadChunk> req) {
-            return HttpResponses.newResponse(req.getVersion(), HttpResponseStatuses.NO_CONTENT, executor);
-        }
+        assertEquals(OK, response.getStatus());
+        assertEquals(HTTP_1_1, response.getVersion());
 
-        private HttpResponse<HttpPayloadChunk> newRot13Response(final HttpRequest<HttpPayloadChunk> req) {
-            final Publisher<HttpPayloadChunk> responseBody = req.getPayloadBody().map(chunk -> {
-                final Buffer buffer = chunk.getContent();
-                // Do an ASCII-only ROT13
-                for (int i = buffer.getReaderIndex(); i < buffer.getWriterIndex(); i++) {
-                    final byte c = buffer.getByte(i);
-                    if (c >= 'a' && c <= 'm' || c >= 'A' && c <= 'M') {
-                        buffer.setByte(i, c + 13);
-                    } else if (c >= 'n' && c <= 'z' || c >= 'N' && c <= 'Z') {
-                        buffer.setByte(i, c - 13);
-                    }
-                }
-                return chunk;
-            });
-            return HttpResponses.newResponse(req.getVersion(), HttpResponseStatuses.OK, responseBody);
-        }
+        final BlockingIterator<HttpPayloadChunk> httpPayloadChunks = response.getPayloadBody().toIterable().iterator();
+        assertEquals("Goodbye", httpPayloadChunks.next().getContent().toString(US_ASCII));
+        assertEquals("cruel", httpPayloadChunks.next().getContent().toString(US_ASCII));
+        assertEquals("world!", httpPayloadChunks.next().getContent().toString(US_ASCII));
 
-        private HttpResponse<HttpPayloadChunk> newNotFoundResponse(final HttpRequest<HttpPayloadChunk> req) {
-            return HttpResponses.newResponse(req.getVersion(), HttpResponseStatuses.NOT_FOUND, executor);
+        thrown.expect(RuntimeException.class);
+        thrown.expectCause(instanceOf(ClosedChannelException.class));
+        try {
+            httpPayloadChunks.next();
+        } finally {
+            awaitIndefinitely(httpConnection.onClose());
         }
+    }
+
+    private HttpResponse<HttpPayloadChunk> makeRequest(final HttpRequest<HttpPayloadChunk> request) throws Exception {
+        final Single<HttpResponse<HttpPayloadChunk>> responseSingle = httpConnection.request(request);
+        return awaitIndefinitelyNonNull(responseSingle);
+    }
+
+    private static void assertResponse(final HttpResponse<HttpPayloadChunk> response, final HttpProtocolVersions version,
+                                       final HttpResponseStatuses status, final List<String> expectedPayloadChunksAsStrings)
+            throws ExecutionException, InterruptedException {
+        assertEquals(status, response.getStatus());
+        assertEquals(version, response.getVersion());
+        final List<String> bodyAsListOfStrings = getBodyAsListOfStrings(response);
+        assertEquals(expectedPayloadChunksAsStrings.size(), bodyAsListOfStrings.size());
+        assertEquals(expectedPayloadChunksAsStrings, bodyAsListOfStrings);
+    }
+
+    private Publisher<HttpPayloadChunk> getChunkPublisherFromStrings(final String... texts) {
+        final List<HttpPayloadChunk> chunks = new ArrayList<>(texts.length);
+        final int end = texts.length - 1;
+        for (int i = 0; i < end; ++i) {
+            chunks.add(HttpPayloadChunks.newPayloadChunk(DEFAULT_ALLOCATOR.fromAscii(texts[i])));
+        }
+        chunks.add(HttpPayloadChunks.newLastPayloadChunk(DEFAULT_ALLOCATOR.fromAscii(texts[end]), EmptyHttpHeaders.INSTANCE));
+        return Publisher.from(executor, chunks);
+    }
+
+    private static List<String> getBodyAsListOfStrings(final HttpResponse<HttpPayloadChunk> response)
+            throws ExecutionException, InterruptedException {
+        return awaitIndefinitelyNonNull(response.getPayloadBody()
+                .reduce(ArrayList::new, (ArrayList<String> list, HttpPayloadChunk payloadChunk) -> {
+                    list.add(payloadChunk.getContent().toString(US_ASCII));
+                    return list;
+                }));
     }
 }
