@@ -119,6 +119,7 @@ final class BlockingHttpClientToHttpClient<I, O> extends HttpClient<I, O> {
         return blockingToCompletable(blockingClient::close);
     }
 
+    @Override
     BlockingHttpClient<I, O> asBlockingClientInternal() {
         return blockingClient;
     }
