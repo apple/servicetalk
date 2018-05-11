@@ -53,7 +53,7 @@ public final class HelloWorldClient {
             assert connection != null;
 
 
-            connection.request(newRequest(GET, "/sayHello", connection.getExecutionContext().getExecutor()))
+            connection.request(newRequest(GET, "/sayHello"))
                     .flatMapPublisher(resp -> {
                         LOGGER.info("got response {}", resp.toString((name, value) -> value));
                         return resp.getPayloadBody().map(chunk -> chunk.getContent().toString(US_ASCII));

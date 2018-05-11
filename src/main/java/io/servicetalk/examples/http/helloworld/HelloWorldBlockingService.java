@@ -34,8 +34,6 @@ final class HelloWorldBlockingService extends BlockingHttpService<HttpPayloadChu
     @Override
     public BlockingHttpResponse<HttpPayloadChunk> handle(final ConnectionContext ctx,
                                                          final BlockingHttpRequest<HttpPayloadChunk> request) {
-        return newResponse(OK,
-                           newPayloadChunk(ctx.getBufferAllocator().fromAscii("Hello World!")),
-                           ctx.getExecutor());
+        return newResponse(OK, newPayloadChunk(ctx.getBufferAllocator().fromAscii("Hello World!")));
     }
 }

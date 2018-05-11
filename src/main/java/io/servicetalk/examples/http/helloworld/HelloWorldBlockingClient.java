@@ -55,7 +55,7 @@ public final class HelloWorldBlockingClient {
             BlockingHttpConnection<HttpPayloadChunk, HttpPayloadChunk> conn = connection.asBlockingConnection();
 
             BlockingHttpResponse<HttpPayloadChunk> response =
-                    conn.request(newRequest(GET, "/sayHello", connection.getExecutionContext().getExecutor()));
+                    conn.request(newRequest(GET, "/sayHello"));
             LOGGER.info("got response {}", response.toString((name, value) -> value));
             for (HttpPayloadChunk chunk : response.getPayloadBody()) {
                 LOGGER.info("converted string chunk '{}'", chunk.getContent().toString(US_ASCII));

@@ -35,8 +35,6 @@ final class HelloWorldService extends HttpService<HttpPayloadChunk, HttpPayloadC
     @Override
     public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
                                                          final HttpRequest<HttpPayloadChunk> request) {
-        return success(newResponse(OK,
-                                   newPayloadChunk(ctx.getBufferAllocator().fromAscii("Hello World!")),
-                                   ctx.getExecutor()));
+        return success(newResponse(OK, newPayloadChunk(ctx.getBufferAllocator().fromAscii("Hello World!"))));
     }
 }
