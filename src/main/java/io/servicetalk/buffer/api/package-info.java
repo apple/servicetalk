@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 @ElementsAreNonnullByDefault
-package io.servicetalk.buffer;
+package io.servicetalk.buffer.api;
 
 import io.servicetalk.annotations.ElementsAreNonnullByDefault;

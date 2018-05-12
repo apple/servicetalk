@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.buffer;
+package io.servicetalk.buffer.api;
 
 final class IndexOfByteProcessor implements ByteProcessor {
     private final byte byteToFind;

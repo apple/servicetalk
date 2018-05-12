@@ -28,7 +28,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package io.servicetalk.buffer;
+package io.servicetalk.buffer.api;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,7 +37,7 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.EmptyBuffer.EMPTY_BUFFER;
+import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.ByteBuffer.allocateDirect;
 

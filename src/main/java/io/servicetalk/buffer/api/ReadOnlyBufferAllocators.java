@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.buffer;
+package io.servicetalk.buffer.api;
 
 /**
  * Utility class containing {@link BufferAllocator}s that create {@link Buffer} instances which cannot be modified and

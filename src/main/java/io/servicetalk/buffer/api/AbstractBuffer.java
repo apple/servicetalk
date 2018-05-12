@@ -28,7 +28,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package io.servicetalk.buffer;
+package io.servicetalk.buffer.api;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
