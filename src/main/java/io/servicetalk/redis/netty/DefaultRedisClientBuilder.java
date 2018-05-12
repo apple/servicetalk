@@ -21,6 +21,7 @@ import io.servicetalk.client.api.ServiceDiscoverer.Event;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.redis.api.LoadBalancerReadyRedisClient;
 import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisClientBuilder;
 import io.servicetalk.redis.api.RedisConnection;
@@ -35,11 +36,12 @@ import java.io.InputStream;
 import java.net.SocketOption;
 import java.time.Duration;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.redis.netty.RedisUtils.isSubscribeModeCommand;
 import static java.util.Objects.requireNonNull;
-import static java.util.function.Function.identity;
+import static java.util.function.UnaryOperator.identity;
 
 /**
  * A builder for instances of {@link RedisClient}.
@@ -52,11 +54,15 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
             conn -> conn.tryRequest() ? conn : null;
     public static final Function<LoadBalancedRedisConnection, LoadBalancedRedisConnection> SELECTOR_FOR_RESERVE =
             conn -> conn.tryReserve() ? conn : null;
+    static final RedisClientFilterFactory DEFAULT_CLIENT_FILTER_FACTORY =
+            // We ignore the sdEvents because currently the SD stream is multiplexed and the pipelined LB will get
+            // events after the pubsub LB. If there is async behavior in the load balancer folks can override this.
+            (client, pubsubEvents, pipelinedEvents) -> new LoadBalancerReadyRedisClient(4, pipelinedEvents, client);
 
     private final LoadBalancerFactory<ResolvedAddress, RedisConnection> loadBalancerFactory;
     private final RedisClientConfig config;
-    private Function<RedisConnection, RedisConnection> connectionFilterFactory = identity();
-    private Function<RedisClient, RedisClient> clientFilterFactory = identity();
+    private UnaryOperator<RedisConnection> connectionFilterFactory = identity();
+    private RedisClientFilterFactory clientFilterFactory = DEFAULT_CLIENT_FILTER_FACTORY;
 
     /**
      * Create a new instance.
@@ -161,11 +167,12 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
      * <p>
      * Filtering allows you to wrap a {@link RedisConnection} and modify behavior during request/response processing.
      * Some potential candidates for filtering include logging, metrics, and decorating responses.
-     * @param connectionFilterFunction {@link Function} to decorate a {@link RedisConnection} for the purpose of filtering.
+     * @param connectionFilterFunction {@link UnaryOperator} to decorate a {@link RedisConnection} for the purpose of
+     * filtering.
      * @return {@code this}.
      */
     public DefaultRedisClientBuilder<ResolvedAddress> setConnectionFilterFactory(
-            Function<RedisConnection, RedisConnection> connectionFilterFunction) {
+            UnaryOperator<RedisConnection> connectionFilterFunction) {
         this.connectionFilterFactory = requireNonNull(connectionFilterFunction);
         return this;
     }
@@ -175,11 +182,11 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
      * <p>
      * Note this method will be used to decorate the result of {@link #build(ExecutionContext, Publisher)} before it is
      * returned to the user.
-     * @param clientFilterFactory {@link Function} to decorate a {@link RedisClient} for the purpose of filtering
+     * @param clientFilterFactory factory to decorate a {@link RedisClient} for the purpose of filtering.
      * @return {@code this}
      */
     public DefaultRedisClientBuilder<ResolvedAddress> setClientFilterFactory(
-            Function<RedisClient, RedisClient> clientFilterFactory) {
+            RedisClientFilterFactory clientFilterFactory) {
         this.clientFilterFactory = requireNonNull(clientFilterFactory);
         return this;
     }
@@ -187,31 +194,42 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
     @Override
     public RedisClient build(ExecutionContext executionContext,
                              Publisher<Event<ResolvedAddress>> addressEventStream) {
-        return clientFilterFactory.apply(new DefaultRedisClient<>(executionContext, config.asReadOnly(),
-                addressEventStream, connectionFilterFactory, loadBalancerFactory));
+        return newRedisClient(executionContext, addressEventStream, config.asReadOnly(), connectionFilterFactory,
+                clientFilterFactory, loadBalancerFactory);
     }
 
-    static final class DefaultRedisClient<ResolvedAddress, EventType extends Event<ResolvedAddress>>
-            extends RedisClient {
+    static <ResolvedAddress, EventType extends Event<ResolvedAddress>> RedisClient newRedisClient(
+            ExecutionContext executionContext, Publisher<EventType> addressEventStream,
+            ReadOnlyRedisClientConfig roConfig, Function<RedisConnection, RedisConnection> connectionFilterFactory,
+            RedisClientFilterFactory clientFilterFactory,
+            LoadBalancerFactory<ResolvedAddress, RedisConnection> loadBalancerFactory) {
+        final Publisher<EventType> multicastAddressEventStream = addressEventStream.multicast(2);
+
+        LoadBalancer<? extends RedisConnection> lbfUntypedForCast =
+                loadBalancerFactory.newLoadBalancer(multicastAddressEventStream,
+                        new SubscribedLBRedisConnectionFactory<>(roConfig, executionContext, connectionFilterFactory));
+        LoadBalancer<LoadBalancedRedisConnection> subscribeLb =
+                (LoadBalancer<LoadBalancedRedisConnection>) lbfUntypedForCast;
+        lbfUntypedForCast = loadBalancerFactory.newLoadBalancer(multicastAddressEventStream,
+                new PipelinedLBRedisConnectionFactory<>(roConfig, executionContext, connectionFilterFactory));
+        LoadBalancer<LoadBalancedRedisConnection> pipelineLb =
+                (LoadBalancer<LoadBalancedRedisConnection>) lbfUntypedForCast;
+
+        return clientFilterFactory.apply(new DefaultRedisClient(executionContext, subscribeLb, pipelineLb),
+                subscribeLb.getEventStream(), pipelineLb.getEventStream());
+    }
+
+    private static final class DefaultRedisClient extends RedisClient {
         private final ExecutionContext executionContext;
         private final LoadBalancer<LoadBalancedRedisConnection> subscribeLb;
         private final LoadBalancer<LoadBalancedRedisConnection> pipelineLb;
 
-        DefaultRedisClient(ExecutionContext executionContext, ReadOnlyRedisClientConfig roConfig,
-                           Publisher<EventType> addressEventStream,
-                           Function<RedisConnection, RedisConnection> connectionFilter,
-                           LoadBalancerFactory<ResolvedAddress, RedisConnection> loadBalancerFactory) {
+        DefaultRedisClient(ExecutionContext executionContext,
+                           LoadBalancer<LoadBalancedRedisConnection> subscribeLb,
+                           LoadBalancer<LoadBalancedRedisConnection> pipelineLb) {
             this.executionContext = requireNonNull(executionContext);
-            final Publisher<EventType> multicastAddressEventStream = addressEventStream.multicast(2);
-            AbstractLBRedisConnectionFactory<ResolvedAddress> subscribeFactory =
-                    new SubscribedLBRedisConnectionFactory<>(roConfig, executionContext, connectionFilter);
-            AbstractLBRedisConnectionFactory<ResolvedAddress> pipelineFactory =
-                    new PipelinedLBRedisConnectionFactory<>(roConfig, executionContext, connectionFilter);
-            LoadBalancer<? extends RedisConnection> lbfUntypedForCast =
-                    loadBalancerFactory.newLoadBalancer(multicastAddressEventStream, subscribeFactory);
-            subscribeLb = (LoadBalancer<LoadBalancedRedisConnection>) lbfUntypedForCast;
-            lbfUntypedForCast = loadBalancerFactory.newLoadBalancer(multicastAddressEventStream, pipelineFactory);
-            pipelineLb = (LoadBalancer<LoadBalancedRedisConnection>) lbfUntypedForCast;
+            this.subscribeLb = requireNonNull(subscribeLb);
+            this.pipelineLb = requireNonNull(pipelineLb);
         }
 
         @Override

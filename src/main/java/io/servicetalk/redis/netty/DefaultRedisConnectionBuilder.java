@@ -34,12 +34,13 @@ import java.io.InputStream;
 import java.net.SocketOption;
 import java.time.Duration;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.redis.netty.InternalSubscribedRedisConnection.newSubscribedConnection;
 import static io.servicetalk.redis.netty.PipelinedRedisConnection.newPipelinedConnection;
 import static java.util.Objects.requireNonNull;
-import static java.util.function.Function.identity;
+import static java.util.function.UnaryOperator.identity;
 
 /**
  * A builder for instances of {@link RedisConnection}.
@@ -48,8 +49,8 @@ import static java.util.function.Function.identity;
  */
 public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements RedisConnectionBuilder<ResolvedAddress> {
     private final RedisClientConfig config;
-    private Function<RedisConnection, RedisConnection> connectionFilterFactory = identity();
     private final boolean forSubscribe;
+    private UnaryOperator<RedisConnection> connectionFilterFactory = identity();
 
     private DefaultRedisConnectionBuilder(boolean forSubscribe) {
         this(forSubscribe, new RedisClientConfig(new TcpClientConfig(false)));
@@ -144,12 +145,12 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
      * <p>
      * Note this method will be used to decorate the result of {@link #build(ExecutionContext, Object)} before it is
      * returned to the user.
-     * @param connectionFilterFactory {@link Function} to decorate a {@link RedisConnection} for the purpose of
-     * filtering
+     * @param connectionFilterFactory {@link UnaryOperator} to decorate a {@link RedisConnection} for the purpose of
+     * filtering.
      * @return {@code this}
      */
     public DefaultRedisConnectionBuilder<ResolvedAddress> setConnectionFilterFactory(
-            Function<RedisConnection, RedisConnection> connectionFilterFactory) {
+            UnaryOperator<RedisConnection> connectionFilterFactory) {
         this.connectionFilterFactory = requireNonNull(connectionFilterFactory);
         return this;
     }
