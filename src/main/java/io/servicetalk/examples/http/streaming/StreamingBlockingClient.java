@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.helloworld;
+package io.servicetalk.examples.http.streaming;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.internal.DefaultHostAndPort;
 import io.servicetalk.client.internal.HostAndPort;
 import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscoverer.Builder;
-import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.BlockingHttpRequest;
+import io.servicetalk.http.api.BlockingHttpResponse;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.netty.DefaultHttpClientBuilder;
 import io.servicetalk.transport.api.DefaultExecutionContext;
@@ -29,19 +31,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.http.api.HttpRequestMethods.GET;
-import static io.servicetalk.http.api.HttpRequests.newRequest;
+import static io.servicetalk.http.api.BlockingHttpRequests.newRequest;
+import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
+import static io.servicetalk.http.api.HttpHeaderNames.USER_AGENT;
+import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
+import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
+import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
-public final class HelloWorldClient {
-    private static final Logger LOGGER = LoggerFactory.getLogger(HelloWorldClient.class);
+public final class StreamingBlockingClient {
+    private static final Logger LOGGER = LoggerFactory.getLogger(StreamingBlockingClient.class);
 
     public static void main(String[] args) throws Exception {
         // Setup the ExecutionContext to offload user code onto a cached Executor.
@@ -57,31 +62,29 @@ public final class HelloWorldClient {
                 new DefaultHttpClientBuilder<>(newRoundRobinFactory());
 
         // Build the client, and register for DNS discovery events.
-        HttpClient<HttpPayloadChunk, HttpPayloadChunk> client = clientBuilder.build(
+        BlockingHttpClient<HttpPayloadChunk, HttpPayloadChunk> client = clientBuilder.buildBlocking(
                 executionContext, dnsDiscoverer.discover(new DefaultHostAndPort("localhost", 8080)));
 
-        // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-        // before the response has been processed. This isn't typical usage for a streaming API but is useful for
-        // demonstration purposes.
-        CountDownLatch responseProcessedLatch = new CountDownLatch(1);
+        // Create a request with a payload body and some headers.
+        BlockingHttpRequest<HttpPayloadChunk> request = newRequest(POST, "/sayHello",
+                newPayloadChunk(executionContext.getBufferAllocator().fromAscii("world")));
+        request.getHeaders().set(TRANSFER_ENCODING, CHUNKED).set(USER_AGENT, "ServiceTalkHelloWorldBlockingClient");
 
-        // Create a request, send the request, convert each chunk to a string, and log it out.
-        client.request(newRequest(GET, "/sayHello")).flatMapPublisher(response -> {
-            // Log the response meta data and headers, by default the header values will be filtered for
-            // security reasons, however here we override the filter and print every value.
-            LOGGER.info("got response {}", response.toString((name, value) -> value));
+        // Send the request, and wait for the response.
+        BlockingHttpResponse<HttpPayloadChunk> response = client.request(request);
 
-            // Map each chunk of the response payload from a Buffer to a String.
-            return response.getPayloadBody().map(chunk -> chunk.getContent().toString(US_ASCII));
-        }).doAfterError(cause -> LOGGER.error("request failed!", cause))
-          .doAfterFinally(responseProcessedLatch::countDown)
-          .forEach(stringPayloadChunk -> LOGGER.info("converted string chunk '{}'", stringPayloadChunk));
+        // Log the response meta data and headers, by default the header values will be filtered for
+        // security reasons, however here we override the filter and print every value.
+        LOGGER.info("got response {}", response.toString((name, value) -> value));
 
-        // Don't exit the main thread until after the response is completely processed.
-        responseProcessedLatch.await();
+        // Iterate through all the response payload chunks. Note that data is streaming in the background so this
+        // may be synchronous as opposed to blocking, but if data is not available the APIs will have to block.
+        for (HttpPayloadChunk responseChunk : response.getPayloadBody()) {
+            LOGGER.info("converted string chunk '{}'", responseChunk.getContent().toString(US_ASCII));
+        }
 
-        // cleanup the HttpClient, ServiceDiscoverer, and IoExecutor
-        awaitIndefinitely(client.closeAsync().mergeDelayError(dnsDiscoverer.closeAsync(),
-                executionContext.getIoExecutor().closeAsync()));
+        // cleanup the BlockingHttpClient, ServiceDiscoverer, and IoExecutor
+        client.close();
+        awaitIndefinitely(dnsDiscoverer.closeAsync().mergeDelayError(executionContext.getIoExecutor().closeAsync()));
     }
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.helloworld;
+package io.servicetalk.examples.http.streaming;
 
 import io.servicetalk.http.api.HttpServerStarter;
 import io.servicetalk.http.netty.DefaultHttpServerStarter;
@@ -24,16 +24,16 @@ import io.servicetalk.transport.netty.NettyIoExecutors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 
 /**
- * A hello world server starter using a {@link HelloWorldBlockingService}.
+ * A hello world server starter.
  */
-public final class HelloWorldBlockingServer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(HelloWorldBlockingServer.class);
+public final class StreamingServer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(StreamingServer.class);
 
-    private HelloWorldBlockingServer() {
+    private StreamingServer() {
         // No instances.
     }
 
@@ -50,8 +50,7 @@ public final class HelloWorldBlockingServer {
             HttpServerStarter starter = new DefaultHttpServerStarter(ioExecutor);
 
             // Starting the server will start listening for incoming client requests.
-            // TODO(scott): Executor offloading has a bug, so use immediate() for now.
-            ServerContext serverContext = starter.start(8080, immediate(), new HelloWorldBlockingService());
+            ServerContext serverContext = awaitIndefinitelyNonNull(starter.start(8080, new StreamingService()));
 
             LOGGER.info("listening on {}", serverContext.getListenAddress());
 

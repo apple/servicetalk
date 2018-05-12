@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.helloworld;
+package io.servicetalk.examples.http.streaming;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.internal.DefaultHostAndPort;
@@ -21,9 +21,12 @@ import io.servicetalk.client.internal.HostAndPort;
 import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscoverer.Builder;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.netty.DefaultHttpClientBuilder;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.netty.NettyIoExecutors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,14 +37,18 @@ import java.util.concurrent.CountDownLatch;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.http.api.HttpRequestMethods.GET;
+import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
+import static io.servicetalk.http.api.HttpHeaderNames.USER_AGENT;
+import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
+import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
+import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
-public final class HelloWorldClient {
-    private static final Logger LOGGER = LoggerFactory.getLogger(HelloWorldClient.class);
+public final class StreamingClient {
+    private static final Logger LOGGER = LoggerFactory.getLogger(StreamingClient.class);
 
     public static void main(String[] args) throws Exception {
         // Setup the ExecutionContext to offload user code onto a cached Executor.
@@ -65,8 +72,13 @@ public final class HelloWorldClient {
         // demonstration purposes.
         CountDownLatch responseProcessedLatch = new CountDownLatch(1);
 
-        // Create a request, send the request, convert each chunk to a string, and log it out.
-        client.request(newRequest(GET, "/sayHello")).flatMapPublisher(response -> {
+        // Create a request with a payload body and some headers.
+        HttpRequest<HttpPayloadChunk> request = newRequest(POST, "/sayHello",
+                newPayloadChunk(executionContext.getBufferAllocator().fromAscii("world")));
+        request.getHeaders().set(TRANSFER_ENCODING, CHUNKED).set(USER_AGENT, "ServiceTalkHelloWorldClient");
+
+        // Send the request, and transform the response.
+        client.request(request).flatMapPublisher(response -> {
             // Log the response meta data and headers, by default the header values will be filtered for
             // security reasons, however here we override the filter and print every value.
             LOGGER.info("got response {}", response.toString((name, value) -> value));

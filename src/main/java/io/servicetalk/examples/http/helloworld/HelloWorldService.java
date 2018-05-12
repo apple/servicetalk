@@ -22,6 +22,9 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
@@ -32,9 +35,15 @@ import static io.servicetalk.http.api.HttpResponses.newResponse;
  * This is an asynchronous service, for blocking style see
  */
 final class HelloWorldService extends HttpService<HttpPayloadChunk, HttpPayloadChunk> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HelloWorldService.class);
+
     @Override
     public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
                                                          final HttpRequest<HttpPayloadChunk> request) {
+        // Log the request meta data and headers, by default the header values will be filtered for
+        // security reasons, however here we override the filter and print every value.
+        LOGGER.info("got request {}", request.toString((name, value) -> value));
+
         return success(newResponse(OK, newPayloadChunk(ctx.getBufferAllocator().fromAscii("Hello World!"))));
     }
 }
