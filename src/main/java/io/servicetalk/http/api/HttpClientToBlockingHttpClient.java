@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.BlockingIterable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
@@ -57,7 +56,7 @@ final class HttpClientToBlockingHttpClient<I, O> extends BlockingHttpClient<I, O
         // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
         return new ReservedHttpConnectionToBlocking<>(awaitIndefinitelyNonNull(client.reserveConnection(
-                fromBlockingRequest(request, getExecutionContext().getExecutor()))));
+                fromBlockingRequest(request))));
     }
 
     @Override
@@ -66,8 +65,7 @@ final class HttpClientToBlockingHttpClient<I, O> extends BlockingHttpClient<I, O
         // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
         return new UpgradableHttpResponseToBlocking<>(awaitIndefinitelyNonNull(client.upgradeConnection(
-                fromBlockingRequest(request, getExecutionContext().getExecutor()))),
-                getExecutionContext().getExecutor());
+                fromBlockingRequest(request))));
     }
 
     @Override
@@ -136,19 +134,15 @@ final class HttpClientToBlockingHttpClient<I, O> extends BlockingHttpClient<I, O
     private static final class UpgradableHttpResponseToBlocking<I, O> implements BlockingUpgradableHttpResponse<I, O> {
         private final UpgradableHttpResponse<I, O> upgradeResponse;
         private final BlockingIterable<O> payloadBody;
-        private final Executor executor;
 
-        UpgradableHttpResponseToBlocking(UpgradableHttpResponse<I, O> upgradeResponse,
-                                         Executor executor) {
-            this(upgradeResponse, upgradeResponse.getPayloadBody().toIterable(), executor);
+        UpgradableHttpResponseToBlocking(UpgradableHttpResponse<I, O> upgradeResponse) {
+            this(upgradeResponse, upgradeResponse.getPayloadBody().toIterable());
         }
 
         private UpgradableHttpResponseToBlocking(UpgradableHttpResponse<I, O> upgradeResponse,
-                                                 BlockingIterable<O> payloadBody,
-                                                 Executor executor) {
+                                                 BlockingIterable<O> payloadBody) {
             this.upgradeResponse = requireNonNull(upgradeResponse);
             this.payloadBody = requireNonNull(payloadBody);
-            this.executor = requireNonNull(executor);
         }
 
         @Override
@@ -202,7 +196,7 @@ final class HttpClientToBlockingHttpClient<I, O> extends BlockingHttpClient<I, O
                     new UpgradableHttpResponseToBlockingConverter<>(upgradeResponse,
                             pub -> from(transformer.apply(pub.toIterable())),
                             from(transformedPayload)),
-                    transformedPayload, executor);
+                    transformedPayload);
         }
     }
 

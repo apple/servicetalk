@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
@@ -317,7 +316,7 @@ public final class HttpRequests {
         return new DefaultHttpRequest<>(method, requestTarget, version, payloadBody, headers);
     }
 
-    static <I> HttpRequest<I> fromBlockingRequest(BlockingHttpRequest<I> request, Executor executor) {
+    static <I> HttpRequest<I> fromBlockingRequest(BlockingHttpRequest<I> request) {
         return new DefaultHttpRequest<>(request.getMethod(),
                 request.getRequestTarget(), request.getVersion(),
                 // The from(..) operator will take care of propagating cancel.

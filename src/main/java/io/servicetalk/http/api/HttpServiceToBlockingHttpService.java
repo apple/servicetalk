@@ -33,8 +33,8 @@ final class HttpServiceToBlockingHttpService<I, O> extends BlockingHttpService<I
             throws Exception {
         // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
-        return new DefaultBlockingHttpResponse<>(awaitIndefinitely(service.handle(ctx,
-                fromBlockingRequest(request, ctx.getExecutor()))));
+        return new DefaultBlockingHttpResponse<>(
+                awaitIndefinitely(service.handle(ctx, fromBlockingRequest(request))));
     }
 
     @Override

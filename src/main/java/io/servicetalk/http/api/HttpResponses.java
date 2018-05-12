@@ -15,8 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
@@ -105,16 +103,12 @@ public final class HttpResponses {
      *
      * @param status the {@link HttpResponseStatus} of the response.
      * @param payloadBody the payload body of the response.
-     * @param executor The {@link Executor} used to consume data from {@code payloadBody}. Note this is typically
-     * consumed by ServiceTalk so if there are any blocking transformations (e.g. filters) and you are unsure if
-     * ServiceTalk is consuming {@code payloadBody} it is wise to avoid {@link Executors#immediate()}.
      * @param headers the {@link HttpHeaders} of the response.
      * @param <O> Type of the content of the response.
      * @return a new {@link HttpResponse}.
      */
     public static <O> HttpResponse<O> newResponse(final HttpResponseStatus status,
                                                   final O payloadBody,
-                                                  final Executor executor,
                                                   final HttpHeaders headers) {
         return newResponse(HTTP_1_1, status, payloadBody, headers);
     }

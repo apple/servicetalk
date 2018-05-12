@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.BlockingIterable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
@@ -85,7 +84,7 @@ final class BlockingHttpClientToHttpClient<I, O> extends HttpClient<I, O> {
                 try {
                     // Do the conversion here in case there is a null value returned by the upgradeConnection.
                     response = new BlockingToUpgradableHttpResponse<>(blockingClient.upgradeConnection(
-                            new DefaultBlockingHttpRequest<>(request)), getExecutionContext().getExecutor());
+                            new DefaultBlockingHttpRequest<>(request)));
                 } catch (Throwable cause) {
                     cancellable.setDone();
                     subscriber.onError(cause);
@@ -179,19 +178,15 @@ final class BlockingHttpClientToHttpClient<I, O> extends HttpClient<I, O> {
     private static final class BlockingToUpgradableHttpResponse<I, O> implements UpgradableHttpResponse<I, O> {
         private final BlockingUpgradableHttpResponse<I, O> upgradeResponse;
         private final Publisher<O> payloadBody;
-        private final Executor executor;
 
-        BlockingToUpgradableHttpResponse(BlockingUpgradableHttpResponse<I, O> upgradeResponse,
-                                         Executor executor) {
-            this(upgradeResponse, from(upgradeResponse.getPayloadBody()), executor);
+        BlockingToUpgradableHttpResponse(BlockingUpgradableHttpResponse<I, O> upgradeResponse) {
+            this(upgradeResponse, from(upgradeResponse.getPayloadBody()));
         }
 
         private BlockingToUpgradableHttpResponse(BlockingUpgradableHttpResponse<I, O> upgradeResponse,
-                                                 Publisher<O> payloadBody,
-                                                 Executor executor) {
+                                                 Publisher<O> payloadBody) {
             this.upgradeResponse = requireNonNull(upgradeResponse);
             this.payloadBody = requireNonNull(payloadBody);
-            this.executor = requireNonNull(executor);
         }
 
         @Override
@@ -246,7 +241,7 @@ final class BlockingHttpClientToHttpClient<I, O> extends HttpClient<I, O> {
                     new BlockingUpgradableHttpResponseConverter<>(upgradeResponse,
                             itr -> transformer.apply(from(itr)).toIterable(),
                             transformedPayload.toIterable()),
-                    transformedPayload, executor);
+                    transformedPayload);
         }
     }
 
