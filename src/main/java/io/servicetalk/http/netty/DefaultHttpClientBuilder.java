@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer.Event;
@@ -25,17 +26,20 @@ import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.LoadBalancerReadyHttpClient;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.SslConfig;
 
 import java.io.InputStream;
 import java.net.SocketOption;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.function.Function.identity;
+import static java.util.function.UnaryOperator.identity;
 
 /**
  * A builder for instances of {@link HttpClient}.
@@ -46,10 +50,10 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
 
     private final HttpClientConfig config;
     private final LoadBalancerFactory<ResolvedAddress, HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> lbFactory;
-    private Function<HttpClient<HttpPayloadChunk, HttpPayloadChunk>,
-            HttpClient<HttpPayloadChunk, HttpPayloadChunk>> clientFilterFactory = identity();
-    private Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>,
-            HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory = identity();
+    private BiFunction<HttpClient<HttpPayloadChunk, HttpPayloadChunk>, Publisher<Object>,
+            HttpClient<HttpPayloadChunk, HttpPayloadChunk>> clientFilterFactory = (client, lbEvents) ->
+                new LoadBalancerReadyHttpClient<>(4, lbEvents, client);
+    private UnaryOperator<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory = identity();
 
     /**
      * Create a new instance.
@@ -74,8 +78,19 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
     @Override
     public HttpClient<HttpPayloadChunk, HttpPayloadChunk> build(final ExecutionContext executionContext,
                                                         final Publisher<Event<ResolvedAddress>> addressEventStream) {
-        return clientFilterFactory.apply(new DefaultHttpClient<>(executionContext, config.asReadOnly(),
-                addressEventStream, connectionFilterFactory, lbFactory));
+        ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
+        ConnectionFactory<ResolvedAddress, LoadBalancedHttpConnection> connectionFactory =
+                roConfig.getMaxPipelinedRequests() == 1 ?
+                        new NonPipelinedLBHttpConnectionFactory<>(roConfig, executionContext, connectionFilterFactory) :
+                        new PipelinedLBHttpConnectionFactory<>(roConfig, executionContext, connectionFilterFactory);
+
+        // TODO we should revisit generics on LoadBalancerFactory to avoid casts
+        LoadBalancer<? extends HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> lbfUntypedForCast =
+                lbFactory.newLoadBalancer(addressEventStream, connectionFactory);
+        LoadBalancer<LoadBalancedHttpConnection> loadBalancer =
+                (LoadBalancer<LoadBalancedHttpConnection>) lbfUntypedForCast;
+        return clientFilterFactory.apply(new DefaultHttpClient<>(executionContext, loadBalancer),
+                                            loadBalancer.getEventStream());
     }
 
     /**
@@ -219,12 +234,12 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * <p>
      * Filtering allows you to wrap a {@link HttpConnection} and modify behavior during request/response processing
      * Some potential candidates for filtering include logging, metrics, and decorating responses
-     * @param connectionFilterFactory {@link Function} to decorate a {@link HttpConnection} for the purpose of filtering
+     * @param connectionFilterFactory {@link UnaryOperator} to decorate a {@link HttpConnection} for the purpose of
+     * filtering.
      * @return {@code this}
      */
     public DefaultHttpClientBuilder<ResolvedAddress> setConnectionFilterFactory(
-            Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>,
-                     HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory) {
+            UnaryOperator<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory) {
         this.connectionFilterFactory = requireNonNull(connectionFilterFactory);
         return this;
     }
@@ -234,11 +249,11 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * <p>
      * Note this method will be used to decorate the result of {@link #build(ExecutionContext, Publisher)} before it is
      * returned to the user.
-     * @param clientFilterFactory {@link Function} to decorate a {@link HttpClient} for the purpose of filtering
+     * @param clientFilterFactory {@link BiFunction} to decorate a {@link HttpClient} for the purpose of filtering.
      * @return {@code this}
      */
     public DefaultHttpClientBuilder<ResolvedAddress> setClientFilterFactory(
-            Function<HttpClient<HttpPayloadChunk, HttpPayloadChunk>,
+            BiFunction<HttpClient<HttpPayloadChunk, HttpPayloadChunk>, Publisher<Object>,
                     HttpClient<HttpPayloadChunk, HttpPayloadChunk>> clientFilterFactory) {
         this.clientFilterFactory = requireNonNull(clientFilterFactory);
         return this;

@@ -15,16 +15,12 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancer;
-import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.internal.RequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
@@ -46,27 +42,14 @@ final class DefaultHttpClient<ResolvedAddress, EventType extends ServiceDiscover
             conn -> conn.tryReserve() ? conn : null;
 
     // TODO Proto specific LB after upgrade and worry about SSL
-    private final LoadBalancer<LoadBalancedHttpConnection> loadBalancer;
     private final ExecutionContext executionContext;
+    private final LoadBalancer<LoadBalancedHttpConnection> loadBalancer;
 
     @SuppressWarnings("unchecked")
     DefaultHttpClient(ExecutionContext executionContext,
-                      ReadOnlyHttpClientConfig roConfig,
-                      Publisher<EventType> addressEventStream,
-                      Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>,
-                               HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilter,
-                      LoadBalancerFactory<ResolvedAddress, HttpConnection<HttpPayloadChunk, HttpPayloadChunk>>
-                                 loadBalancerFactory) {
+                      LoadBalancer<LoadBalancedHttpConnection> loadBalancer) {
         this.executionContext = requireNonNull(executionContext);
-        ConnectionFactory<ResolvedAddress, LoadBalancedHttpConnection> connectionFactory =
-                roConfig.getMaxPipelinedRequests() == 1 ?
-                        new NonPipelinedLBHttpConnectionFactory<>(roConfig, executionContext, connectionFilter) :
-                        new PipelinedLBHttpConnectionFactory<>(roConfig, executionContext, connectionFilter);
-
-        // TODO we should revisit generics on LoadBalancerFactory to avoid casts
-        LoadBalancer<? extends HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> lbfUntypedForCast =
-                loadBalancerFactory.newLoadBalancer(addressEventStream, connectionFactory);
-        loadBalancer = (LoadBalancer<LoadBalancedHttpConnection>) lbfUntypedForCast;
+        this.loadBalancer = requireNonNull(loadBalancer);
     }
 
     @Override

@@ -35,10 +35,11 @@ import java.io.InputStream;
 import java.net.SocketOption;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.function.Function.identity;
+import static java.util.function.UnaryOperator.identity;
 
 /**
  * A builder for instances of {@link HttpConnectionBuilder}.
@@ -51,8 +52,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress>
     private static final Predicate<Object> LAST_CHUNK_PREDICATE = p -> p instanceof LastHttpPayloadChunk;
 
     private final HttpClientConfig config;
-    private Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>,
-            HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory = identity();
+    private UnaryOperator<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory = identity();
 
     /**
      * Create a new builder.
@@ -85,16 +85,16 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress>
 
     static <ResolvedAddress> Single<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> buildForPipelined(
         ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
-        Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>, HttpConnection<HttpPayloadChunk, HttpPayloadChunk>>
-                                                  connectionFilterFactory) {
+        Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>,
+                 HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory) {
         return build(executionContext, resolvedAddress, roConfig, conn ->
                 connectionFilterFactory.apply(new PipelinedHttpConnection(conn, roConfig, executionContext)));
     }
 
     static <ResolvedAddress> Single<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> buildForNonPipelined(
             ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
-            Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>, HttpConnection<HttpPayloadChunk, HttpPayloadChunk>>
-                    connectionFilterFactory) {
+            Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>,
+                     HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory) {
         return build(executionContext, resolvedAddress, roConfig, conn ->
                 connectionFilterFactory.apply(new NonPipelinedHttpConnection(conn, roConfig, executionContext)));
     }
@@ -261,8 +261,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress>
      * @return {@code this}
      */
     public DefaultHttpConnectionBuilder<ResolvedAddress> setConnectionFilterFactory(
-            Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>,
-                     HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory) {
+            UnaryOperator<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory) {
         this.connectionFilterFactory = requireNonNull(connectionFilterFactory);
         return this;
     }
