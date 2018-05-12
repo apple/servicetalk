@@ -48,7 +48,7 @@ public final class AggregatingPayloadClient {
 
     public static void main(String[] args) throws Exception {
         // Shared IoExecutor for the application.
-        IoExecutor ioExecutor = NettyIoExecutors.createExecutor();
+        IoExecutor ioExecutor = NettyIoExecutors.createIoExecutor();
         final ExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate());
         try {
             InetSocketAddress serverAddress = new InetSocketAddress("127.0.0.1", 8081);

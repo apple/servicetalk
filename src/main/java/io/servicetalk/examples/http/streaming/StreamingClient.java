@@ -25,8 +25,6 @@ import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.netty.DefaultHttpClientBuilder;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
-import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.netty.NettyIoExecutors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +42,7 @@ import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
-import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
+import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
 public final class StreamingClient {
@@ -53,7 +51,7 @@ public final class StreamingClient {
     public static void main(String[] args) throws Exception {
         // Setup the ExecutionContext to offload user code onto a cached Executor.
         ExecutionContext executionContext =
-                new DefaultExecutionContext(DEFAULT_ALLOCATOR, createExecutor(), newCachedThreadExecutor());
+                new DefaultExecutionContext(DEFAULT_ALLOCATOR, createIoExecutor(), newCachedThreadExecutor());
 
         // In this example we will use DNS as our Service Discovery system.
         ServiceDiscoverer<HostAndPort, InetSocketAddress> dnsDiscoverer =

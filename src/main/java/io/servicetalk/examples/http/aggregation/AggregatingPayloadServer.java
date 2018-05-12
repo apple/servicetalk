@@ -35,7 +35,7 @@ public final class AggregatingPayloadServer {
 
     public static void main(String[] args) throws Exception {
         // Shared IoExecutor for the application.
-        IoExecutor ioExecutor = NettyIoExecutors.createExecutor();
+        IoExecutor ioExecutor = NettyIoExecutors.createIoExecutor();
         try {
             HttpServerStarter starter = new DefaultHttpServerStarter(ioExecutor);
             // Note that ServiceTalk is safe to block by default. An Application Executor is created by default and is

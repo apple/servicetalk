@@ -19,13 +19,13 @@ import io.servicetalk.http.api.HttpServerStarter;
 import io.servicetalk.http.netty.DefaultHttpServerStarter;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.NettyIoExecutors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 
 /**
  * A hello world server starter using a {@link HelloWorldBlockingService}.
@@ -45,7 +45,7 @@ public final class HelloWorldBlockingServer {
      */
     public static void main(String[] args) throws Exception {
         // Shared IoExecutor for the application.
-        IoExecutor ioExecutor = NettyIoExecutors.createExecutor();
+        IoExecutor ioExecutor = createIoExecutor();
         try {
             HttpServerStarter starter = new DefaultHttpServerStarter(ioExecutor);
 

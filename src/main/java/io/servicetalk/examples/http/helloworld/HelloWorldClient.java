@@ -37,7 +37,7 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
-import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
+import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
 public final class HelloWorldClient {
@@ -46,7 +46,7 @@ public final class HelloWorldClient {
     public static void main(String[] args) throws Exception {
         // Setup the ExecutionContext to offload user code onto a cached Executor.
         ExecutionContext executionContext =
-                new DefaultExecutionContext(DEFAULT_ALLOCATOR, createExecutor(), newCachedThreadExecutor());
+                new DefaultExecutionContext(DEFAULT_ALLOCATOR, createIoExecutor(), newCachedThreadExecutor());
 
         // In this example we will use DNS as our Service Discovery system.
         ServiceDiscoverer<HostAndPort, InetSocketAddress> dnsDiscoverer =
