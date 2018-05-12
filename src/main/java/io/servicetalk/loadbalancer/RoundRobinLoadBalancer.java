@@ -18,6 +18,7 @@ package io.servicetalk.loadbalancer;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionRejectedException;
 import io.servicetalk.client.api.LoadBalancer;
+import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.client.api.ServiceDiscoverer;
@@ -63,6 +64,7 @@ import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace
 import static java.util.Collections.binarySearch;
 import static java.util.Collections.emptyList;
 import static java.util.Comparator.comparing;
+import static java.util.Comparator.comparingInt;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
@@ -186,6 +188,19 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                 LOGGER.debug("Service discoverer {} has completed.", eventPublisher);
             }
         });
+    }
+
+    /**
+     * Create a {@link LoadBalancerFactory} that creates instances of {@link RoundRobinLoadBalancer}.
+     * @param <ResolvedAddress> The resolved address type.
+     * @param <C> The type of connection.
+     * @return a {@link LoadBalancerFactory} that creates instances of {@link RoundRobinLoadBalancer}.
+     */
+    public static <ResolvedAddress, C extends ListenableAsyncCloseable>
+                                    LoadBalancerFactory<ResolvedAddress, C> newRoundRobinFactory() {
+        return (eventPublisher, connectionFactory) -> new RoundRobinLoadBalancer<>(eventPublisher,
+                connectionFactory,
+                comparingInt(Object::hashCode));
     }
 
     @Override
