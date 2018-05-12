@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 @ElementsAreNonnullByDefault
-package io.servicetalk.client.servicediscoverer.dns;
+package io.servicetalk.dns.discovery.netty;
 
 import io.servicetalk.annotations.ElementsAreNonnullByDefault;
