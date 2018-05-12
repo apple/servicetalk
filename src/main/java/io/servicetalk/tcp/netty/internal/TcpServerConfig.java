@@ -15,7 +15,7 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.buffer.BufferAllocator;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
