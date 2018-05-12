@@ -15,7 +15,7 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.servicetalk.buffer.Buffer;
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.redis.api.DefaultBaseRedisData;
 import io.servicetalk.redis.api.RedisData;
 

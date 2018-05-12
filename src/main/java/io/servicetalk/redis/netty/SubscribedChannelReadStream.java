@@ -15,8 +15,8 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.servicetalk.buffer.Buffer;
-import io.servicetalk.buffer.BufferAllocator;
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.redis.api.PubSubRedisMessage.ChannelPubSubRedisMessage;

@@ -15,7 +15,7 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.servicetalk.buffer.Buffer;
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.internal.DefaultHostAndPort;
