@@ -68,7 +68,7 @@ import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.http.api.HttpRequestMethods.PUT;
 import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.http.router.jersey.TestUtils.getContentAsString;
-import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
+import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
@@ -93,7 +93,7 @@ public abstract class AbstractJerseyHttpServiceTest {
     @Before
     public void initServer() throws Exception {
         serverExecutor = newCachedThreadExecutor(new DefaultThreadFactory("st-server-", true, NORM_PRIORITY));
-        serverIoExecutor = createExecutor(new IoThreadFactory("st-server-io"));
+        serverIoExecutor = createIoExecutor(new IoThreadFactory("st-server-io"));
         serverContext = awaitIndefinitelyNonNull(
                 new DefaultHttpServerStarter(serverIoExecutor)
                         .start(new InetSocketAddress(0),
@@ -104,7 +104,7 @@ public abstract class AbstractJerseyHttpServiceTest {
     @Before
     public void initClient() throws Exception {
         clientExecutor = newCachedThreadExecutor(new DefaultThreadFactory("st-client-", true, NORM_PRIORITY));
-        clientIoExecutor = createExecutor(new IoThreadFactory("st-client-io"));
+        clientIoExecutor = createIoExecutor(new IoThreadFactory("st-client-io"));
         clientConnection = awaitIndefinitelyNonNull(
                 new DefaultHttpConnectionBuilder<InetSocketAddress>()
                         .build(new DefaultExecutionContext(DEFAULT_ALLOCATOR, clientIoExecutor, clientExecutor),
