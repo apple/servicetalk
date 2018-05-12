@@ -50,7 +50,7 @@ import static io.servicetalk.redis.api.RedisProtocolSupport.Command.SUBSCRIBE;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static io.servicetalk.redis.netty.DefaultRedisConnectionBuilder.forPipeline;
 import static io.servicetalk.redis.netty.RedisTestUtils.randomStringOfLength;
-import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
+import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -82,7 +82,7 @@ public class InternalSubscribedRedisConnectionTest {
         int redisPort = Integer.parseInt(tmpRedisPort);
         String redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
         redisAddress = InetSocketAddress.createUnresolved(redisHost, redisPort);
-        ioExecutor = toNettyIoExecutor(createExecutor());
+        ioExecutor = toNettyIoExecutor(createIoExecutor());
         builder = DefaultRedisConnectionBuilder.<InetSocketAddress>forSubscribe(
                 new RedisClientConfig(new TcpClientConfig(true))
                 .setDeferSubscribeTillConnect(true))

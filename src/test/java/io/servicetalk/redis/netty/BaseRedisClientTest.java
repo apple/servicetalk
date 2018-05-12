@@ -50,7 +50,7 @@ import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponential
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.INFO;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
-import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
+import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.time.Duration.ofMillis;
@@ -93,7 +93,7 @@ public abstract class BaseRedisClientTest {
 
         redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
 
-        ioExecutor = toEventLoopAwareNettyIoExecutor(createExecutor());
+        ioExecutor = toEventLoopAwareNettyIoExecutor(createIoExecutor());
         serviceDiscoverer = new DefaultDnsServiceDiscoverer.Builder(ioExecutor.next(), immediate()).build()
                 .toHostAndPortDiscoverer();
         RedisClientConfig config = new RedisClientConfig(new TcpClientConfig(false))

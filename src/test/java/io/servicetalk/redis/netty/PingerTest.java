@@ -64,7 +64,7 @@ import static io.servicetalk.redis.api.RedisProtocolSupport.Command.SUBSCRIBE;
 import static io.servicetalk.redis.netty.InternalSubscribedRedisConnection.newSubscribedConnection;
 import static io.servicetalk.redis.netty.PipelinedRedisConnection.newPipelinedConnection;
 import static io.servicetalk.redis.netty.RedisTestUtils.randomStringOfLength;
-import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
+import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
 import static java.lang.Long.MAX_VALUE;
 import static java.time.Duration.ofSeconds;
@@ -97,7 +97,7 @@ public class PingerTest {
         String redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
         serverAddress = new InetSocketAddress(redisHost, redisPort);
 
-        nettyIoExecutor = toNettyIoExecutor(createExecutor());
+        nettyIoExecutor = toNettyIoExecutor(createIoExecutor());
         config = new RedisClientConfig(new TcpClientConfig(false)).setPingPeriod(PING_PERIOD).setMaxPipelinedRequests(10).asReadOnly();
     }
 

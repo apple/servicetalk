@@ -65,7 +65,7 @@ import static io.servicetalk.redis.api.RedisProtocolSupport.Command.INFO;
 import static io.servicetalk.redis.api.RedisProtocolSupport.CommandFlag.PUBSUB;
 import static io.servicetalk.redis.api.RedisProtocolSupport.CommandFlag.WRITE;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
-import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
+import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.time.Duration.ofSeconds;
@@ -117,7 +117,7 @@ public class PartitionedRedisClientTest {
     public void startClient() throws Exception {
         assumeThat(redisPortString, not(isEmptyOrNullString()));
 
-        ioExecutor = toNettyIoExecutor(createExecutor());
+        ioExecutor = toNettyIoExecutor(createIoExecutor());
 
         partitionAttributesBuilderFactory = command -> {
             final PartitionAttributesBuilder partitionAttributesBuilder;

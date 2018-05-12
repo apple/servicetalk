@@ -45,7 +45,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoff;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
+import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
@@ -159,7 +159,7 @@ public class RedisAuthConnectionFactoryClientTest {
 
         redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
 
-        ioExecutor = toEventLoopAwareNettyIoExecutor(createExecutor());
+        ioExecutor = toEventLoopAwareNettyIoExecutor(createIoExecutor());
         serviceDiscoverer = new DefaultDnsServiceDiscoverer.Builder(ioExecutor.next(), immediate()).build()
                 .toHostAndPortDiscoverer();
         client = new RetryingRedisClient(
