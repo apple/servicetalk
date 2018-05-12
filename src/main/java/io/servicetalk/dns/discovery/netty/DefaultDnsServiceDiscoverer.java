@@ -25,6 +25,7 @@ import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
@@ -114,6 +115,15 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
         @Nullable
         private BiIntFunction<Throwable, Completable> retryStrategy;
         private int minTTLSeconds = 2;
+
+        /**
+         * Create a new instance.
+         * @param executionContext The {@link ExecutionContext} which determines the threading model for I/O and calling
+         * user code.
+         */
+        public Builder(ExecutionContext executionContext) {
+            this(executionContext.getIoExecutor(), executionContext.getExecutor());
+        }
 
         /**
          * Create a new instance.
