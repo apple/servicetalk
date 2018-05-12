@@ -22,6 +22,7 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.NettyIoExecutors;
 
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 
 /**
  * A hello world server starter.
@@ -45,10 +46,9 @@ public final class HelloWorldServer {
             HttpServerStarter starter = new DefaultHttpServerStarter(ioExecutor);
             // Note that ServiceTalk is safe to block by default. An Application Executor is created by default and is
             // used to execute user code. The Executor can be manually created and shared if desirable too.
-            ServerContext serverContext = awaitIndefinitely(starter.start(
+            ServerContext serverContext = awaitIndefinitelyNonNull(starter.start(
                     8080,
                     new HelloWorldService()));
-            assert serverContext != null;
             awaitIndefinitely(serverContext.onClose());
         } finally {
             awaitIndefinitely(ioExecutor.closeAsync());

@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.aggregation;
+package io.servicetalk.examples.jaxrs.helloworld;
 
 import io.servicetalk.http.api.HttpServerStarter;
 import io.servicetalk.http.netty.DefaultHttpServerStarter;
+import io.servicetalk.http.router.jersey.HttpJerseyRouterBuilder;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.NettyIoExecutors;
@@ -25,14 +26,20 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 
 /**
- * A server that demonstrates how to aggregate HTTP request payload.
+ * A hello world JAX-RS server starter.
  */
-public final class AggregatingPayloadServer {
+public final class HelloWorldJaxRsServer {
 
-    private AggregatingPayloadServer() {
+    private HelloWorldJaxRsServer() {
         // No instances.
     }
 
+    /**
+     * Starts this server.
+     *
+     * @param args Program arguments, none supported yet.
+     * @throws Exception If the server could not be started.
+     */
     public static void main(String[] args) throws Exception {
         // Shared IoExecutor for the application.
         IoExecutor ioExecutor = NettyIoExecutors.createExecutor();
@@ -40,7 +47,9 @@ public final class AggregatingPayloadServer {
             HttpServerStarter starter = new DefaultHttpServerStarter(ioExecutor);
             // Note that ServiceTalk is safe to block by default. An Application Executor is created by default and is
             // used to execute user code. The Executor can be manually created and shared if desirable too.
-            ServerContext serverContext = awaitIndefinitelyNonNull(starter.start(8081, new RequestAggregationService()));
+            ServerContext serverContext = awaitIndefinitelyNonNull(starter.start(
+                    8080,
+                    new HttpJerseyRouterBuilder().build(new HelloWorldJaxrsApplication())));
             awaitIndefinitely(serverContext.onClose());
         } finally {
             awaitIndefinitely(ioExecutor.closeAsync());

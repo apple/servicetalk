@@ -31,7 +31,11 @@ dependencies {
   api "io.servicetalk:servicetalk-http-api"
   api "io.servicetalk:servicetalk-http-netty"
   api "io.servicetalk:servicetalk-loadbalancer"
+  api "io.servicetalk:servicetalk-http-router-jersey"
+
+  api "com.google.code.findbugs:jsr305:$jsr305Version"
   api "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
   api "org.apache.logging.log4j:log4j-core:$log4jVersion"
-  api "com.google.code.findbugs:jsr305:$jsr305Version"
+  api "org.glassfish.jersey.inject:jersey-hk2:$jerseyVersion"
+  api "org.glassfish.jersey.media:jersey-media-json-jackson:$jerseyVersion"
 }
