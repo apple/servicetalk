@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ServiceDiscoverer.Event;
-import io.servicetalk.client.loadbalancer.RoundRobinLoadBalancer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -26,6 +25,7 @@ import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.loadbalancer.RoundRobinLoadBalancer;
 import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
