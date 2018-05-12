@@ -36,6 +36,7 @@ apply plugin: "servicetalk-core"
 dependencyManagement {
   dependencies {
     // First Party ServiceTalk Dependencies
+    dependency "io.servicetalk:servicetalk-http-router-jersey:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-http-router-predicate:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-http-netty:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-http-api:0.1.0-SNAPSHOT"
