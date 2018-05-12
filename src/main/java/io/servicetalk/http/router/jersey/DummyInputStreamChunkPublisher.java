@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.router.jersey;
 
-import io.servicetalk.buffer.BufferAllocator;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
 

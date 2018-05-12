@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.router.jersey;
 
-import io.servicetalk.buffer.BufferAllocator;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Single.Subscriber;
 import io.servicetalk.concurrent.api.Executor;
@@ -39,7 +39,7 @@ import javax.annotation.Nullable;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.Response.StatusType;
 
-import static io.servicetalk.buffer.ReadOnlyBufferAllocators.PREFER_DIRECT_ALLOCATOR;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_DIRECT_ALLOCATOR;
 import static io.servicetalk.http.api.CharSequences.emptyAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
