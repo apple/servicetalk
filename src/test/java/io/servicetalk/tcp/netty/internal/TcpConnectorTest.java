@@ -64,7 +64,7 @@ public final class TcpConnectorTest {
 
     @BeforeClass
     public static void beforeClass() {
-        nettyIoExecutor = (NettyIoExecutor) NettyIoExecutors.createExecutor();
+        nettyIoExecutor = (NettyIoExecutor) NettyIoExecutors.createIoExecutor();
     }
 
     @AfterClass
