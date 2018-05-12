@@ -41,4 +41,17 @@ public interface HttpClientBuilder<ResolvedAddress, EventType extends Event<Reso
      * @return A new {@link HttpClient}
      */
     HttpClient<I, O> build(ExecutionContext executionContext, Publisher<EventType> addressEventStream);
+
+    /**
+     * Create a new {@link BlockingHttpClient}.
+     *
+     * @param executionContext {@link ExecutionContext} when building {@link BlockingHttpConnection}s.
+     * @param addressEventStream A stream of events (typically from a {@link ServiceDiscoverer#discover(Object)}) that
+     *                           provides the addresses used to create new {@link HttpConnection}s
+     * @return {@link BlockingHttpClient}
+     */
+    default BlockingHttpClient<I, O> buildBlocking(ExecutionContext executionContext,
+                                                   Publisher<EventType> addressEventStream) {
+        return build(executionContext, addressEventStream).asBlockingClient();
+    }
 }

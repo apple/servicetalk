@@ -23,6 +23,8 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.Function;
 
+import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+
 /**
  * A builder for {@link HttpConnection} objects.
  *
@@ -40,6 +42,19 @@ public interface HttpConnectionBuilder<ResolvedAddress, I, O> {
      * @return A single that will complete with the {@link HttpConnection}
      */
     Single<HttpConnection<I, O>> build(ExecutionContext executionContext, ResolvedAddress resolvedAddress);
+
+    /**
+     * Create a new {@link BlockingHttpConnection} and waits till it is created.
+     *
+     * @param executionContext {@link ExecutionContext} when building {@link BlockingHttpConnection}s.
+     * @param resolvedAddress a resolved address to use when connecting
+     * @return {@link BlockingHttpConnection}
+     * @throws Exception If the connection can not be created.
+     */
+    default BlockingHttpConnection<I, O> buildBlocking(ExecutionContext executionContext,
+                                                       ResolvedAddress resolvedAddress) throws Exception {
+        return awaitIndefinitelyNonNull(build(executionContext, resolvedAddress)).asBlockingConnection();
+    }
 
     /**
      * Convert this {@link HttpConnectionBuilder} to a {@link ConnectionFactory}. This can be useful to take advantage

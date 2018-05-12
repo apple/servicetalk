@@ -24,9 +24,8 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
-import static java.util.Objects.requireNonNull;
 
 /**
  * Provides methods for binding an {@link HttpService} to a {@link SocketAddress}.
@@ -257,8 +256,7 @@ public interface HttpServerStarter {
      */
     default ServerContext start(SocketAddress address, ContextFilter contextFilter, Executor executor,
                                 BlockingHttpService<HttpPayloadChunk, HttpPayloadChunk> service) throws Exception {
-        ServerContext ctx = awaitIndefinitely(start(address, contextFilter, executor, service.asAsynchronousService()));
-        return requireNonNull(ctx);
+        return awaitIndefinitelyNonNull(start(address, contextFilter, executor, service.asAsynchronousService()));
     }
 
     /**
