@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.LoadBalancer;
-import io.servicetalk.client.internal.RequestConcurrencyController;
 import io.servicetalk.client.internal.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -29,10 +28,7 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-
 import static java.util.Objects.requireNonNull;
-import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
  * Makes the wrapped {@link HttpConnection} aware of the {@link LoadBalancer}.
@@ -60,52 +56,12 @@ final class LoadBalancedHttpConnection extends ReservedHttpConnection<HttpPayloa
 
     @Override
     public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
-        return new RequestCompletionHelperSingle(delegate.request(request), limiter);
+        return delegate.request(request);
     }
 
     @Override
     public ExecutionContext getExecutionContext() {
         return delegate.getExecutionContext();
-    }
-
-    // TODO We can't make RequestConcurrencyController#requestFinished() work reliably with cancel() of HttpResponse.
-    // This code will prematurely release connections when the cancel event is racing with the onComplete() of the
-    // HttpRequest and gets ignored. This means that from the LoadBalancer's perspective the connection is free however
-    // the user may still be subscribing and consume the payload.
-    // This may be acceptable for now, with DefaultPipelinedConnection rejecting requests after a set maximum number and
-    // this race condition expected to happen infrequently. For NonPipelinedHttpConnections there is no cap on
-    // concurrent requests so we can expect to be making a pipelined request in this case.
-    private static final class RequestCompletionHelperSingle extends Single<HttpResponse<HttpPayloadChunk>> {
-
-        private static final AtomicIntegerFieldUpdater<RequestCompletionHelperSingle> terminatedUpdater =
-                newUpdater(RequestCompletionHelperSingle.class, "terminated");
-
-        private final RequestConcurrencyController limiter;
-        private final Single<HttpResponse<HttpPayloadChunk>> response;
-
-        @SuppressWarnings("unused")
-        private volatile int terminated;
-
-        RequestCompletionHelperSingle(Single<HttpResponse<HttpPayloadChunk>> response,
-                                      RequestConcurrencyController limiter) {
-            this.response = requireNonNull(response);
-            this.limiter = requireNonNull(limiter);
-        }
-
-        private void finished() {
-            // Avoid double counting
-            if (terminatedUpdater.compareAndSet(this, 0, 1)) {
-                limiter.requestFinished();
-            }
-        }
-
-        @Override
-        protected void handleSubscribe(final Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber) {
-            response.doBeforeError(e -> finished())
-                    .doBeforeCancel(this::finished)
-                    .map(resp -> resp.transformPayloadBody(payload -> payload.doBeforeFinally(this::finished)))
-                    .subscribe(subscriber);
-        }
     }
 
     @Override
