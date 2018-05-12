@@ -69,7 +69,7 @@ public class HttpAuthConnectionFactoryClientTest {
 
     @Before
     public void setup() {
-        ioExecutor = NettyIoExecutors.createExecutor();
+        ioExecutor = NettyIoExecutors.createIoExecutor();
     }
 
     @After

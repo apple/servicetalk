@@ -36,7 +36,7 @@ import java.net.InetSocketAddress;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
-import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
+import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.net.InetAddress.getLoopbackAddress;
 
@@ -55,7 +55,7 @@ public abstract class AbstractNettyHttpServerTest {
 
     @BeforeClass
     public static void createServerIoExecutor() {
-        ioExecutor = createExecutor(2, new IoThreadFactory("server-io-executor"));
+        ioExecutor = createIoExecutor(2, new IoThreadFactory("server-io-executor"));
     }
 
     @Before
