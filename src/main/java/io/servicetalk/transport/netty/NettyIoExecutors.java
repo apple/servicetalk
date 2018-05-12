@@ -39,8 +39,8 @@ public final class NettyIoExecutors {
      * it allows internal optimizations.
      * @return The created {@link IoExecutor}
      */
-    public static IoExecutor createExecutor(int ioThreads, ThreadFactory threadFactory) {
-        return io.servicetalk.transport.netty.internal.NettyIoExecutors.createExecutor(ioThreads, threadFactory);
+    public static IoExecutor createIoExecutor(int ioThreads, ThreadFactory threadFactory) {
+        return io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor(ioThreads, threadFactory);
     }
 
     /**
@@ -49,8 +49,8 @@ public final class NettyIoExecutors {
      * @param ioThreads number of threads
      * @return The created {@link IoExecutor}
      */
-    public static IoExecutor createExecutor(int ioThreads) {
-        return createExecutor(ioThreads, new IoThreadFactory(NettyIoExecutor.class.getSimpleName()));
+    public static IoExecutor createIoExecutor(int ioThreads) {
+        return createIoExecutor(ioThreads, new IoThreadFactory(NettyIoExecutor.class.getSimpleName()));
     }
 
     /**
@@ -61,8 +61,8 @@ public final class NettyIoExecutors {
      * it allows internal optimizations.
      * @return The created {@link IoExecutor}
      */
-    public static IoExecutor createExecutor(ThreadFactory threadFactory) {
-        return createExecutor(getRuntime().availableProcessors() * 2, threadFactory);
+    public static IoExecutor createIoExecutor(ThreadFactory threadFactory) {
+        return createIoExecutor(getRuntime().availableProcessors() * 2, threadFactory);
     }
 
     /**
@@ -71,7 +71,7 @@ public final class NettyIoExecutors {
      *
      * @return The created {@link IoExecutor}
      */
-    public static IoExecutor createExecutor() {
-        return createExecutor(getRuntime().availableProcessors() * 2);
+    public static IoExecutor createIoExecutor() {
+        return createIoExecutor(getRuntime().availableProcessors() * 2);
     }
 }
