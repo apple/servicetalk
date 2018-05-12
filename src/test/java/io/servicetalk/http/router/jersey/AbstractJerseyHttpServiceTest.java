@@ -34,7 +34,6 @@ import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.IoThreadFactory;
 
-import org.glassfish.jersey.server.ApplicationHandler;
 import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Before;
@@ -99,7 +98,7 @@ public abstract class AbstractJerseyHttpServiceTest {
                 new DefaultHttpServerStarter(serverIoExecutor)
                         .start(new InetSocketAddress(0),
                                 serverExecutor,
-                                new DefaultJerseyHttpService(new ApplicationHandler(getApplication()))));
+                                new HttpJerseyRouterBuilder().build(getApplication())));
     }
 
     @Before

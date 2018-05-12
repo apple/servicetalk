@@ -177,7 +177,7 @@ public class AsynchronousResources {
     public CompletionStage<Response> getTextPubResponse(@QueryParam("i") final int i) {
         final String contentString = "GOT: " + i;
         final Publisher<HttpPayloadChunk> responseContent =
-                asChunkPublisher(contentString, ctx.getBufferAllocator(), ctx.getExecutor());
+                asChunkPublisher(contentString, ctx.getExecutionContext().getBufferAllocator());
 
         // Wrap content Publisher to capture its generic type (i.e. HttpPayloadChunk)
         final GenericEntity<Publisher<HttpPayloadChunk>> entity = new GenericEntity<Publisher<HttpPayloadChunk>>(responseContent) {

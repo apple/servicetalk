@@ -17,7 +17,6 @@ package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.buffer.Buffer;
 import io.servicetalk.buffer.BufferAllocator;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpResponse;
@@ -48,19 +47,16 @@ public final class TestUtils {
     }
 
     public static Publisher<HttpPayloadChunk> asChunkPublisher(final String content,
-                                                               final BufferAllocator allocator,
-                                                               final Executor executor) {
-        return asChunkPublisher(allocator.fromUtf8(content), executor);
+                                                               final BufferAllocator allocator) {
+        return asChunkPublisher(allocator.fromUtf8(content));
     }
 
     public static Publisher<HttpPayloadChunk> asChunkPublisher(final byte[] content,
-                                                               final BufferAllocator allocator,
-                                                               final Executor executor) {
-        return asChunkPublisher(allocator.wrap(content), executor);
+                                                               final BufferAllocator allocator) {
+        return asChunkPublisher(allocator.wrap(content));
     }
 
-    private static Publisher<HttpPayloadChunk> asChunkPublisher(final Buffer content,
-                                                                final Executor executor) {
+    private static Publisher<HttpPayloadChunk> asChunkPublisher(final Buffer content) {
         return just(newPayloadChunk(content));
     }
 }

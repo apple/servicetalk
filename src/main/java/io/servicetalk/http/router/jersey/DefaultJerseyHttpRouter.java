@@ -16,6 +16,7 @@
 package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.concurrent.Single.Subscriber;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
@@ -29,12 +30,16 @@ import org.glassfish.jersey.internal.MapPropertiesDelegate;
 import org.glassfish.jersey.internal.util.collection.Ref;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ContainerRequest;
+import org.glassfish.jersey.server.spi.Container;
 
 import java.net.URI;
 import java.security.Principal;
 import javax.annotation.Nullable;
 import javax.ws.rs.core.SecurityContext;
 
+import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.Completable.defer;
+import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.http.router.jersey.CharSequenceUtils.ensureNoLeadingSlash;
 import static io.servicetalk.http.router.jersey.Context.CONNECTION_CONTEXT_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.HTTP_REQUEST_REF_TYPE;
@@ -43,7 +48,7 @@ import static io.servicetalk.http.router.jersey.DummyHttpUtils.getBaseUri;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.glassfish.jersey.server.internal.ContainerUtils.encodeUnsafeCharacters;
 
-final class DefaultJerseyHttpService extends HttpService<HttpPayloadChunk, HttpPayloadChunk> {
+final class DefaultJerseyHttpRouter extends HttpService<HttpPayloadChunk, HttpPayloadChunk> {
 
     private static final SecurityContext UNAUTHENTICATED_SECURITY_CONTEXT = new SecurityContext() {
         @Nullable
@@ -70,14 +75,33 @@ final class DefaultJerseyHttpService extends HttpService<HttpPayloadChunk, HttpP
     };
 
     private final ApplicationHandler applicationHandler;
+    private final int publisherInputStreamQueueCapacity;
+    private final Container container;
 
-    DefaultJerseyHttpService(final ApplicationHandler applicationHandler) {
+    DefaultJerseyHttpRouter(final ApplicationHandler applicationHandler,
+                            final int publisherInputStreamQueueCapacity) {
         if (!applicationHandler.getConfiguration().isEnabled(ServiceTalkFeature.class)) {
             throw new IllegalStateException("The " + ServiceTalkFeature.class.getSimpleName()
                     + " needs to be enabled for this application.");
         }
 
         this.applicationHandler = applicationHandler;
+        this.publisherInputStreamQueueCapacity = publisherInputStreamQueueCapacity;
+
+        container = new DefaultContainer(applicationHandler);
+        applicationHandler.onStartup(container);
+    }
+
+    @Override
+    public Completable closeAsync() {
+        return defer(() -> {
+            try {
+                applicationHandler.onShutdown(container);
+                return completed();
+            } catch (final Throwable t) {
+                return error(t);
+            }
+        });
     }
 
     @Override
@@ -129,8 +153,8 @@ final class DefaultJerseyHttpService extends HttpService<HttpPayloadChunk, HttpP
         req.getHeaders().forEach(h ->
                 containerRequest.getHeaders().add(h.getKey().toString(), h.getValue().toString()));
 
-        // TODO support optionally configurable queueCapacity
-        containerRequest.setEntityStream(new ChunkPublisherInputStream(req.getPayloadBody(), 16));
+        containerRequest.setEntityStream(new ChunkPublisherInputStream(req.getPayloadBody(),
+                publisherInputStreamQueueCapacity));
 
         final Ref<Publisher<HttpPayloadChunk>> responseChunkPublisherRef = initResponseChunkPublisherRef(containerRequest);
 

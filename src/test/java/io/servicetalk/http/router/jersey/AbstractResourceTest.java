@@ -114,7 +114,6 @@ public abstract class AbstractResourceTest extends AbstractJerseyHttpServiceTest
         sendAndAssertNoResponse(head("/not_a_resource"), NOT_FOUND);
     }
 
-    @Ignore("Server doesn't handle errors yet")
     @Test
     public void notTranslatedException() {
         sendAndAssertNoResponse(get("/text?qp=throw-not-translated"), INTERNAL_SERVER_ERROR);

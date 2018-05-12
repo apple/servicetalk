@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.router.jersey;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.TimeoutException;
@@ -42,7 +41,6 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
         return PATH;
     }
 
-    @Ignore("Server doesn't handle errors yet")
     @Test
     public void failedText() {
         sendAndAssertNoResponse(get("/failed-text"), INTERNAL_SERVER_ERROR);

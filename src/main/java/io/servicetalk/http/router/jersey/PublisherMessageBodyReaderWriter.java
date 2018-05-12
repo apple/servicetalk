@@ -79,7 +79,7 @@ final class PublisherMessageBodyReaderWriter
         // The wrappedStream has been replaced with a user stream (via filtering) so we use it to build a new
         // publisher, being careful to return a publisher instance that implements Closeable to prevent Jersey
         // from closing wrappedStream.
-        return asCloseableChunkPublisher(wrappedStream, ctx.getBufferAllocator(), ctx.getExecutor());
+        return asCloseableChunkPublisher(wrappedStream, ctx.getExecutionContext().getBufferAllocator());
     }
 
     @Override

@@ -65,7 +65,7 @@ public class InterceptorsTest extends AbstractFilterInterceptorTest {
             // for cases when the resource has returned a Publisher
             if (writerInterceptorCtx.getEntity() instanceof Publisher) {
                 writerInterceptorCtx.setEntity(((Publisher<HttpPayloadChunk>) writerInterceptorCtx.getEntity())
-                        .concatWith(asChunkPublisher("!", ctx.getBufferAllocator(), ctx.getExecutor())));
+                        .concatWith(asChunkPublisher("!", ctx.getExecutionContext().getBufferAllocator())));
                 writerInterceptorCtx.proceed();
                 return;
             }

@@ -16,7 +16,6 @@
 package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.buffer.BufferAllocator;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
 
@@ -39,8 +38,7 @@ final class DummyInputStreamChunkPublisher extends Publisher<HttpPayloadChunk> i
     }
 
     static DummyInputStreamChunkPublisher asCloseableChunkPublisher(final InputStream is,
-                                                                    final BufferAllocator allocator,
-                                                                    final Executor executor) {
+                                                                    final BufferAllocator allocator) {
         requireNonNull(is);
         requireNonNull(allocator);
 

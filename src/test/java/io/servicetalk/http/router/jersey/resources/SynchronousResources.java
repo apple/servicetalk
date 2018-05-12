@@ -163,7 +163,7 @@ public class SynchronousResources {
     @Path("/text-strin-pubout")
     @POST
     public Publisher<HttpPayloadChunk> postTextStrInPubOut(final String requestContent) {
-        return asChunkPublisher("GOT: " + requestContent, ctx.getBufferAllocator(), ctx.getExecutor());
+        return asChunkPublisher("GOT: " + requestContent, ctx.getExecutionContext().getBufferAllocator());
     }
 
     @Consumes(TEXT_PLAIN)
@@ -179,7 +179,7 @@ public class SynchronousResources {
     @Path("/text-pubin-pubout")
     @POST
     public Publisher<HttpPayloadChunk> postTextPubInPubOut(final Publisher<HttpPayloadChunk> requestContent) {
-        return asChunkPublisher("GOT: ", ctx.getBufferAllocator(), ctx.getExecutor()).concatWith(requestContent);
+        return asChunkPublisher("GOT: ", ctx.getExecutionContext().getBufferAllocator()).concatWith(requestContent);
     }
 
     @Produces(TEXT_PLAIN)
@@ -188,7 +188,7 @@ public class SynchronousResources {
     public Response getTextPubResponse(@QueryParam("i") final int i) {
         final String contentString = "GOT: " + i;
         final Publisher<HttpPayloadChunk> responseContent =
-                asChunkPublisher(contentString, ctx.getBufferAllocator(), ctx.getExecutor());
+                asChunkPublisher(contentString, ctx.getExecutionContext().getBufferAllocator());
 
         // Wrap content Publisher to capture its generic type (i.e. HttpPayloadChunk)
         final GenericEntity<Publisher<HttpPayloadChunk>> entity = new GenericEntity<Publisher<HttpPayloadChunk>>(responseContent) {
@@ -249,7 +249,7 @@ public class SynchronousResources {
         final Map<String, Object> responseContent = new HashMap<>(requestContent);
         responseContent.put("foo", "bar3");
         return asChunkPublisher(new ObjectMapper().writeValueAsBytes(responseContent),
-                ctx.getBufferAllocator(), ctx.getExecutor());
+                ctx.getExecutionContext().getBufferAllocator());
     }
 
     @Consumes(APPLICATION_JSON)
