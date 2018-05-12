@@ -31,7 +31,7 @@ import java.util.function.Supplier;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createExecutor;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.lang.Runtime.getRuntime;
 
 /**
@@ -106,6 +106,6 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
     }
 
     private static Supplier<IoExecutor> newIoExecutor() {
-        return () -> createExecutor(getRuntime().availableProcessors() * 2, new DefaultThreadFactory());
+        return () -> createIoExecutor(getRuntime().availableProcessors() * 2, new DefaultThreadFactory());
     }
 }

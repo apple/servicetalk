@@ -43,7 +43,7 @@ public final class NettyIoExecutors {
      * @param threadFactory the {@link ThreadFactory} to use.
      * @return The created {@link IoExecutor}
      */
-    public static NettyIoExecutor createExecutor(int ioThreads, ThreadFactory threadFactory) {
+    public static NettyIoExecutor createIoExecutor(int ioThreads, ThreadFactory threadFactory) {
         return new EventLoopGroupIoExecutor(Epoll.isAvailable() ? new EpollEventLoopGroup(ioThreads, threadFactory) :
                 KQueue.isAvailable() ? new KQueueEventLoopGroup(ioThreads, threadFactory) :
                         new NioEventLoopGroup(ioThreads, threadFactory), true);
