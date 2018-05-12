@@ -47,7 +47,7 @@ import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.transport.netty.NettyIoExecutors.createExecutor;
+import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -71,7 +71,7 @@ public class DefaultDnsServiceDiscovererTest {
 
     @BeforeClass
     public static void beforeClass() throws Exception {
-        nettyIoExecutor = toEventLoopAwareNettyIoExecutor(createExecutor());
+        nettyIoExecutor = toEventLoopAwareNettyIoExecutor(createIoExecutor());
         dnsServer = new TestDnsServer(new HashSet<>(asList("apple.com", "servicetalk.io")));
         dnsServer.start();
     }
