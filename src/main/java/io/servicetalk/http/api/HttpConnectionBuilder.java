@@ -57,6 +57,15 @@ public interface HttpConnectionBuilder<ResolvedAddress, I, O> {
     }
 
     /**
+     * Create a new {@link AggregatedHttpConnection}.
+     *
+     * @param executionContext {@link ExecutionContext} when building {@link AggregatedHttpConnection}s.
+     * @param resolvedAddress a resolved address to use when connecting
+     * @return A single that will complete with the {@link AggregatedHttpConnection}
+     */
+    Single<AggregatedHttpConnection> buildAggregated(ExecutionContext executionContext, ResolvedAddress resolvedAddress);
+
+    /**
      * Convert this {@link HttpConnectionBuilder} to a {@link ConnectionFactory}. This can be useful to take advantage
      * of connection filters targeted at the {@link ConnectionFactory} API.
      *

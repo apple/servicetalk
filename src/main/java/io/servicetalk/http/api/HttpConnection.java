@@ -15,10 +15,15 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import org.reactivestreams.Subscriber;
+
+import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 
@@ -53,6 +58,60 @@ public abstract class HttpConnection<I, O> extends HttpRequester<I, O> {
      */
     public final BlockingHttpConnection<I, O> asBlockingConnection() {
         return asBlockingConnectionInternal();
+    }
+
+    /**
+     * Convert this {@link HttpConnection} to the {@link AggregatedHttpConnection} API.
+     * <p>
+     * This API is provided for convenience. It is recommended that
+     * filters are implemented using the {@link HttpConnection} asynchronous API for maximum portability.
+     *
+     * @param requestPayloadTransformer {@link Function} to convert an {@link HttpPayloadChunk} to {@link I}.
+     * This is to make sure that we can use {@code this} {@link HttpConnection} for the returned
+     * {@link AggregatedHttpConnection}. Use {@link Function#identity()} if {@code this} {@link HttpClient} already
+     * handles {@link HttpPayloadChunk} for request payload.
+     * @param responsePayloadTransformer {@link Function} to convert an {@link O} to {@link HttpPayloadChunk}.
+     * This is to make sure that we can use {@code this} {@link HttpConnection} for the returned
+     * {@link AggregatedHttpConnection}. Use {@link Function#identity()} if {@code this} {@link HttpConnection} already
+     * returns response with {@link HttpPayloadChunk} as payload.
+     * @return a {@link AggregatedHttpConnection} representation of this {@link HttpConnection}.
+     */
+    public final AggregatedHttpConnection asAggregatedConnection(Function<HttpPayloadChunk, I> requestPayloadTransformer,
+                                                               Function<O, HttpPayloadChunk> responsePayloadTransformer) {
+        HttpConnection<HttpPayloadChunk, HttpPayloadChunk> chunkConnection = new HttpConnection<HttpPayloadChunk, HttpPayloadChunk>() {
+            @Override
+            public ConnectionContext getConnectionContext() {
+                return HttpConnection.this.getConnectionContext();
+            }
+
+            @Override
+            public <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
+                return HttpConnection.this.getSettingStream(settingKey);
+            }
+
+            @Override
+            public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
+                return HttpConnection.this.request(request.transformPayloadBody(pubChunk -> pubChunk.map(requestPayloadTransformer)))
+                        .map(resp -> resp.transformPayloadBody(pubChunk -> pubChunk.map(responsePayloadTransformer)));
+            }
+
+            @Override
+            public ExecutionContext getExecutionContext() {
+                return HttpConnection.this.getExecutionContext();
+            }
+
+            @Override
+            public Completable onClose() {
+                return HttpConnection.this.onClose();
+            }
+
+            @Override
+            public Completable closeAsync() {
+                return HttpConnection.this.closeAsync();
+            }
+        };
+
+        return new AggregatedHttpConnection(chunkConnection);
     }
 
     BlockingHttpConnection<I, O> asBlockingConnectionInternal() {

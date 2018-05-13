@@ -19,8 +19,6 @@ import io.servicetalk.concurrent.api.BlockingIterable;
 import io.servicetalk.http.api.HttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 
-import org.reactivestreams.Subscriber;
-
 /**
  * The equivalent of {@link HttpConnection} but with synchronous/blocking APIs instead of asynchronous APIs.
  * @param <I> Type of payload of a request handled by this {@link BlockingHttpConnection}.
@@ -35,7 +33,7 @@ public abstract class BlockingHttpConnection<I, O> extends BlockingHttpRequester
 
     /**
      * Returns a {@link BlockingIterable} that gives the current value of the setting as well as subsequent changes to
-     * the setting value as long as the {@link Subscriber} has expressed enough demand.
+     * the setting value.
      *
      * @param settingKey Name of the setting to fetch.
      * @param <T> Type of the setting value.

@@ -24,7 +24,7 @@ import java.util.function.Function;
 
 /**
  * The equivalent of {@link HttpResponse} but with synchronous/blocking APIs instead of asynchronous APIs.
- * @param <T> Type of payload.HttpServiceToBlockingHttpService.java
+ * @param <T> Type of payload.
  */
 public interface BlockingHttpResponse<T> extends HttpResponseMetaData {
     @Override
@@ -51,7 +51,7 @@ public interface BlockingHttpResponse<T> extends HttpResponseMetaData {
     BlockingIterable<T> getPayloadBody();
 
     /**
-     * To modify the {@link #getPayloadBody()} of the response and preserving the containing request object.
+     * To modify the {@link #getPayloadBody()} of the response and preserving the containing response object.
      *
      * @param transformer {@link Function} which converts the payload body to another type.
      * @param <R> Type of the resulting payload body.

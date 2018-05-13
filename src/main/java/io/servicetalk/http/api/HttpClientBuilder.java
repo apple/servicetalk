@@ -28,7 +28,6 @@ import io.servicetalk.transport.api.ExecutionContext;
  * @param <I> The type of content of the request
  * @param <O> The type of content of the response
  */
-@FunctionalInterface
 public interface HttpClientBuilder<ResolvedAddress, EventType extends Event<ResolvedAddress>, I, O> {
 
     /**
@@ -41,6 +40,17 @@ public interface HttpClientBuilder<ResolvedAddress, EventType extends Event<Reso
      * @return A new {@link HttpClient}
      */
     HttpClient<I, O> build(ExecutionContext executionContext, Publisher<EventType> addressEventStream);
+
+    /**
+     * Build a new {@link AggregatedHttpClient}.
+     *
+     * @param executionContext {@link ExecutionContext} used for {@link AggregatedHttpClient#getExecutionContext()} and
+     * to build new {@link HttpConnection}s.
+     * @param addressEventStream A stream of events (typically from a {@link ServiceDiscoverer#discover(Object)}) that
+     *                           provides the addresses used to create new {@link HttpConnection}s
+     * @return A new {@link AggregatedHttpClient}
+     */
+    AggregatedHttpClient buildAggregated(ExecutionContext executionContext, Publisher<EventType> addressEventStream);
 
     /**
      * Create a new {@link BlockingHttpClient}.

@@ -21,6 +21,10 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.function.BiFunction;
+import java.util.function.Function;
+
+import static io.servicetalk.http.api.DefaultFullHttpRequest.toHttpRequest;
+import static io.servicetalk.http.api.DefaultFullHttpResponse.from;
 
 /**
  * A service contract for the HTTP protocol.
@@ -56,6 +60,35 @@ public abstract class HttpService<I, O> implements AsyncCloseable {
      */
     public final BlockingHttpService<I, O> asBlockingService() {
         return asBlockingServiceInternal();
+    }
+
+    /**
+     * Convert this {@link HttpService} to the {@link AggregatedHttpService} API.
+     * <p>
+     * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
+     * filters are implemented using the {@link HttpService} asynchronous API for maximum portability.
+     * @param requestPayloadTransformer {@link Function} to convert an {@link HttpPayloadChunk} to {@link I}.
+     * This is to make sure that we can use {@code this} {@link HttpService} for the returned
+     * {@link AggregatedHttpService}. Use {@link Function#identity()} if {@code this} {@link HttpService} already
+     * handles {@link HttpPayloadChunk} for request payload.
+     * @param responsePayloadTransformer {@link Function} to convert an {@link O} to {@link HttpPayloadChunk}.
+     * This is to make sure that we can use {@code this} {@link HttpService} for the returned
+     * {@link AggregatedHttpService}. Use {@link Function#identity()} if {@code this} {@link HttpService} already
+     * returns response with {@link HttpPayloadChunk} as payload.
+     * @return a {@link AggregatedHttpService} representation of this {@link HttpService}.
+     */
+    public final AggregatedHttpService asAggregatedService(Function<HttpPayloadChunk, I> requestPayloadTransformer,
+                                                           Function<O, HttpPayloadChunk> responsePayloadTransformer) {
+        return new AggregatedHttpService() {
+            @Override
+            public Single<FullHttpResponse> handle(final ConnectionContext ctx, final FullHttpRequest fullHttpRequest) {
+                final HttpRequest<I> req = toHttpRequest(fullHttpRequest)
+                        .transformPayloadBody(chunkSrc -> chunkSrc.map(requestPayloadTransformer));
+                return HttpService.this.handle(ctx, req)
+                        .flatMap(r -> from(r.transformPayloadBody(chunkSrc -> chunkSrc.map(responsePayloadTransformer)),
+                        ctx.getBufferAllocator()));
+            }
+        };
     }
 
     /**

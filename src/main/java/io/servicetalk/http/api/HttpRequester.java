@@ -15,9 +15,12 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
+
+import java.util.function.Function;
 
 /**
  * Provides a means to make a HTTP request.
@@ -50,6 +53,50 @@ public abstract class HttpRequester<I, O> implements ListenableAsyncCloseable {
      */
     public final BlockingHttpRequester<I, O> asBlockingRequester() {
         return asBlockingRequesterInternal();
+    }
+
+    /**
+     * Convert this {@link HttpRequester} to the {@link AggregatedHttpRequester} API.
+     * <p>
+     * This API is provided for convenience. It is recommended that
+     * filters are implemented using the {@link HttpRequester} asynchronous API for maximum portability.
+     *
+     * @param requestPayloadTransformer {@link Function} to convert an {@link HttpPayloadChunk} to {@link I}.
+     * This is to make sure that we can use {@code this} {@link HttpRequester} for the returned
+     * {@link AggregatedHttpRequester}. Use {@link Function#identity()} if {@code this} {@link HttpClient} already
+     * handles {@link HttpPayloadChunk} for request payload.
+     * @param responsePayloadTransformer {@link Function} to convert an {@link O} to {@link HttpPayloadChunk}.
+     * This is to make sure that we can use {@code this} {@link HttpRequester} for the returned
+     * {@link AggregatedHttpRequester}. Use {@link Function#identity()} if {@code this} {@link HttpRequester} already
+     * returns response with {@link HttpPayloadChunk} as payload.
+     * @return a {@link AggregatedHttpRequester} representation of this {@link HttpRequester}.
+     */
+    public final AggregatedHttpRequester asAggregatedRequester(Function<HttpPayloadChunk, I> requestPayloadTransformer,
+                                                               Function<O, HttpPayloadChunk> responsePayloadTransformer) {
+        HttpRequester<HttpPayloadChunk, HttpPayloadChunk> chunkRequester = new HttpRequester<HttpPayloadChunk, HttpPayloadChunk>() {
+            @Override
+            public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
+                return HttpRequester.this.request(request.transformPayloadBody(pubChunk -> pubChunk.map(requestPayloadTransformer)))
+                        .map(resp -> resp.transformPayloadBody(pubChunk -> pubChunk.map(responsePayloadTransformer)));
+            }
+
+            @Override
+            public ExecutionContext getExecutionContext() {
+                return HttpRequester.this.getExecutionContext();
+            }
+
+            @Override
+            public Completable onClose() {
+                return HttpRequester.this.onClose();
+            }
+
+            @Override
+            public Completable closeAsync() {
+                return HttpRequester.this.closeAsync();
+            }
+        };
+
+        return new AggregatedHttpRequester(chunkRequester);
     }
 
     BlockingHttpRequester<I, O> asBlockingRequesterInternal() {
