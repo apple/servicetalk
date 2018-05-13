@@ -20,6 +20,7 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer.Event;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.http.api.AggregatedHttpClient;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpClientBuilder;
 import io.servicetalk.http.api.HttpConnection;
@@ -91,6 +92,12 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
                 (LoadBalancer<LoadBalancedHttpConnection>) lbfUntypedForCast;
         return clientFilterFactory.apply(new DefaultHttpClient<>(executionContext, loadBalancer),
                                             loadBalancer.getEventStream());
+    }
+
+    @Override
+    public AggregatedHttpClient buildAggregated(final ExecutionContext executionContext,
+                                                final Publisher<Event<ResolvedAddress>> addressEventStream) {
+        return build(executionContext, addressEventStream).asAggregatedClient(identity(), identity());
     }
 
     /**
