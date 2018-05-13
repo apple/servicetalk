@@ -21,6 +21,9 @@ import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.NettyIoExecutors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 
@@ -28,6 +31,8 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
  * A server that demonstrates how to aggregate HTTP request payload.
  */
 public final class AggregatingPayloadServer {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AggregatingPayloadServer.class);
 
     private AggregatingPayloadServer() {
         // No instances.
@@ -38,9 +43,13 @@ public final class AggregatingPayloadServer {
         IoExecutor ioExecutor = NettyIoExecutors.createIoExecutor();
         try {
             HttpServerStarter starter = new DefaultHttpServerStarter(ioExecutor);
-            // Note that ServiceTalk is safe to block by default. An Application Executor is created by default and is
-            // used to execute user code. The Executor can be manually created and shared if desirable too.
-            ServerContext serverContext = awaitIndefinitelyNonNull(starter.start(8081, new RequestAggregationService()));
+
+            // Starting the server will start listening for incoming client requests.
+            ServerContext serverContext = awaitIndefinitelyNonNull(starter.start(8080, new RequestAggregationService()));
+
+            LOGGER.info("listening on {}", serverContext.getListenAddress());
+
+            // Stop listening/accepting more sockets and gracefully shutdown all open sockets.
             awaitIndefinitely(serverContext.onClose());
         } finally {
             awaitIndefinitely(ioExecutor.closeAsync());

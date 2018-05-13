@@ -16,26 +16,28 @@
 package io.servicetalk.examples.http.aggregation;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
-import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.HttpService;
-import io.servicetalk.http.api.LastHttpPayloadChunk;
+import io.servicetalk.http.api.AggregatedHttpService;
+import io.servicetalk.http.api.FullHttpRequest;
+import io.servicetalk.http.api.FullHttpResponse;
 import io.servicetalk.transport.api.ConnectionContext;
 
-import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.HttpPayloadChunks.aggregateChunks;
-import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.api.HttpResponses.newResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-final class RequestAggregationService extends HttpService<HttpPayloadChunk, HttpPayloadChunk> {
+import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.http.api.FullHttpResponses.newResponse;
+import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+
+final class RequestAggregationService extends AggregatedHttpService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RequestAggregationService.class);
 
     @Override
-    public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                         final HttpRequest<HttpPayloadChunk> request) {
-        // ServiceTalk by default delivers content as multiple payload chunks.
-        // If required, users can aggregate potential multiple chunks into a single chunk.
-        Single<LastHttpPayloadChunk> aggregatedPayload = aggregateChunks(request.getPayloadBody(), ctx.getBufferAllocator());
-        return success(newResponse(OK, aggregatedPayload.toPublisher().map(chunk -> (HttpPayloadChunk) chunk)));
+    public Single<FullHttpResponse> handle(final ConnectionContext ctx, final FullHttpRequest request) {
+        // Log the request meta data and headers, by default the header values will be filtered for
+        // security reasons, however here we override the filter and print every value.
+        LOGGER.info("got request {}", request.toString((name, value) -> value));
+
+        return success(newResponse(OK, request.getPayloadBody()));
     }
 }
