@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
@@ -66,8 +67,12 @@ public abstract class AbstractNettyHttpServerTest {
                 NORM_PRIORITY));
         final TestService service = new TestService();
 
+        // A small SNDBUF is needed to test that the server defers closing the connection until writes are complete.
+        // However, if it is too small, tests that expect certain chunks of data will see those chunks broken up
+        // differently.
         serverContext = awaitIndefinitelyNonNull(
                 new DefaultHttpServerStarter(ioExecutor)
+                        .setSocketOption(StandardSocketOptions.SO_SNDBUF, 100)
                         .start(bindAddress, executor, service)
                         .doBeforeSuccess(ctx -> LOGGER.debug("Server started on {}.", ctx.getListenAddress()))
                         .doBeforeError(throwable -> LOGGER.debug("Failed starting server on {}.", bindAddress)));

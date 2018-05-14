@@ -43,6 +43,8 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
@@ -50,14 +52,21 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.internal.Await.await;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
+import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
+import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
+import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpRequests.newRequest;
@@ -69,6 +78,7 @@ import static io.servicetalk.http.netty.TestService.SVC_COUNTER_NO_LAST_CHUNK;
 import static io.servicetalk.http.netty.TestService.SVC_ECHO;
 import static io.servicetalk.http.netty.TestService.SVC_ERROR_BEFORE_READ;
 import static io.servicetalk.http.netty.TestService.SVC_ERROR_DURING_READ;
+import static io.servicetalk.http.netty.TestService.SVC_LARGE_LAST;
 import static io.servicetalk.http.netty.TestService.SVC_NO_CONTENT;
 import static io.servicetalk.http.netty.TestService.SVC_ROT13;
 import static io.servicetalk.http.netty.TestService.SVC_SINGLE_ERROR;
@@ -78,10 +88,13 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(NettyHttpServerTest.class);
 
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
@@ -253,6 +266,72 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     }
 
     @Test
+    public void testHttp10CloseConnection() throws Exception {
+        final HttpRequest<HttpPayloadChunk> request = newRequest(HTTP_1_0, GET, SVC_COUNTER);
+        final HttpResponse<HttpPayloadChunk> response = makeRequest(request);
+        assertResponse(response, HTTP_1_0, OK, asList("Testing1\n", ""));
+        assertFalse(response.getHeaders().contains(CONNECTION));
+
+        assertConnectionClosed();
+    }
+
+    @Test
+    public void testHttp10KeepAliveConnection() throws Exception {
+        final HttpRequest<HttpPayloadChunk> request1 = newRequest(HTTP_1_0, GET, SVC_COUNTER);
+        request1.getHeaders().set("connection", "keep-alive");
+        final HttpResponse<HttpPayloadChunk> response1 = makeRequest(request1);
+        assertResponse(response1, HTTP_1_0, OK, asList("Testing1\n", ""));
+        assertTrue(response1.getHeaders().contains(CONNECTION, KEEP_ALIVE));
+
+        final HttpRequest<HttpPayloadChunk> request2 = newRequest(HTTP_1_0, GET, SVC_COUNTER);
+        request2.getHeaders().set("connection", "keep-alive");
+        final HttpResponse<HttpPayloadChunk> response2 = makeRequest(request2);
+        assertResponse(response2, HTTP_1_0, OK, asList("Testing2\n", ""));
+        assertTrue(response1.getHeaders().contains(CONNECTION, KEEP_ALIVE));
+    }
+
+    @Test
+    public void testHttp11CloseConnection() throws Exception {
+        final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_COUNTER);
+        request.getHeaders().set("connection", "close");
+        final HttpResponse<HttpPayloadChunk> response = makeRequest(request);
+        assertResponse(response, HTTP_1_1, OK, asList("Testing1\n", ""));
+        assertTrue(response.getHeaders().contains(CONNECTION, CLOSE));
+
+        assertConnectionClosed();
+    }
+
+    @Test
+    public void testHttp11KeepAliveConnection() throws Exception {
+        final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_COUNTER);
+        final HttpResponse<HttpPayloadChunk> response1 = makeRequest(request1);
+        assertResponse(response1, HTTP_1_1, OK, asList("Testing1\n", ""));
+        assertFalse(response1.getHeaders().contains(CONNECTION));
+
+        final HttpRequest<HttpPayloadChunk> request2 = newRequest(GET, SVC_COUNTER);
+        final HttpResponse<HttpPayloadChunk> response2 = makeRequest(request2);
+        assertResponse(response2, HTTP_1_1, OK, asList("Testing2\n", ""));
+        assertFalse(response2.getHeaders().contains(CONNECTION));
+    }
+
+    @Test
+    public void testDeferCloseConnection() throws Exception {
+        /*
+        TODO: This test is not quite as robust as it could be.
+        If deferring the close is not working properly, it's possible for this test to pass, when it should fail.
+        We should change the test to configure the client's RecvByteBufAllocator to allocate single-byte buffers, so
+        that netty only reads one byte at a time.
+         */
+        final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_LARGE_LAST);
+        request.getHeaders().set("connection", "close");
+        final HttpResponse<HttpPayloadChunk> response = makeRequest(request);
+        assertResponse(response, HTTP_1_1, OK, 1024 + 6144);
+        assertTrue(response.getHeaders().contains(CONNECTION, CLOSE));
+
+        assertConnectionClosed();
+    }
+
+    @Test
     public void testSynchronousError() throws Exception {
         final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_THROW_ERROR);
         final HttpResponse<HttpPayloadChunk> response = makeRequest(request);
@@ -285,7 +364,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         try {
             httpPayloadChunks.next();
         } finally {
-            awaitIndefinitely(httpConnection.onClose());
+            assertConnectionClosed();
         }
     }
 
@@ -309,7 +388,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         try {
             httpPayloadChunks.next();
         } finally {
-            awaitIndefinitely(httpConnection.onClose());
+            assertConnectionClosed();
         }
     }
 
@@ -318,14 +397,25 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         return awaitIndefinitelyNonNull(responseSingle);
     }
 
-    private static void assertResponse(final HttpResponse<HttpPayloadChunk> response, final HttpProtocolVersions version,
-                                       final HttpResponseStatuses status, final List<String> expectedPayloadChunksAsStrings)
+    private void assertResponse(final HttpResponse<HttpPayloadChunk> response, final HttpProtocolVersions version,
+                                final HttpResponseStatuses status, final int expectedSize)
+            throws ExecutionException, InterruptedException {
+        assertEquals(status, response.getStatus());
+        assertEquals(version, response.getVersion());
+
+        final int size = awaitIndefinitelyNonNull(
+                response.getPayloadBody().reduce(() -> 0, (is, c) -> is + c.getContent().getReadableBytes()));
+        assertEquals(expectedSize, size);
+    }
+
+    private void assertResponse(final HttpResponse<HttpPayloadChunk> response, final HttpProtocolVersions version,
+                                final HttpResponseStatuses status, final List<String> expectedPayloadChunksAsStrings)
             throws ExecutionException, InterruptedException {
         assertEquals(status, response.getStatus());
         assertEquals(version, response.getVersion());
         final List<String> bodyAsListOfStrings = getBodyAsListOfStrings(response);
-        assertEquals(expectedPayloadChunksAsStrings.size(), bodyAsListOfStrings.size());
         assertEquals(expectedPayloadChunksAsStrings, bodyAsListOfStrings);
+        assertEquals(expectedPayloadChunksAsStrings.size(), bodyAsListOfStrings.size());
     }
 
     private Publisher<HttpPayloadChunk> getChunkPublisherFromStrings(final String... texts) {
@@ -345,5 +435,9 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
                     list.add(payloadChunk.getContent().toString(US_ASCII));
                     return list;
                 }));
+    }
+
+    private void assertConnectionClosed() throws InterruptedException, ExecutionException, TimeoutException {
+        await(httpConnection.onClose(), 1000, TimeUnit.MILLISECONDS);
     }
 }

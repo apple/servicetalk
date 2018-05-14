@@ -19,7 +19,6 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpPayloadChunks;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatuses;
@@ -30,10 +29,15 @@ import io.servicetalk.transport.api.ConnectionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.http.api.HttpPayloadChunks.newLastPayloadChunk;
+import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static io.servicetalk.http.api.HttpResponseStatuses.NOT_FOUND;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponses.newResponse;
@@ -45,6 +49,7 @@ final class TestService extends HttpService<HttpPayloadChunk, HttpPayloadChunk> 
     static final String SVC_ECHO = "/echo";
     static final String SVC_COUNTER_NO_LAST_CHUNK = "/counterNoLastChunk";
     static final String SVC_COUNTER = "/counter";
+    static final String SVC_LARGE_LAST = "/largeLast";
     static final String SVC_NO_CONTENT = "/noContent";
     static final String SVC_ROT13 = "/rot13";
     static final String SVC_THROW_ERROR = "/throwError";
@@ -68,6 +73,9 @@ final class TestService extends HttpService<HttpPayloadChunk, HttpPayloadChunk> 
                 break;
             case SVC_COUNTER:
                 response = newTestCounterResponseWithLastPayloadChunk(context, req);
+                break;
+            case SVC_LARGE_LAST:
+                response = newLargeLastChunkResponse(context, req);
                 break;
             case SVC_NO_CONTENT:
                 response = newNoContentResponse(req);
@@ -105,7 +113,7 @@ final class TestService extends HttpService<HttpPayloadChunk, HttpPayloadChunk> 
                                                                   final HttpRequest<HttpPayloadChunk> req) {
         final Buffer responseContent = context.getBufferAllocator().fromUtf8(
                 "Testing" + ++counter + "\n");
-        final HttpPayloadChunk responseBody = HttpPayloadChunks.newPayloadChunk(responseContent);
+        final HttpPayloadChunk responseBody = newPayloadChunk(responseContent);
         return newResponse(req.getVersion(), OK, responseBody);
     }
 
@@ -113,8 +121,26 @@ final class TestService extends HttpService<HttpPayloadChunk, HttpPayloadChunk> 
             final ConnectionContext context, final HttpRequest<HttpPayloadChunk> req) {
         final Buffer responseContent = context.getBufferAllocator().fromUtf8(
                 "Testing" + ++counter + "\n");
-        final HttpPayloadChunk responseBody = HttpPayloadChunks.newLastPayloadChunk(responseContent,
+        final HttpPayloadChunk responseBody = newLastPayloadChunk(responseContent,
                 INSTANCE.newEmptyTrailers());
+        return newResponse(req.getVersion(), OK, responseBody);
+    }
+
+    private HttpResponse<HttpPayloadChunk> newLargeLastChunkResponse(
+            final ConnectionContext context, final HttpRequest<HttpPayloadChunk> req) {
+        final byte[] content = new byte[1024];
+        ThreadLocalRandom.current().nextBytes(content);
+        final HttpPayloadChunk chunk = newPayloadChunk(
+                context.getBufferAllocator().wrap(content));
+
+        final byte[] lastContent = new byte[6144];
+        ThreadLocalRandom.current().nextBytes(lastContent);
+        final HttpPayloadChunk lastChunk = newLastPayloadChunk(
+                context.getBufferAllocator().wrap(lastContent),
+                INSTANCE.newEmptyTrailers());
+
+        final Publisher<HttpPayloadChunk> responseBody = from(chunk, lastChunk);
+
         return newResponse(req.getVersion(), OK, responseBody);
     }
 

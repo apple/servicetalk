@@ -63,6 +63,7 @@ import static io.servicetalk.http.api.HttpResponseStatuses.INTERNAL_SERVER_ERROR
 import static io.servicetalk.http.api.HttpResponses.newResponse;
 import static io.servicetalk.http.netty.HeaderUtils.addResponseTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.SpliceFlatStreamToMetaSingle.flatten;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 final class NettyHttpServer {
 
@@ -145,7 +146,7 @@ final class NettyHttpServer {
             @Override
             protected void onPublisherCreation(final ChannelHandlerContext channelHandlerContext,
                                                final Publisher<Object> requestObjectPublisher) {
-                final Connection<Object, Object> conn = new NettyConnection<>(
+                final NettyConnection<Object, Object> conn = new NettyConnection<>(
                         channelHandlerContext.channel(),
                         context,
                         requestObjectPublisher,
@@ -163,17 +164,19 @@ final class NettyHttpServer {
 
     private static Completable handleRequestAndWriteResponse(
             final Executor executor, final HttpService<HttpPayloadChunk, HttpPayloadChunk> service,
-            final Connection<Object, Object> conn, final ConnectionContext context,
+            final NettyConnection<Object, Object> conn, final ConnectionContext context,
             final Single<HttpRequest<HttpPayloadChunk>> requestSingle) {
         final Publisher<Object> responseObjectPublisher = requestSingle.flatMapPublisher(request -> {
             final HttpRequestMethod requestMethod = request.getMethod();
+            final HttpKeepAlive keepAlive = HttpKeepAlive.getResponseKeepAlive(request);
             final Completable drainRequestPayloadBody = request.getPayloadBody().ignoreElements().onErrorResume(
                     t -> completed()
                     /* ignore error from SpliceFlatStreamToMetaSingle about duplicate subscriptions. */);
 
             return handleRequest(service, context, request)
-                    .map(response -> processResponse(requestMethod, drainRequestPayloadBody, response))
-                    .flatMapPublisher(resp -> flatten(executor, resp, HttpResponse::getPayloadBody));
+                    .map(response -> processResponse(requestMethod, keepAlive, drainRequestPayloadBody, response))
+                    .flatMapPublisher(resp -> flatten(executor, resp, HttpResponse::getPayloadBody))
+                    .concatWith(keepAlive.closeConnectionIfNecessary(executor.schedule(100, MILLISECONDS).andThen(conn.closeAsyncDeferred())));
         });
         return writeResponse(conn, responseObjectPublisher.repeat(val -> true));
     }
@@ -190,9 +193,11 @@ final class NettyHttpServer {
     }
 
     private static HttpResponse<HttpPayloadChunk> processResponse(final HttpRequestMethod requestMethod,
+                                                                  final HttpKeepAlive keepAlive,
                                                                   final Completable drainRequestPayloadBody,
                                                                   final HttpResponse<HttpPayloadChunk> response) {
         addResponseTransferEncodingIfNecessary(response, requestMethod);
+        keepAlive.addConnectionHeaderIfNecessary(response);
 
         // When the response payload publisher completes, read any of the request payload that hasn't already
         // been read. This is necessary for using a persistent connection to send multiple requests.
@@ -254,6 +259,7 @@ final class NettyHttpServer {
         @Override
         public Completable closeAsync() {
             return new Completable() {
+                @Override
                 protected void handleSubscribe(final Subscriber subscriber) {
                     if (closedUpdater.compareAndSet(NettyHttpServerContext.this, 0, 1)) {
                         closeAsync.subscribe(onClose);
