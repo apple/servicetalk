@@ -27,24 +27,6 @@ import java.util.function.Function;
  * @param <T> Type of payload.
  */
 public interface BlockingHttpRequest<T> extends HttpRequestMetaData {
-    @Override
-    BlockingHttpRequest<T> setRawPath(String path);
-
-    @Override
-    BlockingHttpRequest<T> setPath(String path);
-
-    @Override
-    BlockingHttpRequest<T> setRawQuery(String query);
-
-    @Override
-    BlockingHttpRequest<T> setVersion(HttpProtocolVersion version);
-
-    @Override
-    BlockingHttpRequest<T> setMethod(HttpRequestMethod method);
-
-    @Override
-    BlockingHttpRequest<T> setRequestTarget(String requestTarget);
-
     /**
      * The <a href="https://tools.ietf.org/html/rfc7230.html#section-3.3">HTTP Payload Body</a>.
      * <p>
@@ -70,4 +52,22 @@ public interface BlockingHttpRequest<T> extends HttpRequestMetaData {
      * @return New {@code HttpRequest} with the altered {@link #getPayloadBody()}.
      */
     <R> BlockingHttpRequest<R> transformPayloadBody(Function<BlockingIterable<T>, BlockingIterable<R>> transformer);
+
+    @Override
+    BlockingHttpRequest<T> setRawPath(String path);
+
+    @Override
+    BlockingHttpRequest<T> setPath(String path);
+
+    @Override
+    BlockingHttpRequest<T> setRawQuery(String query);
+
+    @Override
+    BlockingHttpRequest<T> setVersion(HttpProtocolVersion version);
+
+    @Override
+    BlockingHttpRequest<T> setMethod(HttpRequestMethod method);
+
+    @Override
+    BlockingHttpRequest<T> setRequestTarget(String requestTarget);
 }

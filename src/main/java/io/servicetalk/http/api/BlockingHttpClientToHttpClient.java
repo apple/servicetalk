@@ -201,7 +201,7 @@ final class BlockingHttpClientToHttpClient<I, O> extends HttpClient<I, O> {
         }
 
         @Override
-        public HttpResponse<O> setVersion(final HttpProtocolVersion version) {
+        public BlockingToUpgradableHttpResponse<I, O> setVersion(final HttpProtocolVersion version) {
             upgradeResponse.setVersion(version);
             return this;
         }
@@ -223,7 +223,7 @@ final class BlockingHttpClientToHttpClient<I, O> extends HttpClient<I, O> {
         }
 
         @Override
-        public HttpResponse<O> setStatus(final HttpResponseStatus status) {
+        public BlockingToUpgradableHttpResponse<I, O> setStatus(final HttpResponseStatus status) {
             upgradeResponse.setStatus(status);
             return this;
         }
@@ -271,7 +271,7 @@ final class BlockingHttpClientToHttpClient<I, O> extends HttpClient<I, O> {
         }
 
         @Override
-        public BlockingHttpResponse<O2> setVersion(final HttpProtocolVersion version) {
+        public BlockingUpgradableHttpResponseConverter<I, O1, O2> setVersion(final HttpProtocolVersion version) {
             upgradeResponse.setVersion(version);
             return this;
         }
@@ -293,7 +293,7 @@ final class BlockingHttpClientToHttpClient<I, O> extends HttpClient<I, O> {
         }
 
         @Override
-        public BlockingHttpResponse<O2> setStatus(final HttpResponseStatus status) {
+        public BlockingUpgradableHttpResponseConverter<I, O1, O2> setStatus(final HttpResponseStatus status) {
             upgradeResponse.setStatus(status);
             return this;
         }

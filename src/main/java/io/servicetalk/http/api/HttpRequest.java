@@ -32,25 +32,6 @@ import java.util.function.Function;
  * @param <T> Type of payload.
  */
 public interface HttpRequest<T> extends HttpRequestMetaData {
-
-    @Override
-    HttpRequest<T> setRawPath(String path);
-
-    @Override
-    HttpRequest<T> setPath(String path);
-
-    @Override
-    HttpRequest<T> setRawQuery(String query);
-
-    @Override
-    HttpRequest<T> setVersion(HttpProtocolVersion version);
-
-    @Override
-    HttpRequest<T> setMethod(HttpRequestMethod method);
-
-    @Override
-    HttpRequest<T> setRequestTarget(String requestTarget);
-
     /**
      * The <a href="https://tools.ietf.org/html/rfc7230.html#section-3.3">HTTP Payload Body</a>.
      * <p>
@@ -72,4 +53,22 @@ public interface HttpRequest<T> extends HttpRequestMetaData {
      * @return New {@code HttpRequest} with the altered {@link #getPayloadBody()}.
      */
     <R> HttpRequest<R> transformPayloadBody(Function<Publisher<T>, Publisher<R>> transformer);
+
+    @Override
+    HttpRequest<T> setRawPath(String path);
+
+    @Override
+    HttpRequest<T> setPath(String path);
+
+    @Override
+    HttpRequest<T> setRawQuery(String query);
+
+    @Override
+    HttpRequest<T> setVersion(HttpProtocolVersion version);
+
+    @Override
+    HttpRequest<T> setMethod(HttpRequestMethod method);
+
+    @Override
+    HttpRequest<T> setRequestTarget(String requestTarget);
 }

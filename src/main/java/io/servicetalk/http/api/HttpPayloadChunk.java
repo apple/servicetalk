@@ -27,6 +27,7 @@ public interface HttpPayloadChunk extends BufferHolder {
      *
      * @return Buffer containing the content of the chunk.
      */
+    @Override
     Buffer getContent();
 
     /**
@@ -35,6 +36,7 @@ public interface HttpPayloadChunk extends BufferHolder {
      * Typically the buffer is duplicated using {@link Buffer#duplicate()}.
      * @return a new instance of {@link HttpPayloadChunk} with duplicated content.
      */
+    @Override
     HttpPayloadChunk duplicate();
 
     /**
@@ -42,5 +44,6 @@ public interface HttpPayloadChunk extends BufferHolder {
      * @param content The {@link Buffer} to replace what is currently returned by {@link #getContent()}.
      * @return a new {@link HttpPayloadChunk} which contains the specified {@code content}.
      */
+    @Override
     HttpPayloadChunk replace(Buffer content);
 }

@@ -103,19 +103,6 @@ public class AggregatedHttpClient extends AggregatedHttpRequester {
     }
 
     public interface AggregatedUpgradableHttpResponse extends FullHttpResponse {
-
-        @Override
-        AggregatedUpgradableHttpResponse setVersion(HttpProtocolVersion version);
-
-        @Override
-        AggregatedUpgradableHttpResponse setStatus(HttpResponseStatus status);
-
-        @Override
-        AggregatedUpgradableHttpResponse duplicate();
-
-        @Override
-        AggregatedUpgradableHttpResponse replace(Buffer content);
-
         /**
          * Called by the code responsible for processing the upgrade response.
          * <p>
@@ -140,5 +127,17 @@ public class AggregatedHttpClient extends AggregatedHttpRequester {
          * {@link AggregatedHttpClient}.
          */
         AggregatedReservedHttpConnection getHttpConnection(boolean releaseReturnsToClient);
+
+        @Override
+        AggregatedUpgradableHttpResponse setVersion(HttpProtocolVersion version);
+
+        @Override
+        AggregatedUpgradableHttpResponse setStatus(HttpResponseStatus status);
+
+        @Override
+        AggregatedUpgradableHttpResponse duplicate();
+
+        @Override
+        AggregatedUpgradableHttpResponse replace(Buffer content);
     }
 }

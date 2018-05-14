@@ -16,10 +16,6 @@
 package io.servicetalk.http.api;
 
 public interface HttpRequestMetaData extends HttpMetaData {
-
-    @Override
-    HttpRequestMetaData setVersion(HttpProtocolVersion version);
-
     /**
      * Returns the {@link HttpRequestMethod} of this {@link HttpRequest}.
      *
@@ -121,4 +117,7 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * @return {@code this}.
      */
     HttpRequestMetaData setRawQuery(String query);
+
+    @Override
+    HttpRequestMetaData setVersion(HttpProtocolVersion version);
 }

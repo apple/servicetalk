@@ -37,4 +37,56 @@
     <LocalVariable name="name1"/>
     <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE"/>
   </Match>
+
+  <!-- Return type is designed such that each type must override the method specifically to override the return type -->
+  <Match>
+    <Class name="io.servicetalk.http.api.BlockingHttpClientToHttpClient$BlockingToUpgradableHttpResponse"/>
+    <Method name="setStatus"/>
+    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.BlockingHttpClientToHttpClient$BlockingToUpgradableHttpResponse"/>
+    <Method name="setVersion"/>
+    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.BlockingHttpClientToHttpClient$BlockingUpgradableHttpResponseConverter"/>
+    <Method name="setStatus"/>
+    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.BlockingHttpClientToHttpClient$BlockingUpgradableHttpResponseConverter"/>
+    <Method name="setVersion"/>
+    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.DefaultAggregatedUpgradableHttpResponse"/>
+    <Method name="setStatus"/>
+    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.DefaultAggregatedUpgradableHttpResponse"/>
+    <Method name="setVersion"/>
+    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.HttpClientToBlockingHttpClient$UpgradableHttpResponseToBlocking"/>
+    <Method name="setStatus"/>
+    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.HttpClientToBlockingHttpClient$UpgradableHttpResponseToBlocking"/>
+    <Method name="setVersion"/>
+    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.HttpClientToBlockingHttpClient$UpgradableHttpResponseToBlockingConverter"/>
+    <Method name="setStatus"/>
+    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.api.HttpClientToBlockingHttpClient$UpgradableHttpResponseToBlockingConverter"/>
+    <Method name="setVersion"/>
+    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+  </Match>
 </FindBugsFilter>

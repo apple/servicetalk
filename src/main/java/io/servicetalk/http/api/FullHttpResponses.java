@@ -187,6 +187,7 @@ public final class FullHttpResponses {
      * @param status the {@link HttpResponseStatus} of the response.
      * @param payloadBody the payload body of the response.
      * @param headers the {@link HttpHeaders} of the response.
+     * @param trailers the trailing {@link HttpHeaders} of the response.
      * @return a new {@link FullHttpResponse}.
      */
     public static FullHttpResponse newResponse(final HttpProtocolVersion version,

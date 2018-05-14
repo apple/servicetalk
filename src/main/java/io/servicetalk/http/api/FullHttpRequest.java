@@ -23,6 +23,39 @@ import io.servicetalk.concurrent.api.Publisher;
  * {@link HttpRequest#getPayloadBody()}.
  */
 public interface FullHttpRequest extends HttpRequestMetaData, LastHttpPayloadChunk {
+    /**
+     * The <a href="https://tools.ietf.org/html/rfc7230.html#section-3.3">HTTP Payload Body</a>.
+     *
+     * @return The <a href="https://tools.ietf.org/html/rfc7230.html#section-3.3">HTTP Payload Body</a> of this request.
+     */
+    Buffer getPayloadBody();
+
+    @Override
+    default Buffer getContent() {
+        return getPayloadBody();
+    }
+
+    /**
+     * Get the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer headers</a>.
+     * @return the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer headers</a>.
+     */
+    @Override
+    HttpHeaders getTrailers();
+
+    /**
+     * Duplicates this {@link FullHttpRequest}.
+     * @return Duplicates this {@link FullHttpRequest}.
+     */
+    @Override
+    FullHttpRequest duplicate();
+
+    /**
+     * Returns a new {@link FullHttpRequest} which contains the specified {@code content}.
+     * @param content The {@link Buffer} to replace what is currently returned by {@link #getContent()}.
+     * @return a new {@link FullHttpRequest} which contains the specified {@code content}.
+     */
+    @Override
+    FullHttpRequest replace(Buffer content);
 
     @Override
     FullHttpRequest setRawPath(String path);
@@ -41,35 +74,4 @@ public interface FullHttpRequest extends HttpRequestMetaData, LastHttpPayloadChu
 
     @Override
     FullHttpRequest setRequestTarget(String requestTarget);
-
-    /**
-     * Get the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer headers</a>.
-     * @return the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer headers</a>.
-     */
-    HttpHeaders getTrailers();
-
-    /**
-     * The <a href="https://tools.ietf.org/html/rfc7230.html#section-3.3">HTTP Payload Body</a>.
-     *
-     * @return The <a href="https://tools.ietf.org/html/rfc7230.html#section-3.3">HTTP Payload Body</a> of this request.
-     */
-    Buffer getPayloadBody();
-
-    @Override
-    default Buffer getContent() {
-        return getPayloadBody();
-    }
-
-    /**
-     * Duplicates this {@link FullHttpRequest}.
-     * @return Duplicates this {@link FullHttpRequest}.
-     */
-    FullHttpRequest duplicate();
-
-    /**
-     * Returns a new {@link FullHttpRequest} which contains the specified {@code content}.
-     * @param content The {@link Buffer} to replace what is currently returned by {@link #getContent()}.
-     * @return a new {@link FullHttpRequest} which contains the specified {@code content}.
-     */
-    FullHttpRequest replace(Buffer content);
 }

@@ -23,13 +23,6 @@ import io.servicetalk.concurrent.api.Publisher;
  *  * {@link HttpResponse#getPayloadBody()}.
  */
 public interface FullHttpResponse extends HttpResponseMetaData, LastHttpPayloadChunk {
-
-    @Override
-    FullHttpResponse setVersion(HttpProtocolVersion version);
-
-    @Override
-    FullHttpResponse setStatus(HttpResponseStatus status);
-
     /**
      * The <a href="https://tools.ietf.org/html/rfc7230.html#section-3.3">HTTP Payload Body</a>.
      *
@@ -41,6 +34,7 @@ public interface FullHttpResponse extends HttpResponseMetaData, LastHttpPayloadC
      * Get the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer headers</a>.
      * @return the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer headers</a>.
      */
+    @Override
     HttpHeaders getTrailers();
 
     @Override
@@ -52,6 +46,7 @@ public interface FullHttpResponse extends HttpResponseMetaData, LastHttpPayloadC
      * Duplicates this {@link FullHttpResponse}.
      * @return Duplicates this {@link FullHttpResponse}.
      */
+    @Override
     FullHttpResponse duplicate();
 
     /**
@@ -59,5 +54,12 @@ public interface FullHttpResponse extends HttpResponseMetaData, LastHttpPayloadC
      * @param content The {@link Buffer} to replace what is currently returned by {@link #getContent()}.
      * @return a new {@link FullHttpResponse} which contains the specified {@code content}.
      */
+    @Override
     FullHttpResponse replace(Buffer content);
+
+    @Override
+    FullHttpResponse setVersion(HttpProtocolVersion version);
+
+    @Override
+    FullHttpResponse setStatus(HttpResponseStatus status);
 }

@@ -188,5 +188,11 @@ public abstract class HttpClient<I, O> extends HttpRequester<I, O> {
 
         @Override
         <R> UpgradableHttpResponse<I, R> transformPayloadBody(Function<Publisher<O>, Publisher<R>> transformer);
+
+        @Override
+        UpgradableHttpResponse<I, O> setVersion(HttpProtocolVersion version);
+
+        @Override
+        UpgradableHttpResponse<I, O> setStatus(HttpResponseStatus status);
     }
 }

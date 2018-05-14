@@ -126,5 +126,11 @@ public abstract class BlockingHttpClient<I, O> extends BlockingHttpRequester<I, 
         @Override
         <R> BlockingUpgradableHttpResponse<I, R> transformPayloadBody(Function<BlockingIterable<O>,
                                                                                BlockingIterable<R>> transformer);
+
+        @Override
+        BlockingUpgradableHttpResponse<I, O> setVersion(HttpProtocolVersion version);
+
+        @Override
+        BlockingUpgradableHttpResponse<I, O> setStatus(HttpResponseStatus status);
     }
 }

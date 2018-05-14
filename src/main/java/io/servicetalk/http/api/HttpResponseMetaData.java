@@ -21,10 +21,6 @@ package io.servicetalk.http.api;
  * other meta data from {@link HttpMetaData}.
  */
 public interface HttpResponseMetaData extends HttpMetaData {
-
-    @Override
-    HttpResponseMetaData setVersion(HttpProtocolVersion version);
-
     /**
      * Returns the status of this {@link HttpResponse}.
      *
@@ -39,4 +35,7 @@ public interface HttpResponseMetaData extends HttpMetaData {
      * @return {@code this}.
      */
     HttpResponseMetaData setStatus(HttpResponseStatus status);
+
+    @Override
+    HttpResponseMetaData setVersion(HttpProtocolVersion version);
 }

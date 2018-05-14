@@ -32,13 +32,6 @@ import java.util.function.Function;
  * @param <T> Type of payload.
  */
 public interface HttpResponse<T> extends HttpResponseMetaData {
-
-    @Override
-    HttpResponse<T> setVersion(HttpProtocolVersion version);
-
-    @Override
-    HttpResponse<T> setStatus(HttpResponseStatus status);
-
     /**
      * The <a href="https://tools.ietf.org/html/rfc7230.html#section-3.3">HTTP Payload Body</a>.
      * <p>
@@ -60,4 +53,10 @@ public interface HttpResponse<T> extends HttpResponseMetaData {
      * @return New {@code HttpResponse} with the altered {@link #getPayloadBody()}.
      */
     <R> HttpResponse<R> transformPayloadBody(Function<Publisher<T>, Publisher<R>> transformer);
+
+    @Override
+    HttpResponse<T> setVersion(HttpProtocolVersion version);
+
+    @Override
+    HttpResponse<T> setStatus(HttpResponseStatus status);
 }
