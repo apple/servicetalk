@@ -25,22 +25,12 @@ import org.reactivestreams.Subscriber;
 /**
  * The equivalent of {@link HttpConnection} but that accepts {@link FullHttpRequest} and returns {@link FullHttpResponse}.
  */
-public class AggregatedHttpConnection extends AggregatedHttpRequester {
-
-    private final HttpConnection<HttpPayloadChunk, HttpPayloadChunk> original;
-
-    AggregatedHttpConnection(final HttpConnection<HttpPayloadChunk, HttpPayloadChunk> original) {
-        super(original);
-        this.original = original;
-    }
-
+public abstract class AggregatedHttpConnection extends AggregatedHttpRequester {
     /**
      * Get the {@link ConnectionContext}.
      * @return the {@link ConnectionContext}.
      */
-    public final ConnectionContext getConnectionContext() {
-        return original.getConnectionContext();
-    }
+    public abstract ConnectionContext getConnectionContext();
 
     /**
      * Returns a {@link Publisher} that gives the current value of the setting as well as subsequent changes to
@@ -50,15 +40,17 @@ public class AggregatedHttpConnection extends AggregatedHttpRequester {
      * @param <T> Type of the setting value.
      * @return {@link BlockingIterable} for the setting values.
      */
-    public <T> Publisher<T> getSettingStream(SettingKey<T> settingKey) {
-        return original.getSettingStream(settingKey);
-    }
+    public abstract <T> Publisher<T> getSettingStream(SettingKey<T> settingKey);
 
     /**
      * Convert this {@link AggregatedHttpConnection} to the {@link HttpConnection} asynchronous API.
      * @return a {@link HttpConnection} representation of this {@link AggregatedHttpConnection}.
      */
     public final HttpConnection<HttpPayloadChunk, HttpPayloadChunk> asClient() {
-        return original;
+        return asClientInternal();
+    }
+
+    HttpConnection<HttpPayloadChunk, HttpPayloadChunk> asClientInternal() {
+        return new AggregatedHttpConnectionToHttpConnection(this);
     }
 }

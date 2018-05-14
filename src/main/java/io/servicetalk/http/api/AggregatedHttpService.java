@@ -22,8 +22,6 @@ import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.function.BiFunction;
 
-import static io.servicetalk.http.api.DefaultFullHttpRequest.from;
-
 /**
  * Same as {@link HttpService} but that accepts {@link FullHttpRequest} and returns {@link FullHttpResponse}..
  */
@@ -55,14 +53,11 @@ public abstract class AggregatedHttpService implements AsyncCloseable {
      * @return a {@link BlockingHttpService} representation of this {@link AggregatedHttpService}.
      */
     public final HttpService<HttpPayloadChunk, HttpPayloadChunk> asService() {
-        return new HttpService<HttpPayloadChunk, HttpPayloadChunk>() {
-            @Override
-            public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx, final HttpRequest<HttpPayloadChunk> request) {
-                return from(request, ctx.getBufferAllocator())
-                        .flatMap(req -> AggregatedHttpService.this.handle(ctx, req)
-                                .map(DefaultFullHttpResponse::toHttpResponse));
-            }
-        };
+        return asServiceInternal();
+    }
+
+    HttpService<HttpPayloadChunk, HttpPayloadChunk> asServiceInternal() {
+        return new AggregatedHttpServiceToHttpService(this);
     }
 
     /**

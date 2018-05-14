@@ -15,34 +15,20 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import static io.servicetalk.http.api.DefaultFullHttpRequest.toHttpRequest;
-import static io.servicetalk.http.api.DefaultFullHttpResponse.from;
-
 /**
  * The equivalent of {@link HttpRequester} but that accepts {@link FullHttpRequest} and returns {@link FullHttpResponse}.
  */
-public class AggregatedHttpRequester implements ListenableAsyncCloseable {
-
-    private final HttpRequester<HttpPayloadChunk, HttpPayloadChunk> original;
-
-    AggregatedHttpRequester(final HttpRequester<HttpPayloadChunk, HttpPayloadChunk> original) {
-        this.original = original;
-    }
-
+public abstract class AggregatedHttpRequester implements ListenableAsyncCloseable {
     /**
      * Send a {@code request}.
      * @param request the request to send.
      * @return The response.
      */
-    public Single<FullHttpResponse> request(FullHttpRequest request) {
-        return original.request(toHttpRequest(request))
-                .flatMap(resp -> from(resp, getExecutionContext().getBufferAllocator()));
-    }
+    public abstract Single<FullHttpResponse> request(FullHttpRequest request);
 
     /**
      * Get the {@link ExecutionContext} used during construction of this object.
@@ -51,25 +37,17 @@ public class AggregatedHttpRequester implements ListenableAsyncCloseable {
      * unless that was how this object was built.
      * @return the {@link ExecutionContext} used during construction of this object.
      */
-    public final ExecutionContext getExecutionContext() {
-        return original.getExecutionContext();
-    }
-
-    @Override
-    public Completable onClose() {
-        return original.onClose();
-    }
-
-    @Override
-    public Completable closeAsync() {
-        return original.closeAsync();
-    }
+    public abstract ExecutionContext getExecutionContext();
 
     /**
      * Convert this {@link AggregatedHttpRequester} to the {@link HttpRequester} asynchronous API.
      * @return a {@link HttpRequester} representation of this {@link AggregatedHttpRequester}.
      */
     public final HttpRequester<HttpPayloadChunk, HttpPayloadChunk> asRequester() {
-        return original;
+        return asRequesterInternal();
+    }
+
+    HttpRequester<HttpPayloadChunk, HttpPayloadChunk> asRequesterInternal() {
+        return new AggregatedHttpRequesterToHttpRequester(this);
     }
 }

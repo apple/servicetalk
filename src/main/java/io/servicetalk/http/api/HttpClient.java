@@ -18,9 +18,10 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.AggregatedHttpClient.AggregatedReservedHttpConnection;
 import io.servicetalk.http.api.BlockingHttpClient.BlockingReservedHttpConnection;
+import io.servicetalk.http.api.HttpClientToAggregatedHttpClient.GenericReservedHttpConnectionToAggregated;
 import io.servicetalk.http.api.HttpClientToBlockingHttpClient.ReservedHttpConnectionToBlocking;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.Function;
 
@@ -82,42 +83,12 @@ public abstract class HttpClient<I, O> extends HttpRequester<I, O> {
      */
     public final AggregatedHttpClient asAggregatedClient(Function<HttpPayloadChunk, I> requestPayloadTransformer,
                                                          Function<O, HttpPayloadChunk> responsePayloadTransformer) {
-        HttpClient<HttpPayloadChunk, HttpPayloadChunk> chunkClient = new HttpClient<HttpPayloadChunk, HttpPayloadChunk>() {
-            @Override
-            public Single<? extends ReservedHttpConnection<HttpPayloadChunk, HttpPayloadChunk>> reserveConnection(final HttpRequest<HttpPayloadChunk> request) {
-                //TODO: Support upgrade and reserve for aggregated client.
-                return Single.error(new UnsupportedOperationException("Reserve not supported for aggregated client."));
-            }
+        return asAggregatedClientInternal(requestPayloadTransformer, responsePayloadTransformer);
+    }
 
-            @Override
-            public Single<? extends UpgradableHttpResponse<HttpPayloadChunk, HttpPayloadChunk>> upgradeConnection(final HttpRequest<HttpPayloadChunk> request) {
-                //TODO: Support upgrade and reserve for aggregated client.
-                return Single.error(new UnsupportedOperationException("Upgrade not supported for aggregated client."));
-            }
-
-            @Override
-            public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
-                return HttpClient.this.request(request.transformPayloadBody(pubChunk -> pubChunk.map(requestPayloadTransformer)))
-                        .map(resp -> resp.transformPayloadBody(pubChunk -> pubChunk.map(responsePayloadTransformer)));
-            }
-
-            @Override
-            public ExecutionContext getExecutionContext() {
-                return HttpClient.this.getExecutionContext();
-            }
-
-            @Override
-            public Completable onClose() {
-                return HttpClient.this.onClose();
-            }
-
-            @Override
-            public Completable closeAsync() {
-                return HttpClient.this.closeAsync();
-            }
-        };
-
-        return new AggregatedHttpClient(chunkClient);
+    AggregatedHttpClient asAggregatedClientInternal(Function<HttpPayloadChunk, I> requestPayloadTransformer,
+                                                    Function<O, HttpPayloadChunk> responsePayloadTransformer) {
+        return new HttpClientToAggregatedHttpClient<>(this, requestPayloadTransformer, responsePayloadTransformer);
     }
 
     BlockingHttpClient<I, O> asBlockingClientInternal() {
@@ -140,14 +111,42 @@ public abstract class HttpClient<I, O> extends HttpRequester<I, O> {
         public abstract Completable releaseAsync();
 
         /**
-         * Convert this {@link HttpClient} to the {@link BlockingHttpClient} API.
+         * Convert this {@link ReservedHttpConnection} to the {@link BlockingHttpClient} API.
          * <p>
          * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
-         * filters are implemented using the {@link HttpClient} asynchronous API for maximum portability.
-         * @return a {@link BlockingHttpClient} representation of this {@link HttpClient}.
+         * filters are implemented using the {@link ReservedHttpConnection} asynchronous API for maximum portability.
+         * @return a {@link BlockingHttpClient} representation of this {@link ReservedHttpConnection}.
          */
         public final BlockingReservedHttpConnection<I, O> asBlockingReservedConnection() {
             return asBlockingReservedConnectionInternal();
+        }
+
+        /**
+         * Convert this {@link ReservedHttpConnection} to the {@link AggregatedReservedHttpConnection} API.
+         * <p>
+         * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
+         * filters are implemented using the {@link ReservedHttpConnection} asynchronous API for maximum portability.
+         * @param requestPayloadTransformer {@link Function} to convert an {@link HttpPayloadChunk} to {@link I}.
+         * This is to make sure that we can use {@code this} {@link HttpClient} for the returned
+         * {@link AggregatedHttpClient}. Use {@link Function#identity()} if {@code this} {@link HttpClient} already
+         * handles {@link HttpPayloadChunk} for request payload.
+         * @param responsePayloadTransformer {@link Function} to convert an {@link O} to {@link HttpPayloadChunk}.
+         * This is to make sure that we can use {@code this} {@link HttpClient} for the returned
+         * {@link AggregatedHttpClient}. Use {@link Function#identity()} if {@code this} {@link HttpClient} already
+         * returns response with {@link HttpPayloadChunk} as payload.
+         * @return a {@link AggregatedReservedHttpConnection} representation of this {@link ReservedHttpConnection}.
+         */
+        public final AggregatedReservedHttpConnection asAggregatedReservedConnection(
+                Function<HttpPayloadChunk, I> requestPayloadTransformer,
+                Function<O, HttpPayloadChunk> responsePayloadTransformer) {
+            return asAggregatedReservedConnectionInternal(requestPayloadTransformer, responsePayloadTransformer);
+        }
+
+        AggregatedReservedHttpConnection asAggregatedReservedConnectionInternal(
+                Function<HttpPayloadChunk, I> requestPayloadTransformer,
+                Function<O, HttpPayloadChunk> responsePayloadTransformer) {
+            return new GenericReservedHttpConnectionToAggregated<>(
+                    this, requestPayloadTransformer, responsePayloadTransformer);
         }
 
         BlockingReservedHttpConnection<I, O> asBlockingReservedConnectionInternal() {

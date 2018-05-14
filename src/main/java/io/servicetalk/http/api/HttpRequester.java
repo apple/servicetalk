@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -72,31 +71,14 @@ public abstract class HttpRequester<I, O> implements ListenableAsyncCloseable {
      * @return a {@link AggregatedHttpRequester} representation of this {@link HttpRequester}.
      */
     public final AggregatedHttpRequester asAggregatedRequester(Function<HttpPayloadChunk, I> requestPayloadTransformer,
-                                                               Function<O, HttpPayloadChunk> responsePayloadTransformer) {
-        HttpRequester<HttpPayloadChunk, HttpPayloadChunk> chunkRequester = new HttpRequester<HttpPayloadChunk, HttpPayloadChunk>() {
-            @Override
-            public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
-                return HttpRequester.this.request(request.transformPayloadBody(pubChunk -> pubChunk.map(requestPayloadTransformer)))
-                        .map(resp -> resp.transformPayloadBody(pubChunk -> pubChunk.map(responsePayloadTransformer)));
-            }
+                                                           Function<O, HttpPayloadChunk> responsePayloadTransformer) {
+        return asAggregatedRequesterInternal(requestPayloadTransformer, responsePayloadTransformer);
+    }
 
-            @Override
-            public ExecutionContext getExecutionContext() {
-                return HttpRequester.this.getExecutionContext();
-            }
-
-            @Override
-            public Completable onClose() {
-                return HttpRequester.this.onClose();
-            }
-
-            @Override
-            public Completable closeAsync() {
-                return HttpRequester.this.closeAsync();
-            }
-        };
-
-        return new AggregatedHttpRequester(chunkRequester);
+    AggregatedHttpRequester asAggregatedRequesterInternal(Function<HttpPayloadChunk, I> requestPayloadTransformer,
+                                                          Function<O, HttpPayloadChunk> responsePayloadTransformer) {
+        return new HttpRequesterToAggregatedHttpRequester<>(
+                this, requestPayloadTransformer, responsePayloadTransformer);
     }
 
     BlockingHttpRequester<I, O> asBlockingRequesterInternal() {

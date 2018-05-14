@@ -40,53 +40,28 @@
 
   <!-- Return type is designed such that each type must override the method specifically to override the return type -->
   <Match>
-    <Class name="io.servicetalk.http.api.BlockingHttpClientToHttpClient$BlockingToUpgradableHttpResponse"/>
-    <Method name="setStatus"/>
-    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
-  </Match>
-  <Match>
-    <Class name="io.servicetalk.http.api.BlockingHttpClientToHttpClient$BlockingToUpgradableHttpResponse"/>
-    <Method name="setVersion"/>
-    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
-  </Match>
-  <Match>
-    <Class name="io.servicetalk.http.api.BlockingHttpClientToHttpClient$BlockingUpgradableHttpResponseConverter"/>
-    <Method name="setStatus"/>
-    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
-  </Match>
-  <Match>
-    <Class name="io.servicetalk.http.api.BlockingHttpClientToHttpClient$BlockingUpgradableHttpResponseConverter"/>
-    <Method name="setVersion"/>
-    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
-  </Match>
-  <Match>
-    <Class name="io.servicetalk.http.api.DefaultAggregatedUpgradableHttpResponse"/>
-    <Method name="setStatus"/>
-    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
-  </Match>
-  <Match>
-    <Class name="io.servicetalk.http.api.DefaultAggregatedUpgradableHttpResponse"/>
-    <Method name="setVersion"/>
-    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
-  </Match>
-  <Match>
-    <Class name="io.servicetalk.http.api.HttpClientToBlockingHttpClient$UpgradableHttpResponseToBlocking"/>
-    <Method name="setStatus"/>
-    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
-  </Match>
-  <Match>
-    <Class name="io.servicetalk.http.api.HttpClientToBlockingHttpClient$UpgradableHttpResponseToBlocking"/>
-    <Method name="setVersion"/>
-    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
-  </Match>
-  <Match>
-    <Class name="io.servicetalk.http.api.HttpClientToBlockingHttpClient$UpgradableHttpResponseToBlockingConverter"/>
-    <Method name="setStatus"/>
-    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
-  </Match>
-  <Match>
-    <Class name="io.servicetalk.http.api.HttpClientToBlockingHttpClient$UpgradableHttpResponseToBlockingConverter"/>
-    <Method name="setVersion"/>
+    <Or>
+      <Class name="io.servicetalk.http.api.BlockingHttpClientToHttpClient$BlockingToUpgradableHttpResponse"/>
+      <Class name="io.servicetalk.http.api.BlockingHttpClientToHttpClient$BlockingToUpgradableHttpResponse"/>
+      <Class name="io.servicetalk.http.api.BlockingHttpClientToHttpClient$BlockingUpgradableHttpResponseConverter"/>
+      <Class name="io.servicetalk.http.api.BlockingHttpClientToHttpClient$BlockingUpgradableHttpResponseConverter"/>
+      <Class name="io.servicetalk.http.api.HttpClientToBlockingHttpClient$UpgradableHttpResponseToBlocking"/>
+      <Class name="io.servicetalk.http.api.HttpClientToBlockingHttpClient$UpgradableHttpResponseToBlocking"/>
+      <Class name="io.servicetalk.http.api.HttpClientToBlockingHttpClient$UpgradableHttpResponseToBlockingConverter"/>
+      <Class name="io.servicetalk.http.api.HttpClientToBlockingHttpClient$UpgradableHttpResponseToBlockingConverter"/>
+      <Class name="io.servicetalk.http.api.AggregatedHttpClientToHttpClient$AggregatedToUpgradableHttpResponse"/>
+      <Class name="io.servicetalk.http.api.AggregatedHttpClientToHttpClient$AggregatedToUpgradableHttpResponse"/>
+      <Class name="io.servicetalk.http.api.AggregatedHttpClientToHttpClient$AggregatedToUpgradableHttpResponseConverter"/>
+      <Class name="io.servicetalk.http.api.AggregatedHttpClientToHttpClient$AggregatedToUpgradableHttpResponseConverter"/>
+      <Class name="io.servicetalk.http.api.HttpClientToAggregatedHttpClient$UpgradableHttpResponseToAggregated"/>
+      <Class name="io.servicetalk.http.api.HttpClientToAggregatedHttpClient$UpgradableHttpResponseToAggregated"/>
+      <Class name="io.servicetalk.http.api.HttpClientToAggregatedHttpClient$UpgradablePayloadResponse"/>
+      <Class name="io.servicetalk.http.api.HttpClientToAggregatedHttpClient$UpgradablePayloadResponse"/>
+    </Or>
+    <Or>
+      <Method name="setStatus"/>
+      <Method name="setVersion"/>
+    </Or>
     <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
   </Match>
 </FindBugsFilter>

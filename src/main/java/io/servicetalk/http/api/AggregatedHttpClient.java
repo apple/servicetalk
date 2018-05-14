@@ -18,23 +18,13 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.AggregatedHttpClientToHttpClient.AggregatedToReservedHttpConnection;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
-
-import static io.servicetalk.http.api.DefaultAggregatedUpgradableHttpResponse.from;
-import static io.servicetalk.http.api.DefaultFullHttpRequest.toHttpRequest;
 
 /**
  * The equivalent of {@link HttpClient} but but that accepts {@link FullHttpRequest} and returns {@link FullHttpResponse}.
  */
-public class AggregatedHttpClient extends AggregatedHttpRequester {
-
-    private final HttpClient<HttpPayloadChunk, HttpPayloadChunk> original;
-
-    AggregatedHttpClient(final HttpClient<HttpPayloadChunk, HttpPayloadChunk> original) {
-        super(original);
-        this.original = original;
-    }
-
+public abstract class AggregatedHttpClient extends AggregatedHttpRequester {
     /**
      * Reserve a {@link AggregatedHttpConnection} for handling the provided {@link FullHttpRequest}
      * but <b>does not execute it</b>!
@@ -42,9 +32,7 @@ public class AggregatedHttpClient extends AggregatedHttpRequester {
      * For example this may provide some insight into shard or other info.
      * @return a {@link ReservedHttpConnection}.
      */
-    public Single<? extends AggregatedReservedHttpConnection> reserveConnection(FullHttpRequest request) {
-        return original.reserveConnection(toHttpRequest(request)).map(AggregatedReservedHttpConnection::new);
-    }
+    public abstract Single<? extends AggregatedReservedHttpConnection> reserveConnection(FullHttpRequest request);
 
     /**
      * Attempt a <a href="https://tools.ietf.org/html/rfc7230.html#section-6.7">protocol upgrade</a>.
@@ -57,48 +45,43 @@ public class AggregatedHttpClient extends AggregatedHttpRequester {
      * @return An object that provides the {@link HttpResponse} for the upgrade attempt and also contains the
      * {@link AggregatedHttpConnection} used for the upgrade.
      */
-    public Single<? extends AggregatedUpgradableHttpResponse> upgradeConnection(FullHttpRequest request) {
-        return original.upgradeConnection(toHttpRequest(request))
-                .flatMap(upgradableResp -> from(upgradableResp, original.getExecutionContext().getBufferAllocator()));
-    }
+    public abstract Single<? extends AggregatedUpgradableHttpResponse> upgradeConnection(FullHttpRequest request);
 
     /**
      * Convert this {@link AggregatedHttpClient} to the {@link HttpClient} asynchronous API.
      * @return a {@link HttpClient} representation of this {@link AggregatedHttpClient}.
      */
     public final HttpClient<HttpPayloadChunk, HttpPayloadChunk> asClient() {
-        return original;
+        return asClientInternal();
+    }
+
+    HttpClient<HttpPayloadChunk, HttpPayloadChunk> asClientInternal() {
+        return new AggregatedHttpClientToHttpClient(this);
     }
 
     /**
      * A special type of {@link AggregatedHttpConnection} for the exclusive use of the caller of
      * {@link #reserveConnection(FullHttpRequest)}.
      */
-    public static class AggregatedReservedHttpConnection extends AggregatedHttpConnection {
-
-        private final ReservedHttpConnection<HttpPayloadChunk, HttpPayloadChunk> original;
-
-        AggregatedReservedHttpConnection(final ReservedHttpConnection<HttpPayloadChunk, HttpPayloadChunk> original) {
-            super(original);
-            this.original = original;
-        }
-
+    public abstract static class AggregatedReservedHttpConnection extends AggregatedHttpConnection {
         /**
          * Releases this reserved {@link AggregatedReservedHttpConnection} to be used for subsequent requests.
          * This method must be idempotent, i.e. calling multiple times must not have side-effects.
          *
          * @return the {@code Completable} that is notified on releaseAsync.
          */
-        public Completable releaseAsync() {
-            return original.releaseAsync();
-        }
+        public abstract Completable releaseAsync();
 
         /**
          * Convert this {@link AggregatedReservedHttpConnection} to the {@link ReservedHttpConnection} asynchronous API.
          * @return a {@link ReservedHttpConnection} representation of this {@link AggregatedReservedHttpConnection}.
          */
         public final ReservedHttpConnection<HttpPayloadChunk, HttpPayloadChunk> asReservedConnection() {
-            return original;
+            return asReservedConnectionInternal();
+        }
+
+        ReservedHttpConnection<HttpPayloadChunk, HttpPayloadChunk> asReservedConnectionInternal() {
+            return new AggregatedToReservedHttpConnection(this);
         }
     }
 
@@ -110,20 +93,20 @@ public class AggregatedHttpClient extends AggregatedHttpRequester {
          * on the return value!
          * @param releaseReturnsToClient
          * <ul>
-         *     <li>{@code true} means the {@link BlockingHttpConnection} associated with the return value can be used by
+         *     <li>{@code true} means the {@link HttpConnection} associated with the return value can be used by
          *     this {@link AggregatedHttpClient} when {@link AggregatedReservedHttpConnection#releaseAsync()} is called.
          *     This typically means the upgrade attempt was unsuccessful, but you can continue talking HTTP. However
          *     this may also be used if the upgrade was successful, but the upgrade protocol shares semantics that are
          *     similar enough to HTTP that the same {@link AggregatedHttpClient} API can still be used
          *     (e.g. HTTP/2).</li>
-         *     <li>{@code false} means the {@link BlockingHttpConnection} associated with the return value can
+         *     <li>{@code false} means the {@link HttpConnection} associated with the return value can
          *     <strong>not</strong> be used by this {@link AggregatedHttpClient} when
          *     {@link AggregatedReservedHttpConnection#releaseAsync()} is called. This typically means the upgrade
          *     attempt was successful and the semantics of the upgrade protocol are sufficiently different that the
          *     {@link AggregatedHttpClient} API no longer makes sense.</li>
          * </ul>
          * @return A {@link AggregatedReservedHttpConnection} which contains the {@link AggregatedHttpConnection} used
-         * for the upgrade attempt, and controls the lifetime of the {@link BlockingHttpConnection} relative to this
+         * for the upgrade attempt, and controls the lifetime of the {@link HttpConnection} relative to this
          * {@link AggregatedHttpClient}.
          */
         AggregatedReservedHttpConnection getHttpConnection(boolean releaseReturnsToClient);

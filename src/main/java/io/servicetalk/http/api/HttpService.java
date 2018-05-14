@@ -23,9 +23,6 @@ import io.servicetalk.transport.api.ConnectionContext;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import static io.servicetalk.http.api.DefaultFullHttpRequest.toHttpRequest;
-import static io.servicetalk.http.api.DefaultFullHttpResponse.from;
-
 /**
  * A service contract for the HTTP protocol.
  * @param <I> Type of payload of a request handled by this service.
@@ -79,16 +76,12 @@ public abstract class HttpService<I, O> implements AsyncCloseable {
      */
     public final AggregatedHttpService asAggregatedService(Function<HttpPayloadChunk, I> requestPayloadTransformer,
                                                            Function<O, HttpPayloadChunk> responsePayloadTransformer) {
-        return new AggregatedHttpService() {
-            @Override
-            public Single<FullHttpResponse> handle(final ConnectionContext ctx, final FullHttpRequest fullHttpRequest) {
-                final HttpRequest<I> req = toHttpRequest(fullHttpRequest)
-                        .transformPayloadBody(chunkSrc -> chunkSrc.map(requestPayloadTransformer));
-                return HttpService.this.handle(ctx, req)
-                        .flatMap(r -> from(r.transformPayloadBody(chunkSrc -> chunkSrc.map(responsePayloadTransformer)),
-                        ctx.getBufferAllocator()));
-            }
-        };
+        return asAggregatedServiceInternal(requestPayloadTransformer, responsePayloadTransformer);
+    }
+
+    AggregatedHttpService asAggregatedServiceInternal(Function<HttpPayloadChunk, I> requestPayloadTransformer,
+                                                      Function<O, HttpPayloadChunk> responsePayloadTransformer) {
+        return new HttpServiceToAggregatedHttpService<>(this, requestPayloadTransformer, responsePayloadTransformer);
     }
 
     /**

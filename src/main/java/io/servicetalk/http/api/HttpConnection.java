@@ -15,11 +15,8 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import org.reactivestreams.Subscriber;
 
@@ -76,42 +73,16 @@ public abstract class HttpConnection<I, O> extends HttpRequester<I, O> {
      * returns response with {@link HttpPayloadChunk} as payload.
      * @return a {@link AggregatedHttpConnection} representation of this {@link HttpConnection}.
      */
-    public final AggregatedHttpConnection asAggregatedConnection(Function<HttpPayloadChunk, I> requestPayloadTransformer,
-                                                               Function<O, HttpPayloadChunk> responsePayloadTransformer) {
-        HttpConnection<HttpPayloadChunk, HttpPayloadChunk> chunkConnection = new HttpConnection<HttpPayloadChunk, HttpPayloadChunk>() {
-            @Override
-            public ConnectionContext getConnectionContext() {
-                return HttpConnection.this.getConnectionContext();
-            }
+    public final AggregatedHttpConnection asAggregatedConnection(
+                                                Function<HttpPayloadChunk, I> requestPayloadTransformer,
+                                                Function<O, HttpPayloadChunk> responsePayloadTransformer) {
+        return asAggregatedInternal(requestPayloadTransformer, responsePayloadTransformer);
+    }
 
-            @Override
-            public <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
-                return HttpConnection.this.getSettingStream(settingKey);
-            }
-
-            @Override
-            public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
-                return HttpConnection.this.request(request.transformPayloadBody(pubChunk -> pubChunk.map(requestPayloadTransformer)))
-                        .map(resp -> resp.transformPayloadBody(pubChunk -> pubChunk.map(responsePayloadTransformer)));
-            }
-
-            @Override
-            public ExecutionContext getExecutionContext() {
-                return HttpConnection.this.getExecutionContext();
-            }
-
-            @Override
-            public Completable onClose() {
-                return HttpConnection.this.onClose();
-            }
-
-            @Override
-            public Completable closeAsync() {
-                return HttpConnection.this.closeAsync();
-            }
-        };
-
-        return new AggregatedHttpConnection(chunkConnection);
+    AggregatedHttpConnection asAggregatedInternal(Function<HttpPayloadChunk, I> requestPayloadTransformer,
+                                                  Function<O, HttpPayloadChunk> responsePayloadTransformer) {
+        return new HttpConnectionToAggregatedHttpConnection<>(
+                this, requestPayloadTransformer, responsePayloadTransformer);
     }
 
     BlockingHttpConnection<I, O> asBlockingConnectionInternal() {
