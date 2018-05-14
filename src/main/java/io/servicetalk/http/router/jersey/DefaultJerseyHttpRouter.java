@@ -94,6 +94,10 @@ final class DefaultJerseyHttpRouter extends HttpService<HttpPayloadChunk, HttpPa
 
     @Override
     public Completable closeAsync() {
+        // We do not prevent multiple close attempts on purpose as we do not know the intention behind calling
+        // closeAsync more than once: maybe a ContainerLifecycleListener failed to handle the onShutdown signal
+        // and closing must be retried? Therefore we keep attempting to dispatch onShutdown and handle any error
+        // that could arise from the repeated attempts.
         return defer(() -> {
             try {
                 applicationHandler.onShutdown(container);
