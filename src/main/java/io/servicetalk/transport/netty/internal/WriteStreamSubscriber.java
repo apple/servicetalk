@@ -196,6 +196,11 @@ final class WriteStreamSubscriber implements org.reactivestreams.Subscriber<Obje
         }
     }
 
+    @Override
+    public ChannelPromise getLastWriteFuture() {
+        return lastWritePromise;
+    }
+
     private void channelClosed0(@Nullable Subscription oldVal, Throwable closedException) {
         if (oldVal == null) {
             // If there was no subscriber when the channel closed, we need to call onSubscribe before we terminate.

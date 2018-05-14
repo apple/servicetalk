@@ -15,6 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.concurrent.Completable.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -24,6 +25,8 @@ import io.servicetalk.transport.api.FlushStrategy;
 import io.servicetalk.transport.api.FlushStrategyHolder;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import org.slf4j.Logger;
@@ -80,6 +83,7 @@ public final class NettyConnection<Read, Write> implements Connection<Read, Writ
 
     /**
      * Create a new instance.
+     *
      * @param channel Netty channel which represents the connection.
      * @param context The ServiceTalk entity which represent the connection.
      * @param read {@link Publisher} which emits all data read from the underlying channel.
@@ -91,6 +95,7 @@ public final class NettyConnection<Read, Write> implements Connection<Read, Writ
 
     /**
      * Create a new instance.
+     *
      * @param channel Netty channel which represents the connection.
      * @param context The ServiceTalk entity which represent the connection.
      * @param read {@link Publisher} which emits all data read from the underlying channel.
@@ -246,6 +251,38 @@ public final class NettyConnection<Read, Write> implements Connection<Read, Writ
         return context.closeAsync();
     }
 
+    /**
+     * Defers the call to {@link #closeAsync()} until after the last write operation has been flushed to the underlying
+     * operating system.
+     * <p>
+     * This method is designed to achieve ordering between writes and close of the socket which {@link #closeAsync()}
+     * does not provide. However, this method assumes that the desired ordering is achieved externally and hence this
+     * method is called after all the expected writes are enqueued to the connection. Failure to do so will also fail
+     * to guarantee that the writes are done before the socket is closed.
+     *
+     * @return {@link Completable} that closes the connection when subscribed to, deferring the close until the
+     * last write operation has been flushed to the underlying {@link Channel}.
+     */
+    public Completable closeAsyncDeferred() {
+        return new Completable() {
+            @Override
+            protected void handleSubscribe(final Subscriber subscriber) {
+                final ChannelFuture channelFuture = writableListener.getLastWriteFuture();
+                if (channelFuture == null) {
+                    closeAsync().subscribe(subscriber);
+                    return;
+                }
+                // If there is a pending write, the FlushStrategy may not have flushed it yet. Flush it so we can close.
+                channel.flush();
+                channelFuture.addListener((ChannelFutureListener) future -> {
+                    // Since it is unlikely that we cancel close(), it is ok to delay onSubscribe till the last write
+                    // finishes.
+                    closeAsync().subscribe(subscriber);
+                });
+            }
+        };
+    }
+
     @Override
     public Completable onClose() {
         return context.onClose();
@@ -286,7 +323,7 @@ public final class NettyConnection<Read, Write> implements Connection<Read, Writ
         return completable.doBeforeFinally(this::cleanupOnWriteTerminated);
     }
 
-    private boolean failIfWriteActive(WritableListener newWritableListener, Completable.Subscriber subscriber) {
+    private boolean failIfWriteActive(WritableListener newWritableListener, Subscriber subscriber) {
         if (writableListenerUpdater.compareAndSet(this, PLACE_HOLDER_WRITABLE_LISTENER, newWritableListener)) {
             // It is possible that we have set the writeSubscriber, then the channel becomes inactive, and we will
             // never notify the write writeSubscriber of the inactive event. So if the channel is inactive we notify
@@ -315,9 +352,20 @@ public final class NettyConnection<Read, Write> implements Connection<Read, Writ
          * <p>
          * This may not always be called from the event loop. For example if the channel is closed when a new write
          * happens then this method will be called from the writer thread.
+         *
          * @param closedException the exception which describes the close rational.
          */
         void channelClosed(Throwable closedException);
+
+        /**
+         * Get the {@link ChannelFuture} from the last write operation, or null if there have been no writes.
+         * <p>
+         * This method is designed to provide {@link #closeAsyncDeferred()} with a mechanism for knowing when writes
+         * have been flushed to the underlying operating system. For particulars about ordering guarantees see
+         * {@link #closeAsyncDeferred}.
+         */
+        @Nullable
+        ChannelFuture getLastWriteFuture();
     }
 
     private static final class NoopWritableListener implements WritableListener {
@@ -327,6 +375,12 @@ public final class NettyConnection<Read, Write> implements Connection<Read, Writ
 
         @Override
         public void channelClosed(Throwable closedException) {
+        }
+
+        @Override
+        @Nullable
+        public ChannelFuture getLastWriteFuture() {
+            return null;
         }
     }
 }
