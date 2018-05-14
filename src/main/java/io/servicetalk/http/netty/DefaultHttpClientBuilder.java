@@ -90,7 +90,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
                 lbFactory.newLoadBalancer(addressEventStream, connectionFactory);
         LoadBalancer<LoadBalancedHttpConnection> loadBalancer =
                 (LoadBalancer<LoadBalancedHttpConnection>) lbfUntypedForCast;
-        return clientFilterFactory.apply(new DefaultHttpClient<>(executionContext, loadBalancer),
+        return clientFilterFactory.apply(new DefaultHttpClient(executionContext, loadBalancer),
                                             loadBalancer.getEventStream());
     }
 
