@@ -17,24 +17,19 @@ package io.servicetalk.redis.netty;
 
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.api.RedisConnection;
 
 import java.util.function.Function;
 
+import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
+
 abstract class AbstractLBRedisConnectionFactory<ResolvedAddress>
         implements ConnectionFactory<ResolvedAddress, LoadBalancedRedisConnection> {
 
-    private final CompletableProcessor onClose = new CompletableProcessor();
     private final Function<RedisConnection, RedisConnection> connectionFilterFactory;
-    private final Completable closeAsync = new Completable() {
-        @Override
-        protected void handleSubscribe(Subscriber subscriber) {
-            onClose.onComplete();
-            onClose.subscribe(subscriber);
-        }
-    };
+    private final ListenableAsyncCloseable close = emptyAsyncCloseable();
 
     AbstractLBRedisConnectionFactory(Function<RedisConnection, RedisConnection> connectionFilterFactory) {
         this.connectionFilterFactory = connectionFilterFactory;
@@ -50,11 +45,11 @@ abstract class AbstractLBRedisConnectionFactory<ResolvedAddress>
 
     @Override
     public final Completable onClose() {
-        return onClose;
+        return close.onClose();
     }
 
     @Override
     public final Completable closeAsync() {
-        return closeAsync;
+        return close.closeAsync();
     }
 }
