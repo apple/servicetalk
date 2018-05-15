@@ -17,12 +17,15 @@ package io.servicetalk.transport.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Executor;
 
 /**
  * Context related to execution and allocation.
+ * Closing this via {@link #closeAsync()} will close all closeable entities in this context, which includes the
+ * contained {@link Executor} and {@link IoExecutor}.
  */
-public interface ExecutionContext {
+public interface ExecutionContext extends AsyncCloseable {
     /**
      * Return the {@link BufferAllocator} that can be used to allocate {@link Buffer}s if needed.
      * @return the {@link BufferAllocator} to use
