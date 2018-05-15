@@ -17,25 +17,20 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpPayloadChunk;
 
 import java.util.function.Function;
 
+import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
+
 abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
         implements ConnectionFactory<ResolvedAddress, LoadBalancedHttpConnection> {
-    private final CompletableProcessor onClose = new CompletableProcessor();
     private final Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>,
             HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory;
-    private final Completable closeAsync = new Completable() {
-        @Override
-        protected void handleSubscribe(Subscriber subscriber) {
-            onClose.onComplete();
-            onClose.subscribe(subscriber);
-        }
-    };
+    private final ListenableAsyncCloseable close = emptyAsyncCloseable();
 
     AbstractLBHttpConnectionFactory(Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>,
                                           HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory) {
@@ -53,11 +48,11 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
 
     @Override
     public final Completable onClose() {
-        return onClose;
+        return close.onClose();
     }
 
     @Override
     public final Completable closeAsync() {
-        return closeAsync;
+        return close.closeAsync();
     }
 }

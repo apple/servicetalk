@@ -17,8 +17,8 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.EmptyHttpHeaders;
@@ -47,11 +47,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
+import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
@@ -231,24 +232,12 @@ final class NettyHttpServer {
 
     private static final class NettyHttpServerContext implements ServerContext {
 
-        // Flag to avoid multiple subscribes to closeAsync
-        private static final AtomicIntegerFieldUpdater<NettyHttpServerContext> closedUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(NettyHttpServerContext.class, "closed");
-
-        @SuppressWarnings("unused")
-        private volatile int closed;
-
         private final ServerContext delegate;
-        private final CompletableProcessor onClose = new CompletableProcessor();
-        private final Completable closeAsync;
+        private final ListenableAsyncCloseable asyncCloseable;
 
         NettyHttpServerContext(final ServerContext delegate, final HttpService service, final Executor executor) {
             this.delegate = delegate;
-            // TODO: To ensure ordering when closing, we should use Completable.concatDelayError here, once it exists.
-            closeAsync = completed().mergeDelayError(
-                    service.closeAsync(),
-                    delegate.closeAsync(),
-                    executor.closeAsync());
+            asyncCloseable = toAsyncCloseable(() -> newCompositeCloseable().concat(service, delegate, executor).closeAsync());
         }
 
         @Override
@@ -258,20 +247,12 @@ final class NettyHttpServer {
 
         @Override
         public Completable closeAsync() {
-            return new Completable() {
-                @Override
-                protected void handleSubscribe(final Subscriber subscriber) {
-                    if (closedUpdater.compareAndSet(NettyHttpServerContext.this, 0, 1)) {
-                        closeAsync.subscribe(onClose);
-                    }
-                    onClose.subscribe(subscriber);
-                }
-            };
+            return asyncCloseable.closeAsync();
         }
 
         @Override
         public Completable onClose() {
-            return onClose;
+            return asyncCloseable.onClose();
         }
     }
 }
