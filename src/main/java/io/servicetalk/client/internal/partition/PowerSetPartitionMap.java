@@ -20,7 +20,7 @@ import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
 import io.servicetalk.client.api.partition.PartitionMap;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,11 +28,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static java.lang.Integer.bitCount;
 import static java.lang.Integer.numberOfTrailingZeros;
 import static java.util.Collections.emptyList;
@@ -45,12 +45,8 @@ import static java.util.Objects.requireNonNull;
  * @param <T> The partition type.
  */
 public final class PowerSetPartitionMap<T extends AsyncCloseable> implements PartitionMap<T> {
-    private static final AtomicIntegerFieldUpdater<PowerSetPartitionMap> closedUpdater =
-            AtomicIntegerFieldUpdater.newUpdater(PowerSetPartitionMap.class, "closed");
     private static final int MAX_PARTITION_ATTRIBUTE_SIZE = 15;
-    @SuppressWarnings("unused")
-    private volatile int closed;
-    private final CompletableProcessor closeCompletable;
+
     private final Function<PartitionAttributes, T> valueFactory;
     private final IntFunction<PartitionAttributesBuilder> partitionAttributesBuilderFunc;
 
@@ -76,6 +72,12 @@ public final class PowerSetPartitionMap<T extends AsyncCloseable> implements Par
      */
     private volatile Map<PartitionAttributes, ValueHolder<T>> wildCardToValueMap;
 
+    private volatile boolean closed;
+    private final ListenableAsyncCloseable asyncCloseable = toAsyncCloseable(() -> {
+        closed = true;
+        return closeAllValues(wildCardToValueMap);
+    });
+
     /**
      * Create a new instance with the {@link DefaultPartitionAttributesBuilder}.
      * @param valueFactory Generates values for new partitions.
@@ -97,7 +99,6 @@ public final class PowerSetPartitionMap<T extends AsyncCloseable> implements Par
         this.partitionAttributesBuilderFunc = requireNonNull(partitionAttributesBuilderFunc);
         absoluteToWildCardIndexMap = new HashMap<>();
         wildCardToValueMap = emptyMap();
-        closeCompletable = new CompletableProcessor();
     }
 
     @Override
@@ -155,7 +156,7 @@ public final class PowerSetPartitionMap<T extends AsyncCloseable> implements Par
         wildCardToValueMap = newWildCardToAttributes;
 
         // It is likely/possible that we generated new objects above, and so we must ensure that these are closed.
-        if (closed != 0) {
+        if (closed) {
             closeAllValues(newWildCardToAttributes).subscribe();
         }
 
@@ -190,21 +191,12 @@ public final class PowerSetPartitionMap<T extends AsyncCloseable> implements Par
 
     @Override
     public Completable onClose() {
-        return closeCompletable;
+        return asyncCloseable.onClose();
     }
 
     @Override
     public Completable closeAsync() {
-        return new Completable() {
-            @Override
-            protected void handleSubscribe(Subscriber subscriber) {
-                if (closedUpdater.compareAndSet(PowerSetPartitionMap.this, 0, 1)) {
-                    closeAllValues(PowerSetPartitionMap.this.wildCardToValueMap).subscribe(closeCompletable);
-                }
-
-                closeCompletable.subscribe(subscriber);
-            }
-        };
+        return asyncCloseable.closeAsync();
     }
 
     private Completable closeAllValues(Map<PartitionAttributes, ValueHolder<T>> wildCardToValueMap) {
