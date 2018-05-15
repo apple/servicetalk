@@ -1,1 +1,1 @@
-## ServiceTalk Gradle Build
+## ServiceTalk Gradle Plugin Internal

@@ -38,7 +38,7 @@ dependencies {
 }
 
 license {
-  header = file("$rootDir/src/main/resources/io/servicetalk/build/gradle/license/HEADER.txt")
+  header = file("$rootDir/src/main/resources/io/servicetalk/gradle/plugin/internal/license/HEADER.txt")
   strictCheck = true
   mapping {
     java = 'SLASHSTAR_STYLE'

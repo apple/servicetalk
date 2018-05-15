@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.build.gradle
+package io.servicetalk.gradle.plugin.internal
 
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
@@ -27,13 +27,13 @@ import org.gradle.api.tasks.javadoc.Javadoc
 import org.gradle.plugins.ide.eclipse.EclipsePlugin
 import org.gradle.plugins.ide.idea.IdeaPlugin
 
-import static io.servicetalk.build.gradle.ProjectUtils.addManifestAttributes
-import static io.servicetalk.build.gradle.ProjectUtils.appendNodes
-import static io.servicetalk.build.gradle.ProjectUtils.copyResource
-import static io.servicetalk.build.gradle.ProjectUtils.createJavadocJarTask
-import static io.servicetalk.build.gradle.ProjectUtils.createSourcesJarTask
-import static io.servicetalk.build.gradle.ProjectUtils.fixBomDependencies
-import static io.servicetalk.build.gradle.ProjectUtils.writeToFile
+import static ProjectUtils.addManifestAttributes
+import static ProjectUtils.appendNodes
+import static ProjectUtils.copyResource
+import static ProjectUtils.createJavadocJarTask
+import static ProjectUtils.createSourcesJarTask
+import static ProjectUtils.fixBomDependencies
+import static ProjectUtils.writeToFile
 
 class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
   void apply(Project project) {

@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.build.gradle
+package io.servicetalk.gradle.plugin.internal
 
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.XmlProvider
-import org.gradle.api.artifacts.Dependency
 import org.gradle.api.java.archives.Manifest
 import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.publish.maven.MavenPom
