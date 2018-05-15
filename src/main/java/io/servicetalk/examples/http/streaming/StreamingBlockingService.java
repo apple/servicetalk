@@ -56,8 +56,7 @@ final class StreamingBlockingService extends BlockingHttpService<HttpPayloadChun
         List<HttpPayloadChunk> responsePayload = new ArrayList<>();
         for (HttpPayloadChunk requestChunk : request.getPayloadBody()) {
             if (requestChunk.getContent().getReadableBytes() != 0) {
-                responsePayload.add(newPayloadChunk(
-                        allocator.newCompositeBuffer()
+                responsePayload.add(newPayloadChunk(allocator.newCompositeBuffer()
                                  .addBuffer(allocator.fromAscii("hello, "))
                                  .addBuffer(requestChunk.getContent())
                                  .addBuffer(allocator.fromAscii("!"))));

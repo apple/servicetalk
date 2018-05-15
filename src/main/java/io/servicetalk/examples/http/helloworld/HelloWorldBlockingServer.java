@@ -15,6 +15,7 @@
  */
 package io.servicetalk.examples.http.helloworld;
 
+import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.http.api.HttpServerStarter;
 import io.servicetalk.http.netty.DefaultHttpServerStarter;
 import io.servicetalk.transport.api.IoExecutor;
@@ -23,7 +24,7 @@ import io.servicetalk.transport.api.ServerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 
@@ -44,21 +45,22 @@ public final class HelloWorldBlockingServer {
      * @throws Exception If the server could not be started.
      */
     public static void main(String[] args) throws Exception {
-        // Shared IoExecutor for the application.
-        IoExecutor ioExecutor = createIoExecutor();
-        try {
+        // Create an AutoCloseable representing all resources used in this example.
+        try (CompositeCloseable resources = newCompositeCloseable()) {
+            // Shared IoExecutor for the application.
+            IoExecutor ioExecutor = createIoExecutor();
+            // Add it as a resource to be cleaned up at the end.
+            resources.concat(ioExecutor);
             HttpServerStarter starter = new DefaultHttpServerStarter(ioExecutor);
 
             // Starting the server will start listening for incoming client requests.
             // TODO(scott): Executor offloading has a bug, so use immediate() for now.
-            ServerContext serverContext = starter.start(8080, immediate(), new HelloWorldBlockingService());
+            ServerContext serverContext = starter.start(8080, new HelloWorldBlockingService());
 
             LOGGER.info("listening on {}", serverContext.getListenAddress());
 
             // Stop listening/accepting more sockets and gracefully shutdown all open sockets.
             awaitIndefinitely(serverContext.onClose());
-        } finally {
-            awaitIndefinitely(ioExecutor.closeAsync());
         }
     }
 }
