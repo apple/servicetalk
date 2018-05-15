@@ -22,7 +22,7 @@ package io.servicetalk.concurrent.api;
 public interface AsyncCloseable {
 
     /**
-     * Called once a life-cycle ends. By default this is a {@code NOOP}.
+     * Called once a life-cycle ends.
      *
      * @return the {@link Completable} that is notified once the close is complete.
      */
