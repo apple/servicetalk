@@ -16,6 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
@@ -107,5 +108,10 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
 
     private static Supplier<IoExecutor> newIoExecutor() {
         return () -> createIoExecutor(getRuntime().availableProcessors() * 2, new DefaultThreadFactory());
+    }
+
+    @Override
+    public Completable closeAsync() {
+        return ctx.closeAsync();
     }
 }
