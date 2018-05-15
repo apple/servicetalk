@@ -17,12 +17,13 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.Function;
 
+import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 
 /**
@@ -80,14 +81,7 @@ public interface HttpConnectionBuilder<ResolvedAddress, I, O> {
                             Function<HttpConnection<I, O>, FilteredConnection> connectionFilter) {
 
         return new ConnectionFactory<ResolvedAddress, FilteredConnection>() {
-            private final CompletableProcessor onClose = new CompletableProcessor();
-            private final Completable closeAsync = new Completable() {
-                @Override
-                protected void handleSubscribe(Subscriber subscriber) {
-                    onClose.onComplete();
-                    onClose.subscribe(subscriber);
-                }
-            };
+            private final ListenableAsyncCloseable close = emptyAsyncCloseable();
 
             @Override
             public Single<FilteredConnection> newConnection(ResolvedAddress resolvedAddress) {
@@ -96,12 +90,12 @@ public interface HttpConnectionBuilder<ResolvedAddress, I, O> {
 
             @Override
             public Completable onClose() {
-                return onClose;
+                return close.onClose();
             }
 
             @Override
             public Completable closeAsync() {
-                return closeAsync;
+                return close.closeAsync();
             }
         };
     }

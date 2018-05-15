@@ -18,7 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -26,13 +26,12 @@ import io.servicetalk.transport.api.ExecutionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
@@ -44,11 +43,7 @@ final class DefaultHttpClientGroup<UnresolvedAddress, I, O> extends HttpClientGr
     public static final String PLACEHOLDER_EXCEPTION_MSG = "Not supported by placeholder";
     public static final String CLOSED_EXCEPTION_MSG = "This group has been closed";
 
-    @SuppressWarnings("rawtypes")
-    private static final AtomicIntegerFieldUpdater<DefaultHttpClientGroup> closedUpdater =
-            AtomicIntegerFieldUpdater.newUpdater(DefaultHttpClientGroup.class, "closed");
-    @SuppressWarnings("unused")
-    private volatile int closed;
+    private volatile boolean closed;
 
     // Placeholder should not leak outside of the scope of existing class
     private final HttpClient<I, O> placeholder = new HttpClient<I, O>() {
@@ -83,9 +78,17 @@ final class DefaultHttpClientGroup<UnresolvedAddress, I, O> extends HttpClientGr
         }
     };
 
-    private final CompletableProcessor onClose = new CompletableProcessor();
     private final ConcurrentMap<GroupKey<UnresolvedAddress>, HttpClient<I, O>> clientMap = new ConcurrentHashMap<>();
     private final Function<GroupKey<UnresolvedAddress>, HttpClient<I, O>> clientFactory;
+    private final ListenableAsyncCloseable asyncCloseable = toAsyncCloseable(() -> {
+                closed = true;
+                return completed().mergeDelayError(clientMap.keySet().stream()
+                        .map(clientMap::remove)
+                        .filter(client -> client != null && client != placeholder)
+                        .map(AsyncCloseable::closeAsync)
+                        .collect(toList()));
+            }
+    );
 
     DefaultHttpClientGroup(final Function<GroupKey<UnresolvedAddress>, HttpClient<I, O>> clientFactory) {
         this.clientFactory = requireNonNull(clientFactory);
@@ -190,36 +193,18 @@ final class DefaultHttpClientGroup<UnresolvedAddress, I, O> extends HttpClientGr
     }
 
     private void throwIfClosed() {
-        if (closed != 0) {
+        if (closed) {
             throw new IllegalStateException(CLOSED_EXCEPTION_MSG);
         }
     }
 
     @Override
     public Completable onClose() {
-        return onClose;
+        return asyncCloseable.onClose();
     }
 
     @Override
     public Completable closeAsync() {
-        return new Completable() {
-            @Override
-            protected void handleSubscribe(final Subscriber subscriber) {
-                if (closedUpdater.compareAndSet(DefaultHttpClientGroup.this, 0, 1)) {
-                    closeAllValues(clientMap).subscribe(onClose);
-                    LOGGER.debug("Current {} was closed", this);
-                }
-
-                onClose.subscribe(subscriber);
-            }
-        };
-    }
-
-    private Completable closeAllValues(final Map<GroupKey<UnresolvedAddress>, HttpClient<I, O>> clientMap) {
-        return completed().mergeDelayError(clientMap.keySet().stream()
-                .map(clientMap::remove)
-                .filter(client -> client != null && client != placeholder)
-                .map(AsyncCloseable::closeAsync)
-                .collect(toList()));
+        return asyncCloseable.closeAsync();
     }
 }
