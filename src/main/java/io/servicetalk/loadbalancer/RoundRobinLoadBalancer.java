@@ -24,7 +24,6 @@ import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -46,11 +45,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_NOT_READY_EVENT;
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_READY_EVENT;
+import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
+import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
@@ -69,7 +70,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Stream.concat;
 
 /**
  * A {@link LoadBalancer} that uses a round robin strategy for selecting addresses. It has the following behaviour:
@@ -96,21 +96,18 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
 
     private static final AtomicReferenceFieldUpdater<RoundRobinLoadBalancer, List> activeHostsUpdater =
             newUpdater(RoundRobinLoadBalancer.class, List.class, "activeHosts");
-    private static final AtomicIntegerFieldUpdater<RoundRobinLoadBalancer> closedUpdater =
-            newUpdater(RoundRobinLoadBalancer.class, "closed");
     private static final AtomicIntegerFieldUpdater<RoundRobinLoadBalancer> indexUpdater =
             newUpdater(RoundRobinLoadBalancer.class, "index");
 
-    @SuppressWarnings("unused")
-    private volatile int closed;
+    private volatile boolean closed;
     @SuppressWarnings("unused")
     private volatile int index;
     private volatile List<Host<ResolvedAddress, C>> activeHosts = emptyList();
 
     private final PublisherProcessorSingle<Object> eventStream = new PublisherProcessorSingle<>();
-    private final CompletableProcessor closeCompletable = new CompletableProcessor();
     private final SequentialCancellable discoveryCancellable = new SequentialCancellable();
     private final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory;
+    private final ListenableAsyncCloseable asyncCloseable;
 
     /**
      * Creates a new instance.
@@ -188,6 +185,14 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                 LOGGER.debug("Service discoverer {} has completed.", eventPublisher);
             }
         });
+        asyncCloseable = toAsyncCloseable(() -> {
+            closed = true;
+            discoveryCancellable.cancel();
+            eventStream.sendOnComplete();
+            @SuppressWarnings("unchecked")
+            List<Host<ResolvedAddress, C>> currentList = activeHostsUpdater.getAndSet(RoundRobinLoadBalancer.this, Collections.<Host<ResolvedAddress, C>>emptyList());
+            return newCompositeCloseable().concat(currentList).concat(connectionFactory).closeAsync();
+        });
     }
 
     /**
@@ -219,7 +224,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
     }
 
     private <CC extends C> Single<CC> selectConnection0(Function<? super C, CC> selector) {
-        if (closed != 0) {
+        if (closed) {
             return error(LB_CLOSED_SELECT_CNX_EXCEPTION);
         }
 
@@ -259,7 +264,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                         // If the LB has closed, we attempt to remove the connection, if the removal succeeds, close it.
                         // If we can't remove it, it means it's been removed concurrently and we assume that whoever removed it also closed it
                         // or that it has been removed as a consequence of closing.
-                        if (closed != 0) {
+                        if (closed) {
                             if (host.connections.remove(newCnx)) {
                                 newCnx.closeAsync().subscribe();
                             }
@@ -273,25 +278,12 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
 
     @Override
     public Completable onClose() {
-        return closeCompletable;
+        return asyncCloseable.onClose();
     }
 
     @Override
     public Completable closeAsync() {
-        return new Completable() {
-            @Override
-            protected void handleSubscribe(final Subscriber subscriber) {
-                if (closedUpdater.compareAndSet(RoundRobinLoadBalancer.this, 0, 1)) {
-                    discoveryCancellable.cancel();
-                    eventStream.sendOnComplete();
-                    @SuppressWarnings("unchecked")
-                    List<Host<ResolvedAddress, C>> currentList = activeHostsUpdater.getAndSet(RoundRobinLoadBalancer.this, Collections.<Host<ResolvedAddress, C>>emptyList());
-                    completed().mergeDelayError(concat(currentList.stream().map(AsyncCloseable::closeAsync), Stream.of(connectionFactory.closeAsync()))::iterator).subscribe(closeCompletable);
-                }
-
-                closeCompletable.subscribe(subscriber);
-            }
-        };
+        return asyncCloseable.closeAsync();
     }
 
     // Visible for testing
@@ -355,7 +347,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
 
         @Override
         public Completable closeAsync() {
-            return connections == null ? Completable.completed() : Completable.completed().mergeDelayError(connections.stream().map(AsyncCloseable::closeAsync)::iterator);
+            return connections == null ? completed() : completed().mergeDelayError(connections.stream().map(AsyncCloseable::closeAsync)::iterator);
         }
     }
 
