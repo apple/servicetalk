@@ -16,7 +16,6 @@
 package io.servicetalk.transport.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 
 import static java.util.Objects.requireNonNull;
@@ -81,10 +80,5 @@ public final class DefaultExecutionContext implements ExecutionContext {
         result = 31 * result + ioExecutor.hashCode();
         result = 31 * result + executor.hashCode();
         return result;
-    }
-
-    @Override
-    public Completable closeAsync() {
-        return executor.closeAsync().mergeDelayError(ioExecutor.closeAsync());
     }
 }
