@@ -83,7 +83,7 @@ public final class HelloWorldClient {
             responseProcessedLatch.await();
 
             // cleanup the HttpClient, ServiceDiscoverer, and IoExecutor
-            resources.concat(client, dnsDiscoverer, executionContext);
+            resources.concat(client, dnsDiscoverer, executionContext.getExecutor(), executionContext.getIoExecutor());
         }
     }
 }

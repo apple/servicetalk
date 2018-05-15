@@ -93,7 +93,7 @@ public final class StreamingClient {
             // Don't exit the main thread until after the response is completely processed.
             responseProcessedLatch.await();
             // cleanup the HttpClient, ServiceDiscoverer, and IoExecutor
-            resources.concat(client, dnsDiscoverer, executionContext);
+            resources.concat(client, dnsDiscoverer, executionContext.getExecutor(), executionContext.getIoExecutor());
         }
     }
 }

@@ -88,7 +88,7 @@ public final class StreamingBlockingClient {
 
             // cleanup the BlockingHttpClient, ServiceDiscoverer, and IoExecutor
             client.close();
-            resources.concat(dnsDiscoverer, executionContext);
+            resources.concat(dnsDiscoverer, executionContext.getExecutor(), executionContext.getIoExecutor());
         }
     }
 }

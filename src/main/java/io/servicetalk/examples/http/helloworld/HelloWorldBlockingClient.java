@@ -78,7 +78,7 @@ public final class HelloWorldBlockingClient {
 
             // cleanup the BlockingHttpClient, ServiceDiscoverer, and IoExecutor
             client.close();
-            resources.concat(dnsDiscoverer, executionContext);
+            resources.concat(dnsDiscoverer, executionContext.getExecutor(), executionContext.getIoExecutor());
         }
     }
 }
