@@ -17,9 +17,11 @@ package io.servicetalk.redis.api;
 
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
+
+import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 
 /**
  * A builder for {@link RedisConnection} objects.
@@ -47,15 +49,7 @@ public interface RedisConnectionBuilder<ResolvedAddress> {
      */
     default ConnectionFactory<ResolvedAddress, RedisConnection> asConnectionFactory(ExecutionContext executionContext) {
         return new ConnectionFactory<ResolvedAddress, RedisConnection>() {
-            private final CompletableProcessor onClose = new CompletableProcessor();
-            private final Completable closeAsync = new Completable() {
-                @Override
-                protected void handleSubscribe(Subscriber subscriber) {
-                    onClose.onComplete();
-                    onClose.subscribe(subscriber);
-                }
-            };
-
+            private final ListenableAsyncCloseable close = emptyAsyncCloseable();
             @Override
             public Single<RedisConnection> newConnection(ResolvedAddress resolvedAddress) {
                 return build(executionContext, resolvedAddress);
@@ -63,12 +57,12 @@ public interface RedisConnectionBuilder<ResolvedAddress> {
 
             @Override
             public Completable onClose() {
-                return onClose;
+                return close.onClose();
             }
 
             @Override
             public Completable closeAsync() {
-                return closeAsync;
+                return close.closeAsync();
             }
         };
     }
