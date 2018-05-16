@@ -20,18 +20,20 @@ import io.servicetalk.concurrent.api.Publisher;
 
 /**
  * The equivalent of {@link HttpResponse} but with an aggregated content instead of a {@link Publisher} as returned by
- *  * {@link HttpResponse#getPayloadBody()}.
+ * {@link HttpResponse#getPayloadBody()}.
  */
 public interface FullHttpResponse extends HttpResponseMetaData, LastHttpPayloadChunk {
     /**
      * The <a href="https://tools.ietf.org/html/rfc7230.html#section-3.3">HTTP Payload Body</a>.
      *
-     * @return The <a href="https://tools.ietf.org/html/rfc7230.html#section-3.3">HTTP Payload Body</a> of this response.
+     * @return The <a href="https://tools.ietf.org/html/rfc7230.html#section-3.3">HTTP Payload Body</a> of this
+     * response.
      */
     Buffer getPayloadBody();
 
     /**
      * Get the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer headers</a>.
+     *
      * @return the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer headers</a>.
      */
     @Override
@@ -44,6 +46,7 @@ public interface FullHttpResponse extends HttpResponseMetaData, LastHttpPayloadC
 
     /**
      * Duplicates this {@link FullHttpResponse}.
+     *
      * @return Duplicates this {@link FullHttpResponse}.
      */
     @Override
@@ -51,6 +54,7 @@ public interface FullHttpResponse extends HttpResponseMetaData, LastHttpPayloadC
 
     /**
      * Returns a new {@link FullHttpResponse} which contains the specified {@code content}.
+     *
      * @param content The {@link Buffer} to replace what is currently returned by {@link #getContent()}.
      * @return a new {@link FullHttpResponse} which contains the specified {@code content}.
      */

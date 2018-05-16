@@ -22,12 +22,13 @@ import io.servicetalk.http.api.AggregatedHttpClientToHttpClient.AggregatedToRese
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
 
 /**
- * The equivalent of {@link HttpClient} but but that accepts {@link FullHttpRequest} and returns {@link FullHttpResponse}.
+ * The equivalent of {@link HttpClient} but that accepts {@link FullHttpRequest} and returns {@link FullHttpResponse}.
  */
 public abstract class AggregatedHttpClient extends AggregatedHttpRequester {
     /**
      * Reserve a {@link AggregatedHttpConnection} for handling the provided {@link FullHttpRequest}
      * but <b>does not execute it</b>!
+     *
      * @param request Allows the underlying layers to know what {@link AggregatedHttpConnection}s are valid to reserve.
      * For example this may provide some insight into shard or other info.
      * @return a {@link ReservedHttpConnection}.
@@ -41,6 +42,7 @@ public abstract class AggregatedHttpClient extends AggregatedHttpRequester {
      * the {@link AggregatedHttpConnection} associated with the {@link AggregatedUpgradableHttpResponse} will be
      * reserved for exclusive use. The code responsible for determining the result of the upgrade attempt is responsible
      * for calling {@link AggregatedUpgradableHttpResponse#getHttpConnection(boolean)}.
+     *
      * @param request the request which initiates the upgrade.
      * @return An object that provides the {@link HttpResponse} for the upgrade attempt and also contains the
      * {@link AggregatedHttpConnection} used for the upgrade.
@@ -49,6 +51,7 @@ public abstract class AggregatedHttpClient extends AggregatedHttpRequester {
 
     /**
      * Convert this {@link AggregatedHttpClient} to the {@link HttpClient} asynchronous API.
+     *
      * @return a {@link HttpClient} representation of this {@link AggregatedHttpClient}.
      */
     public final HttpClient<HttpPayloadChunk, HttpPayloadChunk> asClient() {
@@ -74,6 +77,7 @@ public abstract class AggregatedHttpClient extends AggregatedHttpRequester {
 
         /**
          * Convert this {@link AggregatedReservedHttpConnection} to the {@link ReservedHttpConnection} asynchronous API.
+         *
          * @return a {@link ReservedHttpConnection} representation of this {@link AggregatedReservedHttpConnection}.
          */
         public final ReservedHttpConnection<HttpPayloadChunk, HttpPayloadChunk> asReservedConnection() {
@@ -91,6 +95,7 @@ public abstract class AggregatedHttpClient extends AggregatedHttpRequester {
          * <p>
          * The caller of this method is responsible for calling {@link AggregatedReservedHttpConnection#releaseAsync()}
          * on the return value!
+         *
          * @param releaseReturnsToClient
          * <ul>
          *     <li>{@code true} means the {@link HttpConnection} associated with the return value can be used by

@@ -21,12 +21,14 @@ import io.servicetalk.transport.api.ConnectionContext;
 
 /**
  * The equivalent of {@link HttpConnection} but with synchronous/blocking APIs instead of asynchronous APIs.
+ *
  * @param <I> Type of payload of a request handled by this {@link BlockingHttpConnection}.
  * @param <O> Type of payload of a response handled by this {@link BlockingHttpConnection}.
  */
 public abstract class BlockingHttpConnection<I, O> extends BlockingHttpRequester<I, O> {
     /**
      * Get the {@link ConnectionContext}.
+     *
      * @return the {@link ConnectionContext}.
      */
     public abstract ConnectionContext getConnectionContext();
@@ -46,6 +48,7 @@ public abstract class BlockingHttpConnection<I, O> extends BlockingHttpRequester
      * <p>
      * Note that the resulting {@link HttpConnection} will still be subject to any blocking, in memory aggregation, and
      * other behavior as this {@link BlockingHttpConnection}.
+     *
      * @return a {@link HttpConnection} representation of this {@link BlockingHttpConnection}.
      */
     public final HttpConnection<I, O> asAsynchronousClient() {

@@ -20,11 +20,13 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
 /**
- * The equivalent of {@link HttpRequester} but that accepts {@link FullHttpRequest} and returns {@link FullHttpResponse}.
+ * The equivalent of {@link HttpRequester} but that accepts {@link FullHttpRequest} and returns
+ * {@link FullHttpResponse}.
  */
 public abstract class AggregatedHttpRequester implements ListenableAsyncCloseable {
     /**
      * Send a {@code request}.
+     *
      * @param request the request to send.
      * @return The response.
      */
@@ -35,12 +37,14 @@ public abstract class AggregatedHttpRequester implements ListenableAsyncCloseabl
      * <p>
      * Note that the {@link ExecutionContext#getIoExecutor()} will not necessarily be associated with a specific thread
      * unless that was how this object was built.
+     *
      * @return the {@link ExecutionContext} used during construction of this object.
      */
     public abstract ExecutionContext getExecutionContext();
 
     /**
      * Convert this {@link AggregatedHttpRequester} to the {@link HttpRequester} asynchronous API.
+     *
      * @return a {@link HttpRequester} representation of this {@link AggregatedHttpRequester}.
      */
     public final HttpRequester<HttpPayloadChunk, HttpPayloadChunk> asRequester() {

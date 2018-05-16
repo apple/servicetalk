@@ -24,6 +24,7 @@ import java.util.function.Function;
 
 /**
  * The equivalent of {@link HttpResponse} but with synchronous/blocking APIs instead of asynchronous APIs.
+ *
  * @param <T> Type of payload.
  */
 public interface BlockingHttpResponse<T> extends HttpResponseMetaData {
@@ -43,11 +44,10 @@ public interface BlockingHttpResponse<T> extends HttpResponseMetaData {
      * <a href="http://reactivex.io/documentation/operators/replay.html">Replay Operator</a> and
      * {@link Publisher#multicast(int) Multicast Operator} for more details.
      *
-     * TODO(scott): add a link to ServiceTalk replay operator and synchronous equivalent tools.
-     *
      * @return {@link Iterable} that emits the
      * <a href="https://tools.ietf.org/html/rfc7230.html#section-3.3">HTTP Payload Body</a> of this request.
      */
+    // TODO(scott): add a link in the javadoc to ServiceTalk replay operator and synchronous equivalent tools.
     BlockingIterable<T> getPayloadBody();
 
     /**

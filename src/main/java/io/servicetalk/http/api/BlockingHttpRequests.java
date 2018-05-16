@@ -53,7 +53,7 @@ public final class BlockingHttpRequests {
      * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
      * request.
      * @param <I> Type of the payload of the request.
-     * @return a new {@link BlockingHttpResponse}.
+     * @return a new {@link BlockingHttpRequest}.
      */
     public static <I> BlockingHttpRequest<I> newRequest(final HttpProtocolVersion version,
                                                         final HttpRequestMethod method,
@@ -69,7 +69,7 @@ public final class BlockingHttpRequests {
      * request.
      * @param payloadBody the payload body of the request.
      * @param <I> Type of the payload of the request.
-     * @return a new {@link BlockingHttpResponse}.
+     * @return a new {@link BlockingHttpRequest}.
      */
     public static <I> BlockingHttpRequest<I> newRequest(final HttpRequestMethod method,
                                                         final String requestTarget,
@@ -86,7 +86,7 @@ public final class BlockingHttpRequests {
      * request.
      * @param payloadBody the payload body of the request.
      * @param <I> Type of the payload of the request.
-     * @return a new {@link BlockingHttpResponse}.
+     * @return a new {@link BlockingHttpRequest}.
      */
     public static <I> BlockingHttpRequest<I> newRequest(final HttpProtocolVersion version,
                                                         final HttpRequestMethod method,
@@ -103,7 +103,7 @@ public final class BlockingHttpRequests {
      * request.
      * @param payloadBody a {@link Iterable} of the payload body of the request.
      * @param <I> Type of the payload of the request.
-     * @return a new {@link BlockingHttpResponse}.
+     * @return a new {@link BlockingHttpRequest}.
      */
     public static <I> BlockingHttpRequest<I> newRequest(final HttpRequestMethod method,
                                                         final String requestTarget,
@@ -119,7 +119,7 @@ public final class BlockingHttpRequests {
      * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the request.
      * @param payloadBody a {@link Iterable} of the payload body of the request.
      * @param <I> Type of the payload of the request.
-     * @return a new {@link BlockingHttpResponse}.
+     * @return a new {@link BlockingHttpRequest}.
      */
     public static <I> BlockingHttpRequest<I> newRequest(final HttpProtocolVersion version,
                                                         final HttpRequestMethod method,
@@ -138,7 +138,7 @@ public final class BlockingHttpRequests {
      * @param payloadBody a {@link Iterable} of the payload body of the request.
      * @param headers the {@link HttpHeaders} of the request.
      * @param <I> Type of the payload of the request.
-     * @return a new {@link BlockingHttpResponse}.
+     * @return a new {@link BlockingHttpRequest}.
      */
     public static <I> BlockingHttpRequest<I> newRequest(final HttpProtocolVersion version,
                                                         final HttpRequestMethod method,

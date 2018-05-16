@@ -23,6 +23,7 @@ import java.util.function.Function;
 
 /**
  * The equivalent of {@link HttpClient} but with synchronous/blocking APIs instead of asynchronous APIs.
+ *
  * @param <I> Type of payload of a request handled by this {@link BlockingHttpClient}.
  * @param <O> Type of payload of a response handled by this {@link BlockingHttpClient}.
  */
@@ -30,6 +31,7 @@ public abstract class BlockingHttpClient<I, O> extends BlockingHttpRequester<I, 
     /**
      * Reserve a {@link BlockingHttpConnection} for handling the provided {@link BlockingHttpRequest}
      * but <b>does not execute it</b>!
+     *
      * @param request Allows the underlying layers to know what {@link BlockingHttpConnection}s are valid to reserve.
      * For example this may provide some insight into shard or other info.
      * @return a {@link ReservedHttpConnection}.
@@ -45,6 +47,7 @@ public abstract class BlockingHttpClient<I, O> extends BlockingHttpRequester<I, 
      * the {@link BlockingHttpConnection} associated with the {@link BlockingUpgradableHttpResponse} will be reserved
      * for exclusive use. The code responsible for determining the result of the upgrade attempt is responsible for
      * calling {@link BlockingUpgradableHttpResponse#getHttpConnection(boolean)}.
+     *
      * @param request the request which initiates the upgrade.
      * @return An object that provides the {@link HttpResponse} for the upgrade attempt and also contains the
      * {@link BlockingHttpConnection} used for the upgrade.
@@ -58,6 +61,7 @@ public abstract class BlockingHttpClient<I, O> extends BlockingHttpRequester<I, 
      * <p>
      * Note that the resulting {@link HttpClient} will still be subject to any blocking, in memory aggregation, and
      * other behavior as this {@link BlockingHttpClient}.
+     *
      * @return a {@link HttpClient} representation of this {@link BlockingHttpClient}.
      */
     public final HttpClient<I, O> asAsynchronousClient() {
@@ -71,6 +75,7 @@ public abstract class BlockingHttpClient<I, O> extends BlockingHttpRequester<I, 
     /**
      * A special type of {@link BlockingHttpConnection} for the exclusive use of the caller of
      * {@link #reserveConnection(BlockingHttpRequest)}.
+     *
      * @param <I> The type of payload of the request.
      * @param <O> The type of payload of the response.
      */
@@ -78,6 +83,7 @@ public abstract class BlockingHttpClient<I, O> extends BlockingHttpRequester<I, 
         /**
          * Releases this reserved {@link BlockingHttpConnection} to be used for subsequent requests.
          * This method must be idempotent, i.e. calling multiple times must not have side-effects.
+         *
          * @throws Exception if any exception occurs during releasing.
          */
         public abstract void release() throws Exception;
@@ -87,6 +93,7 @@ public abstract class BlockingHttpClient<I, O> extends BlockingHttpRequester<I, 
          * <p>
          * Note that the resulting {@link ReservedHttpConnection} will still be subject to any blocking, in memory
          * aggregation, and other behavior as this {@link BlockingReservedHttpConnection}.
+         *
          * @return a {@link ReservedHttpConnection} representation of this {@link BlockingReservedHttpConnection}.
          */
         public final ReservedHttpConnection<I, O> asAsynchronousReservedConnection() {
@@ -104,6 +111,7 @@ public abstract class BlockingHttpClient<I, O> extends BlockingHttpRequester<I, 
          * <p>
          * The caller of this method is responsible for calling {@link BlockingReservedHttpConnection#release()} on the
          * return value!
+         *
          * @param releaseReturnsToClient
          * <ul>
          *     <li>{@code true} means the {@link BlockingHttpConnection} associated with the return value can be used by

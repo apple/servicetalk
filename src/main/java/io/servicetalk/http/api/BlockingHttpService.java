@@ -21,12 +21,14 @@ import java.util.function.BiFunction;
 
 /**
  * The equivalent of {@link HttpService} but with synchronous/blocking APIs instead of asynchronous APIs.
+ *
  * @param <I> Type of payload of a request handled by this {@link BlockingHttpService}.
  * @param <O> Type of payload of a response handled by this {@link BlockingHttpService}.
  */
 public abstract class BlockingHttpService<I, O> implements AutoCloseable {
     /**
      * Handles a single HTTP request.
+     *
      * @param ctx Context of the service.
      * @param request to handle.
      * @return a {@link BlockingHttpResponse} which represents the HTTP response.
@@ -45,6 +47,7 @@ public abstract class BlockingHttpService<I, O> implements AutoCloseable {
      * <p>
      * Note that the resulting {@link HttpService} will still be subject to any blocking, in memory aggregation, and
      * other behavior as this {@link BlockingHttpService}.
+     *
      * @return a {@link HttpService} representation of this {@link BlockingHttpService}.
      */
     public final HttpService<I, O> asAsynchronousService() {
@@ -53,6 +56,7 @@ public abstract class BlockingHttpService<I, O> implements AutoCloseable {
 
     /**
      * Provides a means to override the behavior of {@link #asAsynchronousService()} for internal classes.
+     *
      * @return a {@link HttpService} representation of this {@link BlockingHttpService}.
      */
     HttpService<I, O> asAsynchronousServiceInternal() {
@@ -61,6 +65,7 @@ public abstract class BlockingHttpService<I, O> implements AutoCloseable {
 
     /**
      * Create a new {@link BlockingHttpService} from a {@link BiFunction}.
+     *
      * @param handleFunc Provides the functionality for the {@link #handle(ConnectionContext, BlockingHttpRequest)}
      * method.
      * @param <I> Type of payload of a request handled by this service.

@@ -39,6 +39,7 @@ public final class LoadBalancerReadyHttpClient<I, O> extends HttpClient<I, O> {
 
     /**
      * Create a new instance.
+     *
      * @param maxRetryCount The maximum number of retries when requests fail with a {@link RetryableException}.
      * @param loadBalancerEvents See {@link LoadBalancer#getEventStream()}. This filter will listen for
      * {@link LoadBalancerReadyEvent} events to trigger retries.

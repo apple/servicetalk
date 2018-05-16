@@ -20,6 +20,7 @@ import io.servicetalk.http.api.BlockingHttpClient.BlockingReservedHttpConnection
 
 /**
  * The equivalent of {@link HttpClientGroup} but with synchronous/blocking APIs instead of asynchronous APIs.
+ *
  * @param <UnresolvedAddress> The address type used to create new {@link BlockingHttpClient}s.
  * @param <I> Type of payload of a request handled by this {@link BlockingHttpClient}.
  * @param <O> Type of payload of a response handled by this {@link BlockingHttpClient}.
@@ -58,6 +59,7 @@ public abstract class BlockingHttpClientGroup<UnresolvedAddress, I, O> implement
      * <p>
      * Note that the resulting {@link HttpClientGroup} will still be subject to any blocking, in memory aggregation, and
      * other behavior as this {@link BlockingHttpClientGroup}.
+     *
      * @return a {@link HttpClientGroup} representation of this {@link BlockingHttpClientGroup}.
      */
     public final HttpClientGroup<UnresolvedAddress, I, O> asAsynchronousClientGroup() {

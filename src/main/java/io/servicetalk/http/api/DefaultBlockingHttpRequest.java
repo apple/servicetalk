@@ -24,6 +24,7 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Default implementation of {@link BlockingHttpRequest}.
+ *
  * @param <I> The type of payload of the request.
  */
 final class DefaultBlockingHttpRequest<I> implements BlockingHttpRequest<I> {

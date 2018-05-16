@@ -37,6 +37,7 @@ public interface FullHttpRequest extends HttpRequestMetaData, LastHttpPayloadChu
 
     /**
      * Get the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer headers</a>.
+     *
      * @return the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer headers</a>.
      */
     @Override
@@ -44,6 +45,7 @@ public interface FullHttpRequest extends HttpRequestMetaData, LastHttpPayloadChu
 
     /**
      * Duplicates this {@link FullHttpRequest}.
+     *
      * @return Duplicates this {@link FullHttpRequest}.
      */
     @Override
@@ -51,6 +53,7 @@ public interface FullHttpRequest extends HttpRequestMetaData, LastHttpPayloadChu
 
     /**
      * Returns a new {@link FullHttpRequest} which contains the specified {@code content}.
+     *
      * @param content The {@link Buffer} to replace what is currently returned by {@link #getContent()}.
      * @return a new {@link FullHttpRequest} which contains the specified {@code content}.
      */

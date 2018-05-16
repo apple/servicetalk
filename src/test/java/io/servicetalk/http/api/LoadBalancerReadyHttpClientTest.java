@@ -30,7 +30,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
@@ -53,6 +52,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.initMocks;
 
 public class LoadBalancerReadyHttpClientTest {
     @Rule
@@ -69,7 +69,7 @@ public class LoadBalancerReadyHttpClientTest {
 
     @Before
     public void setup() {
-        MockitoAnnotations.initMocks(this);
+        initMocks(this);
     }
 
     @Test

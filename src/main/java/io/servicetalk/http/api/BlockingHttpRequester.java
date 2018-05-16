@@ -19,12 +19,14 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 /**
  * The equivalent of {@link HttpRequester} but with synchronous/blocking APIs instead of asynchronous APIs.
+ *
  * @param <I> Type of payload of a request handled by this {@link BlockingHttpRequester}.
  * @param <O> Type of payload of a response handled by this {@link BlockingHttpRequester}.
  */
 public abstract class BlockingHttpRequester<I, O> implements AutoCloseable {
     /**
      * Send a {@code request}.
+     *
      * @param request the request to send.
      * @return The response.
      * @throws Exception if an exception occurs during the request processing.
@@ -36,6 +38,7 @@ public abstract class BlockingHttpRequester<I, O> implements AutoCloseable {
      * <p>
      * Note that the {@link ExecutionContext#getIoExecutor()} will not necessarily be associated with a specific thread
      * unless that was how this object was built.
+     *
      * @return the {@link ExecutionContext} used during construction of this object.
      */
     public abstract ExecutionContext getExecutionContext();
@@ -45,6 +48,7 @@ public abstract class BlockingHttpRequester<I, O> implements AutoCloseable {
      * <p>
      * Note that the resulting {@link HttpRequester} will still be subject to any blocking, in memory aggregation, and
      * other behavior as this {@link BlockingHttpRequester}.
+     *
      * @return a {@link HttpRequester} representation of this {@link BlockingHttpRequester}.
      */
     public final HttpRequester<I, O> asAsynchronousRequester() {

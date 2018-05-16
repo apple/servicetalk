@@ -23,7 +23,7 @@ import io.servicetalk.transport.api.ConnectionContext;
 import java.util.function.BiFunction;
 
 /**
- * Same as {@link HttpService} but that accepts {@link FullHttpRequest} and returns {@link FullHttpResponse}..
+ * Same as {@link HttpService} but that accepts {@link FullHttpRequest} and returns {@link FullHttpResponse}.
  */
 public abstract class AggregatedHttpService implements AsyncCloseable {
     /**
@@ -50,6 +50,7 @@ public abstract class AggregatedHttpService implements AsyncCloseable {
      * <p>
      * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
      * filters are implemented using the {@link AggregatedHttpService} asynchronous API for maximum portability.
+     *
      * @return a {@link BlockingHttpService} representation of this {@link AggregatedHttpService}.
      */
     public final HttpService<HttpPayloadChunk, HttpPayloadChunk> asService() {
@@ -62,6 +63,7 @@ public abstract class AggregatedHttpService implements AsyncCloseable {
 
     /**
      * Create a new {@link AggregatedHttpService} from a {@link BiFunction}.
+     *
      * @param handleFunc Provides the functionality for the {@link #handle(ConnectionContext, FullHttpRequest)} method.
      * @return a new {@link AggregatedHttpService}.
      */

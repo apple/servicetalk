@@ -36,7 +36,7 @@ public final class FullHttpRequests {
      * @param method the {@link HttpRequestMethod} of the request.
      * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
      * request.
-     * @return a new {@link HttpRequest}.
+     * @return a new {@link FullHttpRequest}.
      */
     public static FullHttpRequest newRequest(final HttpRequestMethod method,
                                              final String requestTarget) {
