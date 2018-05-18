@@ -54,7 +54,7 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
  * @param <Read> Type of objects read from this connection.
  * @param <Write> Type of objects written to this connection.
  */
-public final class NettyConnection<Read, Write> implements Connection<Read, Write> {
+public class NettyConnection<Read, Write> implements Connection<Read, Write> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NettyConnection.class);
 
