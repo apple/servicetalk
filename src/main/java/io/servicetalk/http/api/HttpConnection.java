@@ -20,16 +20,12 @@ import io.servicetalk.transport.api.ConnectionContext;
 
 import org.reactivestreams.Subscriber;
 
-import java.util.function.Function;
-
 import static java.util.Objects.requireNonNull;
 
 /**
  * Represents a single fixed connection to a HTTP server.
- * @param <I> The type of payload of the request.
- * @param <O> The type of payload of the response.
  */
-public abstract class HttpConnection<I, O> extends HttpRequester<I, O> {
+public abstract class HttpConnection extends HttpRequester {
     /**
      * Get the {@link ConnectionContext}.
      * @return the {@link ConnectionContext}.
@@ -53,7 +49,7 @@ public abstract class HttpConnection<I, O> extends HttpRequester<I, O> {
      * filters are implemented using the {@link HttpConnection} asynchronous API for maximum portability.
      * @return a {@link BlockingHttpConnection} representation of this {@link HttpConnection}.
      */
-    public final BlockingHttpConnection<I, O> asBlockingConnection() {
+    public final BlockingHttpConnection asBlockingConnection() {
         return asBlockingConnectionInternal();
     }
 
@@ -62,31 +58,18 @@ public abstract class HttpConnection<I, O> extends HttpRequester<I, O> {
      * <p>
      * This API is provided for convenience. It is recommended that
      * filters are implemented using the {@link HttpConnection} asynchronous API for maximum portability.
-     *
-     * @param requestPayloadTransformer {@link Function} to convert an {@link HttpPayloadChunk} to {@link I}.
-     * This is to make sure that we can use {@code this} {@link HttpConnection} for the returned
-     * {@link AggregatedHttpConnection}. Use {@link Function#identity()} if {@code this} {@link HttpClient} already
-     * handles {@link HttpPayloadChunk} for request payload.
-     * @param responsePayloadTransformer {@link Function} to convert an {@link O} to {@link HttpPayloadChunk}.
-     * This is to make sure that we can use {@code this} {@link HttpConnection} for the returned
-     * {@link AggregatedHttpConnection}. Use {@link Function#identity()} if {@code this} {@link HttpConnection} already
-     * returns response with {@link HttpPayloadChunk} as payload.
      * @return a {@link AggregatedHttpConnection} representation of this {@link HttpConnection}.
      */
-    public final AggregatedHttpConnection asAggregatedConnection(
-                                                Function<HttpPayloadChunk, I> requestPayloadTransformer,
-                                                Function<O, HttpPayloadChunk> responsePayloadTransformer) {
-        return asAggregatedInternal(requestPayloadTransformer, responsePayloadTransformer);
+    public final AggregatedHttpConnection asAggregatedConnection() {
+        return asAggregatedConnectionInternal();
     }
 
-    AggregatedHttpConnection asAggregatedInternal(Function<HttpPayloadChunk, I> requestPayloadTransformer,
-                                                  Function<O, HttpPayloadChunk> responsePayloadTransformer) {
-        return new HttpConnectionToAggregatedHttpConnection<>(
-                this, requestPayloadTransformer, responsePayloadTransformer);
+    AggregatedHttpConnection asAggregatedConnectionInternal() {
+        return new HttpConnectionToAggregatedHttpConnection(this);
     }
 
-    BlockingHttpConnection<I, O> asBlockingConnectionInternal() {
-        return new HttpConnectionToBlockingHttpConnection<>(this);
+    BlockingHttpConnection asBlockingConnectionInternal() {
+        return new HttpConnectionToBlockingHttpConnection(this);
     }
 
     /**

@@ -15,55 +15,35 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
+
+import java.util.function.Function;
 
 /**
  * The equivalent of {@link HttpResponse} but with an aggregated content instead of a {@link Publisher} as returned by
  * {@link HttpResponse#getPayloadBody()}.
  */
-public interface FullHttpResponse extends HttpResponseMetaData, LastHttpPayloadChunk {
+public interface AggregatedHttpResponse<T> extends HttpResponseMetaData, LastHttpMetaData {
     /**
      * The <a href="https://tools.ietf.org/html/rfc7230.html#section-3.3">HTTP Payload Body</a>.
      *
      * @return The <a href="https://tools.ietf.org/html/rfc7230.html#section-3.3">HTTP Payload Body</a> of this
      * response.
      */
-    Buffer getPayloadBody();
+    T getPayloadBody();
 
     /**
-     * Get the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer headers</a>.
+     * To modify the {@link #getPayloadBody()} of the request and preserving the containing request object.
      *
-     * @return the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer headers</a>.
+     * @param transformer {@link Function} which converts the payload body to another type.
+     * @param <R> Type of the resulting payload body.
+     * @return New {@link AggregatedHttpResponse} with the altered {@link #getPayloadBody()}.
      */
-    @Override
-    HttpHeaders getTrailers();
+    <R> AggregatedHttpResponse<R> transformPayloadBody(Function<T, R> transformer);
 
     @Override
-    default Buffer getContent() {
-        return getPayloadBody();
-    }
-
-    /**
-     * Duplicates this {@link FullHttpResponse}.
-     *
-     * @return Duplicates this {@link FullHttpResponse}.
-     */
-    @Override
-    FullHttpResponse duplicate();
-
-    /**
-     * Returns a new {@link FullHttpResponse} which contains the specified {@code content}.
-     *
-     * @param content The {@link Buffer} to replace what is currently returned by {@link #getContent()}.
-     * @return a new {@link FullHttpResponse} which contains the specified {@code content}.
-     */
-    @Override
-    FullHttpResponse replace(Buffer content);
+    AggregatedHttpResponse<T> setVersion(HttpProtocolVersion version);
 
     @Override
-    FullHttpResponse setVersion(HttpProtocolVersion version);
-
-    @Override
-    FullHttpResponse setStatus(HttpResponseStatus status);
+    AggregatedHttpResponse<T> setStatus(HttpResponseStatus status);
 }

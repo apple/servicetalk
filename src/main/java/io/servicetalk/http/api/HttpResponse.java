@@ -50,7 +50,7 @@ public interface HttpResponse<T> extends HttpResponseMetaData {
      *
      * @param transformer {@link Function} which converts the payload body to another type.
      * @param <R> Type of the resulting payload body.
-     * @return New {@code HttpResponse} with the altered {@link #getPayloadBody()}.
+     * @return New {@link HttpResponse} with the altered {@link #getPayloadBody()}.
      */
     <R> HttpResponse<R> transformPayloadBody(Function<Publisher<T>, Publisher<R>> transformer);
 

@@ -20,15 +20,16 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 import static java.util.Objects.requireNonNull;
 
-final class HttpRequesterToBlockingHttpRequester<I, O> extends BlockingHttpRequester<I, O> {
-    private final HttpRequester<I, O> requester;
+final class HttpRequesterToBlockingHttpRequester extends BlockingHttpRequester {
+    private final HttpRequester requester;
 
-    HttpRequesterToBlockingHttpRequester(HttpRequester<I, O> requester) {
+    HttpRequesterToBlockingHttpRequester(HttpRequester requester) {
         this.requester = requireNonNull(requester);
     }
 
     @Override
-    public BlockingHttpResponse<O> request(final BlockingHttpRequest<I> request) throws Exception {
+    public BlockingHttpResponse<HttpPayloadChunk> request(final BlockingHttpRequest<HttpPayloadChunk> request)
+            throws Exception {
         return BlockingUtils.request(requester, request);
     }
 
@@ -47,7 +48,7 @@ final class HttpRequesterToBlockingHttpRequester<I, O> extends BlockingHttpReque
     }
 
     @Override
-    HttpRequester<I, O> asAsynchronousRequesterInternal() {
+    HttpRequester asAsynchronousRequesterInternal() {
         return requester;
     }
 }

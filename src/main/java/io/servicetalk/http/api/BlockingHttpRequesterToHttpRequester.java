@@ -23,15 +23,15 @@ import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static java.util.Objects.requireNonNull;
 
-final class BlockingHttpRequesterToHttpRequester<I, O> extends HttpRequester<I, O> {
-    private final BlockingHttpRequester<I, O> blockingHttpRequester;
+final class BlockingHttpRequesterToHttpRequester extends HttpRequester {
+    private final BlockingHttpRequester blockingHttpRequester;
 
-    BlockingHttpRequesterToHttpRequester(BlockingHttpRequester<I, O> blockingHttpRequester) {
+    BlockingHttpRequesterToHttpRequester(BlockingHttpRequester blockingHttpRequester) {
         this.blockingHttpRequester = requireNonNull(blockingHttpRequester);
     }
 
     @Override
-    public Single<HttpResponse<O>> request(final HttpRequest<I> request) {
+    public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
         return BlockingUtils.request(blockingHttpRequester, request);
     }
 
@@ -55,7 +55,7 @@ final class BlockingHttpRequesterToHttpRequester<I, O> extends HttpRequester<I, 
     }
 
     @Override
-    BlockingHttpRequester<I, O> asBlockingRequesterInternal() {
+    BlockingHttpRequester asBlockingRequesterInternal() {
         return blockingHttpRequester;
     }
 }

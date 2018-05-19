@@ -19,69 +19,31 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 
-import java.util.function.Function;
-
-import static io.servicetalk.http.api.DefaultFullHttpRequest.toHttpRequest;
-import static io.servicetalk.http.api.DefaultFullHttpResponse.from;
+import static io.servicetalk.http.api.DefaultAggregatedHttpRequest.toHttpRequest;
+import static io.servicetalk.http.api.DefaultAggregatedHttpResponse.from;
 import static java.util.Objects.requireNonNull;
 
-public class HttpServiceToAggregatedHttpService<I, O> extends AggregatedHttpService {
-    private final HttpPayloadChunkService chunkService;
+final class HttpServiceToAggregatedHttpService extends AggregatedHttpService {
+    private final HttpService service;
 
-    HttpServiceToAggregatedHttpService(final HttpService<I, O> service,
-                                       final Function<HttpPayloadChunk, I> requestPayloadTransformer,
-                                       final Function<O, HttpPayloadChunk> responsePayloadTransformer) {
-        this.chunkService = new HttpPayloadChunkService(service, requestPayloadTransformer, responsePayloadTransformer);
+    HttpServiceToAggregatedHttpService(HttpService service) {
+        this.service = requireNonNull(service);
     }
 
     @Override
-    public Single<FullHttpResponse> handle(final ConnectionContext ctx, final FullHttpRequest request) {
-        return chunkService.handle(ctx, toHttpRequest(request))
-                .flatMap(response -> from(response, ctx.getExecutionContext().getBufferAllocator()));
+    public Single<AggregatedHttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
+                                                                   final AggregatedHttpRequest<HttpPayloadChunk> request) {
+        return service.handle(ctx, toHttpRequest(request)).flatMap(response ->
+                from(response, ctx.getExecutionContext().getBufferAllocator()));
     }
 
     @Override
     public Completable closeAsync() {
-        return chunkService.closeAsync();
+        return service.closeAsync();
     }
 
     @Override
-    HttpService<HttpPayloadChunk, HttpPayloadChunk> asServiceInternal() {
-        return chunkService;
-    }
-
-    private final class HttpPayloadChunkService extends HttpService<HttpPayloadChunk, HttpPayloadChunk> {
-        private final HttpService<I, O> service;
-        private final Function<HttpPayloadChunk, I> requestPayloadTransformer;
-        private final Function<O, HttpPayloadChunk> responsePayloadTransformer;
-
-        HttpPayloadChunkService(final HttpService<I, O> service,
-                                final Function<HttpPayloadChunk, I> requestPayloadTransformer,
-                                final Function<O, HttpPayloadChunk> responsePayloadTransformer) {
-            this.service = requireNonNull(service);
-            this.requestPayloadTransformer = requireNonNull(requestPayloadTransformer);
-            this.responsePayloadTransformer = requireNonNull(responsePayloadTransformer);
-        }
-
-        @Override
-        public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                             final HttpRequest<HttpPayloadChunk> request) {
-            return service.handle(ctx, request.transformPayloadBody(
-                            requestPayload -> requestPayload.map(requestPayloadTransformer)))
-                    .map(response -> response.transformPayloadBody(
-                            responsePayload -> responsePayload.map(responsePayloadTransformer)));
-        }
-
-        @Override
-        public Completable closeAsync() {
-            return service.closeAsync();
-        }
-
-        @Override
-        AggregatedHttpService asAggregatedServiceInternal(
-                                        Function<HttpPayloadChunk, HttpPayloadChunk> requestPayloadTransformer,
-                                        Function<HttpPayloadChunk, HttpPayloadChunk> responsePayloadTransformer) {
-            return HttpServiceToAggregatedHttpService.this;
-        }
+    HttpService asServiceInternal() {
+        return service;
     }
 }

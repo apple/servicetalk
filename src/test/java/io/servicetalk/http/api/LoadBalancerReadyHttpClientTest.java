@@ -61,11 +61,11 @@ public class LoadBalancerReadyHttpClientTest {
     public final PublisherRule<Object> loadBalancerPublisher = new PublisherRule<>();
 
     @Mock
-    private HttpClient<String, String> mockClient;
+    private HttpClient mockClient;
     @Mock
-    private ReservedHttpConnection<String, String> mockReservedConnection;
+    private ReservedHttpConnection mockReservedConnection;
     @Mock
-    private UpgradableHttpResponse<String, String> mockUpgradeResponse;
+    private UpgradableHttpResponse mockUpgradeResponse;
 
     @Before
     public void setup() {
@@ -110,11 +110,11 @@ public class LoadBalancerReadyHttpClientTest {
         verifyOnInitializedFailedFailsAction(filter -> filter.upgradeConnection(newDummyRequest()));
     }
 
-    private void verifyOnInitializedFailedFailsAction(Function<HttpClient<String, String>,
+    private void verifyOnInitializedFailedFailsAction(Function<HttpClient,
             Single<?>> action) throws InterruptedException {
         TestPublisher<Object> loadBalancerPublisher = new TestPublisher<>();
-        LoadBalancerReadyHttpClient<String, String> filter =
-                new LoadBalancerReadyHttpClient<>(1, loadBalancerPublisher, mockClient);
+        LoadBalancerReadyHttpClient filter =
+                new LoadBalancerReadyHttpClient(1, loadBalancerPublisher, mockClient);
         CountDownLatch latch = new CountDownLatch(2);
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
         action.apply(filter).subscribe(new Subscriber<Object>() {
@@ -144,10 +144,10 @@ public class LoadBalancerReadyHttpClientTest {
         assertThat(causeRef.get(), is(DELIBERATE_EXCEPTION));
     }
 
-    private void verifyActionIsDelayedUntilAfterInitialized(Function<HttpClient<String, String>, Single<?>> action)
+    private void verifyActionIsDelayedUntilAfterInitialized(Function<HttpClient, Single<?>> action)
             throws InterruptedException {
-        LoadBalancerReadyHttpClient<String, String> filter =
-                new LoadBalancerReadyHttpClient<>(1, loadBalancerPublisher.getPublisher(), mockClient);
+        LoadBalancerReadyHttpClient filter =
+                new LoadBalancerReadyHttpClient(1, loadBalancerPublisher.getPublisher(), mockClient);
         CountDownLatch latch = new CountDownLatch(1);
         action.apply(filter).subscribe(resp -> latch.countDown());
 
@@ -158,7 +158,7 @@ public class LoadBalancerReadyHttpClientTest {
         latch.await();
     }
 
-    private static HttpRequest<String> newDummyRequest() {
+    private static HttpRequest<HttpPayloadChunk> newDummyRequest() {
         return newRequest(GET, "/noop");
     }
 

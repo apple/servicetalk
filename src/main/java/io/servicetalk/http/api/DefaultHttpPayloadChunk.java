@@ -49,4 +49,17 @@ class DefaultHttpPayloadChunk implements HttpPayloadChunk {
     public HttpPayloadChunk replace(final Buffer content) {
         return new DefaultHttpPayloadChunk(content);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || o.getClass() != getClass()) {
+            return false;
+        }
+        return content.equals(((DefaultHttpPayloadChunk) o).content);
+    }
+
+    @Override
+    public int hashCode() {
+        return content.hashCode();
+    }
 }

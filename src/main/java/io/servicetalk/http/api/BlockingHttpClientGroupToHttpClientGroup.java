@@ -28,22 +28,23 @@ import static io.servicetalk.http.api.HttpResponses.fromBlockingResponse;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
-final class BlockingHttpClientGroupToHttpClientGroup<UnresolvedAddress, I, O> extends
-                                                                              HttpClientGroup<UnresolvedAddress, I, O> {
-    private final BlockingHttpClientGroup<UnresolvedAddress, I, O> blockingClientGroup;
+final class BlockingHttpClientGroupToHttpClientGroup<UnresolvedAddress> extends
+                                                                              HttpClientGroup<UnresolvedAddress> {
+    private final BlockingHttpClientGroup<UnresolvedAddress> blockingClientGroup;
 
-    BlockingHttpClientGroupToHttpClientGroup(BlockingHttpClientGroup<UnresolvedAddress, I, O> blockingClientGroup) {
+    BlockingHttpClientGroupToHttpClientGroup(BlockingHttpClientGroup<UnresolvedAddress> blockingClientGroup) {
         this.blockingClientGroup = requireNonNull(blockingClientGroup);
     }
 
     @Override
-    public Single<HttpResponse<O>> request(final GroupKey<UnresolvedAddress> key, final HttpRequest<I> request) {
-        return new Single<HttpResponse<O>>() {
+    public Single<HttpResponse<HttpPayloadChunk>> request(final GroupKey<UnresolvedAddress> key,
+                                                          final HttpRequest<HttpPayloadChunk> request) {
+        return new Single<HttpResponse<HttpPayloadChunk>>() {
             @Override
-            protected void handleSubscribe(final Subscriber<? super HttpResponse<O>> subscriber) {
+            protected void handleSubscribe(final Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber) {
                 ThreadInterruptingCancellable cancellable = new ThreadInterruptingCancellable(currentThread());
                 subscriber.onSubscribe(cancellable);
-                final HttpResponse<O> response;
+                final HttpResponse<HttpPayloadChunk> response;
                 try {
                     // Do the conversion inside the try/catch in case there is an exception.
                     response = fromBlockingResponse(blockingClientGroup.request(key,
@@ -64,17 +65,17 @@ final class BlockingHttpClientGroupToHttpClientGroup<UnresolvedAddress, I, O> ex
     }
 
     @Override
-    public Single<? extends ReservedHttpConnection<I, O>> reserveConnection(
-            final GroupKey<UnresolvedAddress> key, final HttpRequest<I> request) {
-        return new Single<ReservedHttpConnection<I, O>>() {
+    public Single<? extends ReservedHttpConnection> reserveConnection(
+            final GroupKey<UnresolvedAddress> key, final HttpRequest<HttpPayloadChunk> request) {
+        return new Single<ReservedHttpConnection>() {
             @Override
-            protected void handleSubscribe(final Subscriber<? super ReservedHttpConnection<I, O>> subscriber) {
+            protected void handleSubscribe(final Subscriber<? super ReservedHttpConnection> subscriber) {
                 ThreadInterruptingCancellable cancellable = new ThreadInterruptingCancellable(currentThread());
                 subscriber.onSubscribe(cancellable);
-                final ReservedHttpConnection<I, O> response;
+                final ReservedHttpConnection response;
                 try {
                     // Do the conversion here in case there is a null value returned by the upgradeConnection.
-                    response = new BlockingToReservedHttpConnection<>(blockingClientGroup.reserveConnection(
+                    response = new BlockingToReservedHttpConnection(blockingClientGroup.reserveConnection(
                             key, new DefaultBlockingHttpRequest<>(request)));
                 } catch (Throwable cause) {
                     cancellable.setDone();
@@ -93,7 +94,7 @@ final class BlockingHttpClientGroupToHttpClientGroup<UnresolvedAddress, I, O> ex
     @Override
     public Completable onClose() {
         if (blockingClientGroup instanceof HttpClientGroupToBlockingHttpClientGroup) {
-            return ((HttpClientGroupToBlockingHttpClientGroup) blockingClientGroup).onClose();
+            return ((HttpClientGroupToBlockingHttpClientGroup<?>) blockingClientGroup).onClose();
         }
 
         return error(new UnsupportedOperationException("unsupported type: " + blockingClientGroup.getClass()));
@@ -105,7 +106,7 @@ final class BlockingHttpClientGroupToHttpClientGroup<UnresolvedAddress, I, O> ex
     }
 
     @Override
-    BlockingHttpClientGroup<UnresolvedAddress, I, O> asBlockingClientGroupInternal() {
+    BlockingHttpClientGroup<UnresolvedAddress> asBlockingClientGroupInternal() {
         return blockingClientGroup;
     }
 }

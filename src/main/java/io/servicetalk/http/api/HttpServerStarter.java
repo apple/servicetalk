@@ -44,8 +44,7 @@ public interface HttpServerStarter {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    default Single<ServerContext> start(SocketAddress address,
-                                        HttpService<HttpPayloadChunk, HttpPayloadChunk> service) {
+    default Single<ServerContext> start(SocketAddress address, HttpService service) {
         return start(address, ACCEPT_ALL, newCachedThreadExecutor(), service);
     }
 
@@ -64,8 +63,7 @@ public interface HttpServerStarter {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    default Single<ServerContext> start(SocketAddress address, Executor executor,
-                                        HttpService<HttpPayloadChunk, HttpPayloadChunk> service) {
+    default Single<ServerContext> start(SocketAddress address, Executor executor, HttpService service) {
         return start(address, ACCEPT_ALL, executor, service);
     }
 
@@ -83,8 +81,7 @@ public interface HttpServerStarter {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    default Single<ServerContext> start(SocketAddress address, ContextFilter contextFilter,
-                                        HttpService<HttpPayloadChunk, HttpPayloadChunk> service) {
+    default Single<ServerContext> start(SocketAddress address, ContextFilter contextFilter, HttpService service) {
         return start(address, contextFilter, newCachedThreadExecutor(), service);
     }
 
@@ -106,7 +103,7 @@ public interface HttpServerStarter {
      * the server could not be started.
      */
     Single<ServerContext> start(SocketAddress address, ContextFilter contextFilter, Executor executor,
-                                HttpService<HttpPayloadChunk, HttpPayloadChunk> service);
+                                HttpService service);
 
     /**
      * Starts this server and returns a {@link Single} that completes when the server is successfully started or
@@ -120,7 +117,7 @@ public interface HttpServerStarter {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    default Single<ServerContext> start(int port, HttpService<HttpPayloadChunk, HttpPayloadChunk> service) {
+    default Single<ServerContext> start(int port, HttpService service) {
         return start(port, ACCEPT_ALL, newCachedThreadExecutor(), service);
     }
 
@@ -139,8 +136,7 @@ public interface HttpServerStarter {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    default Single<ServerContext> start(int port, Executor executor,
-                                        HttpService<HttpPayloadChunk, HttpPayloadChunk> service) {
+    default Single<ServerContext> start(int port, Executor executor, HttpService service) {
         return start(port, ACCEPT_ALL, executor, service);
     }
 
@@ -158,8 +154,7 @@ public interface HttpServerStarter {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    default Single<ServerContext> start(int port, ContextFilter contextFilter,
-                                        HttpService<HttpPayloadChunk, HttpPayloadChunk> service) {
+    default Single<ServerContext> start(int port, ContextFilter contextFilter, HttpService service) {
         return start(new InetSocketAddress(port), contextFilter, newCachedThreadExecutor(), service);
     }
 
@@ -180,8 +175,7 @@ public interface HttpServerStarter {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    default Single<ServerContext> start(int port, ContextFilter contextFilter, Executor executor,
-                                HttpService<HttpPayloadChunk, HttpPayloadChunk> service) {
+    default Single<ServerContext> start(int port, ContextFilter contextFilter, Executor executor, HttpService service) {
         return start(new InetSocketAddress(port), contextFilter, executor, service);
     }
 
@@ -216,8 +210,7 @@ public interface HttpServerStarter {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    default Single<ServerContext> start(SocketAddress address, Executor executor,
-                                        AggregatedHttpService service) {
+    default Single<ServerContext> start(SocketAddress address, Executor executor, AggregatedHttpService service) {
         return start(address, ACCEPT_ALL, executor, service);
     }
 
@@ -258,7 +251,7 @@ public interface HttpServerStarter {
      * the server could not be started.
      */
     default Single<ServerContext> start(SocketAddress address, ContextFilter contextFilter, Executor executor,
-                                AggregatedHttpService service) {
+                                        AggregatedHttpService service) {
         return start(address, contextFilter, executor, service.asService());
     }
 
@@ -348,8 +341,7 @@ public interface HttpServerStarter {
      * @return A {@link ServerContext} if the server starts successfully.
      * @throws Exception If the server could not be started.
      */
-    default ServerContext start(SocketAddress address, BlockingHttpService<HttpPayloadChunk, HttpPayloadChunk> service)
-            throws Exception {
+    default ServerContext start(SocketAddress address, BlockingHttpService service) throws Exception {
         return start(address, ACCEPT_ALL, newCachedThreadExecutor(), service);
     }
 
@@ -367,8 +359,8 @@ public interface HttpServerStarter {
      * @return A {@link ServerContext} if the server starts successfully.
      * @throws Exception If the server could not be started.
      */
-    default ServerContext start(SocketAddress address, Executor executor,
-                                BlockingHttpService<HttpPayloadChunk, HttpPayloadChunk> service) throws Exception {
+    default ServerContext start(SocketAddress address, Executor executor, BlockingHttpService service)
+            throws Exception {
         return start(address, ACCEPT_ALL, executor, service);
     }
 
@@ -385,8 +377,8 @@ public interface HttpServerStarter {
      * @return A {@link ServerContext} if the server starts successfully.
      * @throws Exception If the server could not be started.
      */
-    default ServerContext start(SocketAddress address, ContextFilter contextFilter,
-                                BlockingHttpService<HttpPayloadChunk, HttpPayloadChunk> service) throws Exception {
+    default ServerContext start(SocketAddress address, ContextFilter contextFilter, BlockingHttpService service)
+            throws Exception {
         return start(address, contextFilter, newCachedThreadExecutor(), service);
     }
 
@@ -407,7 +399,7 @@ public interface HttpServerStarter {
      * @throws Exception If the server could not be started.
      */
     default ServerContext start(SocketAddress address, ContextFilter contextFilter, Executor executor,
-                                BlockingHttpService<HttpPayloadChunk, HttpPayloadChunk> service) throws Exception {
+                                BlockingHttpService service) throws Exception {
         return awaitIndefinitelyNonNull(start(address, contextFilter, executor, service.asAsynchronousService()));
     }
 
@@ -422,8 +414,7 @@ public interface HttpServerStarter {
      * @return A {@link ServerContext} if the server starts successfully.
      * @throws Exception If the server could not be started.
      */
-    default ServerContext start(int port, BlockingHttpService<HttpPayloadChunk, HttpPayloadChunk> service)
-            throws Exception {
+    default ServerContext start(int port, BlockingHttpService service) throws Exception {
         return start(port, ACCEPT_ALL, newCachedThreadExecutor(), service);
     }
 
@@ -441,8 +432,7 @@ public interface HttpServerStarter {
      * @return A {@link ServerContext} if the server starts successfully.
      * @throws Exception If the server could not be started.
      */
-    default ServerContext start(int port, Executor executor,
-                                BlockingHttpService<HttpPayloadChunk, HttpPayloadChunk> service) throws Exception {
+    default ServerContext start(int port, Executor executor, BlockingHttpService service) throws Exception {
         return start(port, ACCEPT_ALL, executor, service);
     }
 
@@ -459,8 +449,7 @@ public interface HttpServerStarter {
      * @return A {@link ServerContext} if the server starts successfully.
      * @throws Exception If the server could not be started.
      */
-    default ServerContext start(int port, ContextFilter contextFilter,
-                                BlockingHttpService<HttpPayloadChunk, HttpPayloadChunk> service) throws Exception {
+    default ServerContext start(int port, ContextFilter contextFilter, BlockingHttpService service) throws Exception {
         return start(new InetSocketAddress(port), contextFilter, newCachedThreadExecutor(), service);
     }
 
@@ -480,8 +469,8 @@ public interface HttpServerStarter {
      * @return A {@link ServerContext} if the server starts successfully.
      * @throws Exception If the server could not be started.
      */
-    default ServerContext start(int port, ContextFilter contextFilter, Executor executor,
-                                BlockingHttpService<HttpPayloadChunk, HttpPayloadChunk> service) throws Exception {
+    default ServerContext start(int port, ContextFilter contextFilter, Executor executor, BlockingHttpService service)
+            throws Exception {
         return start(new InetSocketAddress(port), contextFilter, executor, service);
     }
 }

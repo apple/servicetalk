@@ -55,29 +55,30 @@ public class DefaultHttpClientGroupTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     @Rule
-    public final MockedSingleListenerRule<ReservedHttpConnection<String, String>> reservedHttpConnectionListener =
+    public final MockedSingleListenerRule<ReservedHttpConnection> reservedHttpConnectionListener =
             new MockedSingleListenerRule<>();
 
     @Rule
-    public final MockedSingleListenerRule<HttpResponse<String>> httpResponseListener = new MockedSingleListenerRule<>();
+    public final MockedSingleListenerRule<HttpResponse<HttpPayloadChunk>> httpResponseListener =
+            new MockedSingleListenerRule<>();
 
     private final ExecutionContext executionContext = mock(ExecutionContext.class);
 
     @SuppressWarnings("unchecked")
-    private final Function<GroupKey<String>, HttpClient<String, String>> clientFactory = mock(Function.class);
+    private final Function<GroupKey<String>, HttpClient> clientFactory = mock(Function.class);
 
     private final GroupKey<String> key = mockKey(1);
     @SuppressWarnings("unchecked")
-    private final HttpClient<String, String> httpClient = mock(HttpClient.class);
+    private final HttpClient httpClient = mock(HttpClient.class);
 
     @SuppressWarnings("unchecked")
-    private final HttpRequest<String> request = mock(HttpRequest.class);
+    private final HttpRequest<HttpPayloadChunk> request = mock(HttpRequest.class);
     @SuppressWarnings("unchecked")
-    private final HttpResponse<String> expectedResponse = mock(HttpResponse.class);
+    private final HttpResponse<HttpPayloadChunk> expectedResponse = mock(HttpResponse.class);
     @SuppressWarnings("unchecked")
-    private final ReservedHttpConnection<String, String> expectedReservedCon = mock(ReservedHttpConnection.class);
+    private final ReservedHttpConnection expectedReservedCon = mock(ReservedHttpConnection.class);
 
-    private HttpClientGroup<String, String, String> clientGroup;
+    private HttpClientGroup<String> clientGroup;
 
     @SuppressWarnings("unchecked")
     private static GroupKey<String> mockKey(final int i) {
@@ -98,7 +99,7 @@ public class DefaultHttpClientGroupTest {
 
     @Test(expected = NullPointerException.class)
     public void createWithNullFactory() {
-        new DefaultHttpClientGroup<String, String, String>(null);
+        new DefaultHttpClientGroup<String>(null);
     }
 
     @Test(expected = NullPointerException.class)
@@ -205,7 +206,7 @@ public class DefaultHttpClientGroupTest {
 
         final AtomicBoolean invoked = new AtomicBoolean();
         final AtomicBoolean returned = new AtomicBoolean();
-        final HttpClientGroup<String, String, String> clientGroup = newHttpClientGroup(gk -> {
+        final HttpClientGroup<String> clientGroup = newHttpClientGroup(gk -> {
             invoked.set(true);
             latchForCancel.countDown();
             try {
@@ -252,7 +253,7 @@ public class DefaultHttpClientGroupTest {
 
     @Test
     public void asRequester() {
-        final HttpRequester<String, String> requester = clientGroup.asRequester(r ->
+        final HttpRequester requester = clientGroup.asRequester(r ->
                 new DefaultGroupKey<>("address", executionContext), executionContext);
         assertNotNull(requester);
         assertEquals(executionContext, requester.getExecutionContext());
@@ -278,7 +279,7 @@ public class DefaultHttpClientGroupTest {
 
     @Test
     public void successfulRequestViaRequester() {
-        final HttpRequester<String, String> requester = clientGroup.asRequester(r ->
+        final HttpRequester requester = clientGroup.asRequester(r ->
                 new DefaultGroupKey<>("address", executionContext), executionContext);
         httpResponseListener.listen(requester.request(request))
                 .verifySuccess(expectedResponse);
@@ -286,7 +287,7 @@ public class DefaultHttpClientGroupTest {
 
     @Test
     public void failedRequestViaRequester() {
-        final HttpRequester<String, String> requester = clientGroup.asRequester(r -> {
+        final HttpRequester requester = clientGroup.asRequester(r -> {
             throw DELIBERATE_EXCEPTION;
         }, executionContext);
         httpResponseListener.listen(requester.request(request))

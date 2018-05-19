@@ -23,10 +23,10 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 import static java.util.Objects.requireNonNull;
 
-final class HttpConnectionToBlockingHttpConnection<I, O> extends BlockingHttpConnection<I, O> {
-    private final HttpConnection<I, O> connection;
+final class HttpConnectionToBlockingHttpConnection extends BlockingHttpConnection {
+    private final HttpConnection connection;
 
-    HttpConnectionToBlockingHttpConnection(HttpConnection<I, O> connection) {
+    HttpConnectionToBlockingHttpConnection(HttpConnection connection) {
         this.connection = requireNonNull(connection);
     }
 
@@ -41,7 +41,8 @@ final class HttpConnectionToBlockingHttpConnection<I, O> extends BlockingHttpCon
     }
 
     @Override
-    public BlockingHttpResponse<O> request(final BlockingHttpRequest<I> request) throws Exception {
+    public BlockingHttpResponse<HttpPayloadChunk> request(final BlockingHttpRequest<HttpPayloadChunk> request)
+            throws Exception {
         return BlockingUtils.request(connection, request);
     }
 
@@ -60,7 +61,7 @@ final class HttpConnectionToBlockingHttpConnection<I, O> extends BlockingHttpCon
     }
 
     @Override
-    HttpConnection<I, O> asAsynchronousClientInternal() {
+    HttpConnection asAsynchronousConnectionInternal() {
         return connection;
     }
 }

@@ -21,14 +21,11 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 /**
  * A service contract for the HTTP protocol.
- * @param <I> Type of payload of a request handled by this service.
- * @param <O> Type of payload of a response handled by this service.
  */
-public abstract class HttpService<I, O> implements AsyncCloseable {
+public abstract class HttpService implements AsyncCloseable {
     /**
      * Handles a single HTTP request.
      *
@@ -36,7 +33,8 @@ public abstract class HttpService<I, O> implements AsyncCloseable {
      * @param request to handle.
      * @return {@link Single} of HTTP response.
      */
-    public abstract Single<HttpResponse<O>> handle(ConnectionContext ctx, HttpRequest<I> request);
+    public abstract Single<HttpResponse<HttpPayloadChunk>> handle(ConnectionContext ctx,
+                                                                  HttpRequest<HttpPayloadChunk> request);
 
     /**
      * Closes this {@link HttpService} asynchronously.
@@ -55,56 +53,43 @@ public abstract class HttpService<I, O> implements AsyncCloseable {
      * filters are implemented using the {@link HttpService} asynchronous API for maximum portability.
      * @return a {@link BlockingHttpService} representation of this {@link HttpService}.
      */
-    public final BlockingHttpService<I, O> asBlockingService() {
+    public final BlockingHttpService asBlockingService() {
         return asBlockingServiceInternal();
     }
 
     /**
      * Convert this {@link HttpService} to the {@link AggregatedHttpService} API.
-     * <p>
-     * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
-     * filters are implemented using the {@link HttpService} asynchronous API for maximum portability.
-     * @param requestPayloadTransformer {@link Function} to convert an {@link HttpPayloadChunk} to {@link I}.
-     * This is to make sure that we can use {@code this} {@link HttpService} for the returned
-     * {@link AggregatedHttpService}. Use {@link Function#identity()} if {@code this} {@link HttpService} already
-     * handles {@link HttpPayloadChunk} for request payload.
-     * @param responsePayloadTransformer {@link Function} to convert an {@link O} to {@link HttpPayloadChunk}.
-     * This is to make sure that we can use {@code this} {@link HttpService} for the returned
-     * {@link AggregatedHttpService}. Use {@link Function#identity()} if {@code this} {@link HttpService} already
-     * returns response with {@link HttpPayloadChunk} as payload.
+     *
      * @return a {@link AggregatedHttpService} representation of this {@link HttpService}.
      */
-    public final AggregatedHttpService asAggregatedService(Function<HttpPayloadChunk, I> requestPayloadTransformer,
-                                                           Function<O, HttpPayloadChunk> responsePayloadTransformer) {
-        return asAggregatedServiceInternal(requestPayloadTransformer, responsePayloadTransformer);
+    public final AggregatedHttpService asAggregatedService() {
+        return asAggregatedServiceInternal();
     }
 
-    AggregatedHttpService asAggregatedServiceInternal(Function<HttpPayloadChunk, I> requestPayloadTransformer,
-                                                      Function<O, HttpPayloadChunk> responsePayloadTransformer) {
-        return new HttpServiceToAggregatedHttpService<>(this, requestPayloadTransformer, responsePayloadTransformer);
+    AggregatedHttpService asAggregatedServiceInternal() {
+        return new HttpServiceToAggregatedHttpService(this);
     }
 
     /**
      * Provides a means to override the behavior of {@link #asBlockingService()} for internal classes.
      * @return a {@link BlockingHttpService} representation of this {@link HttpService}.
      */
-    BlockingHttpService<I, O> asBlockingServiceInternal() {
-        return new HttpServiceToBlockingHttpService<>(this);
+    BlockingHttpService asBlockingServiceInternal() {
+        return new HttpServiceToBlockingHttpService(this);
     }
 
     /**
      * Create a new {@link HttpService} from a {@link BiFunction}.
      * @param handleFunc Provides the functionality for the {@link #handle(ConnectionContext, HttpRequest)} method.
-     * @param <I> Type of payload of a request handled by this service.
-     * @param <O> Type of payload of a response handled by this service.
      * @return a new {@link HttpService}.
      */
-    public static <I, O> HttpService<I, O> fromAsync(BiFunction<ConnectionContext,
-                                                                HttpRequest<I>,
-                                                                Single<HttpResponse<O>>> handleFunc) {
-        return new HttpService<I, O>() {
+    public static HttpService fromAsync(BiFunction<ConnectionContext,
+                                                HttpRequest<HttpPayloadChunk>,
+                                                Single<HttpResponse<HttpPayloadChunk>>> handleFunc) {
+        return new HttpService() {
             @Override
-            public Single<HttpResponse<O>> handle(final ConnectionContext ctx, final HttpRequest<I> request) {
+            public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
+                                                                 final HttpRequest<HttpPayloadChunk> request) {
                 return handleFunc.apply(ctx, request);
             }
         };

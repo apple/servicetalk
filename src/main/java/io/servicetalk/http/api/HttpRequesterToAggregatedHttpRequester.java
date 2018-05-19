@@ -19,89 +19,40 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import java.util.function.Function;
-
-import static io.servicetalk.http.api.DefaultFullHttpRequest.toHttpRequest;
-import static io.servicetalk.http.api.DefaultFullHttpResponse.from;
+import static io.servicetalk.http.api.DefaultAggregatedHttpRequest.toHttpRequest;
+import static io.servicetalk.http.api.DefaultAggregatedHttpResponse.from;
 import static java.util.Objects.requireNonNull;
 
-final class HttpRequesterToAggregatedHttpRequester<I, O> extends AggregatedHttpRequester {
-    private final HttpPayloadChunkRequester payloadRequester;
+final class HttpRequesterToAggregatedHttpRequester extends AggregatedHttpRequester {
+    private final HttpRequester requester;
 
-    HttpRequesterToAggregatedHttpRequester(final HttpRequester<I, O> requester,
-                                           final Function<HttpPayloadChunk, I> requestPayloadTransformer,
-                                           final Function<O, HttpPayloadChunk> responsePayloadTransformer) {
-        payloadRequester = new HttpPayloadChunkRequester(
-                requester, requestPayloadTransformer, responsePayloadTransformer);
+    HttpRequesterToAggregatedHttpRequester(final HttpRequester requester) {
+        this.requester = requireNonNull(requester);
     }
 
     @Override
-    public Single<FullHttpResponse> request(final FullHttpRequest request) {
-        return payloadRequester.request(toHttpRequest(request)).flatMap(response ->
-                from(response, payloadRequester.getExecutionContext().getBufferAllocator()));
+    public Single<AggregatedHttpResponse<HttpPayloadChunk>> request(final AggregatedHttpRequest<HttpPayloadChunk> request) {
+        return requester.request(toHttpRequest(request)).flatMap(response ->
+                from(response, requester.getExecutionContext().getBufferAllocator()));
     }
 
     @Override
     public ExecutionContext getExecutionContext() {
-        return payloadRequester.getExecutionContext();
+        return requester.getExecutionContext();
     }
 
     @Override
     public Completable onClose() {
-        return payloadRequester.onClose();
+        return requester.onClose();
     }
 
     @Override
     public Completable closeAsync() {
-        return payloadRequester.closeAsync();
+        return requester.closeAsync();
     }
 
     @Override
-    HttpRequester<HttpPayloadChunk, HttpPayloadChunk> asRequesterInternal() {
-        return payloadRequester;
-    }
-
-    private final class HttpPayloadChunkRequester extends HttpRequester<HttpPayloadChunk, HttpPayloadChunk> {
-        private final HttpRequester<I, O> requester;
-        private final Function<HttpPayloadChunk, I> requestPayloadTransformer;
-        private final Function<O, HttpPayloadChunk> responsePayloadTransformer;
-
-        HttpPayloadChunkRequester(final HttpRequester<I, O> requester,
-                                  final Function<HttpPayloadChunk, I> requestPayloadTransformer,
-                                  final Function<O, HttpPayloadChunk> responsePayloadTransformer) {
-            this.requester = requireNonNull(requester);
-            this.requestPayloadTransformer = requireNonNull(requestPayloadTransformer);
-            this.responsePayloadTransformer = requireNonNull(responsePayloadTransformer);
-        }
-
-        @Override
-        public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
-            return requester.request(request.transformPayloadBody(
-                        requestPayload -> requestPayload.map(requestPayloadTransformer)))
-                    .map(response -> response.transformPayloadBody(
-                        responsePayload -> responsePayload.map(responsePayloadTransformer)));
-        }
-
-        @Override
-        public ExecutionContext getExecutionContext() {
-            return requester.getExecutionContext();
-        }
-
-        @Override
-        public Completable onClose() {
-            return requester.onClose();
-        }
-
-        @Override
-        public Completable closeAsync() {
-            return requester.closeAsync();
-        }
-
-        @Override
-        AggregatedHttpRequester asAggregatedRequesterInternal(
-                                Function<HttpPayloadChunk, HttpPayloadChunk> requestPayloadTransformer,
-                                Function<HttpPayloadChunk, HttpPayloadChunk> responsePayloadTransformer) {
-            return HttpRequesterToAggregatedHttpRequester.this;
-        }
+    HttpRequester asRequesterInternal() {
+        return requester;
     }
 }

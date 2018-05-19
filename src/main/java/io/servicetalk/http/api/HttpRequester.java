@@ -19,20 +19,16 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import java.util.function.Function;
-
 /**
  * Provides a means to make a HTTP request.
- * @param <I> The type of payload of the request.
- * @param <O> The type of payload of the response.
  */
-public abstract class HttpRequester<I, O> implements ListenableAsyncCloseable {
+public abstract class HttpRequester implements ListenableAsyncCloseable {
     /**
      * Send a {@code request}.
      * @param request the request to send.
      * @return The response.
      */
-    public abstract Single<HttpResponse<O>> request(HttpRequest<I> request);
+    public abstract Single<HttpResponse<HttpPayloadChunk>> request(HttpRequest<HttpPayloadChunk> request);
 
     /**
      * Get the {@link ExecutionContext} used during construction of this object.
@@ -50,7 +46,7 @@ public abstract class HttpRequester<I, O> implements ListenableAsyncCloseable {
      * filters are implemented using the {@link HttpRequester} asynchronous API for maximum portability.
      * @return a {@link BlockingHttpRequester} representation of this {@link HttpRequester}.
      */
-    public final BlockingHttpRequester<I, O> asBlockingRequester() {
+    public final BlockingHttpRequester asBlockingRequester() {
         return asBlockingRequesterInternal();
     }
 
@@ -59,29 +55,17 @@ public abstract class HttpRequester<I, O> implements ListenableAsyncCloseable {
      * <p>
      * This API is provided for convenience. It is recommended that
      * filters are implemented using the {@link HttpRequester} asynchronous API for maximum portability.
-     *
-     * @param requestPayloadTransformer {@link Function} to convert an {@link HttpPayloadChunk} to {@link I}.
-     * This is to make sure that we can use {@code this} {@link HttpRequester} for the returned
-     * {@link AggregatedHttpRequester}. Use {@link Function#identity()} if {@code this} {@link HttpClient} already
-     * handles {@link HttpPayloadChunk} for request payload.
-     * @param responsePayloadTransformer {@link Function} to convert an {@link O} to {@link HttpPayloadChunk}.
-     * This is to make sure that we can use {@code this} {@link HttpRequester} for the returned
-     * {@link AggregatedHttpRequester}. Use {@link Function#identity()} if {@code this} {@link HttpRequester} already
-     * returns response with {@link HttpPayloadChunk} as payload.
      * @return a {@link AggregatedHttpRequester} representation of this {@link HttpRequester}.
      */
-    public final AggregatedHttpRequester asAggregatedRequester(Function<HttpPayloadChunk, I> requestPayloadTransformer,
-                                                           Function<O, HttpPayloadChunk> responsePayloadTransformer) {
-        return asAggregatedRequesterInternal(requestPayloadTransformer, responsePayloadTransformer);
+    public final AggregatedHttpRequester asAggregatedRequester() {
+        return asAggregatedRequesterInternal();
     }
 
-    AggregatedHttpRequester asAggregatedRequesterInternal(Function<HttpPayloadChunk, I> requestPayloadTransformer,
-                                                          Function<O, HttpPayloadChunk> responsePayloadTransformer) {
-        return new HttpRequesterToAggregatedHttpRequester<>(
-                this, requestPayloadTransformer, responsePayloadTransformer);
+    AggregatedHttpRequester asAggregatedRequesterInternal() {
+        return new HttpRequesterToAggregatedHttpRequester(this);
     }
 
-    BlockingHttpRequester<I, O> asBlockingRequesterInternal() {
-        return new HttpRequesterToBlockingHttpRequester<>(this);
+    BlockingHttpRequester asBlockingRequesterInternal() {
+        return new HttpRequesterToBlockingHttpRequester(this);
     }
 }

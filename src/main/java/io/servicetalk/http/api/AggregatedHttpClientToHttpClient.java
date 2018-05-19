@@ -27,11 +27,11 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.http.api.DefaultFullHttpRequest.from;
+import static io.servicetalk.http.api.DefaultAggregatedHttpRequest.from;
 import static io.servicetalk.http.api.HttpPayloadChunks.newLastPayloadChunk;
 import static java.util.Objects.requireNonNull;
 
-final class AggregatedHttpClientToHttpClient extends HttpClient<HttpPayloadChunk, HttpPayloadChunk> {
+final class AggregatedHttpClientToHttpClient extends HttpClient {
     private final AggregatedHttpClient aggregatedClient;
 
     AggregatedHttpClientToHttpClient(AggregatedHttpClient aggregatedClient) {
@@ -39,23 +39,26 @@ final class AggregatedHttpClientToHttpClient extends HttpClient<HttpPayloadChunk
     }
 
     @Override
-    public Single<? extends ReservedHttpConnection<HttpPayloadChunk, HttpPayloadChunk>> reserveConnection(
+    public Single<? extends ReservedHttpConnection> reserveConnection(
             final HttpRequest<HttpPayloadChunk> request) {
         return from(request, aggregatedClient.getExecutionContext().getBufferAllocator())
                 .flatMap(aggregatedClient::reserveConnection).map(AggregatedToReservedHttpConnection::new);
     }
 
     @Override
-    public Single<? extends UpgradableHttpResponse<HttpPayloadChunk, HttpPayloadChunk>> upgradeConnection(
+    public Single<? extends UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
             final HttpRequest<HttpPayloadChunk> request) {
         return from(request, aggregatedClient.getExecutionContext().getBufferAllocator())
-                .flatMap(aggregatedClient::upgradeConnection).map(AggregatedToUpgradableHttpResponse::new);
+                .flatMap(aggregatedClient::upgradeConnection).map(upgradableResponse ->
+                        new AggregatedToUpgradableHttpResponse<>(upgradableResponse,
+                                just(newLastPayloadChunk(upgradableResponse.getPayloadBody().getContent(),
+                                        upgradableResponse.getTrailers()))));
     }
 
     @Override
     public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
         return from(request, aggregatedClient.getExecutionContext().getBufferAllocator())
-                .flatMap(aggregatedClient::request).map(DefaultFullHttpResponse::toHttpResponse);
+                .flatMap(aggregatedClient::request).map(DefaultAggregatedHttpResponse::toHttpResponse);
     }
 
     @Override
@@ -74,14 +77,11 @@ final class AggregatedHttpClientToHttpClient extends HttpClient<HttpPayloadChunk
     }
 
     @Override
-    AggregatedHttpClient asAggregatedClientInternal(
-                                Function<HttpPayloadChunk, HttpPayloadChunk> requestPayloadTransformer,
-                                Function<HttpPayloadChunk, HttpPayloadChunk> responsePayloadTransformer) {
+    AggregatedHttpClient asAggregatedClientInternal() {
         return aggregatedClient;
     }
 
-    static final class AggregatedToReservedHttpConnection extends
-                                                          ReservedHttpConnection<HttpPayloadChunk, HttpPayloadChunk> {
+    static final class AggregatedToReservedHttpConnection extends ReservedHttpConnection {
         private final AggregatedReservedHttpConnection aggregatedReservedConnection;
 
         AggregatedToReservedHttpConnection(AggregatedReservedHttpConnection aggregatedReservedConnection) {
@@ -106,7 +106,7 @@ final class AggregatedHttpClientToHttpClient extends HttpClient<HttpPayloadChunk
         @Override
         public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
             return from(request, aggregatedReservedConnection.getExecutionContext().getBufferAllocator())
-                    .flatMap(aggregatedReservedConnection::request).map(DefaultFullHttpResponse::toHttpResponse);
+                    .flatMap(aggregatedReservedConnection::request).map(DefaultAggregatedHttpResponse::toHttpResponse);
         }
 
         @Override
@@ -125,37 +125,29 @@ final class AggregatedHttpClientToHttpClient extends HttpClient<HttpPayloadChunk
         }
 
         @Override
-        AggregatedReservedHttpConnection asAggregatedReservedConnectionInternal(
-                                            Function<HttpPayloadChunk, HttpPayloadChunk> requestPayloadTransformer,
-                                            Function<HttpPayloadChunk, HttpPayloadChunk> responsePayloadTransformer) {
+        AggregatedReservedHttpConnection asAggregatedConnectionInternal() {
             return aggregatedReservedConnection;
         }
     }
 
-    private static final class AggregatedToUpgradableHttpResponse implements
-                                                          UpgradableHttpResponse<HttpPayloadChunk, HttpPayloadChunk> {
-        private final AggregatedUpgradableHttpResponse upgradableResponse;
-        private final Publisher<HttpPayloadChunk> payloadBody;
+    private static final class AggregatedToUpgradableHttpResponse<T> implements
+                                                          UpgradableHttpResponse<T> {
+        private final AggregatedUpgradableHttpResponse<?> upgradableResponse;
+        private final Publisher<T> payloadBody;
 
-        AggregatedToUpgradableHttpResponse(AggregatedUpgradableHttpResponse upgradableResponse) {
-            this(upgradableResponse,
-                    just(newLastPayloadChunk(upgradableResponse.getContent(), upgradableResponse.getTrailers())));
-        }
-
-        private AggregatedToUpgradableHttpResponse(AggregatedUpgradableHttpResponse upgradableResponse,
-                                                   Publisher<HttpPayloadChunk> payloadBody) {
+        AggregatedToUpgradableHttpResponse(AggregatedUpgradableHttpResponse<?> upgradableResponse,
+                                           Publisher<T> payloadBody) {
             this.upgradableResponse = requireNonNull(upgradableResponse);
             this.payloadBody = requireNonNull(payloadBody);
         }
 
         @Override
-        public ReservedHttpConnection<HttpPayloadChunk, HttpPayloadChunk> getHttpConnection(
-                final boolean releaseReturnsToClient) {
+        public ReservedHttpConnection getHttpConnection(final boolean releaseReturnsToClient) {
             return new AggregatedToReservedHttpConnection(upgradableResponse.getHttpConnection(releaseReturnsToClient));
         }
 
         @Override
-        public Publisher<HttpPayloadChunk> getPayloadBody() {
+        public Publisher<T> getPayloadBody() {
             return payloadBody;
         }
 
@@ -165,78 +157,7 @@ final class AggregatedHttpClientToHttpClient extends HttpClient<HttpPayloadChunk
         }
 
         @Override
-        public UpgradableHttpResponse<HttpPayloadChunk, HttpPayloadChunk> setVersion(
-                final HttpProtocolVersion version) {
-            upgradableResponse.setVersion(version);
-            return this;
-        }
-
-        @Override
-        public HttpHeaders getHeaders() {
-            return upgradableResponse.getHeaders();
-        }
-
-        @Override
-        public String toString(final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> headerFilter) {
-            return upgradableResponse.toString(headerFilter);
-        }
-
-        @Override
-        public HttpResponseStatus getStatus() {
-            return upgradableResponse.getStatus();
-        }
-
-        @Override
-        public UpgradableHttpResponse<HttpPayloadChunk, HttpPayloadChunk> setStatus(final HttpResponseStatus status) {
-            upgradableResponse.setStatus(status);
-            return this;
-        }
-
-        @Override
-        public <R> UpgradableHttpResponse<HttpPayloadChunk, R> transformPayloadBody(
-                final Function<Publisher<HttpPayloadChunk>, Publisher<R>> transformer) {
-            return new AggregatedToUpgradableHttpResponseConverter<>(this, transformer, transformer.apply(payloadBody));
-        }
-    }
-
-    static final class AggregatedToUpgradableHttpResponseConverter<O1, O2> implements
-                                                              UpgradableHttpResponse<HttpPayloadChunk, O2> {
-        private final UpgradableHttpResponse<HttpPayloadChunk, O1> upgradableResponse;
-        private final Function<Publisher<O1>, Publisher<O2>> transformer;
-        private final Publisher<O2> payloadBody;
-
-        AggregatedToUpgradableHttpResponseConverter(UpgradableHttpResponse<HttpPayloadChunk, O1> upgradableResponse,
-                                                    Function<Publisher<O1>, Publisher<O2>> transformer,
-                                                    Publisher<O2> payloadBody) {
-            this.upgradableResponse = requireNonNull(upgradableResponse);
-            this.transformer = requireNonNull(transformer);
-            this.payloadBody = requireNonNull(payloadBody);
-        }
-
-        @Override
-        public ReservedHttpConnection<HttpPayloadChunk, O2> getHttpConnection(final boolean releaseReturnsToClient) {
-            return new AggregatedReservedHttpConnectionConverter<>(
-                    upgradableResponse.getHttpConnection(releaseReturnsToClient), transformer);
-        }
-
-        @Override
-        public Publisher<O2> getPayloadBody() {
-            return payloadBody;
-        }
-
-        @Override
-        public <R> UpgradableHttpResponse<HttpPayloadChunk, R> transformPayloadBody(
-                final Function<Publisher<O2>, Publisher<R>> transformer) {
-            return new AggregatedToUpgradableHttpResponseConverter<>(this, transformer, transformer.apply(payloadBody));
-        }
-
-        @Override
-        public HttpProtocolVersion getVersion() {
-            return upgradableResponse.getVersion();
-        }
-
-        @Override
-        public UpgradableHttpResponse<HttpPayloadChunk, O2> setVersion(final HttpProtocolVersion version) {
+        public UpgradableHttpResponse<T> setVersion(final HttpProtocolVersion version) {
             upgradableResponse.setVersion(version);
             return this;
         }
@@ -258,57 +179,15 @@ final class AggregatedHttpClientToHttpClient extends HttpClient<HttpPayloadChunk
         }
 
         @Override
-        public UpgradableHttpResponse<HttpPayloadChunk, O2> setStatus(final HttpResponseStatus status) {
+        public UpgradableHttpResponse<T> setStatus(final HttpResponseStatus status) {
             upgradableResponse.setStatus(status);
             return this;
         }
-    }
-
-    private static final class AggregatedReservedHttpConnectionConverter<O1, O2> extends
-                                                                        ReservedHttpConnection<HttpPayloadChunk, O2> {
-        private final ReservedHttpConnection<HttpPayloadChunk, O1> reservedConnection;
-        private final Function<Publisher<O1>, Publisher<O2>> transformer;
-
-        AggregatedReservedHttpConnectionConverter(
-                                      ReservedHttpConnection<HttpPayloadChunk, O1> reservedConnection,
-                                      Function<Publisher<O1>, Publisher<O2>> transformer) {
-            this.reservedConnection = requireNonNull(reservedConnection);
-            this.transformer = requireNonNull(transformer);
-        }
 
         @Override
-        public Completable releaseAsync() {
-            return reservedConnection.releaseAsync();
-        }
-
-        @Override
-        public ConnectionContext getConnectionContext() {
-            return reservedConnection.getConnectionContext();
-        }
-
-        @Override
-        public <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
-            return reservedConnection.getSettingStream(settingKey);
-        }
-
-        @Override
-        public Single<HttpResponse<O2>> request(final HttpRequest<HttpPayloadChunk> request) {
-            return reservedConnection.request(request).map(response -> response.transformPayloadBody(transformer));
-        }
-
-        @Override
-        public ExecutionContext getExecutionContext() {
-            return reservedConnection.getExecutionContext();
-        }
-
-        @Override
-        public Completable onClose() {
-            return reservedConnection.onClose();
-        }
-
-        @Override
-        public Completable closeAsync() {
-            return reservedConnection.closeAsync();
+        public <R> UpgradableHttpResponse<R> transformPayloadBody(
+                final Function<Publisher<T>, Publisher<R>> transformer) {
+            return new AggregatedToUpgradableHttpResponse<>(upgradableResponse, transformer.apply(payloadBody));
         }
     }
 }

@@ -18,16 +18,14 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.BlockingIterable;
 import io.servicetalk.http.api.BlockingHttpClientToHttpClient.BlockingToReservedHttpConnection;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
+import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
 
 import java.util.function.Function;
 
 /**
  * The equivalent of {@link HttpClient} but with synchronous/blocking APIs instead of asynchronous APIs.
- *
- * @param <I> Type of payload of a request handled by this {@link BlockingHttpClient}.
- * @param <O> Type of payload of a response handled by this {@link BlockingHttpClient}.
  */
-public abstract class BlockingHttpClient<I, O> extends BlockingHttpRequester<I, O> {
+public abstract class BlockingHttpClient extends BlockingHttpRequester {
     /**
      * Reserve a {@link BlockingHttpConnection} for handling the provided {@link BlockingHttpRequest}
      * but <b>does not execute it</b>!
@@ -36,8 +34,9 @@ public abstract class BlockingHttpClient<I, O> extends BlockingHttpRequester<I, 
      * For example this may provide some insight into shard or other info.
      * @return a {@link ReservedHttpConnection}.
      * @throws Exception if a exception occurs during the reservation process.
+     * @see HttpClient#reserveConnection(HttpRequest)
      */
-    public abstract BlockingReservedHttpConnection<I, O> reserveConnection(BlockingHttpRequest<I> request)
+    public abstract BlockingReservedHttpConnection reserveConnection(BlockingHttpRequest<HttpPayloadChunk> request)
             throws Exception;
 
     /**
@@ -52,34 +51,33 @@ public abstract class BlockingHttpClient<I, O> extends BlockingHttpRequester<I, 
      * @return An object that provides the {@link HttpResponse} for the upgrade attempt and also contains the
      * {@link BlockingHttpConnection} used for the upgrade.
      * @throws Exception if a exception occurs during the upgrade process.
+     * @see HttpClient#upgradeConnection(HttpRequest)
      */
-    public abstract BlockingUpgradableHttpResponse<I, O> upgradeConnection(BlockingHttpRequest<I> request)
-            throws Exception;
+    public abstract BlockingUpgradableHttpResponse<HttpPayloadChunk> upgradeConnection(
+            BlockingHttpRequest<HttpPayloadChunk> request) throws Exception;
 
     /**
-     * Convert this {@link BlockingHttpClient} to the {@link HttpClient} asynchronous API.
+     * Convert this {@link BlockingHttpClient} to the {@link HttpClient} API.
      * <p>
      * Note that the resulting {@link HttpClient} will still be subject to any blocking, in memory aggregation, and
      * other behavior as this {@link BlockingHttpClient}.
      *
      * @return a {@link HttpClient} representation of this {@link BlockingHttpClient}.
      */
-    public final HttpClient<I, O> asAsynchronousClient() {
+    public final HttpClient asAsynchronousClient() {
         return asAsynchronousClientInternal();
     }
 
-    HttpClient<I, O> asAsynchronousClientInternal() {
-        return new BlockingHttpClientToHttpClient<>(this);
+    HttpClient asAsynchronousClientInternal() {
+        return new BlockingHttpClientToHttpClient(this);
     }
 
     /**
      * A special type of {@link BlockingHttpConnection} for the exclusive use of the caller of
      * {@link #reserveConnection(BlockingHttpRequest)}.
-     *
-     * @param <I> The type of payload of the request.
-     * @param <O> The type of payload of the response.
+     * @see ReservedHttpConnection
      */
-    public abstract static class BlockingReservedHttpConnection<I, O> extends BlockingHttpConnection<I, O> {
+    public abstract static class BlockingReservedHttpConnection extends BlockingHttpConnection {
         /**
          * Releases this reserved {@link BlockingHttpConnection} to be used for subsequent requests.
          * This method must be idempotent, i.e. calling multiple times must not have side-effects.
@@ -89,23 +87,31 @@ public abstract class BlockingHttpClient<I, O> extends BlockingHttpRequester<I, 
         public abstract void release() throws Exception;
 
         /**
-         * Convert this {@link BlockingReservedHttpConnection} to the {@link ReservedHttpConnection} asynchronous API.
+         * Convert this {@link BlockingReservedHttpConnection} to the {@link ReservedHttpConnection} API.
          * <p>
          * Note that the resulting {@link ReservedHttpConnection} will still be subject to any blocking, in memory
          * aggregation, and other behavior as this {@link BlockingReservedHttpConnection}.
          *
          * @return a {@link ReservedHttpConnection} representation of this {@link BlockingReservedHttpConnection}.
          */
-        public final ReservedHttpConnection<I, O> asAsynchronousReservedConnection() {
-            return asAsynchronousReservedConnectionInternal();
+        public final ReservedHttpConnection asAsynchronousReservedConnection() {
+            return asAsynchronousConnectionInternal();
         }
 
-        ReservedHttpConnection<I, O> asAsynchronousReservedConnectionInternal() {
-            return new BlockingToReservedHttpConnection<>(this);
+        @Override
+        ReservedHttpConnection asAsynchronousConnectionInternal() {
+            return new BlockingToReservedHttpConnection(this);
         }
     }
 
-    public interface BlockingUpgradableHttpResponse<I, O> extends BlockingHttpResponse<O> {
+    /**
+     * A special type of response returned by upgrade requests {@link #upgradeConnection(BlockingHttpRequest)}. This
+     * object allows the upgrade code to inform the HTTP implementation if the {@link AggregatedHttpConnection} can
+     * continue using the HTTP protocol or not.
+     * @param <T> The type of data in the {@link BlockingHttpResponse}.
+     * @see UpgradableHttpResponse
+     */
+    public interface BlockingUpgradableHttpResponse<T> extends BlockingHttpResponse<T> {
         /**
          * Called by the code responsible for processing the upgrade response.
          * <p>
@@ -129,16 +135,16 @@ public abstract class BlockingHttpClient<I, O> extends BlockingHttpRequester<I, 
          * the upgrade attempt, and controls the lifetime of the {@link BlockingHttpConnection} relative to this
          * {@link BlockingHttpClient}.
          */
-        BlockingReservedHttpConnection<I, O> getHttpConnection(boolean releaseReturnsToClient);
+        BlockingReservedHttpConnection getHttpConnection(boolean releaseReturnsToClient);
 
         @Override
-        <R> BlockingUpgradableHttpResponse<I, R> transformPayloadBody(Function<BlockingIterable<O>,
-                                                                               BlockingIterable<R>> transformer);
+        <R> BlockingUpgradableHttpResponse<R> transformPayloadBody(Function<BlockingIterable<T>,
+                                                                            BlockingIterable<R>> transformer);
 
         @Override
-        BlockingUpgradableHttpResponse<I, O> setVersion(HttpProtocolVersion version);
+        BlockingUpgradableHttpResponse<T> setVersion(HttpProtocolVersion version);
 
         @Override
-        BlockingUpgradableHttpResponse<I, O> setStatus(HttpResponseStatus status);
+        BlockingUpgradableHttpResponse<T> setStatus(HttpResponseStatus status);
     }
 }

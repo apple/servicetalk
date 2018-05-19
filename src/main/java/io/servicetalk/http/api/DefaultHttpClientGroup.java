@@ -36,24 +36,22 @@ import static io.servicetalk.concurrent.api.Completable.completed;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
-final class DefaultHttpClientGroup<UnresolvedAddress, I, O> extends HttpClientGroup<UnresolvedAddress, I, O> {
+final class DefaultHttpClientGroup<UnresolvedAddress> extends HttpClientGroup<UnresolvedAddress> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultHttpClientGroup.class);
 
-    public static final String PLACEHOLDER_EXCEPTION_MSG = "Not supported by placeholder";
+    public static final String PLACEHOLDER_EXCEPTION_MSG = "Not supported by PLACEHOLDER_CLIENT";
     public static final String CLOSED_EXCEPTION_MSG = "This group has been closed";
 
-    private volatile boolean closed;
-
     // Placeholder should not leak outside of the scope of existing class
-    private final HttpClient<I, O> placeholder = new HttpClient<I, O>() {
+    private static final HttpClient PLACEHOLDER_CLIENT = new HttpClient() {
         @Override
-        public Single<ReservedHttpConnection<I, O>> reserveConnection(final HttpRequest<I> request) {
+        public Single<ReservedHttpConnection> reserveConnection(final HttpRequest<HttpPayloadChunk> request) {
             return Single.error(new UnsupportedOperationException(PLACEHOLDER_EXCEPTION_MSG));
         }
 
         @Override
-        public Single<UpgradableHttpResponse<I, O>> upgradeConnection(final HttpRequest<I> request) {
+        public Single<UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(final HttpRequest<HttpPayloadChunk> request) {
             return Single.error(new UnsupportedOperationException(PLACEHOLDER_EXCEPTION_MSG));
         }
 
@@ -63,7 +61,7 @@ final class DefaultHttpClientGroup<UnresolvedAddress, I, O> extends HttpClientGr
         }
 
         @Override
-        public Single<HttpResponse<O>> request(final HttpRequest<I> request) {
+        public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
             return Single.error(new UnsupportedOperationException(PLACEHOLDER_EXCEPTION_MSG));
         }
 
@@ -78,30 +76,32 @@ final class DefaultHttpClientGroup<UnresolvedAddress, I, O> extends HttpClientGr
         }
     };
 
-    private final ConcurrentMap<GroupKey<UnresolvedAddress>, HttpClient<I, O>> clientMap = new ConcurrentHashMap<>();
-    private final Function<GroupKey<UnresolvedAddress>, HttpClient<I, O>> clientFactory;
+    private volatile boolean closed;
+    private final ConcurrentMap<GroupKey<UnresolvedAddress>, HttpClient> clientMap = new ConcurrentHashMap<>();
+    private final Function<GroupKey<UnresolvedAddress>, HttpClient> clientFactory;
     private final ListenableAsyncCloseable asyncCloseable = toAsyncCloseable(() -> {
                 closed = true;
                 return completed().mergeDelayError(clientMap.keySet().stream()
                         .map(clientMap::remove)
-                        .filter(client -> client != null && client != placeholder)
+                        .filter(client -> client != null && client != PLACEHOLDER_CLIENT)
                         .map(AsyncCloseable::closeAsync)
                         .collect(toList()));
             }
     );
 
-    DefaultHttpClientGroup(final Function<GroupKey<UnresolvedAddress>, HttpClient<I, O>> clientFactory) {
+    DefaultHttpClientGroup(final Function<GroupKey<UnresolvedAddress>, HttpClient> clientFactory) {
         this.clientFactory = requireNonNull(clientFactory);
     }
 
     @Override
-    public Single<HttpResponse<O>> request(final GroupKey<UnresolvedAddress> key, final HttpRequest<I> request) {
+    public Single<HttpResponse<HttpPayloadChunk>> request(final GroupKey<UnresolvedAddress> key,
+                                                          final HttpRequest<HttpPayloadChunk> request) {
         requireNonNull(key);
         requireNonNull(request);
-        return new Single<HttpResponse<O>>() {
+        return new Single<HttpResponse<HttpPayloadChunk>>() {
             @Override
-            protected void handleSubscribe(final Subscriber<? super HttpResponse<O>> subscriber) {
-                final Single<HttpResponse<O>> response;
+            protected void handleSubscribe(final Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber) {
+                final Single<HttpResponse<HttpPayloadChunk>> response;
                 try {
                     response = selectClient(key).request(request);
                 } catch (final Throwable t) {
@@ -115,14 +115,14 @@ final class DefaultHttpClientGroup<UnresolvedAddress, I, O> extends HttpClientGr
     }
 
     @Override
-    public Single<? extends ReservedHttpConnection<I, O>> reserveConnection(final GroupKey<UnresolvedAddress> key,
-                                                                  final HttpRequest<I> request) {
+    public Single<? extends ReservedHttpConnection> reserveConnection(final GroupKey<UnresolvedAddress> key,
+                                                                      final HttpRequest<HttpPayloadChunk> request) {
         requireNonNull(key);
         requireNonNull(request);
-        return new Single<ReservedHttpConnection<I, O>>() {
+        return new Single<ReservedHttpConnection>() {
             @Override
-            protected void handleSubscribe(final Subscriber<? super ReservedHttpConnection<I, O>> subscriber) {
-                final Single<? extends ReservedHttpConnection<I, O>> reservedHttpConnection;
+            protected void handleSubscribe(final Subscriber<? super ReservedHttpConnection> subscriber) {
+                final Single<? extends ReservedHttpConnection> reservedHttpConnection;
                 try {
                     reservedHttpConnection = selectClient(key).reserveConnection(request);
                 } catch (final Throwable t) {
@@ -135,34 +135,34 @@ final class DefaultHttpClientGroup<UnresolvedAddress, I, O> extends HttpClientGr
         };
     }
 
-    private HttpClient<I, O> selectClient(final GroupKey<UnresolvedAddress> key) {
+    private HttpClient selectClient(final GroupKey<UnresolvedAddress> key) {
         // It is assumed that clientFactory will not acquire synchronization primitives which may be held by threads
         // in the spin/wait loop below to avoid livelock. This allows us to avoid acquiring locks/monitors
         // for the expected steady state where the key will already exist in the map.
-        HttpClient<I, O> client;
+        HttpClient client;
         for (;;) {
             // It is expected that the majority of the time the key will already exist in the map, and so we try the
             // less expensive "get" operation first because "computeIfAbsent" may incur extra synchronization, while it
             // checks existence of the key in the concurrent hash map.
             client = clientMap.get(key);
-            if (client != null && client != placeholder) {
+            if (client != null && client != PLACEHOLDER_CLIENT) {
                 return client;
             }
-            if (client == placeholder) {
+            if (client == PLACEHOLDER_CLIENT) {
                 continue;
             }
 
-            // Attempt to "reserve" this key with a placeholder so we can later create a new client and insert the
-            // "real" client instead of the placeholder. Placeholder will make sure that we call factory only once.
-            // This is necessary to avoid execution of the user code while holding a wide lock in "computeIfAbsent".
-            // Basically, we are also holding a "per-key lock" here with the placeholder as a subsequent select with
-            // the same key does a spin-loop. The difference between "computeIfAbsent" and here is that
-            // "computeIfAbsent" will lock the bin/bucket for the key but here we just lock the key.
-            client = clientMap.putIfAbsent(key, placeholder);
+            // Attempt to "reserve" this key with a PLACEHOLDER_CLIENT so we can later create a new client and insert
+            // the "real" client instead of the PLACEHOLDER_CLIENT. Placeholder will make sure that we call factory only
+            // once. This is necessary to avoid execution of the user code while holding a wide lock in
+            // "computeIfAbsent". Basically, we are also holding a "per-key lock" here with the PLACEHOLDER_CLIENT as a
+            // subsequent select with the same key does a spin-loop. The difference between "computeIfAbsent" and here
+            // is that "computeIfAbsent" will lock the bin/bucket for the key but here we just lock the key.
+            client = clientMap.putIfAbsent(key, PLACEHOLDER_CLIENT);
             if (client == null) {
                 break;
             }
-            if (client != placeholder) {
+            if (client != PLACEHOLDER_CLIENT) {
                 return client;
             }
         }
@@ -174,13 +174,13 @@ final class DefaultHttpClientGroup<UnresolvedAddress, I, O> extends HttpClientGr
             if (client == null) {
                 throw new IllegalStateException("Newly created client can not be null");
             }
-            // Overwrite the placeholder which was temporarily put in the map
+            // Overwrite the PLACEHOLDER_CLIENT which was temporarily put in the map
             clientMap.put(key, client);
             LOGGER.debug("A new {} was created", client);
 
             throwIfClosed();
         } catch (final Throwable t) {
-            final HttpClient<I, O> closeCandidate = clientMap.remove(key);
+            final HttpClient closeCandidate = clientMap.remove(key);
             if (closeCandidate != null && closeCandidate == client) {
                 // It will happen only if the group has been closed after a new client was created
                 closeCandidate.closeAsync().subscribe();

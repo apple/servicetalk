@@ -20,35 +20,36 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.http.api.BlockingHttpClient.BlockingReservedHttpConnection;
 import io.servicetalk.http.api.HttpClientToBlockingHttpClient.ReservedHttpConnectionToBlocking;
 
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpRequests.fromBlockingRequest;
 import static java.util.Objects.requireNonNull;
 
-final class HttpClientGroupToBlockingHttpClientGroup<UnresolvedAddress, I, O> extends
-                                                                  BlockingHttpClientGroup<UnresolvedAddress, I, O> {
-    private final HttpClientGroup<UnresolvedAddress, I, O> clientGroup;
+final class HttpClientGroupToBlockingHttpClientGroup<UnresolvedAddress> extends
+                                                                  BlockingHttpClientGroup<UnresolvedAddress> {
+    private final HttpClientGroup<UnresolvedAddress> clientGroup;
 
-    HttpClientGroupToBlockingHttpClientGroup(HttpClientGroup<UnresolvedAddress, I, O> clientGroup) {
+    HttpClientGroupToBlockingHttpClientGroup(HttpClientGroup<UnresolvedAddress> clientGroup) {
         this.clientGroup = requireNonNull(clientGroup);
     }
 
     @Override
-    public BlockingHttpResponse<O> request(final GroupKey<UnresolvedAddress> key,
-                                           final BlockingHttpRequest<I> request) throws Exception {
-        // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
-        // apply any explicit timeout here and just wait forever.
-        return new DefaultBlockingHttpResponse<>(
-                awaitIndefinitely(clientGroup.request(key, fromBlockingRequest(request))));
-    }
-
-    @Override
-    public BlockingReservedHttpConnection<I, O> reserveConnection(final GroupKey<UnresolvedAddress> key,
-                                                                  final BlockingHttpRequest<I> request)
+    public BlockingHttpResponse<HttpPayloadChunk> request(final GroupKey<UnresolvedAddress> key,
+                                                          final BlockingHttpRequest<HttpPayloadChunk> request)
             throws Exception {
         // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
-        return new ReservedHttpConnectionToBlocking<>(
-                awaitIndefinitely(clientGroup.reserveConnection(key, fromBlockingRequest(request))));
+        return new DefaultBlockingHttpResponse<>(
+                awaitIndefinitelyNonNull(clientGroup.request(key, fromBlockingRequest(request))));
+    }
+
+    @Override
+    public BlockingReservedHttpConnection reserveConnection(final GroupKey<UnresolvedAddress> key,
+                                                            final BlockingHttpRequest<HttpPayloadChunk> request)
+            throws Exception {
+        // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
+        // apply any explicit timeout here and just wait forever.
+        return new ReservedHttpConnectionToBlocking(
+                awaitIndefinitelyNonNull(clientGroup.reserveConnection(key, fromBlockingRequest(request))));
     }
 
     @Override
@@ -61,7 +62,7 @@ final class HttpClientGroupToBlockingHttpClientGroup<UnresolvedAddress, I, O> ex
     }
 
     @Override
-    HttpClientGroup<UnresolvedAddress, I, O> asAsynchronousClientGroupInternal() {
+    HttpClientGroup<UnresolvedAddress> asAsynchronousClientGroupInternal() {
         return clientGroup;
     }
 }

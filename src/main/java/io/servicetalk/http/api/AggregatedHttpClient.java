@@ -15,25 +15,29 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.AggregatedHttpClientToHttpClient.AggregatedToReservedHttpConnection;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
+import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
+
+import java.util.function.Function;
 
 /**
- * The equivalent of {@link HttpClient} but that accepts {@link FullHttpRequest} and returns {@link FullHttpResponse}.
+ * The equivalent of {@link HttpClient} but that accepts {@link AggregatedHttpRequest} and returns {@link AggregatedHttpResponse}.
  */
 public abstract class AggregatedHttpClient extends AggregatedHttpRequester {
     /**
-     * Reserve a {@link AggregatedHttpConnection} for handling the provided {@link FullHttpRequest}
+     * Reserve a {@link AggregatedHttpConnection} for handling the provided {@link AggregatedHttpRequest}
      * but <b>does not execute it</b>!
      *
      * @param request Allows the underlying layers to know what {@link AggregatedHttpConnection}s are valid to reserve.
      * For example this may provide some insight into shard or other info.
      * @return a {@link ReservedHttpConnection}.
+     * @see HttpClient#reserveConnection(HttpRequest)
      */
-    public abstract Single<? extends AggregatedReservedHttpConnection> reserveConnection(FullHttpRequest request);
+    public abstract Single<? extends AggregatedReservedHttpConnection> reserveConnection(
+            AggregatedHttpRequest<HttpPayloadChunk> request);
 
     /**
      * Attempt a <a href="https://tools.ietf.org/html/rfc7230.html#section-6.7">protocol upgrade</a>.
@@ -46,25 +50,28 @@ public abstract class AggregatedHttpClient extends AggregatedHttpRequester {
      * @param request the request which initiates the upgrade.
      * @return An object that provides the {@link HttpResponse} for the upgrade attempt and also contains the
      * {@link AggregatedHttpConnection} used for the upgrade.
+     * @see HttpClient#upgradeConnection(HttpRequest)
      */
-    public abstract Single<? extends AggregatedUpgradableHttpResponse> upgradeConnection(FullHttpRequest request);
+    public abstract Single<? extends AggregatedUpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
+            AggregatedHttpRequest<HttpPayloadChunk> request);
 
     /**
-     * Convert this {@link AggregatedHttpClient} to the {@link HttpClient} asynchronous API.
+     * Convert this {@link AggregatedHttpClient} to the {@link HttpClient} API.
      *
      * @return a {@link HttpClient} representation of this {@link AggregatedHttpClient}.
      */
-    public final HttpClient<HttpPayloadChunk, HttpPayloadChunk> asClient() {
+    public final HttpClient asClient() {
         return asClientInternal();
     }
 
-    HttpClient<HttpPayloadChunk, HttpPayloadChunk> asClientInternal() {
+    HttpClient asClientInternal() {
         return new AggregatedHttpClientToHttpClient(this);
     }
 
     /**
      * A special type of {@link AggregatedHttpConnection} for the exclusive use of the caller of
-     * {@link #reserveConnection(FullHttpRequest)}.
+     * {@link #reserveConnection(AggregatedHttpRequest)}.
+     * @see ReservedHttpConnection
      */
     public abstract static class AggregatedReservedHttpConnection extends AggregatedHttpConnection {
         /**
@@ -76,20 +83,28 @@ public abstract class AggregatedHttpClient extends AggregatedHttpRequester {
         public abstract Completable releaseAsync();
 
         /**
-         * Convert this {@link AggregatedReservedHttpConnection} to the {@link ReservedHttpConnection} asynchronous API.
+         * Convert this {@link AggregatedReservedHttpConnection} to the {@link ReservedHttpConnection} API.
          *
          * @return a {@link ReservedHttpConnection} representation of this {@link AggregatedReservedHttpConnection}.
          */
-        public final ReservedHttpConnection<HttpPayloadChunk, HttpPayloadChunk> asReservedConnection() {
-            return asReservedConnectionInternal();
+        public final ReservedHttpConnection asReservedConnection() {
+            return asConnectionInternal();
         }
 
-        ReservedHttpConnection<HttpPayloadChunk, HttpPayloadChunk> asReservedConnectionInternal() {
+        @Override
+        ReservedHttpConnection asConnectionInternal() {
             return new AggregatedToReservedHttpConnection(this);
         }
     }
 
-    public interface AggregatedUpgradableHttpResponse extends FullHttpResponse {
+    /**
+     * A special type of response returned by upgrade requests {@link #upgradeConnection(AggregatedHttpRequest)}. This object
+     * allows the upgrade code to inform the HTTP implementation if the {@link AggregatedHttpConnection} can continue
+     * using the HTTP protocol or not.
+     * @param <T> The type of data in the {@link HttpResponse}.
+     * @see UpgradableHttpResponse
+     */
+    public interface AggregatedUpgradableHttpResponse<T> extends AggregatedHttpResponse<T> {
         /**
          * Called by the code responsible for processing the upgrade response.
          * <p>
@@ -117,15 +132,12 @@ public abstract class AggregatedHttpClient extends AggregatedHttpRequester {
         AggregatedReservedHttpConnection getHttpConnection(boolean releaseReturnsToClient);
 
         @Override
-        AggregatedUpgradableHttpResponse setVersion(HttpProtocolVersion version);
+        <R> AggregatedUpgradableHttpResponse<R> transformPayloadBody(Function<T, R> transformer);
 
         @Override
-        AggregatedUpgradableHttpResponse setStatus(HttpResponseStatus status);
+        AggregatedUpgradableHttpResponse<T> setVersion(HttpProtocolVersion version);
 
         @Override
-        AggregatedUpgradableHttpResponse duplicate();
-
-        @Override
-        AggregatedUpgradableHttpResponse replace(Buffer content);
+        AggregatedUpgradableHttpResponse<T> setStatus(HttpResponseStatus status);
     }
 }

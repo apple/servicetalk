@@ -19,11 +19,8 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 /**
  * The equivalent of {@link HttpRequester} but with synchronous/blocking APIs instead of asynchronous APIs.
- *
- * @param <I> Type of payload of a request handled by this {@link BlockingHttpRequester}.
- * @param <O> Type of payload of a response handled by this {@link BlockingHttpRequester}.
  */
-public abstract class BlockingHttpRequester<I, O> implements AutoCloseable {
+public abstract class BlockingHttpRequester implements AutoCloseable {
     /**
      * Send a {@code request}.
      *
@@ -31,7 +28,8 @@ public abstract class BlockingHttpRequester<I, O> implements AutoCloseable {
      * @return The response.
      * @throws Exception if an exception occurs during the request processing.
      */
-    public abstract BlockingHttpResponse<O> request(BlockingHttpRequest<I> request) throws Exception;
+    public abstract BlockingHttpResponse<HttpPayloadChunk> request(BlockingHttpRequest<HttpPayloadChunk> request)
+            throws Exception;
 
     /**
      * Get the {@link ExecutionContext} used during construction of this object.
@@ -44,18 +42,18 @@ public abstract class BlockingHttpRequester<I, O> implements AutoCloseable {
     public abstract ExecutionContext getExecutionContext();
 
     /**
-     * Convert this {@link BlockingHttpRequester} to the {@link HttpRequester} asynchronous API.
+     * Convert this {@link BlockingHttpRequester} to the {@link HttpRequester} API.
      * <p>
      * Note that the resulting {@link HttpRequester} will still be subject to any blocking, in memory aggregation, and
      * other behavior as this {@link BlockingHttpRequester}.
      *
      * @return a {@link HttpRequester} representation of this {@link BlockingHttpRequester}.
      */
-    public final HttpRequester<I, O> asAsynchronousRequester() {
+    public final HttpRequester asAsynchronousRequester() {
         return asAsynchronousRequesterInternal();
     }
 
-    HttpRequester<I, O> asAsynchronousRequesterInternal() {
-        return new BlockingHttpRequesterToHttpRequester<>(this);
+    HttpRequester asAsynchronousRequesterInternal() {
+        return new BlockingHttpRequesterToHttpRequester(this);
     }
 }

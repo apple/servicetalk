@@ -25,21 +25,22 @@ import static io.servicetalk.http.api.HttpResponses.fromBlockingResponse;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
-final class BlockingHttpServiceToHttpService<I, O> extends HttpService<I, O> {
-    private final BlockingHttpService<I, O> blockingHttpService;
+final class BlockingHttpServiceToHttpService extends HttpService {
+    private final BlockingHttpService blockingHttpService;
 
-    BlockingHttpServiceToHttpService(BlockingHttpService<I, O> blockingHttpService) {
+    BlockingHttpServiceToHttpService(BlockingHttpService blockingHttpService) {
         this.blockingHttpService = requireNonNull(blockingHttpService);
     }
 
     @Override
-    public Single<HttpResponse<O>> handle(final ConnectionContext ctx, final HttpRequest<I> request) {
-        return new Single<HttpResponse<O>>() {
+    public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
+                                                         final HttpRequest<HttpPayloadChunk> request) {
+        return new Single<HttpResponse<HttpPayloadChunk>>() {
             @Override
-            protected void handleSubscribe(Subscriber<? super HttpResponse<O>> subscriber) {
+            protected void handleSubscribe(Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber) {
                 ThreadInterruptingCancellable cancellable = new ThreadInterruptingCancellable(currentThread());
                 subscriber.onSubscribe(cancellable);
-                final HttpResponse<O> response;
+                final HttpResponse<HttpPayloadChunk> response;
                 try {
                     // Do the conversion inside the try/catch in case there is an exception.
                     response = fromBlockingResponse(blockingHttpService.handle(ctx,
@@ -65,7 +66,7 @@ final class BlockingHttpServiceToHttpService<I, O> extends HttpService<I, O> {
     }
 
     @Override
-    BlockingHttpService<I, O> asBlockingServiceInternal() {
+    BlockingHttpService asBlockingServiceInternal() {
         return blockingHttpService;
     }
 }

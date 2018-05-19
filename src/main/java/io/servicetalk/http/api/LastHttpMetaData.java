@@ -15,16 +15,15 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.api.Buffer;
-
 /**
- * A special instance of {@link HttpPayloadChunk} that terminates the payload and contains
- * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer headers</a>.
+ * An indicator that can be attached to the last chunk of payload to carry
+ * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer headers</a>. This will signify the end of a request
+ * or response and no other data can come after this object.
  */
-public interface LastHttpPayloadChunk extends HttpPayloadChunk, LastHttpMetaData {
-    @Override
-    LastHttpPayloadChunk duplicate();
-
-    @Override
-    LastHttpPayloadChunk replace(Buffer content);
+public interface LastHttpMetaData {
+    /**
+     * Get the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer headers</a>.
+     * @return the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer headers</a>.
+     */
+    HttpHeaders getTrailers();
 }

@@ -65,22 +65,23 @@ final class BlockingUtils {
         awaitIndefinitely(closeable.closeAsync());
     }
 
-    static <I, O> BlockingHttpResponse<O> request(final HttpRequester<I, O> requester,
-                                                  final BlockingHttpRequest<I> request) throws Exception {
+    static BlockingHttpResponse<HttpPayloadChunk> request(final HttpRequester requester,
+                                                          final BlockingHttpRequest<HttpPayloadChunk> request)
+            throws Exception {
         // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
         return new DefaultBlockingHttpResponse<>(
                 awaitIndefinitelyNonNull(requester.request(fromBlockingRequest(request))));
     }
 
-    static <I, O> Single<HttpResponse<O>> request(final BlockingHttpRequester<I, O> blockingHttpRequester,
-                                                  final HttpRequest<I> request) {
-        return new Single<HttpResponse<O>>() {
+    static Single<HttpResponse<HttpPayloadChunk>> request(final BlockingHttpRequester blockingHttpRequester,
+                                                  final HttpRequest<HttpPayloadChunk> request) {
+        return new Single<HttpResponse<HttpPayloadChunk>>() {
             @Override
-            protected void handleSubscribe(final Subscriber<? super HttpResponse<O>> subscriber) {
+            protected void handleSubscribe(final Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber) {
                 ThreadInterruptingCancellable cancellable = new ThreadInterruptingCancellable(currentThread());
                 subscriber.onSubscribe(cancellable);
-                final HttpResponse<O> response;
+                final HttpResponse<HttpPayloadChunk> response;
                 try {
                     // Do the conversion inside the try/catch in case there is an exception.
                     response = fromBlockingResponse(blockingHttpRequester.request(

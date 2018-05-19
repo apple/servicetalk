@@ -25,10 +25,8 @@ import io.servicetalk.transport.api.ExecutionContext;
  *
  * @param <ResolvedAddress> A resolved address that can be used to establish new {@link HttpConnection}s
  * @param <EventType> The type of {@link Event} which communicates address changes
- * @param <I> The type of content of the request
- * @param <O> The type of content of the response
  */
-public interface HttpClientBuilder<ResolvedAddress, EventType extends Event<ResolvedAddress>, I, O> {
+public interface HttpClientBuilder<ResolvedAddress, EventType extends Event<ResolvedAddress>> {
 
     /**
      * Build a new {@link HttpClient}.
@@ -39,7 +37,7 @@ public interface HttpClientBuilder<ResolvedAddress, EventType extends Event<Reso
      *                           provides the addresses used to create new {@link HttpConnection}s
      * @return A new {@link HttpClient}
      */
-    HttpClient<I, O> build(ExecutionContext executionContext, Publisher<EventType> addressEventStream);
+    HttpClient build(ExecutionContext executionContext, Publisher<EventType> addressEventStream);
 
     /**
      * Build a new {@link AggregatedHttpClient}.
@@ -50,7 +48,10 @@ public interface HttpClientBuilder<ResolvedAddress, EventType extends Event<Reso
      *                           provides the addresses used to create new {@link HttpConnection}s
      * @return A new {@link AggregatedHttpClient}
      */
-    AggregatedHttpClient buildAggregated(ExecutionContext executionContext, Publisher<EventType> addressEventStream);
+    default AggregatedHttpClient buildAggregated(ExecutionContext executionContext,
+                                                 Publisher<EventType> addressEventStream) {
+        return build(executionContext, addressEventStream).asAggregatedClient();
+    }
 
     /**
      * Create a new {@link BlockingHttpClient}.
@@ -60,8 +61,8 @@ public interface HttpClientBuilder<ResolvedAddress, EventType extends Event<Reso
      *                           provides the addresses used to create new {@link HttpConnection}s
      * @return {@link BlockingHttpClient}
      */
-    default BlockingHttpClient<I, O> buildBlocking(ExecutionContext executionContext,
-                                                   Publisher<EventType> addressEventStream) {
+    default BlockingHttpClient buildBlocking(ExecutionContext executionContext,
+                                             Publisher<EventType> addressEventStream) {
         return build(executionContext, addressEventStream).asBlockingClient();
     }
 }

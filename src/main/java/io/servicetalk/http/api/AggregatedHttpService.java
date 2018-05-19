@@ -23,7 +23,7 @@ import io.servicetalk.transport.api.ConnectionContext;
 import java.util.function.BiFunction;
 
 /**
- * Same as {@link HttpService} but that accepts {@link FullHttpRequest} and returns {@link FullHttpResponse}.
+ * Same as {@link HttpService} but that accepts {@link AggregatedHttpRequest} and returns {@link AggregatedHttpResponse}.
  */
 public abstract class AggregatedHttpService implements AsyncCloseable {
     /**
@@ -33,7 +33,8 @@ public abstract class AggregatedHttpService implements AsyncCloseable {
      * @param request to handle.
      * @return {@link Single} of HTTP response.
      */
-    public abstract Single<FullHttpResponse> handle(ConnectionContext ctx, FullHttpRequest request);
+    public abstract Single<AggregatedHttpResponse<HttpPayloadChunk>> handle(ConnectionContext ctx,
+                                                                            AggregatedHttpRequest<HttpPayloadChunk> request);
 
     /**
      * Closes this {@link AggregatedHttpService} asynchronously.
@@ -46,32 +47,34 @@ public abstract class AggregatedHttpService implements AsyncCloseable {
     }
 
     /**
-     * Convert this {@link AggregatedHttpService} to the {@link BlockingHttpService} API.
+     * Convert this {@link AggregatedHttpService} to the {@link HttpService} API.
      * <p>
      * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
-     * filters are implemented using the {@link AggregatedHttpService} asynchronous API for maximum portability.
+     * filters are implemented using the {@link HttpService} asynchronous API for maximum portability.
      *
-     * @return a {@link BlockingHttpService} representation of this {@link AggregatedHttpService}.
+     * @return a {@link HttpService} representation of this {@link AggregatedHttpService}.
      */
-    public final HttpService<HttpPayloadChunk, HttpPayloadChunk> asService() {
+    public final HttpService asService() {
         return asServiceInternal();
     }
 
-    HttpService<HttpPayloadChunk, HttpPayloadChunk> asServiceInternal() {
+    HttpService asServiceInternal() {
         return new AggregatedHttpServiceToHttpService(this);
     }
 
     /**
      * Create a new {@link AggregatedHttpService} from a {@link BiFunction}.
      *
-     * @param handleFunc Provides the functionality for the {@link #handle(ConnectionContext, FullHttpRequest)} method.
+     * @param handleFunc Provides the functionality for the {@link #handle(ConnectionContext, AggregatedHttpRequest)} method.
      * @return a new {@link AggregatedHttpService}.
      */
-    public static AggregatedHttpService fromAggregated(BiFunction<ConnectionContext, FullHttpRequest,
-            Single<FullHttpResponse>> handleFunc) {
+    public static AggregatedHttpService fromAggregated(BiFunction<ConnectionContext,
+            AggregatedHttpRequest<HttpPayloadChunk>,
+                            Single<AggregatedHttpResponse<HttpPayloadChunk>>> handleFunc) {
         return new AggregatedHttpService() {
             @Override
-            public Single<FullHttpResponse> handle(final ConnectionContext ctx, final FullHttpRequest request) {
+            public Single<AggregatedHttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
+                                                                           final AggregatedHttpRequest<HttpPayloadChunk> request) {
                 return handleFunc.apply(ctx, request);
             }
         };

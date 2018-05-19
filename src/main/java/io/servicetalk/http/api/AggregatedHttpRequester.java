@@ -20,8 +20,8 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
 /**
- * The equivalent of {@link HttpRequester} but that accepts {@link FullHttpRequest} and returns
- * {@link FullHttpResponse}.
+ * The equivalent of {@link HttpRequester} but that accepts {@link AggregatedHttpRequest} and returns
+ * {@link AggregatedHttpResponse}.
  */
 public abstract class AggregatedHttpRequester implements ListenableAsyncCloseable {
     /**
@@ -30,7 +30,7 @@ public abstract class AggregatedHttpRequester implements ListenableAsyncCloseabl
      * @param request the request to send.
      * @return The response.
      */
-    public abstract Single<FullHttpResponse> request(FullHttpRequest request);
+    public abstract Single<AggregatedHttpResponse<HttpPayloadChunk>> request(AggregatedHttpRequest<HttpPayloadChunk> request);
 
     /**
      * Get the {@link ExecutionContext} used during construction of this object.
@@ -43,15 +43,15 @@ public abstract class AggregatedHttpRequester implements ListenableAsyncCloseabl
     public abstract ExecutionContext getExecutionContext();
 
     /**
-     * Convert this {@link AggregatedHttpRequester} to the {@link HttpRequester} asynchronous API.
+     * Convert this {@link AggregatedHttpRequester} to the {@link HttpRequester} API.
      *
      * @return a {@link HttpRequester} representation of this {@link AggregatedHttpRequester}.
      */
-    public final HttpRequester<HttpPayloadChunk, HttpPayloadChunk> asRequester() {
+    public final HttpRequester asRequester() {
         return asRequesterInternal();
     }
 
-    HttpRequester<HttpPayloadChunk, HttpPayloadChunk> asRequesterInternal() {
+    HttpRequester asRequesterInternal() {
         return new AggregatedHttpRequesterToHttpRequester(this);
     }
 }

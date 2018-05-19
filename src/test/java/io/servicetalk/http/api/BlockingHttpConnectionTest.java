@@ -33,11 +33,11 @@ public class BlockingHttpConnectionTest extends AbstractBlockingHttpRequesterTes
 
     @SuppressWarnings("unchecked")
     @Override
-    protected <I, O, T extends HttpRequester<I, O> & TestHttpRequester> T newAsyncRequester(final ExecutionContext ctx,
-                                               final Function<HttpRequest<I>, Single<HttpResponse<O>>> doRequest) {
-        return (T) new TestHttpConnection<I, O>(ctx) {
+    protected <T extends HttpRequester & TestHttpRequester> T newAsyncRequester(final ExecutionContext ctx,
+                    final Function<HttpRequest<HttpPayloadChunk>, Single<HttpResponse<HttpPayloadChunk>>> doRequest) {
+        return (T) new TestHttpConnection(ctx) {
             @Override
-            public Single<HttpResponse<O>> request(final HttpRequest<I> request) {
+            public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
                 return doRequest.apply(request);
             }
         };
@@ -45,17 +45,17 @@ public class BlockingHttpConnectionTest extends AbstractBlockingHttpRequesterTes
 
     @SuppressWarnings("unchecked")
     @Override
-    protected <I, O, T extends BlockingHttpRequester<I, O> & TestHttpRequester> T newBlockingRequester(
-            final ExecutionContext ctx, final Function<BlockingHttpRequest<I>, BlockingHttpResponse<O>> doRequest) {
-        return (T) new TestBlockingHttpConnection<I, O>(ctx) {
+    protected <T extends BlockingHttpRequester & TestHttpRequester> T newBlockingRequester(final ExecutionContext ctx,
+           final Function<BlockingHttpRequest<HttpPayloadChunk>, BlockingHttpResponse<HttpPayloadChunk>> doRequest) {
+        return (T) new TestBlockingHttpConnection(ctx) {
             @Override
-            public BlockingHttpResponse<O> request(final BlockingHttpRequest<I> request) {
+            public BlockingHttpResponse<HttpPayloadChunk> request(final BlockingHttpRequest<HttpPayloadChunk> request) {
                 return doRequest.apply(request);
             }
         };
     }
 
-    private abstract static class TestHttpConnection<I, O> extends HttpConnection<I, O> implements TestHttpRequester {
+    private abstract static class TestHttpConnection extends HttpConnection implements TestHttpRequester {
         private final AtomicBoolean closed = new AtomicBoolean();
         private final CompletableProcessor onClose = new CompletableProcessor();
         private final ExecutionContext executionContext;
@@ -106,7 +106,7 @@ public class BlockingHttpConnectionTest extends AbstractBlockingHttpRequesterTes
         }
     }
 
-    private abstract static class TestBlockingHttpConnection<I, O> extends BlockingHttpConnection<I, O>
+    private abstract static class TestBlockingHttpConnection extends BlockingHttpConnection
             implements TestHttpRequester {
         private final AtomicBoolean closed = new AtomicBoolean();
         private final ExecutionContext executionContext;

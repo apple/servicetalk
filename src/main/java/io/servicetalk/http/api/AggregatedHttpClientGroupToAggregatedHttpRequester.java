@@ -25,26 +25,27 @@ import java.util.function.Function;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static java.util.Objects.requireNonNull;
 
-final class HttpClientGroupToHttpRequester<UnresolvedAddress> extends HttpRequester {
-    private final HttpClientGroup<UnresolvedAddress> clientGroup;
-    private final Function<HttpRequest<HttpPayloadChunk>, GroupKey<UnresolvedAddress>> requestToGroupKeyFunc;
+final class AggregatedHttpClientGroupToAggregatedHttpRequester<UnresolvedAddress> extends AggregatedHttpRequester {
+    private final AggregatedHttpClientGroup<UnresolvedAddress> clientGroup;
+    private final Function<AggregatedHttpRequest<HttpPayloadChunk>, GroupKey<UnresolvedAddress>> requestToGroupKeyFunc;
     private final ExecutionContext executionContext;
 
-    HttpClientGroupToHttpRequester(final HttpClientGroup<UnresolvedAddress> clientGroup,
-                                   final Function<HttpRequest<HttpPayloadChunk>,
-                                           GroupKey<UnresolvedAddress>> requestToGroupKeyFunc,
-                                   final ExecutionContext executionContext) {
+    AggregatedHttpClientGroupToAggregatedHttpRequester(AggregatedHttpClientGroup<UnresolvedAddress> clientGroup,
+            Function<AggregatedHttpRequest<HttpPayloadChunk>, GroupKey<UnresolvedAddress>> requestToGroupKeyFunc,
+            ExecutionContext executionContext) {
         this.clientGroup = requireNonNull(clientGroup);
         this.requestToGroupKeyFunc = requireNonNull(requestToGroupKeyFunc);
         this.executionContext = requireNonNull(executionContext);
     }
 
     @Override
-    public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
-        return new Single<HttpResponse<HttpPayloadChunk>>() {
+    public Single<AggregatedHttpResponse<HttpPayloadChunk>> request(
+            final AggregatedHttpRequest<HttpPayloadChunk> request) {
+        return new Single<AggregatedHttpResponse<HttpPayloadChunk>>() {
             @Override
-            protected void handleSubscribe(final Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber) {
-                final Single<HttpResponse<HttpPayloadChunk>> response;
+            protected void handleSubscribe(
+                    final Subscriber<? super AggregatedHttpResponse<HttpPayloadChunk>> subscriber) {
+                final Single<AggregatedHttpResponse<HttpPayloadChunk>> response;
                 try {
                     response = clientGroup.request(requestToGroupKeyFunc.apply(request), request);
                 } catch (final Throwable t) {

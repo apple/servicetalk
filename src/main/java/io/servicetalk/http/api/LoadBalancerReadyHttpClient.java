@@ -32,9 +32,9 @@ import static java.util.Objects.requireNonNull;
  * A {@link HttpClient} filter that will account for transient failures introduced by a {@link LoadBalancer} not being
  * ready for {@link #request(HttpRequest)} and retry/delay requests until the {@link LoadBalancer} is ready.
  */
-public final class LoadBalancerReadyHttpClient<I, O> extends HttpClient<I, O> {
+public final class LoadBalancerReadyHttpClient extends HttpClient {
     private final LoadBalancerReadySubscriber loadBalancerReadySubscriber;
-    private final HttpClient<I, O> next;
+    private final HttpClient next;
     private final int maxRetryCount;
 
     /**
@@ -47,7 +47,7 @@ public final class LoadBalancerReadyHttpClient<I, O> extends HttpClient<I, O> {
      */
     public LoadBalancerReadyHttpClient(int maxRetryCount,
                                        Publisher<Object> loadBalancerEvents,
-                                       HttpClient<I, O> next) {
+                                       HttpClient next) {
         if (maxRetryCount <= 0) {
             throw new IllegalArgumentException("maxRetryCount " + maxRetryCount + " (expected >0)");
         }
@@ -58,17 +58,18 @@ public final class LoadBalancerReadyHttpClient<I, O> extends HttpClient<I, O> {
     }
 
     @Override
-    public Single<? extends ReservedHttpConnection<I, O>> reserveConnection(final HttpRequest<I> request) {
+    public Single<? extends ReservedHttpConnection> reserveConnection(final HttpRequest<HttpPayloadChunk> request) {
         return next.reserveConnection(request).retryWhen(retryWhenFunction());
     }
 
     @Override
-    public Single<? extends UpgradableHttpResponse<I, O>> upgradeConnection(final HttpRequest<I> request) {
+    public Single<? extends UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
+            final HttpRequest<HttpPayloadChunk> request) {
         return next.upgradeConnection(request).retryWhen(retryWhenFunction());
     }
 
     @Override
-    public Single<HttpResponse<O>> request(final HttpRequest<I> request) {
+    public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
         return next.request(request).retryWhen(retryWhenFunction());
     }
 

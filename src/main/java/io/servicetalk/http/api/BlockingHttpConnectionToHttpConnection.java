@@ -26,10 +26,10 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static java.util.Objects.requireNonNull;
 
-final class BlockingHttpConnectionToHttpConnection<I, O> extends HttpConnection<I, O> {
-    private final BlockingHttpConnection<I, O> blockingConnection;
+final class BlockingHttpConnectionToHttpConnection extends HttpConnection {
+    private final BlockingHttpConnection blockingConnection;
 
-    BlockingHttpConnectionToHttpConnection(BlockingHttpConnection<I, O> blockingConnection) {
+    BlockingHttpConnectionToHttpConnection(BlockingHttpConnection blockingConnection) {
         this.blockingConnection = requireNonNull(blockingConnection);
     }
 
@@ -44,7 +44,7 @@ final class BlockingHttpConnectionToHttpConnection<I, O> extends HttpConnection<
     }
 
     @Override
-    public Single<HttpResponse<O>> request(final HttpRequest<I> request) {
+    public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
         return BlockingUtils.request(blockingConnection, request);
     }
 
@@ -68,7 +68,7 @@ final class BlockingHttpConnectionToHttpConnection<I, O> extends HttpConnection<
     }
 
     @Override
-    BlockingHttpConnection<I, O> asBlockingConnectionInternal() {
+    BlockingHttpConnection asBlockingConnectionInternal() {
         return blockingConnection;
     }
 }

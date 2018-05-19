@@ -19,24 +19,21 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 
-import java.util.function.Function;
-
-import static io.servicetalk.http.api.DefaultFullHttpRequest.from;
+import static io.servicetalk.http.api.DefaultAggregatedHttpRequest.from;
 import static java.util.Objects.requireNonNull;
 
-final class AggregatedHttpServiceToHttpService extends HttpService<HttpPayloadChunk, HttpPayloadChunk> {
+final class AggregatedHttpServiceToHttpService extends HttpService {
     private final AggregatedHttpService aggregatedService;
 
-    AggregatedHttpServiceToHttpService(final AggregatedHttpService aggregatedService) {
+    AggregatedHttpServiceToHttpService(AggregatedHttpService aggregatedService) {
         this.aggregatedService = requireNonNull(aggregatedService);
     }
 
     @Override
     public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
                                                          final HttpRequest<HttpPayloadChunk> request) {
-        return from(request, ctx.getBufferAllocator())
-                .flatMap(req -> aggregatedService.handle(ctx, req)
-                        .map(DefaultFullHttpResponse::toHttpResponse));
+        return from(request, ctx.getExecutionContext().getBufferAllocator()).flatMap(fullRequest ->
+                aggregatedService.handle(ctx, fullRequest).map(DefaultAggregatedHttpResponse::toHttpResponse));
     }
 
     @Override
@@ -45,9 +42,7 @@ final class AggregatedHttpServiceToHttpService extends HttpService<HttpPayloadCh
     }
 
     @Override
-    AggregatedHttpService asAggregatedServiceInternal(
-                                Function<HttpPayloadChunk, HttpPayloadChunk> requestPayloadTransformer,
-                                Function<HttpPayloadChunk, HttpPayloadChunk> responsePayloadTransformer) {
+    AggregatedHttpService asAggregatedServiceInternal() {
         return aggregatedService;
     }
 }

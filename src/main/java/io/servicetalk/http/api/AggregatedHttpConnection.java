@@ -23,8 +23,8 @@ import io.servicetalk.transport.api.ConnectionContext;
 import org.reactivestreams.Subscriber;
 
 /**
- * The equivalent of {@link HttpConnection} but that accepts {@link FullHttpRequest} and returns
- * {@link FullHttpResponse}.
+ * The equivalent of {@link HttpConnection} but that accepts {@link AggregatedHttpRequest} and returns
+ * {@link AggregatedHttpResponse}.
  */
 public abstract class AggregatedHttpConnection extends AggregatedHttpRequester {
     /**
@@ -45,15 +45,15 @@ public abstract class AggregatedHttpConnection extends AggregatedHttpRequester {
     public abstract <T> Publisher<T> getSettingStream(SettingKey<T> settingKey);
 
     /**
-     * Convert this {@link AggregatedHttpConnection} to the {@link HttpConnection} asynchronous API.
+     * Convert this {@link AggregatedHttpConnection} to the {@link HttpConnection} API.
      *
      * @return a {@link HttpConnection} representation of this {@link AggregatedHttpConnection}.
      */
-    public final HttpConnection<HttpPayloadChunk, HttpPayloadChunk> asClient() {
-        return asClientInternal();
+    public final HttpConnection asConnection() {
+        return asConnectionInternal();
     }
 
-    HttpConnection<HttpPayloadChunk, HttpPayloadChunk> asClientInternal() {
+    HttpConnection asConnectionInternal() {
         return new AggregatedHttpConnectionToHttpConnection(this);
     }
 }

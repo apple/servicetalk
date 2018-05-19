@@ -49,7 +49,7 @@ public interface BlockingHttpRequest<T> extends HttpRequestMetaData {
      *
      * @param transformer {@link Function} which converts the payload body to another type.
      * @param <R> Type of the resulting payload body.
-     * @return New {@code HttpRequest} with the altered {@link #getPayloadBody()}.
+     * @return New {@link BlockingHttpRequest} with the altered {@link #getPayloadBody()}.
      */
     <R> BlockingHttpRequest<R> transformPayloadBody(Function<BlockingIterable<T>, BlockingIterable<R>> transformer);
 

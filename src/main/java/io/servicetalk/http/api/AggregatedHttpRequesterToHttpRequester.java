@@ -19,12 +19,10 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import java.util.function.Function;
-
-import static io.servicetalk.http.api.DefaultFullHttpRequest.from;
+import static io.servicetalk.http.api.DefaultAggregatedHttpRequest.from;
 import static java.util.Objects.requireNonNull;
 
-final class AggregatedHttpRequesterToHttpRequester extends HttpRequester<HttpPayloadChunk, HttpPayloadChunk> {
+final class AggregatedHttpRequesterToHttpRequester extends HttpRequester {
     private final AggregatedHttpRequester aggregatedRequester;
 
     AggregatedHttpRequesterToHttpRequester(final AggregatedHttpRequester aggregatedRequester) {
@@ -34,7 +32,7 @@ final class AggregatedHttpRequesterToHttpRequester extends HttpRequester<HttpPay
     @Override
     public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
         return from(request, aggregatedRequester.getExecutionContext().getBufferAllocator())
-                .flatMap(aggregatedRequester::request).map(DefaultFullHttpResponse::toHttpResponse);
+                .flatMap(aggregatedRequester::request).map(DefaultAggregatedHttpResponse::toHttpResponse);
     }
 
     @Override
@@ -53,9 +51,7 @@ final class AggregatedHttpRequesterToHttpRequester extends HttpRequester<HttpPay
     }
 
     @Override
-    AggregatedHttpRequester asAggregatedRequesterInternal(
-            Function<HttpPayloadChunk, HttpPayloadChunk> requestPayloadTransformer,
-            Function<HttpPayloadChunk, HttpPayloadChunk> responsePayloadTransformer) {
+    AggregatedHttpRequester asAggregatedRequesterInternal() {
         return aggregatedRequester;
     }
 }

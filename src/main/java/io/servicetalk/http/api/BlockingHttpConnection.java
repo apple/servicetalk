@@ -21,11 +21,8 @@ import io.servicetalk.transport.api.ConnectionContext;
 
 /**
  * The equivalent of {@link HttpConnection} but with synchronous/blocking APIs instead of asynchronous APIs.
- *
- * @param <I> Type of payload of a request handled by this {@link BlockingHttpConnection}.
- * @param <O> Type of payload of a response handled by this {@link BlockingHttpConnection}.
  */
-public abstract class BlockingHttpConnection<I, O> extends BlockingHttpRequester<I, O> {
+public abstract class BlockingHttpConnection extends BlockingHttpRequester {
     /**
      * Get the {@link ConnectionContext}.
      *
@@ -44,18 +41,18 @@ public abstract class BlockingHttpConnection<I, O> extends BlockingHttpRequester
     public abstract <T> BlockingIterable<T> getSettingIterable(SettingKey<T> settingKey);
 
     /**
-     * Convert this {@link BlockingHttpConnection} to the {@link HttpConnection} asynchronous API.
+     * Convert this {@link BlockingHttpConnection} to the {@link HttpConnection} API.
      * <p>
      * Note that the resulting {@link HttpConnection} will still be subject to any blocking, in memory aggregation, and
      * other behavior as this {@link BlockingHttpConnection}.
      *
      * @return a {@link HttpConnection} representation of this {@link BlockingHttpConnection}.
      */
-    public final HttpConnection<I, O> asAsynchronousClient() {
-        return asAsynchronousClientInternal();
+    public final HttpConnection asAsynchronousConnection() {
+        return asAsynchronousConnectionInternal();
     }
 
-    HttpConnection<I, O> asAsynchronousClientInternal() {
-        return new BlockingHttpConnectionToHttpConnection<>(this);
+    HttpConnection asAsynchronousConnectionInternal() {
+        return new BlockingHttpConnectionToHttpConnection(this);
     }
 }

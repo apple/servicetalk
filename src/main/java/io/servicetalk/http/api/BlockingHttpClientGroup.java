@@ -22,10 +22,8 @@ import io.servicetalk.http.api.BlockingHttpClient.BlockingReservedHttpConnection
  * The equivalent of {@link HttpClientGroup} but with synchronous/blocking APIs instead of asynchronous APIs.
  *
  * @param <UnresolvedAddress> The address type used to create new {@link BlockingHttpClient}s.
- * @param <I> Type of payload of a request handled by this {@link BlockingHttpClient}.
- * @param <O> Type of payload of a response handled by this {@link BlockingHttpClient}.
  */
-public abstract class BlockingHttpClientGroup<UnresolvedAddress, I, O> implements AutoCloseable {
+public abstract class BlockingHttpClientGroup<UnresolvedAddress> implements AutoCloseable {
     /**
      * Locate or create a client and delegate to {@link BlockingHttpClient#request(BlockingHttpRequest)}.
      *
@@ -36,7 +34,8 @@ public abstract class BlockingHttpClientGroup<UnresolvedAddress, I, O> implement
      * @throws Exception if an exception occurs during the request processing.
      * @see BlockingHttpClient#request(BlockingHttpRequest)
      */
-    public abstract BlockingHttpResponse<O> request(GroupKey<UnresolvedAddress> key, BlockingHttpRequest<I> request)
+    public abstract BlockingHttpResponse<HttpPayloadChunk> request(GroupKey<UnresolvedAddress> key,
+                                                                   BlockingHttpRequest<HttpPayloadChunk> request)
             throws Exception;
 
     /**
@@ -50,23 +49,23 @@ public abstract class BlockingHttpClientGroup<UnresolvedAddress, I, O> implement
      * @throws Exception if a exception occurs during the reservation process.
      * @see BlockingHttpClient#reserveConnection(BlockingHttpRequest)
      */
-    public abstract BlockingReservedHttpConnection<I, O> reserveConnection(GroupKey<UnresolvedAddress> key,
-                                                                           BlockingHttpRequest<I> request)
+    public abstract BlockingReservedHttpConnection reserveConnection(GroupKey<UnresolvedAddress> key,
+                                                                     BlockingHttpRequest<HttpPayloadChunk> request)
             throws Exception;
 
     /**
-     * Convert this {@link BlockingHttpClientGroup} to the {@link HttpClientGroup} asynchronous API.
+     * Convert this {@link BlockingHttpClientGroup} to the {@link HttpClientGroup} API.
      * <p>
      * Note that the resulting {@link HttpClientGroup} will still be subject to any blocking, in memory aggregation, and
      * other behavior as this {@link BlockingHttpClientGroup}.
      *
      * @return a {@link HttpClientGroup} representation of this {@link BlockingHttpClientGroup}.
      */
-    public final HttpClientGroup<UnresolvedAddress, I, O> asAsynchronousClientGroup() {
+    public final HttpClientGroup<UnresolvedAddress> asAsynchronousClientGroup() {
         return asAsynchronousClientGroupInternal();
     }
 
-    HttpClientGroup<UnresolvedAddress, I, O> asAsynchronousClientGroupInternal() {
+    HttpClientGroup<UnresolvedAddress> asAsynchronousClientGroupInternal() {
         return new BlockingHttpClientGroupToHttpClientGroup<>(this);
     }
 }

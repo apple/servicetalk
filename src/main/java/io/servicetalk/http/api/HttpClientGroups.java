@@ -34,12 +34,10 @@ public final class HttpClientGroups {
      *
      * @param clientFactory A factory to create a {@link HttpClient} for the passed {@link GroupKey}.
      * @param <UnresolvedAddress> The address type used to create new {@link HttpClient}s.
-     * @param <I> The type of payload for the requests sent by the returned {@link HttpClientGroup}.
-     * @param <O> The type of payload for the response received by the returned {@link HttpClientGroup}.
      * @return A new {@link HttpClientGroup}.
      */
-    public static <UnresolvedAddress, I, O> HttpClientGroup<UnresolvedAddress, I, O> newHttpClientGroup(
-            final Function<GroupKey<UnresolvedAddress>, HttpClient<I, O>> clientFactory) {
+    public static <UnresolvedAddress> HttpClientGroup<UnresolvedAddress> newHttpClientGroup(
+            final Function<GroupKey<UnresolvedAddress>, HttpClient> clientFactory) {
         return new DefaultHttpClientGroup<>(clientFactory);
     }
 }

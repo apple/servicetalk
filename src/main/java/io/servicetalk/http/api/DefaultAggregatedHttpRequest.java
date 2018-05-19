@@ -15,36 +15,51 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
 
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.http.api.HttpPayloadChunks.aggregateChunks;
 import static io.servicetalk.http.api.HttpPayloadChunks.newLastPayloadChunk;
+import static java.lang.System.lineSeparator;
 
-final class DefaultFullHttpRequest implements FullHttpRequest {
-
+final class DefaultAggregatedHttpRequest<T> implements AggregatedHttpRequest<T> {
     private final HttpRequestMetaData original;
-    private final Buffer payloadBody;
+    private final T payloadBody;
     private final HttpHeaders trailers;
 
-    DefaultFullHttpRequest(HttpRequestMetaData original, Buffer payloadBody, HttpHeaders trailers) {
+    DefaultAggregatedHttpRequest(HttpRequestMetaData original, T payloadBody, HttpHeaders trailers) {
         this.original = original;
         this.payloadBody = payloadBody;
         this.trailers = trailers;
     }
 
     @Override
-    public FullHttpRequest setRawPath(final String path) {
+    public T getPayloadBody() {
+        return payloadBody;
+    }
+
+    @Override
+    public HttpHeaders getTrailers() {
+        return trailers;
+    }
+
+    @Override
+    public <R> AggregatedHttpRequest<R> transformPayloadBody(final Function<T, R> transformer) {
+        return new DefaultAggregatedHttpRequest<>(original, transformer.apply(payloadBody), trailers);
+    }
+
+    @Override
+    public AggregatedHttpRequest<T> setRawPath(final String path) {
         original.setRawPath(path);
         return this;
     }
 
     @Override
-    public FullHttpRequest setPath(final String path) {
+    public AggregatedHttpRequest<T> setPath(final String path) {
         original.setPath(path);
         return this;
     }
@@ -60,7 +75,7 @@ final class DefaultFullHttpRequest implements FullHttpRequest {
     }
 
     @Override
-    public FullHttpRequest setRawQuery(final String query) {
+    public AggregatedHttpRequest<T> setRawQuery(final String query) {
         original.setRawQuery(query);
         return this;
     }
@@ -71,7 +86,7 @@ final class DefaultFullHttpRequest implements FullHttpRequest {
     }
 
     @Override
-    public FullHttpRequest setVersion(final HttpProtocolVersion version) {
+    public AggregatedHttpRequest<T> setVersion(final HttpProtocolVersion version) {
         original.setVersion(version);
         return this;
     }
@@ -82,8 +97,9 @@ final class DefaultFullHttpRequest implements FullHttpRequest {
     }
 
     @Override
-    public String toString(final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> headerFilter) {
-        return original.toString(headerFilter);
+    public String toString(
+            final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> headerFilter) {
+        return original.toString(headerFilter) + lineSeparator() + trailers.toString(headerFilter);
     }
 
     @Override
@@ -92,7 +108,7 @@ final class DefaultFullHttpRequest implements FullHttpRequest {
     }
 
     @Override
-    public FullHttpRequest setMethod(final HttpRequestMethod method) {
+    public AggregatedHttpRequest<T> setMethod(final HttpRequestMethod method) {
         original.setMethod(method);
         return this;
     }
@@ -103,7 +119,7 @@ final class DefaultFullHttpRequest implements FullHttpRequest {
     }
 
     @Override
-    public FullHttpRequest setRequestTarget(final String requestTarget) {
+    public AggregatedHttpRequest<T> setRequestTarget(final String requestTarget) {
         original.setRequestTarget(requestTarget);
         return this;
     }
@@ -118,35 +134,17 @@ final class DefaultFullHttpRequest implements FullHttpRequest {
         return original.getPath();
     }
 
-    @Override
-    public HttpHeaders getTrailers() {
-        return trailers;
-    }
-
-    @Override
-    public Buffer getPayloadBody() {
-        return payloadBody;
-    }
-
-    @Override
-    public FullHttpRequest duplicate() {
-        return new DefaultFullHttpRequest(original, payloadBody.duplicate(), trailers);
-    }
-
-    @Override
-    public FullHttpRequest replace(final Buffer content) {
-        return new DefaultFullHttpRequest(original, content, trailers);
-    }
-
-    static HttpRequest<HttpPayloadChunk> toHttpRequest(FullHttpRequest request) {
+    static HttpRequest<HttpPayloadChunk> toHttpRequest(AggregatedHttpRequest<HttpPayloadChunk> request) {
         return new DefaultHttpRequest<>(request.getMethod(), request.getRequestTarget(), request.getVersion(),
                 // We can not simply write "request" here as the encoder will see two metadata objects,
                 // one created by splice and the next the chunk itself.
-                just(newLastPayloadChunk(request.getPayloadBody(), request.getTrailers())), request.getHeaders());
+                just(newLastPayloadChunk(request.getPayloadBody().getContent(), request.getTrailers())),
+                request.getHeaders());
     }
 
-    static Single<FullHttpRequest> from(HttpRequest<HttpPayloadChunk> original, BufferAllocator allocator) {
+    static Single<AggregatedHttpRequest<HttpPayloadChunk>> from(HttpRequest<HttpPayloadChunk> original,
+                                                                BufferAllocator allocator) {
         final Single<LastHttpPayloadChunk> reduce = aggregateChunks(original.getPayloadBody(), allocator);
-        return reduce.map(payload -> new DefaultFullHttpRequest(original, payload.getContent(), payload.getTrailers()));
+        return reduce.map(payload -> new DefaultAggregatedHttpRequest<>(original, payload, payload.getTrailers()));
     }
 }

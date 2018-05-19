@@ -52,4 +52,18 @@ final class DefaultLastHttpPayloadChunk extends DefaultHttpPayloadChunk implemen
     public LastHttpPayloadChunk replace(final Buffer content) {
         return new DefaultLastHttpPayloadChunk(content, trailers);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || o.getClass() != getClass()) {
+            return false;
+        }
+        DefaultLastHttpPayloadChunk that = (DefaultLastHttpPayloadChunk) o;
+        return getContent().equals(that.getContent()) && trailers.equals(that.trailers);
+    }
+
+    @Override
+    public int hashCode() {
+        return 31 * (31 + getContent().hashCode()) + trailers.hashCode();
+    }
 }

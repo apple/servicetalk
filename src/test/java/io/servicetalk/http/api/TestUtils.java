@@ -15,16 +15,15 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.api.Buffer;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 
-/**
- * A special instance of {@link HttpPayloadChunk} that terminates the payload and contains
- * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer headers</a>.
- */
-public interface LastHttpPayloadChunk extends HttpPayloadChunk, LastHttpMetaData {
-    @Override
-    LastHttpPayloadChunk duplicate();
+final class TestUtils {
+    private TestUtils() {
+        // no instances
+    }
 
-    @Override
-    LastHttpPayloadChunk replace(Buffer content);
+    static HttpPayloadChunk chunkFromString(String ascii) {
+        return newPayloadChunk(DEFAULT_ALLOCATOR.fromAscii(ascii));
+    }
 }

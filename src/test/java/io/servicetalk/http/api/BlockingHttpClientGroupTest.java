@@ -47,6 +47,8 @@ import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponses.newResponse;
+import static io.servicetalk.http.api.TestUtils.chunkFromString;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -61,11 +63,11 @@ public class BlockingHttpClientGroupTest {
     @Mock
     private ConnectionContext mockCtx;
     @Rule
-    public final PublisherRule<String> publisherRule = new PublisherRule<>();
+    public final PublisherRule<HttpPayloadChunk> publisherRule = new PublisherRule<>();
     @Mock
-    private BlockingIterable<String> mockIterable;
+    private BlockingIterable<HttpPayloadChunk> mockIterable;
     @Mock
-    private BlockingIterator<String> mockIterator;
+    private BlockingIterator<HttpPayloadChunk> mockIterator;
     @Mock
     private GroupKey<String> mockKey;
     @Mock
@@ -82,10 +84,10 @@ public class BlockingHttpClientGroupTest {
 
     @Test
     public void asyncToSyncNoPayload() throws Exception {
-        HttpClientGroup<String, String, String> asyncGroup = newAsyncGroup(
+        HttpClientGroup<String> asyncGroup = newAsyncGroup(
                 (key, req) -> success(newResponse(HTTP_1_1, OK)));
-        BlockingHttpClientGroup<String, String, String> syncGroup = asyncGroup.asBlockingClientGroup();
-        BlockingHttpResponse<String> syncResponse = syncGroup.request(mockKey,
+        BlockingHttpClientGroup<String> syncGroup = asyncGroup.asBlockingClientGroup();
+        BlockingHttpResponse<HttpPayloadChunk> syncResponse = syncGroup.request(mockKey,
                 BlockingHttpRequests.newRequest(HTTP_1_1, GET, "/"));
         assertEquals(HTTP_1_1, syncResponse.getVersion());
         assertEquals(OK, syncResponse.getStatus());
@@ -93,39 +95,39 @@ public class BlockingHttpClientGroupTest {
 
     @Test
     public void asyncToSyncWithPayload() throws Exception {
-        HttpClientGroup<String, String, String> asyncGroup = newAsyncGroup(
-                (key, req) -> success(newResponse(HTTP_1_1, OK, just("hello"))));
-        BlockingHttpClientGroup<String, String, String> syncGroup = asyncGroup.asBlockingClientGroup();
-        BlockingHttpResponse<String> syncResponse = syncGroup.request(mockKey,
+        HttpClientGroup<String> asyncGroup = newAsyncGroup(
+                (key, req) -> success(newResponse(HTTP_1_1, OK, just(chunkFromString("hello")))));
+        BlockingHttpClientGroup<String> syncGroup = asyncGroup.asBlockingClientGroup();
+        BlockingHttpResponse<HttpPayloadChunk> syncResponse = syncGroup.request(mockKey,
                 BlockingHttpRequests.newRequest(HTTP_1_1, GET, "/"));
         assertEquals(HTTP_1_1, syncResponse.getVersion());
         assertEquals(OK, syncResponse.getStatus());
-        BlockingIterator<String> iterator = syncResponse.getPayloadBody().iterator();
+        BlockingIterator<HttpPayloadChunk> iterator = syncResponse.getPayloadBody().iterator();
         assertTrue(iterator.hasNext());
-        assertEquals("hello", iterator.next());
+        assertEquals(chunkFromString("hello"), iterator.next());
         assertFalse(iterator.hasNext());
     }
 
     @Test
     public void asyncToSyncClose() throws Exception {
-        TestHttpClientGroup<String, String, String> asyncGroup = newAsyncGroup(
+        TestHttpClientGroup<String> asyncGroup = newAsyncGroup(
                 (key, req) -> error(new IllegalStateException("shouldn't be called!")));
-        BlockingHttpClientGroup<String, String, String> syncGroup = asyncGroup.asBlockingClientGroup();
+        BlockingHttpClientGroup<String> syncGroup = asyncGroup.asBlockingClientGroup();
         syncGroup.close();
         assertTrue(asyncGroup.isClosed());
     }
 
     @Test
     public void asyncToSyncCancelPropagated() throws Exception {
-        TestHttpClientGroup<String, String, String> asyncGroup = newAsyncGroup(
+        TestHttpClientGroup<String> asyncGroup = newAsyncGroup(
                 (key, req) -> success(newResponse(HTTP_1_1, OK, publisherRule.getPublisher())));
-        BlockingHttpClientGroup<String, String, String> syncGroup = asyncGroup.asBlockingClientGroup();
-        BlockingHttpResponse<String> syncResponse = syncGroup.request(mockKey,
+        BlockingHttpClientGroup<String> syncGroup = asyncGroup.asBlockingClientGroup();
+        BlockingHttpResponse<HttpPayloadChunk> syncResponse = syncGroup.request(mockKey,
                 BlockingHttpRequests.newRequest(HTTP_1_1, GET, "/"));
         assertEquals(HTTP_1_1, syncResponse.getVersion());
         assertEquals(OK, syncResponse.getStatus());
-        BlockingIterator<String> iterator = syncResponse.getPayloadBody().iterator();
-        publisherRule.sendItems("hello");
+        BlockingIterator<HttpPayloadChunk> iterator = syncResponse.getPayloadBody().iterator();
+        publisherRule.sendItems(chunkFromString("hello"));
         assertTrue(iterator.hasNext());
         iterator.close();
         publisherRule.verifyCancelled();
@@ -133,10 +135,10 @@ public class BlockingHttpClientGroupTest {
 
     @Test
     public void syncToAsyncNoPayload() throws Exception {
-        BlockingHttpClientGroup<String, String, String> syncGroup = newBlockingGroup(
+        BlockingHttpClientGroup<String> syncGroup = newBlockingGroup(
                 (key, req) -> BlockingHttpResponses.newResponse(HTTP_1_1, OK));
-        HttpClientGroup<String, String, String> asyncRequester = syncGroup.asAsynchronousClientGroup();
-        HttpResponse<String> asyncResponse = awaitIndefinitely(asyncRequester.request(mockKey,
+        HttpClientGroup<String> asyncRequester = syncGroup.asAsynchronousClientGroup();
+        HttpResponse<HttpPayloadChunk> asyncResponse = awaitIndefinitely(asyncRequester.request(mockKey,
                 HttpRequests.newRequest(HTTP_1_1, GET, "/")));
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.getVersion());
@@ -145,38 +147,38 @@ public class BlockingHttpClientGroupTest {
 
     @Test
     public void syncToAsyncWithPayload() throws Exception {
-        BlockingHttpClientGroup<String, String, String> syncGroup = newBlockingGroup(
-                (key, req) -> BlockingHttpResponses.newResponse(HTTP_1_1, OK, singleton("hello")));
-        HttpClientGroup<String, String, String> asyncRequester = syncGroup.asAsynchronousClientGroup();
-        HttpResponse<String> asyncResponse = awaitIndefinitely(asyncRequester.request(mockKey,
+        BlockingHttpClientGroup<String> syncGroup = newBlockingGroup(
+                (key, req) -> BlockingHttpResponses.newResponse(HTTP_1_1, OK, singleton(chunkFromString("hello"))));
+        HttpClientGroup<String> asyncRequester = syncGroup.asAsynchronousClientGroup();
+        HttpResponse<HttpPayloadChunk> asyncResponse = awaitIndefinitely(asyncRequester.request(mockKey,
                 HttpRequests.newRequest(HTTP_1_1, GET, "/")));
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.getVersion());
         assertEquals(OK, asyncResponse.getStatus());
         assertEquals("hello", awaitIndefinitely(asyncResponse.getPayloadBody()
-                .reduce(() -> "", (acc, next) -> acc + next)));
+                .reduce(() -> "", (acc, next) -> acc + next.getContent().toString(US_ASCII))));
     }
 
     @Test
     public void syncToAsyncClose() throws Exception {
-        TestBlockingHttpClientGroup<String, String, String> syncGroup = newBlockingGroup((key, req) -> {
+        TestBlockingHttpClientGroup<String> syncGroup = newBlockingGroup((key, req) -> {
             throw new IllegalStateException("shouldn't be called!");
         });
-        HttpClientGroup<String, String, String> asyncRequester = syncGroup.asAsynchronousClientGroup();
+        HttpClientGroup<String> asyncRequester = syncGroup.asAsynchronousClientGroup();
         awaitIndefinitely(asyncRequester.closeAsync());
         assertTrue(syncGroup.isClosed());
     }
 
     @Test
     public void syncToAsyncCancelPropagated() throws Exception {
-        TestBlockingHttpClientGroup<String, String, String> syncGroup = newBlockingGroup((key, req) ->
+        TestBlockingHttpClientGroup<String> syncGroup = newBlockingGroup((key, req) ->
                 BlockingHttpResponses.newResponse(HTTP_1_1, OK, mockIterable));
-        HttpClientGroup<String, String, String> asyncRequester = syncGroup.asAsynchronousClientGroup();
-        HttpResponse<String> asyncResponse = awaitIndefinitely(asyncRequester.request(mockKey,
+        HttpClientGroup<String> asyncRequester = syncGroup.asAsynchronousClientGroup();
+        HttpResponse<HttpPayloadChunk> asyncResponse = awaitIndefinitely(asyncRequester.request(mockKey,
                 HttpRequests.newRequest(HTTP_1_1, GET, "/")));
         assertNotNull(asyncResponse);
         CountDownLatch latch = new CountDownLatch(1);
-        asyncResponse.getPayloadBody().subscribe(new Subscriber<String>() {
+        asyncResponse.getPayloadBody().subscribe(new Subscriber<HttpPayloadChunk>() {
             @Override
             public void onSubscribe(final Subscription s) {
                 s.cancel();
@@ -184,7 +186,7 @@ public class BlockingHttpClientGroupTest {
             }
 
             @Override
-            public void onNext(final String s) {
+            public void onNext(final HttpPayloadChunk s) {
             }
 
             @Override
@@ -199,42 +201,44 @@ public class BlockingHttpClientGroupTest {
         verify(mockIterator).close();
     }
 
-    private static <UnresolvedAddress, I, O> TestHttpClientGroup<UnresolvedAddress, I, O> newAsyncGroup(
-            BiFunction<GroupKey<UnresolvedAddress>, HttpRequest<I>, Single<HttpResponse<O>>> doRequest) {
-        return new TestHttpClientGroup<UnresolvedAddress, I, O>() {
+    private static <UnresolvedAddress> TestHttpClientGroup<UnresolvedAddress> newAsyncGroup(
+            BiFunction<GroupKey<UnresolvedAddress>, HttpRequest<HttpPayloadChunk>,
+                    Single<HttpResponse<HttpPayloadChunk>>> doRequest) {
+        return new TestHttpClientGroup<UnresolvedAddress>() {
             @Override
-            public Single<HttpResponse<O>> request(final GroupKey<UnresolvedAddress> key,
-                                                   final HttpRequest<I> request) {
+            public Single<HttpResponse<HttpPayloadChunk>> request(final GroupKey<UnresolvedAddress> key,
+                                                   final HttpRequest<HttpPayloadChunk> request) {
                 return doRequest.apply(key, request);
             }
 
             @Override
-            public Single<? extends HttpClient.ReservedHttpConnection<I, O>> reserveConnection(
-                    final GroupKey<UnresolvedAddress> key, final HttpRequest<I> request) {
+            public Single<? extends HttpClient.ReservedHttpConnection> reserveConnection(
+                    final GroupKey<UnresolvedAddress> key, final HttpRequest<HttpPayloadChunk> request) {
                 return error(new UnsupportedOperationException());
             }
         };
     }
 
-    private static <UnresolvedAddress, I, O> TestBlockingHttpClientGroup<UnresolvedAddress, I, O> newBlockingGroup(
-            BiFunction<GroupKey<UnresolvedAddress>, BlockingHttpRequest<I>, BlockingHttpResponse<O>> doRequest) {
-        return new TestBlockingHttpClientGroup<UnresolvedAddress, I, O>() {
+    private static <UnresolvedAddress> TestBlockingHttpClientGroup<UnresolvedAddress> newBlockingGroup(
+            BiFunction<GroupKey<UnresolvedAddress>, BlockingHttpRequest<HttpPayloadChunk>,
+                    BlockingHttpResponse<HttpPayloadChunk>> doRequest) {
+        return new TestBlockingHttpClientGroup<UnresolvedAddress>() {
             @Override
-            public BlockingHttpResponse<O> request(final GroupKey<UnresolvedAddress> key,
-                                                   final BlockingHttpRequest<I> request) {
+            public BlockingHttpResponse<HttpPayloadChunk> request(final GroupKey<UnresolvedAddress> key,
+                                                   final BlockingHttpRequest<HttpPayloadChunk> request) {
                 return doRequest.apply(key, request);
             }
 
             @Override
-            public BlockingHttpClient.BlockingReservedHttpConnection<I, O> reserveConnection(
-                    final GroupKey<UnresolvedAddress> key, final BlockingHttpRequest<I> request) {
+            public BlockingHttpClient.BlockingReservedHttpConnection reserveConnection(
+                    final GroupKey<UnresolvedAddress> key, final BlockingHttpRequest<HttpPayloadChunk> request) {
                 throw new UnsupportedOperationException();
             }
         };
     }
 
-    private abstract static class TestHttpClientGroup<UnresolvedAddress, I, O> extends
-                                                                      HttpClientGroup<UnresolvedAddress, I, O> {
+    private abstract static class TestHttpClientGroup<UnresolvedAddress> extends
+                                                                      HttpClientGroup<UnresolvedAddress> {
         private final AtomicBoolean closed = new AtomicBoolean();
         private final CompletableProcessor onClose = new CompletableProcessor();
 
@@ -261,8 +265,8 @@ public class BlockingHttpClientGroupTest {
         }
     }
 
-    private abstract static class TestBlockingHttpClientGroup<UnresolvedAddress, I, O> extends
-            BlockingHttpClientGroup<UnresolvedAddress, I, O> {
+    private abstract static class TestBlockingHttpClientGroup<UnresolvedAddress> extends
+            BlockingHttpClientGroup<UnresolvedAddress> {
         private final AtomicBoolean closed = new AtomicBoolean();
 
         @Override

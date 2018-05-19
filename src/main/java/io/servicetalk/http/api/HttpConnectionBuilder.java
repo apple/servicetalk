@@ -30,10 +30,8 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
  * A builder for {@link HttpConnection} objects.
  *
  * @param <ResolvedAddress> A resolved address that can be used for connecting
- * @param <I> The type of content of the request
- * @param <O> The type of content of the response
  */
-public interface HttpConnectionBuilder<ResolvedAddress, I, O> {
+public interface HttpConnectionBuilder<ResolvedAddress> {
 
     /**
      * Create a new {@link HttpConnection}.
@@ -42,7 +40,7 @@ public interface HttpConnectionBuilder<ResolvedAddress, I, O> {
      * @param resolvedAddress a resolved address to use when connecting
      * @return A single that will complete with the {@link HttpConnection}
      */
-    Single<HttpConnection<I, O>> build(ExecutionContext executionContext, ResolvedAddress resolvedAddress);
+    Single<HttpConnection> build(ExecutionContext executionContext, ResolvedAddress resolvedAddress);
 
     /**
      * Create a new {@link BlockingHttpConnection} and waits till it is created.
@@ -52,8 +50,8 @@ public interface HttpConnectionBuilder<ResolvedAddress, I, O> {
      * @return {@link BlockingHttpConnection}
      * @throws Exception If the connection can not be created.
      */
-    default BlockingHttpConnection<I, O> buildBlocking(ExecutionContext executionContext,
-                                                       ResolvedAddress resolvedAddress) throws Exception {
+    default BlockingHttpConnection buildBlocking(ExecutionContext executionContext,
+                                                 ResolvedAddress resolvedAddress) throws Exception {
         return awaitIndefinitelyNonNull(build(executionContext, resolvedAddress)).asBlockingConnection();
     }
 
@@ -76,9 +74,9 @@ public interface HttpConnectionBuilder<ResolvedAddress, I, O> {
      * @return A {@link ConnectionFactory} that will use the {@link #build(ExecutionContext, Object)}
      * method to create new {@link HttpConnection} objects.
      */
-    default <FilteredConnection extends HttpConnection<I, O>> ConnectionFactory<ResolvedAddress, FilteredConnection>
+    default <FilteredConnection extends HttpConnection> ConnectionFactory<ResolvedAddress, FilteredConnection>
         asConnectionFactory(ExecutionContext executionContext,
-                            Function<HttpConnection<I, O>, FilteredConnection> connectionFilter) {
+                            Function<HttpConnection, FilteredConnection> connectionFilter) {
 
         return new ConnectionFactory<ResolvedAddress, FilteredConnection>() {
             private final ListenableAsyncCloseable close = emptyAsyncCloseable();

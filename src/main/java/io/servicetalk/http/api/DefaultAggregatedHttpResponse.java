@@ -15,24 +15,26 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
 
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.http.api.HttpPayloadChunks.aggregateChunks;
 import static io.servicetalk.http.api.HttpPayloadChunks.newLastPayloadChunk;
+import static java.lang.System.lineSeparator;
 
-final class DefaultFullHttpResponse implements FullHttpResponse {
+final class DefaultAggregatedHttpResponse<T> implements AggregatedHttpResponse<T> {
 
     private final HttpResponseMetaData original;
-    private final Buffer payloadBody;
+    private final T payloadBody;
     private final HttpHeaders trailers;
 
-    DefaultFullHttpResponse(final HttpResponseMetaData original, final Buffer payloadBody,
-                            final HttpHeaders trailers) {
+    DefaultAggregatedHttpResponse(final HttpResponseMetaData original,
+                                  final T payloadBody,
+                                  final HttpHeaders trailers) {
         this.original = original;
         this.payloadBody = payloadBody;
         this.trailers = trailers;
@@ -44,7 +46,7 @@ final class DefaultFullHttpResponse implements FullHttpResponse {
     }
 
     @Override
-    public FullHttpResponse setVersion(final HttpProtocolVersion version) {
+    public AggregatedHttpResponse<T> setVersion(final HttpProtocolVersion version) {
         original.setVersion(version);
         return this;
     }
@@ -56,7 +58,7 @@ final class DefaultFullHttpResponse implements FullHttpResponse {
 
     @Override
     public String toString(final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> headerFilter) {
-        return original.toString(headerFilter);
+        return original.toString(headerFilter) + lineSeparator() + trailers.toString(headerFilter);
     }
 
     @Override
@@ -65,14 +67,19 @@ final class DefaultFullHttpResponse implements FullHttpResponse {
     }
 
     @Override
-    public FullHttpResponse setStatus(final HttpResponseStatus status) {
+    public AggregatedHttpResponse<T> setStatus(final HttpResponseStatus status) {
         original.setStatus(status);
         return this;
     }
 
     @Override
-    public Buffer getPayloadBody() {
+    public T getPayloadBody() {
         return payloadBody;
+    }
+
+    @Override
+    public <R> AggregatedHttpResponse<R> transformPayloadBody(final Function<T, R> transformer) {
+        return new DefaultAggregatedHttpResponse<>(original, transformer.apply(payloadBody), trailers);
     }
 
     @Override
@@ -80,25 +87,16 @@ final class DefaultFullHttpResponse implements FullHttpResponse {
         return trailers;
     }
 
-    @Override
-    public FullHttpResponse duplicate() {
-        return new DefaultFullHttpResponse(original, payloadBody.duplicate(), trailers);
-    }
-
-    @Override
-    public FullHttpResponse replace(final Buffer content) {
-        return new DefaultFullHttpResponse(original, content, trailers);
-    }
-
-    static HttpResponse<HttpPayloadChunk> toHttpResponse(FullHttpResponse response) {
+    static HttpResponse<HttpPayloadChunk> toHttpResponse(AggregatedHttpResponse<HttpPayloadChunk> response) {
         return new DefaultHttpResponse<>(response.getStatus(), response.getVersion(), response.getHeaders(),
                 // We can not simply write "request" here as the encoder will see two metadata objects,
                 // one created by splice and the next the chunk itself.
-                just(newLastPayloadChunk(response.getContent(), response.getTrailers())));
+                just(newLastPayloadChunk(response.getPayloadBody().getContent(), response.getTrailers())));
     }
 
-    static Single<FullHttpResponse> from(HttpResponse<HttpPayloadChunk> original, BufferAllocator allocator) {
+    static Single<AggregatedHttpResponse<HttpPayloadChunk>> from(HttpResponse<HttpPayloadChunk> original,
+                                                                 BufferAllocator allocator) {
         final Single<LastHttpPayloadChunk> reduce = aggregateChunks(original.getPayloadBody(), allocator);
-        return reduce.map(payload -> new DefaultFullHttpResponse(original, payload.getContent(), payload.getTrailers()));
+        return reduce.map(payload -> new DefaultAggregatedHttpResponse<>(original, payload, payload.getTrailers()));
     }
 }

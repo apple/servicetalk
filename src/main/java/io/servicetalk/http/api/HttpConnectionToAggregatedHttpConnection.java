@@ -21,109 +21,50 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import java.util.function.Function;
-
-import static io.servicetalk.http.api.DefaultFullHttpRequest.toHttpRequest;
-import static io.servicetalk.http.api.DefaultFullHttpResponse.from;
+import static io.servicetalk.http.api.DefaultAggregatedHttpRequest.toHttpRequest;
+import static io.servicetalk.http.api.DefaultAggregatedHttpResponse.from;
 import static java.util.Objects.requireNonNull;
 
-final class HttpConnectionToAggregatedHttpConnection<I, O> extends AggregatedHttpConnection {
-    private final HttpPayloadChunkConnection payloadConnection;
+final class HttpConnectionToAggregatedHttpConnection extends AggregatedHttpConnection {
+    private final HttpConnection connection;
 
-    HttpConnectionToAggregatedHttpConnection(final HttpConnection<I, O> connection,
-                                             final Function<HttpPayloadChunk, I> requestPayloadTransformer,
-                                             final Function<O, HttpPayloadChunk> responsePayloadTransformer) {
-        payloadConnection = new HttpPayloadChunkConnection(
-                connection, requestPayloadTransformer, responsePayloadTransformer);
+    HttpConnectionToAggregatedHttpConnection(final HttpConnection connection) {
+        this.connection = requireNonNull(connection);
     }
 
     @Override
     public ConnectionContext getConnectionContext() {
-        return payloadConnection.getConnectionContext();
+        return connection.getConnectionContext();
     }
 
     @Override
     public <T> Publisher<T> getSettingStream(final HttpConnection.SettingKey<T> settingKey) {
-        return payloadConnection.getSettingStream(settingKey);
+        return connection.getSettingStream(settingKey);
     }
 
     @Override
-    public Single<FullHttpResponse> request(final FullHttpRequest request) {
-        return payloadConnection.request(toHttpRequest(request)).flatMap(response ->
-                from(response, payloadConnection.getExecutionContext().getBufferAllocator()));
+    public Single<AggregatedHttpResponse<HttpPayloadChunk>> request(final AggregatedHttpRequest<HttpPayloadChunk> request) {
+        return connection.request(toHttpRequest(request)).flatMap(response ->
+                from(response, connection.getExecutionContext().getBufferAllocator()));
     }
 
     @Override
     public ExecutionContext getExecutionContext() {
-        return payloadConnection.getExecutionContext();
+        return connection.getExecutionContext();
     }
 
     @Override
     public Completable onClose() {
-        return payloadConnection.onClose();
+        return connection.onClose();
     }
 
     @Override
     public Completable closeAsync() {
-        return payloadConnection.closeAsync();
+        return connection.closeAsync();
     }
 
     @Override
-    HttpConnection<HttpPayloadChunk, HttpPayloadChunk> asClientInternal() {
-        return payloadConnection;
-    }
-
-    private final class HttpPayloadChunkConnection extends HttpConnection<HttpPayloadChunk, HttpPayloadChunk> {
-        private final HttpConnection<I, O> connection;
-        private final Function<HttpPayloadChunk, I> requestPayloadTransformer;
-        private final Function<O, HttpPayloadChunk> responsePayloadTransformer;
-
-        HttpPayloadChunkConnection(final HttpConnection<I, O> connection,
-                                   final Function<HttpPayloadChunk, I> requestPayloadTransformer,
-                                   final Function<O, HttpPayloadChunk> responsePayloadTransformer) {
-            this.connection = requireNonNull(connection);
-            this.requestPayloadTransformer = requireNonNull(requestPayloadTransformer);
-            this.responsePayloadTransformer = requireNonNull(responsePayloadTransformer);
-        }
-
-        @Override
-        public ConnectionContext getConnectionContext() {
-            return connection.getConnectionContext();
-        }
-
-        @Override
-        public <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
-            return connection.getSettingStream(settingKey);
-        }
-
-        @Override
-        public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
-            return connection.request(request.transformPayloadBody(
-                        requestPayload -> requestPayload.map(requestPayloadTransformer)))
-                    .map(response -> response.transformPayloadBody(
-                        responsePayload -> responsePayload.map(responsePayloadTransformer)));
-        }
-
-        @Override
-        public ExecutionContext getExecutionContext() {
-            return connection.getExecutionContext();
-        }
-
-        @Override
-        public Completable onClose() {
-            return connection.onClose();
-        }
-
-        @Override
-        public Completable closeAsync() {
-            return connection.closeAsync();
-        }
-
-        @Override
-        AggregatedHttpConnection asAggregatedInternal(
-                                    Function<HttpPayloadChunk, HttpPayloadChunk> requestPayloadTransformer,
-                                    Function<HttpPayloadChunk, HttpPayloadChunk> responsePayloadTransformer) {
-            return HttpConnectionToAggregatedHttpConnection.this;
-        }
+    HttpConnection asConnectionInternal() {
+        return connection;
     }
 }

@@ -28,10 +28,8 @@ import java.util.function.Function;
  * {@link HttpClient} objects if none yet exist.
  *
  * @param <UnresolvedAddress> The address type used to create new {@link HttpClient}s.
- * @param <I> The type of payload of the request.
- * @param <O> The type of payload of the response.
  */
-public abstract class HttpClientGroup<UnresolvedAddress, I, O> implements ListenableAsyncCloseable {
+public abstract class HttpClientGroup<UnresolvedAddress> implements ListenableAsyncCloseable {
     /**
      * Locate or create a client and delegate to {@link HttpClient#request(HttpRequest)}.
      *
@@ -41,7 +39,8 @@ public abstract class HttpClientGroup<UnresolvedAddress, I, O> implements Listen
      * @return The received {@link HttpResponse}.
      * @see HttpClient#request(HttpRequest)
      */
-    public abstract Single<HttpResponse<O>> request(GroupKey<UnresolvedAddress> key, HttpRequest<I> request);
+    public abstract Single<HttpResponse<HttpPayloadChunk>> request(GroupKey<UnresolvedAddress> key,
+                                                                   HttpRequest<HttpPayloadChunk> request);
 
     /**
      * Locate or create a client and delegate to {@link HttpClient#reserveConnection(HttpRequest)}.
@@ -53,8 +52,8 @@ public abstract class HttpClientGroup<UnresolvedAddress, I, O> implements Listen
      * @return A {@link ReservedHttpConnection}.
      * @see HttpClient#reserveConnection(HttpRequest)
      */
-    public abstract Single<? extends ReservedHttpConnection<I, O>> reserveConnection(GroupKey<UnresolvedAddress> key,
-                                                                                     HttpRequest<I> request);
+    public abstract Single<? extends ReservedHttpConnection> reserveConnection(GroupKey<UnresolvedAddress> key,
+                                                                               HttpRequest<HttpPayloadChunk> request);
 
     /**
      * Convert this {@link HttpClientGroup} to the {@link HttpRequester} API. This can simplify the request APIs and
@@ -62,28 +61,43 @@ public abstract class HttpClientGroup<UnresolvedAddress, I, O> implements Listen
      * <p>
      * <b>Note:</b> close of any created {@link HttpRequester} will close existing {@link HttpClientGroup} instance.
      *
-     * @param requestToGroupKeyFunc A {@link Function} which returns the {@link GroupKey} give a {@link HttpRequest}.
+     * @param requestToGroupKeyFunc A {@link Function} which returns the {@link GroupKey} given a {@link HttpRequest}.
      * @param executionContext the {@link ExecutionContext} to use for {@link HttpRequester#getExecutionContext()}.
      * @return A {@link HttpRequester}, which is backed by this {@link HttpClientGroup}.
      */
-    public final HttpRequester<I, O> asRequester(final Function<HttpRequest<I>,
-                                                                GroupKey<UnresolvedAddress>> requestToGroupKeyFunc,
-                                                 final ExecutionContext executionContext) {
+    public final HttpRequester asRequester(final Function<HttpRequest<HttpPayloadChunk>,
+                                                          GroupKey<UnresolvedAddress>> requestToGroupKeyFunc,
+                                           final ExecutionContext executionContext) {
         return new HttpClientGroupToHttpRequester<>(this, requestToGroupKeyFunc, executionContext);
     }
 
     /**
-     * Convert this {@link HttpClientGroup} to the {@link BlockingHttpClientGroup} asynchronous API.
+     * Convert this {@link HttpClientGroup} to the {@link AggregatedHttpClientGroup} API.
+     * <p>
+     * Note that the resulting {@link AggregatedHttpClientGroup} will still be subject to any blocking, in memory
+     * aggregation, and other behavior as this {@link HttpClientGroup}.
+     * @return a {@link AggregatedHttpClientGroup} representation of this {@link HttpClientGroup}.
+     */
+    public final AggregatedHttpClientGroup<UnresolvedAddress> asAggregatedClientGroup() {
+        return asAggregatedClientGroupInternal();
+    }
+
+    /**
+     * Convert this {@link HttpClientGroup} to the {@link BlockingHttpClientGroup} API.
      * <p>
      * Note that the resulting {@link BlockingHttpClientGroup} will still be subject to any blocking, in memory
      * aggregation, and other behavior as this {@link HttpClientGroup}.
      * @return a {@link BlockingHttpClientGroup} representation of this {@link HttpClientGroup}.
      */
-    public final BlockingHttpClientGroup<UnresolvedAddress, I, O> asBlockingClientGroup() {
+    public final BlockingHttpClientGroup<UnresolvedAddress> asBlockingClientGroup() {
         return asBlockingClientGroupInternal();
     }
 
-    BlockingHttpClientGroup<UnresolvedAddress, I, O> asBlockingClientGroupInternal() {
+    AggregatedHttpClientGroup<UnresolvedAddress> asAggregatedClientGroupInternal() {
+        return new HttpClientGroupToAggregatedHttpClientGroup<>(this);
+    }
+
+    BlockingHttpClientGroup<UnresolvedAddress> asBlockingClientGroupInternal() {
         return new HttpClientGroupToBlockingHttpClientGroup<>(this);
     }
 }
