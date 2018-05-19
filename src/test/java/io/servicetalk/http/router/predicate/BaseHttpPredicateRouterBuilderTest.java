@@ -51,7 +51,7 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
 
     @Mock
-    HttpService<HttpPayloadChunk, HttpPayloadChunk> serviceA, serviceB, serviceC, serviceD, serviceE, fallbackService;
+    HttpService serviceA, serviceB, serviceC, serviceD, serviceE, fallbackService;
     @Mock
     ConnectionContext ctx;
     @Mock

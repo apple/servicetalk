@@ -56,7 +56,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
     @Test
     public void testFallback() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
 
@@ -65,7 +65,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
     @Test
     public void testDefaultFallback() throws Exception {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .build();
 
         final Single<HttpResponse<HttpPayloadChunk>> responseSingle = service.handle(ctx, request);
@@ -76,7 +76,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
     @Test
     public void testWhenMethod() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenMethod(POST).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
@@ -90,7 +90,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
     @Test
     public void testWhenMethodIsOneOf() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenMethodIsOneOf(POST, PUT).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
@@ -107,7 +107,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
     @Test
     public void testWhenPathEquals() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenPathEquals("/abc").thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
@@ -121,7 +121,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
     @Test
     public void testWhenPathIsOneOf() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenPathIsOneOf("/abc", "/def").thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
@@ -138,7 +138,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
     @Test
     public void testWhenPathStartsWith() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenPathStartsWith("/abc").thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
@@ -155,7 +155,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
     @Test
     public void testWhenPathMatches() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenPathMatches(".*abc").thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
@@ -175,7 +175,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
     @Test
     public void testWhenPathMatchesPattern() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenPathMatches(Pattern.compile(".*ABC", CASE_INSENSITIVE)).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
@@ -192,7 +192,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
     @Test
     public void testWhenIsSsl() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenIsSsl().thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
@@ -206,7 +206,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
     @Test
     public void testWhenIsNotSsl() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenIsNotSsl().thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
@@ -220,7 +220,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
     @Test
     public void testWhenPredicate() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .when(req -> req.getVersion() == HTTP_1_1).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
@@ -235,7 +235,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
     public void testWhenBiPredicate() {
         final SocketAddress addr1 = mock(SocketAddress.class);
         final SocketAddress addr2 = mock(SocketAddress.class);
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .when((ctx, req) -> ctx.getRemoteAddress() == addr1).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
@@ -253,7 +253,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
         when(serviceB.closeAsync()).thenReturn(completableB);
         when(serviceC.closeAsync()).thenReturn(completableC);
 
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenMethod(GET).thenRouteTo(serviceA)
                 .whenMethod(POST).thenRouteTo(serviceB)
                 .when((ctx, req) -> true).thenRouteTo(serviceC)
@@ -280,7 +280,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
         when(serviceB.closeAsync()).thenReturn(completableB);
         when(serviceC.closeAsync()).thenReturn(completableC);
 
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenMethod(GET).thenRouteTo(serviceA)
                 .whenMethod(POST).thenRouteTo(serviceB)
                 .when((ctx, req) -> true).thenRouteTo(serviceC)

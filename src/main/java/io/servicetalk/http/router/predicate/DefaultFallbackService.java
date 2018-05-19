@@ -16,6 +16,7 @@
 package io.servicetalk.http.router.predicate;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponses;
@@ -27,7 +28,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpResponseStatuses.NOT_FOUND;
 
-final class DefaultFallbackService<I, O> extends HttpService<I, O> {
+final class DefaultFallbackService extends HttpService {
 
     private static final DefaultFallbackService INSTANCE = new DefaultFallbackService();
 
@@ -36,16 +37,16 @@ final class DefaultFallbackService<I, O> extends HttpService<I, O> {
     }
 
     @Override
-    public Single<HttpResponse<O>> handle(final ConnectionContext ctx, final HttpRequest<I> request) {
-        final HttpResponse<O> response = HttpResponses.newResponse(request.getVersion(), NOT_FOUND);
+    public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
+                                                         final HttpRequest<HttpPayloadChunk> request) {
+        final HttpResponse<HttpPayloadChunk> response = HttpResponses.newResponse(request.getVersion(), NOT_FOUND);
         response.getHeaders().set(CONTENT_LENGTH, "0")
                 .set(CONTENT_TYPE, TEXT_PLAIN);
         // TODO(derek): Set keepalive once we have an isKeepAlive helper method.
         return Single.success(response);
     }
 
-    @SuppressWarnings("unchecked")
-    static <I, O> HttpService<I, O> instance() {
+    static HttpService instance() {
         return INSTANCE;
     }
 }

@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.router.predicate;
 
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpService;
 
 import org.junit.Test;
@@ -31,7 +30,7 @@ public class HttpPredicateRouterBuilderQueryTest extends BaseHttpPredicateRouter
 
     @Test
     public void testWhenQueryParamIsPresent() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenQueryParam("page").isPresent().thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
@@ -45,7 +44,7 @@ public class HttpPredicateRouterBuilderQueryTest extends BaseHttpPredicateRouter
 
     @Test
     public void testWhenQueryParamFirstValue() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenQueryParam("page").firstValue("home").thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
@@ -68,7 +67,7 @@ public class HttpPredicateRouterBuilderQueryTest extends BaseHttpPredicateRouter
 
     @Test
     public void testWhenQueryParamFirstValueMatches() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenQueryParam("page").firstValueMatches("sign.*").thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
@@ -91,7 +90,7 @@ public class HttpPredicateRouterBuilderQueryTest extends BaseHttpPredicateRouter
 
     @Test
     public void testWhenQueryParamFirstValueMatchesPattern() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenQueryParam("page").firstValueMatches(Pattern.compile("sign.*", CASE_INSENSITIVE)).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
@@ -114,7 +113,7 @@ public class HttpPredicateRouterBuilderQueryTest extends BaseHttpPredicateRouter
 
     @Test
     public void testWhenQueryParamValues() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenQueryParam("page").values(new AnyMatchPredicate<>("home")).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();

@@ -15,9 +15,9 @@
  */
 package io.servicetalk.http.router.predicate.dsl;
 
+import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMethod;
-import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 
@@ -27,123 +27,120 @@ import java.util.regex.Pattern;
 
 /**
  * Methods for starting a route.
- *
- * @param <I> the type of the content in the {@link HttpRequest}s.
- * @param <O> the type of the content in the {@link HttpResponse}s.
  */
-public interface RouteStarter<I, O> {
+public interface RouteStarter {
     /**
      * Matches requests where the method is {@code method}.
      * @param method the method to match.
      * @return {@link RouteContinuation} for the next steps of building a route.
      */
-    RouteContinuation<I, O> whenMethod(HttpRequestMethod method);
+    RouteContinuation whenMethod(HttpRequestMethod method);
 
     /**
      * Matches requests where the method is one of the {@code methods}.
      * @param methods the methods to match.
      * @return {@link RouteContinuation} for the next steps of building a route.
      */
-    RouteContinuation<I, O> whenMethodIsOneOf(HttpRequestMethod... methods);
+    RouteContinuation whenMethodIsOneOf(HttpRequestMethod... methods);
 
     /**
      * Matches requests where the path is equal to {@code path}.
      * @param path the path to match.
      * @return {@link RouteContinuation} for the next steps of building a route.
      */
-    RouteContinuation<I, O> whenPathEquals(String path);
+    RouteContinuation whenPathEquals(String path);
 
     /**
      * Matches requests where the path is equal to any of the specified {@code path}s.
      * @param paths the paths to match.
      * @return {@link RouteContinuation} for the next steps of building a route.
      */
-    RouteContinuation<I, O> whenPathIsOneOf(String... paths);
+    RouteContinuation whenPathIsOneOf(String... paths);
 
     /**
      * Matches requests where the path starts with {@code pathPrefix}.
      * @param pathPrefix the path prefix to match.
      * @return {@link RouteContinuation} for the next steps of building a route.
      */
-    RouteContinuation<I, O> whenPathStartsWith(String pathPrefix);
+    RouteContinuation whenPathStartsWith(String pathPrefix);
 
     /**
      * Matches requests where the path matches the regex {@code pathRegex}.
      * @param pathRegex the regex to match against the request path.
      * @return {@link RouteContinuation} for the next steps of building a route.
      */
-    RouteContinuation<I, O> whenPathMatches(String pathRegex);
+    RouteContinuation whenPathMatches(String pathRegex);
 
     /**
      * Matches requests where the path matches the regex {@code pathRegex}.
      * @param pathRegex the regex to match against the request path.
      * @return {@link RouteContinuation} for the next steps of building a route.
      */
-    RouteContinuation<I, O> whenPathMatches(Pattern pathRegex);
+    RouteContinuation whenPathMatches(Pattern pathRegex);
 
     /**
      * Begins a builder that matches against the value(s) of the request parameter {@code name}.
      * @param name the request parameter to match.
      * @return {@link StringMultiValueMatcher} for the next steps of building a route.
      */
-    StringMultiValueMatcher<I, O> whenQueryParam(String name);
+    StringMultiValueMatcher whenQueryParam(String name);
 
     /**
      * Begins a builder that matches against the value(s) of the {@code name} headers.
      * @param name the header name to match.
-     * @return {@link StringMultiValueMatcher} for the next steps of building a rout
+     * @return {@link StringMultiValueMatcher} for the next steps of building a route.
      */
-    StringMultiValueMatcher<I, O> whenHeader(CharSequence name);
+    StringMultiValueMatcher whenHeader(CharSequence name);
 
     /**
      * Begins a builder that matches against cookies with the name {@code name}.
      * @param name the cookie name to match.
      * @return {@link CookieMatcher} for the next steps of building a route.
      */
-    CookieMatcher<I, O> whenCookie(String name);
+    CookieMatcher whenCookie(String name);
 
     /**
      * Begins a builder that matches against cookies with a name matching the regex {@code regex}.
      * @param regex the regex to match against the cookie name.
      * @return {@link CookieMatcher} for the next steps of building a route.
      */
-    CookieMatcher<I, O> whenCookieNameMatches(String regex);
+    CookieMatcher whenCookieNameMatches(String regex);
 
     /**
      * Begins a builder that matches against cookies with a name matching the regex {@code regex}.
      * @param regex the regex to match against the cookie name.
      * @return {@link CookieMatcher} for the next steps of building a route.
      */
-    CookieMatcher<I, O> whenCookieNameMatches(Pattern regex);
+    CookieMatcher whenCookieNameMatches(Pattern regex);
 
     /**
      * Matches requests that are over SSL/TLS.
      * @return {@link RouteContinuation} for the next steps of building a route.
      */
-    RouteContinuation<I, O> whenIsSsl();
+    RouteContinuation whenIsSsl();
 
     /**
      * Matches requests that are not over SSL/TLS.
      * @return {@link RouteContinuation} for the next steps of building a route.
      */
-    RouteContinuation<I, O> whenIsNotSsl();
+    RouteContinuation whenIsNotSsl();
 
     /**
      * Matches requests with a user-specified {@code predicate}.
      * @param predicate the predicate to evaluate against requests.
      * @return {@link RouteContinuation} for the next steps of building a route.
      */
-    RouteContinuation<I, O> when(Predicate<HttpRequest<I>> predicate);
+    RouteContinuation when(Predicate<HttpRequest<HttpPayloadChunk>> predicate);
 
     /**
      * Matches request and connection context with a user-specified {@code predicate}.
      * @param predicate the predicate to evaluate against the request and connection context.
      */
-    RouteContinuation<I, O> when(BiPredicate<ConnectionContext, HttpRequest<I>> predicate);
+    RouteContinuation when(BiPredicate<ConnectionContext, HttpRequest<HttpPayloadChunk>> predicate);
 
     /**
      * Builds the {@link HttpService} that performs the configured routing.
      * @return the router {@link HttpService}.
      */
-    HttpService<I, O> build();
+    HttpService build();
 }

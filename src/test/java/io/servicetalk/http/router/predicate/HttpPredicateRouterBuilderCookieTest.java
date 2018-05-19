@@ -17,7 +17,6 @@ package io.servicetalk.http.router.predicate;
 
 import io.servicetalk.http.api.HttpCookie;
 import io.servicetalk.http.api.HttpCookies;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpService;
 
 import org.junit.Before;
@@ -46,7 +45,7 @@ public class HttpPredicateRouterBuilderCookieTest extends BaseHttpPredicateRoute
 
     @Test
     public void testWhenCookieIsPresent() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenCookie("session").isPresent().thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
@@ -60,7 +59,7 @@ public class HttpPredicateRouterBuilderCookieTest extends BaseHttpPredicateRoute
 
     @Test
     public void testWhenCookieIs() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenCookie("session").value(cookie1::equals).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
@@ -83,7 +82,7 @@ public class HttpPredicateRouterBuilderCookieTest extends BaseHttpPredicateRoute
 
     @Test
     public void testWhenCookieValues() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenCookie("session").values(new AnyMatchPredicate<>(cookie1)).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
@@ -103,7 +102,7 @@ public class HttpPredicateRouterBuilderCookieTest extends BaseHttpPredicateRoute
 
     @Test
     public void testWhenCookieNameMatches() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenCookieNameMatches(".*abc.*").isPresent().thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
@@ -122,7 +121,7 @@ public class HttpPredicateRouterBuilderCookieTest extends BaseHttpPredicateRoute
 
     @Test
     public void testWhenCookieNameMatchesPattern() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenCookieNameMatches(Pattern.compile(".*abc.*", Pattern.CASE_INSENSITIVE)).isPresent().thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();

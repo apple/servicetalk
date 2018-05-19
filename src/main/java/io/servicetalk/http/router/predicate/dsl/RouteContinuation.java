@@ -15,9 +15,9 @@
  */
 package io.servicetalk.http.router.predicate.dsl;
 
+import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMethod;
-import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 
@@ -27,90 +27,87 @@ import java.util.regex.Pattern;
 
 /**
  * Methods for continuing a route.
- *
- * @param <I> the type of the content in the {@link HttpRequest}s.
- * @param <O> the type of the content in the {@link HttpResponse}s.
  */
-public interface RouteContinuation<I, O> {
+public interface RouteContinuation {
     /**
      * See {@link RouteStarter#whenMethod(HttpRequestMethod)}.
      */
-    RouteContinuation<I, O> andMethod(HttpRequestMethod method);
+    RouteContinuation andMethod(HttpRequestMethod method);
 
     /**
      * See {@link RouteStarter#whenMethodIsOneOf(HttpRequestMethod...)}.
      */
-    RouteContinuation<I, O> andMethodIsOneOf(HttpRequestMethod... methods);
+    RouteContinuation andMethodIsOneOf(HttpRequestMethod... methods);
 
     /**
      * See {@link RouteStarter#whenPathEquals(String)}.
      */
-    RouteContinuation<I, O> andPathEquals(String path);
+    RouteContinuation andPathEquals(String path);
 
     /**
      * See {@link RouteStarter#whenPathIsOneOf(String...)}.
      */
-    RouteContinuation<I, O> andPathIsOneOf(String... paths);
+    RouteContinuation andPathIsOneOf(String... paths);
 
     /**
      * See {@link RouteStarter#whenPathStartsWith(String)}.
      */
-    RouteContinuation<I, O> andPathStartsWith(String pathPrefix);
+    RouteContinuation andPathStartsWith(String pathPrefix);
 
     /**
      * See {@link RouteStarter#whenPathMatches(String)}.
      */
-    RouteContinuation<I, O> andPathMatches(String pathRegex);
+    RouteContinuation andPathMatches(String pathRegex);
 
     /**
      * See {@link RouteStarter#whenPathMatches(Pattern)}.
      */
-    RouteContinuation<I, O> andPathMatches(Pattern pathRegex);
+    RouteContinuation andPathMatches(Pattern pathRegex);
 
     /**
      * See {@link RouteStarter#whenQueryParam(String)}.
      */
-    StringMultiValueMatcher<I, O> andQueryParam(String name);
+    StringMultiValueMatcher andQueryParam(String name);
 
     /**
      * See {@link RouteStarter#whenHeader(CharSequence)}.
      */
-    StringMultiValueMatcher<I, O> andHeader(CharSequence name);
+    StringMultiValueMatcher andHeader(CharSequence name);
 
     /**
      * See {@link RouteStarter#whenCookie(String)}.
      */
-    CookieMatcher<I, O> andCookie(String name);
+    CookieMatcher andCookie(String name);
 
     /**
      * See {@link RouteStarter#whenCookieNameMatches(String)}.
      */
-    CookieMatcher<I, O> andCookieNameMatches(String regex);
+    CookieMatcher andCookieNameMatches(String regex);
 
     /**
      * See {@link RouteStarter#whenCookieNameMatches(Pattern)}.
      */
-    CookieMatcher<I, O> andCookieNameMatches(Pattern regex);
+    CookieMatcher andCookieNameMatches(Pattern regex);
 
     /**
      * See {@link RouteStarter#whenIsSsl()}.
      */
-    RouteContinuation<I, O> andIsSsl();
+    RouteContinuation andIsSsl();
 
     /**
      * See {@link RouteStarter#whenIsNotSsl()}.
      */
-    RouteContinuation<I, O> andIsNotSsl();
+    RouteContinuation andIsNotSsl();
 
     /**
      * See {@link RouteStarter#when(Predicate)}.
      */
-    RouteContinuation<I, O> and(Predicate<HttpRequest<I>> predicate);
+    RouteContinuation and(Predicate<HttpRequest<HttpPayloadChunk>> predicate);
 
     /**
-     * See {@link RouteStarter#when(BiPredicate)}.
+     * See {@link RouteStarter#when(Predicate)}.
      */
-    RouteContinuation<I, O> and(BiPredicate<ConnectionContext, HttpRequest<I>> predicate);
+    RouteContinuation and(BiPredicate<ConnectionContext, HttpRequest<HttpPayloadChunk>> predicate);
 
     /**
      * Specifies the {@link HttpService} to route requests to that match the previously specified criteria.
@@ -118,5 +115,5 @@ public interface RouteContinuation<I, O> {
      * @param service the {@link HttpService} to route requests to.
      * {@link RouteStarter} for building another route.
      */
-    RouteStarter<I, O> thenRouteTo(HttpService<I, O> service);
+    RouteStarter thenRouteTo(HttpService service);
 }

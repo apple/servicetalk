@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.router.predicate;
 
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpService;
 
 import org.junit.Test;
@@ -34,7 +33,7 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
 
     @Test
     public void testWhenHeaderIsPresent() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenHeader("host").isPresent().thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
@@ -48,7 +47,7 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
 
     @Test
     public void testWhenHeaderFirstValue() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenHeader("host").firstValue("localhost").thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
@@ -71,7 +70,7 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
 
     @Test
     public void testWhenHeaderFirstValueMatches() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenHeader("host").firstValueMatches("127\\..*").thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
@@ -91,7 +90,7 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
 
     @Test
     public void testWhenHeaderFirstValueMatchesPattern() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenHeader("host").firstValueMatches(Pattern.compile("127\\..*", CASE_INSENSITIVE)).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
@@ -111,7 +110,7 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
 
     @Test
     public void testWhenHeaderValues() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenHeader("host").values(new AnyMatchPredicate<>("localhost")).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .build();
@@ -131,7 +130,7 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
 
     @Test
     public void testMultipleHeaderRoutes() {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> service = new HttpPredicateRouterBuilder<HttpPayloadChunk, HttpPayloadChunk>()
+        final HttpService service = new HttpPredicateRouterBuilder()
                 .whenHeader("host").firstValue("a.com").thenRouteTo(serviceA)
                 .whenHeader("host").firstValue("b.com").thenRouteTo(serviceB)
                 .whenHeader("host").firstValue("c.com").thenRouteTo(serviceC)

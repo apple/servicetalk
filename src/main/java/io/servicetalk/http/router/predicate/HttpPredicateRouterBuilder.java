@@ -16,6 +16,7 @@
 package io.servicetalk.http.router.predicate;
 
 import io.servicetalk.http.api.HttpCookie;
+import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpService;
@@ -32,7 +33,6 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.router.predicate.Predicates.method;
@@ -60,114 +60,114 @@ import static java.util.stream.StreamSupport.stream;
  * <p>
  * If no routes match, a default service is used, which returns a 404 response.
  */
-public final class HttpPredicateRouterBuilder<I, O> implements RouteStarter<I, O> {
+public final class HttpPredicateRouterBuilder implements RouteStarter {
 
-    private final List<PredicateServicePair<I, O>> predicateServicePairs = new ArrayList<>();
+    private final List<PredicateServicePair> predicateServicePairs = new ArrayList<>();
     @Nullable
-    private BiPredicate<ConnectionContext, HttpRequest<I>> predicate;
+    private BiPredicate<ConnectionContext, HttpRequest<HttpPayloadChunk>> predicate;
     private final RouteContinuationImpl continuation = new RouteContinuationImpl();
 
     @Override
-    public RouteContinuation<I, O> whenMethod(final HttpRequestMethod method) {
+    public RouteContinuation whenMethod(final HttpRequestMethod method) {
         andPredicate(method(method));
         return continuation;
     }
 
     @Override
-    public RouteContinuation<I, O> whenMethodIsOneOf(final HttpRequestMethod... methods) {
+    public RouteContinuation whenMethodIsOneOf(final HttpRequestMethod... methods) {
         andPredicate(methodIsOneOf(methods));
         return continuation;
     }
 
     @Override
-    public RouteContinuation<I, O> whenPathEquals(final String path) {
+    public RouteContinuation whenPathEquals(final String path) {
         andPredicate(pathEquals(path));
         return continuation;
     }
 
     @Override
-    public RouteContinuation<I, O> whenPathIsOneOf(final String... paths) {
+    public RouteContinuation whenPathIsOneOf(final String... paths) {
         andPredicate(pathIsOneOf(paths));
         return continuation;
     }
 
     @Override
-    public RouteContinuation<I, O> whenPathStartsWith(final String pathPrefix) {
+    public RouteContinuation whenPathStartsWith(final String pathPrefix) {
         andPredicate(pathStartsWith(pathPrefix));
         return continuation;
     }
 
     @Override
-    public RouteContinuation<I, O> whenPathMatches(final String pathRegex) {
+    public RouteContinuation whenPathMatches(final String pathRegex) {
         andPredicate(pathRegex(pathRegex));
         return continuation;
     }
 
     @Override
-    public RouteContinuation<I, O> whenPathMatches(final Pattern pathRegex) {
+    public RouteContinuation whenPathMatches(final Pattern pathRegex) {
         andPredicate(pathRegex(pathRegex));
         return continuation;
     }
 
     @Override
-    public StringMultiValueMatcher<I, O> whenQueryParam(final String name) {
+    public StringMultiValueMatcher whenQueryParam(final String name) {
         requireNonNull(name);
         return new StringMultiValueMatcherImpl(req -> req.parseQuery().getAll(name));
     }
 
     @Override
-    public StringMultiValueMatcher<I, O> whenHeader(final CharSequence name) {
+    public StringMultiValueMatcher whenHeader(final CharSequence name) {
         requireNonNull(name);
         return new StringMultiValueMatcherImpl(req -> req.getHeaders().getAll(name));
     }
 
     @Override
-    public CookieMatcher<I, O> whenCookie(final String name) {
+    public CookieMatcher whenCookie(final String name) {
         requireNonNull(name);
         return new CookieMatcherImpl(req -> req.getHeaders().parseCookies().getCookies(name));
     }
 
     @Override
-    public CookieMatcher<I, O> whenCookieNameMatches(final String regex) {
+    public CookieMatcher whenCookieNameMatches(final String regex) {
         return new CookieMatcherImpl(getCookiesWithNameFunction(regex(regex)));
     }
 
     @Override
-    public CookieMatcher<I, O> whenCookieNameMatches(final Pattern regex) {
+    public CookieMatcher whenCookieNameMatches(final Pattern regex) {
         return new CookieMatcherImpl(getCookiesWithNameFunction(regex(regex)));
     }
 
     @Override
-    public RouteContinuation<I, O> whenIsSsl() {
+    public RouteContinuation whenIsSsl() {
         andPredicate((ctx, req) -> ctx.getSslSession() != null);
         return continuation;
     }
 
     @Override
-    public RouteContinuation<I, O> whenIsNotSsl() {
+    public RouteContinuation whenIsNotSsl() {
         andPredicate((ctx, req) -> ctx.getSslSession() == null);
         return continuation;
     }
 
     @Override
-    public RouteContinuation<I, O> when(final Predicate<HttpRequest<I>> predicate) {
+    public RouteContinuation when(final Predicate<HttpRequest<HttpPayloadChunk>> predicate) {
         requireNonNull(predicate);
         andPredicate((ctx, req) -> predicate.test(req));
         return continuation;
     }
 
     @Override
-    public RouteContinuation<I, O> when(final BiPredicate<ConnectionContext, HttpRequest<I>> predicate) {
+    public RouteContinuation when(final BiPredicate<ConnectionContext, HttpRequest<HttpPayloadChunk>> predicate) {
         andPredicate(requireNonNull(predicate));
         return continuation;
     }
 
     @Override
-    public HttpService<I, O> build() {
-        return new InOrderRouter<>(DefaultFallbackService.instance(), predicateServicePairs);
+    public HttpService build() {
+        return new InOrderRouter(DefaultFallbackService.instance(), predicateServicePairs);
     }
 
-    private void andPredicate(final BiPredicate<ConnectionContext, HttpRequest<I>> newPredicate) {
+    private void andPredicate(final BiPredicate<ConnectionContext, HttpRequest<HttpPayloadChunk>> newPredicate) {
         if (predicate == null) {
             predicate = newPredicate;
         } else {
@@ -175,117 +175,117 @@ public final class HttpPredicateRouterBuilder<I, O> implements RouteStarter<I, O
         }
     }
 
-    @Nonnull
-    private Function<HttpRequest<I>, Iterator<? extends HttpCookie>> getCookiesWithNameFunction(final Predicate<CharSequence> cookieNamePredicate) {
+    private static Function<HttpRequest<HttpPayloadChunk>, Iterator<? extends HttpCookie>> getCookiesWithNameFunction(
+            final Predicate<CharSequence> cookieNamePredicate) {
         return req -> stream(req.getHeaders().parseCookies().spliterator(), false)
                 .filter(cookie -> cookieNamePredicate.test(cookie.getName())).iterator();
     }
 
-    private class RouteContinuationImpl implements RouteContinuation<I, O> {
+    private class RouteContinuationImpl implements RouteContinuation {
 
         @Override
-        public RouteContinuation<I, O> andMethod(final HttpRequestMethod method) {
+        public RouteContinuation andMethod(final HttpRequestMethod method) {
             return whenMethod(method);
         }
 
         @Override
-        public RouteContinuation<I, O> andMethodIsOneOf(final HttpRequestMethod... methods) {
+        public RouteContinuation andMethodIsOneOf(final HttpRequestMethod... methods) {
             return whenMethodIsOneOf(methods);
         }
 
         @Override
-        public RouteContinuation<I, O> andPathEquals(final String path) {
+        public RouteContinuation andPathEquals(final String path) {
             return whenPathEquals(path);
         }
 
         @Override
-        public RouteContinuation<I, O> andPathIsOneOf(final String... paths) {
+        public RouteContinuation andPathIsOneOf(final String... paths) {
             return whenPathIsOneOf(paths);
         }
 
         @Override
-        public RouteContinuation<I, O> andPathStartsWith(final String pathPrefix) {
+        public RouteContinuation andPathStartsWith(final String pathPrefix) {
             return whenPathStartsWith(pathPrefix);
         }
 
         @Override
-        public RouteContinuation<I, O> andPathMatches(final String pathRegex) {
+        public RouteContinuation andPathMatches(final String pathRegex) {
             return whenPathMatches(pathRegex);
         }
 
         @Override
-        public RouteContinuation<I, O> andPathMatches(final Pattern pathRegex) {
+        public RouteContinuation andPathMatches(final Pattern pathRegex) {
             return whenPathMatches(pathRegex);
         }
 
         @Override
-        public StringMultiValueMatcher<I, O> andQueryParam(final String name) {
+        public StringMultiValueMatcher andQueryParam(final String name) {
             return whenQueryParam(name);
         }
 
         @Override
-        public StringMultiValueMatcher<I, O> andHeader(final CharSequence name) {
+        public StringMultiValueMatcher andHeader(final CharSequence name) {
             return whenHeader(name);
         }
 
         @Override
-        public CookieMatcher<I, O> andCookie(final String name) {
+        public CookieMatcher andCookie(final String name) {
             return whenCookie(name);
         }
 
         @Override
-        public CookieMatcher<I, O> andCookieNameMatches(final String regex) {
+        public CookieMatcher andCookieNameMatches(final String regex) {
             return whenCookieNameMatches(regex);
         }
 
         @Override
-        public CookieMatcher<I, O> andCookieNameMatches(final Pattern regex) {
+        public CookieMatcher andCookieNameMatches(final Pattern regex) {
             return whenCookieNameMatches(regex);
         }
 
         @Override
-        public RouteContinuation<I, O> andIsSsl() {
+        public RouteContinuation andIsSsl() {
             return whenIsSsl();
         }
 
         @Override
-        public RouteContinuation<I, O> andIsNotSsl() {
+        public RouteContinuation andIsNotSsl() {
             return whenIsNotSsl();
         }
 
         @Override
-        public RouteContinuation<I, O> and(final Predicate<HttpRequest<I>> predicate) {
+        public RouteContinuation and(final Predicate<HttpRequest<HttpPayloadChunk>> predicate) {
             return when(predicate);
         }
 
         @Override
-        public RouteContinuation<I, O> and(final BiPredicate<ConnectionContext, HttpRequest<I>> predicate) {
+        public RouteContinuation and(final BiPredicate<ConnectionContext, HttpRequest<HttpPayloadChunk>> predicate) {
             return when(predicate);
         }
 
         @Override
-        public RouteStarter<I, O> thenRouteTo(final HttpService<I, O> service) {
+        public RouteStarter thenRouteTo(final HttpService service) {
             assert predicate != null;
-            predicateServicePairs.add(new PredicateServicePair<>(predicate, service));
+            predicateServicePairs.add(new PredicateServicePair(predicate, service));
             predicate = null;
             return HttpPredicateRouterBuilder.this;
         }
     }
 
-    private class CookieMatcherImpl implements CookieMatcher<I, O> {
-        private final Function<HttpRequest<I>, Iterator<? extends HttpCookie>> itemsSource;
+    private class CookieMatcherImpl implements CookieMatcher {
+        private final Function<HttpRequest<HttpPayloadChunk>, Iterator<? extends HttpCookie>> itemsSource;
 
-        CookieMatcherImpl(final Function<HttpRequest<I>, Iterator<? extends HttpCookie>> itemsSource) {
+        CookieMatcherImpl(final Function<HttpRequest<HttpPayloadChunk>, Iterator<? extends HttpCookie>> itemsSource) {
             this.itemsSource = itemsSource;
         }
 
         @Override
-        public RouteContinuation<I, O> isPresent() {
+        public RouteContinuation isPresent() {
             return value(v -> true);
         }
 
         @Override
-        public RouteContinuation<I, O> value(final Predicate<HttpCookie> predicate) {
+        public RouteContinuation value(final Predicate<HttpCookie> predicate) {
             return values((cookies) -> {
                 while (cookies.hasNext()) {
                     if (predicate.test(cookies.next())) {
@@ -297,48 +297,49 @@ public final class HttpPredicateRouterBuilder<I, O> implements RouteStarter<I, O
         }
 
         @Override
-        public RouteContinuation<I, O> values(final Predicate<Iterator<? extends HttpCookie>> predicate) {
+        public RouteContinuation values(final Predicate<Iterator<? extends HttpCookie>> predicate) {
             andPredicate((ctx, req) -> predicate.test(itemsSource.apply(req)));
             return continuation;
         }
     }
 
-    private class StringMultiValueMatcherImpl implements StringMultiValueMatcher<I, O> {
-        private final Function<HttpRequest<I>, Iterator<? extends CharSequence>> itemsSource;
+    private class StringMultiValueMatcherImpl implements StringMultiValueMatcher {
+        private final Function<HttpRequest<HttpPayloadChunk>, Iterator<? extends CharSequence>> itemsSource;
 
-        StringMultiValueMatcherImpl(final Function<HttpRequest<I>, Iterator<? extends CharSequence>> itemsSource) {
+        StringMultiValueMatcherImpl(final Function<HttpRequest<HttpPayloadChunk>,
+                Iterator<? extends CharSequence>> itemsSource) {
             this.itemsSource = itemsSource;
         }
 
         @Override
-        public RouteContinuation<I, O> isPresent() {
+        public RouteContinuation isPresent() {
             return firstValue(value -> true);
         }
 
         @Override
-        public RouteContinuation<I, O> firstValue(final CharSequence value) {
+        public RouteContinuation firstValue(final CharSequence value) {
             return firstValue(value::equals);
         }
 
         @Override
-        public RouteContinuation<I, O> firstValue(final Predicate<CharSequence> predicate) {
+        public RouteContinuation firstValue(final Predicate<CharSequence> predicate) {
             requireNonNull(predicate);
             return values(iterator -> iterator.hasNext() && predicate.test(iterator.next()));
         }
 
         @Override
-        public RouteContinuation<I, O> values(final Predicate<Iterator<? extends CharSequence>> predicate) {
+        public RouteContinuation values(final Predicate<Iterator<? extends CharSequence>> predicate) {
             andPredicate((ctx, req) -> predicate.test(itemsSource.apply(req)));
             return continuation;
         }
 
         @Override
-        public RouteContinuation<I, O> firstValueMatches(final String regex) {
+        public RouteContinuation firstValueMatches(final String regex) {
             return firstValue(regex(regex));
         }
 
         @Override
-        public RouteContinuation<I, O> firstValueMatches(final Pattern regex) {
+        public RouteContinuation firstValueMatches(final Pattern regex) {
             return firstValue(regex(regex));
         }
     }

@@ -54,7 +54,7 @@ public class DefaultFallbackServiceTest {
 
     @Test
     public void testDefaultFallbackService() throws Exception {
-        final HttpService<HttpPayloadChunk, HttpPayloadChunk> fixture = DefaultFallbackService.instance();
+        final HttpService fixture = DefaultFallbackService.instance();
 
         final Single<HttpResponse<HttpPayloadChunk>> responseSingle = fixture.handle(ctx, request);
 

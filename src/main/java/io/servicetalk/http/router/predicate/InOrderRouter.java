@@ -17,6 +17,7 @@ package io.servicetalk.http.router.predicate;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpService;
@@ -35,10 +36,10 @@ import static java.util.Objects.requireNonNull;
  * first one which returns {@code true} is used to handle the request. If no predicates match, the fallback service
  * specified is used.
  */
-final class InOrderRouter<I, O> extends HttpService<I, O> {
+final class InOrderRouter extends HttpService {
 
-    private final HttpService<I, O> fallbackService;
-    private final PredicateServicePair<I, O>[] predicateServicePairs;
+    private final HttpService fallbackService;
+    private final PredicateServicePair[] predicateServicePairs;
     private final Completable closeCompletable;
 
     /**
@@ -47,13 +48,13 @@ final class InOrderRouter<I, O> extends HttpService<I, O> {
      * @param predicateServicePairs the list of predicate-service pairs to use for handling requests.
      */
     @SuppressWarnings("unchecked")
-    InOrderRouter(final HttpService<I, O> fallbackService, final List<PredicateServicePair<I, O>> predicateServicePairs) {
+    InOrderRouter(final HttpService fallbackService, final List<PredicateServicePair> predicateServicePairs) {
         this.fallbackService = requireNonNull(fallbackService);
         this.predicateServicePairs = predicateServicePairs.toArray(new PredicateServicePair[0]);
 
         final List<Completable> completables = new ArrayList<>(predicateServicePairs.size() + 1);
-        for (final PredicateServicePair<I, O> predicateServicePair : predicateServicePairs) {
-            final HttpService<I, O> service = predicateServicePair.getService();
+        for (final PredicateServicePair predicateServicePair : predicateServicePairs) {
+            final HttpService service = predicateServicePair.getService();
             completables.add(service.closeAsync());
         }
         completables.add(fallbackService.closeAsync());
@@ -61,8 +62,9 @@ final class InOrderRouter<I, O> extends HttpService<I, O> {
     }
 
     @Override
-    public Single<HttpResponse<O>> handle(final ConnectionContext ctx, final HttpRequest<I> request) {
-        for (final PredicateServicePair<I, O> pair : predicateServicePairs) {
+    public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
+                                                         final HttpRequest<HttpPayloadChunk> request) {
+        for (final PredicateServicePair pair : predicateServicePairs) {
             if (pair.getPredicate().test(ctx, request)) {
                 return pair.getService().handle(ctx, request);
             }
