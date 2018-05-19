@@ -25,14 +25,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.http.api.BlockingHttpResponses.newResponse;
-import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 
 /**
  * Business logic for the Hello World application.
  * This is a blocking service, for asynchronous use {@link HelloWorldService}.
  */
-final class HelloWorldBlockingService extends BlockingHttpService<HttpPayloadChunk, HttpPayloadChunk> {
+final class HelloWorldBlockingService extends BlockingHttpService {
     private static final Logger LOGGER = LoggerFactory.getLogger(HelloWorldBlockingService.class);
 
     @Override
@@ -42,6 +41,6 @@ final class HelloWorldBlockingService extends BlockingHttpService<HttpPayloadChu
         // security reasons, however here we override the filter and print every value.
         LOGGER.info("got request {}", request.toString((name, value) -> value));
 
-        return newResponse(OK, newPayloadChunk(ctx.getBufferAllocator().fromAscii("Hello World!")));
+        return newResponse(OK, ctx.getBufferAllocator().fromAscii("Hello World!"));
     }
 }

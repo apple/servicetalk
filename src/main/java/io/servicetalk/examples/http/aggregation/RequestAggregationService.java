@@ -17,15 +17,16 @@ package io.servicetalk.examples.http.aggregation;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.AggregatedHttpService;
-import io.servicetalk.http.api.FullHttpRequest;
-import io.servicetalk.http.api.FullHttpResponse;
+import io.servicetalk.http.api.AggregatedHttpRequest;
+import io.servicetalk.http.api.AggregatedHttpResponse;
+import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.FullHttpResponses.newResponse;
+import static io.servicetalk.http.api.AggregatedHttpResponses.newResponse;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 
 final class RequestAggregationService extends AggregatedHttpService {
@@ -33,11 +34,12 @@ final class RequestAggregationService extends AggregatedHttpService {
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestAggregationService.class);
 
     @Override
-    public Single<FullHttpResponse> handle(final ConnectionContext ctx, final FullHttpRequest request) {
+    public Single<AggregatedHttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
+                                                                   final AggregatedHttpRequest<HttpPayloadChunk> request) {
         // Log the request meta data and headers, by default the header values will be filtered for
         // security reasons, however here we override the filter and print every value.
         LOGGER.info("got request {}", request.toString((name, value) -> value));
 
-        return success(newResponse(OK, request.getPayloadBody()));
+        return success(newResponse(OK, request.getPayloadBody().getContent()));
     }
 }

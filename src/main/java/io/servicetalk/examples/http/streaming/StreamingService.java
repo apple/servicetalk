@@ -38,7 +38,7 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
  * Business logic for the Hello World application.
  * This is an asynchronous service, for blocking style see
  */
-final class StreamingService extends HttpService<HttpPayloadChunk, HttpPayloadChunk> {
+final class StreamingService extends HttpService {
     private static final Logger LOGGER = LoggerFactory.getLogger(StreamingService.class);
 
     @Override

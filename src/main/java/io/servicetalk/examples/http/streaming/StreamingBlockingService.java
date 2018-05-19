@@ -39,7 +39,7 @@ import static io.servicetalk.http.api.HttpResponseStatuses.OK;
  * Business logic for the Hello World application.
  * This is a blocking service, for asynchronous use {@link StreamingService}.
  */
-final class StreamingBlockingService extends BlockingHttpService<HttpPayloadChunk, HttpPayloadChunk> {
+final class StreamingBlockingService extends BlockingHttpService {
     private static final Logger LOGGER = LoggerFactory.getLogger(StreamingBlockingService.class);
 
     @Override

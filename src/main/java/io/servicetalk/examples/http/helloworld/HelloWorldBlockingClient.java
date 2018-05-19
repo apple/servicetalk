@@ -60,7 +60,7 @@ public final class HelloWorldBlockingClient {
                     new DefaultHttpClientBuilder<>(newRoundRobinFactory());
 
             // Build the client, and register for DNS discovery events.
-            BlockingHttpClient<HttpPayloadChunk, HttpPayloadChunk> client = clientBuilder.buildBlocking(
+            BlockingHttpClient client = clientBuilder.buildBlocking(
                     executionContext, dnsDiscoverer.discover(new DefaultHostAndPort("localhost", 8080)));
 
             // Create a request, send the request, and wait for the response.

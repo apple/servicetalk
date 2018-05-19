@@ -65,7 +65,7 @@ public final class StreamingBlockingClient {
                     new DefaultHttpClientBuilder<>(newRoundRobinFactory());
             clientBuilder.setWireLoggerName("client");
             // Build the client, and register for DNS discovery events.
-            BlockingHttpClient<HttpPayloadChunk, HttpPayloadChunk> client = clientBuilder.buildBlocking(
+            BlockingHttpClient client = clientBuilder.buildBlocking(
                     executionContext, dnsDiscoverer.discover(new DefaultHostAndPort("localhost", 8080)));
 
             // Create a request with a payload body and some headers.

@@ -26,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponses.newResponse;
 
@@ -34,7 +33,7 @@ import static io.servicetalk.http.api.HttpResponses.newResponse;
  * Business logic for the Hello World application.
  * This is an asynchronous service, for blocking style see
  */
-final class HelloWorldService extends HttpService<HttpPayloadChunk, HttpPayloadChunk> {
+final class HelloWorldService extends HttpService {
     private static final Logger LOGGER = LoggerFactory.getLogger(HelloWorldService.class);
 
     @Override
@@ -44,6 +43,6 @@ final class HelloWorldService extends HttpService<HttpPayloadChunk, HttpPayloadC
         // security reasons, however here we override the filter and print every value.
         LOGGER.info("got request {}", request.toString((name, value) -> value));
 
-        return success(newResponse(OK, newPayloadChunk(ctx.getBufferAllocator().fromAscii("Hello World!"))));
+        return success(newResponse(OK, ctx.getBufferAllocator().fromAscii("Hello World!")));
     }
 }

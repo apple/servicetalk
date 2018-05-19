@@ -59,7 +59,7 @@ public final class HelloWorldClient {
                     new DefaultHttpClientBuilder<>(newRoundRobinFactory());
 
             // Build the client, and register for DNS discovery events.
-            HttpClient<HttpPayloadChunk, HttpPayloadChunk> client = clientBuilder.build(
+            HttpClient client = clientBuilder.build(
                     executionContext, dnsDiscoverer.discover(new DefaultHostAndPort("localhost", 8080)));
 
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting

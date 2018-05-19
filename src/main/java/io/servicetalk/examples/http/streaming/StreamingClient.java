@@ -39,7 +39,6 @@ import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.USER_AGENT;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
-import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
@@ -65,7 +64,7 @@ public final class StreamingClient {
                     new DefaultHttpClientBuilder<>(newRoundRobinFactory());
 
             // Build the client, and register for DNS discovery events.
-            HttpClient<HttpPayloadChunk, HttpPayloadChunk> client = clientBuilder.build(
+            HttpClient client = clientBuilder.build(
                     executionContext, dnsDiscoverer.discover(new DefaultHostAndPort("localhost", 8080)));
 
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
@@ -75,7 +74,7 @@ public final class StreamingClient {
 
             // Create a request with a payload body and some headers.
             HttpRequest<HttpPayloadChunk> request = newRequest(POST, "/sayHello",
-                    newPayloadChunk(executionContext.getBufferAllocator().fromAscii("world")));
+                    executionContext.getBufferAllocator().fromAscii("world"));
             request.getHeaders().set(TRANSFER_ENCODING, CHUNKED).set(USER_AGENT, "ServiceTalkHelloWorldClient");
 
             // Send the request, and transform the response.

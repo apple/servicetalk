@@ -24,7 +24,8 @@ import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscoverer;
 import io.servicetalk.http.api.AggregatedHttpClient;
-import io.servicetalk.http.api.FullHttpRequest;
+import io.servicetalk.http.api.AggregatedHttpRequest;
+import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.netty.DefaultHttpClientBuilder;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -37,7 +38,7 @@ import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
-import static io.servicetalk.http.api.FullHttpRequests.newRequest;
+import static io.servicetalk.http.api.AggregatedHttpRequests.newRequest;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
@@ -79,7 +80,7 @@ public final class AggregatingPayloadClient {
             for (int i = 0; i < 10; i++) {
                 payload.addBuffer(data);
             }
-            FullHttpRequest request = newRequest(GET, "/sayHello", payload);
+            AggregatedHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/sayHello", payload);
             // This is required at the moment since HttpClient does not add a transfer-encoding header.
             request.getHeaders().add(TRANSFER_ENCODING, CHUNKED);
             client.request(request)
@@ -87,7 +88,7 @@ public final class AggregatingPayloadClient {
                     .doAfterFinally(responseProcessedLatch::countDown)
                     .subscribe(response -> {
                         LOGGER.info("got response \n{}", response.toString((name, value) -> value));
-                        LOGGER.info("Response content: \n{}", response.getPayloadBody().toString(US_ASCII));
+                        LOGGER.info("Response content: \n{}", response.getPayloadBody().getContent().toString(US_ASCII));
                     });
 
             // Don't exit the main thread until after the response is completely processed.
