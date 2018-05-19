@@ -88,7 +88,7 @@ public abstract class AbstractJerseyHttpServiceTest {
     private ServerContext serverContext;
     private IoExecutor clientIoExecutor;
     private Executor clientExecutor;
-    private HttpConnection<HttpPayloadChunk, HttpPayloadChunk> clientConnection;
+    private HttpConnection clientConnection;
 
     @Before
     public void initServer() throws Exception {

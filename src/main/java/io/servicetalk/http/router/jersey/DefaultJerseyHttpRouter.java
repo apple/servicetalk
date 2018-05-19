@@ -48,7 +48,7 @@ import static io.servicetalk.http.router.jersey.DummyHttpUtils.getBaseUri;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.glassfish.jersey.server.internal.ContainerUtils.encodeUnsafeCharacters;
 
-final class DefaultJerseyHttpRouter extends HttpService<HttpPayloadChunk, HttpPayloadChunk> {
+final class DefaultJerseyHttpRouter extends HttpService {
 
     private static final SecurityContext UNAUTHENTICATED_SECURITY_CONTEXT = new SecurityContext() {
         @Nullable

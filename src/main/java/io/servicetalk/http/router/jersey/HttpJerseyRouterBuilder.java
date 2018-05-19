@@ -29,7 +29,7 @@ import javax.ws.rs.core.Application;
  * to JAX-RS annotated classes, using Jersey as the routing engine.
  * eg.
  * <pre>{@code
- * final HttpService<HttpPayloadChunk, HttpPayloadChunk> router = new HttpJerseyRouterBuilder()
+ * final HttpService router = new HttpJerseyRouterBuilder()
  *     .build(application);
  * }</pre>
  */
@@ -58,7 +58,7 @@ public final class HttpJerseyRouterBuilder {
      * @param application the {@link Application} to route requests to.
      * @return the {@link HttpService}.
      */
-    public HttpService<HttpPayloadChunk, HttpPayloadChunk> build(final Application application) {
+    public HttpService build(final Application application) {
         return build(new ApplicationHandler(application));
     }
 
@@ -68,7 +68,7 @@ public final class HttpJerseyRouterBuilder {
      * @param applicationClass the {@link Application} class to instantiate and route requests to.
      * @return the {@link HttpService}.
      */
-    public HttpService<HttpPayloadChunk, HttpPayloadChunk> build(final Class<? extends Application> applicationClass) {
+    public HttpService build(final Class<? extends Application> applicationClass) {
         return build(new ApplicationHandler(applicationClass));
     }
 
@@ -78,7 +78,7 @@ public final class HttpJerseyRouterBuilder {
      * @param applicationHandler the {@link ApplicationHandler} to route requests to.
      * @return the {@link HttpService}.
      */
-    public HttpService<HttpPayloadChunk, HttpPayloadChunk> build(final ApplicationHandler applicationHandler) {
+    public HttpService build(final ApplicationHandler applicationHandler) {
         return new DefaultJerseyHttpRouter(applicationHandler, publisherInputStreamQueueCapacity);
     }
 }
