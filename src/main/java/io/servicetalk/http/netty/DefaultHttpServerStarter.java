@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpServerStarter;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.transport.api.ContextFilter;
@@ -213,7 +212,7 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
     @Override
     public Single<ServerContext> start(final SocketAddress address, final ContextFilter contextFilter,
                                        final Executor executor,
-                                       final HttpService<HttpPayloadChunk, HttpPayloadChunk> service) {
+                                       final HttpService service) {
         return bind(config.asReadOnly(), address, contextFilter, executor, service);
     }
 }

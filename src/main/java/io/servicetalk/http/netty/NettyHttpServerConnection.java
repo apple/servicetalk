@@ -58,12 +58,12 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
             p -> p instanceof LastHttpPayloadChunk;
     private final Executor executor;
     private final ConnectionContext context;
-    private final HttpService<HttpPayloadChunk, HttpPayloadChunk> service;
+    private final HttpService service;
 
     NettyHttpServerConnection(final Channel channel, final Publisher<Object> requestObjectPublisher,
                               final TerminalPredicate<Object> terminalPredicate,
                               final Executor executor, final ConnectionContext context,
-                              final HttpService<HttpPayloadChunk, HttpPayloadChunk> service) {
+                              final HttpService service) {
         super(channel, context, requestObjectPublisher, terminalPredicate);
         this.executor = executor;
         this.context = context;

@@ -20,13 +20,11 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer.Event;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.http.api.AggregatedHttpClient;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpClientBuilder;
 import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.LoadBalancerReadyHttpClient;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -47,21 +45,19 @@ import static java.util.function.UnaryOperator.identity;
  * @param <ResolvedAddress> the type of address after resolution
  */
 public final class DefaultHttpClientBuilder<ResolvedAddress>
-        implements HttpClientBuilder<ResolvedAddress, Event<ResolvedAddress>, HttpPayloadChunk, HttpPayloadChunk> {
+        implements HttpClientBuilder<ResolvedAddress, Event<ResolvedAddress>> {
 
     private final HttpClientConfig config;
-    private final LoadBalancerFactory<ResolvedAddress, HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> lbFactory;
-    private BiFunction<HttpClient<HttpPayloadChunk, HttpPayloadChunk>, Publisher<Object>,
-            HttpClient<HttpPayloadChunk, HttpPayloadChunk>> clientFilterFactory = (client, lbEvents) ->
-                new LoadBalancerReadyHttpClient<>(4, lbEvents, client);
-    private UnaryOperator<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory = identity();
+    private final LoadBalancerFactory<ResolvedAddress, HttpConnection> lbFactory;
+    private BiFunction<HttpClient, Publisher<Object>, HttpClient> clientFilterFactory = (client, lbEvents) ->
+                new LoadBalancerReadyHttpClient(4, lbEvents, client);
+    private UnaryOperator<HttpConnection> connectionFilterFactory = identity();
 
     /**
      * Create a new instance.
      * @param loadBalancerFactory factory of {@link LoadBalancer} objects for {@link HttpConnection}s.
      */
-    public DefaultHttpClientBuilder(final LoadBalancerFactory<ResolvedAddress,
-            HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> loadBalancerFactory) {
+    public DefaultHttpClientBuilder(final LoadBalancerFactory<ResolvedAddress, HttpConnection> loadBalancerFactory) {
         this(loadBalancerFactory, new HttpClientConfig(new TcpClientConfig(false)));
     }
 
@@ -69,16 +65,15 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * @param loadBalancerFactory factory of {@link LoadBalancer} objects for {@link HttpConnection}s
      * @param config pre-load the builder with {@link HttpClientConfig} passed on from higher level builders
      */
-    DefaultHttpClientBuilder(final LoadBalancerFactory<ResolvedAddress,
-                             HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> loadBalancerFactory,
+    DefaultHttpClientBuilder(final LoadBalancerFactory<ResolvedAddress, HttpConnection> loadBalancerFactory,
                              final HttpClientConfig config) {
         this.lbFactory = requireNonNull(loadBalancerFactory);
         this.config = requireNonNull(config);
     }
 
     @Override
-    public HttpClient<HttpPayloadChunk, HttpPayloadChunk> build(final ExecutionContext executionContext,
-                                                        final Publisher<Event<ResolvedAddress>> addressEventStream) {
+    public HttpClient build(final ExecutionContext executionContext,
+                            final Publisher<Event<ResolvedAddress>> addressEventStream) {
         ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
         ConnectionFactory<ResolvedAddress, LoadBalancedHttpConnection> connectionFactory =
                 roConfig.getMaxPipelinedRequests() == 1 ?
@@ -86,18 +81,12 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
                         new PipelinedLBHttpConnectionFactory<>(roConfig, executionContext, connectionFilterFactory);
 
         // TODO we should revisit generics on LoadBalancerFactory to avoid casts
-        LoadBalancer<? extends HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> lbfUntypedForCast =
+        LoadBalancer<? extends HttpConnection> lbfUntypedForCast =
                 lbFactory.newLoadBalancer(addressEventStream, connectionFactory);
         LoadBalancer<LoadBalancedHttpConnection> loadBalancer =
                 (LoadBalancer<LoadBalancedHttpConnection>) lbfUntypedForCast;
         return clientFilterFactory.apply(new DefaultHttpClient(executionContext, loadBalancer),
                                             loadBalancer.getEventStream());
-    }
-
-    @Override
-    public AggregatedHttpClient buildAggregated(final ExecutionContext executionContext,
-                                                final Publisher<Event<ResolvedAddress>> addressEventStream) {
-        return build(executionContext, addressEventStream).asAggregatedClient(identity(), identity());
     }
 
     /**
@@ -234,7 +223,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * @return {@code this}
      */
     public DefaultHttpClientBuilder<ResolvedAddress> setConnectionFilterFactory(
-            UnaryOperator<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory) {
+            UnaryOperator<HttpConnection> connectionFilterFactory) {
         this.connectionFilterFactory = requireNonNull(connectionFilterFactory);
         return this;
     }
@@ -248,8 +237,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * @return {@code this}
      */
     public DefaultHttpClientBuilder<ResolvedAddress> setClientFilterFactory(
-            BiFunction<HttpClient<HttpPayloadChunk, HttpPayloadChunk>, Publisher<Object>,
-                    HttpClient<HttpPayloadChunk, HttpPayloadChunk>> clientFilterFactory) {
+            BiFunction<HttpClient, Publisher<Object>, HttpClient> clientFilterFactory) {
         this.clientFilterFactory = requireNonNull(clientFilterFactory);
         return this;
     }

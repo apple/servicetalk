@@ -64,7 +64,7 @@ public class HttpAuthConnectionFactoryClientTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private IoExecutor ioExecutor;
-    private HttpClient<HttpPayloadChunk, HttpPayloadChunk> client;
+    private HttpClient client;
     private ServerContext serverContext;
 
     @Before
@@ -109,17 +109,17 @@ public class HttpAuthConnectionFactoryClientTest {
     }
 
     private static final class TestHttpAuthConnectionFactory<ResolvedAddress> implements
-                              ConnectionFactory<ResolvedAddress, HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> {
+                              ConnectionFactory<ResolvedAddress, HttpConnection> {
         private final ConnectionFactory<ResolvedAddress,
-                ? extends HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> delegate;
+                ? extends HttpConnection> delegate;
 
         TestHttpAuthConnectionFactory(final ConnectionFactory<ResolvedAddress,
-                ? extends HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> delegate) {
+                ? extends HttpConnection> delegate) {
             this.delegate = requireNonNull(delegate);
         }
 
         @Override
-        public Single<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> newConnection(
+        public Single<HttpConnection> newConnection(
                 final ResolvedAddress resolvedAddress) {
             return delegate.newConnection(resolvedAddress).flatMap(cnx ->
                     cnx.request(newTestRequest("/auth"))

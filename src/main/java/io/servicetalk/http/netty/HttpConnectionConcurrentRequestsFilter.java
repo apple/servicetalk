@@ -33,11 +33,11 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.http.api.HttpConnection.SettingKey.MAX_CONCURRENCY;
 import static java.util.Objects.requireNonNull;
 
-final class HttpConnectionConcurrentRequestsFilter extends HttpConnection<HttpPayloadChunk, HttpPayloadChunk> {
-    private final HttpConnection<HttpPayloadChunk, HttpPayloadChunk> next;
+final class HttpConnectionConcurrentRequestsFilter extends HttpConnection {
+    private final HttpConnection next;
     private final RequestConcurrencyController limiter;
 
-    HttpConnectionConcurrentRequestsFilter(HttpConnection<HttpPayloadChunk, HttpPayloadChunk> next,
+    HttpConnectionConcurrentRequestsFilter(HttpConnection next,
                                            int defaultMaxPipelinedRequests) {
         this.next = requireNonNull(next);
         limiter = defaultMaxPipelinedRequests == 1 ?

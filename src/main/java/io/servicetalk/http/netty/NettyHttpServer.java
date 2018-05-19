@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.LastHttpPayloadChunk;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
@@ -50,7 +49,7 @@ final class NettyHttpServer {
 
     static Single<ServerContext> bind(final ReadOnlyHttpServerConfig config, final SocketAddress address,
                                       final ContextFilter contextFilter, final Executor executor,
-                                      final HttpService<HttpPayloadChunk, HttpPayloadChunk> service) {
+                                      final HttpService service) {
         final TcpServerInitializer initializer = new TcpServerInitializer(config.getTcpConfig());
 
         final ChannelInitializer channelInitializer = new TcpServerChannelInitializer(config.getTcpConfig())
@@ -63,7 +62,7 @@ final class NettyHttpServer {
 
     private static ChannelInitializer getChannelInitializer(
             final ReadOnlyHttpServerConfig config, final Executor executor,
-            final HttpService<HttpPayloadChunk, HttpPayloadChunk> service) {
+            final HttpService service) {
         return (channel, context) -> {
             channel.pipeline().addLast(new HttpRequestDecoder(config.getHeadersFactory(),
                     config.getMaxInitialLineLength(), config.getMaxHeaderSize()));

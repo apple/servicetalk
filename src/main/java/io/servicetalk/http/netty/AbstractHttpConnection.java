@@ -36,8 +36,7 @@ import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.http.netty.SpliceFlatStreamToMetaSingle.flatten;
 import static java.util.Objects.requireNonNull;
 
-abstract class AbstractHttpConnection<CC extends ConnectionContext>
-        extends HttpConnection<HttpPayloadChunk, HttpPayloadChunk> {
+abstract class AbstractHttpConnection<CC extends ConnectionContext> extends HttpConnection {
 
     // TODO consolidate with http server logic
     private static final Predicate<HttpPayloadChunk> LAST_CHUNK_PREDICATE = p -> p instanceof LastHttpPayloadChunk;

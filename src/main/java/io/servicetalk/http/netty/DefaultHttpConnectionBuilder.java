@@ -22,7 +22,6 @@ import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpConnectionBuilder;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.LastHttpPayloadChunk;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
@@ -47,13 +46,12 @@ import static java.util.function.UnaryOperator.identity;
  *
  * @param <ResolvedAddress> the type of address after resolution.
  */
-public final class DefaultHttpConnectionBuilder<ResolvedAddress>
-        implements HttpConnectionBuilder<ResolvedAddress, HttpPayloadChunk, HttpPayloadChunk> {
+public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements HttpConnectionBuilder<ResolvedAddress> {
 
     private static final Predicate<Object> LAST_CHUNK_PREDICATE = p -> p instanceof LastHttpPayloadChunk;
 
     private final HttpClientConfig config;
-    private UnaryOperator<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory = identity();
+    private UnaryOperator<HttpConnection> connectionFilterFactory = identity();
 
     /**
      * Create a new builder.
@@ -74,8 +72,8 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress>
     }
 
     @Override
-    public Single<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> build(final ExecutionContext executionContext,
-                                                                            final ResolvedAddress resolvedAddress) {
+    public Single<HttpConnection> build(final ExecutionContext executionContext,
+                                        final ResolvedAddress resolvedAddress) {
         ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
         return (roConfig.getMaxPipelinedRequests() == 1 ?
                   buildForNonPipelined(executionContext, resolvedAddress, roConfig, connectionFilterFactory) :
@@ -87,32 +85,30 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress>
     @Override
     public Single<AggregatedHttpConnection> buildAggregated(final ExecutionContext executionContext,
                                                             final ResolvedAddress resolvedAddress) {
-        return build(executionContext, resolvedAddress).map(conn -> conn.asAggregatedConnection(identity(), identity()));
+        return build(executionContext, resolvedAddress).map(HttpConnection::asAggregatedConnection);
     }
 
-    static <ResolvedAddress> Single<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> buildForPipelined(
+    static <ResolvedAddress> Single<HttpConnection> buildForPipelined(
         ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
-        Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>,
-                 HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory) {
+        Function<HttpConnection, HttpConnection> connectionFilterFactory) {
         return build(executionContext, resolvedAddress, roConfig, conn ->
                 connectionFilterFactory.apply(new PipelinedHttpConnection(conn, roConfig, executionContext)));
     }
 
-    static <ResolvedAddress> Single<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> buildForNonPipelined(
+    static <ResolvedAddress> Single<HttpConnection> buildForNonPipelined(
             ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
-            Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>,
-                     HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory) {
+            Function<HttpConnection, HttpConnection> connectionFilterFactory) {
         return build(executionContext, resolvedAddress, roConfig, conn ->
                 connectionFilterFactory.apply(new NonPipelinedHttpConnection(conn, roConfig, executionContext)));
     }
 
-    private static <ResolvedAddress> Single<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> build(
+    private static <ResolvedAddress> Single<HttpConnection> build(
             ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
-            Function<Connection<Object, Object>, HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> mapper) {
-        return new Single<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>>() {
+            Function<Connection<Object, Object>, HttpConnection> mapper) {
+        return new Single<HttpConnection>() {
             @Override
             protected void handleSubscribe(
-                    Subscriber<? super HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> subscriber) {
+                    Subscriber<? super HttpConnection> subscriber) {
                 final ChannelInitializer initializer = new TcpClientChannelInitializer(roConfig.getTcpClientConfig())
                         .andThen(new HttpClientChannelInitializer(roConfig));
 
@@ -256,7 +252,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress>
      * @return {@code this}
      */
     public DefaultHttpConnectionBuilder<ResolvedAddress> setConnectionFilterFactory(
-            UnaryOperator<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory) {
+            UnaryOperator<HttpConnection> connectionFilterFactory) {
         this.connectionFilterFactory = requireNonNull(connectionFilterFactory);
         return this;
     }

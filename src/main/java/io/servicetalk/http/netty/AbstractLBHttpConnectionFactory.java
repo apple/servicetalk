@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpConnection;
-import io.servicetalk.http.api.HttpPayloadChunk;
 
 import java.util.function.Function;
 
@@ -28,18 +27,15 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 
 abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
         implements ConnectionFactory<ResolvedAddress, LoadBalancedHttpConnection> {
-    private final Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>,
-            HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory;
+    private final Function<HttpConnection, HttpConnection> connectionFilterFactory;
     private final ListenableAsyncCloseable close = emptyAsyncCloseable();
 
-    AbstractLBHttpConnectionFactory(Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>,
-                                          HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory) {
+    AbstractLBHttpConnectionFactory(Function<HttpConnection, HttpConnection> connectionFilterFactory) {
         this.connectionFilterFactory = connectionFilterFactory;
     }
 
     abstract Single<LoadBalancedHttpConnection> newConnection(ResolvedAddress address,
-                                 Function<HttpConnection<HttpPayloadChunk, HttpPayloadChunk>,
-                                         HttpConnection<HttpPayloadChunk, HttpPayloadChunk>> connectionFilterFactory);
+                                                      Function<HttpConnection, HttpConnection> connectionFilterFactory);
 
     @Override
     public final Single<LoadBalancedHttpConnection> newConnection(ResolvedAddress address) {

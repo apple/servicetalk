@@ -33,12 +33,12 @@ import static java.util.Objects.requireNonNull;
 /**
  * Makes the wrapped {@link HttpConnection} aware of the {@link LoadBalancer}.
  */
-final class LoadBalancedHttpConnection extends ReservedHttpConnection<HttpPayloadChunk, HttpPayloadChunk>
+final class LoadBalancedHttpConnection extends ReservedHttpConnection
         implements ReservableRequestConcurrencyController {
-    private final HttpConnection<HttpPayloadChunk, HttpPayloadChunk> delegate;
+    private final HttpConnection delegate;
     private final ReservableRequestConcurrencyController limiter;
 
-    LoadBalancedHttpConnection(HttpConnection<HttpPayloadChunk, HttpPayloadChunk> delegate,
+    LoadBalancedHttpConnection(HttpConnection delegate,
                                ReservableRequestConcurrencyController limiter) {
         this.delegate = requireNonNull(delegate);
         this.limiter = requireNonNull(limiter);

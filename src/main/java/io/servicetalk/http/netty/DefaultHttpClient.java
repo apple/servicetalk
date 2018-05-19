@@ -29,7 +29,7 @@ import java.util.function.Function;
 import static io.servicetalk.concurrent.api.Single.error;
 import static java.util.Objects.requireNonNull;
 
-final class DefaultHttpClient extends HttpClient<HttpPayloadChunk, HttpPayloadChunk> {
+final class DefaultHttpClient extends HttpClient {
 
     private static final Function<LoadBalancedHttpConnection, LoadBalancedHttpConnection> SELECTOR_FOR_REQUEST =
             conn -> conn.tryRequest() ? conn : null;
@@ -48,13 +48,13 @@ final class DefaultHttpClient extends HttpClient<HttpPayloadChunk, HttpPayloadCh
     }
 
     @Override
-    public Single<? extends ReservedHttpConnection<HttpPayloadChunk, HttpPayloadChunk>> reserveConnection(
+    public Single<? extends ReservedHttpConnection> reserveConnection(
             final HttpRequest<HttpPayloadChunk> request) {
         return loadBalancer.selectConnection(SELECTOR_FOR_RESERVE);
     }
 
     @Override
-    public Single<? extends UpgradableHttpResponse<HttpPayloadChunk, HttpPayloadChunk>> upgradeConnection(
+    public Single<? extends UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
             final HttpRequest<HttpPayloadChunk> request) {
         return error(new UnsupportedOperationException("Protocol upgrades not yet implemented"));
     }

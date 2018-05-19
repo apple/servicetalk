@@ -62,7 +62,7 @@ public class HttpConnectionConcurrentRequestsFilterTest {
 
     @Test
     public void decrementWaitsUntilResponsePayloadIsComplete() throws ExecutionException, InterruptedException {
-        HttpConnection<HttpPayloadChunk, HttpPayloadChunk> mockConnection = Mockito.mock(HttpConnection.class);
+        HttpConnection mockConnection = Mockito.mock(HttpConnection.class);
         when(mockConnection.onClose()).thenReturn(never());
         when(mockConnection.getSettingStream(eq(MAX_CONCURRENCY))).thenReturn(just(2));
         when(mockConnection.request(any())).thenReturn(
@@ -70,7 +70,7 @@ public class HttpConnectionConcurrentRequestsFilterTest {
                 success(newResponse(OK, response2Publisher.getPublisher())),
                 success(newResponse(OK, response3Publisher.getPublisher()))
         );
-        HttpConnection<HttpPayloadChunk, HttpPayloadChunk> limitedConnection =
+        HttpConnection limitedConnection =
                 new HttpConnectionConcurrentRequestsFilter(mockConnection, 2);
         HttpResponse<HttpPayloadChunk> resp1 = awaitIndefinitelyNonNull(
                 limitedConnection.request(newRequest(HttpRequestMethods.GET, "/foo")));

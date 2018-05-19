@@ -42,7 +42,7 @@ import static io.servicetalk.http.api.HttpResponseStatuses.NOT_FOUND;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponses.newResponse;
 
-final class TestService extends HttpService<HttpPayloadChunk, HttpPayloadChunk> {
+final class TestService extends HttpService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestService.class);
 

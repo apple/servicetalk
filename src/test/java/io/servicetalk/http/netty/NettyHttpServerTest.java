@@ -102,7 +102,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     private static IoExecutor ioExecutor;
     private final Executor executor;
 
-    private HttpConnection<HttpPayloadChunk, HttpPayloadChunk> httpConnection;
+    private HttpConnection httpConnection;
 
     public NettyHttpServerTest(final Executor executor) {
         this.executor = executor;
