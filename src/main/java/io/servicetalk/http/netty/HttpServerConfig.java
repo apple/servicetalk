@@ -31,7 +31,6 @@ final class HttpServerConfig {
     private int maxHeaderSize = 8192;
     private int headersEncodedSizeEstimate = 256;
     private int trailersEncodedSizeEstimate = 256;
-    private int maxChunkSize = 8192;
 
     HttpServerConfig(final IoExecutor ioExecutor) {
         tcpConfig = new TcpServerConfig(false, toNettyIoExecutor(ioExecutor));
@@ -92,17 +91,6 @@ final class HttpServerConfig {
             throw new IllegalArgumentException("maxHeaderSize must be > 0");
         }
         this.maxHeaderSize = maxHeaderSize;
-    }
-
-    int getMaxChunkSize() {
-        return maxChunkSize;
-    }
-
-    void setMaxChunkSize(final int maxChunkSize) {
-        if (maxChunkSize <= 0) {
-            throw new IllegalArgumentException("maxChunkSize must be > 0");
-        }
-        this.maxChunkSize = maxChunkSize;
     }
 
     TcpServerConfig getTcpConfig() {

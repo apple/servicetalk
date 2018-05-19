@@ -126,19 +126,6 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
     }
 
     /**
-     * The server will break contents or chunks whose size exceeds maxChunkSize into multiple {@link HttpPayloadChunk}s
-     * whose length is less than maxChunkSize.
-     *
-     * @param maxChunkSize The server will break contents or chunks whose size exceeds maxChunkSize
-     * into multiple {@link HttpPayloadChunk}s whose length is less than maxChunkSize.
-     * @return this.
-     */
-    public DefaultHttpServerStarter setMaxChunkSize(final int maxChunkSize) {
-        config.setMaxChunkSize(maxChunkSize);
-        return this;
-    }
-
-    /**
      * The maximum queue length for incoming connection indications (a request to connect) is set to the backlog
      * parameter. If a connection indication arrives when the queue is full, the connection may time out.
      *

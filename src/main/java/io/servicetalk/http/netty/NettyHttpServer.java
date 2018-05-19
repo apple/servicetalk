@@ -66,7 +66,7 @@ final class NettyHttpServer {
             final HttpService<HttpPayloadChunk, HttpPayloadChunk> service) {
         return (channel, context) -> {
             channel.pipeline().addLast(new HttpRequestDecoder(config.getHeadersFactory(),
-                    config.getMaxInitialLineLength(), config.getMaxHeaderSize(), config.getMaxChunkSize(), true));
+                    config.getMaxInitialLineLength(), config.getMaxHeaderSize()));
             channel.pipeline().addLast(new HttpResponseEncoder(config.getHeadersEncodedSizeEstimate(),
                     config.getTrailersEncodedSizeEstimate()));
             channel.pipeline().addLast(new AbstractChannelReadHandler<Object>(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE,

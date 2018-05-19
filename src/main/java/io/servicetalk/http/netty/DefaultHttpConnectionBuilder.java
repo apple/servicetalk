@@ -208,18 +208,6 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress>
     }
 
     /**
-     * Set the maximum size of HttpContents which will be send by created {@link HttpClient}.
-     *
-     * @param maxChunkSize A {@link HttpClient} will break contents or chunks whose size exceeds this value into
-     * multiple HttpContents whose length is less than maxChunkSize.
-     * @return {@code this}.
-     */
-    public DefaultHttpConnectionBuilder<ResolvedAddress> setMaxChunkSize(final int maxChunkSize) {
-        config.setMaxChunkSize(maxChunkSize);
-        return this;
-    }
-
-    /**
      * Set the value used to calculate an exponential moving average of the encoded size of the initial line and the
      * headers for a guess for future buffer allocations.
      *

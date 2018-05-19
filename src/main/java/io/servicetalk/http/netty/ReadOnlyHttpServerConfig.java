@@ -26,7 +26,6 @@ final class ReadOnlyHttpServerConfig {
     private final int maxHeaderSize;
     private final int headersEncodedSizeEstimate;
     private final int trailersEncodedSizeEstimate;
-    private final int maxChunkSize;
 
     ReadOnlyHttpServerConfig(final HttpServerConfig from) {
         tcpConfig = from.getTcpConfig().asReadOnly();
@@ -36,7 +35,6 @@ final class ReadOnlyHttpServerConfig {
         maxHeaderSize = from.getMaxHeaderSize();
         headersEncodedSizeEstimate = from.getHeadersEncodedSizeEstimate();
         trailersEncodedSizeEstimate = from.getTrailersEncodedSizeEstimate();
-        maxChunkSize = from.getMaxChunkSize();
     }
 
     HttpHeadersFactory getHeadersFactory() {
@@ -61,10 +59,6 @@ final class ReadOnlyHttpServerConfig {
 
     int getTrailersEncodedSizeEstimate() {
         return trailersEncodedSizeEstimate;
-    }
-
-    int getMaxChunkSize() {
-        return maxChunkSize;
     }
 
     ReadOnlyTcpServerConfig getTcpConfig() {

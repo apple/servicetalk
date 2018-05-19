@@ -23,7 +23,6 @@ final class ReadOnlyHttpClientConfig {
     private final ReadOnlyTcpClientConfig tcpClientConfig;
     private final int maxInitialLineLength;
     private final int maxHeaderSize;
-    private final int maxChunkSize;
     private final int maxPipelinedRequests;
     private final int headersEncodedSizeEstimate;
     private final int trailersEncodedSizeEstimate;
@@ -33,7 +32,6 @@ final class ReadOnlyHttpClientConfig {
         tcpClientConfig = from.getTcpClientConfig().asReadOnly();
         maxInitialLineLength = from.getMaxInitialLineLength();
         maxHeaderSize = from.getMaxHeaderSize();
-        maxChunkSize = from.getMaxChunkSize();
         headersEncodedSizeEstimate = from.getHeadersEncodedSizeEstimate();
         trailersEncodedSizeEstimate = from.getTrailersEncodedSizeEstimate();
         maxPipelinedRequests = from.getMaxPipelinedRequests();
@@ -54,10 +52,6 @@ final class ReadOnlyHttpClientConfig {
 
     int getMaxHeaderSize() {
         return maxHeaderSize;
-    }
-
-    int getMaxChunkSize() {
-        return maxChunkSize;
     }
 
     int getHeadersEncodedSizeEstimate() {

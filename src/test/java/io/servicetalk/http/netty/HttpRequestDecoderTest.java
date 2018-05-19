@@ -335,7 +335,7 @@ public class HttpRequestDecoderTest {
     }
 
     private static EmbeddedChannel newEmbeddedChannel() {
-        HttpRequestDecoder decoder = new HttpRequestDecoder(DefaultHttpHeadersFactory.INSTANCE, 8192, 8192, 8192, true);
+        HttpRequestDecoder decoder = new HttpRequestDecoder(DefaultHttpHeadersFactory.INSTANCE, 8192, 8192);
         decoder.setDiscardAfterReads(1);
         return new EmbeddedChannel(decoder);
     }

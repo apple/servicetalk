@@ -28,9 +28,8 @@ import static java.lang.Integer.parseInt;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
 final class HttpResponseDecoder extends HttpObjectDecoder {
-    HttpResponseDecoder(HttpHeadersFactory headersFactory,
-                        int maxInitialLineLength, int maxHeaderSize, int maxChunkSize, boolean chunkedSupported) {
-        super(headersFactory, maxInitialLineLength, maxHeaderSize, maxChunkSize, chunkedSupported);
+    HttpResponseDecoder(HttpHeadersFactory headersFactory, int maxInitialLineLength, int maxHeaderSize) {
+        super(headersFactory, maxInitialLineLength, maxHeaderSize);
     }
 
     @Override

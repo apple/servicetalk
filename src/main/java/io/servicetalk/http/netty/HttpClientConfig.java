@@ -27,7 +27,6 @@ final class HttpClientConfig {
     private HttpHeadersFactory headersFactory = DefaultHttpHeadersFactory.INSTANCE;
     private int maxInitialLineLength = 4096;
     private int maxHeaderSize = 8192;
-    private int maxChunkSize = 8192;
     private int headersEncodedSizeEstimate = 256;
     private int trailersEncodedSizeEstimate = 256;
     private int maxPipelinedRequests = 1;
@@ -79,17 +78,6 @@ final class HttpClientConfig {
             throw new IllegalArgumentException("maxHeaderSize must be > 0");
         }
         this.maxHeaderSize = maxHeaderSize;
-    }
-
-    int getMaxChunkSize() {
-        return maxChunkSize;
-    }
-
-    void setMaxChunkSize(final int maxChunkSize) {
-        if (maxChunkSize <= 0) {
-            throw new IllegalArgumentException("maxChunkSize must be > 0");
-        }
-        this.maxChunkSize = maxChunkSize;
     }
 
     int getHeadersEncodedSizeEstimate() {

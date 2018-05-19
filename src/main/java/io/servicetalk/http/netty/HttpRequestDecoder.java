@@ -54,9 +54,8 @@ final class HttpRequestDecoder extends HttpObjectDecoder {
         }
     };
 
-    HttpRequestDecoder(HttpHeadersFactory headersFactory,
-                       int maxInitialLineLength, int maxHeaderSize, int maxChunkSize, boolean chunkedSupported) {
-        super(headersFactory, maxInitialLineLength, maxHeaderSize, maxChunkSize, chunkedSupported);
+    HttpRequestDecoder(HttpHeadersFactory headersFactory, int maxInitialLineLength, int maxHeaderSize) {
+        super(headersFactory, maxInitialLineLength, maxHeaderSize);
     }
 
     @Override

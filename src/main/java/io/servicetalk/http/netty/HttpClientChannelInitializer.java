@@ -37,7 +37,7 @@ final class HttpClientChannelInitializer implements ChannelInitializer {
     public ConnectionContext init(final Channel channel, final ConnectionContext ctx) {
         final ChannelPipeline pipeline = channel.pipeline();
         pipeline.addLast(new HttpResponseDecoder(roConfig.getHeadersFactory(), roConfig.getMaxInitialLineLength(),
-                roConfig.getMaxHeaderSize(), roConfig.getMaxChunkSize(), true));
+                roConfig.getMaxHeaderSize()));
         pipeline.addLast(new HttpRequestEncoder(
                 roConfig.getHeadersEncodedSizeEstimate(), roConfig.getTrailersEncodedSizeEstimate()));
         return ctx;
