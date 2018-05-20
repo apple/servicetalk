@@ -176,6 +176,10 @@ public final class RedisUtils {
 
     /**
      * Returns a {@code short} value using endian order.
+     *
+     * @param first the first {@code char} to include in the {@code short}.
+     * @param second the second {@code char} to include in the {@code short}.
+     * @return a {@code short}.
      */
     public static short makeShort(char first, char second) {
         return BIG_ENDIAN_NATIVE_ORDER ?
