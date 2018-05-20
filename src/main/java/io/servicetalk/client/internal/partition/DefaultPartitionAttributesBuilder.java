@@ -42,7 +42,8 @@ public final class DefaultPartitionAttributesBuilder implements PartitionAttribu
 
     /**
      * Create a new instance.
-     * @param initialSize The anticipated number of key/value pairs that will be added via {@link #add(Key, Object)}.
+     *
+     * @param initialSize The anticipated number of key/value pairs that will be added via {@link #add add(Key&lt;T&gt; key, T value)}.
      */
     public DefaultPartitionAttributesBuilder(int initialSize) {
         keyValueArray = new Object[initialSize << 1];
