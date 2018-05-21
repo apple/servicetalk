@@ -35,7 +35,6 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static java.nio.ByteBuffer.allocate;
@@ -43,8 +42,6 @@ import static java.nio.ByteBuffer.allocateDirect;
 
 final class ReadOnlyByteBuffer extends AbstractBuffer {
     private final ByteBuffer buffer;
-    @Nullable
-    private ByteBuffer tmpNioBuf;
 
     ReadOnlyByteBuffer(ByteBuffer buffer) {
         super(buffer.position(), buffer.limit());
@@ -137,8 +134,8 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
                     "dstIndex: %d, length: %d (expected: range(0, %d))", dstIndex, length, dst.length));
         }
 
-        ByteBuffer tmpBuf = internalNioBuffer();
-        tmpBuf.clear().position(index).limit(index + length);
+        ByteBuffer tmpBuf = buffer.duplicate();
+        tmpBuf.position(index).limit(index + length);
         tmpBuf.get(dst, dstIndex, length);
         return this;
     }
@@ -151,8 +148,8 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
         }
 
         int bytesToCopy = Math.min(getCapacity() - index, dst.remaining());
-        ByteBuffer tmpBuf = internalNioBuffer();
-        tmpBuf.clear().position(index).limit(index + bytesToCopy);
+        ByteBuffer tmpBuf = buffer.duplicate();
+        tmpBuf.position(index).limit(index + bytesToCopy);
         dst.put(tmpBuf);
         return this;
     }
@@ -410,7 +407,7 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
     }
 
     private ByteBuffer sliceByteBuffer0(int index, int length) {
-        return (ByteBuffer) internalNioBuffer().clear().position(index).limit(index + length);
+        return (ByteBuffer) buffer.duplicate().position(index).limit(index + length);
     }
 
     @Override
@@ -472,13 +469,5 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
         } catch (CharacterCodingException e) {
             throw new IllegalStateException(e);
         }
-    }
-
-    private ByteBuffer internalNioBuffer() {
-        ByteBuffer tmpNioBuf = this.tmpNioBuf;
-        if (tmpNioBuf == null) {
-            this.tmpNioBuf = tmpNioBuf = buffer.duplicate();
-        }
-        return tmpNioBuf;
     }
 }
