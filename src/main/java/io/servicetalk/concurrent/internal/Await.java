@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.internal.ConcurrentSubscription.wrap;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
 
 /**
@@ -268,7 +269,7 @@ public final class Await {
         //TODO: Check if the current thread is an eventloop, if so, throw.
     }
 
-    private static <T> T enforceNonNull(T result, NullPointerException npe) throws ExecutionException {
+    private static <T> T enforceNonNull(@Nullable T result, NullPointerException npe) throws ExecutionException {
         if (result == null) {
             throw new ExecutionException("null return value not supported", npe);
         }
@@ -384,8 +385,11 @@ public final class Await {
 
         @Override
         public void onSubscribe(Subscription s) {
-            setCancellable(s::cancel);
-            s.request(Long.MAX_VALUE);
+            // Since, cancel() from timeout can be concurrent with the below request(Long.MAX_VALUE), we wrap the
+            // Subscription in a ConcurrentSubscription.
+            ConcurrentSubscription cs = wrap(s);
+            setCancellable(cs::cancel);
+            cs.request(Long.MAX_VALUE);
         }
 
         @Override
