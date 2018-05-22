@@ -56,7 +56,7 @@ public abstract class AbstractNettyHttpServerTest {
 
     @BeforeClass
     public static void createServerIoExecutor() {
-        ioExecutor = createIoExecutor(2, new IoThreadFactory("server-io-executor"));
+        ioExecutor = createIoExecutor(new IoThreadFactory("server-io-executor"));
     }
 
     @Before

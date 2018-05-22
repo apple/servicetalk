@@ -110,7 +110,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
     @BeforeClass
     public static void createClientIoExecutor() {
-        ioExecutor = NettyIoExecutors.createIoExecutor(2, new IoThreadFactory("client-io-executor"));
+        ioExecutor = NettyIoExecutors.createIoExecutor(new IoThreadFactory("client-io-executor"));
     }
 
     @Parameters
