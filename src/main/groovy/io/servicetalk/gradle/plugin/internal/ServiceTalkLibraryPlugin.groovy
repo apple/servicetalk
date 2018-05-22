@@ -105,6 +105,8 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
 
       javadoc {
         options.noQualifiers "all"
+        // -quiet is a workaround for addStringOption(s) being broken: it's ignored as already added in the command by Gradle
+        options.addStringOption("Xwerror", "-quiet")
       }
 
       def sourcesJar = createSourcesJarTask(project, sourceSets.main)
