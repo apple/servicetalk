@@ -327,8 +327,12 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
     private static void writeBufferToByteBuf(Buffer src, int dstOffset, ByteBuf dst) {
         ByteBuf byteBuf = toByteBufNoThrow(src);
         if (byteBuf != null) {
-            dst.setBytes(dstOffset, byteBuf);
+            // We don't want to modify either src or byteBuf's reader/writer indexes so use the setBytes method which
+            // doesn't modify indexes.
+            dst.setBytes(dstOffset, byteBuf, byteBuf.readerIndex(), byteBuf.readableBytes());
         } else {
+            // This will modify the position of the src's NIO ByteBuffer, however the API of toNioBuffer says that the
+            // indexes of the ByteBuffer and the Buffer are independent.
             dst.setBytes(dstOffset, src.toNioBuffer());
         }
     }
