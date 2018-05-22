@@ -19,13 +19,14 @@ import io.servicetalk.concurrent.Cancellable;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import static java.lang.Thread.interrupted;
 import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link Cancellable} that will {@link Thread#interrupt() interrupt a thread}.
  * <p>
- * It is important that {@link #setDone()} is called after the associated blocking operation completes to avoid
- * "spurious" thread interrupts.
+ * It is important that {@link #setDone()} (or {@link #setDone(Throwable)}) is called after the associated blocking
+ * operation completes to avoid "spurious" thread interrupts.
  */
 public final class ThreadInterruptingCancellable implements Cancellable {
     private static final AtomicIntegerFieldUpdater<ThreadInterruptingCancellable> statusUpdater =
@@ -56,5 +57,19 @@ public final class ThreadInterruptingCancellable implements Cancellable {
      */
     public void setDone() {
         status = 1;
+    }
+
+    /**
+     * Indicates the operation associated with this {@link Cancellable} is done and future calls to {@link #cancel()}
+     * should be NOOPs.
+     * @param cause The operation failed, and this is the {@link Throwable} that indicates why. If this is
+     * {@link InterruptedException} then {@link Thread#interrupted()} will be called for the current thread to clear
+     * the interrupt status.
+     */
+    public void setDone(Throwable cause) {
+        setDone();
+        if (cause instanceof InterruptedException) {
+            interrupted();
+        }
     }
 }
