@@ -37,10 +37,10 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid
 import static java.util.Collections.emptyIterator;
 import static java.util.Objects.requireNonNull;
 
-final class PublisherFlatMapIterable<T, U> extends AbstractSynchronousPublisherOperator<T, U> {
+final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublisherOperator<T, U> {
     private final Function<? super T, ? extends Iterable<? extends U>> mapper;
 
-    PublisherFlatMapIterable(Publisher<T> original, Function<? super T, ? extends Iterable<? extends U>> mapper, Executor executor) {
+    PublisherConcatMapIterable(Publisher<T> original, Function<? super T, ? extends Iterable<? extends U>> mapper, Executor executor) {
         super(original, executor);
         this.mapper = requireNonNull(mapper);
     }

@@ -325,14 +325,38 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     }
 
     /**
-     * Create a {@link Publisher} that flattens each element returned by the {@link Iterable#iterator()} from {@code mapper}.
+     * Create a {@link Publisher} that flattens each element returned by the {@link Iterable#iterator()} from
+     * {@code mapper}.
+     * <p>
+     * Note that {@code flatMap} operators may process input in parallel, provide results as they become available, and
+     * may interleave results from multiple {@link Iterator}s. If ordering is required see
+     * {@link #concatMapIterable(Function)}.
      * @param mapper A {@link Function} that returns an {@link Iterable} for each element.
      * @param <U> The elements returned by the {@link Iterable}.
-     * @return a {@link Publisher} that flattens each element returned by the {@link Iterable#iterator()} from {@code mapper}.
+     * @return a {@link Publisher} that flattens each element returned by the {@link Iterable#iterator()} from
+     * {@code mapper}. Data is processed concurrently, the results are not necessarily ordered, and will depend upon
+     * completion order of the {@link Iterator}s.
      * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX FlatMap operator.</a>
      */
     public final <U> Publisher<U> flatMapIterable(Function<? super T, ? extends Iterable<? extends U>> mapper) {
-        return new PublisherFlatMapIterable<>(this, mapper, executor);
+        // TODO(scott): implement the flatMap variant.
+        return concatMapIterable(mapper);
+    }
+
+    /**
+     * Create a {@link Publisher} that flattens each element returned by the {@link Iterable#iterator()} from
+     * {@code mapper}.
+     * <p>
+     * The mapper {@link Function} will only be called when the previously returned {@link Iterator} has returned
+     * {@code false} from {@link Iterator#hasNext()}.
+     * @param mapper A {@link Function} that returns an {@link Iterable} for each element.
+     * @param <U> The elements returned by the {@link Iterable}.
+     * @return a {@link Publisher} that flattens each element returned by the {@link Iterable#iterator()} from
+     * {@code mapper}. The results will be sequential for each {@link Iterator}, and overall for all calls to
+     * {@link Iterable#iterator()}
+     */
+    public final <U> Publisher<U> concatMapIterable(Function<? super T, ? extends Iterable<? extends U>> mapper) {
+        return new PublisherConcatMapIterable<>(this, mapper, executor);
     }
 
     /**

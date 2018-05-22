@@ -22,9 +22,9 @@ import org.testng.annotations.Test;
 import java.util.Collections;
 
 @Test
-public class PublisherFlatMapIterableTckTest extends AbstractPublisherOperatorTckTest<Integer> {
+public class PublisherConcatMapIterableTckTest extends AbstractPublisherOperatorTckTest<Integer> {
     @Override
     protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
-        return publisher.flatMapIterable(Collections::singletonList);
+        return publisher.concatMapIterable(Collections::singletonList);
     }
 }

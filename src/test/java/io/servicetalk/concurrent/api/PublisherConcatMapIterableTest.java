@@ -28,7 +28,7 @@ import static java.util.function.Function.identity;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class PublisherFlatMapIterableTest {
+public class PublisherConcatMapIterableTest {
     @Rule
     public final PublisherRule<List<String>> publisher = new PublisherRule<>();
     @Rule
@@ -38,7 +38,7 @@ public class PublisherFlatMapIterableTest {
 
     @Test
     public void cancellableIterableIsCancelled() {
-        cancellablePublisher.getPublisher().flatMapIterable(identity()).subscribe(subscriber.getSubscriber());
+        cancellablePublisher.getPublisher().concatMapIterable(identity()).subscribe(subscriber.getSubscriber());
         subscriber.verifySubscribe();
         subscriber.request(1);
         AtomicBoolean cancelled = new AtomicBoolean();
@@ -52,14 +52,14 @@ public class PublisherFlatMapIterableTest {
 
     @Test
     public void justComplete() {
-        publisher.getPublisher().flatMapIterable(identity()).subscribe(subscriber.getSubscriber());
+        publisher.getPublisher().concatMapIterable(identity()).subscribe(subscriber.getSubscriber());
         subscriber.verifySubscribe();
         verifyTermination(true);
     }
 
     @Test
     public void justFail() {
-        publisher.getPublisher().flatMapIterable(identity()).subscribe(subscriber.getSubscriber());
+        publisher.getPublisher().concatMapIterable(identity()).subscribe(subscriber.getSubscriber());
         subscriber.verifySubscribe();
         verifyTermination(false);
     }
@@ -75,7 +75,7 @@ public class PublisherFlatMapIterableTest {
     }
 
     private void singleElementSingleValue(boolean success) {
-        publisher.getPublisher().flatMapIterable(identity()).subscribe(subscriber.getSubscriber());
+        publisher.getPublisher().concatMapIterable(identity()).subscribe(subscriber.getSubscriber());
         subscriber.verifySubscribe();
         subscriber.request(1);
         publisher.sendItems(singletonList("one"));
@@ -96,7 +96,7 @@ public class PublisherFlatMapIterableTest {
     }
 
     private void singleElementMultipleValuesDelayedRequest(boolean success) {
-        publisher.getPublisher().flatMapIterable(identity()).subscribe(subscriber.getSubscriber());
+        publisher.getPublisher().concatMapIterable(identity()).subscribe(subscriber.getSubscriber());
         subscriber.verifySubscribe();
         subscriber.request(1);
         publisher.sendItems(asList("one", "two"));
@@ -130,7 +130,7 @@ public class PublisherFlatMapIterableTest {
     }
 
     private void multipleElementsSingleValue(boolean success) {
-        publisher.getPublisher().flatMapIterable(identity()).subscribe(subscriber.getSubscriber());
+        publisher.getPublisher().concatMapIterable(identity()).subscribe(subscriber.getSubscriber());
         subscriber.verifySubscribe();
         subscriber.request(1);
         publisher.sendItems(singletonList("one"));
@@ -154,7 +154,7 @@ public class PublisherFlatMapIterableTest {
     }
 
     private void multipleElementsMultipleValues(boolean success) {
-        publisher.getPublisher().flatMapIterable(identity()).subscribe(subscriber.getSubscriber());
+        publisher.getPublisher().concatMapIterable(identity()).subscribe(subscriber.getSubscriber());
         subscriber.verifySubscribe();
         subscriber.request(1);
         publisher.sendItems(asList("one", "two"));
@@ -175,7 +175,7 @@ public class PublisherFlatMapIterableTest {
 
     @Test
     public void cancelIsPropagated() {
-        publisher.getPublisher().flatMapIterable(identity()).subscribe(subscriber.getSubscriber());
+        publisher.getPublisher().concatMapIterable(identity()).subscribe(subscriber.getSubscriber());
         subscriber.verifySubscribe();
         subscriber.request(1);
         publisher.sendItems(asList("one", "two"));
@@ -195,7 +195,7 @@ public class PublisherFlatMapIterableTest {
     }
 
     private void requestWithEmptyIterable(boolean success) {
-        publisher.getPublisher().flatMapIterable(identity()).subscribe(subscriber.getSubscriber());
+        publisher.getPublisher().concatMapIterable(identity()).subscribe(subscriber.getSubscriber());
         subscriber.verifySubscribe();
         subscriber.request(1);
         subscriber.request(1);
