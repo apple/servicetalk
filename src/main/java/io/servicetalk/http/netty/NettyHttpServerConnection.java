@@ -137,8 +137,6 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
                                                                     final HttpRequest<HttpPayloadChunk> request) {
         LOGGER.error("internal server error service={} connection={}", service, context, cause);
         final HttpResponse<HttpPayloadChunk> response = newResponse(request.getVersion(), INTERNAL_SERVER_ERROR,
-                // Using immediate is OK here because the user will never touch this response and it will
-                // only be consumed by ServiceTalk at this point.
                 just(newLastPayloadChunk(EMPTY_BUFFER, EmptyHttpHeaders.INSTANCE)));
         response.getHeaders().set(CONTENT_LENGTH, ZERO);
         return success(response);
