@@ -88,6 +88,7 @@ public final class RedisProtocolSupport {
 
         /**
          * Write this tuple's content to a {@link CompositeBuffer}.
+         *
          * @param compositeBuffer the {@link CompositeBuffer} to write to
          * @param bufferAllocator the {@link BufferAllocator} to use when writing
          * @return the count of arguments written to the buffer
@@ -96,6 +97,7 @@ public final class RedisProtocolSupport {
 
         /**
          * Modify the {@code builder} according to this objects internals.
+         *
          * @param builder The builder modify for this objects contributions.
          */
         void buildAttributes(RedisPartitionAttributesBuilder builder);
@@ -139,6 +141,11 @@ public final class RedisProtocolSupport {
             return toRespBulkString(b, allocator);
         }
 
+        /**
+         * Get the size in bits represented by this type.
+         *
+         * @return the bit size.
+         */
         public int getBitSize() {
             return size;
         }
@@ -340,6 +347,7 @@ public final class RedisProtocolSupport {
 
         /**
          * Check if this command has a specific {@link CommandFlag}.
+         *
          * @param flag The flag to check.
          * @return {@code true} if this command has {@code flag}.
          */
@@ -349,6 +357,7 @@ public final class RedisProtocolSupport {
 
         /**
          * Check if this command supports keys.
+         *
          * @return {@code true} if this command can have one or more keys associated with it.
          */
         public boolean supportsKeys() {
@@ -382,6 +391,7 @@ public final class RedisProtocolSupport {
 
         /**
          * Instantiates a new {@link ExpireDuration}.
+         *
          * @param expire the expire
          * @param duration the duration
          */
@@ -999,6 +1009,7 @@ public final class RedisProtocolSupport {
 
         /**
          * Instantiates a new {@link BufferFieldValue}.
+         *
          * @param field the field
          * @param value the value
          */
@@ -1047,6 +1058,7 @@ public final class RedisProtocolSupport {
 
         /**
          * Instantiates a new {@link BufferKeyValue}.
+         *
          * @param key the key
          * @param value the value
          */
@@ -1097,6 +1109,7 @@ public final class RedisProtocolSupport {
 
         /**
          * Instantiates a new {@link BufferLongitudeLatitudeMember}.
+         *
          * @param longitude the longitude
          * @param latitude the latitude
          * @param member the member
@@ -1148,6 +1161,7 @@ public final class RedisProtocolSupport {
 
         /**
          * Instantiates a new {@link BufferScoreMember}.
+         *
          * @param score the score
          * @param member the member
          */
@@ -1195,6 +1209,7 @@ public final class RedisProtocolSupport {
 
         /**
          * Instantiates a new {@link FieldValue}.
+         *
          * @param field the field
          * @param value the value
          */
@@ -1243,6 +1258,7 @@ public final class RedisProtocolSupport {
 
         /**
          * Instantiates a new {@link KeyValue}.
+         *
          * @param key the key
          * @param value the value
          */
@@ -1293,6 +1309,7 @@ public final class RedisProtocolSupport {
 
         /**
          * Instantiates a new {@link LongitudeLatitudeMember}.
+         *
          * @param longitude the longitude
          * @param latitude the latitude
          * @param member the member
@@ -1344,6 +1361,7 @@ public final class RedisProtocolSupport {
 
         /**
          * Instantiates a new {@link OffsetCount}.
+         *
          * @param offset the offset
          * @param count the count
          */
@@ -1392,6 +1410,7 @@ public final class RedisProtocolSupport {
 
         /**
          * Instantiates a new {@link ScoreMember}.
+         *
          * @param score the score
          * @param member the member
          */
@@ -1442,6 +1461,7 @@ public final class RedisProtocolSupport {
 
             /**
              * Instantiates a new {@link Get}.
+             *
              * @param type the type
              * @param offset the offset
              */
@@ -1496,6 +1516,7 @@ public final class RedisProtocolSupport {
 
             /**
              * Instantiates a new {@link Incrby}.
+             *
              * @param type the type
              * @param offset the offset
              * @param increment the increment
@@ -1554,6 +1575,7 @@ public final class RedisProtocolSupport {
 
             /**
              * Instantiates a new {@link Set}.
+             *
              * @param type the type
              * @param offset the offset
              * @param value the value
@@ -1607,6 +1629,7 @@ public final class RedisProtocolSupport {
 
             /**
              * Instantiates a new {@link Overflow}.
+             *
              * @param strategy the strategy
              */
             public Overflow(final BitfieldOverflow strategy) {

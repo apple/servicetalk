@@ -30,12 +30,14 @@ public interface PubSubBufferRedisConnection extends AsyncCloseable {
 
     /**
      * Messages that are received by this client.
+     *
      * @return a {@link Publisher} of messages
      */
     Publisher<PubSubRedisMessage> getMessages();
 
     /**
      * Listen for messages published to channels matching the given patterns.
+     *
      * @param pattern the pattern
      * @return a {@link Single} result
      */
@@ -44,6 +46,7 @@ public interface PubSubBufferRedisConnection extends AsyncCloseable {
 
     /**
      * Listen for messages published to the given channels.
+     *
      * @param channel the channel
      * @return a {@link Single} result
      */
@@ -52,6 +55,7 @@ public interface PubSubBufferRedisConnection extends AsyncCloseable {
 
     /**
      * Ping the server.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PING)
@@ -59,6 +63,7 @@ public interface PubSubBufferRedisConnection extends AsyncCloseable {
 
     /**
      * Ping the server.
+     *
      * @param message the message
      * @return a {@link Single} result
      */

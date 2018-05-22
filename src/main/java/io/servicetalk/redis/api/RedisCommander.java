@@ -41,6 +41,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Append a value to a key.
+     *
      * @param key the key
      * @param value the value
      * @return a {@link Single} result
@@ -50,6 +51,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Authenticate to the server.
+     *
      * @param password the password
      * @return a {@link Single} result
      */
@@ -58,6 +60,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Asynchronously rewrite the append-only file.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BGREWRITEAOF)
@@ -65,6 +68,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Asynchronously save the dataset to disk.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BGSAVE)
@@ -72,6 +76,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Count set bits in a string.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -80,6 +85,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Count set bits in a string.
+     *
      * @param key the key
      * @param start the start
      * @param end the end
@@ -90,6 +96,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Perform arbitrary bitfield integer operations on strings.
+     *
      * @param key the key
      * @param operations the operations
      * @return a {@link Single} result
@@ -100,6 +107,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Perform bitwise operations between strings.
+     *
      * @param operation the operation
      * @param destkey the destkey
      * @param key the key
@@ -111,6 +119,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Perform bitwise operations between strings.
+     *
      * @param operation the operation
      * @param destkey the destkey
      * @param key1 the key1
@@ -123,6 +132,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Perform bitwise operations between strings.
+     *
      * @param operation the operation
      * @param destkey the destkey
      * @param key1 the key1
@@ -137,6 +147,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Perform bitwise operations between strings.
+     *
      * @param operation the operation
      * @param destkey the destkey
      * @param keys the keys
@@ -148,6 +159,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Find first bit set or clear in a string.
+     *
      * @param key the key
      * @param bit the bit
      * @return a {@link Single} result
@@ -157,6 +169,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Find first bit set or clear in a string.
+     *
      * @param key the key
      * @param bit the bit
      * @param start the start
@@ -168,6 +181,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove and get the first element in a list, or block until one is available.
+     *
      * @param keys the keys
      * @param timeout the timeout
      * @return a {@link Single} result
@@ -178,6 +192,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove and get the last element in a list, or block until one is available.
+     *
      * @param keys the keys
      * @param timeout the timeout
      * @return a {@link Single} result
@@ -189,6 +204,7 @@ public interface RedisCommander extends AsyncCloseable {
     /**
      * Pop a value from a list, push it to another list and return it; or block until one is
      * available.
+     *
      * @param source the source
      * @param destination the destination
      * @param timeout the timeout
@@ -200,6 +216,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Kill the connection of a client.
+     *
      * @param id the id
      * @param type the type
      * @param addrIpPort the addrIpPort
@@ -215,6 +232,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get the list of client connections.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLIENT)
@@ -223,6 +241,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get the current connection name.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLIENT)
@@ -231,6 +250,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Stop processing commands from clients for some time.
+     *
      * @param timeout the timeout
      * @return a {@link Single} result
      */
@@ -240,6 +260,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Instruct the server whether to reply to commands.
+     *
      * @param replyMode the replyMode
      * @return a {@link Single} result
      */
@@ -249,6 +270,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set the current connection name.
+     *
      * @param connectionName the connectionName
      * @return a {@link Single} result
      */
@@ -258,6 +280,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Assign new hash slots to receiving node.
+     *
      * @param slot the slot
      * @return a {@link Single} result
      */
@@ -267,6 +290,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Assign new hash slots to receiving node.
+     *
      * @param slot1 the slot1
      * @param slot2 the slot2
      * @return a {@link Single} result
@@ -277,6 +301,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Assign new hash slots to receiving node.
+     *
      * @param slot1 the slot1
      * @param slot2 the slot2
      * @param slot3 the slot3
@@ -288,6 +313,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Assign new hash slots to receiving node.
+     *
      * @param slots the slots
      * @return a {@link Single} result
      */
@@ -297,6 +323,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Return the number of failure reports active for a given node.
+     *
      * @param nodeId the nodeId
      * @return a {@link Single} result
      */
@@ -306,6 +333,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Return the number of local keys in the specified hash slot.
+     *
      * @param slot the slot
      * @return a {@link Single} result
      */
@@ -315,6 +343,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set hash slots as unbound in receiving node.
+     *
      * @param slot the slot
      * @return a {@link Single} result
      */
@@ -324,6 +353,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set hash slots as unbound in receiving node.
+     *
      * @param slot1 the slot1
      * @param slot2 the slot2
      * @return a {@link Single} result
@@ -334,6 +364,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set hash slots as unbound in receiving node.
+     *
      * @param slot1 the slot1
      * @param slot2 the slot2
      * @param slot3 the slot3
@@ -345,6 +376,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set hash slots as unbound in receiving node.
+     *
      * @param slots the slots
      * @return a {@link Single} result
      */
@@ -354,6 +386,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Forces a slave to perform a manual failover of its master..
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
@@ -362,6 +395,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Forces a slave to perform a manual failover of its master..
+     *
      * @param options the options
      * @return a {@link Single} result
      */
@@ -371,6 +405,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove a node from the nodes table.
+     *
      * @param nodeId the nodeId
      * @return a {@link Single} result
      */
@@ -380,6 +415,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Return local key names in the specified hash slot.
+     *
      * @param slot the slot
      * @param count the count
      * @return a {@link Single} result
@@ -391,6 +427,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Provides info about Redis Cluster node state.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
@@ -399,6 +436,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Returns the hash slot of the specified key.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -408,6 +446,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Force a node cluster to handshake with another node.
+     *
      * @param ip the ip
      * @param port the port
      * @return a {@link Single} result
@@ -418,6 +457,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get Cluster config for the node.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
@@ -426,6 +466,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Reconfigure a node as a slave of the specified master node.
+     *
      * @param nodeId the nodeId
      * @return a {@link Single} result
      */
@@ -435,6 +476,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Reset a Redis Cluster node.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
@@ -443,6 +485,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Reset a Redis Cluster node.
+     *
      * @param resetType the resetType
      * @return a {@link Single} result
      */
@@ -452,6 +495,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Forces the node to save cluster state on disk.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
@@ -460,6 +504,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set the configuration epoch in a new node.
+     *
      * @param configEpoch the configEpoch
      * @return a {@link Single} result
      */
@@ -469,6 +514,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Bind a hash slot to a specific node.
+     *
      * @param slot the slot
      * @param subcommand the subcommand
      * @return a {@link Single} result
@@ -480,6 +526,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Bind a hash slot to a specific node.
+     *
      * @param slot the slot
      * @param subcommand the subcommand
      * @param nodeId the nodeId
@@ -493,6 +540,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * List slave nodes of the specified master node.
+     *
      * @param nodeId the nodeId
      * @return a {@link Single} result
      */
@@ -502,6 +550,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get array of Cluster slot to node mappings.
+     *
      * @return a {@link Single} result
      * @param <T> the type of elements
      */
@@ -511,6 +560,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get array of Redis command details.
+     *
      * @return a {@link Single} result
      * @param <T> the type of elements
      */
@@ -519,6 +569,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get total number of Redis commands.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.COMMAND)
@@ -527,6 +578,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Extract keys given a full Redis command.
+     *
      * @return a {@link Single} result
      * @param <T> the type of elements
      */
@@ -536,6 +588,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get array of specific Redis command details.
+     *
      * @param commandName the commandName
      * @return a {@link Single} result
      * @param <T> the type of elements
@@ -546,6 +599,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get array of specific Redis command details.
+     *
      * @param commandName1 the commandName1
      * @param commandName2 the commandName2
      * @return a {@link Single} result
@@ -557,6 +611,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get array of specific Redis command details.
+     *
      * @param commandName1 the commandName1
      * @param commandName2 the commandName2
      * @param commandName3 the commandName3
@@ -569,6 +624,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get array of specific Redis command details.
+     *
      * @param commandNames the commandNames
      * @return a {@link Single} result
      * @param <T> the type of elements
@@ -579,6 +635,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get the value of a configuration parameter.
+     *
      * @param parameter the parameter
      * @return a {@link Single} result
      * @param <T> the type of elements
@@ -589,6 +646,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Rewrite the configuration file with the in memory configuration.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CONFIG)
@@ -597,6 +655,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set a configuration parameter to the given value.
+     *
      * @param parameter the parameter
      * @param value the value
      * @return a {@link Single} result
@@ -607,6 +666,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Reset the stats returned by INFO.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CONFIG)
@@ -615,6 +675,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Return the number of keys in the selected database.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.DBSIZE)
@@ -622,6 +683,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get debugging information about a key.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -631,6 +693,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Make the server crash.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.DEBUG)
@@ -639,6 +702,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Decrement the integer value of a key by one.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -647,6 +711,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Decrement the integer value of a key by the given number.
+     *
      * @param key the key
      * @param decrement the decrement
      * @return a {@link Single} result
@@ -656,6 +721,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Delete a key.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -664,6 +730,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Delete a key.
+     *
      * @param key1 the key1
      * @param key2 the key2
      * @return a {@link Single} result
@@ -673,6 +740,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Delete a key.
+     *
      * @param key1 the key1
      * @param key2 the key2
      * @param key3 the key3
@@ -684,6 +752,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Delete a key.
+     *
      * @param keys the keys
      * @return a {@link Single} result
      */
@@ -692,6 +761,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Return a serialized version of the value stored at the specified key..
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -700,6 +770,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Echo the given string.
+     *
      * @param message the message
      * @return a {@link Single} result
      */
@@ -708,6 +779,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Execute a Lua script server side.
+     *
      * @param script the script
      * @param numkeys the numkeys
      * @param keys the keys
@@ -720,6 +792,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Execute a Lua script server side.
+     *
      * @param script the script
      * @param numkeys the numkeys
      * @param keys the keys
@@ -734,6 +807,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Execute a Lua script server side.
+     *
      * @param script the script
      * @param numkeys the numkeys
      * @param keys the keys
@@ -746,6 +820,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Execute a Lua script server side.
+     *
      * @param sha1 the sha1
      * @param numkeys the numkeys
      * @param keys the keys
@@ -758,6 +833,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Execute a Lua script server side.
+     *
      * @param sha1 the sha1
      * @param numkeys the numkeys
      * @param keys the keys
@@ -772,6 +848,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Execute a Lua script server side.
+     *
      * @param sha1 the sha1
      * @param numkeys the numkeys
      * @param keys the keys
@@ -784,6 +861,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Determine if a key exists.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -792,6 +870,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Determine if a key exists.
+     *
      * @param key1 the key1
      * @param key2 the key2
      * @return a {@link Single} result
@@ -801,6 +880,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Determine if a key exists.
+     *
      * @param key1 the key1
      * @param key2 the key2
      * @param key3 the key3
@@ -812,6 +892,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Determine if a key exists.
+     *
      * @param keys the keys
      * @return a {@link Single} result
      */
@@ -820,6 +901,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set a key's time to live in seconds.
+     *
      * @param key the key
      * @param seconds the seconds
      * @return a {@link Single} result
@@ -829,6 +911,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set the expiration for a key as a UNIX timestamp.
+     *
      * @param key the key
      * @param timestamp the timestamp
      * @return a {@link Single} result
@@ -838,6 +921,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove all keys from all databases.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.FLUSHALL)
@@ -845,6 +929,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove all keys from all databases.
+     *
      * @param async the async
      * @return a {@link Single} result
      */
@@ -853,6 +938,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove all keys from the current database.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.FLUSHDB)
@@ -860,6 +946,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove all keys from the current database.
+     *
      * @param async the async
      * @return a {@link Single} result
      */
@@ -868,6 +955,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add one or more geospatial items in the geospatial index represented using a sorted set.
+     *
      * @param key the key
      * @param longitude the longitude
      * @param latitude the latitude
@@ -879,6 +967,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add one or more geospatial items in the geospatial index represented using a sorted set.
+     *
      * @param key the key
      * @param longitude1 the longitude1
      * @param latitude1 the latitude1
@@ -894,6 +983,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add one or more geospatial items in the geospatial index represented using a sorted set.
+     *
      * @param key the key
      * @param longitude1 the longitude1
      * @param latitude1 the latitude1
@@ -913,6 +1003,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add one or more geospatial items in the geospatial index represented using a sorted set.
+     *
      * @param key the key
      * @param longitudeLatitudeMembers the longitudeLatitudeMembers
      * @return a {@link Single} result
@@ -923,6 +1014,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Returns the distance between two members of a geospatial index.
+     *
      * @param key the key
      * @param member1 the member1
      * @param member2 the member2
@@ -933,6 +1025,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Returns the distance between two members of a geospatial index.
+     *
      * @param key the key
      * @param member1 the member1
      * @param member2 the member2
@@ -945,6 +1038,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Returns members of a geospatial index as standard geohash strings.
+     *
      * @param key the key
      * @param member the member
      * @return a {@link Single} result
@@ -955,6 +1049,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Returns members of a geospatial index as standard geohash strings.
+     *
      * @param key the key
      * @param member1 the member1
      * @param member2 the member2
@@ -966,6 +1061,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Returns members of a geospatial index as standard geohash strings.
+     *
      * @param key the key
      * @param member1 the member1
      * @param member2 the member2
@@ -979,6 +1075,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Returns members of a geospatial index as standard geohash strings.
+     *
      * @param key the key
      * @param members the members
      * @return a {@link Single} result
@@ -989,6 +1086,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Returns longitude and latitude of members of a geospatial index.
+     *
      * @param key the key
      * @param member the member
      * @return a {@link Single} result
@@ -999,6 +1097,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Returns longitude and latitude of members of a geospatial index.
+     *
      * @param key the key
      * @param member1 the member1
      * @param member2 the member2
@@ -1010,6 +1109,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Returns longitude and latitude of members of a geospatial index.
+     *
      * @param key the key
      * @param member1 the member1
      * @param member2 the member2
@@ -1023,6 +1123,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Returns longitude and latitude of members of a geospatial index.
+     *
      * @param key the key
      * @param members the members
      * @return a {@link Single} result
@@ -1034,6 +1135,7 @@ public interface RedisCommander extends AsyncCloseable {
     /**
      * Query a sorted set representing a geospatial index to fetch members matching a given maximum
      * distance from a point.
+     *
      * @param key the key
      * @param longitude the longitude
      * @param latitude the latitude
@@ -1049,6 +1151,7 @@ public interface RedisCommander extends AsyncCloseable {
     /**
      * Query a sorted set representing a geospatial index to fetch members matching a given maximum
      * distance from a point.
+     *
      * @param key the key
      * @param longitude the longitude
      * @param latitude the latitude
@@ -1078,6 +1181,7 @@ public interface RedisCommander extends AsyncCloseable {
     /**
      * Query a sorted set representing a geospatial index to fetch members matching a given maximum
      * distance from a member.
+     *
      * @param key the key
      * @param member the member
      * @param radius the radius
@@ -1092,6 +1196,7 @@ public interface RedisCommander extends AsyncCloseable {
     /**
      * Query a sorted set representing a geospatial index to fetch members matching a given maximum
      * distance from a member.
+     *
      * @param key the key
      * @param member the member
      * @param radius the radius
@@ -1119,6 +1224,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get the value of a key.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -1127,6 +1233,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Returns the bit value at offset in the string value stored at key.
+     *
      * @param key the key
      * @param offset the offset
      * @return a {@link Single} result
@@ -1136,6 +1243,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get a substring of the string stored at a key.
+     *
      * @param key the key
      * @param start the start
      * @param end the end
@@ -1146,6 +1254,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set the string value of a key and return its old value.
+     *
      * @param key the key
      * @param value the value
      * @return a {@link Single} result
@@ -1155,6 +1264,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Delete one or more hash fields.
+     *
      * @param key the key
      * @param field the field
      * @return a {@link Single} result
@@ -1164,6 +1274,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Delete one or more hash fields.
+     *
      * @param key the key
      * @param field1 the field1
      * @param field2 the field2
@@ -1174,6 +1285,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Delete one or more hash fields.
+     *
      * @param key the key
      * @param field1 the field1
      * @param field2 the field2
@@ -1185,6 +1297,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Delete one or more hash fields.
+     *
      * @param key the key
      * @param fields the fields
      * @return a {@link Single} result
@@ -1194,6 +1307,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Determine if a hash field exists.
+     *
      * @param key the key
      * @param field the field
      * @return a {@link Single} result
@@ -1203,6 +1317,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get the value of a hash field.
+     *
      * @param key the key
      * @param field the field
      * @return a {@link Single} result
@@ -1212,6 +1327,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get all the fields and values in a hash.
+     *
      * @param key the key
      * @return a {@link Single} result
      * @param <T> the type of elements
@@ -1221,6 +1337,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Increment the integer value of a hash field by the given number.
+     *
      * @param key the key
      * @param field the field
      * @param increment the increment
@@ -1231,6 +1348,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Increment the float value of a hash field by the given amount.
+     *
      * @param key the key
      * @param field the field
      * @param increment the increment
@@ -1241,6 +1359,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get all the fields in a hash.
+     *
      * @param key the key
      * @return a {@link Single} result
      * @param <T> the type of elements
@@ -1250,6 +1369,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get the number of fields in a hash.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -1258,6 +1378,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get the values of all the given hash fields.
+     *
      * @param key the key
      * @param field the field
      * @return a {@link Single} result
@@ -1268,6 +1389,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get the values of all the given hash fields.
+     *
      * @param key the key
      * @param field1 the field1
      * @param field2 the field2
@@ -1279,6 +1401,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get the values of all the given hash fields.
+     *
      * @param key the key
      * @param field1 the field1
      * @param field2 the field2
@@ -1292,6 +1415,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get the values of all the given hash fields.
+     *
      * @param key the key
      * @param fields the fields
      * @return a {@link Single} result
@@ -1302,6 +1426,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set multiple hash fields to multiple values.
+     *
      * @param key the key
      * @param field the field
      * @param value the value
@@ -1312,6 +1437,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set multiple hash fields to multiple values.
+     *
      * @param key the key
      * @param field1 the field1
      * @param value1 the value1
@@ -1325,6 +1451,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set multiple hash fields to multiple values.
+     *
      * @param key the key
      * @param field1 the field1
      * @param value1 the value1
@@ -1340,6 +1467,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set multiple hash fields to multiple values.
+     *
      * @param key the key
      * @param fieldValues the fieldValues
      * @return a {@link Single} result
@@ -1350,6 +1478,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Incrementally iterate hash fields and associated values.
+     *
      * @param key the key
      * @param cursor the cursor
      * @return a {@link Single} result
@@ -1360,6 +1489,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Incrementally iterate hash fields and associated values.
+     *
      * @param key the key
      * @param cursor the cursor
      * @param matchPattern the matchPattern
@@ -1374,6 +1504,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set the string value of a hash field.
+     *
      * @param key the key
      * @param field the field
      * @param value the value
@@ -1384,6 +1515,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set the value of a hash field, only if the field does not exist.
+     *
      * @param key the key
      * @param field the field
      * @param value the value
@@ -1394,6 +1526,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get the length of the value of a hash field.
+     *
      * @param key the key
      * @param field the field
      * @return a {@link Single} result
@@ -1403,6 +1536,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get all the values in a hash.
+     *
      * @param key the key
      * @return a {@link Single} result
      * @param <T> the type of elements
@@ -1412,6 +1546,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Increment the integer value of a key by one.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -1420,6 +1555,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Increment the integer value of a key by the given amount.
+     *
      * @param key the key
      * @param increment the increment
      * @return a {@link Single} result
@@ -1429,6 +1565,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Increment the float value of a key by the given amount.
+     *
      * @param key the key
      * @param increment the increment
      * @return a {@link Single} result
@@ -1438,6 +1575,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get information and statistics about the server.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.INFO)
@@ -1445,6 +1583,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get information and statistics about the server.
+     *
      * @param section the section
      * @return a {@link Single} result
      */
@@ -1453,6 +1592,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Find all keys matching the given pattern.
+     *
      * @param pattern the pattern
      * @return a {@link Single} result
      * @param <T> the type of elements
@@ -1462,6 +1602,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get the UNIX time stamp of the last successful save to disk.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LASTSAVE)
@@ -1469,6 +1610,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get an element from a list by its index.
+     *
      * @param key the key
      * @param index the index
      * @return a {@link Single} result
@@ -1478,6 +1620,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Insert an element before or after another element in a list.
+     *
      * @param key the key
      * @param where the where
      * @param pivot the pivot
@@ -1491,6 +1634,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get the length of a list.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -1499,6 +1643,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove and get the first element in a list.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -1507,6 +1652,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Prepend one or multiple values to a list.
+     *
      * @param key the key
      * @param value the value
      * @return a {@link Single} result
@@ -1516,6 +1662,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Prepend one or multiple values to a list.
+     *
      * @param key the key
      * @param value1 the value1
      * @param value2 the value2
@@ -1526,6 +1673,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Prepend one or multiple values to a list.
+     *
      * @param key the key
      * @param value1 the value1
      * @param value2 the value2
@@ -1537,6 +1685,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Prepend one or multiple values to a list.
+     *
      * @param key the key
      * @param values the values
      * @return a {@link Single} result
@@ -1546,6 +1695,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Prepend a value to a list, only if the list exists.
+     *
      * @param key the key
      * @param value the value
      * @return a {@link Single} result
@@ -1555,6 +1705,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get a range of elements from a list.
+     *
      * @param key the key
      * @param start the start
      * @param stop the stop
@@ -1566,6 +1717,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove elements from a list.
+     *
      * @param key the key
      * @param count the count
      * @param value the value
@@ -1576,6 +1728,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set the value of an element in a list by its index.
+     *
      * @param key the key
      * @param index the index
      * @param value the value
@@ -1586,6 +1739,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Trim a list to the specified range.
+     *
      * @param key the key
      * @param start the start
      * @param stop the stop
@@ -1596,6 +1750,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Outputs memory problems report.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MEMORY)
@@ -1604,6 +1759,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Show helpful text about the different subcommands.
+     *
      * @return a {@link Single} result
      * @param <T> the type of elements
      */
@@ -1613,6 +1769,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Show allocator internal stats.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MEMORY)
@@ -1621,6 +1778,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Ask the allocator to release memory.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MEMORY)
@@ -1629,6 +1787,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Show memory usage details.
+     *
      * @return a {@link Single} result
      * @param <T> the type of elements
      */
@@ -1638,6 +1797,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Estimate the memory usage of a key.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -1647,6 +1807,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Estimate the memory usage of a key.
+     *
      * @param key the key
      * @param samplesCount the samplesCount
      * @return a {@link Single} result
@@ -1658,6 +1819,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get the values of all the given keys.
+     *
      * @param key the key
      * @return a {@link Single} result
      * @param <T> the type of elements
@@ -1667,6 +1829,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get the values of all the given keys.
+     *
      * @param key1 the key1
      * @param key2 the key2
      * @return a {@link Single} result
@@ -1677,6 +1840,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get the values of all the given keys.
+     *
      * @param key1 the key1
      * @param key2 the key2
      * @param key3 the key3
@@ -1689,6 +1853,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get the values of all the given keys.
+     *
      * @param keys the keys
      * @return a {@link Single} result
      * @param <T> the type of elements
@@ -1698,6 +1863,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Listen for all requests received by the server in real time.
+     *
      * @return a {@link Publisher} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MONITOR)
@@ -1705,6 +1871,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Move a key to another database.
+     *
      * @param key the key
      * @param db the db
      * @return a {@link Single} result
@@ -1714,6 +1881,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set multiple keys to multiple values.
+     *
      * @param key the key
      * @param value the value
      * @return a {@link Single} result
@@ -1723,6 +1891,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set multiple keys to multiple values.
+     *
      * @param key1 the key1
      * @param value1 the value1
      * @param key2 the key2
@@ -1735,6 +1904,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set multiple keys to multiple values.
+     *
      * @param key1 the key1
      * @param value1 the value1
      * @param key2 the key2
@@ -1750,6 +1920,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set multiple keys to multiple values.
+     *
      * @param keyValues the keyValues
      * @return a {@link Single} result
      */
@@ -1758,6 +1929,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set multiple keys to multiple values, only if none of the keys exist.
+     *
      * @param key the key
      * @param value the value
      * @return a {@link Single} result
@@ -1767,6 +1939,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set multiple keys to multiple values, only if none of the keys exist.
+     *
      * @param key1 the key1
      * @param value1 the value1
      * @param key2 the key2
@@ -1779,6 +1952,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set multiple keys to multiple values, only if none of the keys exist.
+     *
      * @param key1 the key1
      * @param value1 the value1
      * @param key2 the key2
@@ -1794,6 +1968,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set multiple keys to multiple values, only if none of the keys exist.
+     *
      * @param keyValues the keyValues
      * @return a {@link Single} result
      */
@@ -1802,6 +1977,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Mark the start of a transaction block.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MULTI)
@@ -1810,6 +1986,7 @@ public interface RedisCommander extends AsyncCloseable {
     /**
      * Returns the kind of internal representation used in order to store the value associated with
      * a key.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -1819,6 +1996,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Returns the logarithmic access frequency counter of the object stored at the specified key.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -1828,6 +2006,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Returns a succinct help text.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.OBJECT)
@@ -1836,6 +2015,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Returns the number of seconds since the object stored at the specified key is idle.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -1845,6 +2025,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Returns the number of references of the value associated with the specified key.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -1854,6 +2035,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove the expiration from a key.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -1862,6 +2044,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set a key's time to live in milliseconds.
+     *
      * @param key the key
      * @param milliseconds the milliseconds
      * @return a {@link Single} result
@@ -1871,6 +2054,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set the expiration for a key as a UNIX timestamp specified in milliseconds.
+     *
      * @param key the key
      * @param millisecondsTimestamp the millisecondsTimestamp
      * @return a {@link Single} result
@@ -1880,6 +2064,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Adds the specified elements to the specified HyperLogLog..
+     *
      * @param key the key
      * @param element the element
      * @return a {@link Single} result
@@ -1889,6 +2074,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Adds the specified elements to the specified HyperLogLog..
+     *
      * @param key the key
      * @param element1 the element1
      * @param element2 the element2
@@ -1899,6 +2085,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Adds the specified elements to the specified HyperLogLog..
+     *
      * @param key the key
      * @param element1 the element1
      * @param element2 the element2
@@ -1911,6 +2098,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Adds the specified elements to the specified HyperLogLog..
+     *
      * @param key the key
      * @param elements the elements
      * @return a {@link Single} result
@@ -1920,6 +2108,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Return the approximated cardinality of the set(s) observed by the HyperLogLog at key(s)..
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -1928,6 +2117,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Return the approximated cardinality of the set(s) observed by the HyperLogLog at key(s)..
+     *
      * @param key1 the key1
      * @param key2 the key2
      * @return a {@link Single} result
@@ -1937,6 +2127,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Return the approximated cardinality of the set(s) observed by the HyperLogLog at key(s)..
+     *
      * @param key1 the key1
      * @param key2 the key2
      * @param key3 the key3
@@ -1948,6 +2139,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Return the approximated cardinality of the set(s) observed by the HyperLogLog at key(s)..
+     *
      * @param keys the keys
      * @return a {@link Single} result
      */
@@ -1956,6 +2148,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Merge N different HyperLogLogs into a single one..
+     *
      * @param destkey the destkey
      * @param sourcekey the sourcekey
      * @return a {@link Single} result
@@ -1965,6 +2158,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Merge N different HyperLogLogs into a single one..
+     *
      * @param destkey the destkey
      * @param sourcekey1 the sourcekey1
      * @param sourcekey2 the sourcekey2
@@ -1976,6 +2170,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Merge N different HyperLogLogs into a single one..
+     *
      * @param destkey the destkey
      * @param sourcekey1 the sourcekey1
      * @param sourcekey2 the sourcekey2
@@ -1988,6 +2183,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Merge N different HyperLogLogs into a single one..
+     *
      * @param destkey the destkey
      * @param sourcekeys the sourcekeys
      * @return a {@link Single} result
@@ -1998,6 +2194,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Ping the server.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PING)
@@ -2005,6 +2202,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Ping the server.
+     *
      * @param message the message
      * @return a {@link Single} result
      */
@@ -2013,6 +2211,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set the value and expiration in milliseconds of a key.
+     *
      * @param key the key
      * @param milliseconds the milliseconds
      * @param value the value
@@ -2023,6 +2222,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Listen for messages published to channels matching the given patterns.
+     *
      * @param pattern the pattern
      * @return a {@link Single} result
      */
@@ -2031,6 +2231,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get the time to live for a key in milliseconds.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -2039,6 +2240,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Post a message to a channel.
+     *
      * @param channel the channel
      * @param message the message
      * @return a {@link Single} result
@@ -2048,6 +2250,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Lists the currently active channels.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBSUB)
@@ -2056,6 +2259,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Lists the currently active channels.
+     *
      * @param pattern the pattern
      * @return a {@link Single} result
      */
@@ -2065,6 +2269,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Lists the currently active channels.
+     *
      * @param pattern1 the pattern1
      * @param pattern2 the pattern2
      * @return a {@link Single} result
@@ -2075,6 +2280,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Lists the currently active channels.
+     *
      * @param pattern1 the pattern1
      * @param pattern2 the pattern2
      * @param pattern3 the pattern3
@@ -2087,6 +2293,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Lists the currently active channels.
+     *
      * @param patterns the patterns
      * @return a {@link Single} result
      */
@@ -2096,6 +2303,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Returns the number of subscribers for the specified channels.
+     *
      * @return a {@link Single} result
      * @param <T> the type of elements
      */
@@ -2105,6 +2313,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Returns the number of subscribers for the specified channels.
+     *
      * @param channel the channel
      * @return a {@link Single} result
      * @param <T> the type of elements
@@ -2115,6 +2324,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Returns the number of subscribers for the specified channels.
+     *
      * @param channel1 the channel1
      * @param channel2 the channel2
      * @return a {@link Single} result
@@ -2126,6 +2336,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Returns the number of subscribers for the specified channels.
+     *
      * @param channel1 the channel1
      * @param channel2 the channel2
      * @param channel3 the channel3
@@ -2139,6 +2350,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Returns the number of subscribers for the specified channels.
+     *
      * @param channels the channels
      * @return a {@link Single} result
      * @param <T> the type of elements
@@ -2149,6 +2361,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Returns the number of subscriptions to patterns.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBSUB)
@@ -2157,6 +2370,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Return a random key from the keyspace.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RANDOMKEY)
@@ -2164,6 +2378,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Enables read queries for a connection to a cluster slave node.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.READONLY)
@@ -2171,6 +2386,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Disables read queries for a connection to a cluster slave node.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.READWRITE)
@@ -2178,6 +2394,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Rename a key.
+     *
      * @param key the key
      * @param newkey the newkey
      * @return a {@link Single} result
@@ -2187,6 +2404,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Rename a key, only if the new key does not exist.
+     *
      * @param key the key
      * @param newkey the newkey
      * @return a {@link Single} result
@@ -2196,6 +2414,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Create a key using the provided serialized value, previously obtained using DUMP..
+     *
      * @param key the key
      * @param ttl the ttl
      * @param serializedValue the serializedValue
@@ -2206,6 +2425,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Create a key using the provided serialized value, previously obtained using DUMP..
+     *
      * @param key the key
      * @param ttl the ttl
      * @param serializedValue the serializedValue
@@ -2218,6 +2438,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Return the role of the instance in the context of replication.
+     *
      * @return a {@link Single} result
      * @param <T> the type of elements
      */
@@ -2226,6 +2447,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove and get the last element in a list.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -2234,6 +2456,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove the last element in a list, prepend it to another list and return it.
+     *
      * @param source the source
      * @param destination the destination
      * @return a {@link Single} result
@@ -2243,6 +2466,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Append one or multiple values to a list.
+     *
      * @param key the key
      * @param value the value
      * @return a {@link Single} result
@@ -2252,6 +2476,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Append one or multiple values to a list.
+     *
      * @param key the key
      * @param value1 the value1
      * @param value2 the value2
@@ -2262,6 +2487,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Append one or multiple values to a list.
+     *
      * @param key the key
      * @param value1 the value1
      * @param value2 the value2
@@ -2273,6 +2499,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Append one or multiple values to a list.
+     *
      * @param key the key
      * @param values the values
      * @return a {@link Single} result
@@ -2282,6 +2509,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Append a value to a list, only if the list exists.
+     *
      * @param key the key
      * @param value the value
      * @return a {@link Single} result
@@ -2291,6 +2519,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add one or more members to a set.
+     *
      * @param key the key
      * @param member the member
      * @return a {@link Single} result
@@ -2300,6 +2529,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add one or more members to a set.
+     *
      * @param key the key
      * @param member1 the member1
      * @param member2 the member2
@@ -2310,6 +2540,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add one or more members to a set.
+     *
      * @param key the key
      * @param member1 the member1
      * @param member2 the member2
@@ -2322,6 +2553,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add one or more members to a set.
+     *
      * @param key the key
      * @param members the members
      * @return a {@link Single} result
@@ -2331,6 +2563,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Synchronously save the dataset to disk.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SAVE)
@@ -2338,6 +2571,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Incrementally iterate the keys space.
+     *
      * @param cursor the cursor
      * @return a {@link Single} result
      * @param <T> the type of elements
@@ -2347,6 +2581,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Incrementally iterate the keys space.
+     *
      * @param cursor the cursor
      * @param matchPattern the matchPattern
      * @param count the count
@@ -2360,6 +2595,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get the number of members in a set.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -2368,6 +2604,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set the debug mode for executed scripts..
+     *
      * @param mode the mode
      * @return a {@link Single} result
      */
@@ -2377,6 +2614,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Check existence of scripts in the script cache..
+     *
      * @param sha1 the sha1
      * @return a {@link Single} result
      * @param <T> the type of elements
@@ -2387,6 +2625,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Check existence of scripts in the script cache..
+     *
      * @param sha11 the sha11
      * @param sha12 the sha12
      * @return a {@link Single} result
@@ -2398,6 +2637,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Check existence of scripts in the script cache..
+     *
      * @param sha11 the sha11
      * @param sha12 the sha12
      * @param sha13 the sha13
@@ -2410,6 +2650,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Check existence of scripts in the script cache..
+     *
      * @param sha1s the sha1s
      * @return a {@link Single} result
      * @param <T> the type of elements
@@ -2420,6 +2661,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove all the scripts from the script cache..
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SCRIPT)
@@ -2428,6 +2670,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Kill the script currently in execution..
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SCRIPT)
@@ -2436,6 +2679,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Load the specified Lua script into the script cache..
+     *
      * @param script the script
      * @return a {@link Single} result
      */
@@ -2445,6 +2689,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Subtract multiple sets.
+     *
      * @param firstkey the firstkey
      * @return a {@link Single} result
      * @param <T> the type of elements
@@ -2454,6 +2699,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Subtract multiple sets.
+     *
      * @param firstkey the firstkey
      * @param otherkey the otherkey
      * @return a {@link Single} result
@@ -2465,6 +2711,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Subtract multiple sets.
+     *
      * @param firstkey the firstkey
      * @param otherkey1 the otherkey1
      * @param otherkey2 the otherkey2
@@ -2478,6 +2725,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Subtract multiple sets.
+     *
      * @param firstkey the firstkey
      * @param otherkey1 the otherkey1
      * @param otherkey2 the otherkey2
@@ -2493,6 +2741,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Subtract multiple sets.
+     *
      * @param firstkey the firstkey
      * @param otherkeys the otherkeys
      * @return a {@link Single} result
@@ -2504,6 +2753,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Subtract multiple sets and store the resulting set in a key.
+     *
      * @param destination the destination
      * @param firstkey the firstkey
      * @return a {@link Single} result
@@ -2513,6 +2763,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Subtract multiple sets and store the resulting set in a key.
+     *
      * @param destination the destination
      * @param firstkey the firstkey
      * @param otherkey the otherkey
@@ -2524,6 +2775,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Subtract multiple sets and store the resulting set in a key.
+     *
      * @param destination the destination
      * @param firstkey the firstkey
      * @param otherkey1 the otherkey1
@@ -2537,6 +2789,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Subtract multiple sets and store the resulting set in a key.
+     *
      * @param destination the destination
      * @param firstkey the firstkey
      * @param otherkey1 the otherkey1
@@ -2552,6 +2805,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Subtract multiple sets and store the resulting set in a key.
+     *
      * @param destination the destination
      * @param firstkey the firstkey
      * @param otherkeys the otherkeys
@@ -2563,6 +2817,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Change the selected database for the current connection.
+     *
      * @param index the index
      * @return a {@link Single} result
      */
@@ -2571,6 +2826,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set the string value of a key.
+     *
      * @param key the key
      * @param value the value
      * @return a {@link Single} result
@@ -2580,6 +2836,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set the string value of a key.
+     *
      * @param key the key
      * @param value the value
      * @param expireDuration the expireDuration
@@ -2593,6 +2850,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Sets or clears the bit at offset in the string value stored at key.
+     *
      * @param key the key
      * @param offset the offset
      * @param value the value
@@ -2603,6 +2861,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set the value and expiration of a key.
+     *
      * @param key the key
      * @param seconds the seconds
      * @param value the value
@@ -2613,6 +2872,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Set the value of a key, only if the key does not exist.
+     *
      * @param key the key
      * @param value the value
      * @return a {@link Single} result
@@ -2622,6 +2882,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Overwrite part of a string at key starting at the specified offset.
+     *
      * @param key the key
      * @param offset the offset
      * @param value the value
@@ -2632,6 +2893,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Synchronously save the dataset to disk and then shut down the server.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SHUTDOWN)
@@ -2639,6 +2901,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Synchronously save the dataset to disk and then shut down the server.
+     *
      * @param saveMode the saveMode
      * @return a {@link Single} result
      */
@@ -2647,6 +2910,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Intersect multiple sets.
+     *
      * @param key the key
      * @return a {@link Single} result
      * @param <T> the type of elements
@@ -2656,6 +2920,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Intersect multiple sets.
+     *
      * @param key1 the key1
      * @param key2 the key2
      * @return a {@link Single} result
@@ -2666,6 +2931,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Intersect multiple sets.
+     *
      * @param key1 the key1
      * @param key2 the key2
      * @param key3 the key3
@@ -2678,6 +2944,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Intersect multiple sets.
+     *
      * @param keys the keys
      * @return a {@link Single} result
      * @param <T> the type of elements
@@ -2687,6 +2954,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Intersect multiple sets and store the resulting set in a key.
+     *
      * @param destination the destination
      * @param key the key
      * @return a {@link Single} result
@@ -2696,6 +2964,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Intersect multiple sets and store the resulting set in a key.
+     *
      * @param destination the destination
      * @param key1 the key1
      * @param key2 the key2
@@ -2707,6 +2976,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Intersect multiple sets and store the resulting set in a key.
+     *
      * @param destination the destination
      * @param key1 the key1
      * @param key2 the key2
@@ -2719,6 +2989,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Intersect multiple sets and store the resulting set in a key.
+     *
      * @param destination the destination
      * @param keys the keys
      * @return a {@link Single} result
@@ -2729,6 +3000,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Determine if a given value is a member of a set.
+     *
      * @param key the key
      * @param member the member
      * @return a {@link Single} result
@@ -2738,6 +3010,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Make the server a slave of another instance, or promote it as master.
+     *
      * @param host the host
      * @param port the port
      * @return a {@link Single} result
@@ -2747,6 +3020,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Manages the Redis slow queries log.
+     *
      * @param subcommand the subcommand
      * @return a {@link Single} result
      * @param <T> the type of elements
@@ -2756,6 +3030,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Manages the Redis slow queries log.
+     *
      * @param subcommand the subcommand
      * @param argument the argument
      * @return a {@link Single} result
@@ -2766,6 +3041,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get all the members in a set.
+     *
      * @param key the key
      * @return a {@link Single} result
      * @param <T> the type of elements
@@ -2775,6 +3051,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Move a member from one set to another.
+     *
      * @param source the source
      * @param destination the destination
      * @param member the member
@@ -2786,6 +3063,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Sort the elements in a list, set or sorted set.
+     *
      * @param key the key
      * @return a {@link Single} result
      * @param <T> the type of elements
@@ -2795,6 +3073,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Sort the elements in a list, set or sorted set.
+     *
      * @param key the key
      * @param byPattern the byPattern
      * @param offsetCount the offsetCount
@@ -2814,6 +3093,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Sort the elements in a list, set or sorted set.
+     *
      * @param key the key
      * @param storeDestination the storeDestination
      * @return a {@link Single} result
@@ -2824,6 +3104,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Sort the elements in a list, set or sorted set.
+     *
      * @param key the key
      * @param storeDestination the storeDestination
      * @param byPattern the byPattern
@@ -2844,6 +3125,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove and return one or multiple random members from a set.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -2852,6 +3134,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove and return one or multiple random members from a set.
+     *
      * @param key the key
      * @param count the count
      * @return a {@link Single} result
@@ -2861,6 +3144,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get one or multiple random members from a set.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -2869,6 +3153,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get one or multiple random members from a set.
+     *
      * @param key the key
      * @param count the count
      * @return a {@link Single} result
@@ -2878,6 +3163,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove one or more members from a set.
+     *
      * @param key the key
      * @param member the member
      * @return a {@link Single} result
@@ -2887,6 +3173,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove one or more members from a set.
+     *
      * @param key the key
      * @param member1 the member1
      * @param member2 the member2
@@ -2897,6 +3184,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove one or more members from a set.
+     *
      * @param key the key
      * @param member1 the member1
      * @param member2 the member2
@@ -2909,6 +3197,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove one or more members from a set.
+     *
      * @param key the key
      * @param members the members
      * @return a {@link Single} result
@@ -2918,6 +3207,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Incrementally iterate Set elements.
+     *
      * @param key the key
      * @param cursor the cursor
      * @return a {@link Single} result
@@ -2928,6 +3218,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Incrementally iterate Set elements.
+     *
      * @param key the key
      * @param cursor the cursor
      * @param matchPattern the matchPattern
@@ -2942,6 +3233,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get the length of the value stored in a key.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -2950,6 +3242,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Listen for messages published to the given channels.
+     *
      * @param channel the channel
      * @return a {@link Single} result
      */
@@ -2958,6 +3251,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add multiple sets.
+     *
      * @param key the key
      * @return a {@link Single} result
      * @param <T> the type of elements
@@ -2967,6 +3261,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add multiple sets.
+     *
      * @param key1 the key1
      * @param key2 the key2
      * @return a {@link Single} result
@@ -2977,6 +3272,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add multiple sets.
+     *
      * @param key1 the key1
      * @param key2 the key2
      * @param key3 the key3
@@ -2989,6 +3285,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add multiple sets.
+     *
      * @param keys the keys
      * @return a {@link Single} result
      * @param <T> the type of elements
@@ -2998,6 +3295,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add multiple sets and store the resulting set in a key.
+     *
      * @param destination the destination
      * @param key the key
      * @return a {@link Single} result
@@ -3007,6 +3305,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add multiple sets and store the resulting set in a key.
+     *
      * @param destination the destination
      * @param key1 the key1
      * @param key2 the key2
@@ -3018,6 +3317,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add multiple sets and store the resulting set in a key.
+     *
      * @param destination the destination
      * @param key1 the key1
      * @param key2 the key2
@@ -3030,6 +3330,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add multiple sets and store the resulting set in a key.
+     *
      * @param destination the destination
      * @param keys the keys
      * @return a {@link Single} result
@@ -3040,6 +3341,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Swaps two Redis databases.
+     *
      * @param index the index
      * @param index1 the index1
      * @return a {@link Single} result
@@ -3049,6 +3351,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Return the current server time.
+     *
      * @return a {@link Single} result
      * @param <T> the type of elements
      */
@@ -3057,6 +3360,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Alters the last access time of a key(s). Returns the number of existing keys specified..
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -3065,6 +3369,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Alters the last access time of a key(s). Returns the number of existing keys specified..
+     *
      * @param key1 the key1
      * @param key2 the key2
      * @return a {@link Single} result
@@ -3074,6 +3379,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Alters the last access time of a key(s). Returns the number of existing keys specified..
+     *
      * @param key1 the key1
      * @param key2 the key2
      * @param key3 the key3
@@ -3085,6 +3391,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Alters the last access time of a key(s). Returns the number of existing keys specified..
+     *
      * @param keys the keys
      * @return a {@link Single} result
      */
@@ -3093,6 +3400,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get the time to live for a key.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -3101,6 +3409,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Determine the type stored at key.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -3110,6 +3419,7 @@ public interface RedisCommander extends AsyncCloseable {
     /**
      * Delete a key asynchronously in another thread. Otherwise it is just as DEL, but non
      * blocking..
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -3119,6 +3429,7 @@ public interface RedisCommander extends AsyncCloseable {
     /**
      * Delete a key asynchronously in another thread. Otherwise it is just as DEL, but non
      * blocking..
+     *
      * @param key1 the key1
      * @param key2 the key2
      * @return a {@link Single} result
@@ -3129,6 +3440,7 @@ public interface RedisCommander extends AsyncCloseable {
     /**
      * Delete a key asynchronously in another thread. Otherwise it is just as DEL, but non
      * blocking..
+     *
      * @param key1 the key1
      * @param key2 the key2
      * @param key3 the key3
@@ -3141,6 +3453,7 @@ public interface RedisCommander extends AsyncCloseable {
     /**
      * Delete a key asynchronously in another thread. Otherwise it is just as DEL, but non
      * blocking..
+     *
      * @param keys the keys
      * @return a {@link Single} result
      */
@@ -3149,6 +3462,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Forget about all watched keys.
+     *
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.UNWATCH)
@@ -3157,6 +3471,7 @@ public interface RedisCommander extends AsyncCloseable {
     /**
      * Wait for the synchronous replication of all the write commands sent in the context of the
      * current connection.
+     *
      * @param numslaves the numslaves
      * @param timeout the timeout
      * @return a {@link Single} result
@@ -3166,6 +3481,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Watch the given keys to determine execution of the MULTI/EXEC block.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -3174,6 +3490,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Watch the given keys to determine execution of the MULTI/EXEC block.
+     *
      * @param key1 the key1
      * @param key2 the key2
      * @return a {@link Single} result
@@ -3183,6 +3500,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Watch the given keys to determine execution of the MULTI/EXEC block.
+     *
      * @param key1 the key1
      * @param key2 the key2
      * @param key3 the key3
@@ -3194,6 +3512,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Watch the given keys to determine execution of the MULTI/EXEC block.
+     *
      * @param keys the keys
      * @return a {@link Single} result
      */
@@ -3202,6 +3521,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
+     *
      * @param key the key
      * @param scoreMembers the scoreMembers
      * @return a {@link Single} result
@@ -3212,6 +3532,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
+     *
      * @param key the key
      * @param condition the condition
      * @param change the change
@@ -3227,6 +3548,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
+     *
      * @param key the key
      * @param condition the condition
      * @param change the change
@@ -3244,6 +3566,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
+     *
      * @param key the key
      * @param condition the condition
      * @param change the change
@@ -3263,6 +3586,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
+     *
      * @param key the key
      * @param condition the condition
      * @param change the change
@@ -3277,6 +3601,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
+     *
      * @param key the key
      * @param scoreMembers the scoreMembers
      * @return a {@link Single} result
@@ -3287,6 +3612,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
+     *
      * @param key the key
      * @param condition the condition
      * @param change the change
@@ -3302,6 +3628,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
+     *
      * @param key the key
      * @param condition the condition
      * @param change the change
@@ -3319,6 +3646,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
+     *
      * @param key the key
      * @param condition the condition
      * @param change the change
@@ -3338,6 +3666,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
+     *
      * @param key the key
      * @param condition the condition
      * @param change the change
@@ -3352,6 +3681,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get the number of members in a sorted set.
+     *
      * @param key the key
      * @return a {@link Single} result
      */
@@ -3360,6 +3690,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Count the members in a sorted set with scores within the given values.
+     *
      * @param key the key
      * @param min the min
      * @param max the max
@@ -3370,6 +3701,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Increment the score of a member in a sorted set.
+     *
      * @param key the key
      * @param increment the increment
      * @param member the member
@@ -3380,6 +3712,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Intersect multiple sorted sets and store the resulting sorted set in a new key.
+     *
      * @param destination the destination
      * @param numkeys the numkeys
      * @param keys the keys
@@ -3391,6 +3724,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Intersect multiple sorted sets and store the resulting sorted set in a new key.
+     *
      * @param destination the destination
      * @param numkeys the numkeys
      * @param keys the keys
@@ -3406,6 +3740,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Count the number of members in a sorted set between a given lexicographical range.
+     *
      * @param key the key
      * @param min the min
      * @param max the max
@@ -3416,6 +3751,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Return a range of members in a sorted set, by index.
+     *
      * @param key the key
      * @param start the start
      * @param stop the stop
@@ -3427,6 +3763,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Return a range of members in a sorted set, by index.
+     *
      * @param key the key
      * @param start the start
      * @param stop the stop
@@ -3440,6 +3777,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Return a range of members in a sorted set, by lexicographical range.
+     *
      * @param key the key
      * @param min the min
      * @param max the max
@@ -3451,6 +3789,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Return a range of members in a sorted set, by lexicographical range.
+     *
      * @param key the key
      * @param min the min
      * @param max the max
@@ -3464,6 +3803,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Return a range of members in a sorted set, by score.
+     *
      * @param key the key
      * @param min the min
      * @param max the max
@@ -3475,6 +3815,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Return a range of members in a sorted set, by score.
+     *
      * @param key the key
      * @param min the min
      * @param max the max
@@ -3490,6 +3831,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Determine the index of a member in a sorted set.
+     *
      * @param key the key
      * @param member the member
      * @return a {@link Single} result
@@ -3499,6 +3841,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove one or more members from a sorted set.
+     *
      * @param key the key
      * @param member the member
      * @return a {@link Single} result
@@ -3508,6 +3851,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove one or more members from a sorted set.
+     *
      * @param key the key
      * @param member1 the member1
      * @param member2 the member2
@@ -3518,6 +3862,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove one or more members from a sorted set.
+     *
      * @param key the key
      * @param member1 the member1
      * @param member2 the member2
@@ -3530,6 +3875,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove one or more members from a sorted set.
+     *
      * @param key the key
      * @param members the members
      * @return a {@link Single} result
@@ -3539,6 +3885,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove all members in a sorted set between the given lexicographical range.
+     *
      * @param key the key
      * @param min the min
      * @param max the max
@@ -3549,6 +3896,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove all members in a sorted set within the given indexes.
+     *
      * @param key the key
      * @param start the start
      * @param stop the stop
@@ -3559,6 +3907,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Remove all members in a sorted set within the given scores.
+     *
      * @param key the key
      * @param min the min
      * @param max the max
@@ -3569,6 +3918,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Return a range of members in a sorted set, by index, with scores ordered from high to low.
+     *
      * @param key the key
      * @param start the start
      * @param stop the stop
@@ -3580,6 +3930,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Return a range of members in a sorted set, by index, with scores ordered from high to low.
+     *
      * @param key the key
      * @param start the start
      * @param stop the stop
@@ -3594,6 +3945,7 @@ public interface RedisCommander extends AsyncCloseable {
     /**
      * Return a range of members in a sorted set, by lexicographical range, ordered from higher to
      * lower strings..
+     *
      * @param key the key
      * @param max the max
      * @param min the min
@@ -3606,6 +3958,7 @@ public interface RedisCommander extends AsyncCloseable {
     /**
      * Return a range of members in a sorted set, by lexicographical range, ordered from higher to
      * lower strings..
+     *
      * @param key the key
      * @param max the max
      * @param min the min
@@ -3619,6 +3972,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Return a range of members in a sorted set, by score, with scores ordered from high to low.
+     *
      * @param key the key
      * @param max the max
      * @param min the min
@@ -3630,6 +3984,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Return a range of members in a sorted set, by score, with scores ordered from high to low.
+     *
      * @param key the key
      * @param max the max
      * @param min the min
@@ -3645,6 +4000,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Determine the index of a member in a sorted set, with scores ordered from high to low.
+     *
      * @param key the key
      * @param member the member
      * @return a {@link Single} result
@@ -3654,6 +4010,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Incrementally iterate sorted sets elements and associated scores.
+     *
      * @param key the key
      * @param cursor the cursor
      * @return a {@link Single} result
@@ -3664,6 +4021,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Incrementally iterate sorted sets elements and associated scores.
+     *
      * @param key the key
      * @param cursor the cursor
      * @param matchPattern the matchPattern
@@ -3678,6 +4036,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Get the score associated with the given member in a sorted set.
+     *
      * @param key the key
      * @param member the member
      * @return a {@link Single} result
@@ -3687,6 +4046,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add multiple sorted sets and store the resulting sorted set in a new key.
+     *
      * @param destination the destination
      * @param numkeys the numkeys
      * @param keys the keys
@@ -3698,6 +4058,7 @@ public interface RedisCommander extends AsyncCloseable {
 
     /**
      * Add multiple sorted sets and store the resulting sorted set in a new key.
+     *
      * @param destination the destination
      * @param numkeys the numkeys
      * @param keys the keys
