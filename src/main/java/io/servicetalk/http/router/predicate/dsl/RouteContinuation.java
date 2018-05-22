@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.router.predicate.dsl;
 
+import io.servicetalk.http.api.HttpCookie;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMethod;
@@ -30,90 +31,146 @@ import java.util.regex.Pattern;
  */
 public interface RouteContinuation {
     /**
-     * See {@link RouteStarter#whenMethod(HttpRequestMethod)}.
+     * Extends the current route such that it matches requests where the {@link HttpRequestMethod} is {@code method}.
+     *
+     * @param method the method to match.
+     * @return {@link RouteContinuation} for the next steps of building a route.
      */
     RouteContinuation andMethod(HttpRequestMethod method);
 
     /**
-     * See {@link RouteStarter#whenMethodIsOneOf(HttpRequestMethod...)}.
+     * Extends the current route such that it matches requests where the {@link HttpRequestMethod} is one of the
+     * {@code methods}.
+     *
+     * @param methods the methods to match.
+     * @return {@link RouteContinuation} for the next steps of building a route.
      */
     RouteContinuation andMethodIsOneOf(HttpRequestMethod... methods);
 
     /**
-     * See {@link RouteStarter#whenPathEquals(String)}.
+     * Extends the current route such that it matches requests where the path is equal to {@code path}.
+     *
+     * @param path the path to match.
+     * @return {@link RouteContinuation} for the next steps of building a route.
      */
     RouteContinuation andPathEquals(String path);
 
     /**
-     * See {@link RouteStarter#whenPathIsOneOf(String...)}.
+     * Extends the current route such that it matches requests where the path is equal to any of the specified
+     * {@code path}s.
+     *
+     * @param paths the paths to match.
+     * @return {@link RouteContinuation} for the next steps of building a route.
      */
     RouteContinuation andPathIsOneOf(String... paths);
 
     /**
-     * See {@link RouteStarter#whenPathStartsWith(String)}.
+     * Extends the current route such that it matches requests where the path starts with {@code pathPrefix}.
+     *
+     * @param pathPrefix the path prefix to match.
+     * @return {@link RouteContinuation} for the next steps of building a route.
      */
     RouteContinuation andPathStartsWith(String pathPrefix);
 
     /**
-     * See {@link RouteStarter#whenPathMatches(String)}.
+     * Extends the current route such that it matches requests where the path matches the regex {@code pathRegex}.
+     *
+     * @param pathRegex the regex to match against the request path.
+     * @return {@link RouteContinuation} for the next steps of building a route.
      */
     RouteContinuation andPathMatches(String pathRegex);
 
     /**
-     * See {@link RouteStarter#whenPathMatches(Pattern)}.
+     * Extends the current route such that it matches requests where the path matches the regex {@code pathRegex}.
+     *
+     * @param pathRegex the regex to match against the request path.
+     * @return {@link RouteContinuation} for the next steps of building a route.
      */
     RouteContinuation andPathMatches(Pattern pathRegex);
 
     /**
-     * See {@link RouteStarter#whenQueryParam(String)}.
+     * Extends the current route with a {@link StringMultiValueMatcher} that matches against the value(s) of the
+     * request parameter {@code name}.
+     *
+     * @param name the request parameter name that must be present in the request in order to continue evaluation of
+     * this route.
+     * @return {@link StringMultiValueMatcher} for the next steps of building a route.
      */
     StringMultiValueMatcher andQueryParam(String name);
 
     /**
-     * See {@link RouteStarter#whenHeader(CharSequence)}.
+     * Extends the current route with a {@link StringMultiValueMatcher} that matches against the value(s) of the
+     * {@code name} headers.
+     *
+     * @param name The header name that must be present in the request in order to continue evaluation of this route.
+     * @return {@link StringMultiValueMatcher} for the next steps of building a route.
      */
     StringMultiValueMatcher andHeader(CharSequence name);
 
     /**
-     * See {@link RouteStarter#whenCookie(String)}.
+     * Extends the current route with a {@link CookieMatcher} that matches against {@link HttpCookie}s with the name
+     * {@code name}.
+     *
+     * @param name the cookie name that must be present in the request in order to continue evaluation of this route.
+     * @return {@link CookieMatcher} for the next steps of building a route.
      */
     CookieMatcher andCookie(String name);
 
     /**
-     * See {@link RouteStarter#whenCookieNameMatches(String)}.
+     * Extends the current route with a {@link CookieMatcher} that matches against {@link HttpCookie}s with a name
+     * matching the regex {@code regex}.
+     *
+     * @param regex the regex to match against the cookie name.
+     * @return {@link CookieMatcher} for the next steps of building a route.
      */
     CookieMatcher andCookieNameMatches(String regex);
 
     /**
-     * See {@link RouteStarter#whenCookieNameMatches(Pattern)}.
+     * Extends the current route with a {@link CookieMatcher} that matches against {@link HttpCookie}s with a name
+     * matching the regex {@code regex}.
+     *
+     * @param regex the regex to match against the cookie name.
+     * @return {@link CookieMatcher} for the next steps of building a route.
      */
     CookieMatcher andCookieNameMatches(Pattern regex);
 
     /**
-     * See {@link RouteStarter#whenIsSsl()}.
+     * Extends the current route such that it matches requests that are over SSL/TLS.
+     *
+     * @return {@link RouteContinuation} for the next steps of building a route.
      */
     RouteContinuation andIsSsl();
 
     /**
-     * See {@link RouteStarter#whenIsNotSsl()}.
+     * Extends the current route such that it matches requests that are not over SSL/TLS.
+     *
+     * @return {@link RouteContinuation} for the next steps of building a route.
      */
     RouteContinuation andIsNotSsl();
 
     /**
-     * See {@link RouteStarter#when(Predicate)}.
+     * Extends the current route such that it matches {@link HttpRequest}s with a user-specified {@code predicate}.
+     *
+     * @param predicate the predicate to evaluate against requests.
+     * @return {@link RouteContinuation} for the next steps of building a route.
      */
     RouteContinuation and(Predicate<HttpRequest<HttpPayloadChunk>> predicate);
 
     /**
-     * See {@link RouteStarter#when(Predicate)}.
+     * Extends the current route such that it matches {@link HttpRequest} and {@link ConnectionContext} with a
+     * user-specified {@code predicate}.
+     *
+     * @param predicate the predicate to evaluate against the request and connection context.
+     * @return {@link RouteContinuation} for the next steps of building a route.
      */
     RouteContinuation and(BiPredicate<ConnectionContext, HttpRequest<HttpPayloadChunk>> predicate);
 
     /**
-     * Specifies the {@link HttpService} to route requests to that match the previously specified criteria.
-     * Each call to {@code thenRouteTo} resets the criteria, prior to building the next route.
+     * Completes the route by specifying the {@link HttpService} to route requests to that match the previously
+     * specified criteria. Each call to {@code thenRouteTo} resets the criteria, prior to building the next route.
+     *
      * @param service the {@link HttpService} to route requests to.
-     * {@link RouteStarter} for building another route.
+     * @return {@link RouteStarter} for building another route.
      */
     RouteStarter thenRouteTo(HttpService service);
 }
