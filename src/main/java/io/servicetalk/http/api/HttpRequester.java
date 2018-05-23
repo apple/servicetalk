@@ -61,11 +61,26 @@ public abstract class HttpRequester implements ListenableAsyncCloseable {
         return asAggregatedRequesterInternal();
     }
 
+    /**
+     * Convert this {@link HttpRequester} to the {@link BlockingAggregatedHttpRequester} API.
+     * <p>
+     * This API is provided for convenience. It is recommended that
+     * filters are implemented using the {@link HttpRequester} asynchronous API for maximum portability.
+     * @return a {@link BlockingAggregatedHttpRequester} representation of this {@link HttpRequester}.
+     */
+    public final BlockingAggregatedHttpRequester asBlockingAggregatedRequester() {
+        return asBlockingAggregatedRequesterInternal();
+    }
+
     AggregatedHttpRequester asAggregatedRequesterInternal() {
         return new HttpRequesterToAggregatedHttpRequester(this);
     }
 
     BlockingHttpRequester asBlockingRequesterInternal() {
         return new HttpRequesterToBlockingHttpRequester(this);
+    }
+
+    BlockingAggregatedHttpRequester asBlockingAggregatedRequesterInternal() {
+        return new HttpRequesterToBlockingAggregatedHttpRequester(this);
     }
 }

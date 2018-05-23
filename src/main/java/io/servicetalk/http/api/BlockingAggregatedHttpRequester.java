@@ -18,9 +18,9 @@ package io.servicetalk.http.api;
 import io.servicetalk.transport.api.ExecutionContext;
 
 /**
- * The equivalent of {@link HttpRequester} but with synchronous/blocking APIs instead of asynchronous APIs.
+ * The equivalent of {@link AggregatedHttpRequester} with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public abstract class BlockingHttpRequester implements AutoCloseable {
+public abstract class BlockingAggregatedHttpRequester implements AutoCloseable {
     /**
      * Send a {@code request}.
      *
@@ -28,7 +28,7 @@ public abstract class BlockingHttpRequester implements AutoCloseable {
      * @return The response.
      * @throws Exception if an exception occurs during the request processing.
      */
-    public abstract BlockingHttpResponse<HttpPayloadChunk> request(BlockingHttpRequest<HttpPayloadChunk> request)
+    public abstract AggregatedHttpResponse<HttpPayloadChunk> request(AggregatedHttpRequest<HttpPayloadChunk> request)
             throws Exception;
 
     /**
@@ -42,7 +42,7 @@ public abstract class BlockingHttpRequester implements AutoCloseable {
     public abstract ExecutionContext getExecutionContext();
 
     /**
-     * Convert this {@link BlockingHttpRequester} to the {@link HttpRequester} API.
+     * Convert this {@link BlockingAggregatedHttpRequester} to the {@link HttpRequester} API.
      * <p>
      * Note that the resulting {@link HttpRequester} may still be subject to any blocking, in memory aggregation, and
      * other behavior as this {@link BlockingHttpRequester}.
@@ -54,7 +54,7 @@ public abstract class BlockingHttpRequester implements AutoCloseable {
     }
 
     /**
-     * Convert this {@link BlockingHttpRequester} to the {@link AggregatedHttpRequester} API.
+     * Convert this {@link BlockingAggregatedHttpRequester} to the {@link AggregatedHttpRequester} API.
      * <p>
      * Note that the resulting {@link AggregatedHttpRequester} may still be subject to any blocking, in memory
      * aggregation, and other behavior as this {@link BlockingHttpRequester}.
@@ -62,22 +62,26 @@ public abstract class BlockingHttpRequester implements AutoCloseable {
      * @return a {@link AggregatedHttpRequester} representation of this {@link BlockingHttpRequester}.
      */
     public final AggregatedHttpRequester asAggregatedRequester() {
-        return asRequester().asAggregatedRequester();
+        return asAggregatedRequesterInternal();
     }
 
     /**
-     * Convert this {@link BlockingHttpRequester} to the {@link BlockingAggregatedHttpRequester} API.
+     * Convert this {@link BlockingAggregatedHttpRequester} to the {@link BlockingHttpRequester} API.
      * <p>
-     * Note that the resulting {@link BlockingAggregatedHttpRequester} may still be subject to in memory
+     * Note that the resulting {@link BlockingHttpRequester} may still be subject to in memory
      * aggregation and other behavior as this {@link BlockingHttpRequester}.
      *
-     * @return a {@link BlockingAggregatedHttpRequester} representation of this {@link BlockingHttpRequester}.
+     * @return a {@link BlockingHttpRequester} representation of this {@link BlockingHttpRequester}.
      */
-    public final BlockingAggregatedHttpRequester asBlockingAggregatedRequester() {
-        return asRequester().asBlockingAggregatedRequester();
+    public final BlockingHttpRequester asBlockingRequester() {
+        return asRequester().asBlockingRequester();
     }
 
     HttpRequester asRequesterInternal() {
-        return new BlockingHttpRequesterToHttpRequester(this);
+        return new BlockingAggregatedHttpRequesterToHttpRequester(this);
+    }
+
+    AggregatedHttpRequester asAggregatedRequesterInternal() {
+        return new BlockingAggregatedHttpRequesterToAggregatedHttpRequester(this);
     }
 }

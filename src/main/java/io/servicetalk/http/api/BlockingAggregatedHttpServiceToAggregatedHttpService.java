@@ -21,30 +21,28 @@ import io.servicetalk.transport.api.ConnectionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
-import static io.servicetalk.http.api.HttpResponses.fromBlockingResponse;
 import static java.util.Objects.requireNonNull;
 
-final class BlockingHttpServiceToHttpService extends HttpService {
-    private final BlockingHttpService blockingHttpService;
+public class BlockingAggregatedHttpServiceToAggregatedHttpService extends AggregatedHttpService {
+    private final BlockingAggregatedHttpService service;
 
-    BlockingHttpServiceToHttpService(BlockingHttpService blockingHttpService) {
-        this.blockingHttpService = requireNonNull(blockingHttpService);
+    BlockingAggregatedHttpServiceToAggregatedHttpService(BlockingAggregatedHttpService service) {
+        this.service = requireNonNull(service);
     }
 
     @Override
-    public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                         final HttpRequest<HttpPayloadChunk> request) {
-        return blockingToSingle(() -> fromBlockingResponse(blockingHttpService.handle(ctx,
-                new DefaultBlockingHttpRequest<>(request))));
+    public Single<AggregatedHttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
+                                                               final AggregatedHttpRequest<HttpPayloadChunk> request) {
+        return blockingToSingle(() -> service.handle(ctx, request));
     }
 
     @Override
     public Completable closeAsync() {
-        return blockingToCompletable(blockingHttpService::close);
+        return blockingToCompletable(service::close);
     }
 
     @Override
-    BlockingHttpService asBlockingServiceInternal() {
-        return blockingHttpService;
+    BlockingAggregatedHttpService asBlockingAggregatedServiceInternal() {
+        return service;
     }
 }

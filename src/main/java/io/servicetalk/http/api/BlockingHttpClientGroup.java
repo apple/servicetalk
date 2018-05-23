@@ -28,7 +28,7 @@ public abstract class BlockingHttpClientGroup<UnresolvedAddress> implements Auto
      * Locate or create a client and delegate to {@link BlockingHttpClient#request(BlockingHttpRequest)}.
      *
      * @param key Identifies the {@link BlockingHttpClient} to use, or provides enough information to create
-     * an {@link BlockingHttpClient} if non exist.
+     * a {@link BlockingHttpClient} if non exist.
      * @param request The {@link BlockingHttpRequest} to send.
      * @return The received {@link BlockingHttpResponse}.
      * @throws Exception if an exception occurs during the request processing.
@@ -42,7 +42,7 @@ public abstract class BlockingHttpClientGroup<UnresolvedAddress> implements Auto
      * Locate or create a client and delegate to {@link BlockingHttpClient#reserveConnection(BlockingHttpRequest)}.
      *
      * @param key Identifies the {@link BlockingHttpClient} to use, or provides enough information to create
-     * an {@link BlockingHttpClient} if non exist.
+     * a {@link BlockingHttpClient} if non exist.
      * @param request The {@link HttpRequest} which may provide more information about which
      * {@link BlockingHttpConnection} to reserve.
      * @return A {@link BlockingReservedHttpConnection}.
@@ -56,16 +56,40 @@ public abstract class BlockingHttpClientGroup<UnresolvedAddress> implements Auto
     /**
      * Convert this {@link BlockingHttpClientGroup} to the {@link HttpClientGroup} API.
      * <p>
-     * Note that the resulting {@link HttpClientGroup} will still be subject to any blocking, in memory aggregation, and
+     * Note that the resulting {@link HttpClientGroup} may still be subject to any blocking, in memory aggregation, and
      * other behavior as this {@link BlockingHttpClientGroup}.
      *
      * @return a {@link HttpClientGroup} representation of this {@link BlockingHttpClientGroup}.
      */
-    public final HttpClientGroup<UnresolvedAddress> asAsynchronousClientGroup() {
-        return asAsynchronousClientGroupInternal();
+    public final HttpClientGroup<UnresolvedAddress> asClientGroup() {
+        return asClientGroupInternal();
     }
 
-    HttpClientGroup<UnresolvedAddress> asAsynchronousClientGroupInternal() {
+    /**
+     * Convert this {@link BlockingHttpClientGroup} to the {@link AggregatedHttpClientGroup} API.
+     * <p>
+     * Note that the resulting {@link AggregatedHttpClientGroup} may still be subject to any blocking, in memory
+     * aggregation, and other behavior as this {@link BlockingHttpClientGroup}.
+     *
+     * @return a {@link AggregatedHttpClientGroup} representation of this {@link BlockingHttpClientGroup}.
+     */
+    public final AggregatedHttpClientGroup<UnresolvedAddress> asAggregatedClientGroup() {
+        return asClientGroup().asAggregatedClientGroup();
+    }
+
+    /**
+     * Convert this {@link BlockingHttpClientGroup} to the {@link BlockingAggregatedHttpClientGroup} API.
+     * <p>
+     * Note that the resulting {@link BlockingAggregatedHttpClientGroup} may still be subject to in
+     * memory aggregation and other behavior as this {@link BlockingHttpClientGroup}.
+     *
+     * @return a {@link BlockingAggregatedHttpClientGroup} representation of this {@link BlockingHttpClientGroup}.
+     */
+    public final BlockingAggregatedHttpClientGroup<UnresolvedAddress> asBlockingAggregatedClientGroup() {
+        return asClientGroup().asBlockingAggregatedClientGroup();
+    }
+
+    HttpClientGroup<UnresolvedAddress> asClientGroupInternal() {
         return new BlockingHttpClientGroupToHttpClientGroup<>(this);
     }
 }

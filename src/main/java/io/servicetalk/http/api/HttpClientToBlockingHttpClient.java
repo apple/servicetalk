@@ -77,7 +77,7 @@ final class HttpClientToBlockingHttpClient extends BlockingHttpClient {
     }
 
     @Override
-    HttpClient asAsynchronousClientInternal() {
+    HttpClient asClientInternal() {
         return client;
     }
 
@@ -126,7 +126,7 @@ final class HttpClientToBlockingHttpClient extends BlockingHttpClient {
         }
 
         @Override
-        ReservedHttpConnection asAsynchronousConnectionInternal() {
+        ReservedHttpConnection asConnectionInternal() {
             return reservedConnection;
         }
     }

@@ -18,7 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
 import io.servicetalk.http.api.BlockingHttpClient.BlockingReservedHttpConnection;
 import io.servicetalk.http.api.BlockingHttpClient.BlockingUpgradableHttpResponse;
 import io.servicetalk.http.api.HttpClientToBlockingHttpClient.ReservedHttpConnectionToBlocking;
@@ -31,7 +30,7 @@ import java.util.function.Function;
 import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
-import static java.lang.Thread.currentThread;
+import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
 import static java.util.Objects.requireNonNull;
 
 final class BlockingHttpClientToHttpClient extends HttpClient {
@@ -48,58 +47,19 @@ final class BlockingHttpClientToHttpClient extends HttpClient {
 
     @Override
     public Single<? extends ReservedHttpConnection> reserveConnection(final HttpRequest<HttpPayloadChunk> request) {
-        return new Single<ReservedHttpConnection>() {
-            @Override
-            protected void handleSubscribe(final Subscriber<? super ReservedHttpConnection> subscriber) {
-                ThreadInterruptingCancellable cancellable = new ThreadInterruptingCancellable(currentThread());
-                subscriber.onSubscribe(cancellable);
-                final ReservedHttpConnection response;
-                try {
-                    // Do the conversion here in case there is a null value returned by the upgradeConnection.
-                    response = new BlockingToReservedHttpConnection(
-                            blockingClient.reserveConnection(new DefaultBlockingHttpRequest<>(request)));
-                } catch (Throwable cause) {
-                    cancellable.setDone();
-                    subscriber.onError(cause);
-                    return;
-                }
-                // It is safe to set this outside the scope of the try/catch above because we don't do any blocking
-                // operations which may be interrupted between the completion of the blockingHttpService call and here.
-                cancellable.setDone();
-
-                subscriber.onSuccess(response);
-            }
-        };
+        return blockingToSingle(() -> new BlockingToReservedHttpConnection(
+                    blockingClient.reserveConnection(new DefaultBlockingHttpRequest<>(request))));
     }
 
     @Override
     public Single<? extends UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
             final HttpRequest<HttpPayloadChunk> request) {
-        return new Single<UpgradableHttpResponse<HttpPayloadChunk>>() {
-            @Override
-            protected void handleSubscribe(
-                    final Subscriber<? super UpgradableHttpResponse<HttpPayloadChunk>> subscriber) {
-                ThreadInterruptingCancellable cancellable = new ThreadInterruptingCancellable(currentThread());
-                subscriber.onSubscribe(cancellable);
-                final UpgradableHttpResponse<HttpPayloadChunk> response;
-                try {
-                    // Do the conversion here in case there is a null value returned by the upgradeConnection.
-                    BlockingUpgradableHttpResponse<HttpPayloadChunk> upgradeResponse =
-                            blockingClient.upgradeConnection(new DefaultBlockingHttpRequest<>(request));
-                    response = new BlockingToUpgradableHttpResponse<>(upgradeResponse,
-                                                                      from(upgradeResponse.getPayloadBody()));
-                } catch (Throwable cause) {
-                    cancellable.setDone();
-                    subscriber.onError(cause);
-                    return;
-                }
-                // It is safe to set this outside the scope of the try/catch above because we don't do any blocking
-                // operations which may be interrupted between the completion of the blockingHttpService call and here.
-                cancellable.setDone();
-
-                subscriber.onSuccess(response);
-            }
-        };
+        return blockingToSingle(() -> {
+            BlockingUpgradableHttpResponse<HttpPayloadChunk> upgradeResponse =
+                    blockingClient.upgradeConnection(new DefaultBlockingHttpRequest<>(request));
+            return new BlockingToUpgradableHttpResponse<>(upgradeResponse,
+                    from(upgradeResponse.getPayloadBody()));
+        });
     }
 
     @Override

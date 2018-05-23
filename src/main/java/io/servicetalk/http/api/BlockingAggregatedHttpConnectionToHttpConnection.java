@@ -15,18 +15,21 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.BlockingIterable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.http.api.HttpConnection.SettingKey;
+import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static java.util.Objects.requireNonNull;
 
-final class HttpConnectionToBlockingHttpConnection extends BlockingHttpConnection {
-    private final HttpConnection connection;
+final class BlockingAggregatedHttpConnectionToHttpConnection extends HttpConnection {
+    private final BlockingAggregatedHttpConnection connection;
 
-    HttpConnectionToBlockingHttpConnection(HttpConnection connection) {
+    BlockingAggregatedHttpConnectionToHttpConnection(BlockingAggregatedHttpConnection connection) {
         this.connection = requireNonNull(connection);
     }
 
@@ -36,13 +39,12 @@ final class HttpConnectionToBlockingHttpConnection extends BlockingHttpConnectio
     }
 
     @Override
-    public <T> BlockingIterable<T> getSettingIterable(final SettingKey<T> settingKey) {
-        return connection.getSettingStream(settingKey).toIterable();
+    public <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
+        return from(connection.getSettingIterable(settingKey));
     }
 
     @Override
-    public BlockingHttpResponse<HttpPayloadChunk> request(final BlockingHttpRequest<HttpPayloadChunk> request)
-            throws Exception {
+    public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
         return BlockingUtils.request(connection, request);
     }
 
@@ -52,16 +54,21 @@ final class HttpConnectionToBlockingHttpConnection extends BlockingHttpConnectio
     }
 
     @Override
-    public void close() throws Exception {
-        BlockingUtils.close(connection);
-    }
+    public Completable onClose() {
+        if (connection instanceof HttpConnectionToBlockingAggregatedHttpConnection) {
+            return ((HttpConnectionToBlockingAggregatedHttpConnection) connection).onClose();
+        }
 
-    Completable onClose() {
-        return connection.onClose();
+        return error(new UnsupportedOperationException("unsupported type: " + connection.getClass()));
     }
 
     @Override
-    HttpConnection asConnectionInternal() {
+    public Completable closeAsync() {
+        return blockingToCompletable(connection::close);
+    }
+
+    @Override
+    BlockingAggregatedHttpConnection asBlockingAggregatedConnectionInternal() {
         return connection;
     }
 }

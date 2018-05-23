@@ -42,16 +42,6 @@ public abstract class HttpConnection extends HttpRequester {
      */
     public abstract <T> Publisher<T> getSettingStream(SettingKey<T> settingKey);
 
-    /**
-     * Convert this {@link HttpConnection} to the {@link BlockingHttpConnection} API.
-     * <p>
-     * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
-     * filters are implemented using the {@link HttpConnection} asynchronous API for maximum portability.
-     * @return a {@link BlockingHttpConnection} representation of this {@link HttpConnection}.
-     */
-    public final BlockingHttpConnection asBlockingConnection() {
-        return asBlockingConnectionInternal();
-    }
 
     /**
      * Convert this {@link HttpConnection} to the {@link AggregatedHttpConnection} API.
@@ -64,12 +54,38 @@ public abstract class HttpConnection extends HttpRequester {
         return asAggregatedConnectionInternal();
     }
 
+    /**
+     * Convert this {@link HttpConnection} to the {@link BlockingHttpConnection} API.
+     * <p>
+     * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
+     * filters are implemented using the {@link HttpConnection} asynchronous API for maximum portability.
+     * @return a {@link BlockingHttpConnection} representation of this {@link HttpConnection}.
+     */
+    public final BlockingHttpConnection asBlockingConnection() {
+        return asBlockingConnectionInternal();
+    }
+
+    /**
+     * Convert this {@link HttpConnection} to the {@link BlockingAggregatedHttpConnection} API.
+     * <p>
+     * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
+     * filters are implemented using the {@link HttpConnection} asynchronous API for maximum portability.
+     * @return a {@link BlockingAggregatedHttpConnection} representation of this {@link HttpConnection}.
+     */
+    public final BlockingAggregatedHttpConnection asBlockingAggregatedConnection() {
+        return asBlockingAggregatedConnectionInternal();
+    }
+
     AggregatedHttpConnection asAggregatedConnectionInternal() {
         return new HttpConnectionToAggregatedHttpConnection(this);
     }
 
     BlockingHttpConnection asBlockingConnectionInternal() {
         return new HttpConnectionToBlockingHttpConnection(this);
+    }
+
+    BlockingAggregatedHttpConnection asBlockingAggregatedConnectionInternal() {
+        return new HttpConnectionToBlockingAggregatedHttpConnection(this);
     }
 
     /**

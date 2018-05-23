@@ -18,7 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.http.api.BlockingHttpClient.BlockingReservedHttpConnection;
-import io.servicetalk.http.api.HttpClientToBlockingHttpClient.ReservedHttpConnectionToBlocking;
 
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpRequests.fromBlockingRequest;
@@ -48,8 +47,8 @@ final class HttpClientGroupToBlockingHttpClientGroup<UnresolvedAddress> extends
             throws Exception {
         // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
-        return new ReservedHttpConnectionToBlocking(
-                awaitIndefinitelyNonNull(clientGroup.reserveConnection(key, fromBlockingRequest(request))));
+        return awaitIndefinitelyNonNull(clientGroup.reserveConnection(key, fromBlockingRequest(request)))
+                .asBlockingReservedConnection();
     }
 
     @Override
@@ -62,7 +61,7 @@ final class HttpClientGroupToBlockingHttpClientGroup<UnresolvedAddress> extends
     }
 
     @Override
-    HttpClientGroup<UnresolvedAddress> asAsynchronousClientGroupInternal() {
+    HttpClientGroup<UnresolvedAddress> asClientGroupInternal() {
         return clientGroup;
     }
 }

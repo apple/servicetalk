@@ -43,6 +43,18 @@ public interface HttpConnectionBuilder<ResolvedAddress> {
     Single<HttpConnection> build(ExecutionContext executionContext, ResolvedAddress resolvedAddress);
 
     /**
+     * Create a new {@link AggregatedHttpConnection}.
+     *
+     * @param executionContext {@link ExecutionContext} when building {@link AggregatedHttpConnection}s.
+     * @param resolvedAddress a resolved address to use when connecting
+     * @return A single that will complete with the {@link AggregatedHttpConnection}
+     */
+    default Single<AggregatedHttpConnection> buildAggregated(ExecutionContext executionContext,
+                                                             ResolvedAddress resolvedAddress) {
+        return build(executionContext, resolvedAddress).map(HttpConnection::asAggregatedConnection);
+    }
+
+    /**
      * Create a new {@link BlockingHttpConnection} and waits till it is created.
      *
      * @param executionContext {@link ExecutionContext} when building {@link BlockingHttpConnection}s.
@@ -56,13 +68,17 @@ public interface HttpConnectionBuilder<ResolvedAddress> {
     }
 
     /**
-     * Create a new {@link AggregatedHttpConnection}.
+     * Create a new {@link BlockingAggregatedHttpConnection} and waits till it is created.
      *
-     * @param executionContext {@link ExecutionContext} when building {@link AggregatedHttpConnection}s.
+     * @param executionContext {@link ExecutionContext} when building {@link BlockingAggregatedHttpConnection}s.
      * @param resolvedAddress a resolved address to use when connecting
-     * @return A single that will complete with the {@link AggregatedHttpConnection}
+     * @return {@link BlockingAggregatedHttpConnection}
+     * @throws Exception If the connection can not be created.
      */
-    Single<AggregatedHttpConnection> buildAggregated(ExecutionContext executionContext, ResolvedAddress resolvedAddress);
+    default BlockingAggregatedHttpConnection buildBlockingAggregated(ExecutionContext executionContext,
+                                                                     ResolvedAddress resolvedAddress) throws Exception {
+        return awaitIndefinitelyNonNull(build(executionContext, resolvedAddress)).asBlockingAggregatedConnection();
+    }
 
     /**
      * Convert this {@link HttpConnectionBuilder} to a {@link ConnectionFactory}. This can be useful to take advantage

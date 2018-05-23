@@ -74,7 +74,7 @@ public abstract class HttpClientGroup<UnresolvedAddress> implements ListenableAs
     /**
      * Convert this {@link HttpClientGroup} to the {@link AggregatedHttpClientGroup} API.
      * <p>
-     * Note that the resulting {@link AggregatedHttpClientGroup} will still be subject to any blocking, in memory
+     * Note that the resulting {@link AggregatedHttpClientGroup} may still be subject to any blocking, in memory
      * aggregation, and other behavior as this {@link HttpClientGroup}.
      * @return a {@link AggregatedHttpClientGroup} representation of this {@link HttpClientGroup}.
      */
@@ -85,12 +85,23 @@ public abstract class HttpClientGroup<UnresolvedAddress> implements ListenableAs
     /**
      * Convert this {@link HttpClientGroup} to the {@link BlockingHttpClientGroup} API.
      * <p>
-     * Note that the resulting {@link BlockingHttpClientGroup} will still be subject to any blocking, in memory
+     * Note that the resulting {@link BlockingHttpClientGroup} may still be subject to any blocking, in memory
      * aggregation, and other behavior as this {@link HttpClientGroup}.
      * @return a {@link BlockingHttpClientGroup} representation of this {@link HttpClientGroup}.
      */
     public final BlockingHttpClientGroup<UnresolvedAddress> asBlockingClientGroup() {
         return asBlockingClientGroupInternal();
+    }
+
+    /**
+     * Convert this {@link HttpClientGroup} to the {@link BlockingAggregatedHttpClientGroup} API.
+     * <p>
+     * Note that the resulting {@link BlockingAggregatedHttpClientGroup} may still be subject to any blocking, in
+     * memory aggregation, and other behavior as this {@link HttpClientGroup}.
+     * @return a {@link BlockingAggregatedHttpClientGroup} representation of this {@link HttpClientGroup}.
+     */
+    public final BlockingAggregatedHttpClientGroup<UnresolvedAddress> asBlockingAggregatedClientGroup() {
+        return asBlockingAggregatedClientGroupInternal();
     }
 
     AggregatedHttpClientGroup<UnresolvedAddress> asAggregatedClientGroupInternal() {
@@ -99,5 +110,9 @@ public abstract class HttpClientGroup<UnresolvedAddress> implements ListenableAs
 
     BlockingHttpClientGroup<UnresolvedAddress> asBlockingClientGroupInternal() {
         return new HttpClientGroupToBlockingHttpClientGroup<>(this);
+    }
+
+    BlockingAggregatedHttpClientGroup<UnresolvedAddress> asBlockingAggregatedClientGroupInternal() {
+        return new HttpClientGroupToBlockingAggregatedHttpClientGroup<>(this);
     }
 }

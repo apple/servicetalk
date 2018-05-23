@@ -17,33 +17,29 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.transport.api.ConnectionContext;
 
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
-import static io.servicetalk.http.api.HttpRequests.fromBlockingRequest;
+import static io.servicetalk.http.api.DefaultAggregatedHttpRequest.toHttpRequest;
+import static io.servicetalk.http.api.DefaultAggregatedHttpResponse.from;
 import static java.util.Objects.requireNonNull;
 
-final class HttpServiceToBlockingHttpService extends BlockingHttpService {
+final class HttpServiceToBlockingAggregatedHttpService extends BlockingAggregatedHttpService {
     private final HttpService service;
 
-    HttpServiceToBlockingHttpService(HttpService service) {
+    HttpServiceToBlockingAggregatedHttpService(HttpService service) {
         this.service = requireNonNull(service);
     }
 
     @Override
-    public BlockingHttpResponse<HttpPayloadChunk> handle(final ConnectionContext ctx,
-                                                         final BlockingHttpRequest<HttpPayloadChunk> request)
+    public AggregatedHttpResponse<HttpPayloadChunk> handle(final ConnectionContext ctx,
+                                                           final AggregatedHttpRequest<HttpPayloadChunk> request)
             throws Exception {
-        // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
-        // apply any explicit timeout here and just wait forever.
-        return new DefaultBlockingHttpResponse<>(
-                awaitIndefinitelyNonNull(service.handle(ctx, fromBlockingRequest(request))));
+        return awaitIndefinitelyNonNull(service.handle(ctx, toHttpRequest(request)).flatMap(response ->
+                from(response, ctx.getExecutionContext().getBufferAllocator())));
     }
 
     @Override
     public void close() throws Exception {
-        // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
-        // apply any explicit timeout here and just wait forever.
-        awaitIndefinitely(service.closeAsync());
+        BlockingUtils.close(service);
     }
 
     @Override

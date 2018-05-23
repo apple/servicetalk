@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.BlockingIterable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -40,7 +39,7 @@ public abstract class AggregatedHttpConnection extends AggregatedHttpRequester {
      *
      * @param settingKey Name of the setting to fetch.
      * @param <T> Type of the setting value.
-     * @return {@link BlockingIterable} for the setting values.
+     * @return {@link Publisher} for the setting values.
      */
     public abstract <T> Publisher<T> getSettingStream(SettingKey<T> settingKey);
 
@@ -53,7 +52,29 @@ public abstract class AggregatedHttpConnection extends AggregatedHttpRequester {
         return asConnectionInternal();
     }
 
+    /**
+     * Convert this {@link AggregatedHttpConnection} to the {@link BlockingHttpConnection} API.
+     *
+     * @return a {@link BlockingHttpConnection} representation of this {@link AggregatedHttpConnection}.
+     */
+    public final BlockingHttpConnection asBlockingConnection() {
+        return asConnection().asBlockingConnection();
+    }
+
+    /**
+     * Convert this {@link AggregatedHttpConnection} to the {@link BlockingAggregatedHttpConnection} API.
+     *
+     * @return a {@link BlockingAggregatedHttpConnection} representation of this {@link AggregatedHttpConnection}.
+     */
+    public final BlockingAggregatedHttpConnection asBlockingAggregatedConnection() {
+        return asBlockingAggregatedConnectionInternal();
+    }
+
     HttpConnection asConnectionInternal() {
         return new AggregatedHttpConnectionToHttpConnection(this);
+    }
+
+    BlockingAggregatedHttpConnection asBlockingAggregatedConnectionInternal() {
+        return new AggregatedHttpConnectionToBlockingAggregatedHttpConnection(this);
     }
 }

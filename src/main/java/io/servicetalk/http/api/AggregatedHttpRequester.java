@@ -30,7 +30,8 @@ public abstract class AggregatedHttpRequester implements ListenableAsyncCloseabl
      * @param request the request to send.
      * @return The response.
      */
-    public abstract Single<AggregatedHttpResponse<HttpPayloadChunk>> request(AggregatedHttpRequest<HttpPayloadChunk> request);
+    public abstract Single<AggregatedHttpResponse<HttpPayloadChunk>> request(
+            AggregatedHttpRequest<HttpPayloadChunk> request);
 
     /**
      * Get the {@link ExecutionContext} used during construction of this object.
@@ -51,7 +52,29 @@ public abstract class AggregatedHttpRequester implements ListenableAsyncCloseabl
         return asRequesterInternal();
     }
 
+    /**
+     * Convert this {@link AggregatedHttpRequester} to the {@link BlockingHttpRequester} API.
+     *
+     * @return a {@link BlockingHttpRequester} representation of this {@link AggregatedHttpRequester}.
+     */
+    public final BlockingHttpRequester asBlockingRequester() {
+        return asRequester().asBlockingRequester();
+    }
+
+    /**
+     * Convert this {@link AggregatedHttpRequester} to the {@link BlockingAggregatedHttpRequester} API.
+     *
+     * @return a {@link BlockingAggregatedHttpRequester} representation of this {@link AggregatedHttpRequester}.
+     */
+    public final BlockingAggregatedHttpRequester asBlockingAggregatedRequester() {
+        return asBlockingAggregatedRequesterInternal();
+    }
+
     HttpRequester asRequesterInternal() {
         return new AggregatedHttpRequesterToHttpRequester(this);
+    }
+
+    BlockingAggregatedHttpRequester asBlockingAggregatedRequesterInternal() {
+        return new AggregatedHttpRequesterToBlockingAggregatedHttpRequester(this);
     }
 }

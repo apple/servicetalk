@@ -19,8 +19,10 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.AggregatedHttpClient.AggregatedReservedHttpConnection;
+import io.servicetalk.http.api.BlockingAggregatedHttpClient.BlockingAggregatedReservedHttpConnection;
 import io.servicetalk.http.api.BlockingHttpClient.BlockingReservedHttpConnection;
 import io.servicetalk.http.api.HttpClientToAggregatedHttpClient.ReservedHttpConnectionToAggregated;
+import io.servicetalk.http.api.HttpClientToBlockingAggregatedHttpClient.ReservedHttpConnectionToBlockingAggregated;
 import io.servicetalk.http.api.HttpClientToBlockingHttpClient.ReservedHttpConnectionToBlocking;
 
 import java.util.function.Function;
@@ -54,6 +56,17 @@ public abstract class HttpClient extends HttpRequester {
                                                                                 HttpRequest<HttpPayloadChunk> request);
 
     /**
+     * Convert this {@link HttpClient} to the {@link AggregatedHttpClient} API.
+     * <p>
+     * This API is provided for convenience. It is recommended that
+     * filters are implemented using the {@link HttpClient} asynchronous API for maximum portability.
+     * @return a {@link AggregatedHttpClient} representation of this {@link HttpRequester}.
+     */
+    public final AggregatedHttpClient asAggregatedClient() {
+        return asAggregatedClientInternal();
+    }
+
+    /**
      * Convert this {@link HttpClient} to the {@link BlockingHttpClient} API.
      * <p>
      * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
@@ -65,14 +78,14 @@ public abstract class HttpClient extends HttpRequester {
     }
 
     /**
-     * Convert this {@link HttpClient} to the {@link AggregatedHttpClient} API.
+     * Convert this {@link HttpClient} to the {@link BlockingAggregatedHttpClient} API.
      * <p>
-     * This API is provided for convenience. It is recommended that
+     * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
      * filters are implemented using the {@link HttpClient} asynchronous API for maximum portability.
-     * @return a {@link AggregatedHttpClient} representation of this {@link HttpRequester}.
+     * @return a {@link BlockingAggregatedHttpClient} representation of this {@link HttpClient}.
      */
-    public final AggregatedHttpClient asAggregatedClient() {
-        return asAggregatedClientInternal();
+    public final BlockingAggregatedHttpClient asBlockingAggregatedClient() {
+        return asBlockingAggregatedClientInternal();
     }
 
     AggregatedHttpClient asAggregatedClientInternal() {
@@ -81,6 +94,10 @@ public abstract class HttpClient extends HttpRequester {
 
     BlockingHttpClient asBlockingClientInternal() {
         return new HttpClientToBlockingHttpClient(this);
+    }
+
+    BlockingAggregatedHttpClient asBlockingAggregatedClientInternal() {
+        return new HttpClientToBlockingAggregatedHttpClient(this);
     }
 
     /**
@@ -97,6 +114,17 @@ public abstract class HttpClient extends HttpRequester {
         public abstract Completable releaseAsync();
 
         /**
+         * Convert this {@link ReservedHttpConnection} to the {@link AggregatedReservedHttpConnection} API.
+         * <p>
+         * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
+         * filters are implemented using the {@link ReservedHttpConnection} asynchronous API for maximum portability.
+         * @return a {@link AggregatedReservedHttpConnection} representation of this {@link ReservedHttpConnection}.
+         */
+        public final AggregatedReservedHttpConnection asAggregatedReservedConnection() {
+            return asAggregatedConnectionInternal();
+        }
+
+        /**
          * Convert this {@link ReservedHttpConnection} to the {@link BlockingHttpClient} API.
          * <p>
          * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
@@ -108,14 +136,15 @@ public abstract class HttpClient extends HttpRequester {
         }
 
         /**
-         * Convert this {@link ReservedHttpConnection} to the {@link AggregatedReservedHttpConnection} API.
+         * Convert this {@link ReservedHttpConnection} to the {@link BlockingAggregatedReservedHttpConnection} API.
          * <p>
          * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
          * filters are implemented using the {@link ReservedHttpConnection} asynchronous API for maximum portability.
-         * @return a {@link AggregatedReservedHttpConnection} representation of this {@link ReservedHttpConnection}.
+         * @return a {@link BlockingAggregatedReservedHttpConnection} representation of this
+         * {@link ReservedHttpConnection}.
          */
-        public final AggregatedReservedHttpConnection asAggregatedReservedConnection() {
-            return asAggregatedConnectionInternal();
+        public final BlockingAggregatedReservedHttpConnection asBlockingAggregatedReservedConnection() {
+            return asBlockingAggregatedConnectionInternal();
         }
 
         @Override
@@ -126,6 +155,11 @@ public abstract class HttpClient extends HttpRequester {
         @Override
         BlockingReservedHttpConnection asBlockingConnectionInternal() {
             return new ReservedHttpConnectionToBlocking(this);
+        }
+
+        @Override
+        BlockingAggregatedReservedHttpConnection asBlockingAggregatedConnectionInternal() {
+            return new ReservedHttpConnectionToBlockingAggregated(this);
         }
     }
 

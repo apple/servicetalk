@@ -141,7 +141,7 @@ public class BlockingHttpServiceTest {
     public void syncToAsyncNoPayload() throws Exception {
         BlockingHttpService syncService = fromBlocking((ctx, request) ->
                 BlockingHttpResponses.newResponse(HTTP_1_1, OK));
-        HttpService asyncService = syncService.asAsynchronousService();
+        HttpService asyncService = syncService.asService();
         HttpResponse<HttpPayloadChunk> asyncResponse = awaitIndefinitely(asyncService.handle(mockCtx,
                 HttpRequests.newRequest(HTTP_1_1, GET, "/")));
         assertNotNull(asyncResponse);
@@ -153,7 +153,7 @@ public class BlockingHttpServiceTest {
     public void syncToAsyncWithPayload() throws Exception {
         BlockingHttpService syncService = fromBlocking((ctx, request) ->
                 BlockingHttpResponses.newResponse(HTTP_1_1, OK, singleton(chunkFromString("hello"))));
-        HttpService asyncService = syncService.asAsynchronousService();
+        HttpService asyncService = syncService.asService();
         HttpResponse<HttpPayloadChunk> asyncResponse = awaitIndefinitely(asyncService.handle(mockCtx,
                 HttpRequests.newRequest(HTTP_1_1, GET, "/")));
         assertNotNull(asyncResponse);
@@ -178,7 +178,7 @@ public class BlockingHttpServiceTest {
                 closedCalled.set(true);
             }
         };
-        HttpService asyncService = syncService.asAsynchronousService();
+        HttpService asyncService = syncService.asService();
         awaitIndefinitely(asyncService.closeAsync());
         assertTrue(closedCalled.get());
     }
@@ -187,7 +187,7 @@ public class BlockingHttpServiceTest {
     public void syncToAsyncCancelPropagated() throws Exception {
         BlockingHttpService syncService = fromBlocking((ctx, request) ->
             BlockingHttpResponses.newResponse(HTTP_1_1, OK, mockIterable));
-        HttpService asyncService = syncService.asAsynchronousService();
+        HttpService asyncService = syncService.asService();
         HttpResponse<HttpPayloadChunk> asyncResponse = awaitIndefinitely(asyncService.handle(mockCtx,
                 HttpRequests.newRequest(HTTP_1_1, GET, "/")));
         assertNotNull(asyncResponse);

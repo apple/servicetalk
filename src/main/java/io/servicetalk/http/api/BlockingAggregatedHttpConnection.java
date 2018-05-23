@@ -19,10 +19,12 @@ import io.servicetalk.concurrent.api.BlockingIterable;
 import io.servicetalk.http.api.HttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 
+import org.reactivestreams.Subscriber;
+
 /**
- * The equivalent of {@link HttpConnection} but with synchronous/blocking APIs instead of asynchronous APIs.
+ * The equivalent of {@link AggregatedHttpConnection} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public abstract class BlockingHttpConnection extends BlockingHttpRequester {
+public abstract class BlockingAggregatedHttpConnection extends BlockingAggregatedHttpRequester {
     /**
      * Get the {@link ConnectionContext}.
      *
@@ -32,7 +34,7 @@ public abstract class BlockingHttpConnection extends BlockingHttpRequester {
 
     /**
      * Returns a {@link BlockingIterable} that gives the current value of the setting as well as subsequent changes to
-     * the setting value.
+     * the setting value as long as the {@link Subscriber} has expressed enough demand.
      *
      * @param settingKey Name of the setting to fetch.
      * @param <T> Type of the setting value.
@@ -41,42 +43,46 @@ public abstract class BlockingHttpConnection extends BlockingHttpRequester {
     public abstract <T> BlockingIterable<T> getSettingIterable(SettingKey<T> settingKey);
 
     /**
-     * Convert this {@link BlockingHttpConnection} to the {@link HttpConnection} API.
+     * Convert this {@link BlockingAggregatedHttpConnection} to the {@link HttpConnection} API.
      * <p>
      * Note that the resulting {@link HttpConnection} may still be subject to any blocking, in memory aggregation, and
-     * other behavior as this {@link BlockingHttpConnection}.
+     * other behavior as this {@link BlockingAggregatedHttpConnection}.
      *
-     * @return a {@link HttpConnection} representation of this {@link BlockingHttpConnection}.
+     * @return a {@link HttpConnection} representation of this {@link BlockingAggregatedHttpConnection}.
      */
     public final HttpConnection asConnection() {
         return asConnectionInternal();
     }
 
     /**
-     * Convert this {@link BlockingHttpConnection} to the {@link AggregatedHttpConnection} API.
+     * Convert this {@link BlockingAggregatedHttpConnection} to the {@link AggregatedHttpConnection} API.
      * <p>
      * Note that the resulting {@link AggregatedHttpConnection} may still be subject to any blocking, in memory
-     * aggregation, and other behavior as this {@link BlockingHttpConnection}.
+     * aggregation, and other behavior as this {@link BlockingAggregatedHttpConnection}.
      *
-     * @return a {@link AggregatedHttpConnection} representation of this {@link BlockingHttpConnection}.
+     * @return a {@link AggregatedHttpConnection} representation of this {@link BlockingAggregatedHttpConnection}.
      */
     public final AggregatedHttpConnection asAggregatedConnection() {
-        return asConnection().asAggregatedConnection();
+        return asAggregatedConnectionInternal();
     }
 
     /**
-     * Convert this {@link BlockingHttpConnection} to the {@link BlockingAggregatedHttpConnection} API.
+     * Convert this {@link BlockingAggregatedHttpConnection} to the {@link BlockingHttpConnection} API.
      * <p>
-     * Note that the resulting {@link BlockingAggregatedHttpConnection} may still be subject to in memory
-     * aggregation and other behavior as this {@link BlockingHttpConnection}.
+     * Note that the resulting {@link BlockingHttpConnection} may still be subject to in memory
+     * aggregation and other behavior as this {@link BlockingAggregatedHttpConnection}.
      *
-     * @return a {@link BlockingAggregatedHttpConnection} representation of this {@link BlockingHttpConnection}.
+     * @return a {@link BlockingHttpConnection} representation of this {@link BlockingAggregatedHttpConnection}.
      */
-    public final BlockingAggregatedHttpConnection asBlockingAggregatedConnection() {
-        return asConnection().asBlockingAggregatedConnection();
+    public final BlockingHttpConnection asBlockingConnection() {
+        return asConnection().asBlockingConnection();
     }
 
     HttpConnection asConnectionInternal() {
-        return new BlockingHttpConnectionToHttpConnection(this);
+        return new BlockingAggregatedHttpConnectionToHttpConnection(this);
+    }
+
+    AggregatedHttpConnection asAggregatedConnectionInternal() {
+        return new BlockingAggregatedHttpConnectionToAggregatedHttpConnection(this);
     }
 }

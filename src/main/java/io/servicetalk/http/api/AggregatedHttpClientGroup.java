@@ -33,7 +33,7 @@ public abstract class AggregatedHttpClientGroup<UnresolvedAddress> implements Li
     /**
      * Locate or create a client and delegate to {@link AggregatedHttpClient#request(AggregatedHttpRequest)}.
      *
-     * @param key Identifies the {@link HttpClient} to use, or provides enough information to create
+     * @param key Identifies the {@link AggregatedHttpClient} to use, or provides enough information to create
      * an {@link AggregatedHttpClient} if non exist.
      * @param request The {@link AggregatedHttpRequest} to send.
      * @return The received {@link AggregatedHttpResponse}.
@@ -43,12 +43,12 @@ public abstract class AggregatedHttpClientGroup<UnresolvedAddress> implements Li
                                                                              AggregatedHttpRequest<HttpPayloadChunk> request);
 
     /**
-     * Locate or create a client and delegate to {@link HttpClient#reserveConnection(HttpRequest)}.
+     * Locate or create a client and delegate to {@link AggregatedHttpClient#reserveConnection(AggregatedHttpRequest)}.
      *
-     * @param key Identifies the {@link HttpClient} to use, or provides enough information to create
-     * an {@link HttpClient} if non exist.
-     * @param request The {@link HttpRequest} which may provide more information about which {@link HttpConnection} to
-     * reserve.
+     * @param key Identifies the {@link AggregatedHttpClient} to use, or provides enough information to create
+     * an {@link AggregatedHttpClient} if non exist.
+     * @param request The {@link AggregatedHttpRequest} which may provide more information about which
+     * {@link AggregatedHttpConnection} to reserve.
      * @return A {@link AggregatedReservedHttpConnection}.
      * @see AggregatedHttpClient#reserveConnection(AggregatedHttpRequest)
      */
@@ -79,7 +79,7 @@ public abstract class AggregatedHttpClientGroup<UnresolvedAddress> implements Li
     /**
      * Convert this {@link AggregatedHttpClientGroup} to the {@link HttpClientGroup} API.
      * <p>
-     * Note that the resulting {@link AggregatedHttpClientGroup} will still be subject to any blocking, in memory
+     * Note that the resulting {@link HttpClientGroup} may still be subject to any blocking, in memory
      * aggregation, and other behavior as this {@link AggregatedHttpClientGroup}.
      * @return a {@link HttpClientGroup} representation of this {@link AggregatedHttpClientGroup}.
      */
@@ -87,7 +87,33 @@ public abstract class AggregatedHttpClientGroup<UnresolvedAddress> implements Li
         return asClientGroupInternal();
     }
 
+    /**
+     * Convert this {@link AggregatedHttpClientGroup} to the {@link BlockingHttpClientGroup} API.
+     * <p>
+     * Note that the resulting {@link BlockingHttpClientGroup} may still be subject to any blocking, in memory
+     * aggregation, and other behavior as this {@link AggregatedHttpClientGroup}.
+     * @return a {@link BlockingHttpClientGroup} representation of this {@link AggregatedHttpClientGroup}.
+     */
+    public final BlockingHttpClientGroup<UnresolvedAddress> asBlockingClientGroup() {
+        return asClientGroup().asBlockingClientGroup();
+    }
+
+    /**
+     * Convert this {@link AggregatedHttpClientGroup} to the {@link BlockingAggregatedHttpClientGroup} API.
+     * <p>
+     * Note that the resulting {@link BlockingAggregatedHttpClientGroup} may still be subject to any blocking, in
+     * memory aggregation, and other behavior as this {@link AggregatedHttpClientGroup}.
+     * @return a {@link BlockingAggregatedHttpClientGroup} representation of this {@link AggregatedHttpClientGroup}.
+     */
+    public final BlockingAggregatedHttpClientGroup<UnresolvedAddress> asBlockingAggregatedClientGroup() {
+        return asBlockingAggregatedClientGroupInternal();
+    }
+
     HttpClientGroup<UnresolvedAddress> asClientGroupInternal() {
         return new AggregatedHttpClientGroupToHttpClientGroup<>(this);
+    }
+
+    BlockingAggregatedHttpClientGroup<UnresolvedAddress> asBlockingAggregatedClientGroupInternal() {
+        return new AggregatedHttpClientGroupToBlockingAggregatedHttpClientGroup<>(this);
     }
 }

@@ -15,40 +15,32 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.ConnectionContext;
 
+import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static java.util.Objects.requireNonNull;
 
-final class HttpRequesterToBlockingHttpRequester extends BlockingHttpRequester {
-    private final HttpRequester requester;
+final class AggregatedHttpServiceToBlockingAggregatedHttpService extends BlockingAggregatedHttpService {
+    private final AggregatedHttpService service;
 
-    HttpRequesterToBlockingHttpRequester(HttpRequester requester) {
-        this.requester = requireNonNull(requester);
+    AggregatedHttpServiceToBlockingAggregatedHttpService(AggregatedHttpService service) {
+        this.service = requireNonNull(service);
     }
 
     @Override
-    public BlockingHttpResponse<HttpPayloadChunk> request(final BlockingHttpRequest<HttpPayloadChunk> request)
+    public AggregatedHttpResponse<HttpPayloadChunk> handle(final ConnectionContext ctx,
+                                                           final AggregatedHttpRequest<HttpPayloadChunk> request)
             throws Exception {
-        return BlockingUtils.request(requester, request);
-    }
-
-    @Override
-    public ExecutionContext getExecutionContext() {
-        return requester.getExecutionContext();
+        return awaitIndefinitelyNonNull(service.handle(ctx, request));
     }
 
     @Override
     public void close() throws Exception {
-        BlockingUtils.close(requester);
-    }
-
-    Completable onClose() {
-        return requester.onClose();
+        BlockingUtils.close(service);
     }
 
     @Override
-    HttpRequester asRequesterInternal() {
-        return requester;
+    AggregatedHttpService asAggregatedServiceInternal() {
+        return service;
     }
 }

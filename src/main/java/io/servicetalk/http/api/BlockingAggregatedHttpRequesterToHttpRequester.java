@@ -16,20 +16,22 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static java.util.Objects.requireNonNull;
 
-final class HttpRequesterToBlockingHttpRequester extends BlockingHttpRequester {
-    private final HttpRequester requester;
+final class BlockingAggregatedHttpRequesterToHttpRequester extends HttpRequester {
+    private final BlockingAggregatedHttpRequester requester;
 
-    HttpRequesterToBlockingHttpRequester(HttpRequester requester) {
+    BlockingAggregatedHttpRequesterToHttpRequester(BlockingAggregatedHttpRequester requester) {
         this.requester = requireNonNull(requester);
     }
 
     @Override
-    public BlockingHttpResponse<HttpPayloadChunk> request(final BlockingHttpRequest<HttpPayloadChunk> request)
-            throws Exception {
+    public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
         return BlockingUtils.request(requester, request);
     }
 
@@ -39,16 +41,21 @@ final class HttpRequesterToBlockingHttpRequester extends BlockingHttpRequester {
     }
 
     @Override
-    public void close() throws Exception {
-        BlockingUtils.close(requester);
-    }
+    public Completable onClose() {
+        if (requester instanceof HttpRequesterToBlockingAggregatedHttpRequester) {
+            return ((HttpRequesterToBlockingAggregatedHttpRequester) requester).onClose();
+        }
 
-    Completable onClose() {
-        return requester.onClose();
+        return error(new UnsupportedOperationException("unsupported type: " + requester.getClass()));
     }
 
     @Override
-    HttpRequester asRequesterInternal() {
+    public Completable closeAsync() {
+        return blockingToCompletable(requester::close);
+    }
+
+    @Override
+    BlockingAggregatedHttpRequester asBlockingAggregatedRequesterInternal() {
         return requester;
     }
 }

@@ -47,6 +47,15 @@ public abstract class HttpService implements AsyncCloseable {
     }
 
     /**
+     * Convert this {@link HttpService} to the {@link AggregatedHttpService} API.
+     *
+     * @return a {@link AggregatedHttpService} representation of this {@link HttpService}.
+     */
+    public final AggregatedHttpService asAggregatedService() {
+        return asAggregatedServiceInternal();
+    }
+
+    /**
      * Convert this {@link HttpService} to the {@link BlockingHttpService} API.
      * <p>
      * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
@@ -58,24 +67,14 @@ public abstract class HttpService implements AsyncCloseable {
     }
 
     /**
-     * Convert this {@link HttpService} to the {@link AggregatedHttpService} API.
-     *
-     * @return a {@link AggregatedHttpService} representation of this {@link HttpService}.
+     * Convert this {@link HttpService} to the {@link BlockingAggregatedHttpService} API.
+     * <p>
+     * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
+     * filters are implemented using the {@link HttpService} asynchronous API for maximum portability.
+     * @return a {@link BlockingAggregatedHttpService} representation of this {@link HttpService}.
      */
-    public final AggregatedHttpService asAggregatedService() {
-        return asAggregatedServiceInternal();
-    }
-
-    AggregatedHttpService asAggregatedServiceInternal() {
-        return new HttpServiceToAggregatedHttpService(this);
-    }
-
-    /**
-     * Provides a means to override the behavior of {@link #asBlockingService()} for internal classes.
-     * @return a {@link BlockingHttpService} representation of this {@link HttpService}.
-     */
-    BlockingHttpService asBlockingServiceInternal() {
-        return new HttpServiceToBlockingHttpService(this);
+    public final BlockingAggregatedHttpService asBlockingAggregatedService() {
+        return asBlockingAggregatedServiceInternal();
     }
 
     /**
@@ -93,5 +92,17 @@ public abstract class HttpService implements AsyncCloseable {
                 return handleFunc.apply(ctx, request);
             }
         };
+    }
+
+    AggregatedHttpService asAggregatedServiceInternal() {
+        return new HttpServiceToAggregatedHttpService(this);
+    }
+
+    BlockingHttpService asBlockingServiceInternal() {
+        return new HttpServiceToBlockingHttpService(this);
+    }
+
+    BlockingAggregatedHttpService asBlockingAggregatedServiceInternal() {
+        return new HttpServiceToBlockingAggregatedHttpService(this);
     }
 }

@@ -17,16 +17,15 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.BlockingIterable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.http.api.HttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static java.util.Objects.requireNonNull;
 
-final class HttpConnectionToBlockingHttpConnection extends BlockingHttpConnection {
+final class HttpConnectionToBlockingAggregatedHttpConnection extends BlockingAggregatedHttpConnection {
     private final HttpConnection connection;
 
-    HttpConnectionToBlockingHttpConnection(HttpConnection connection) {
+    HttpConnectionToBlockingAggregatedHttpConnection(HttpConnection connection) {
         this.connection = requireNonNull(connection);
     }
 
@@ -36,12 +35,12 @@ final class HttpConnectionToBlockingHttpConnection extends BlockingHttpConnectio
     }
 
     @Override
-    public <T> BlockingIterable<T> getSettingIterable(final SettingKey<T> settingKey) {
+    public <T> BlockingIterable<T> getSettingIterable(final HttpConnection.SettingKey<T> settingKey) {
         return connection.getSettingStream(settingKey).toIterable();
     }
 
     @Override
-    public BlockingHttpResponse<HttpPayloadChunk> request(final BlockingHttpRequest<HttpPayloadChunk> request)
+    public AggregatedHttpResponse<HttpPayloadChunk> request(final AggregatedHttpRequest<HttpPayloadChunk> request)
             throws Exception {
         return BlockingUtils.request(connection, request);
     }
@@ -56,12 +55,12 @@ final class HttpConnectionToBlockingHttpConnection extends BlockingHttpConnectio
         BlockingUtils.close(connection);
     }
 
-    Completable onClose() {
-        return connection.onClose();
-    }
-
     @Override
     HttpConnection asConnectionInternal() {
         return connection;
+    }
+
+    Completable onClose() {
+        return connection.onClose();
     }
 }

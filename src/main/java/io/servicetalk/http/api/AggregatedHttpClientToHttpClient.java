@@ -49,10 +49,8 @@ final class AggregatedHttpClientToHttpClient extends HttpClient {
     public Single<? extends UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
             final HttpRequest<HttpPayloadChunk> request) {
         return from(request, aggregatedClient.getExecutionContext().getBufferAllocator())
-                .flatMap(aggregatedClient::upgradeConnection).map(upgradableResponse ->
-                        new AggregatedToUpgradableHttpResponse<>(upgradableResponse,
-                                just(newLastPayloadChunk(upgradableResponse.getPayloadBody().getContent(),
-                                        upgradableResponse.getTrailers()))));
+                .flatMap(aggregatedClient::upgradeConnection).map(
+                        AggregatedToUpgradableHttpResponse::newUpgradeResponse);
     }
 
     @Override
@@ -130,7 +128,7 @@ final class AggregatedHttpClientToHttpClient extends HttpClient {
         }
     }
 
-    private static final class AggregatedToUpgradableHttpResponse<T> implements
+    static final class AggregatedToUpgradableHttpResponse<T> implements
                                                           UpgradableHttpResponse<T> {
         private final AggregatedUpgradableHttpResponse<?> upgradableResponse;
         private final Publisher<T> payloadBody;
@@ -139,6 +137,13 @@ final class AggregatedHttpClientToHttpClient extends HttpClient {
                                            Publisher<T> payloadBody) {
             this.upgradableResponse = requireNonNull(upgradableResponse);
             this.payloadBody = requireNonNull(payloadBody);
+        }
+
+        static AggregatedToUpgradableHttpResponse<HttpPayloadChunk> newUpgradeResponse(
+                AggregatedUpgradableHttpResponse<HttpPayloadChunk> upgradableResponse) {
+            return new AggregatedToUpgradableHttpResponse<>(upgradableResponse,
+                    just(newLastPayloadChunk(upgradableResponse.getPayloadBody().getContent(),
+                            upgradableResponse.getTrailers())));
         }
 
         @Override

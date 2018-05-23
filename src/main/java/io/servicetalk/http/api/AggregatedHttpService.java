@@ -34,7 +34,7 @@ public abstract class AggregatedHttpService implements AsyncCloseable {
      * @return {@link Single} of HTTP response.
      */
     public abstract Single<AggregatedHttpResponse<HttpPayloadChunk>> handle(ConnectionContext ctx,
-                                                                            AggregatedHttpRequest<HttpPayloadChunk> request);
+                                                                    AggregatedHttpRequest<HttpPayloadChunk> request);
 
     /**
      * Closes this {@link AggregatedHttpService} asynchronously.
@@ -58,8 +58,28 @@ public abstract class AggregatedHttpService implements AsyncCloseable {
         return asServiceInternal();
     }
 
-    HttpService asServiceInternal() {
-        return new AggregatedHttpServiceToHttpService(this);
+    /**
+     * Convert this {@link AggregatedHttpService} to the {@link BlockingHttpService} API.
+     * <p>
+     * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
+     * filters are implemented using the {@link HttpService} asynchronous API for maximum portability.
+     *
+     * @return a {@link BlockingHttpService} representation of this {@link AggregatedHttpService}.
+     */
+    public final BlockingHttpService asBlockingService() {
+        return asService().asBlockingService();
+    }
+
+    /**
+     * Convert this {@link AggregatedHttpService} to the {@link BlockingAggregatedHttpService} API.
+     * <p>
+     * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
+     * filters are implemented using the {@link HttpService} asynchronous API for maximum portability.
+     *
+     * @return a {@link BlockingAggregatedHttpService} representation of this {@link AggregatedHttpService}.
+     */
+    public final BlockingAggregatedHttpService asBlockingAggregatedService() {
+        return asBlockingAggregatedServiceInternal();
     }
 
     /**
@@ -78,5 +98,13 @@ public abstract class AggregatedHttpService implements AsyncCloseable {
                 return handleFunc.apply(ctx, request);
             }
         };
+    }
+
+    HttpService asServiceInternal() {
+        return new AggregatedHttpServiceToHttpService(this);
+    }
+
+    BlockingAggregatedHttpService asBlockingAggregatedServiceInternal() {
+        return new AggregatedHttpServiceToBlockingAggregatedHttpService(this);
     }
 }

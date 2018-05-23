@@ -46,6 +46,11 @@ final class HttpClientToAggregatedHttpClient extends AggregatedHttpClient {
     @Override
     public Single<? extends AggregatedUpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
             final AggregatedHttpRequest<HttpPayloadChunk> request) {
+        return doUpgradeConnection(client, request);
+    }
+
+    static Single<? extends AggregatedUpgradableHttpResponse<HttpPayloadChunk>> doUpgradeConnection(HttpClient client,
+            final AggregatedHttpRequest<HttpPayloadChunk> request) {
         return client.upgradeConnection(toHttpRequest(request))
                 .flatMap(response -> from(response, client.getExecutionContext().getBufferAllocator())
                         .map(fullResponse -> new UpgradableHttpResponseToAggregated<>(response,

@@ -18,14 +18,13 @@ package io.servicetalk.http.api;
 import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
 import io.servicetalk.http.api.BlockingHttpClientToHttpClient.BlockingToReservedHttpConnection;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
 
 import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
+import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
 import static io.servicetalk.http.api.HttpResponses.fromBlockingResponse;
-import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
 final class BlockingHttpClientGroupToHttpClientGroup<UnresolvedAddress> extends
@@ -39,56 +38,15 @@ final class BlockingHttpClientGroupToHttpClientGroup<UnresolvedAddress> extends
     @Override
     public Single<HttpResponse<HttpPayloadChunk>> request(final GroupKey<UnresolvedAddress> key,
                                                           final HttpRequest<HttpPayloadChunk> request) {
-        return new Single<HttpResponse<HttpPayloadChunk>>() {
-            @Override
-            protected void handleSubscribe(final Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber) {
-                ThreadInterruptingCancellable cancellable = new ThreadInterruptingCancellable(currentThread());
-                subscriber.onSubscribe(cancellable);
-                final HttpResponse<HttpPayloadChunk> response;
-                try {
-                    // Do the conversion inside the try/catch in case there is an exception.
-                    response = fromBlockingResponse(blockingClientGroup.request(key,
-                            new DefaultBlockingHttpRequest<>(request)));
-                } catch (Throwable cause) {
-                    cancellable.setDone();
-                    subscriber.onError(cause);
-                    return;
-                }
-                // It is safe to set this outside the scope of the try/catch above because we don't do any blocking
-                // operations which may be interrupted between the completion of the blockingHttpService call and here.
-                cancellable.setDone();
-
-                // The from(..) operator will take care of propagating cancel.
-                subscriber.onSuccess(response);
-            }
-        };
+        return blockingToSingle(() -> fromBlockingResponse(blockingClientGroup.request(key,
+                        new DefaultBlockingHttpRequest<>(request))));
     }
 
     @Override
     public Single<? extends ReservedHttpConnection> reserveConnection(
             final GroupKey<UnresolvedAddress> key, final HttpRequest<HttpPayloadChunk> request) {
-        return new Single<ReservedHttpConnection>() {
-            @Override
-            protected void handleSubscribe(final Subscriber<? super ReservedHttpConnection> subscriber) {
-                ThreadInterruptingCancellable cancellable = new ThreadInterruptingCancellable(currentThread());
-                subscriber.onSubscribe(cancellable);
-                final ReservedHttpConnection response;
-                try {
-                    // Do the conversion here in case there is a null value returned by the upgradeConnection.
-                    response = new BlockingToReservedHttpConnection(blockingClientGroup.reserveConnection(
-                            key, new DefaultBlockingHttpRequest<>(request)));
-                } catch (Throwable cause) {
-                    cancellable.setDone();
-                    subscriber.onError(cause);
-                    return;
-                }
-                // It is safe to set this outside the scope of the try/catch above because we don't do any blocking
-                // operations which may be interrupted between the completion of the blockingHttpService call and here.
-                cancellable.setDone();
-
-                subscriber.onSuccess(response);
-            }
-        };
+        return blockingToSingle(() -> new BlockingToReservedHttpConnection(blockingClientGroup.reserveConnection(
+                key, new DefaultBlockingHttpRequest<>(request))));
     }
 
     @Override

@@ -21,30 +21,32 @@ import io.servicetalk.transport.api.ConnectionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
-import static io.servicetalk.http.api.HttpResponses.fromBlockingResponse;
+import static io.servicetalk.http.api.DefaultAggregatedHttpRequest.from;
+import static io.servicetalk.http.api.DefaultAggregatedHttpResponse.toHttpResponse;
 import static java.util.Objects.requireNonNull;
 
-final class BlockingHttpServiceToHttpService extends HttpService {
-    private final BlockingHttpService blockingHttpService;
+final class BlockingAggregatedHttpServiceToHttpService extends HttpService {
+    private final BlockingAggregatedHttpService service;
 
-    BlockingHttpServiceToHttpService(BlockingHttpService blockingHttpService) {
-        this.blockingHttpService = requireNonNull(blockingHttpService);
+    BlockingAggregatedHttpServiceToHttpService(BlockingAggregatedHttpService service) {
+        this.service = requireNonNull(service);
     }
 
     @Override
     public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
                                                          final HttpRequest<HttpPayloadChunk> request) {
-        return blockingToSingle(() -> fromBlockingResponse(blockingHttpService.handle(ctx,
-                new DefaultBlockingHttpRequest<>(request))));
+
+        return from(request, ctx.getExecutionContext().getBufferAllocator()).flatMap(
+                aggregatedRequest -> blockingToSingle(() -> toHttpResponse(service.handle(ctx, aggregatedRequest))));
     }
 
     @Override
     public Completable closeAsync() {
-        return blockingToCompletable(blockingHttpService::close);
+        return blockingToCompletable(service::close);
     }
 
     @Override
-    BlockingHttpService asBlockingServiceInternal() {
-        return blockingHttpService;
+    BlockingAggregatedHttpService asBlockingAggregatedServiceInternal() {
+        return service;
     }
 }

@@ -43,22 +43,37 @@ public abstract class BlockingHttpService implements AutoCloseable {
     /**
      * Convert this {@link BlockingHttpService} to the {@link HttpService} asynchronous API.
      * <p>
-     * Note that the resulting {@link HttpService} will still be subject to any blocking, in memory aggregation, and
+     * Note that the resulting {@link HttpService} may still be subject to any blocking, in memory aggregation, and
      * other behavior as this {@link BlockingHttpService}.
      *
      * @return a {@link HttpService} representation of this {@link BlockingHttpService}.
      */
-    public final HttpService asAsynchronousService() {
-        return asAsynchronousServiceInternal();
+    public final HttpService asService() {
+        return asServiceInternal();
     }
 
     /**
-     * Provides a means to override the behavior of {@link #asAsynchronousService()} for internal classes.
+     * Convert this {@link BlockingHttpService} to the {@link AggregatedHttpService} asynchronous API.
+     * <p>
+     * Note that the resulting {@link AggregatedHttpService} may still be subject to any blocking, in memory
+     * aggregation, and other behavior as this {@link BlockingHttpService}.
      *
-     * @return a {@link HttpService} representation of this {@link BlockingHttpService}.
+     * @return a {@link AggregatedHttpService} representation of this {@link BlockingHttpService}.
      */
-    HttpService asAsynchronousServiceInternal() {
-        return new BlockingHttpServiceToHttpService(this);
+    public final AggregatedHttpService asAggregatedService() {
+        return asService().asAggregatedService();
+    }
+
+    /**
+     * Convert this {@link BlockingHttpService} to the {@link BlockingAggregatedHttpService} asynchronous API.
+     * <p>
+     * Note that the resulting {@link BlockingAggregatedHttpService} may still be subject to any blocking, in memory
+     * aggregation, and other behavior as this {@link BlockingHttpService}.
+     *
+     * @return a {@link BlockingAggregatedHttpService} representation of this {@link BlockingHttpService}.
+     */
+    public final BlockingAggregatedHttpService asBlockingAggregatedService() {
+        return asService().asBlockingAggregatedService();
     }
 
     /**
@@ -78,5 +93,14 @@ public abstract class BlockingHttpService implements AutoCloseable {
                 return handleFunc.apply(ctx, request);
             }
         };
+    }
+
+    /**
+     * Provides a means to override the behavior of {@link #asService()} for internal classes.
+     *
+     * @return a {@link HttpService} representation of this {@link BlockingHttpService}.
+     */
+    HttpService asServiceInternal() {
+        return new BlockingHttpServiceToHttpService(this);
     }
 }

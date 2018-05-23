@@ -23,10 +23,10 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 import static java.util.Objects.requireNonNull;
 
-final class HttpConnectionToBlockingHttpConnection extends BlockingHttpConnection {
-    private final HttpConnection connection;
+final class AggregatedHttpConnectionToBlockingAggregatedHttpConnection extends BlockingAggregatedHttpConnection {
+    private final AggregatedHttpConnection connection;
 
-    HttpConnectionToBlockingHttpConnection(HttpConnection connection) {
+    AggregatedHttpConnectionToBlockingAggregatedHttpConnection(AggregatedHttpConnection connection) {
         this.connection = requireNonNull(connection);
     }
 
@@ -41,7 +41,7 @@ final class HttpConnectionToBlockingHttpConnection extends BlockingHttpConnectio
     }
 
     @Override
-    public BlockingHttpResponse<HttpPayloadChunk> request(final BlockingHttpRequest<HttpPayloadChunk> request)
+    public AggregatedHttpResponse<HttpPayloadChunk> request(final AggregatedHttpRequest<HttpPayloadChunk> request)
             throws Exception {
         return BlockingUtils.request(connection, request);
     }
@@ -56,12 +56,12 @@ final class HttpConnectionToBlockingHttpConnection extends BlockingHttpConnectio
         BlockingUtils.close(connection);
     }
 
-    Completable onClose() {
-        return connection.onClose();
+    @Override
+    AggregatedHttpConnection asAggregatedConnectionInternal() {
+        return connection;
     }
 
-    @Override
-    HttpConnection asConnectionInternal() {
-        return connection;
+    Completable onClose() {
+        return connection.onClose();
     }
 }

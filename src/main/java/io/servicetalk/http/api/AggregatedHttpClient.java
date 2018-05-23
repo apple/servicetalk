@@ -17,14 +17,18 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.AggregatedHttpClientToBlockingAggregatedHttpClient.AggregatedReservedHttpConnectionToBlockingAggregated;
 import io.servicetalk.http.api.AggregatedHttpClientToHttpClient.AggregatedToReservedHttpConnection;
+import io.servicetalk.http.api.BlockingAggregatedHttpClient.BlockingAggregatedReservedHttpConnection;
+import io.servicetalk.http.api.BlockingHttpClient.BlockingReservedHttpConnection;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
 import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
 
 import java.util.function.Function;
 
 /**
- * The equivalent of {@link HttpClient} but that accepts {@link AggregatedHttpRequest} and returns {@link AggregatedHttpResponse}.
+ * The equivalent of {@link HttpClient} but that accepts {@link AggregatedHttpRequest} and returns
+ * {@link AggregatedHttpResponse}.
  */
 public abstract class AggregatedHttpClient extends AggregatedHttpRequester {
     /**
@@ -33,7 +37,7 @@ public abstract class AggregatedHttpClient extends AggregatedHttpRequester {
      *
      * @param request Allows the underlying layers to know what {@link AggregatedHttpConnection}s are valid to reserve.
      * For example this may provide some insight into shard or other info.
-     * @return a {@link ReservedHttpConnection}.
+     * @return a {@link Single} that provides the {@link AggregatedReservedHttpConnection} upon completion.
      * @see HttpClient#reserveConnection(HttpRequest)
      */
     public abstract Single<? extends AggregatedReservedHttpConnection> reserveConnection(
@@ -48,8 +52,8 @@ public abstract class AggregatedHttpClient extends AggregatedHttpRequester {
      * for calling {@link AggregatedUpgradableHttpResponse#getHttpConnection(boolean)}.
      *
      * @param request the request which initiates the upgrade.
-     * @return An object that provides the {@link HttpResponse} for the upgrade attempt and also contains the
-     * {@link AggregatedHttpConnection} used for the upgrade.
+     * @return An object that provides the {@link AggregatedUpgradableHttpResponse} for the upgrade attempt and also
+     * contains the {@link AggregatedHttpConnection} used for the upgrade.
      * @see HttpClient#upgradeConnection(HttpRequest)
      */
     public abstract Single<? extends AggregatedUpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
@@ -64,8 +68,30 @@ public abstract class AggregatedHttpClient extends AggregatedHttpRequester {
         return asClientInternal();
     }
 
+    /**
+     * Convert this {@link AggregatedHttpClient} to the {@link BlockingHttpClient} API.
+     *
+     * @return a {@link BlockingHttpClient} representation of this {@link AggregatedHttpClient}.
+     */
+    public final BlockingHttpClient asBlockingClient() {
+        return asClient().asBlockingClient();
+    }
+
+    /**
+     * Convert this {@link AggregatedHttpClient} to the {@link BlockingAggregatedHttpClient} API.
+     *
+     * @return a {@link BlockingAggregatedHttpClient} representation of this {@link AggregatedHttpClient}.
+     */
+    public final BlockingAggregatedHttpClient asBlockingAggregatedClient() {
+        return asBlockingAggregatedClientInternal();
+    }
+
     HttpClient asClientInternal() {
         return new AggregatedHttpClientToHttpClient(this);
+    }
+
+    BlockingAggregatedHttpClient asBlockingAggregatedClientInternal() {
+        return new AggregatedHttpClientToBlockingAggregatedHttpClient(this);
     }
 
     /**
@@ -91,9 +117,35 @@ public abstract class AggregatedHttpClient extends AggregatedHttpRequester {
             return asConnectionInternal();
         }
 
+        /**
+         * Convert this {@link AggregatedReservedHttpConnection} to the {@link BlockingReservedHttpConnection} API.
+         *
+         * @return a {@link BlockingReservedHttpConnection} representation of this
+         * {@link AggregatedReservedHttpConnection}.
+         */
+        public final BlockingReservedHttpConnection asBlockingReservedConnection() {
+            return asReservedConnection().asBlockingReservedConnection();
+        }
+
+        /**
+         * Convert this {@link AggregatedReservedHttpConnection} to the {@link BlockingAggregatedReservedHttpConnection}
+         * API.
+         *
+         * @return a {@link BlockingAggregatedReservedHttpConnection} representation of this
+         * {@link AggregatedReservedHttpConnection}.
+         */
+        public final BlockingAggregatedReservedHttpConnection asBlockingAggregatedReservedConnection() {
+            return asBlockingAggregatedConnectionInternal();
+        }
+
         @Override
         ReservedHttpConnection asConnectionInternal() {
             return new AggregatedToReservedHttpConnection(this);
+        }
+
+        @Override
+        BlockingAggregatedReservedHttpConnection asBlockingAggregatedConnectionInternal() {
+            return new AggregatedReservedHttpConnectionToBlockingAggregated(this);
         }
     }
 

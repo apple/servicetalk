@@ -16,6 +16,8 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.BlockingIterable;
+import io.servicetalk.http.api.AggregatedHttpClient.AggregatedReservedHttpConnection;
+import io.servicetalk.http.api.BlockingAggregatedHttpClient.BlockingAggregatedReservedHttpConnection;
 import io.servicetalk.http.api.BlockingHttpClientToHttpClient.BlockingToReservedHttpConnection;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
 import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
@@ -59,16 +61,40 @@ public abstract class BlockingHttpClient extends BlockingHttpRequester {
     /**
      * Convert this {@link BlockingHttpClient} to the {@link HttpClient} API.
      * <p>
-     * Note that the resulting {@link HttpClient} will still be subject to any blocking, in memory aggregation, and
+     * Note that the resulting {@link HttpClient} may still be subject to any blocking, in memory aggregation, and
      * other behavior as this {@link BlockingHttpClient}.
      *
      * @return a {@link HttpClient} representation of this {@link BlockingHttpClient}.
      */
-    public final HttpClient asAsynchronousClient() {
-        return asAsynchronousClientInternal();
+    public final HttpClient asClient() {
+        return asClientInternal();
     }
 
-    HttpClient asAsynchronousClientInternal() {
+    /**
+     * Convert this {@link BlockingHttpClient} to the {@link AggregatedHttpClient} API.
+     * <p>
+     * Note that the resulting {@link AggregatedHttpClient} may still be subject to any blocking, in memory aggregation, and
+     * other behavior as this {@link BlockingHttpClient}.
+     *
+     * @return a {@link AggregatedHttpClient} representation of this {@link BlockingHttpClient}.
+     */
+    public final AggregatedHttpClient asAggregatedClient() {
+        return asClient().asAggregatedClient();
+    }
+
+    /**
+     * Convert this {@link BlockingHttpClient} to the {@link BlockingAggregatedHttpClient} API.
+     * <p>
+     * Note that the resulting {@link BlockingAggregatedHttpClient} may still be subject to in memory
+     * aggregation and other behavior as this {@link BlockingHttpClient}.
+     *
+     * @return a {@link BlockingAggregatedHttpClient} representation of this {@link BlockingHttpClient}.
+     */
+    public final BlockingAggregatedHttpClient asBlockingAggregatedClient() {
+        return asClient().asBlockingAggregatedClient();
+    }
+
+    HttpClient asClientInternal() {
         return new BlockingHttpClientToHttpClient(this);
     }
 
@@ -89,17 +115,44 @@ public abstract class BlockingHttpClient extends BlockingHttpRequester {
         /**
          * Convert this {@link BlockingReservedHttpConnection} to the {@link ReservedHttpConnection} API.
          * <p>
-         * Note that the resulting {@link ReservedHttpConnection} will still be subject to any blocking, in memory
+         * Note that the resulting {@link ReservedHttpConnection} may still be subject to any blocking, in memory
          * aggregation, and other behavior as this {@link BlockingReservedHttpConnection}.
          *
          * @return a {@link ReservedHttpConnection} representation of this {@link BlockingReservedHttpConnection}.
          */
-        public final ReservedHttpConnection asAsynchronousReservedConnection() {
-            return asAsynchronousConnectionInternal();
+        public final ReservedHttpConnection asReservedConnection() {
+            return asConnectionInternal();
+        }
+
+        /**
+         * Convert this {@link BlockingReservedHttpConnection} to the {@link AggregatedReservedHttpConnection} API.
+         * <p>
+         * Note that the resulting {@link AggregatedReservedHttpConnection} may still be subject to any blocking, in
+         * memory aggregation, and other behavior as this {@link BlockingReservedHttpConnection}.
+         *
+         * @return a {@link AggregatedReservedHttpConnection} representation of this
+         * {@link BlockingReservedHttpConnection}.
+         */
+        public final AggregatedReservedHttpConnection asAggregatedReservedConnection() {
+            return asReservedConnection().asAggregatedReservedConnection();
+        }
+
+        /**
+         * Convert this {@link BlockingReservedHttpConnection} to the {@link BlockingAggregatedReservedHttpConnection}
+         * API.
+         * <p>
+         * Note that the resulting {@link BlockingAggregatedReservedHttpConnection} may still be subject to in memory
+         * aggregation and other behavior as this {@link BlockingReservedHttpConnection}.
+         *
+         * @return a {@link BlockingAggregatedReservedHttpConnection} representation of this
+         * {@link BlockingReservedHttpConnection}.
+         */
+        public final BlockingAggregatedReservedHttpConnection asBlockingAggregatedReservedConnection() {
+            return asReservedConnection().asBlockingAggregatedReservedConnection();
         }
 
         @Override
-        ReservedHttpConnection asAsynchronousConnectionInternal() {
+        ReservedHttpConnection asConnectionInternal() {
             return new BlockingToReservedHttpConnection(this);
         }
     }
