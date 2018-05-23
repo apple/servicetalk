@@ -17,6 +17,7 @@ package io.servicetalk.redis.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
@@ -29,7 +30,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferUtil.maxUtf8Bytes;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
+import static io.servicetalk.concurrent.internal.ConcurrentSubscription.wrap;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 final class RedisRequesterUtils {
@@ -40,8 +41,6 @@ final class RedisRequesterUtils {
 
     abstract static class AggregatingSubscriber<R> implements org.reactivestreams.Subscriber<RedisData> {
         final Single.Subscriber<? super R> singleSubscriber;
-        @Nullable
-        private Subscription subscription;
 
         AggregatingSubscriber(Single.Subscriber<? super R> singleSubscriber) {
             this.singleSubscriber = singleSubscriber;
@@ -49,11 +48,9 @@ final class RedisRequesterUtils {
 
         @Override
         public final void onSubscribe(Subscription s) {
-            if (checkDuplicateSubscription(subscription, s)) {
-                subscription = s;
-                singleSubscriber.onSubscribe(subscription::cancel);
-                subscription.request(Long.MAX_VALUE);
-            }
+            ConcurrentSubscription cs = wrap(s);
+            singleSubscriber.onSubscribe(cs::cancel);
+            cs.request(Long.MAX_VALUE);
         }
     }
 
