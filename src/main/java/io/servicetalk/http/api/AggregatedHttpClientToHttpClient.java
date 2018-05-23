@@ -128,8 +128,7 @@ final class AggregatedHttpClientToHttpClient extends HttpClient {
         }
     }
 
-    static final class AggregatedToUpgradableHttpResponse<T> implements
-                                                          UpgradableHttpResponse<T> {
+    static final class AggregatedToUpgradableHttpResponse<T> implements HttpClient.UpgradableHttpResponse<T> {
         private final AggregatedUpgradableHttpResponse<?> upgradableResponse;
         private final Publisher<T> payloadBody;
 
