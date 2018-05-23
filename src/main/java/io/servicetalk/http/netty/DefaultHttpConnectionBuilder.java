@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.AggregatedHttpConnection;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpConnectionBuilder;
@@ -80,12 +79,6 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
                   buildForPipelined(executionContext, resolvedAddress, roConfig, connectionFilterFactory))
                         .map(filteredConnection -> new HttpConnectionConcurrentRequestsFilter(filteredConnection,
                                 roConfig.getMaxPipelinedRequests()));
-    }
-
-    @Override
-    public Single<AggregatedHttpConnection> buildAggregated(final ExecutionContext executionContext,
-                                                            final ResolvedAddress resolvedAddress) {
-        return build(executionContext, resolvedAddress).map(HttpConnection::asAggregatedConnection);
     }
 
     static <ResolvedAddress> Single<HttpConnection> buildForPipelined(
