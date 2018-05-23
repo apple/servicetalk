@@ -17,6 +17,7 @@ package io.servicetalk.buffer.api;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
@@ -1936,4 +1937,25 @@ public interface Buffer {
      * @return the string.
      */
     String toString(int index, int length, Charset charset);
+
+    /**
+     * Return an {@link OutputStream} that wraps the given {@link Buffer}. The writerIndex will be increased when
+     * writing to the buffer.
+     *
+     * @param buffer the buffer to wrap.
+     * @return a new {@link OutputStream}.
+     */
+    static OutputStream asOutputStream(Buffer buffer) {
+        return new BufferOutputStream(buffer);
+    }
+
+    /**
+     * Return an {@link InputStream} that wraps the given {@link Buffer}. The readerIndex will be increased when reading
+     * from the buffer.
+     * @param buffer the buffer to wrap.
+     * @return a new {@link InputStream}.
+     */
+    static InputStream asInputStream(Buffer buffer) {
+        return new BufferInputStream(buffer);
+    }
 }
