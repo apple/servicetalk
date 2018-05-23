@@ -15,6 +15,9 @@
  */
 package io.servicetalk.http.router.predicate.dsl;
 
+import io.servicetalk.http.api.AggregatedHttpService;
+import io.servicetalk.http.api.BlockingAggregatedHttpService;
+import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.HttpCookie;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
@@ -168,4 +171,31 @@ public interface RouteStarter {
      * @return the router {@link HttpService}.
      */
     HttpService build();
+
+    /**
+     * Builds the {@link AggregatedHttpService} that performs the configured routing.
+     *
+     * @return the router {@link AggregatedHttpService}.
+     */
+    default AggregatedHttpService buildAggregated() {
+        return build().asAggregatedService();
+    }
+
+    /**
+     * Builds the {@link BlockingAggregatedHttpService} that performs the configured routing.
+     *
+     * @return the router {@link BlockingAggregatedHttpService}.
+     */
+    default BlockingAggregatedHttpService buildBlockingAggregated() {
+        return build().asBlockingAggregatedService();
+    }
+
+    /**
+     * Builds the {@link BlockingHttpService} that performs the configured routing.
+     *
+     * @return the router {@link BlockingHttpService}.
+     */
+    default BlockingHttpService buildBlocking() {
+        return build().asBlockingService();
+    }
 }

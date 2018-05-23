@@ -15,6 +15,9 @@
  */
 package io.servicetalk.http.router.predicate.dsl;
 
+import io.servicetalk.http.api.AggregatedHttpService;
+import io.servicetalk.http.api.BlockingAggregatedHttpService;
+import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.HttpCookie;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
@@ -173,4 +176,39 @@ public interface RouteContinuation {
      * @return {@link RouteStarter} for building another route.
      */
     RouteStarter thenRouteTo(HttpService service);
+
+    /**
+     * Completes the route by specifying the {@link AggregatedHttpService} to route requests to that match the
+     * previously specified criteria. Each call to {@code thenRouteTo} resets the criteria, prior to building the next
+     * route.
+     *
+     * @param service the {@link AggregatedHttpService} to route requests to.
+     * @return {@link RouteStarter} for building another route.
+     */
+    default RouteStarter thenRouteTo(AggregatedHttpService service) {
+        return thenRouteTo(service.asService());
+    }
+
+    /**
+     * Completes the route by specifying the {@link BlockingAggregatedHttpService} to route requests to that match the
+     * previously specified criteria. Each call to {@code thenRouteTo} resets the criteria, prior to building the next
+     * route.
+     *
+     * @param service the {@link BlockingAggregatedHttpService} to route requests to.
+     * @return {@link RouteStarter} for building another route.
+     */
+    default RouteStarter thenRouteTo(BlockingAggregatedHttpService service) {
+        return thenRouteTo(service.asService());
+    }
+
+    /**
+     * Completes the route by specifying the {@link BlockingHttpService} to route requests to that match the previously
+     * specified criteria. Each call to {@code thenRouteTo} resets the criteria, prior to building the next route.
+     *
+     * @param service the {@link BlockingHttpService} to route requests to.
+     * @return {@link RouteStarter} for building another route.
+     */
+    default RouteStarter thenRouteTo(BlockingHttpService service) {
+        return thenRouteTo(service.asService());
+    }
 }
