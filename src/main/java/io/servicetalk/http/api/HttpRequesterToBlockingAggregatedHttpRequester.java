@@ -40,7 +40,7 @@ final class HttpRequesterToBlockingAggregatedHttpRequester extends BlockingAggre
 
     @Override
     public void close() throws Exception {
-        BlockingUtils.close(requester::onClose);
+        BlockingUtils.close(requester);
     }
 
     @Override
