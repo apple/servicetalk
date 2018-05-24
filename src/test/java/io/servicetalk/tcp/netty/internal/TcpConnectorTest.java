@@ -16,23 +16,14 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.api.DefaultExecutionContext;
-import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.NettyIoExecutors;
 import io.servicetalk.transport.netty.internal.Connection;
-import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.Timeout;
 
 import java.net.ConnectException;
 import java.nio.channels.ClosedChannelException;
@@ -42,7 +33,6 @@ import java.util.concurrent.ExecutionException;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.transport.api.FlushStrategy.defaultFlushStrategy;
 import static java.net.InetSocketAddress.createUnresolved;
 import static java.nio.charset.Charset.defaultCharset;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -50,40 +40,9 @@ import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.Is.is;
 
-public final class TcpConnectorTest {
-    @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout();
+public final class TcpConnectorTest extends AbstractTcpServerTest {
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
-
-    private static NettyIoExecutor nettyIoExecutor;
-
-    private int serverPort;
-    private ServerContext serverContext;
-    private TcpClient client;
-
-    @BeforeClass
-    public static void beforeClass() {
-        nettyIoExecutor = (NettyIoExecutor) NettyIoExecutors.createIoExecutor();
-    }
-
-    @AfterClass
-    public static void afterClass() {
-        nettyIoExecutor.closeAsync().subscribe();
-    }
-
-    @Before
-    public void setUp() throws Exception {
-        TcpServer server = new TcpServer(nettyIoExecutor);
-        serverContext = server.start(0, conn -> conn.write(conn.read(), defaultFlushStrategy()));
-        serverPort = TcpServer.getServerPort(serverContext);
-        client = new TcpClient(nettyIoExecutor);
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        awaitIndefinitely(serverContext.closeAsync());
-    }
 
     @Test
     public void testConnect() throws Exception {
@@ -145,7 +104,7 @@ public final class TcpConnectorTest {
                     return context;
                 }, () -> v -> true);
         Connection<Buffer, Buffer> connection = awaitIndefinitely(connector.connect(
-                new DefaultExecutionContext(DEFAULT_ALLOCATOR, nettyIoExecutor, immediate()),
+                new DefaultExecutionContext(DEFAULT_ALLOCATOR, clientIoExecutor, immediate()),
                 serverContext.getListenAddress()));
         assert connection != null;
         awaitIndefinitely(connection.closeAsync());

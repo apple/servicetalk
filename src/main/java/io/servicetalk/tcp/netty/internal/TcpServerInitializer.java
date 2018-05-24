@@ -17,7 +17,6 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.netty.BufferUtil;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
@@ -128,16 +127,11 @@ public final class TcpServerInitializer {
         bs.childHandler(new io.netty.channel.ChannelInitializer<Channel>() {
             @Override
             protected void initChannel(Channel channel) {
-                try {
-                    // TODO: Use proper executor
-                    ConnectionContext context = newContext(channel, threadIoExecutor, immediate(),
-                            config.getAllocator(), channelInitializer, checkForRefCountedTrapper);
-                    //TODO 3.x: Use filter result.
-                    contextFilter.filter(context);
-                } catch (Exception cause) {
-                    LOGGER.warn("Closing channel {} because of exception during initChannel.", channel, cause);
-                    channel.close();
-                }
+                // We rely on Netty to catch and log exceptions from the channel initializer.
+                // TODO: Use proper executor
+                newContext(channel, threadIoExecutor, immediate(), config.getAllocator(),
+                        new ContextFilterChannelInitializer(contextFilter, channelInitializer),
+                        checkForRefCountedTrapper);
             }
         });
         ChannelFuture future = bs.bind(listenAddress);

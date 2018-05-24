@@ -16,7 +16,6 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
@@ -39,12 +38,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
 
 /**
  * A utility to create a TCP server for tests.
  */
-public final class TcpServer {
+public class TcpServer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TcpServer.class);
     private final ReadOnlyTcpServerConfig config;
@@ -67,18 +67,45 @@ public final class TcpServer {
 
     /**
      * Starts the server at the passed {@code port} and invoke the passed {@code service} for each accepted connection.
+     * Awaits for the server to start.
+     *
+     * @param port Port for the server.
+     * @param service {@link Function} that is invoked for each accepted connection.
+     * @return {@link ServerContext} for the started server.
+     * @throws ExecutionException If the server start failed.
+     * @throws InterruptedException If the calling thread was interrupted waiting for the server to start.
+     */
+    public ServerContext start(int port, Function<Connection<Buffer, Buffer>, Completable> service)
+            throws ExecutionException, InterruptedException {
+        return start(port, ACCEPT_ALL, service);
+    }
+
+    /**
+     * Starts the server at the passed {@code port} and invoke the passed {@code service} for each accepted connection.
+     * Awaits for the server to start.
      *
      * @param port    Port for the server.
+     * @param contextFilter to use for filtering accepted connections.  The returned {@link ServerContext} manages the
+     * lifecycle of the {@code contextFilter}, ensuring it is closed when the {@link ServerContext} is closed.
      * @param service {@link Function} that is invoked for each accepted connection.
      * @return {@link ServerContext} for the started server.
      * @throws ExecutionException   If the server start failed.
      * @throws InterruptedException If the calling thread was interrupted waiting for the server to start.
      */
-    public ServerContext start(int port, Function<Connection<Buffer, Buffer>, Completable> service)
+    public ServerContext start(int port, ContextFilter contextFilter, Function<Connection<Buffer, Buffer>, Completable> service)
             throws ExecutionException, InterruptedException {
         TcpServerInitializer initializer = new TcpServerInitializer(config);
         final Executor executor = newCachedThreadExecutor();
-        ChannelInitializer channelInitializer = new TcpServerChannelInitializer(config).andThen((channel, context) -> {
+        return awaitIndefinitelyNonNull(initializer.start(new InetSocketAddress(port), contextFilter,
+                new TcpServerChannelInitializer(config).andThen(getChannelInitializer(service, executor)), false)
+                .doBeforeSuccess(ctx -> LOGGER.info("Server started on port {}.", getServerPort(ctx)))
+                .doBeforeError(throwable -> LOGGER.error("Failed starting server on port {}.", port)));
+    }
+
+    // Visible to allow tests to override.
+    ChannelInitializer getChannelInitializer(final Function<Connection<Buffer, Buffer>, Completable> service,
+                                             final Executor executor) {
+        return (channel, context) -> {
             channel.pipeline().addLast(new BufferHandler(config.getAllocator()));
             channel.pipeline()
                     .addLast(new AbstractChannelReadHandler<Buffer>(buffer -> false, executor) {
@@ -89,16 +116,11 @@ public final class TcpServer {
                             service.apply(conn)
                                     .doBeforeError(throwable -> LOGGER.error("Error handling a connection.", throwable))
                                     .doBeforeFinally(() -> ctx.channel().close())
-                                    .subscribe(NoOpSubscriber.NOOP_SUBSCRIBER);
+                                    .subscribe();
                         }
                     });
             return context;
-        });
-        //noinspection ConstantConditions
-        return awaitIndefinitely(initializer.start(new InetSocketAddress(port), ContextFilter.ACCEPT_ALL,
-                channelInitializer)
-                .doBeforeSuccess(ctx -> LOGGER.info("Server started on port {}.", getServerPort(ctx)))
-                .doBeforeError(throwable -> LOGGER.error("Failed starting server on port {}.", port)));
+        };
     }
 
     /**
@@ -111,28 +133,5 @@ public final class TcpServer {
      */
     public static int getServerPort(ServerContext context) {
         return ((InetSocketAddress) context.getListenAddress()).getPort();
-    }
-
-    private static final class NoOpSubscriber implements Completable.Subscriber {
-
-        static final NoOpSubscriber NOOP_SUBSCRIBER = new NoOpSubscriber();
-
-        private NoOpSubscriber() {
-        }
-
-        @Override
-        public void onSubscribe(Cancellable cancellable) {
-            // No Op
-        }
-
-        @Override
-        public void onComplete() {
-            // No Op
-        }
-
-        @Override
-        public void onError(Throwable ignore) {
-            // No op
-        }
     }
 }
