@@ -28,7 +28,7 @@ buildscript {
 }
 
 plugins {
-  id "io.spring.dependency-management" version "1.0.4.RELEASE"
+  id "io.spring.dependency-management" version "1.0.5.RELEASE"
 }
 
 apply plugin: "servicetalk-core"
@@ -36,9 +36,10 @@ apply plugin: "servicetalk-core"
 dependencyManagement {
   dependencies {
     // First Party ServiceTalk Dependencies
-    dependency "io.servicetalk:servicetalk-http-router-jersey:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-http-router-predicate:0.1.0-SNAPSHOT"
+    dependency "io.servicetalk:servicetalk-http-router-jersey:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-http-netty:0.1.0-SNAPSHOT"
+    dependency "io.servicetalk:servicetalk-http-jackson:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-http-api:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-redis-api:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-redis-netty:0.1.0-SNAPSHOT"
@@ -54,12 +55,15 @@ dependencyManagement {
     dependency "io.servicetalk:servicetalk-rxjava-context:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-concurrent-context:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-concurrent-api:0.1.0-SNAPSHOT"
+    dependency "io.servicetalk:servicetalk-transport-netty-internal:0.1.0-SNAPSHOT"
+    dependency "io.servicetalk:servicetalk-concurrent-internal:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-buffer-api:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-buffer-netty:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-transport-api:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-transport-netty:0.1.0-SNAPSHOT"
-    dependency "io.servicetalk:servicetalk-concurent:0.1.0-SNAPSHOT"
+    dependency "io.servicetalk:servicetalk-concurrent:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
+    dependency "io.servicetalk:servicetalk-data-jackson:0.1.0-SNAPSHOT"
   }
 }
