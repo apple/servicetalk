@@ -15,16 +15,16 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 
 import org.reactivestreams.Subscription;
 
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.internal.ConcurrentSubscription.wrap;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -66,15 +66,11 @@ final class ReduceSingle<R, T> extends Single<R> {
     }
 
     private static final class ReduceSubscriber<R, T> implements org.reactivestreams.Subscriber<T> {
-        private static final AtomicReferenceFieldUpdater<ReduceSubscriber, Cancellable> cancellableUpdater =
-                AtomicReferenceFieldUpdater.newUpdater(ReduceSubscriber.class, Cancellable.class, "cancellable");
-        @SuppressWarnings("unused")
-        @Nullable
-        private volatile Cancellable cancellable;
-        @Nullable
-        private R result;
+
         private final BiFunction<R, ? super T, R> reducer;
         private final Subscriber<? super R> subscriber;
+        @Nullable
+        private R result;
 
         ReduceSubscriber(@Nullable R result, BiFunction<R, ? super T, R> reducer, Subscriber<? super R> subscriber) {
             this.result = result;
@@ -83,38 +79,27 @@ final class ReduceSingle<R, T> extends Single<R> {
         }
 
         @Override
-        public void onSubscribe(Subscription s) {
-            if (!cancellableUpdater.compareAndSet(this, null, s::cancel)) {
-                s.cancel();
-                return;
-            }
+        public void onSubscribe(final Subscription s) {
+            final ConcurrentSubscription cs = wrap(s);
+            subscriber.onSubscribe(cs::cancel);
             s.request(Long.MAX_VALUE);
-            subscriber.onSubscribe(this::cancel);
         }
 
         @Override
-        public void onNext(T t) {
+        public void onNext(final T t) {
             // If Function.apply(...) throws we just propagate it to the caller which is responsible to terminate
             // its subscriber and cancel the subscription.
             result = reducer.apply(result, t);
         }
 
         @Override
-        public void onError(Throwable t) {
+        public void onError(final Throwable t) {
             subscriber.onError(t);
         }
 
         @Override
         public void onComplete() {
             subscriber.onSuccess(result);
-        }
-
-        private void cancel() {
-            // Protected against concurrency on the cancel operation between the subscriber and this class.
-            Cancellable cancellable = cancellableUpdater.getAndSet(this, IGNORE_CANCEL);
-            if (cancellable != null) {
-                cancellable.cancel();
-            }
         }
     }
 }

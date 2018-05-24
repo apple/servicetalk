@@ -21,6 +21,7 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.stubbing.Answer;
 
 import javax.annotation.Nullable;
@@ -32,6 +33,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -80,38 +82,34 @@ public class MockedSingleListenerRule<T> implements TestRule {
 
     public MockedSingleListenerRule<T> verifySuccess(@Nullable T expected) {
         verifyCancellable();
-        assert subscriber != null;
-        verify(subscriber).onSubscribe(any());
-        verify(subscriber).onSuccess(expected);
-        verifyNoMoreInteractions(subscriber);
+        final InOrder verifier = inOrderVerifier();
+        verifier.verify(subscriber).onSuccess(expected);
+        verifier.verifyNoMoreInteractions();
         return this;
     }
 
     public T verifySuccessAndReturn(Class<T> returnClass) {
         verifyCancellable();
-        assert subscriber != null;
-        verify(subscriber).onSubscribe(any());
+        final InOrder verifier = inOrderVerifier();
         ArgumentCaptor<T> captor = ArgumentCaptor.forClass(returnClass);
-        verify(subscriber).onSuccess(captor.capture());
-        verifyNoMoreInteractions(subscriber);
+        verifier.verify(subscriber).onSuccess(captor.capture());
+        verifier.verifyNoMoreInteractions();
         return captor.getValue();
     }
 
     public MockedSingleListenerRule<T> verifyFailure(Throwable cause) {
         verifyCancellable();
-        assert subscriber != null;
-        verify(subscriber).onSubscribe(any());
-        verify(subscriber).onError(cause);
-        verifyNoMoreInteractions(subscriber);
+        final InOrder verifier = inOrderVerifier();
+        verifier.verify(subscriber).onError(cause);
+        verifier.verifyNoMoreInteractions();
         return this;
     }
 
     public MockedSingleListenerRule<T> verifyFailure(Class<? extends Throwable> cause) {
         verifyCancellable();
-        assert subscriber != null;
-        verify(subscriber).onSubscribe(any());
-        verify(subscriber).onError(any(cause));
-        verifyNoMoreInteractions(subscriber);
+        final InOrder verifier = inOrderVerifier();
+        verifier.verify(subscriber).onError(any(cause));
+        verifier.verifyNoMoreInteractions();
         return this;
     }
 
@@ -124,25 +122,23 @@ public class MockedSingleListenerRule<T> implements TestRule {
 
     public MockedSingleListenerRule<T> verifySuppressedFailure(Throwable originalCause, Throwable suppressedCause) {
         verifyCancellable();
-        assert subscriber != null;
-        verify(subscriber).onSubscribe(any());
+        final InOrder verifier = inOrderVerifier();
         ArgumentCaptor<Throwable> throwableCaptor = ArgumentCaptor.forClass(Throwable.class);
-        verify(subscriber).onError(throwableCaptor.capture());
+        verifier.verify(subscriber).onError(throwableCaptor.capture());
         Throwable actualCause = throwableCaptor.getValue();
         verifyOriginalAndSuppressedCauses(actualCause, originalCause, suppressedCause);
-        verifyNoMoreInteractions(subscriber);
+        verifier.verifyNoMoreInteractions();
         return this;
     }
 
     public MockedSingleListenerRule<T> verifySuppressedFailure(Throwable suppressedCause) {
         verifyCancellable();
-        assert subscriber != null;
-        verify(subscriber).onSubscribe(any());
+        final InOrder verifier = inOrderVerifier();
         ArgumentCaptor<Throwable> throwableCaptor = ArgumentCaptor.forClass(Throwable.class);
-        verify(subscriber).onError(throwableCaptor.capture());
+        verifier.verify(subscriber).onError(throwableCaptor.capture());
         Throwable actualCause = throwableCaptor.getValue();
         verifySuppressed(actualCause, suppressedCause);
-        verifyNoMoreInteractions(subscriber);
+        verifier.verifyNoMoreInteractions();
         return this;
     }
 
@@ -156,5 +152,12 @@ public class MockedSingleListenerRule<T> implements TestRule {
     private MockedSingleListenerRule<T> verifyCancellable() {
         assertThat("Listen result not found.", onSubscribeResult, is(notNullValue()));
         return this;
+    }
+
+    private InOrder inOrderVerifier() {
+        assert subscriber != null;
+        final InOrder verifier = inOrder(subscriber);
+        verifier.verify(subscriber).onSubscribe(any());
+        return verifier;
     }
 }

@@ -15,13 +15,17 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
+import io.servicetalk.concurrent.api.DeferredEmptySubscription;
 import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 
 public class PubToCompletableTest {
 
@@ -29,18 +33,38 @@ public class PubToCompletableTest {
     public final MockedCompletableListenerRule listenerRule = new MockedCompletableListenerRule();
 
     @Test
-    public void testSuccess() throws Exception {
+    public void testSuccess() {
         listen(Publisher.just("Hello")).verifyCompletion();
     }
 
     @Test
-    public void testError() throws Exception {
+    public void testError() {
         listen(Publisher.error(DELIBERATE_EXCEPTION)).verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
-    public void testEmpty() throws Exception {
+    public void testEmpty() {
         listen(Publisher.empty()).verifyCompletion();
+    }
+
+    @Test
+    public void testEmptyFromRequestN() {
+        listen(new Publisher<String>() {
+            @Override
+            protected void handleSubscribe(final Subscriber<? super String> subscriber) {
+                subscriber.onSubscribe(new DeferredEmptySubscription(subscriber, complete()));
+            }
+        }).verifyCompletion();
+    }
+
+    @Test
+    public void testErrorFromRequestN() {
+        listen(new Publisher<String>() {
+            @Override
+            protected void handleSubscribe(final Subscriber<? super String> subscriber) {
+                subscriber.onSubscribe(new DeferredEmptySubscription(subscriber, TerminalNotification.error(DELIBERATE_EXCEPTION)));
+            }
+        }).verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     private MockedCompletableListenerRule listen(Publisher<String> src) {

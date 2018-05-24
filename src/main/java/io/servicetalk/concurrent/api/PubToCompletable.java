@@ -15,7 +15,11 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.internal.ConcurrentSubscription;
+
 import org.reactivestreams.Subscription;
+
+import static io.servicetalk.concurrent.internal.ConcurrentSubscription.wrap;
 
 /**
  * A {@link Completable} created from a {@link Publisher}.
@@ -36,27 +40,37 @@ final class PubToCompletable<T> extends Completable {
 
     @Override
     public void handleSubscribe(Subscriber subscriber) {
-        source.subscribe(new org.reactivestreams.Subscriber<T>() {
-            @Override
-            public void onSubscribe(Subscription s) {
-                s.request(Long.MAX_VALUE); // Look for the terminal signal
-                subscriber.onSubscribe(s::cancel);
-            }
+        source.subscribe(new PubToCompletableSubscriber<>(subscriber));
+    }
 
-            @Override
-            public void onNext(T t) {
-                // Ignore elements.
-            }
+    private static final class PubToCompletableSubscriber<T> implements org.reactivestreams.Subscriber<T> {
 
-            @Override
-            public void onError(Throwable t) {
-                subscriber.onError(t);
-            }
+        private final Subscriber subscriber;
 
-            @Override
-            public void onComplete() {
-                subscriber.onComplete();
-            }
-        });
+        PubToCompletableSubscriber(final Subscriber subscriber) {
+            this.subscriber = subscriber;
+        }
+
+        @Override
+        public void onSubscribe(final Subscription s) {
+            final ConcurrentSubscription cs = wrap(s);
+            subscriber.onSubscribe(cs::cancel);
+            s.request(Long.MAX_VALUE);
+        }
+
+        @Override
+        public void onNext(final T t) {
+            // Ignore elements
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+            subscriber.onError(t);
+        }
+
+        @Override
+        public void onComplete() {
+            subscriber.onComplete();
+        }
     }
 }

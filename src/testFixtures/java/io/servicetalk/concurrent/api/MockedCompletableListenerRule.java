@@ -21,6 +21,7 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 
 import javax.annotation.Nullable;
 
@@ -33,9 +34,9 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class MockedCompletableListenerRule implements TestRule {
@@ -79,65 +80,58 @@ public class MockedCompletableListenerRule implements TestRule {
     }
 
     public MockedCompletableListenerRule verifyCompletion() {
-        assert subscriber != null;
-        verify(subscriber).onSubscribe(any());
-        verify(subscriber).onComplete();
-        verifyNoMoreInteractions(subscriber);
+        final InOrder verifier = inOrderVerifier();
+        verifier.verify(subscriber).onComplete();
+        verifier.verifyNoMoreInteractions();
         return this;
     }
 
     public MockedCompletableListenerRule verifyFailure(Throwable cause) {
-        assert subscriber != null;
-        verify(subscriber).onSubscribe(any());
-        verify(subscriber).onError(cause);
-        verifyNoMoreInteractions(subscriber);
+        final InOrder verifier = inOrderVerifier();
+        verifier.verify(subscriber).onError(cause);
+        verifier.verifyNoMoreInteractions();
         return this;
     }
 
     public MockedCompletableListenerRule verifyFailure(Class<? extends Throwable> cause) {
-        assert subscriber != null;
-        verify(subscriber).onSubscribe(any());
-        verify(subscriber).onError(any(cause));
-        verifyNoMoreInteractions(subscriber);
+        final InOrder verifier = inOrderVerifier();
+        verifier.verify(subscriber).onError(any(cause));
+        verifier.verifyNoMoreInteractions();
         return this;
     }
 
     public MockedCompletableListenerRule verifySuppressedFailure(Throwable originalCause, Throwable suppressedCause) {
-        assert subscriber != null;
-        verify(subscriber).onSubscribe(any());
+        final InOrder verifier = inOrderVerifier();
         ArgumentCaptor<Throwable> throwableCaptor = ArgumentCaptor.forClass(Throwable.class);
-        verify(subscriber).onError(throwableCaptor.capture());
+        verifier.verify(subscriber).onError(throwableCaptor.capture());
         Throwable actualCause = throwableCaptor.getValue();
         verifyOriginalAndSuppressedCauses(actualCause, originalCause, suppressedCause);
-        verifyNoMoreInteractions(subscriber);
+        verifier.verifyNoMoreInteractions();
         return this;
     }
 
     public MockedCompletableListenerRule verifySuppressedFailure(Class<? extends Throwable> orginalCause, Class<? extends Throwable> suppressedCause) {
-        assert subscriber != null;
-        verify(subscriber).onSubscribe(any());
+        final InOrder verifier = inOrderVerifier();
         ArgumentCaptor<Throwable> throwableCaptor = ArgumentCaptor.forClass(Throwable.class);
-        verify(subscriber).onError(throwableCaptor.capture());
+        verifier.verify(subscriber).onError(throwableCaptor.capture());
         Throwable actualCause = throwableCaptor.getValue();
         assertThat(actualCause, is(instanceOf(orginalCause)));
         assertThat(actualCause.getSuppressed(), arrayContaining(instanceOf(suppressedCause)));
-        verifyNoMoreInteractions(subscriber);
+        verifier.verifyNoMoreInteractions();
         return this;
     }
 
     public MockedCompletableListenerRule verifySuppressedFailure(Throwable suppressedCause) {
-        assert subscriber != null;
-        verify(subscriber).onSubscribe(any());
+        final InOrder verifier = inOrderVerifier();
         ArgumentCaptor<Throwable> throwableCaptor = ArgumentCaptor.forClass(Throwable.class);
-        verify(subscriber).onError(throwableCaptor.capture());
+        verifier.verify(subscriber).onError(throwableCaptor.capture());
         Throwable actualCause = throwableCaptor.getValue();
         verifySuppressed(actualCause, suppressedCause);
-        verifyNoMoreInteractions(subscriber);
+        verifier.verifyNoMoreInteractions();
         return this;
     }
 
     public MockedCompletableListenerRule verifyNoEmissions() {
-        assert subscriber != null;
         verify(subscriber).onSubscribe(any());
         verifyZeroInteractions(subscriber);
         return this;
@@ -155,5 +149,12 @@ public class MockedCompletableListenerRule implements TestRule {
 
     private void createSubscriber() {
         subscriber = mock(Completable.Subscriber.class);
+    }
+
+    private InOrder inOrderVerifier() {
+        assert subscriber != null;
+        final InOrder verifier = inOrder(subscriber);
+        verifier.verify(subscriber).onSubscribe(any());
+        return verifier;
     }
 }
