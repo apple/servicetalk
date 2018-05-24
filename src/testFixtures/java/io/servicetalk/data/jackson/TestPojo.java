@@ -64,7 +64,7 @@ public final class TestPojo {
      * @param myFloat a float.
      * @param myDouble a double.
      * @param myString a {@link String}.
-     * @param myStringArray an array of {@Link String}s.
+     * @param myStringArray an array of {@link String}s.
      * @param myPojo a {@link TestPojo}.
      */
     public TestPojo(boolean myBoolean, byte myByte, short myShort, char myChar, int myInt, long myLong, float myFloat,
