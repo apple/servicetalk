@@ -68,6 +68,9 @@ public final class AggregatingPayloadClient {
             final AggregatedHttpClient client = clientBuilder.buildAggregated(
                     executionContext, dnsDiscoverer.discover(new DefaultHostAndPort("localhost", 8080)));
 
+            // Register resources to be cleaned up at the end.
+            resources.concat(client, dnsDiscoverer, executionContext.getExecutor(), executionContext.getIoExecutor());
+
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
             // before the response has been processed. This isn't typical usage for a streaming API but is useful for
             // demonstration purposes.
@@ -93,8 +96,6 @@ public final class AggregatingPayloadClient {
 
             // Don't exit the main thread until after the response is completely processed.
             responseProcessedLatch.await();
-            // cleanup the AggregatedHttpClient, ServiceDiscoverer, and IoExecutor
-            resources.concat(client, dnsDiscoverer, executionContext.getExecutor(), executionContext.getIoExecutor());
         }
     }
 }

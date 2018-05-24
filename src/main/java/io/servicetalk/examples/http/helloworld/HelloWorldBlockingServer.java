@@ -51,8 +51,9 @@ public final class HelloWorldBlockingServer {
             IoExecutor ioExecutor = createIoExecutor();
             // Add it as a resource to be cleaned up at the end.
             resources.concat(ioExecutor);
-            HttpServerStarter starter = new DefaultHttpServerStarter(ioExecutor);
 
+            // Create configurable starter for HTTP server.
+            HttpServerStarter starter = new DefaultHttpServerStarter(ioExecutor);
             // Starting the server will start listening for incoming client requests.
             // TODO(scott): Executor offloading has a bug, so use immediate() for now.
             ServerContext serverContext = starter.start(8080, new HelloWorldBlockingService());

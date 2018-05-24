@@ -50,6 +50,8 @@ public final class StreamingBlockingServer {
             IoExecutor ioExecutor = createIoExecutor();
             // Add it as a resource to be cleaned up at the end.
             resources.concat(ioExecutor);
+
+            // Create configurable starter for HTTP server.
             DefaultHttpServerStarter starter = new DefaultHttpServerStarter(ioExecutor);
             starter.setWireLoggerName("server");
             // Starting the server will start listening for incoming client requests.

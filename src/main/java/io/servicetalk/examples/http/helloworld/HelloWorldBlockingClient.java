@@ -55,6 +55,9 @@ public final class HelloWorldBlockingClient {
             ServiceDiscoverer<HostAndPort, InetSocketAddress> dnsDiscoverer =
                     new Builder(executionContext).build().toHostAndPortDiscoverer();
 
+            // Register resources to be cleaned up at the end.
+            resources.concat(dnsDiscoverer, executionContext.getExecutor(), executionContext.getIoExecutor());
+
             // Create a ClientBuilder and use round robin load balancing.
             DefaultHttpClientBuilder<InetSocketAddress> clientBuilder =
                     new DefaultHttpClientBuilder<>(newRoundRobinFactory());
@@ -76,9 +79,8 @@ public final class HelloWorldBlockingClient {
                 LOGGER.info("converted string chunk '{}'", responseChunk.getContent().toString(US_ASCII));
             }
 
-            // cleanup the BlockingHttpClient, ServiceDiscoverer, and IoExecutor
+            // Close synchronous (blocking) client.
             client.close();
-            resources.concat(dnsDiscoverer, executionContext.getExecutor(), executionContext.getIoExecutor());
         }
     }
 }
