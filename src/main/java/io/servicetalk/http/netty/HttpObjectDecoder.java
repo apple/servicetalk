@@ -39,6 +39,7 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethods;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.LastHttpPayloadChunk;
+import io.servicetalk.transport.netty.internal.ByteToMessageDecoder;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
