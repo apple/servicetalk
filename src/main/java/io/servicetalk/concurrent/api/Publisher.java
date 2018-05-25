@@ -292,11 +292,30 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     }
 
     /**
-     * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of those {@link Single}s.
+     * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of
+     * those {@link Single}s.
+     * <p>
+     * To control the amount of concurrent processing done by this operator see {@link #flatMapSingle(Function, int)}.
+     *
+     * @param mapper Function to convert each item emitted by this {@link Publisher} into a {@link Single}.
+     * @param <R> Type of items emitted by the returned {@link Publisher}.
+     * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     * @see #flatMapSingle(Function, int)
+     */
+    public final <R> Publisher<R> flatMapSingle(Function<T, Single<R>> mapper) {
+        return new PublisherFlatmapSingle<>(this, mapper, false, executor);
+    }
+
+    /**
+     * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of
+     * those {@link Single}s.
      *
      * @param mapper Function to convert each item emitted by this {@link Publisher} into a {@link Single}.
      * @param maxConcurrency Maximum active {@link Single}s at any time.
-     *                       Even if the number of items requested by a {@link Subscriber} is more than this number, this will never request more than this number at any point.
+     * Even if the number of items requested by a {@link Subscriber} is more than this number, this will never request
+     * more than this number at any point.
      * @param <R> Type of items emitted by the returned {@link Publisher}.
      * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
      *
@@ -307,10 +326,34 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     }
 
     /**
-     * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of those {@link Single}s.
-     * This is the same as {@link #flatMapSingle(Function, int)} just that if any {@link Single} returned by {@code mapper}, terminates with an error,
-     * the returned {@link Publisher} will not immediately terminate. Instead, it will wait for this {@link Publisher} and all {@link Single}s to terminate and then
-     * terminate the returned {@link Publisher} with all errors emitted by the {@link Single}s produced by the {@code mapper}.
+     * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of
+     * those {@link Single}s. This is the same as {@link #flatMapSingle(Function, int)} just that if any {@link Single}
+     * returned by {@code mapper}, terminates with an error, the returned {@link Publisher} will not immediately
+     * terminate. Instead, it will wait for this {@link Publisher} and all {@link Single}s to terminate and then
+     * terminate the returned {@link Publisher} with all errors emitted by the {@link Single}s produced by the
+     * {@code mapper}.
+     * <p>
+     * To control the amount of concurrent processing done by this operator see
+     * {@link #flatMapSingleDelayError(Function, int)}.
+     *
+     * @param mapper Function to convert each item emitted by this {@link Publisher} into a {@link Single}.
+     * @param <R> Type of items emitted by the returned {@link Publisher}.
+     * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
+     * @see #flatMapSingleDelayError(Function, int)
+     */
+    public final <R> Publisher<R> flatMapSingleDelayError(Function<T, Single<R>> mapper) {
+        return new PublisherFlatmapSingle<>(this, mapper, true, executor);
+    }
+
+    /**
+     * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of
+     * those {@link Single}s. This is the same as {@link #flatMapSingle(Function, int)} just that if any {@link Single}
+     * returned by {@code mapper}, terminates with an error, the returned {@link Publisher} will not immediately
+     * terminate. Instead, it will wait for this {@link Publisher} and all {@link Single}s to terminate and then
+     * terminate the returned {@link Publisher} with all errors emitted by the {@link Single}s produced by the
+     * {@code mapper}.
      *
      * @param mapper Function to convert each item emitted by this {@link Publisher} into a {@link Single}.
      * @param maxConcurrency Maximum active {@link Single}s at any time.
