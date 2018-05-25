@@ -83,9 +83,9 @@ public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
      * @throws IllegalStateException if the {@link SslConfig#getKeyCertChainSupplier()}, {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()}
      * throws when {@link InputStream#close()} is called.
      */
-    public TcpServerConfig sni(@Nullable Map<String, SslConfig> mappings, SslConfig defaultConfig) {
+    public TcpServerConfig setSniConfig(@Nullable Map<String, SslConfig> mappings, SslConfig defaultConfig) {
         if (sslContext != null) {
-            throw new IllegalStateException("withSsl(...) was already used");
+            throw new IllegalStateException("setSslConfig(...) was already used");
         } else {
             if (mappings != null) {
                 DomainMappingBuilder<SslContext> builder = new DomainMappingBuilder<>(forServer(defaultConfig));
@@ -112,7 +112,7 @@ public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
     public TcpServerConfig setSslConfig(@Nullable SslConfig config) {
         if (config != null) {
             if (mappings != null) {
-                throw new IllegalStateException("withSni(...) was already used");
+                throw new IllegalStateException("setSniConfig(...) was already used");
             }
             sslContext = forServer(config);
         } else {
