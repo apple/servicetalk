@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.context.AsyncContextMap;
 import io.servicetalk.concurrent.context.AsyncContextMap.Key;
 
 import org.apache.logging.log4j.spi.CleanableThreadContextMap;
+import org.apache.logging.log4j.spi.ReadOnlyThreadContextMap;
 import org.apache.logging.log4j.util.BiConsumer;
 import org.apache.logging.log4j.util.ReadOnlyStringMap;
 import org.apache.logging.log4j.util.StringMap;
@@ -32,36 +33,36 @@ import javax.annotation.Nullable;
 
 import static java.util.Collections.unmodifiableMap;
 
-public class ServiceTalkThreadContextMap implements CleanableThreadContextMap {
+public class ServiceTalkThreadContextMap implements ReadOnlyThreadContextMap, CleanableThreadContextMap {
     private static final Key<Map<String, String>> key = Key.newKeyWithDebugToString("log4j2Mdc");
 
     @Override
-    public void put(String key, String value) {
+    public final void put(String key, String value) {
         getStorage().put(key, value);
     }
 
     @Override
-    public String get(String key) {
+    public final String get(String key) {
         return getStorage().get(key);
     }
 
     @Override
-    public void remove(String key) {
+    public final void remove(String key) {
         getStorage().remove(key);
     }
 
     @Override
-    public void clear() {
+    public final void clear() {
         getStorage().clear();
     }
 
     @Override
-    public boolean containsKey(String key) {
+    public final boolean containsKey(String key) {
         return getStorage().containsKey(key);
     }
 
     @Override
-    public Map<String, String> getCopy() {
+    public final Map<String, String> getCopy() {
         return getCopy(getStorage());
     }
 
@@ -71,7 +72,7 @@ public class ServiceTalkThreadContextMap implements CleanableThreadContextMap {
 
     @Nullable
     @Override
-    public Map<String, String> getImmutableMapOrNull() {
+    public final Map<String, String> getImmutableMapOrNull() {
         final Map<String, String> storage = getStorage();
         if (storage.isEmpty()) {
             return null;
@@ -84,23 +85,23 @@ public class ServiceTalkThreadContextMap implements CleanableThreadContextMap {
     }
 
     @Override
-    public boolean isEmpty() {
+    public final boolean isEmpty() {
         return getStorage().isEmpty();
     }
 
     @Override
-    public void removeAll(Iterable<String> keys) {
+    public final void removeAll(Iterable<String> keys) {
         final Map<String, String> storage = getStorage();
         keys.forEach(storage::remove);
     }
 
     @Override
-    public void putAll(Map<String, String> map) {
+    public final void putAll(Map<String, String> map) {
         getStorage().putAll(map);
     }
 
     @Override
-    public StringMap getReadOnlyContextData() {
+    public final StringMap getReadOnlyContextData() {
         return new StringMap() {
             private static final long serialVersionUID = -1707426073379541244L;
 
