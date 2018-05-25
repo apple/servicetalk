@@ -157,8 +157,8 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
      * @throws IllegalStateException if the {@link SslConfig#getKeyCertChainSupplier()}, {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()}
      * throws when {@link InputStream#close()} is called.
      */
-    public DefaultHttpServerStarter sni(@Nullable final Map<String, SslConfig> mappings, final SslConfig defaultConfig) {
-        config.getTcpConfig().sni(mappings, defaultConfig);
+    public DefaultHttpServerStarter setSniConfig(@Nullable final Map<String, SslConfig> mappings, final SslConfig defaultConfig) {
+        config.getTcpConfig().setSniConfig(mappings, defaultConfig);
         return this;
     }
 
