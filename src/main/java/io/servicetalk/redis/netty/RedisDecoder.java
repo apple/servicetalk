@@ -17,16 +17,15 @@ package io.servicetalk.redis.netty;
 
 import io.servicetalk.buffer.netty.BufferUtil;
 import io.servicetalk.redis.api.RedisData;
+import io.servicetalk.transport.netty.internal.ByteToMessageDecoder;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.util.ByteProcessor;
 import io.netty.util.CharsetUtil;
 import io.netty.util.internal.PlatformDependent;
 
-import java.util.List;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.redis.internal.RedisUtils.EOL_LENGTH;
@@ -78,7 +77,7 @@ final class RedisDecoder extends ByteToMessageDecoder {
     }
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+    protected void decode(final ChannelHandlerContext ctx, final ByteBuf in) {
         try {
             for (;;) {
                 switch (state) {
@@ -88,22 +87,22 @@ final class RedisDecoder extends ByteToMessageDecoder {
                         }
                         break;
                     case DECODE_INLINE:
-                        if (!decodeInline(in, out)) {
+                        if (!decodeInline(in, ctx)) {
                             return;
                         }
                         break;
                     case DECODE_LENGTH:
-                        if (!decodeLength(in, out)) {
+                        if (!decodeLength(in, ctx)) {
                             return;
                         }
                         break;
                     case DECODE_BULK_STRING_EOL:
-                        if (!decodeBulkStringEndOfLine(in, out)) {
+                        if (!decodeBulkStringEndOfLine(in, ctx)) {
                             return;
                         }
                         break;
                     case DECODE_BULK_STRING_CONTENT:
-                        if (!decodeBulkStringContent(in, out)) {
+                        if (!decodeBulkStringContent(in, ctx)) {
                             return;
                         }
                         break;
@@ -131,7 +130,7 @@ final class RedisDecoder extends ByteToMessageDecoder {
         return true;
     }
 
-    private boolean decodeInline(ByteBuf in, List<Object> out) {
+    private boolean decodeInline(ByteBuf in, ChannelHandlerContext ctx) {
         ByteBuf lineBytes = readLine(in);
         if (lineBytes == null) {
             if (in.readableBytes() > maxInlineMessageLength) {
@@ -140,12 +139,12 @@ final class RedisDecoder extends ByteToMessageDecoder {
             }
             return false;
         }
-        out.add(newInlineRedisData(type, lineBytes));
         resetDecoder();
+        ctx.fireChannelRead(newInlineRedisData(type, lineBytes));
         return true;
     }
 
-    private boolean decodeLength(ByteBuf in, List<Object> out) {
+    private boolean decodeLength(ByteBuf in, ChannelHandlerContext ctx) {
         ByteBuf lineByteBuf = readLine(in);
         if (lineByteBuf == null) {
             return false;
@@ -156,12 +155,12 @@ final class RedisDecoder extends ByteToMessageDecoder {
         }
         switch (type) {
             case ARRAY_HEADER:
-                if (length == NULL_VALUE) {
-                    out.add(RedisData.NULL);
-                } else {
-                    out.add(new RedisData.ArraySize(length));
-                }
                 resetDecoder();
+                if (length == NULL_VALUE) {
+                    ctx.fireChannelRead(RedisData.NULL);
+                } else {
+                    ctx.fireChannelRead(new RedisData.ArraySize(length));
+                }
                 return true;
             case BULK_STRING:
                 if (length > REDIS_MESSAGE_MAX_LENGTH) {
@@ -169,45 +168,45 @@ final class RedisDecoder extends ByteToMessageDecoder {
                             REDIS_MESSAGE_MAX_LENGTH + ")");
                 }
                 remainingBulkLength = (int) length; // range(int) is already checked.
-                return decodeBulkString(in, out);
+                return decodeBulkString(in, ctx);
             default:
                 throw new RedisCodecException("bad type: " + type);
         }
     }
 
-    private boolean decodeBulkString(ByteBuf in, List<Object> out) {
+    private boolean decodeBulkString(ByteBuf in, ChannelHandlerContext ctx) {
         switch (remainingBulkLength) {
             case NULL_VALUE: // $-1\r\n
-                out.add(RedisData.NULL);
                 resetDecoder();
+                ctx.fireChannelRead(RedisData.NULL);
                 return true;
             case 0:
                 state = State.DECODE_BULK_STRING_EOL;
-                return decodeBulkStringEndOfLine(in, out);
+                return decodeBulkStringEndOfLine(in, ctx);
             default: // expectedBulkLength is always positive.
-                if (remainingBulkLength == NULL_LENGTH) {
-                    out.add(RedisData.NULL);
-                } else {
-                    out.add(new RedisData.BulkStringSize(remainingBulkLength));
-                }
                 state = State.DECODE_BULK_STRING_CONTENT;
-                return decodeBulkStringContent(in, out);
+                if (remainingBulkLength == NULL_LENGTH) {
+                    ctx.fireChannelRead(RedisData.NULL);
+                } else {
+                    ctx.fireChannelRead(new RedisData.BulkStringSize(remainingBulkLength));
+                }
+                return decodeBulkStringContent(in, ctx);
         }
     }
 
     // $0\r\n <here> \r\n
-    private boolean decodeBulkStringEndOfLine(ByteBuf in, List<Object> out) {
+    private boolean decodeBulkStringEndOfLine(ByteBuf in, ChannelHandlerContext ctx) {
         if (in.readableBytes() < EOL_LENGTH) {
             return false;
         }
         readEndOfLine(in);
-        out.add(EMPTY_INSTANCE);
         resetDecoder();
+        ctx.fireChannelRead(EMPTY_INSTANCE);
         return true;
     }
 
     // ${expectedBulkLength}\r\n <here> {data...}\r\n
-    private boolean decodeBulkStringContent(ByteBuf in, List<Object> out) {
+    private boolean decodeBulkStringContent(ByteBuf in, ChannelHandlerContext ctx) {
         final int readableBytes = in.readableBytes();
         if (readableBytes == 0 || remainingBulkLength == 0 && readableBytes < EOL_LENGTH) {
             return false;
@@ -217,16 +216,16 @@ final class RedisDecoder extends ByteToMessageDecoder {
         if (readableBytes >= remainingBulkLength + EOL_LENGTH) {
             ByteBuf content = in.readSlice(remainingBulkLength);
             readEndOfLine(in);
-            // Only call retain after readEndOfLine(...) as the method may throw an exception.
-            out.add(new RedisData.LastBulkStringChunk(BufferUtil.newBufferFrom(content.retain())));
             resetDecoder();
+            // Only call retain after readEndOfLine(...) as the method may throw an exception.
+            ctx.fireChannelRead(new RedisData.LastBulkStringChunk(BufferUtil.newBufferFrom(content.retain())));
             return true;
         }
 
         // chunked write.
         int toRead = Math.min(remainingBulkLength, readableBytes);
         remainingBulkLength -= toRead;
-        out.add(new RedisData.BulkStringChunk(BufferUtil.newBufferFrom(in.readSlice(toRead).retain())));
+        ctx.fireChannelRead(new RedisData.BulkStringChunk(BufferUtil.newBufferFrom(in.readSlice(toRead).retain())));
         return true;
     }
 
