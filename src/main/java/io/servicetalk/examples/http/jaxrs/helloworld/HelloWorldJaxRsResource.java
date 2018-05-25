@@ -60,6 +60,9 @@ public class HelloWorldJaxRsResource {
      * curl http://localhost:8080/greetings/hello
      * curl http://localhost:8080/greetings/hello?who=turnip
      * </pre>
+     *
+     * @param who the recipient of the greetings.
+     * @return greetings as a {@link String}.
      */
     @GET
     @Path("hello")
@@ -76,6 +79,9 @@ public class HelloWorldJaxRsResource {
      * curl -X POST -H 'accept: application/json' http://localhost:8080/greetings/hello
      * curl -H 'content-type: application/json' -d '{"who":"turnip"}' http://localhost:8080/greetings/hello
      * </pre>
+     *
+     * @param salutation a {@link Map} that provides salutation data.
+     * @return greetings as a {@link Map}.
      */
     @POST
     @Path("hello")
@@ -94,6 +100,10 @@ public class HelloWorldJaxRsResource {
      * curl http://localhost:8080/greetings/slow-hello
      * curl http://localhost:8080/greetings/slow-hello?who=doctor
      * </pre>
+     *
+     * @param who the recipient of the greetings.
+     * @param ctx the {@link ConnectionContext}.
+     * @return future greetings as a {@link CompletionStage} of {@link String}.
      */
     @GET
     @Path("slow-hello")
@@ -118,6 +128,10 @@ public class HelloWorldJaxRsResource {
      * <pre>
      * curl -H 'content-type: text/plain' -d 'dolly' http://localhost:8080/greetings/hello
      * </pre>
+     *
+     * @param who the recipient of the greetings.
+     * @param ctx the {@link ConnectionContext}.
+     * @return greetings as a {@link Publisher} of {@link HttpPayloadChunk}.
      */
     @POST
     @Path("hello")
@@ -147,6 +161,10 @@ public class HelloWorldJaxRsResource {
      * <pre>
      * curl -i -H 'content-type: text/plain' -d 'kitty' http://localhost:8080/greetings/random-hello
      * </pre>
+     *
+     * @param who the recipient of the greetings.
+     * @param ctx the {@link ConnectionContext}.
+     * @return greetings as a JAX-RS {@link Response}.
      */
     @POST
     @Path("random-hello")
