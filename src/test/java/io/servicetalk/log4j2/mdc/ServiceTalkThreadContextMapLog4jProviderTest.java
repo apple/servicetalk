@@ -13,27 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-buildscript {
-  if (!repositories) {
-    repositories {
-      jcenter()
-      maven { url "https://plugins.gradle.org/m2/" }
+package io.servicetalk.log4j2.mdc;
+
+import io.servicetalk.log4j2.mdc.internal.ServiceTalkThreadContextMap;
+
+import org.apache.logging.log4j.ThreadContext;
+import org.junit.Test;
+
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
+public class ServiceTalkThreadContextMapLog4jProviderTest {
+    @Test
+    public void testProviderLoadsClass() {
+        assertThat(ThreadContext.getThreadContextMap(), is(instanceOf(ServiceTalkThreadContextMap.class)));
     }
-  }
-
-  dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.1.0-SNAPSHOT"
-  }
-}
-
-apply plugin: "servicetalk-library"
-
-dependencies {
-  api "io.servicetalk:servicetalk-bom-internal:0.1.0-SNAPSHOT"
-
-  api "com.google.code.findbugs:jsr305"
-  api "io.servicetalk:servicetalk-log4j2-mdc-internal:0.1.0-SNAPSHOT"
-
-  testImplementation "junit:junit"
-  testImplementation "org.hamcrest:hamcrest-library"
 }

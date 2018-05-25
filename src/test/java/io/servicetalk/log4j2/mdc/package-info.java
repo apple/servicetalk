@@ -13,27 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-buildscript {
-  if (!repositories) {
-    repositories {
-      jcenter()
-      maven { url "https://plugins.gradle.org/m2/" }
-    }
-  }
+@ElementsAreNonnullByDefault
+package io.servicetalk.log4j2.mdc;
 
-  dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.1.0-SNAPSHOT"
-  }
-}
-
-apply plugin: "servicetalk-library"
-
-dependencies {
-  api "io.servicetalk:servicetalk-bom-internal:0.1.0-SNAPSHOT"
-
-  api "com.google.code.findbugs:jsr305"
-  api "io.servicetalk:servicetalk-log4j2-mdc-internal:0.1.0-SNAPSHOT"
-
-  testImplementation "junit:junit"
-  testImplementation "org.hamcrest:hamcrest-library"
-}
+import io.servicetalk.annotations.ElementsAreNonnullByDefault;
