@@ -22,7 +22,7 @@ import io.servicetalk.client.internal.DefaultHostAndPort;
 import io.servicetalk.client.internal.HostAndPort;
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.CompositeCloseable;
-import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscoverer;
+import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
 import io.servicetalk.http.api.AggregatedHttpClient;
 import io.servicetalk.http.api.AggregatedHttpRequest;
 import io.servicetalk.http.api.HttpPayloadChunk;
@@ -58,7 +58,7 @@ public final class AggregatingPayloadClient {
 
             // In this example we will use DNS as our Service Discovery system.
             ServiceDiscoverer<HostAndPort, InetSocketAddress> dnsDiscoverer =
-                    new DefaultDnsServiceDiscoverer.Builder(executionContext).build().toHostAndPortDiscoverer();
+                    new DefaultDnsServiceDiscovererBuilder(executionContext).build();
 
             // Create a ClientBuilder and use round robin load balancing.
             DefaultHttpClientBuilder<InetSocketAddress> clientBuilder =

@@ -20,7 +20,7 @@ import io.servicetalk.client.internal.DefaultHostAndPort;
 import io.servicetalk.client.internal.HostAndPort;
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.CompositeCloseable;
-import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscoverer.Builder;
+import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpRequest;
 import io.servicetalk.http.api.BlockingHttpResponse;
@@ -58,7 +58,7 @@ public final class StreamingBlockingClient {
 
             // In this example we will use DNS as our Service Discovery system.
             ServiceDiscoverer<HostAndPort, InetSocketAddress> dnsDiscoverer =
-                    new Builder(executionContext).build().toHostAndPortDiscoverer();
+                    new DefaultDnsServiceDiscovererBuilder(executionContext).build();
 
             // Register resources to be cleaned up at the end.
             resources.concat(dnsDiscoverer, executionContext.getExecutor(), executionContext.getIoExecutor());
