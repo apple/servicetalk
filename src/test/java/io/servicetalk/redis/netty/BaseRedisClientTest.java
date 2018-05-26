@@ -21,7 +21,7 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.internal.DefaultHostAndPort;
 import io.servicetalk.client.internal.HostAndPort;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscoverer;
+import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancer;
 import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisData.BulkStringChunk;
@@ -94,8 +94,7 @@ public abstract class BaseRedisClientTest {
         redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
 
         ioExecutor = toEventLoopAwareNettyIoExecutor(createIoExecutor());
-        serviceDiscoverer = new DefaultDnsServiceDiscoverer.Builder(ioExecutor.next(), immediate()).build()
-                .toHostAndPortDiscoverer();
+        serviceDiscoverer = new DefaultDnsServiceDiscovererBuilder(ioExecutor.next(), immediate()).build();
         RedisClientConfig config = new RedisClientConfig(new TcpClientConfig(false))
                 .setDeferSubscribeTillConnect(true);
         client = new RetryingRedisClient(new DefaultRedisClientBuilder<InetSocketAddress>(

@@ -21,7 +21,7 @@ import io.servicetalk.client.internal.DefaultHostAndPort;
 import io.servicetalk.client.internal.HostAndPort;
 import io.servicetalk.concurrent.internal.PlatformDependent;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscoverer;
+import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancer;
 import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisCommander;
@@ -160,8 +160,7 @@ public class RedisAuthConnectionFactoryClientTest {
         redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
 
         ioExecutor = toEventLoopAwareNettyIoExecutor(createIoExecutor());
-        serviceDiscoverer = new DefaultDnsServiceDiscoverer.Builder(ioExecutor.next(), immediate()).build()
-                .toHostAndPortDiscoverer();
+        serviceDiscoverer = new DefaultDnsServiceDiscovererBuilder(ioExecutor.next(), immediate()).build();
         client = new RetryingRedisClient(
                 new DefaultRedisClientBuilder<InetSocketAddress>((eventPublisher, connectionFactory) -> new RoundRobinLoadBalancer<>(eventPublisher, new RedisAuthConnectionFactory<>(connectionFactory, ctx -> ctx.getBufferAllocator().fromAscii(password)), comparingInt(Object::hashCode)))
                         .setMaxPipelinedRequests(10)
