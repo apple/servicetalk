@@ -25,7 +25,6 @@ import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
-import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
@@ -57,14 +56,13 @@ import static io.servicetalk.concurrent.api.Publisher.error;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChannel;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
-import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.function.Function.identity;
 
 /**
  * Default load balancer which will attempt to resolve A, AAAA, and CNAME type queries.
  */
-public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<String, InetAddress> {
+final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<String, InetAddress> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultDnsServiceDiscoverer.class);
 
@@ -98,124 +96,11 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
     private final DnsNameResolver resolver;
     private boolean closed;
 
-    /**
-     * Builder use to create objects of type {@link DefaultDnsServiceDiscoverer}.
-     */
-    public static final class Builder {
-        private final IoExecutor ioExecutor;
-        private final Executor executor;
-        @Nullable
-        private DnsServerAddressStreamProvider dnsServerAddressStreamProvider;
-        @Nullable
-        private DnsResolverAddressTypes dnsResolverAddressTypes;
-        @Nullable
-        private Integer ndots;
-        @Nullable
-        private Boolean optResourceEnabled;
-        @Nullable
-        private BiIntFunction<Throwable, Completable> retryStrategy;
-        private int minTTLSeconds = 2;
-
-        /**
-         * Create a new instance.
-         * @param executionContext The {@link ExecutionContext} which determines the threading model for I/O and calling
-         * user code.
-         */
-        public Builder(ExecutionContext executionContext) {
-            this(executionContext.getIoExecutor(), executionContext.getExecutor());
-        }
-
-        /**
-         * Create a new instance.
-         * @param ioExecutor The {@link IoExecutor} which will be used for I/O.
-         * @param executor The {@link Executor} which will be used for calling user code.
-         */
-        public Builder(IoExecutor ioExecutor, Executor executor) {
-            this.ioExecutor = requireNonNull(ioExecutor);
-            this.executor = requireNonNull(executor);
-        }
-
-        /**
-         * The minimum allowed TTL. This will be the minimum poll interval.
-         * @param minTTLSeconds The minimum amount of time a cache entry will be considered valid (in seconds).
-         * @return {@code this}.
-         */
-        public Builder setMinTTL(int minTTLSeconds) {
-            if (minTTLSeconds < 1) {
-                throw new IllegalArgumentException("minTTLSeconds: " + minTTLSeconds + " (expected > 1)");
-            }
-            this.minTTLSeconds = minTTLSeconds;
-            return this;
-        }
-
-        /**
-         * Set the {@link DnsServerAddressStreamProvider} which determines which DNS server should be used per query.
-         * @param dnsServerAddressStreamProvider the {@link DnsServerAddressStreamProvider} which determines which DNS server should be used per query.
-         * @return {@code this}.
-         */
-        public Builder setDnsServerAddressStreamProvider(@Nullable DnsServerAddressStreamProvider dnsServerAddressStreamProvider) {
-            this.dnsServerAddressStreamProvider = dnsServerAddressStreamProvider;
-            return this;
-        }
-
-        /**
-         * Enable the automatic inclusion of a optional records that tries to give the remote DNS server a hint about
-         * how much data the resolver can read per response. Some DNSServer may not support this and so fail to answer
-         * queries. If you find problems you may want to disable this.
-         * @param optResourceEnabled if optional records inclusion is enabled.
-         * @return {@code this}.
-         */
-        public Builder setOptResourceEnabled(boolean optResourceEnabled) {
-            this.optResourceEnabled = optResourceEnabled;
-            return this;
-        }
-
-        /**
-         * Set the number of dots which must appear in a name before an initial absolute query is made.
-         * The default value is {@code 1}.
-         * @param ndots the ndots value.
-         * @return {@code this}.
-         */
-        public Builder setNdots(int ndots) {
-            this.ndots = ndots;
-            return this;
-        }
-
-        /**
-         * Sets the list of the protocol families of the address resolved.
-         * @param dnsResolverAddressTypes the address types.
-         * @return {@code this}.
-         */
-        public Builder setDnsResolverAddressTypes(@Nullable DnsResolverAddressTypes dnsResolverAddressTypes) {
-            this.dnsResolverAddressTypes = dnsResolverAddressTypes;
-            return this;
-        }
-
-        /**
-         * Configures retry strategy if DNS lookup fails.
-         * @param retryStrategy Retry strategy to use for retrying DNS lookup failures.
-         * @return {@code this}.
-         */
-        public Builder retryDnsFailures(BiIntFunction<Throwable, Completable> retryStrategy) {
-            this.retryStrategy = retryStrategy;
-            return this;
-        }
-
-        /**
-         * Build a new instance of {@link DefaultDnsServiceDiscoverer}.
-         * @return a new instance of {@link DefaultDnsServiceDiscoverer}.
-         */
-        public DefaultDnsServiceDiscoverer build() {
-            return new DefaultDnsServiceDiscoverer(ioExecutor, executor, retryStrategy, minTTLSeconds, ndots,
-                    optResourceEnabled, dnsResolverAddressTypes, dnsServerAddressStreamProvider);
-        }
-    }
-
-    private DefaultDnsServiceDiscoverer(IoExecutor ioExecutor, Executor executor,
-                                        @Nullable BiIntFunction<Throwable, Completable> retryStrategy, int minTTL,
-                                        @Nullable Integer ndots, @Nullable Boolean optResourceEnabled,
-                                        @Nullable DnsResolverAddressTypes dnsResolverAddressTypes,
-                                        @Nullable DnsServerAddressStreamProvider dnsServerAddressStreamProvider) {
+    DefaultDnsServiceDiscoverer(IoExecutor ioExecutor, Executor executor,
+                                @Nullable BiIntFunction<Throwable, Completable> retryStrategy, int minTTL,
+                                @Nullable Integer ndots, @Nullable Boolean optResourceEnabled,
+                                @Nullable DnsResolverAddressTypes dnsResolverAddressTypes,
+                                @Nullable DnsServerAddressStreamProvider dnsServerAddressStreamProvider) {
         // Implementation of this class expects to use only single EventLoop from IoExecutor
         this.nettyIoExecutor = toEventLoopAwareNettyIoExecutor(ioExecutor).next();
         this.executor = executor;
@@ -344,10 +229,11 @@ public final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<Stri
     /**
      * Convert this object from {@link String} host names and {@link InetAddress} resolved address to
      * {@link HostAndPort} to {@link InetSocketAddress}.
+     *
      * @return a resolver which will convert from {@link String} host names and {@link InetAddress} resolved address to
      * {@link HostAndPort} to {@link InetSocketAddress}.
      */
-    public ServiceDiscoverer<HostAndPort, InetSocketAddress> toHostAndPortDiscoverer() {
+    ServiceDiscoverer<HostAndPort, InetSocketAddress> toHostAndPortDiscoverer() {
         return new ServiceDiscoverer<HostAndPort, InetSocketAddress>() {
             @Override
             public Completable closeAsync() {

@@ -15,6 +15,7 @@
  */
 package io.servicetalk.dns.discovery.netty;
 
+import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscoverer.Event;
 import io.servicetalk.client.servicediscoverer.ServiceDiscovererTestSubscriber;
 import io.servicetalk.concurrent.api.BiIntFunction;
@@ -67,7 +68,7 @@ public class DefaultDnsServiceDiscovererTest {
 
     private static EventLoopAwareNettyIoExecutor nettyIoExecutor;
     private static TestDnsServer dnsServer;
-    private DefaultDnsServiceDiscoverer discoverer;
+    private ServiceDiscoverer<String, InetAddress> discoverer;
 
     @BeforeClass
     public static void beforeClass() throws Exception {
@@ -95,7 +96,7 @@ public class DefaultDnsServiceDiscovererTest {
     @Test
     public void testRetry() throws Exception {
         AtomicInteger retryStrategyCalledCount = new AtomicInteger();
-        DefaultDnsServiceDiscoverer retryingDiscoverer = buildServiceDiscoverer((retryCount, cause) -> {
+        ServiceDiscoverer<String, InetAddress> retryingDiscoverer = buildServiceDiscoverer((retryCount, cause) -> {
             retryStrategyCalledCount.incrementAndGet();
             return retryCount == 1 && cause instanceof UnknownHostException ? completed() : error(cause);
         });
@@ -177,7 +178,7 @@ public class DefaultDnsServiceDiscovererTest {
 
     @Test
     public void repeatDiscoverMultipleHosts() throws InterruptedException {
-        DefaultDnsServiceDiscoverer discoverer = buildServiceDiscoverer(null);
+        ServiceDiscoverer<String, InetAddress> discoverer = buildServiceDiscoverer(null);
 
         CountDownLatch appleLatch = new CountDownLatch(2);
         CountDownLatch stLatch = new CountDownLatch(2);
@@ -204,7 +205,7 @@ public class DefaultDnsServiceDiscovererTest {
     @Test(expected = ExecutionException.class)
     public void exceptionInSubscriberOnErrorWhileClose() throws Exception {
         CountDownLatch latchOnSubscribe = new CountDownLatch(1);
-        DefaultDnsServiceDiscoverer discoverer = buildServiceDiscoverer(null);
+        ServiceDiscoverer<String, InetAddress> discoverer = buildServiceDiscoverer(null);
         Subscriber<Event<InetAddress>> subscriber = mock(Subscriber.class);
 
         try {
@@ -223,11 +224,11 @@ public class DefaultDnsServiceDiscovererTest {
         }
     }
 
-    private static DefaultDnsServiceDiscoverer buildServiceDiscoverer(
+    private static ServiceDiscoverer<String, InetAddress> buildServiceDiscoverer(
             @Nullable BiIntFunction<Throwable, Completable> retryStrategy) {
 
-        DefaultDnsServiceDiscoverer.Builder builder =
-                new DefaultDnsServiceDiscoverer.Builder(nettyIoExecutor, immediate())
+        DefaultDnsServiceDiscovererBuilder builder =
+                new DefaultDnsServiceDiscovererBuilder(nettyIoExecutor, immediate())
                 .setDnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_ONLY)
                 .setOptResourceEnabled(false)
                 .setDnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(
@@ -237,6 +238,6 @@ public class DefaultDnsServiceDiscovererTest {
         if (retryStrategy != null) {
             builder.retryDnsFailures(retryStrategy);
         }
-        return builder.build();
+        return builder.buildInetDiscoverer();
     }
 }
