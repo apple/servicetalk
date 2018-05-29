@@ -131,7 +131,7 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
         }
         if (isRequestNValid(n)) {
             requestCount = addWithOverflowProtection(requestCount, n);
-            if (!processPending(forSubscriber) && !requested) {
+            if (!processPending(forSubscriber) && !requested && requestCount > 0) {
                 // If subscriber wasn't terminated from the queue, then request more.
                 requestChannel();
             }
