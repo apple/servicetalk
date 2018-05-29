@@ -46,28 +46,31 @@ public final class SslUtils {
      *
      * @param context the {@link SslContext} which will be used to create the {@link SslHandler}
      * @param allocator the {@link ByteBufAllocator} which will be used
-     * @param remote the {@link InetSocketAddress} of the remote peer.
      * @param hostnameVerificationAlgorithm see {@link SSLParameters#setEndpointIdentificationAlgorithm(String)}.
      *                                      If this is {@code null} or empty then you will be vulnerable to a MITM attack.
+     * @param hostnameVerificationHost the non-authoritative name of the host.
+     * @param hostnameVerificationPort the non-authoritative port.
      * @return a {@link SslHandler}
      */
-    public static SslHandler newHandler(SslContext context, ByteBufAllocator allocator, InetSocketAddress remote,
-                                        String hostnameVerificationAlgorithm) {
-        String hostname = remote.getHostString();
-        if (hostname == null) {
+    public static SslHandler newHandler(SslContext context, ByteBufAllocator allocator,
+                                        @Nullable String hostnameVerificationAlgorithm,
+                                        @Nullable String hostnameVerificationHost,
+                                        int hostnameVerificationPort) {
+        if (hostnameVerificationHost == null) {
             return newHandler(context, allocator);
         }
 
-        SslHandler handler = context.newHandler(allocator, hostname, remote.getPort());
+        SslHandler handler = context.newHandler(allocator, hostnameVerificationHost, hostnameVerificationPort);
         SSLEngine engine = handler.engine();
         try {
             SSLParameters parameters = engine.getSSLParameters();
             parameters.setEndpointIdentificationAlgorithm(hostnameVerificationAlgorithm);
-            if (!NetUtil.isValidIpV4Address(hostname) && !NetUtil.isValidIpV6Address(hostname)) {
+            if (!NetUtil.isValidIpV4Address(hostnameVerificationHost) &&
+                    !NetUtil.isValidIpV6Address(hostnameVerificationHost)) {
                 // SNI doesn't permit IP addresses!
                 // https://tools.ietf.org/html/rfc6066#section-3
                 // Literal IPv4 and IPv6 addresses are not permitted in "HostName".
-                parameters.setServerNames(Collections.singletonList(new SNIHostName(hostname)));
+                parameters.setServerNames(Collections.singletonList(new SNIHostName(hostnameVerificationHost)));
             }
             engine.setSSLParameters(parameters);
         } catch (Throwable cause) {
