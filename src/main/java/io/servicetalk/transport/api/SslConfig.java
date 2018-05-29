@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManagerFactory;
 
@@ -29,28 +30,28 @@ import javax.net.ssl.TrustManagerFactory;
 public interface SslConfig {
 
     /**
-     * Indicates the state of the {@link javax.net.ssl.SSLEngine} with respect to client authentication.
+     * Indicates the state of the {@link SSLEngine} with respect to client authentication.
      * This configuration item really only applies when building the server-side {@link SslConfig}.
      */
     enum ClientAuth {
         /**
-         * Indicates that the {@link javax.net.ssl.SSLEngine} will not request client authentication.
+         * Indicates that the {@link SSLEngine} will not request client authentication.
          */
         NONE,
 
         /**
-         * Indicates that the {@link javax.net.ssl.SSLEngine} will request client authentication.
+         * Indicates that the {@link SSLEngine} will request client authentication.
          */
         OPTIONAL,
 
         /**
-         * Indicates that the {@link javax.net.ssl.SSLEngine} will *require* client authentication.
+         * Indicates that the {@link SSLEngine} will *require* client authentication.
          */
         REQUIRE
     }
 
     /**
-     * The provider to use for {@link javax.net.ssl.SSLEngine}.
+     * The provider to use for {@link SSLEngine}.
      */
     enum SslProvider {
         /**
@@ -175,14 +176,28 @@ public interface SslConfig {
     List<String> getProtocols();
 
     /**
-     * Determines what algorithm to use for hostname verification.
-     * <p>
-     * Disable at your own risk! Disabling this will leave you vulnerable to MITM attacks.
-     * <p>
-     * Currently only support for client use cases.
+     * Determines what algorithm to use for hostname verification using the
+     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
      * @return the algorithm to use for hostname verification.
      * @see SSLParameters#setEndpointIdentificationAlgorithm(String)
      */
     @Nullable
     String getHostnameVerificationAlgorithm();
+
+    /**
+     * The host name used to verify the <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
+     * @return The host name used to verify the
+     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
+     */
+    @Nullable
+    String getHostnameVerificationHost();
+
+    /**
+     * The port which maybe used to verify the
+     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>. If the port is used or not
+     * determines on the {@link SSLEngine} implementation and protocol.
+     * @return The port which maybe used to verify the
+     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
+     */
+    int getHostnameVerificationPort();
 }

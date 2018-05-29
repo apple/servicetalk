@@ -16,14 +16,16 @@
 package io.servicetalk.transport.api;
 
 import java.io.InputStream;
+import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManagerFactory;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Builder for configuring a new SslContext for creation.
@@ -56,18 +58,73 @@ public final class SslConfigBuilder {
     private List<String> protocols;
     @Nullable
     private String hostNameVerificationAlgorithm = DEFAULT_HOSTNAME_VERIFICATION_ALGORITHM;
+    @Nullable
+    private String hostNameVerificationHost;
+    /**
+     * Only valid if {@link #hostNameVerificationHost} is valid;
+     */
+    private int hostNameVerificationPort = -1;
 
     private SslConfigBuilder(boolean forServer) {
         this.forServer = forServer;
     }
 
+    private SslConfigBuilder(String hostName, int port) {
+        hostNameVerificationHost = requireNonNull(hostName);
+        hostNameVerificationPort = port;
+        forServer = false; // host name verification currently only support on the client
+    }
+
     /**
      * Creates a builder for new client-side {@link SslConfig}.
+     * <p>
+     * This method does not have enough information to ensure
+     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a> is verified. Use
+     * {@link #forClient(String, int)} instead for
+     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a> verification.
      *
      * @return a new {@link SslConfigBuilder} for clients.
      */
-    public static SslConfigBuilder forClient() {
+    public static SslConfigBuilder forClientWithoutServerIdentity() {
         return new SslConfigBuilder(false);
+    }
+
+    /**
+     * Creates a builder for new client-side {@link SslConfig} which verifies the
+     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
+     *
+     * @param hostName The non-authoritative name of the host. This is used to verify the
+     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
+     * @param port The non-authoritative port. This maybe used to verify
+     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
+     * @return a new {@link SslConfigBuilder} for clients.
+     */
+    public static SslConfigBuilder forClient(String hostName, int port) {
+        return new SslConfigBuilder(hostName, port);
+    }
+
+    /**
+     * Creates a builder for new client-side {@link SslConfig} which verifies the
+     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
+     *
+     * @param hostAndPort The non-authoritative host name and port used to verify the
+     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
+     * @return a new {@link SslConfigBuilder} for clients.
+     */
+    public static SslConfigBuilder forClient(HostAndPort hostAndPort) {
+        return forClient(hostAndPort.getHostName(), hostAndPort.getPort());
+    }
+
+    /**
+     * Creates a builder for new client-side {@link SslConfig} which verifies the
+     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
+     *
+     * @param address Provides the non-authoritative host name and port used to verify the
+     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
+     * @return a new {@link SslConfigBuilder} for clients.
+     */
+    public static SslConfigBuilder forClient(InetSocketAddress address) {
+        return forClient(address.getHostString(), address.getPort());
     }
 
     /**
@@ -279,7 +336,7 @@ public final class SslConfigBuilder {
         if (!forServer) {
             throw new UnsupportedOperationException("Only supported in server mode");
         }
-        this.clientAuth = Objects.requireNonNull(clientAuth);
+        this.clientAuth = requireNonNull(clientAuth);
         return this;
     }
 
@@ -290,7 +347,7 @@ public final class SslConfigBuilder {
      * @return self.
      */
     public SslConfigBuilder setProvider(SslConfig.SslProvider provider) {
-        this.provider = Objects.requireNonNull(provider);
+        this.provider = requireNonNull(provider);
         return this;
     }
 
@@ -308,6 +365,10 @@ public final class SslConfigBuilder {
         if (forServer) {
             throw new UnsupportedOperationException("only supported for client mode");
         }
+        if (hostNameVerificationAlgorithm == null && hostNameVerificationHost != null) {
+            throw new IllegalArgumentException(
+                    "hostNameVerificationAlgorithm cannot be null while hostNameVerificationHost is non-null");
+        }
         this.hostNameVerificationAlgorithm = hostNameVerificationAlgorithm;
         return this;
     }
@@ -318,8 +379,10 @@ public final class SslConfigBuilder {
      * @return a new {@link SslConfig}.
      */
     public SslConfig build() {
-        return new SslConfigImpl(forServer, trustManagerFactory, trustCertChainSupplier, keyManagerFactory, keyCertChainSupplier, keySupplier,
-                keyPassword, ciphers, sessionCacheSize, sessionTimeout, clientAuth, apn, provider, protocols, hostNameVerificationAlgorithm);
+        return new SslConfigImpl(forServer, trustManagerFactory, trustCertChainSupplier, keyManagerFactory,
+                keyCertChainSupplier, keySupplier, keyPassword, ciphers, sessionCacheSize, sessionTimeout, clientAuth,
+                apn, provider, protocols, hostNameVerificationAlgorithm, hostNameVerificationHost,
+                hostNameVerificationPort);
     }
 
     @SuppressWarnings("unchecked")
@@ -352,11 +415,20 @@ public final class SslConfigBuilder {
         private final List<String> protocols;
         @Nullable
         private final String hostnameVerificationAlgorithm;
+        @Nullable
+        private String hostNameVerificationHost;
+        /**
+         * Only valid if {@link #hostNameVerificationHost} is valid.
+         */
+        private int hostNameVerificationPort = -1;
 
-        SslConfigImpl(boolean forServer, @Nullable TrustManagerFactory trustManagerFactory, Supplier<InputStream> trustCertChainSupplier,
-                      @Nullable KeyManagerFactory keyManagerFactory, Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier, @Nullable String keyPassword,
-                      @Nullable Iterable<String> ciphers, long sessionCacheSize, long sessionTimeout, ClientAuth clientAuth, ApplicationProtocolConfig apn,
-                      SslProvider provider, @Nullable List<String> protocols, @Nullable String hostnameVerificationAlgorithm) {
+        SslConfigImpl(boolean forServer, @Nullable TrustManagerFactory trustManagerFactory,
+                      Supplier<InputStream> trustCertChainSupplier, @Nullable KeyManagerFactory keyManagerFactory,
+                      Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier,
+                      @Nullable String keyPassword, @Nullable Iterable<String> ciphers, long sessionCacheSize,
+                      long sessionTimeout, ClientAuth clientAuth, ApplicationProtocolConfig apn, SslProvider provider,
+                      @Nullable List<String> protocols, @Nullable String hostnameVerificationAlgorithm,
+                      @Nullable String hostNameVerificationHost, int hostNameVerificationPort) {
             this.forServer = forServer;
             this.trustManagerFactory = trustManagerFactory;
             this.keyManagerFactory = keyManagerFactory;
@@ -372,6 +444,8 @@ public final class SslConfigBuilder {
             this.provider = provider;
             this.protocols = protocols;
             this.hostnameVerificationAlgorithm = hostnameVerificationAlgorithm;
+            this.hostNameVerificationHost = hostNameVerificationHost;
+            this.hostNameVerificationPort = hostNameVerificationPort;
         }
 
         @Override
@@ -447,6 +521,16 @@ public final class SslConfigBuilder {
         @Override
         public String getHostnameVerificationAlgorithm() {
             return hostnameVerificationAlgorithm;
+        }
+
+        @Override
+        public String getHostnameVerificationHost() {
+            return hostNameVerificationHost;
+        }
+
+        @Override
+        public int getHostnameVerificationPort() {
+            return hostNameVerificationPort;
         }
     }
 }
