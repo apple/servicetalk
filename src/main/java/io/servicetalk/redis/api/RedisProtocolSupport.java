@@ -172,6 +172,8 @@ public final class RedisProtocolSupport {
         BLPOP("BLPOP", EnumSet.of(CommandFlag.WRITE, CommandFlag.NOSCRIPT), true),
         BRPOP("BRPOP", EnumSet.of(CommandFlag.WRITE, CommandFlag.NOSCRIPT), true),
         BRPOPLPUSH("BRPOPLPUSH", EnumSet.of(CommandFlag.WRITE, CommandFlag.DENYOOM, CommandFlag.NOSCRIPT), true),
+        BZPOPMAX("BZPOPMAX", EnumSet.of(CommandFlag.WRITE, CommandFlag.NOSCRIPT, CommandFlag.FAST), true),
+        BZPOPMIN("BZPOPMIN", EnumSet.of(CommandFlag.WRITE, CommandFlag.NOSCRIPT, CommandFlag.FAST), true),
         CLIENT("CLIENT", EnumSet.of(CommandFlag.ADMIN, CommandFlag.NOSCRIPT), false),
         CLUSTER("CLUSTER", EnumSet.of(CommandFlag.ADMIN), false),
         COMMAND("COMMAND", EnumSet.of(CommandFlag.LOADING, CommandFlag.STALE), false),
@@ -306,12 +308,20 @@ public final class RedisProtocolSupport {
         UNWATCH("UNWATCH", EnumSet.of(CommandFlag.NOSCRIPT, CommandFlag.FAST), false),
         WAIT("WAIT", EnumSet.of(CommandFlag.NOSCRIPT), false),
         WATCH("WATCH", EnumSet.of(CommandFlag.NOSCRIPT, CommandFlag.FAST), true),
+        XADD("XADD", EnumSet.of(CommandFlag.WRITE, CommandFlag.DENYOOM, CommandFlag.FAST), true),
+        XLEN("XLEN", EnumSet.of(CommandFlag.READONLY, CommandFlag.FAST), true),
+        XPENDING("XPENDING", EnumSet.of(CommandFlag.READONLY), true), XRANGE("XRANGE", EnumSet.of(CommandFlag.READONLY), true),
+        XREAD("XREAD", EnumSet.of(CommandFlag.READONLY, CommandFlag.NOSCRIPT, CommandFlag.MOVABLEKEYS), true),
+        XREADGROUP("XREADGROUP", EnumSet.of(CommandFlag.WRITE, CommandFlag.NOSCRIPT, CommandFlag.MOVABLEKEYS), true),
+        XREVRANGE("XREVRANGE", EnumSet.of(CommandFlag.READONLY), true),
         ZADD("ZADD", EnumSet.of(CommandFlag.WRITE, CommandFlag.DENYOOM, CommandFlag.FAST), true),
         ZCARD("ZCARD", EnumSet.of(CommandFlag.READONLY, CommandFlag.FAST), true),
         ZCOUNT("ZCOUNT", EnumSet.of(CommandFlag.READONLY, CommandFlag.FAST), true),
         ZINCRBY("ZINCRBY", EnumSet.of(CommandFlag.WRITE, CommandFlag.DENYOOM, CommandFlag.FAST), true),
         ZINTERSTORE("ZINTERSTORE", EnumSet.of(CommandFlag.WRITE, CommandFlag.DENYOOM, CommandFlag.MOVABLEKEYS), false),
         ZLEXCOUNT("ZLEXCOUNT", EnumSet.of(CommandFlag.READONLY, CommandFlag.FAST), true),
+        ZPOPMAX("ZPOPMAX", EnumSet.of(CommandFlag.WRITE, CommandFlag.FAST), true),
+        ZPOPMIN("ZPOPMIN", EnumSet.of(CommandFlag.WRITE, CommandFlag.FAST), true),
         ZRANGE("ZRANGE", EnumSet.of(CommandFlag.READONLY), true),
         ZRANGEBYLEX("ZRANGEBYLEX", EnumSet.of(CommandFlag.READONLY), true),
         ZRANGEBYSCORE("ZRANGEBYSCORE", EnumSet.of(CommandFlag.READONLY), true),
@@ -431,17 +441,17 @@ public final class RedisProtocolSupport {
 
     public enum SubCommand implements RedisData.CompleteRequestRedisData {
 
-        ADDR("ADDR"), ADDSLOTS("ADDSLOTS"), AGGREGATE("AGGREGATE"), BY("BY"), CHANNELS("CHANNELS"), COUNT("COUNT"),
-        COUNT_FAILURE_REPORTS("COUNT-FAILURE-REPORTS"), COUNTKEYSINSLOT("COUNTKEYSINSLOT"), DEBUG("DEBUG"), DELSLOTS("DELSLOTS"),
-        DOCTOR("DOCTOR"), ENCODING("ENCODING"), EXISTS("EXISTS"), FAILOVER("FAILOVER"), FLUSH("FLUSH"), FORGET("FORGET"),
-        FREQ("FREQ"), GET("GET"), GETKEYS("GETKEYS"), GETKEYSINSLOT("GETKEYSINSLOT"), GETNAME("GETNAME"), HELP("HELP"), ID("ID"),
-        IDLETIME("IDLETIME"), INCRBY("INCRBY"), INFO("INFO"), KEYSLOT("KEYSLOT"), KILL("KILL"), LIMIT("LIMIT"), LIST("LIST"),
-        LOAD("LOAD"), MALLOC_STATS("MALLOC-STATS"), MATCH("MATCH"), MEET("MEET"), NODES("NODES"), NUMPAT("NUMPAT"),
-        NUMSUB("NUMSUB"), OBJECT("OBJECT"), OVERFLOW("OVERFLOW"), PAUSE("PAUSE"), PURGE("PURGE"), REFCOUNT("REFCOUNT"),
-        REPLICATE("REPLICATE"), REPLY("REPLY"), RESET("RESET"), RESETSTAT("RESETSTAT"), REWRITE("REWRITE"), SAMPLES("SAMPLES"),
-        SAVECONFIG("SAVECONFIG"), SEGFAULT("SEGFAULT"), SET("SET"), SET_CONFIG_EPOCH("SET-CONFIG-EPOCH"), SETNAME("SETNAME"),
-        SETSLOT("SETSLOT"), SKIPME("SKIPME"), SLAVES("SLAVES"), SLOTS("SLOTS"), STATS("STATS"), STORE("STORE"),
-        STOREDIST("STOREDIST"), TYPE("TYPE"), USAGE("USAGE"), WEIGHTS("WEIGHTS");
+        ADDR("ADDR"), ADDSLOTS("ADDSLOTS"), AGGREGATE("AGGREGATE"), BLOCK("BLOCK"), BY("BY"), CHANNELS("CHANNELS"),
+        COUNT("COUNT"), COUNT_FAILURE_REPORTS("COUNT-FAILURE-REPORTS"), COUNTKEYSINSLOT("COUNTKEYSINSLOT"), DEBUG("DEBUG"),
+        DELSLOTS("DELSLOTS"), DOCTOR("DOCTOR"), ENCODING("ENCODING"), EXISTS("EXISTS"), FAILOVER("FAILOVER"), FLUSH("FLUSH"),
+        FORGET("FORGET"), FREQ("FREQ"), GET("GET"), GETKEYS("GETKEYS"), GETKEYSINSLOT("GETKEYSINSLOT"), GETNAME("GETNAME"),
+        GROUP("GROUP"), HELP("HELP"), ID("ID"), IDLETIME("IDLETIME"), INCRBY("INCRBY"), INFO("INFO"), KEYSLOT("KEYSLOT"),
+        KILL("KILL"), LIMIT("LIMIT"), LIST("LIST"), LOAD("LOAD"), MALLOC_STATS("MALLOC-STATS"), MATCH("MATCH"), MEET("MEET"),
+        NODES("NODES"), NUMPAT("NUMPAT"), NUMSUB("NUMSUB"), OBJECT("OBJECT"), OVERFLOW("OVERFLOW"), PAUSE("PAUSE"),
+        PURGE("PURGE"), REFCOUNT("REFCOUNT"), REPLICATE("REPLICATE"), REPLY("REPLY"), RESET("RESET"), RESETSTAT("RESETSTAT"),
+        REWRITE("REWRITE"), SAMPLES("SAMPLES"), SAVECONFIG("SAVECONFIG"), SEGFAULT("SEGFAULT"), SET("SET"),
+        SET_CONFIG_EPOCH("SET-CONFIG-EPOCH"), SETNAME("SETNAME"), SETSLOT("SETSLOT"), SKIPME("SKIPME"), SLAVES("SLAVES"),
+        SLOTS("SLOTS"), STATS("STATS"), STORE("STORE"), STOREDIST("STOREDIST"), TYPE("TYPE"), USAGE("USAGE"), WEIGHTS("WEIGHTS");
 
         private final byte[] b;
 
@@ -855,6 +865,38 @@ public final class RedisProtocolSupport {
         }
     }
 
+    public enum XreadStreams implements RedisData.CompleteRequestRedisData {
+
+        STREAMS("STREAMS");
+
+        private final byte[] b;
+
+        XreadStreams(final String s) {
+            b = s.getBytes(US_ASCII);
+        }
+
+        @Override
+        public Buffer toRESPArgument(BufferAllocator allocator) {
+            return toRespBulkString(b, allocator);
+        }
+    }
+
+    public enum XreadgroupStreams implements RedisData.CompleteRequestRedisData {
+
+        STREAMS("STREAMS");
+
+        private final byte[] b;
+
+        XreadgroupStreams(final String s) {
+            b = s.getBytes(US_ASCII);
+        }
+
+        @Override
+        public Buffer toRESPArgument(BufferAllocator allocator) {
+            return toRespBulkString(b, allocator);
+        }
+    }
+
     public enum ZaddChange implements RedisData.CompleteRequestRedisData {
 
         CH("CH");
@@ -1039,6 +1081,55 @@ public final class RedisProtocolSupport {
         public int writeTo(final CompositeBuffer buf, final BufferAllocator allocator) {
             addRequestArgument(field, buf, allocator);
             addRequestArgument(value, buf, allocator);
+            return SIZE;
+        }
+
+        @Override
+        public void buildAttributes(final RedisPartitionAttributesBuilder builder) {
+        }
+    }
+
+    public static final class BufferGroupConsumer implements TupleArgument {
+
+        static final int SIZE = 3;
+
+        public final Buffer group;
+
+        public final Buffer consumer;
+
+        /**
+         * Instantiates a new {@link BufferGroupConsumer}.
+         *
+         * @param group the group
+         * @param consumer the consumer
+         */
+        public BufferGroupConsumer(final Buffer group, final Buffer consumer) {
+            this.group = requireNonNull(group);
+            this.consumer = requireNonNull(consumer);
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            final BufferGroupConsumer that = (BufferGroupConsumer) o;
+            return Objects.equals(group, that.group) && Objects.equals(consumer, that.consumer);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(group, consumer);
+        }
+
+        @Override
+        public int writeTo(final CompositeBuffer buf, final BufferAllocator allocator) {
+            addRequestArgument(SubCommand.GROUP, buf, allocator);
+            addRequestArgument(group, buf, allocator);
+            addRequestArgument(consumer, buf, allocator);
             return SIZE;
         }
 
@@ -1239,6 +1330,55 @@ public final class RedisProtocolSupport {
         public int writeTo(final CompositeBuffer buf, final BufferAllocator allocator) {
             addRequestArgument(field, buf, allocator);
             addRequestArgument(value, buf, allocator);
+            return SIZE;
+        }
+
+        @Override
+        public void buildAttributes(final RedisPartitionAttributesBuilder builder) {
+        }
+    }
+
+    public static final class GroupConsumer implements TupleArgument {
+
+        static final int SIZE = 3;
+
+        public final CharSequence group;
+
+        public final CharSequence consumer;
+
+        /**
+         * Instantiates a new {@link GroupConsumer}.
+         *
+         * @param group the group
+         * @param consumer the consumer
+         */
+        public GroupConsumer(final CharSequence group, final CharSequence consumer) {
+            this.group = requireNonNull(group);
+            this.consumer = requireNonNull(consumer);
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            final GroupConsumer that = (GroupConsumer) o;
+            return Objects.equals(group, that.group) && Objects.equals(consumer, that.consumer);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(group, consumer);
+        }
+
+        @Override
+        public int writeTo(final CompositeBuffer buf, final BufferAllocator allocator) {
+            addRequestArgument(SubCommand.GROUP, buf, allocator);
+            addRequestArgument(group, buf, allocator);
+            addRequestArgument(consumer, buf, allocator);
             return SIZE;
         }
 

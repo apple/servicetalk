@@ -388,6 +388,44 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
     }
 
     @Override
+    public <T> Single<List<T>> bzpopmax(@RedisProtocolSupport.Key final Collection<Buffer> keys, final long timeout) {
+        requireNonNull(keys);
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 2;
+        len += keys.size();
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BZPOPMAX, allocator);
+        addRequestBufferArguments(keys, null, cb, allocator);
+        addRequestArgument(timeout, cb, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BZPOPMAX, cb);
+        final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
+                    .apply(RedisProtocolSupport.Command.BZPOPMAX);
+        addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    List.class);
+        return result;
+    }
+
+    @Override
+    public <T> Single<List<T>> bzpopmin(@RedisProtocolSupport.Key final Collection<Buffer> keys, final long timeout) {
+        requireNonNull(keys);
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 2;
+        len += keys.size();
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BZPOPMIN, allocator);
+        addRequestBufferArguments(keys, null, cb, allocator);
+        addRequestArgument(timeout, cb, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.BZPOPMIN, cb);
+        final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
+                    .apply(RedisProtocolSupport.Command.BZPOPMIN);
+        addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    List.class);
+        return result;
+    }
+
+    @Override
     public Single<Long> clientKill(@Nullable final Long id, @Nullable final RedisProtocolSupport.ClientKillType type,
                                    @Nullable final Buffer addrIpPort, @Nullable final Buffer skipmeYesNo) {
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
@@ -6398,6 +6436,414 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
     }
 
     @Override
+    public Single<Buffer> xadd(@RedisProtocolSupport.Key final Buffer key, final Buffer id, final Buffer field,
+                               final Buffer value) {
+        requireNonNull(key);
+        requireNonNull(id);
+        requireNonNull(field);
+        requireNonNull(value);
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 5;
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XADD, allocator);
+        addRequestArgument(key, cb, allocator);
+        addRequestArgument(id, cb, allocator);
+        addRequestArgument(field, cb, allocator);
+        addRequestArgument(value, cb, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XADD, cb);
+        final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
+                    .apply(RedisProtocolSupport.Command.XADD);
+        partitionAttributesBuilder.addKey(key);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        return result;
+    }
+
+    @Override
+    public Single<Buffer> xadd(@RedisProtocolSupport.Key final Buffer key, final Buffer id, final Buffer field1,
+                               final Buffer value1, final Buffer field2, final Buffer value2) {
+        requireNonNull(key);
+        requireNonNull(id);
+        requireNonNull(field1);
+        requireNonNull(value1);
+        requireNonNull(field2);
+        requireNonNull(value2);
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 7;
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XADD, allocator);
+        addRequestArgument(key, cb, allocator);
+        addRequestArgument(id, cb, allocator);
+        addRequestArgument(field1, cb, allocator);
+        addRequestArgument(value1, cb, allocator);
+        addRequestArgument(field2, cb, allocator);
+        addRequestArgument(value2, cb, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XADD, cb);
+        final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
+                    .apply(RedisProtocolSupport.Command.XADD);
+        partitionAttributesBuilder.addKey(key);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        return result;
+    }
+
+    @Override
+    public Single<Buffer> xadd(@RedisProtocolSupport.Key final Buffer key, final Buffer id, final Buffer field1,
+                               final Buffer value1, final Buffer field2, final Buffer value2, final Buffer field3,
+                               final Buffer value3) {
+        requireNonNull(key);
+        requireNonNull(id);
+        requireNonNull(field1);
+        requireNonNull(value1);
+        requireNonNull(field2);
+        requireNonNull(value2);
+        requireNonNull(field3);
+        requireNonNull(value3);
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 9;
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XADD, allocator);
+        addRequestArgument(key, cb, allocator);
+        addRequestArgument(id, cb, allocator);
+        addRequestArgument(field1, cb, allocator);
+        addRequestArgument(value1, cb, allocator);
+        addRequestArgument(field2, cb, allocator);
+        addRequestArgument(value2, cb, allocator);
+        addRequestArgument(field3, cb, allocator);
+        addRequestArgument(value3, cb, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XADD, cb);
+        final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
+                    .apply(RedisProtocolSupport.Command.XADD);
+        partitionAttributesBuilder.addKey(key);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        return result;
+    }
+
+    @Override
+    public Single<Buffer> xadd(@RedisProtocolSupport.Key final Buffer key, final Buffer id,
+                               final Collection<RedisProtocolSupport.BufferFieldValue> fieldValues) {
+        requireNonNull(key);
+        requireNonNull(id);
+        requireNonNull(fieldValues);
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 3;
+        len += RedisProtocolSupport.BufferFieldValue.SIZE * fieldValues.size();
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XADD, allocator);
+        addRequestArgument(key, cb, allocator);
+        addRequestArgument(id, cb, allocator);
+        addRequestTupleArguments(fieldValues, null, cb, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XADD, cb);
+        final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
+                    .apply(RedisProtocolSupport.Command.XADD);
+        partitionAttributesBuilder.addKey(key);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        return result;
+    }
+
+    @Override
+    public Single<Long> xlen(@RedisProtocolSupport.Key final Buffer key) {
+        requireNonNull(key);
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 2;
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XLEN, allocator);
+        addRequestArgument(key, cb, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XLEN, cb);
+        final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
+                    .apply(RedisProtocolSupport.Command.XLEN);
+        partitionAttributesBuilder.addKey(key);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        return result;
+    }
+
+    @Override
+    public <T> Single<List<T>> xpending(@RedisProtocolSupport.Key final Buffer key, final Buffer group) {
+        requireNonNull(key);
+        requireNonNull(group);
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 3;
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XPENDING, allocator);
+        addRequestArgument(key, cb, allocator);
+        addRequestArgument(group, cb, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XPENDING, cb);
+        final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
+                    .apply(RedisProtocolSupport.Command.XPENDING);
+        partitionAttributesBuilder.addKey(key);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    List.class);
+        return result;
+    }
+
+    @Override
+    public <T> Single<List<T>> xpending(@RedisProtocolSupport.Key final Buffer key, final Buffer group,
+                                        @Nullable final Buffer start, @Nullable final Buffer end, @Nullable final Long count,
+                                        @Nullable final Buffer consumer) {
+        requireNonNull(key);
+        requireNonNull(group);
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 3;
+        if (start != null) {
+            len++;
+        }
+        if (end != null) {
+            len++;
+        }
+        if (count != null) {
+            len++;
+        }
+        if (consumer != null) {
+            len++;
+        }
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XPENDING, allocator);
+        addRequestArgument(key, cb, allocator);
+        addRequestArgument(group, cb, allocator);
+        if (start != null) {
+            addRequestArgument(start, cb, allocator);
+        }
+        if (end != null) {
+            addRequestArgument(end, cb, allocator);
+        }
+        if (count != null) {
+            addRequestArgument(count, cb, allocator);
+        }
+        if (consumer != null) {
+            addRequestArgument(consumer, cb, allocator);
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XPENDING, cb);
+        final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
+                    .apply(RedisProtocolSupport.Command.XPENDING);
+        partitionAttributesBuilder.addKey(key);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    List.class);
+        return result;
+    }
+
+    @Override
+    public <T> Single<List<T>> xrange(@RedisProtocolSupport.Key final Buffer key, final Buffer start, final Buffer end) {
+        requireNonNull(key);
+        requireNonNull(start);
+        requireNonNull(end);
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 4;
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XRANGE, allocator);
+        addRequestArgument(key, cb, allocator);
+        addRequestArgument(start, cb, allocator);
+        addRequestArgument(end, cb, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XRANGE, cb);
+        final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
+                    .apply(RedisProtocolSupport.Command.XRANGE);
+        partitionAttributesBuilder.addKey(key);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    List.class);
+        return result;
+    }
+
+    @Override
+    public <T> Single<List<T>> xrange(@RedisProtocolSupport.Key final Buffer key, final Buffer start, final Buffer end,
+                                      @Nullable final Long count) {
+        requireNonNull(key);
+        requireNonNull(start);
+        requireNonNull(end);
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 4;
+        if (count != null) {
+            len += 2;
+        }
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XRANGE, allocator);
+        addRequestArgument(key, cb, allocator);
+        addRequestArgument(start, cb, allocator);
+        addRequestArgument(end, cb, allocator);
+        if (count != null) {
+            addRequestArgument(RedisProtocolSupport.SubCommand.COUNT, cb, allocator);
+            addRequestArgument(count, cb, allocator);
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XRANGE, cb);
+        final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
+                    .apply(RedisProtocolSupport.Command.XRANGE);
+        partitionAttributesBuilder.addKey(key);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    List.class);
+        return result;
+    }
+
+    @Override
+    public <T> Single<List<T>> xread(@RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Buffer> ids) {
+        requireNonNull(keys);
+        requireNonNull(ids);
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 2;
+        len += keys.size();
+        len += ids.size();
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XREAD, allocator);
+        addRequestArgument(RedisProtocolSupport.XreadStreams.values()[0], cb, allocator);
+        addRequestBufferArguments(keys, null, cb, allocator);
+        addRequestBufferArguments(ids, null, cb, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREAD, cb);
+        final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
+                    .apply(RedisProtocolSupport.Command.XREAD);
+        addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    List.class);
+        return result;
+    }
+
+    @Override
+    public <T> Single<List<T>> xread(@Nullable final Long count, @Nullable final Long blockMilliseconds,
+                                     @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Buffer> ids) {
+        requireNonNull(keys);
+        requireNonNull(ids);
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 2;
+        if (count != null) {
+            len += 2;
+        }
+        if (blockMilliseconds != null) {
+            len += 2;
+        }
+        len += keys.size();
+        len += ids.size();
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XREAD, allocator);
+        if (count != null) {
+            addRequestArgument(RedisProtocolSupport.SubCommand.COUNT, cb, allocator);
+            addRequestArgument(count, cb, allocator);
+        }
+        if (blockMilliseconds != null) {
+            addRequestArgument(RedisProtocolSupport.SubCommand.BLOCK, cb, allocator);
+            addRequestArgument(blockMilliseconds, cb, allocator);
+        }
+        addRequestArgument(RedisProtocolSupport.XreadStreams.values()[0], cb, allocator);
+        addRequestBufferArguments(keys, null, cb, allocator);
+        addRequestBufferArguments(ids, null, cb, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREAD, cb);
+        final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
+                    .apply(RedisProtocolSupport.Command.XREAD);
+        addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    List.class);
+        return result;
+    }
+
+    @Override
+    public <T> Single<List<T>> xreadgroup(final RedisProtocolSupport.BufferGroupConsumer groupConsumer,
+                                          @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Buffer> ids) {
+        requireNonNull(groupConsumer);
+        requireNonNull(keys);
+        requireNonNull(ids);
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 2 + RedisProtocolSupport.BufferGroupConsumer.SIZE;
+        len += keys.size();
+        len += ids.size();
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XREADGROUP, allocator);
+        groupConsumer.writeTo(cb, allocator);
+        addRequestArgument(RedisProtocolSupport.XreadgroupStreams.values()[0], cb, allocator);
+        addRequestBufferArguments(keys, null, cb, allocator);
+        addRequestBufferArguments(ids, null, cb, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREADGROUP, cb);
+        final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
+                    .apply(RedisProtocolSupport.Command.XREADGROUP);
+        addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    List.class);
+        return result;
+    }
+
+    @Override
+    public <T> Single<List<T>> xreadgroup(final RedisProtocolSupport.BufferGroupConsumer groupConsumer,
+                                          @Nullable final Long count, @Nullable final Long blockMilliseconds,
+                                          @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Buffer> ids) {
+        requireNonNull(groupConsumer);
+        requireNonNull(keys);
+        requireNonNull(ids);
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 2 + RedisProtocolSupport.BufferGroupConsumer.SIZE;
+        if (count != null) {
+            len += 2;
+        }
+        if (blockMilliseconds != null) {
+            len += 2;
+        }
+        len += keys.size();
+        len += ids.size();
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XREADGROUP, allocator);
+        groupConsumer.writeTo(cb, allocator);
+        if (count != null) {
+            addRequestArgument(RedisProtocolSupport.SubCommand.COUNT, cb, allocator);
+            addRequestArgument(count, cb, allocator);
+        }
+        if (blockMilliseconds != null) {
+            addRequestArgument(RedisProtocolSupport.SubCommand.BLOCK, cb, allocator);
+            addRequestArgument(blockMilliseconds, cb, allocator);
+        }
+        addRequestArgument(RedisProtocolSupport.XreadgroupStreams.values()[0], cb, allocator);
+        addRequestBufferArguments(keys, null, cb, allocator);
+        addRequestBufferArguments(ids, null, cb, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREADGROUP, cb);
+        final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
+                    .apply(RedisProtocolSupport.Command.XREADGROUP);
+        addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    List.class);
+        return result;
+    }
+
+    @Override
+    public <T> Single<List<T>> xrevrange(@RedisProtocolSupport.Key final Buffer key, final Buffer end, final Buffer start) {
+        requireNonNull(key);
+        requireNonNull(end);
+        requireNonNull(start);
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 4;
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XREVRANGE, allocator);
+        addRequestArgument(key, cb, allocator);
+        addRequestArgument(end, cb, allocator);
+        addRequestArgument(start, cb, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREVRANGE, cb);
+        final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
+                    .apply(RedisProtocolSupport.Command.XREVRANGE);
+        partitionAttributesBuilder.addKey(key);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    List.class);
+        return result;
+    }
+
+    @Override
+    public <T> Single<List<T>> xrevrange(@RedisProtocolSupport.Key final Buffer key, final Buffer end, final Buffer start,
+                                         @Nullable final Long count) {
+        requireNonNull(key);
+        requireNonNull(end);
+        requireNonNull(start);
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 4;
+        if (count != null) {
+            len += 2;
+        }
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XREVRANGE, allocator);
+        addRequestArgument(key, cb, allocator);
+        addRequestArgument(end, cb, allocator);
+        addRequestArgument(start, cb, allocator);
+        if (count != null) {
+            addRequestArgument(RedisProtocolSupport.SubCommand.COUNT, cb, allocator);
+            addRequestArgument(count, cb, allocator);
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREVRANGE, cb);
+        final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
+                    .apply(RedisProtocolSupport.Command.XREVRANGE);
+        partitionAttributesBuilder.addKey(key);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    List.class);
+        return result;
+    }
+
+    @Override
     public Single<Long> zadd(@RedisProtocolSupport.Key final Buffer key,
                              final Collection<RedisProtocolSupport.BufferScoreMember> scoreMembers) {
         requireNonNull(key);
@@ -6862,6 +7308,86 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.ZLEXCOUNT);
         partitionAttributesBuilder.addKey(key);
         final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        return result;
+    }
+
+    @Override
+    public <T> Single<List<T>> zpopmax(@RedisProtocolSupport.Key final Buffer key) {
+        requireNonNull(key);
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 2;
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZPOPMAX, allocator);
+        addRequestArgument(key, cb, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZPOPMAX, cb);
+        final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
+                    .apply(RedisProtocolSupport.Command.ZPOPMAX);
+        partitionAttributesBuilder.addKey(key);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    List.class);
+        return result;
+    }
+
+    @Override
+    public <T> Single<List<T>> zpopmax(@RedisProtocolSupport.Key final Buffer key, @Nullable final Long count) {
+        requireNonNull(key);
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 2;
+        if (count != null) {
+            len++;
+        }
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZPOPMAX, allocator);
+        addRequestArgument(key, cb, allocator);
+        if (count != null) {
+            addRequestArgument(count, cb, allocator);
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZPOPMAX, cb);
+        final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
+                    .apply(RedisProtocolSupport.Command.ZPOPMAX);
+        partitionAttributesBuilder.addKey(key);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    List.class);
+        return result;
+    }
+
+    @Override
+    public <T> Single<List<T>> zpopmin(@RedisProtocolSupport.Key final Buffer key) {
+        requireNonNull(key);
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 2;
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZPOPMIN, allocator);
+        addRequestArgument(key, cb, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZPOPMIN, cb);
+        final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
+                    .apply(RedisProtocolSupport.Command.ZPOPMIN);
+        partitionAttributesBuilder.addKey(key);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    List.class);
+        return result;
+    }
+
+    @Override
+    public <T> Single<List<T>> zpopmin(@RedisProtocolSupport.Key final Buffer key, @Nullable final Long count) {
+        requireNonNull(key);
+        final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 2;
+        if (count != null) {
+            len++;
+        }
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZPOPMIN, allocator);
+        addRequestArgument(key, cb, allocator);
+        if (count != null) {
+            addRequestArgument(count, cb, allocator);
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZPOPMIN, cb);
+        final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
+                    .apply(RedisProtocolSupport.Command.ZPOPMIN);
+        partitionAttributesBuilder.addKey(key);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    List.class);
         return result;
     }
 
