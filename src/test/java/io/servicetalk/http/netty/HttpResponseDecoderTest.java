@@ -29,6 +29,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -369,7 +370,8 @@ public class HttpResponseDecoderTest {
     }
 
     private static EmbeddedChannel newEmbeddedChannel() {
-        HttpResponseDecoder decoder = new HttpResponseDecoder(DefaultHttpHeadersFactory.INSTANCE, 8192, 8192);
+        HttpResponseDecoder decoder = new HttpResponseDecoder(new ArrayDeque<>(), DefaultHttpHeadersFactory.INSTANCE,
+                8192, 8192);
         decoder.setDiscardAfterReads(1);
         return new EmbeddedChannel(decoder);
     }

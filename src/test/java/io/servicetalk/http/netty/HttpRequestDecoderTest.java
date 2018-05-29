@@ -29,6 +29,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -335,7 +336,8 @@ public class HttpRequestDecoderTest {
     }
 
     private static EmbeddedChannel newEmbeddedChannel() {
-        HttpRequestDecoder decoder = new HttpRequestDecoder(DefaultHttpHeadersFactory.INSTANCE, 8192, 8192);
+        HttpRequestDecoder decoder = new HttpRequestDecoder(new ArrayDeque<>(),
+                DefaultHttpHeadersFactory.INSTANCE, 8192, 8192);
         decoder.setDiscardAfterReads(1);
         return new EmbeddedChannel(decoder);
     }

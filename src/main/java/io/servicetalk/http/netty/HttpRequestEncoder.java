@@ -31,13 +31,17 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpRequestMetaData;
+import io.servicetalk.http.api.HttpRequestMethod;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
+import java.util.Queue;
+
 import static io.netty.buffer.ByteBufUtil.writeMediumBE;
 import static io.netty.buffer.ByteBufUtil.writeShortBE;
 import static io.netty.handler.codec.http.HttpConstants.SP;
+import static java.util.Objects.requireNonNull;
 
 final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
     private static final char SLASH = '/';
@@ -45,15 +49,34 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
     private static final int SLASH_AND_SPACE_SHORT = (SLASH << 8) | SP;
     private static final int SPACE_SLASH_AND_SPACE_MEDIUM = (SP << 16) | SLASH_AND_SPACE_SHORT;
 
+    private final Queue<HttpRequestMethod> methodQueue;
+
     /**
      * Create a new instance.
+     * @param methodQueue A queue used to enforce HTTP protocol semantics related to request/response lengths.
      * @param headersEncodedSizeAccumulator Used to calculate an exponential moving average of the encoded size of the
      * initial line and the headers for a guess for future buffer allocations.
      * @param trailersEncodedSizeAccumulator  Used to calculate an exponential moving average of the encoded size of
      * the trailers for a guess for future buffer allocations.
      */
-    HttpRequestEncoder(int headersEncodedSizeAccumulator, int trailersEncodedSizeAccumulator) {
+    HttpRequestEncoder(Queue<HttpRequestMethod> methodQueue,
+                       int headersEncodedSizeAccumulator, int trailersEncodedSizeAccumulator) {
         super(headersEncodedSizeAccumulator, trailersEncodedSizeAccumulator);
+        this.methodQueue = requireNonNull(methodQueue);
+    }
+
+    @Override
+    protected void sanitizeHeadersBeforeEncode(final HttpRequestMetaData msg, final boolean isAlwaysEmpty) {
+        // This method has side effects on the methodQueue for the following reasons:
+        // - createMessage will not necessary fire a message up the pipeline.
+        // - the trigger points on the queue are currently symmetric for the request/response decoder and
+        // request/response encoder. We may use header information on the response decoder side, and the queue
+        // interaction is conditional (1xx responses don't touch the queue).
+        // - unit tests exist which verify these side effects occur, so if behavior of the internal classes changes the
+        // unit test should catch it.
+        // - this is the rough equivalent of what is done in Netty in terms of sequencing. Instead of trying to
+        // iterate a decoded list it makes some assumptions about the base class ordering of events.
+        methodQueue.add(msg.getMethod());
     }
 
     @Override

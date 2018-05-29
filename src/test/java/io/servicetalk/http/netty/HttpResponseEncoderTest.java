@@ -26,6 +26,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Test;
 
+import java.util.ArrayDeque;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
@@ -295,6 +296,6 @@ public class HttpResponseEncoderTest {
     }
 
     private static EmbeddedChannel newEmbeddedChannel() {
-        return new EmbeddedChannel(new HttpResponseEncoder(256, 256));
+        return new EmbeddedChannel(new HttpResponseEncoder(new ArrayDeque<>(), 256, 256));
     }
 }

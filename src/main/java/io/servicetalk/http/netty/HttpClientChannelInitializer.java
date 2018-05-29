@@ -15,11 +15,17 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
+
+import java.util.ArrayDeque;
+import java.util.Queue;
+
+import static java.lang.Math.min;
 
 final class HttpClientChannelInitializer implements ChannelInitializer {
 
@@ -35,10 +41,11 @@ final class HttpClientChannelInitializer implements ChannelInitializer {
 
     @Override
     public ConnectionContext init(final Channel channel, final ConnectionContext ctx) {
+        Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(min(8, roConfig.getMaxPipelinedRequests()));
         final ChannelPipeline pipeline = channel.pipeline();
-        pipeline.addLast(new HttpResponseDecoder(roConfig.getHeadersFactory(), roConfig.getMaxInitialLineLength(),
-                roConfig.getMaxHeaderSize()));
-        pipeline.addLast(new HttpRequestEncoder(
+        pipeline.addLast(new HttpResponseDecoder(methodQueue, roConfig.getHeadersFactory(),
+                roConfig.getMaxInitialLineLength(), roConfig.getMaxHeaderSize()));
+        pipeline.addLast(new HttpRequestEncoder(methodQueue,
                 roConfig.getHeadersEncodedSizeEstimate(), roConfig.getTrailersEncodedSizeEstimate()));
         return ctx;
     }

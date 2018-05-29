@@ -31,31 +31,42 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 
 import io.netty.buffer.ByteBuf;
+
+import java.util.Queue;
 
 import static io.netty.buffer.ByteBufUtil.writeShortBE;
 import static io.netty.handler.codec.http.HttpConstants.SP;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_VERSION;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
+import static io.servicetalk.http.api.HttpRequestMethods.CONNECT;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESS_2XX;
 import static io.servicetalk.http.api.HttpResponseStatuses.NOT_MODIFIED;
 import static io.servicetalk.http.api.HttpResponseStatuses.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatuses.SWITCHING_PROTOCOLS;
+import static java.util.Objects.requireNonNull;
 
 final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> {
+    private final Queue<HttpRequestMethod> methodQueue;
+
     /**
      * Create a new instance.
+     * @param methodQueue A queue used to enforce HTTP protocol semantics related to request/response lengths.
      * @param headersEncodedSizeAccumulator Used to calculate an exponential moving average of the encoded size of the
      * initial line and the headers for a guess for future buffer allocations.
      * @param trailersEncodedSizeAccumulator  Used to calculate an exponential moving average of the encoded size of
      * the trailers for a guess for future buffer allocations.
      */
-    HttpResponseEncoder(int headersEncodedSizeAccumulator, int trailersEncodedSizeAccumulator) {
+    HttpResponseEncoder(Queue<HttpRequestMethod> methodQueue,
+                        int headersEncodedSizeAccumulator, int trailersEncodedSizeAccumulator) {
         super(headersEncodedSizeAccumulator, trailersEncodedSizeAccumulator);
+        this.methodQueue = requireNonNull(methodQueue);
     }
 
     @Override
@@ -75,6 +86,16 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
 
     @Override
     protected void sanitizeHeadersBeforeEncode(HttpResponseMetaData msg, boolean isAlwaysEmpty) {
+        // This method has side effects on the methodQueue for the following reasons:
+        // - createMessage will not necessary fire a message up the pipeline.
+        // - the trigger points on the queue are currently symmetric for the request/response decoder and
+        // request/response encoder. We may use header information on the response decoder side, and the queue
+        // interaction is conditional (1xx responses don't touch the queue).
+        // - unit tests exist which verify these side effects occur, so if behavior of the internal classes changes the
+        // unit test should catch it.
+        // - this is the rough equivalent of what is done in Netty in terms of sequencing. Instead of trying to
+        // iterate a decoded list it makes some assumptions about the base class ordering of events.
+        HttpRequestMethod method = methodQueue.poll();
         if (isAlwaysEmpty) {
             HttpResponseStatus status = msg.getStatus();
             if (status.getStatusClass() == INFORMATIONAL_1XX ||
@@ -89,6 +110,10 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
                 // See https://tools.ietf.org/html/rfc7230#section-3.3.1
                 headers.remove(TRANSFER_ENCODING);
             }
+        } else if (method == CONNECT && msg.getStatus().getStatusClass() == SUCCESS_2XX) {
+            // Stripping Transfer-Encoding:
+            // See https://tools.ietf.org/html/rfc7230#section-3.3.1
+            msg.getHeaders().remove(TRANSFER_ENCODING);
         }
     }
 

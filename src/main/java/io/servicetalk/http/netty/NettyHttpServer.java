@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.LastHttpPayloadChunk;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
@@ -33,6 +34,8 @@ import io.servicetalk.transport.netty.internal.Connection.TerminalPredicate;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.net.SocketAddress;
+import java.util.ArrayDeque;
+import java.util.Queue;
 import java.util.function.Predicate;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
@@ -64,9 +67,10 @@ final class NettyHttpServer {
             final ReadOnlyHttpServerConfig config, final Executor executor,
             final HttpService service) {
         return (channel, context) -> {
-            channel.pipeline().addLast(new HttpRequestDecoder(config.getHeadersFactory(),
+            Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(2);
+            channel.pipeline().addLast(new HttpRequestDecoder(methodQueue, config.getHeadersFactory(),
                     config.getMaxInitialLineLength(), config.getMaxHeaderSize()));
-            channel.pipeline().addLast(new HttpResponseEncoder(config.getHeadersEncodedSizeEstimate(),
+            channel.pipeline().addLast(new HttpResponseEncoder(methodQueue, config.getHeadersEncodedSizeEstimate(),
                     config.getTrailersEncodedSizeEstimate()));
             channel.pipeline().addLast(new AbstractChannelReadHandler<Object>(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE,
                     executor) {

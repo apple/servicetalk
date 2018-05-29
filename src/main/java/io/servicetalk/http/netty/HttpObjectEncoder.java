@@ -229,9 +229,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
     /**
      * Allows to sanitize headers of the message before encoding these.
      */
-    protected void sanitizeHeadersBeforeEncode(@SuppressWarnings("unused") T msg, boolean isAlwaysEmpty) {
-        // noop
-    }
+    protected abstract void sanitizeHeadersBeforeEncode(T msg, boolean isAlwaysEmpty);
 
     /**
      * Cast the {@code httpMetaData} object to the runtime type {@code T}.

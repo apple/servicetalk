@@ -62,13 +62,11 @@ import static io.servicetalk.buffer.netty.BufferUtil.newBufferFrom;
 import static io.servicetalk.http.api.CharSequences.emptyAsciiString;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
-import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_ACCEPT;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY1;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY2;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_LOCATION;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_ORIGIN;
 import static io.servicetalk.http.api.HttpHeaderNames.UPGRADE;
-import static io.servicetalk.http.api.HttpHeaderValues.WEBSOCKET;
 import static io.servicetalk.http.api.HttpPayloadChunks.newLastPayloadChunk;
 import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_0;
@@ -83,7 +81,7 @@ import static java.lang.Math.min;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 
-abstract class HttpObjectDecoder extends ByteToMessageDecoder {
+abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDecoder {
     private static final ByteBuf HTTP_1_1_BUF = copiedBuffer("HTTP/1.1", US_ASCII);
     private static final ByteBuf HTTP_1_0_BUF = copiedBuffer("HTTP/1.0", US_ASCII);
     private static final byte COLON_BYTE = (byte) ':';
@@ -103,7 +101,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
 
     private final HttpHeadersFactory headersFactory;
     @Nullable
-    private HttpMetaData message;
+    private T message;
     @Nullable
     private LastHttpPayloadChunk trailer;
     private long chunkSize;
@@ -166,7 +164,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
      * @return a new {@link HttpMetaData} that represents the parsed
      * <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1">start line</a>.
      */
-    protected abstract HttpMetaData createMessage(ByteBuf first, ByteBuf second, ByteBuf third);
+    protected abstract T createMessage(ByteBuf first, ByteBuf second, ByteBuf third);
 
     @Override
     protected final void decode(ChannelHandlerContext ctx, ByteBuf buffer) {
@@ -457,31 +455,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
         super.userEventTriggered(ctx, evt);
     }
 
-    protected boolean isContentAlwaysEmpty(HttpMetaData msg) {
-        if (msg instanceof HttpResponseMetaData) {
-            HttpResponseMetaData res = (HttpResponseMetaData) msg;
-            int code = res.getStatus().getCode();
-
-            // Correctly handle return codes of 1xx.
-            //
-            // See:
-            //     - http://www.w3.org/Protocols/rfc2616/rfc2616-sec4.html Section 4.4
-            //     - https://github.com/netty/netty/issues/222
-            if (code >= 100 && code < 200) {
-                // One exception: Hixie 76 websocket handshake response
-                return !(code == 101 && !res.getHeaders().contains(SEC_WEBSOCKET_ACCEPT)
-                        && res.getHeaders().contains(UPGRADE, WEBSOCKET, true));
-            }
-
-            switch (code) {
-                case 204: case 304:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-        return false;
-    }
+    protected abstract boolean isContentAlwaysEmpty(T msg);
 
     /**
      * Returns true if the server switched to a different protocol than HTTP/1.0 or HTTP/1.1, e.g. HTTP/2 or Websocket.
@@ -498,7 +472,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
     }
 
     private void resetNow() {
-        HttpMetaData message = this.message;
+        T message = this.message;
         this.message = null;
         this.trailer = null;
         contentLength = Long.MIN_VALUE;
@@ -588,7 +562,7 @@ abstract class HttpObjectDecoder extends ByteToMessageDecoder {
         if (lfIndex < 0) {
             return null;
         }
-        final HttpMetaData message = this.message;
+        final T message = this.message;
         assert message != null;
         if (!parseAllHeaders(buffer, message.getHeaders(), lfIndex, maxHeaderSize)) {
             return null;
