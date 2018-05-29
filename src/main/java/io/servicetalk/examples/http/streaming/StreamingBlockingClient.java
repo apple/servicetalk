@@ -16,8 +16,8 @@
 package io.servicetalk.examples.http.streaming;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
-import io.servicetalk.client.internal.DefaultHostAndPort;
-import io.servicetalk.client.internal.HostAndPort;
+import io.servicetalk.transport.api.DefaultHostAndPort;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;

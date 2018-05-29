@@ -16,15 +16,15 @@
 package io.servicetalk.examples.http.helloworld;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
-import io.servicetalk.client.internal.DefaultHostAndPort;
-import io.servicetalk.client.internal.HostAndPort;
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.netty.DefaultHttpClientBuilder;
 import io.servicetalk.transport.api.DefaultExecutionContext;
+import io.servicetalk.transport.api.DefaultHostAndPort;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.HostAndPort;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
