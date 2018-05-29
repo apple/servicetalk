@@ -108,7 +108,6 @@ public abstract class AbstractResourceTest extends AbstractJerseyHttpServiceTest
         return getResourcePath() + path;
     }
 
-    @Ignore("HttpClient hangs on HEAD requests")
     @Test
     public void notFound() {
         sendAndAssertNoResponse(head("/not_a_resource"), NOT_FOUND);
@@ -124,7 +123,6 @@ public abstract class AbstractResourceTest extends AbstractJerseyHttpServiceTest
         sendAndAssertNoResponse(get("/text?qp=throw-translated"), CONFLICT);
     }
 
-    @Ignore("HttpClient hangs on HEAD requests")
     @Test
     public void implicitHead() {
         sendAndAssertResponse(head("/text"), OK, TEXT_PLAIN, isEmptyString(), 16);
