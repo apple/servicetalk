@@ -18,8 +18,6 @@ package io.servicetalk.redis.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.client.api.ServiceDiscoverer;
-import io.servicetalk.client.internal.DefaultHostAndPort;
-import io.servicetalk.client.internal.HostAndPort;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancer;
@@ -29,6 +27,8 @@ import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.utils.RetryingRedisClient;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.DefaultExecutionContext;
+import io.servicetalk.transport.api.DefaultHostAndPort;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
 import org.hamcrest.BaseMatcher;
