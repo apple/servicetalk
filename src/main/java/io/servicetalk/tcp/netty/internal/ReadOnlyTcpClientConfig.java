@@ -41,10 +41,10 @@ public class ReadOnlyTcpClientConfig {
     @Nullable
     protected SslContext sslContext;
     @Nullable
-    protected String hostnameVerificationAlgorithm;
+    protected String sslHostnameVerificationAlgorithm;
     @Nullable
-    protected String hostnameVerificationHost;
-    protected int hostnameVerificationPort;
+    protected String sslHostnameVerificationHost;
+    protected int sslHostnameVerificationPort;
     protected long idleTimeoutMs;
     @Nullable
     protected WireLogInitializer wireLogger = GLOBAL_WIRE_LOGGER;
@@ -71,9 +71,9 @@ public class ReadOnlyTcpClientConfig {
         final Map<ChannelOption, Object> optionMap = new HashMap<>(from.optionMap);
         this.optionMap = readOnlyMap ? unmodifiableMap(optionMap) : optionMap;
         sslContext = from.sslContext;
-        hostnameVerificationAlgorithm = from.hostnameVerificationAlgorithm;
-        hostnameVerificationHost = from.hostnameVerificationHost;
-        hostnameVerificationPort = from.hostnameVerificationPort;
+        sslHostnameVerificationAlgorithm = from.sslHostnameVerificationAlgorithm;
+        sslHostnameVerificationHost = from.sslHostnameVerificationHost;
+        sslHostnameVerificationPort = from.sslHostnameVerificationPort;
         idleTimeoutMs = from.idleTimeoutMs;
         wireLogger = from.wireLogger;
     }
@@ -102,7 +102,7 @@ public class ReadOnlyTcpClientConfig {
      */
     @Nullable
     public String getSslHostnameVerificationAlgorithm() {
-        return hostnameVerificationAlgorithm;
+        return sslHostnameVerificationAlgorithm;
     }
 
     /**
@@ -111,7 +111,7 @@ public class ReadOnlyTcpClientConfig {
      */
     @Nullable
     public String getSslHostnameVerificationHost() {
-        return hostnameVerificationHost;
+        return sslHostnameVerificationHost;
     }
 
     /**
@@ -121,7 +121,7 @@ public class ReadOnlyTcpClientConfig {
      * @return the non-authoritative port.
      */
     public int getSslHostnameVerificationPort() {
-        return hostnameVerificationPort;
+        return sslHostnameVerificationPort;
     }
 
     /**
