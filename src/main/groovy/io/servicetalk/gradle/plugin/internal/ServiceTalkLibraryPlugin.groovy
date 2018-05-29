@@ -180,7 +180,7 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       pluginManager.apply("com.github.spotbugs")
 
       checkstyle {
-        toolVersion = "8.10"
+        toolVersion = "8.10.1"
         configDir = file("$buildDir/checkstyle")
       }
 
