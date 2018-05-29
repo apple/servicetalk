@@ -43,7 +43,9 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.getIdleTimeoutMs()));
         }
         if (config.getSslContext() != null) {
-            delegate = delegate.andThen(new SslClientChannelInitializer(config.getSslContext(), config.getHostnameVerificationAlgorithm()));
+            delegate = delegate.andThen(new SslClientChannelInitializer(config.getSslContext(),
+                    config.getSslHostnameVerificationAlgorithm(), config.getSslHostnameVerificationHost(),
+                    config.getSslHostnameVerificationPort()));
         }
         this.delegate = delegate;
     }

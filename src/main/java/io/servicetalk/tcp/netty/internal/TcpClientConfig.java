@@ -61,6 +61,8 @@ public final class TcpClientConfig extends ReadOnlyTcpClientConfig {
         if (config != null) {
             sslContext = forClient(config);
             hostnameVerificationAlgorithm = config.getHostnameVerificationAlgorithm();
+            hostnameVerificationHost = config.getHostnameVerificationHost();
+            hostnameVerificationPort = config.getHostnameVerificationPort();
         } else {
             sslContext = null;
             hostnameVerificationAlgorithm = null;

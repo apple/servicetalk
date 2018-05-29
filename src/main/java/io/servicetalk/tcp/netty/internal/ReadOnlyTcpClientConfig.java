@@ -42,6 +42,9 @@ public class ReadOnlyTcpClientConfig {
     protected SslContext sslContext;
     @Nullable
     protected String hostnameVerificationAlgorithm;
+    @Nullable
+    protected String hostnameVerificationHost;
+    protected int hostnameVerificationPort;
     protected long idleTimeoutMs;
     @Nullable
     protected WireLogInitializer wireLogger = GLOBAL_WIRE_LOGGER;
@@ -68,7 +71,9 @@ public class ReadOnlyTcpClientConfig {
         final Map<ChannelOption, Object> optionMap = new HashMap<>(from.optionMap);
         this.optionMap = readOnlyMap ? unmodifiableMap(optionMap) : optionMap;
         sslContext = from.sslContext;
-        this.hostnameVerificationAlgorithm = from.hostnameVerificationAlgorithm;
+        hostnameVerificationAlgorithm = from.hostnameVerificationAlgorithm;
+        hostnameVerificationHost = from.hostnameVerificationHost;
+        hostnameVerificationPort = from.hostnameVerificationPort;
         idleTimeoutMs = from.idleTimeoutMs;
         wireLogger = from.wireLogger;
     }
@@ -96,8 +101,27 @@ public class ReadOnlyTcpClientConfig {
      * @return hostname verification algorithm, {@code null} if none specified.
      */
     @Nullable
-    public String getHostnameVerificationAlgorithm() {
+    public String getSslHostnameVerificationAlgorithm() {
         return hostnameVerificationAlgorithm;
+    }
+
+    /**
+     * Get the non-authoritative name of the host.
+     * @return the non-authoritative name of the host.
+     */
+    @Nullable
+    public String getSslHostnameVerificationHost() {
+        return hostnameVerificationHost;
+    }
+
+    /**
+     * Get the non-authoritative port.
+     * <p>
+     * Only valid if {@link #getSslHostnameVerificationHost()} is not {@code null}.
+     * @return the non-authoritative port.
+     */
+    public int getSslHostnameVerificationPort() {
+        return hostnameVerificationPort;
     }
 
     /**
