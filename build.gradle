@@ -42,6 +42,7 @@ dependencies {
 
   testImplementation "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
   testImplementation "io.servicetalk:servicetalk-loadbalancer:0.1.0-SNAPSHOT"
+  testImplementation "io.servicetalk:servicetalk-transport-netty-internal-testFixtures:0.1.0-SNAPSHOT"
   testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:0.1.0-SNAPSHOT"
   testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:0.1.0-SNAPSHOT"
   testImplementation "org.hamcrest:hamcrest-library"

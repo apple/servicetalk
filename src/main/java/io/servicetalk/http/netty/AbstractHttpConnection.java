@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.Publisher.error;
 import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.http.netty.HeaderUtils.addRequestTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.SpliceFlatStreamToMetaSingle.flatten;
 import static java.util.Objects.requireNonNull;
 
@@ -70,6 +71,7 @@ abstract class AbstractHttpConnection<CC extends ConnectionContext> extends Http
 
     @Override
     public Single<HttpResponse<HttpPayloadChunk>> request(HttpRequest<HttpPayloadChunk> request) {
+        addRequestTransferEncodingIfNecessary(request); // See https://tools.ietf.org/html/rfc7230#section-3.3.3
         return new SpliceFlatStreamToMetaSingle<HttpResponse<HttpPayloadChunk>, HttpResponseMetaData, HttpPayloadChunk>(
                 writeAndRead(flatten(executionContext.getExecutor(), request, AbstractHttpConnection::unpack)),
                 AbstractHttpConnection::newResponse);
