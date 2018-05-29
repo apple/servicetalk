@@ -42,7 +42,6 @@ public abstract class HttpConnection extends HttpRequester {
      */
     public abstract <T> Publisher<T> getSettingStream(SettingKey<T> settingKey);
 
-
     /**
      * Convert this {@link HttpConnection} to the {@link AggregatedHttpConnection} API.
      * <p>
