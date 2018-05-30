@@ -234,11 +234,49 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * Note this method will be used to decorate the result of {@link #build(ExecutionContext, Publisher)} before it is
      * returned to the user.
      * @param clientFilterFactory {@link BiFunction} to decorate a {@link HttpClient} for the purpose of filtering.
+     * The signature of the {@link BiFunction} is as follows:
+     * <pre>
+     *     PostFilteredHttpClient func(PreFilteredHttpClient, {@link LoadBalancer#getEventStream()})
+     * </pre>
      * @return {@code this}
      */
     public DefaultHttpClientBuilder<ResolvedAddress> setClientFilterFactory(
             BiFunction<HttpClient, Publisher<Object>, HttpClient> clientFilterFactory) {
         this.clientFilterFactory = requireNonNull(clientFilterFactory);
+        return this;
+    }
+
+    /**
+     * Append a client filter on to the existing {@link HttpClient} filter {@link BiFunction} from
+     * {@link #setClientFilterFactory(BiFunction)}.
+     * @param clientFilterFactory {@link BiFunction} to decorate a {@link HttpClient} for the purpose of filtering.
+     * The signature of the {@link BiFunction} is as follows:
+     * <pre>
+     *     PostFilteredHttpClient func(PreFilteredHttpClient, {@link LoadBalancer#getEventStream()})
+     * </pre>
+     * @return {@code this}
+     */
+    public DefaultHttpClientBuilder<ResolvedAddress> appendClientFilterFactory(
+            BiFunction<HttpClient, Publisher<Object>, HttpClient> clientFilterFactory) {
+        requireNonNull(clientFilterFactory);
+        BiFunction<HttpClient, Publisher<Object>, HttpClient> oldFilterFactory = this.clientFilterFactory;
+        this.clientFilterFactory = (httpClient, objectPublisher) ->
+                oldFilterFactory.apply(clientFilterFactory.apply(httpClient, objectPublisher), objectPublisher);
+        return this;
+    }
+
+    /**
+     * Append a client filter on to the existing {@link HttpClient} filter {@link BiFunction} from
+     * {@link #setClientFilterFactory(BiFunction)}.
+     * @param clientFilterFactory {@link Function} to decorate a {@link HttpClient} for the purpose of filtering.
+     * @return {@code this}
+     */
+    public DefaultHttpClientBuilder<ResolvedAddress> appendClientFilterFactory(
+            Function<HttpClient, HttpClient> clientFilterFactory) {
+        requireNonNull(clientFilterFactory);
+        BiFunction<HttpClient, Publisher<Object>, HttpClient> oldFilterFactory = this.clientFilterFactory;
+        this.clientFilterFactory = (httpClient, objectPublisher) ->
+                oldFilterFactory.apply(clientFilterFactory.apply(httpClient), objectPublisher);
         return this;
     }
 }
