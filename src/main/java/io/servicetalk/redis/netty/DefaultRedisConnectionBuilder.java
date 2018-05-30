@@ -81,8 +81,8 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
      * @param value  the value.
      * @return {@code this}.
      */
-    public <T> DefaultRedisConnectionBuilder<ResolvedAddress> setOption(SocketOption<T> option, T value) {
-        config.getTcpClientConfig().setOption(option, value);
+    public <T> DefaultRedisConnectionBuilder<ResolvedAddress> setSocketOption(SocketOption<T> option, T value) {
+        config.getTcpClientConfig().setSocketOption(option, value);
         return this;
     }
 

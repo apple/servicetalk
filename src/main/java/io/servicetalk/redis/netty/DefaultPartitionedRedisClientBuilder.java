@@ -130,8 +130,8 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
      * @param value the value.
      * @return {@code this}.
      */
-    public <T> DefaultPartitionedRedisClientBuilder<ResolvedAddress> setOption(SocketOption<T> option, T value) {
-        config.getTcpClientConfig().setOption(option, value);
+    public <T> DefaultPartitionedRedisClientBuilder<ResolvedAddress> setSocketOption(SocketOption<T> option, T value) {
+        config.getTcpClientConfig().setSocketOption(option, value);
         return this;
     }
 

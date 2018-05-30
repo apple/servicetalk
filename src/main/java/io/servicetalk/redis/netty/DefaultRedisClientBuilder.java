@@ -102,8 +102,8 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
      * @param value the value.
      * @return {@code this}.
      */
-    public <T> DefaultRedisClientBuilder<ResolvedAddress> setOption(SocketOption<T> option, T value) {
-        config.getTcpClientConfig().setOption(option, value);
+    public <T> DefaultRedisClientBuilder<ResolvedAddress> setSocketOption(SocketOption<T> option, T value) {
+        config.getTcpClientConfig().setSocketOption(option, value);
         return this;
     }
 
