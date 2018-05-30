@@ -211,7 +211,7 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       }
 
       pmd {
-        toolVersion = "6.3.0"
+        toolVersion = "6.4.0"
         sourceSets = [sourceSets.main, sourceSets.test]
         ruleSets = []
         ruleSetConfig = resources.text.fromString(getClass().getResourceAsStream("pmd/basic.xml").text)
