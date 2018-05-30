@@ -18,8 +18,6 @@ package io.servicetalk.examples.http.aggregation;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.client.api.ServiceDiscoverer;
-import io.servicetalk.transport.api.DefaultHostAndPort;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
@@ -28,7 +26,9 @@ import io.servicetalk.http.api.AggregatedHttpRequest;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.netty.DefaultHttpClientBuilder;
 import io.servicetalk.transport.api.DefaultExecutionContext;
+import io.servicetalk.transport.api.DefaultHostAndPort;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.HostAndPort;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +42,7 @@ import static io.servicetalk.http.api.AggregatedHttpRequests.newRequest;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
+import static io.servicetalk.http.utils.HttpHostHeaderFilter.newHostHeaderFilter;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -65,8 +66,9 @@ public final class AggregatingPayloadClient {
                     new DefaultHttpClientBuilder<>(newRoundRobinFactory());
 
             // Build the client, and register for DNS discovery events.
-            final AggregatedHttpClient client = clientBuilder.buildAggregated(
-                    executionContext, dnsDiscoverer.discover(new DefaultHostAndPort("localhost", 8080)));
+            HostAndPort address = new DefaultHostAndPort("localhost", 8080);
+            AggregatedHttpClient client = clientBuilder.appendClientFilterFactory(c -> newHostHeaderFilter(address, c))
+                    .buildAggregated(executionContext, dnsDiscoverer.discover(address));
 
             // Register resources to be cleaned up at the end.
             resources.concat(client, dnsDiscoverer, executionContext.getExecutor(), executionContext.getIoExecutor());
@@ -79,7 +81,7 @@ public final class AggregatingPayloadClient {
             Buffer data = executionContext.getBufferAllocator().fromAscii("lorem ipsum dolor sit amet \n");
             // Create a big buffer so that we can leverage aggregation on the response which is the request payload
             // echoed back.
-            final CompositeBuffer payload = executionContext.getBufferAllocator().newCompositeBuffer(10);
+            CompositeBuffer payload = executionContext.getBufferAllocator().newCompositeBuffer(10);
             for (int i = 0; i < 10; i++) {
                 payload.addBuffer(data);
             }

@@ -36,6 +36,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpRequests.newRequest;
+import static io.servicetalk.http.utils.HttpHostHeaderFilter.newHostHeaderFilter;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -58,8 +59,9 @@ public final class HelloWorldClient {
                     new DefaultHttpClientBuilder<>(newRoundRobinFactory());
 
             // Build the client, and register for DNS discovery events.
-            HttpClient client = clientBuilder.build(
-                    executionContext, dnsDiscoverer.discover(new DefaultHostAndPort("localhost", 8080)));
+            HostAndPort address = new DefaultHostAndPort("localhost", 8080);
+            HttpClient client = clientBuilder.appendClientFilterFactory(c -> newHostHeaderFilter(address, c))
+                    .build(executionContext, dnsDiscoverer.discover(address));
 
             // Register resources to be cleaned up at the end.
             resources.concat(client, dnsDiscoverer, executionContext.getExecutor(), executionContext.getIoExecutor());

@@ -16,8 +16,6 @@
 package io.servicetalk.examples.http.streaming;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
-import io.servicetalk.transport.api.DefaultHostAndPort;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
@@ -27,7 +25,9 @@ import io.servicetalk.http.api.BlockingHttpResponse;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.netty.DefaultHttpClientBuilder;
 import io.servicetalk.transport.api.DefaultExecutionContext;
+import io.servicetalk.transport.api.DefaultHostAndPort;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.HostAndPort;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +42,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.USER_AGENT;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static io.servicetalk.http.api.HttpRequestMethods.POST;
+import static io.servicetalk.http.utils.HttpHostHeaderFilter.newHostHeaderFilter;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -66,10 +67,11 @@ public final class StreamingBlockingClient {
             // Create a ClientBuilder and use round robin load balancing.
             DefaultHttpClientBuilder<InetSocketAddress> clientBuilder =
                     new DefaultHttpClientBuilder<>(newRoundRobinFactory());
-            clientBuilder.setWireLoggerName("client");
+
             // Build the client, and register for DNS discovery events.
-            BlockingHttpClient client = clientBuilder.buildBlocking(
-                    executionContext, dnsDiscoverer.discover(new DefaultHostAndPort("localhost", 8080)));
+            HostAndPort address = new DefaultHostAndPort("localhost", 8080);
+            BlockingHttpClient client = clientBuilder.appendClientFilterFactory(c -> newHostHeaderFilter(address, c))
+                    .buildBlocking(executionContext, dnsDiscoverer.discover(address));
 
             // Create a request with a payload body and some headers.
             BlockingHttpRequest<HttpPayloadChunk> request = newRequest(POST, "/sayHello",
