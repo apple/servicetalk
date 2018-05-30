@@ -21,29 +21,29 @@ import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 final class ReadOnlyHttpClientConfig {
 
     private final ReadOnlyTcpClientConfig tcpClientConfig;
+    private final HttpHeadersFactory headersFactory;
     private final int maxInitialLineLength;
     private final int maxHeaderSize;
     private final int maxPipelinedRequests;
     private final int headersEncodedSizeEstimate;
     private final int trailersEncodedSizeEstimate;
-    private final HttpHeadersFactory headersFactory;
 
     ReadOnlyHttpClientConfig(final HttpClientConfig from) {
         tcpClientConfig = from.getTcpClientConfig().asReadOnly();
+        headersFactory = from.getHeadersFactory();
         maxInitialLineLength = from.getMaxInitialLineLength();
         maxHeaderSize = from.getMaxHeaderSize();
+        maxPipelinedRequests = from.getMaxPipelinedRequests();
         headersEncodedSizeEstimate = from.getHeadersEncodedSizeEstimate();
         trailersEncodedSizeEstimate = from.getTrailersEncodedSizeEstimate();
-        maxPipelinedRequests = from.getMaxPipelinedRequests();
-        headersFactory = from.getHeadersFactory();
     }
 
     ReadOnlyTcpClientConfig getTcpClientConfig() {
         return tcpClientConfig;
     }
 
-    public int getMaxPipelinedRequests() {
-        return maxPipelinedRequests;
+    HttpHeadersFactory getHeadersFactory() {
+        return headersFactory;
     }
 
     int getMaxInitialLineLength() {
@@ -54,15 +54,15 @@ final class ReadOnlyHttpClientConfig {
         return maxHeaderSize;
     }
 
+    int getMaxPipelinedRequests() {
+        return maxPipelinedRequests;
+    }
+
     int getHeadersEncodedSizeEstimate() {
         return headersEncodedSizeEstimate;
     }
 
     int getTrailersEncodedSizeEstimate() {
         return trailersEncodedSizeEstimate;
-    }
-
-    public HttpHeadersFactory getHeadersFactory() {
-        return headersFactory;
     }
 }

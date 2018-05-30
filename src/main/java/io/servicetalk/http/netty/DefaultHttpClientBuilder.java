@@ -42,6 +42,7 @@ import static java.util.function.UnaryOperator.identity;
 
 /**
  * A builder for instances of {@link HttpClient}.
+ *
  * @param <ResolvedAddress> the type of address after resolution
  */
 public final class DefaultHttpClientBuilder<ResolvedAddress>
@@ -55,20 +56,24 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
 
     /**
      * Create a new instance.
+     *
      * @param loadBalancerFactory factory of {@link LoadBalancer} objects for {@link HttpConnection}s.
      */
     public DefaultHttpClientBuilder(final LoadBalancerFactory<ResolvedAddress, HttpConnection> loadBalancerFactory) {
-        this(loadBalancerFactory, new HttpClientConfig(new TcpClientConfig(false)));
+        this.lbFactory = requireNonNull(loadBalancerFactory);
+        this.config = new HttpClientConfig(new TcpClientConfig(false));
     }
 
     /**
-     * @param loadBalancerFactory factory of {@link LoadBalancer} objects for {@link HttpConnection}s
-     * @param config pre-load the builder with {@link HttpClientConfig} passed on from higher level builders
+     * Copy constructor.
+     *
+     * @param from The original {@link DefaultHttpClientBuilder} to copy from.
      */
-    DefaultHttpClientBuilder(final LoadBalancerFactory<ResolvedAddress, HttpConnection> loadBalancerFactory,
-                             final HttpClientConfig config) {
-        this.lbFactory = requireNonNull(loadBalancerFactory);
-        this.config = requireNonNull(config);
+    public DefaultHttpClientBuilder(final DefaultHttpClientBuilder<ResolvedAddress> from) {
+        config = new HttpClientConfig(from.config);
+        lbFactory = from.lbFactory;
+        clientFilterFactory = from.clientFilterFactory;
+        connectionFilterFactory = from.connectionFilterFactory;
     }
 
     @Override
@@ -98,8 +103,8 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()}
      * throws when {@link InputStream#close()} is called.
      */
-    public DefaultHttpClientBuilder<ResolvedAddress> setSslConfig(@Nullable SslConfig sslConfig) {
-        this.config.getTcpClientConfig().setSslConfig(sslConfig);
+    public DefaultHttpClientBuilder<ResolvedAddress> setSslConfig(@Nullable final SslConfig sslConfig) {
+        config.getTcpClientConfig().setSslConfig(sslConfig);
         return this;
     }
 
@@ -122,7 +127,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * @param loggerName Name of the logger.
      * @return {@code this}.
      */
-    public DefaultHttpClientBuilder<ResolvedAddress> setWireLoggerName(String loggerName) {
+    public DefaultHttpClientBuilder<ResolvedAddress> setWireLoggerName(final String loggerName) {
         config.getTcpClientConfig().setWireLoggerName(loggerName);
         return this;
     }
@@ -202,7 +207,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * Set the maximum number of pipelined HTTP requests to queue up, anything above this will be rejected,
      * 1 means pipelining is disabled and requests and responses are processed sequentially.
      * <p>
-     * Request pipelining requires HTTP 1.1
+     * Request pipelining requires HTTP 1.1.
      *
      * @param maxPipelinedRequests number of pipelined requests to queue up
      * @return {@code this}.
@@ -217,13 +222,14 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * builder.
      * <p>
      * Filtering allows you to wrap a {@link HttpConnection} and modify behavior during request/response processing
-     * Some potential candidates for filtering include logging, metrics, and decorating responses
+     * Some potential candidates for filtering include logging, metrics, and decorating responses.
+     *
      * @param connectionFilterFactory {@link UnaryOperator} to decorate a {@link HttpConnection} for the purpose of
      * filtering.
      * @return {@code this}
      */
     public DefaultHttpClientBuilder<ResolvedAddress> setConnectionFilterFactory(
-            UnaryOperator<HttpConnection> connectionFilterFactory) {
+            final UnaryOperator<HttpConnection> connectionFilterFactory) {
         this.connectionFilterFactory = requireNonNull(connectionFilterFactory);
         return this;
     }
@@ -233,6 +239,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * <p>
      * Note this method will be used to decorate the result of {@link #build(ExecutionContext, Publisher)} before it is
      * returned to the user.
+     *
      * @param clientFilterFactory {@link BiFunction} to decorate a {@link HttpClient} for the purpose of filtering.
      * The signature of the {@link BiFunction} is as follows:
      * <pre>
@@ -241,7 +248,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * @return {@code this}
      */
     public DefaultHttpClientBuilder<ResolvedAddress> setClientFilterFactory(
-            BiFunction<HttpClient, Publisher<Object>, HttpClient> clientFilterFactory) {
+            final BiFunction<HttpClient, Publisher<Object>, HttpClient> clientFilterFactory) {
         this.clientFilterFactory = requireNonNull(clientFilterFactory);
         return this;
     }
@@ -257,7 +264,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * @return {@code this}
      */
     public DefaultHttpClientBuilder<ResolvedAddress> appendClientFilterFactory(
-            BiFunction<HttpClient, Publisher<Object>, HttpClient> clientFilterFactory) {
+            final BiFunction<HttpClient, Publisher<Object>, HttpClient> clientFilterFactory) {
         requireNonNull(clientFilterFactory);
         BiFunction<HttpClient, Publisher<Object>, HttpClient> oldFilterFactory = this.clientFilterFactory;
         this.clientFilterFactory = (httpClient, objectPublisher) ->
@@ -272,7 +279,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * @return {@code this}
      */
     public DefaultHttpClientBuilder<ResolvedAddress> appendClientFilterFactory(
-            Function<HttpClient, HttpClient> clientFilterFactory) {
+            final Function<HttpClient, HttpClient> clientFilterFactory) {
         requireNonNull(clientFilterFactory);
         BiFunction<HttpClient, Publisher<Object>, HttpClient> oldFilterFactory = this.clientFilterFactory;
         this.clientFilterFactory = (httpClient, objectPublisher) ->

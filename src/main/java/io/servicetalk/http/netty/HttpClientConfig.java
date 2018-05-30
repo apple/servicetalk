@@ -27,12 +27,22 @@ final class HttpClientConfig {
     private HttpHeadersFactory headersFactory = DefaultHttpHeadersFactory.INSTANCE;
     private int maxInitialLineLength = 4096;
     private int maxHeaderSize = 8192;
+    private int maxPipelinedRequests = 1;
     private int headersEncodedSizeEstimate = 256;
     private int trailersEncodedSizeEstimate = 256;
-    private int maxPipelinedRequests = 1;
 
     HttpClientConfig(final TcpClientConfig tcpClientConfig) {
         this.tcpClientConfig = requireNonNull(tcpClientConfig);
+    }
+
+    HttpClientConfig(final HttpClientConfig from) {
+        this.tcpClientConfig = new TcpClientConfig(from.tcpClientConfig);
+        headersFactory = from.headersFactory;
+        maxInitialLineLength = from.maxInitialLineLength;
+        maxHeaderSize = from.maxHeaderSize;
+        maxPipelinedRequests = from.maxPipelinedRequests;
+        headersEncodedSizeEstimate = from.headersEncodedSizeEstimate;
+        trailersEncodedSizeEstimate = from.trailersEncodedSizeEstimate;
     }
 
     TcpClientConfig getTcpClientConfig() {
@@ -41,17 +51,6 @@ final class HttpClientConfig {
 
     HttpHeadersFactory getHeadersFactory() {
         return headersFactory;
-    }
-
-    public void setMaxPipelinedRequests(final int maxPipelinedRequests) {
-        if (maxPipelinedRequests <= 0) {
-            throw new IllegalArgumentException("maxPipelinedRequests must be > 0");
-        }
-        this.maxPipelinedRequests = maxPipelinedRequests;
-    }
-
-    public int getMaxPipelinedRequests() {
-        return maxPipelinedRequests;
     }
 
     void setHeadersFactory(final HttpHeadersFactory headersFactory) {
@@ -78,6 +77,17 @@ final class HttpClientConfig {
             throw new IllegalArgumentException("maxHeaderSize must be > 0");
         }
         this.maxHeaderSize = maxHeaderSize;
+    }
+
+    int getMaxPipelinedRequests() {
+        return maxPipelinedRequests;
+    }
+
+    void setMaxPipelinedRequests(final int maxPipelinedRequests) {
+        if (maxPipelinedRequests <= 0) {
+            throw new IllegalArgumentException("maxPipelinedRequests must be > 0");
+        }
+        this.maxPipelinedRequests = maxPipelinedRequests;
     }
 
     int getHeadersEncodedSizeEstimate() {

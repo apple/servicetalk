@@ -56,14 +56,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
      * Create a new builder.
      */
     public DefaultHttpConnectionBuilder() {
-        this(new HttpClientConfig(new TcpClientConfig(false)));
-    }
-
-    /**
-     * @param config pre-load the builder with {@link HttpClientConfig} passed on from higher level builders
-     */
-    DefaultHttpConnectionBuilder(final HttpClientConfig config) {
-        this.config = requireNonNull(config);
+        config = new HttpClientConfig(new TcpClientConfig(false));
     }
 
     private static Predicate<Object> getLastChunkPredicate() {
@@ -82,22 +75,22 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
     }
 
     static <ResolvedAddress> Single<HttpConnection> buildForPipelined(
-        ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
-        Function<HttpConnection, HttpConnection> connectionFilterFactory) {
+            final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
+            final Function<HttpConnection, HttpConnection> connectionFilterFactory) {
         return build(executionContext, resolvedAddress, roConfig, conn ->
                 connectionFilterFactory.apply(new PipelinedHttpConnection(conn, roConfig, executionContext)));
     }
 
     static <ResolvedAddress> Single<HttpConnection> buildForNonPipelined(
-            ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
-            Function<HttpConnection, HttpConnection> connectionFilterFactory) {
+            final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
+            final Function<HttpConnection, HttpConnection> connectionFilterFactory) {
         return build(executionContext, resolvedAddress, roConfig, conn ->
                 connectionFilterFactory.apply(new NonPipelinedHttpConnection(conn, roConfig, executionContext)));
     }
 
     private static <ResolvedAddress> Single<HttpConnection> build(
-            ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
-            Function<Connection<Object, Object>, HttpConnection> mapper) {
+            final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
+            final Function<Connection<Object, Object>, HttpConnection> mapper) {
         return new Single<HttpConnection>() {
             @Override
             protected void handleSubscribe(
@@ -122,7 +115,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
      * {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()}
      * throws when {@link InputStream#close()} is called.
      */
-    public DefaultHttpConnectionBuilder<ResolvedAddress> setSslConfig(@Nullable SslConfig sslConfig) {
+    public DefaultHttpConnectionBuilder<ResolvedAddress> setSslConfig(@Nullable final SslConfig sslConfig) {
         config.getTcpClientConfig().setSslConfig(sslConfig);
         return this;
     }
@@ -135,7 +128,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
      * @param value the value.
      * @return this.
      */
-    public <T> DefaultHttpConnectionBuilder<ResolvedAddress> setSocketOption(SocketOption<T> option, T value) {
+    public <T> DefaultHttpConnectionBuilder<ResolvedAddress> setSocketOption(final SocketOption<T> option, T value) {
         config.getTcpClientConfig().setSocketOption(option, value);
         return this;
     }
@@ -146,7 +139,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
      * @param loggerName Name of the logger.
      * @return {@code this}.
      */
-    public DefaultHttpConnectionBuilder<ResolvedAddress> setWireLoggerName(String loggerName) {
+    public DefaultHttpConnectionBuilder<ResolvedAddress> setWireLoggerName(final String loggerName) {
         config.getTcpClientConfig().setWireLoggerName(loggerName);
         return this;
     }
@@ -241,11 +234,12 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
      * <p>
      * Note this method will be used to decorate the result of {@link #build(ExecutionContext, Object)} before it is
      * returned to the user.
+     *
      * @param connectionFilterFactory {@link Function} to decorate a {@link HttpConnection} for the purpose of filtering
      * @return {@code this}
      */
     public DefaultHttpConnectionBuilder<ResolvedAddress> setConnectionFilterFactory(
-            UnaryOperator<HttpConnection> connectionFilterFactory) {
+            final UnaryOperator<HttpConnection> connectionFilterFactory) {
         this.connectionFilterFactory = requireNonNull(connectionFilterFactory);
         return this;
     }
