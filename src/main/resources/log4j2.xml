@@ -27,7 +27,6 @@
     <Logger name="io.netty" level="${level}"/>
     <Logger name="io.servicetalk" level="${level}"/>
     <Logger name="servicetalk-global-wire-logger" level="${level}"/>
-    <Logger name="server" level="debug"/>
     <Root level="info">
       <AppenderRef ref="Console"/>
     </Root>
