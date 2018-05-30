@@ -13,25 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-buildscript {
-  if (!repositories) {
-    repositories {
-      jcenter()
-      maven { url "https://plugins.gradle.org/m2/" }
-    }
-  }
+/**
+ * HTTP utilities based upon the HTTP API package.
+ */
+@ElementsAreNonnullByDefault
+package io.servicetalk.http.utils;
 
-  dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.1.0-SNAPSHOT"
-  }
-}
-
-apply plugin: "servicetalk-library"
-
-dependencies {
-  api "io.servicetalk:servicetalk-bom-internal:0.1.0-SNAPSHOT"
-
-  implementation "com.google.code.findbugs:jsr305"
-  implementation "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
-  api "io.servicetalk:servicetalk-http-api:0.1.0-SNAPSHOT"
-}
+import io.servicetalk.annotations.ElementsAreNonnullByDefault;
