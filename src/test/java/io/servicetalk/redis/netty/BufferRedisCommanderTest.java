@@ -112,6 +112,9 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         if (serverVersion[0] >= 3) {
             assertThat(awaitIndefinitely(commandClient.zaddIncr(key("a-zset"), null, null, 1, buf("one"))), is(2.0));
         }
+        if (serverVersion[0] >= 5) {
+            assertThat(awaitIndefinitely(commandClient.zpopmax(key("a-zset"))), contains(buf("2"), buf("one")));
+        }
 
         assertThat(awaitIndefinitely(commandClient.blpop(singletonList(buf("missing-key")), 1)), is(nullValue()));
 

@@ -110,6 +110,9 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         if (serverVersion[0] >= 3) {
             assertThat(awaitIndefinitely(commandClient.zaddIncr(key("a-zset"), null, null, 1, "one")), is(2.0));
         }
+        if (serverVersion[0] >= 5) {
+            assertThat(awaitIndefinitely(commandClient.zpopmax(key("a-zset"))), contains("2", "one"));
+        }
 
         assertThat(awaitIndefinitely(commandClient.blpop(singletonList("missing-key"), 1)), is(nullValue()));
 
