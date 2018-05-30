@@ -111,8 +111,8 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * @param value the value.
      * @return this.
      */
-    public <T> DefaultHttpClientBuilder<ResolvedAddress> setOption(SocketOption<T> option, T value) {
-        config.getTcpClientConfig().setOption(option, value);
+    public <T> DefaultHttpClientBuilder<ResolvedAddress> setSocketOption(SocketOption<T> option, T value) {
+        config.getTcpClientConfig().setSocketOption(option, value);
         return this;
     }
 

@@ -184,7 +184,7 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
      * @return this.
      */
     public <T> DefaultHttpServerStarter setSocketOption(final SocketOption<T> option, final T value) {
-        config.getTcpConfig().setOption(option, value);
+        config.getTcpConfig().setSocketOption(option, value);
         return this;
     }
 

@@ -135,8 +135,8 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
      * @param value the value.
      * @return this.
      */
-    public <T> DefaultHttpConnectionBuilder<ResolvedAddress> setOption(SocketOption<T> option, T value) {
-        config.getTcpClientConfig().setOption(option, value);
+    public <T> DefaultHttpConnectionBuilder<ResolvedAddress> setSocketOption(SocketOption<T> option, T value) {
+        config.getTcpClientConfig().setSocketOption(option, value);
         return this;
     }
 
