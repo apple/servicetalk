@@ -199,7 +199,7 @@ public final class TcpClient {
     private static TcpClientConfig defaultConfig() {
         TcpClientConfig config = new TcpClientConfig(false);
         // To test coverage of options.
-        config.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
+        config.setSocketOption(StandardSocketOptions.SO_KEEPALIVE, true);
         return config;
     }
 }

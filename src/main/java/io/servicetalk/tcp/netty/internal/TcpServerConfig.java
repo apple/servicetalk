@@ -129,7 +129,7 @@ public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
      * @param value the value.
      * @return this.
      */
-    public <T> TcpServerConfig setOption(SocketOption<T> option, T value) {
+    public <T> TcpServerConfig setSocketOption(SocketOption<T> option, T value) {
         if (option == ServiceTalkSocketOptions.IDLE_TIMEOUT) {
             idleTimeoutMs = (Long) value;
         } else {

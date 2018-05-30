@@ -78,7 +78,7 @@ public final class TcpClientConfig extends ReadOnlyTcpClientConfig {
      * @param value the value.
      * @return this.
      */
-    public <T> TcpClientConfig setOption(SocketOption<T> option, T value) {
+    public <T> TcpClientConfig setSocketOption(SocketOption<T> option, T value) {
         if (option == ServiceTalkSocketOptions.IDLE_TIMEOUT) {
             idleTimeoutMs = (Long) value;
         } else {
