@@ -57,8 +57,8 @@ public interface ContextFilter extends AsyncCloseable {
      *          {@code after}
      */
     default ContextFilter andThen(ContextFilter after) {
-        //TODO 3.x: Implement chaining
-        return context -> Single.error(new UnsupportedOperationException("Context filter chaining not implemented"));
+        return context -> filter(context).flatMap(
+                result -> (result == null || !result) ? Single.success(result) : after.filter(context));
     }
 
     /**
