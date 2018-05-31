@@ -117,7 +117,7 @@ public class ContextFilterTest {
         verify(second, never()).filter(any(ConnectionContext.class));
     }
 
-    private void setFilterResult(final ContextFilter first, final Single<Boolean> resultSingle) {
-        when(first.filter(context)).thenReturn(resultSingle);
+    private void setFilterResult(final ContextFilter filter, final Single<Boolean> resultSingle) {
+        when(filter.filter(context)).thenReturn(resultSingle);
     }
 }
