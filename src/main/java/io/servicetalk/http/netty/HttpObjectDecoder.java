@@ -42,6 +42,7 @@ import io.servicetalk.http.api.LastHttpPayloadChunk;
 import io.servicetalk.transport.netty.internal.ByteToMessageDecoder;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.PrematureChannelClosureException;
@@ -206,13 +207,13 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 }
 
                 int cStart = buffer.forEachByte(bEnd + 1, nonControlIndex - bEnd, FIND_NON_LINEAR_WHITESPACE);
-                if (cStart < 0) {
-                    splitInitialLineError();
-                }
-                // Find End Of String
-                int cEnd = buffer.forEachByteDesc(cStart, lfIndex - cStart, FIND_NON_LINEAR_WHITESPACE);
-                if (cEnd < 0) {
-                    splitInitialLineError();
+                int cEnd = -1;
+                if (cStart >= 0) {
+                    // Find End Of String
+                    cEnd = buffer.forEachByteDesc(cStart, lfIndex - cStart, FIND_NON_LINEAR_WHITESPACE);
+                    if (cEnd < 0) {
+                        splitInitialLineError();
+                    }
                 }
 
                 // Consume the initial line bytes from the buffer.
@@ -220,7 +221,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
                 message = createMessage(buffer.slice(aStart, aEnd - aStart),
                                         buffer.slice(bStart, bEnd - bStart),
-                                        buffer.slice(cStart, cEnd - cStart));
+                                        cEnd >= 0 ? buffer.slice(cStart, cEnd - cStart) : Unpooled.EMPTY_BUFFER);
                 currentState = State.READ_HEADER;
                 // fall-through
             }

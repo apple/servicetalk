@@ -55,6 +55,21 @@ public class HttpRequestDecoderTest {
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Test
+    public void noVersion() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        byte[] content = new byte[128];
+        ThreadLocalRandom.current().nextBytes(content);
+        byte[] beforeContentBytes = new String(
+                "GET /some/path?foo=bar&baz=yyy " + "\r\n" +
+                        "Connection: keep-alive" + "\r\n" +
+                        "User-Agent: unit-test" + "\r\n" +
+                        "Content-Length: " + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
+        expectedException.expect(DecoderException.class);
+        expectedException.expectCause(instanceOf(IllegalArgumentException.class));
+        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
+    }
+
+    @Test
     public void contentLengthNoTrailers() {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];

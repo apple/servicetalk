@@ -55,6 +55,23 @@ public class HttpResponseDecoderTest {
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Test
+    public void noReasonPhrase() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        byte[] content = new byte[128];
+        ThreadLocalRandom.current().nextBytes(content);
+        byte[] beforeContentBytes = new String(
+                "HTTP/1.1 200 " + "\r\n" +
+                        "Connection: keep-alive" + "\r\n" +
+                        "Server: unit-test" + "\r\n" +
+                        "Content-Length: " + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
+        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
+        assertTrue(channel.writeInbound(wrappedBuffer(content)));
+
+        validateHttpResponse(channel, content.length);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
     public void contentLengthNoTrailers() {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
