@@ -22,6 +22,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_DIRECT_ALLOCATOR;
 import static io.servicetalk.http.api.DefaultHttpResponseStatus.statusCodeToBuffer;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.toStatusClass;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Provides constant instances of {@link HttpResponseStatus}, as well as a mechanism for creating new instances if the
@@ -320,7 +321,7 @@ public enum HttpResponseStatuses implements HttpResponseStatus {
     HttpResponseStatuses(int code, Buffer reasonPhrase) {
         // No instances.
         this.code = code;
-        this.reasonPhrase = reasonPhrase;
+        this.reasonPhrase = requireNonNull(reasonPhrase);
         this.statusClass = toStatusClass(code);
         this.statusCodeBuffer = statusCodeToBuffer(code);
     }
@@ -362,7 +363,8 @@ public enum HttpResponseStatuses implements HttpResponseStatus {
      */
     public static HttpResponseStatus getResponseStatus(final int statusCode, final Buffer reasonPhrase) {
         final HttpResponseStatuses responseStatus = valueOf(statusCode);
-        if (responseStatus != null && responseStatus.reasonPhrase.equals(reasonPhrase)) {
+        if (responseStatus != null &&
+                (reasonPhrase.getReadableBytes() == 0 || responseStatus.reasonPhrase.equals(reasonPhrase))) {
             return responseStatus;
         }
         return new DefaultHttpResponseStatus(statusCode, reasonPhrase);
