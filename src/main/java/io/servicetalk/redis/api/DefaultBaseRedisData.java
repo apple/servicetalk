@@ -18,6 +18,8 @@ package io.servicetalk.redis.api;
 import static java.util.Objects.requireNonNull;
 
 /**
+ * A skeletal {@link RedisData} implementation to extend.
+ *
  * @param <T> the type of this specific Redis data.
  */
 public abstract class DefaultBaseRedisData<T> implements RedisData {

@@ -49,6 +49,8 @@ public abstract class RedisRequester implements ListenableAsyncCloseable {
     private volatile BufferRedisCommander redisBufferCommander;
 
     /**
+     * Send a {@code request}.
+     *
      * @param request the {@link RedisRequest} to send.
      * @return the response as a {@link Publisher}.
      */
@@ -64,6 +66,8 @@ public abstract class RedisRequester implements ListenableAsyncCloseable {
     public abstract ExecutionContext getExecutionContext();
 
     /**
+     * Send a {@code request} which expects the specified response type.
+     *
      * @param request      the {@link RedisRequest} to send.
      * @param responseType the {@link Class} to coerce the response to.
      * @param <R>          the type of the response.

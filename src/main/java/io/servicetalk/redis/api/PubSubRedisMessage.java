@@ -46,6 +46,8 @@ public interface PubSubRedisMessage extends CompleteRedisData {
     }
 
     /**
+     * A skeletal {@link RedisData} implementation for a {@link PubSubRedisMessage} to extend.
+     *
      * @param <T> the type of content stored in this message.
      */
     abstract class BasePubSubRedisMessage<T> extends DefaultBaseRedisData<T> {
@@ -67,6 +69,8 @@ public interface PubSubRedisMessage extends CompleteRedisData {
     }
 
     /**
+     * Response for a {@link Command#PING} command.
+     *
      * @param <T> the type of used for characters ({@link String} or {@link Buffer}).
      */
     final class Pong<T> extends BasePubSubRedisMessage<T> implements PubSubRedisMessage {

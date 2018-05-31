@@ -50,7 +50,9 @@ public final class RedisProtocolSupport {
     public @interface Cmd {
 
         /**
-         * @return the {@link Command}
+         * Get the {@link Command}.
+         *
+         * @return the {@link Command}.
          */
         Command value();
     }
@@ -61,7 +63,9 @@ public final class RedisProtocolSupport {
     public @interface SubCmd {
 
         /**
-         * @return the {@link SubCommand}
+         * Get the {@link SubCommand}.
+         *
+         * @return the {@link SubCommand}.
          */
         SubCommand value();
     }

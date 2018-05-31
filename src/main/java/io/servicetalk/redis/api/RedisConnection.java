@@ -27,6 +27,8 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class RedisConnection extends RedisRequester {
     /**
+     * Get the {@link ConnectionContext}.
+     *
      * @return the {@link ConnectionContext}.
      */
     public abstract ConnectionContext getConnectionContext();

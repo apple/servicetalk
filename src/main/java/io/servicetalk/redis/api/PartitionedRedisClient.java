@@ -44,6 +44,8 @@ public abstract class PartitionedRedisClient implements ListenableAsyncCloseable
     private volatile BufferRedisCommander redisBufferCommander;
 
     /**
+     * Send a {@code request}.
+     *
      * @param request the {@link RedisRequest} to send.
      * @param partitionSelector Defines the partition(s) that {@code request} can be sent to.
      * @return the response as a {@link Publisher}.
@@ -51,6 +53,8 @@ public abstract class PartitionedRedisClient implements ListenableAsyncCloseable
     public abstract Publisher<RedisData> request(PartitionAttributes partitionSelector, RedisRequest request);
 
     /**
+     * Send a {@code request} which expects the specified response type.
+     *
      * @param partitionSelector Defines the partition(s) that {@code request} can be sent to.
      * @param request      the {@link RedisRequest} to send.
      * @param responseType the {@link Class} to coerce the response to.

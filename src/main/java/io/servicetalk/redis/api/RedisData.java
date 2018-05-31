@@ -38,6 +38,8 @@ public interface RedisData {
     SimpleString PONG = new SimpleString("PONG");
 
     /**
+     * Get the {@code int} value of the data.
+     *
      * @return the {@code int} value of the data.
      * @throws UnsupportedOperationException if the data is not an {@code int}
      */
@@ -46,6 +48,8 @@ public interface RedisData {
     }
 
     /**
+     * Get the {@code long} value of the data.
+     *
      * @return the {@code long} value of the data.
      * @throws UnsupportedOperationException if the data is not an {@code long}
      */
@@ -54,6 +58,8 @@ public interface RedisData {
     }
 
     /**
+     * Get the {@link Buffer} value of the data.
+     *
      * @return the {@link Buffer} value of the data.
      * @throws UnsupportedOperationException if the data is not an {@link Buffer}
      */
@@ -62,6 +68,8 @@ public interface RedisData {
     }
 
     /**
+     * Get the {@link CharSequence} value of the data.
+     *
      * @return the {@link CharSequence} value of the data.
      * @throws UnsupportedOperationException if the data is not an {@link CharSequence}
      */
@@ -70,6 +78,8 @@ public interface RedisData {
     }
 
     /**
+     * Get the {@link List} of {@link RedisData} value of the data.
+     *
      * @return the {@link List} of {@link RedisData} value of the data.
      * @throws UnsupportedOperationException if the data is not a {@link List} of {@link RedisData}
      */
