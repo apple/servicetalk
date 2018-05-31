@@ -156,22 +156,44 @@ public final class TcpConnector<Read, Write> {
             ChannelHandler handler = new io.netty.channel.ChannelInitializer<Channel>() {
                 @Override
                 protected void initChannel(Channel channel) {
-                    ConnectionContext context = newContext(channel, ioExecutorThread, executionContext.getExecutor(),
-                            executionContext.getBufferAllocator(), channelInitializer, checkForRefCountedTrapper);
-                    AbstractChannelReadHandler readHandler = channel.pipeline().get(AbstractChannelReadHandler.class);
+                    final ConnectionContext context;
+                    final AbstractChannelReadHandler readHandler;
+                    try {
+                        context = newContext(channel, ioExecutorThread, executionContext.getExecutor(),
+                                executionContext.getBufferAllocator(), channelInitializer, checkForRefCountedTrapper);
+                        readHandler = channel.pipeline().get(AbstractChannelReadHandler.class);
+                    } catch (Throwable cause) {
+                        channel.close();
+                        subscriber.onError(cause);
+                        return;
+                    }
                     if (readHandler != null) {
+                        channel.close();
                         subscriber.onError(new IllegalStateException(
                             format("A handler %s of type %s already found, can not connect with this existing handler.",
                                         readHandler, AbstractChannelReadHandler.class.getName())));
                     } else {
-                        Connection.TerminalPredicate<Read> predicate =
-                                new Connection.TerminalPredicate<>(terminalItemPredicate.get());
-                        channel.pipeline().addLast(new AbstractChannelReadHandler<Read>(predicate, executionContext.getExecutor()) {
-                            @Override
-                            protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Read> newPublisher) {
-                                subscriber.onSuccess(new NettyConnection<>(channel, context, newPublisher, predicate));
-                            }
-                        });
+                        try {
+                            Connection.TerminalPredicate<Read> predicate =
+                                    new Connection.TerminalPredicate<>(terminalItemPredicate.get());
+                            channel.pipeline().addLast(new AbstractChannelReadHandler<Read>(predicate, executionContext.getExecutor()) {
+                                @Override
+                                protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Read> newPublisher) {
+                                    final Connection<Read, Write> connection;
+                                    try {
+                                        connection = new NettyConnection<>(channel, context, newPublisher, predicate);
+                                    } catch (Throwable cause) {
+                                        channel.close();
+                                        subscriber.onError(cause);
+                                        return;
+                                    }
+                                    subscriber.onSuccess(connection);
+                                }
+                            });
+                        } catch (Throwable cause) {
+                            channel.close();
+                            subscriber.onError(cause);
+                        }
                     }
                 }
             };
