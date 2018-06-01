@@ -39,7 +39,6 @@ dependencyManagement {
     dependency "io.servicetalk:servicetalk-http-router-predicate:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-http-router-jersey:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-http-netty:0.1.0-SNAPSHOT"
-    dependency "io.servicetalk:servicetalk-http-jackson:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-http-api:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-http-utils:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-redis-api:0.1.0-SNAPSHOT"
@@ -66,5 +65,6 @@ dependencyManagement {
     dependency "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-data-jackson:0.1.0-SNAPSHOT"
+    dependency "io.servicetalk:servicetalk-serialization-api:0.1.0-SNAPSHOT"
   }
 }
