@@ -14,4 +14,4 @@
  * limitations under the License.
  */
 enableFeaturePreview("IMPROVED_POM_SUPPORT")
-rootProject.name = "servicetalk-buffer-api"
+rootProject.name = "servicetalk-serialization-api"
