@@ -37,6 +37,8 @@ public interface Single<T> {
      * <p>
      * The semantics and threading model of this interface is meant to be the same as {@link Subscriber},
      * but simplified for the use case where the operations completes with a single data element or fails.
+     *
+     * @param <T> Type of the result of the {@link Single}.
      */
     interface Subscriber<T> {
         /**
