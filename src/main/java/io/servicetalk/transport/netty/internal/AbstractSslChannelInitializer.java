@@ -28,6 +28,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
+/**
+ * A {@link ChannelInitializer} that adds a {@link SslHandler} to the {@link ChannelPipeline} if necessary.
+ */
 public abstract class AbstractSslChannelInitializer implements ChannelInitializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SslServerChannelInitializer.class);

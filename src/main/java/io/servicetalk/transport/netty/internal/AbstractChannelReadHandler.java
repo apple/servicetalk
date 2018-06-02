@@ -34,6 +34,8 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * An abstract {@link ChannelInboundHandler} that can be used to read off a {@link Channel} as a {@link Publisher}.
+ *
+ * @param <T> Type of elements emitted by the {@link Publisher} created by this handler.
  */
 public abstract class AbstractChannelReadHandler<T> extends ChannelInboundHandlerAdapter {
 
