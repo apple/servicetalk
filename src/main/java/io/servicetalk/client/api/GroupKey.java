@@ -20,7 +20,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 /**
  * Identifies a client within a group of clients, and provides enough information to create a client if non exist.
  *
- * @param <Address> The type of address used to create new clients (typically this is unresolved address).
+ * @param <Address> The type of address used by clients (typically this is unresolved address).
  */
 public interface GroupKey<Address> {
     /**

@@ -21,6 +21,8 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * A default implementation of {@link GroupKey}.
+ *
+ * @param <Address> The type of address used by clients (typically this is unresolved address).
  */
 public final class DefaultGroupKey<Address> implements GroupKey<Address> {
 

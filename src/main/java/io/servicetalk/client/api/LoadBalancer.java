@@ -25,6 +25,8 @@ import java.util.function.Function;
 /**
  * Given multiple {@link SocketAddress}es select the most desired {@link SocketAddress} to use. This is typically used
  * to determine which connection to issue a request to.
+ *
+ * @param <C> The type of connection.
  */
 public interface LoadBalancer<C extends ListenableAsyncCloseable> extends ListenableAsyncCloseable {
 

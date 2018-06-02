@@ -21,9 +21,11 @@ import io.servicetalk.concurrent.api.Single;
 /**
  * A factory for creating new connections.
  *
- * @param <C> Type of connections created by this factory.
+ * @param <ResolvedAddress> The type of a resolved address that can be used for connecting.
+ * @param <C> The type of connections created by this factory.
  */
-public interface ConnectionFactory<ResolvedAddress, C extends ListenableAsyncCloseable> extends ListenableAsyncCloseable {
+public interface ConnectionFactory<ResolvedAddress, C extends ListenableAsyncCloseable>
+        extends ListenableAsyncCloseable {
 
     /**
      * Creates and asynchronously returns a connection.

@@ -21,7 +21,9 @@ import io.servicetalk.concurrent.api.Publisher;
 
 /**
  * A factory for creating {@link LoadBalancer} instances.
- * @param <ResolvedAddress> the type of address after resolution.
+ *
+ * @param <ResolvedAddress> The type of address after resolution.
+ * @param <C> The type of connection.
  */
 @FunctionalInterface
 public interface LoadBalancerFactory<ResolvedAddress, C extends ListenableAsyncCloseable> {
