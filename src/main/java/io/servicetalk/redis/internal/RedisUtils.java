@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.api.CompositeBuffer;
 
+import java.util.List;
 import javax.annotation.Nullable;
 
 import static java.nio.ByteOrder.BIG_ENDIAN;
@@ -186,6 +187,9 @@ public final class RedisUtils {
                 (short) ((second << 8) | first) : (short) ((first << 8) | second);
     }
 
+    /**
+     * Marker class which indicates that Redis response should be coerced to the {@link List} of {@link CharSequence}s.
+     */
     public static final class ListWithBuffersCoercedToCharSequences {
         private ListWithBuffersCoercedToCharSequences() {
             // no instantiation
