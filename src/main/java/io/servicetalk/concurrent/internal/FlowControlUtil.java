@@ -18,6 +18,9 @@ package io.servicetalk.concurrent.internal;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
+/**
+ * A set of utility methods for safe math operations to prevent overflow.
+ */
 public final class FlowControlUtil {
 
     private FlowControlUtil() {

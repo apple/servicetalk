@@ -29,6 +29,9 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
+/**
+ * A set of utility methods for tasks execution.
+ */
 public final class ExecutorUtil {
 
     private ExecutorUtil() {

@@ -17,6 +17,9 @@ package io.servicetalk.concurrent.internal;
 
 import org.reactivestreams.Subscription;
 
+/**
+ * A {@link Subscription} implementation, which does not do anything.
+ */
 public final class EmptySubscription implements Subscription {
     public static final EmptySubscription EMPTY_SUBSCRIPTION = new EmptySubscription();
 
