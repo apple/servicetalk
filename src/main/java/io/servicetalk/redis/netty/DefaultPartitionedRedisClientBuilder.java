@@ -70,6 +70,11 @@ import static io.servicetalk.redis.netty.DefaultRedisClientBuilder.newRedisClien
 import static java.util.Objects.requireNonNull;
 import static java.util.function.UnaryOperator.identity;
 
+/**
+ * A builder for instances of {@link PartitionedRedisClient}.
+ *
+ * @param <ResolvedAddress> the type of address after resolution.
+ */
 public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
         implements PartitionedRedisClientBuilder<ResolvedAddress> {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultPartitionedRedisClientBuilder.class);

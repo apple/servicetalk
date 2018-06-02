@@ -29,9 +29,13 @@ import javax.annotation.Nullable;
 import static io.servicetalk.buffer.netty.BufferUtil.toByteBuf;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+/**
+ * A set of utility functions for redis.
+ */
 final class RedisUtils {
 
     private RedisUtils() {
+        // no instances
     }
 
     /**
