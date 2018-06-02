@@ -26,6 +26,9 @@ import javax.annotation.Nullable;
 
 import static java.util.Collections.binarySearch;
 
+/**
+ * A set of utility functions for {@link ServiceDiscoverer}.
+ */
 public final class ServiceDiscovererUtils {
 
     private ServiceDiscovererUtils() {
