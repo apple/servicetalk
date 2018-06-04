@@ -25,6 +25,7 @@ import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.netty.DefaultHttpClientBuilder;
 import io.servicetalk.http.netty.DefaultHttpServerStarter;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
+import io.servicetalk.http.utils.HttpClientFunctionFilter;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
@@ -42,6 +43,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.examples.http.service.composition.AsyncUtil.timeout;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.METADATA_BACKEND_ADDRESS;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.RATINGS_BACKEND_ADDRESS;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.RECOMMENDATIONS_BACKEND_ADDRESS;
@@ -89,7 +91,9 @@ public final class GatewayServer {
             // Set retry and timeout filters for all clients.
             clientBuilder.setClientFilterFactory((client, lbEventStream) -> {
                 // Apply a timeout filter for the client to guard against extremely latent clients.
-                return new ClientTimeoutFilter(client, ofMillis(100));
+                return new HttpClientFunctionFilter((requester, request) ->
+                        timeout(requester.request(request), requester.getExecutionContext().getExecutor(), ofMillis(100)),
+                        client);
             });
 
             // Create clients for the different backends we are going to use in the gateway.
