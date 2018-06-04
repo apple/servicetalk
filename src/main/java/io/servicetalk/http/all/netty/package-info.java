@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 @ElementsAreNonnullByDefault
-package io.servicetalk.http.netty.all;
+package io.servicetalk.http.all.netty;
 
 import io.servicetalk.annotations.ElementsAreNonnullByDefault;

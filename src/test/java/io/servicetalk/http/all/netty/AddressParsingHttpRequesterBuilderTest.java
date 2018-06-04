@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.netty.all;
+package io.servicetalk.http.all.netty;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.concurrent.api.CompositeCloseable;

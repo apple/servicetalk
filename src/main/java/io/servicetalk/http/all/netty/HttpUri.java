@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.servicetalk.http.netty.all;
+package io.servicetalk.http.all.netty;
 
 import java.net.InetSocketAddress;
 import java.util.Objects;
