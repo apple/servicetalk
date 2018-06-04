@@ -25,7 +25,8 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 
 /**
  * A builder for {@link RedisConnection} objects.
- * @param <ResolvedAddress> A resolved address that can be used for connecting.
+ *
+ * @param <ResolvedAddress> The type of a resolved address that can be used for connecting.
  */
 public interface RedisConnectionBuilder<ResolvedAddress> {
 

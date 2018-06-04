@@ -44,6 +44,9 @@ public final class RedisProtocolSupport {
         // no instantiation
     }
 
+    /**
+     * An annotation, which indicates a <a href="https://redis.io/commands">Redis Command</a> name.
+     */
     @Documented
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.METHOD})
@@ -57,6 +60,9 @@ public final class RedisProtocolSupport {
         Command value();
     }
 
+    /**
+     * An annotation, which indicates a Redis sub command name.
+     */
     @Documented
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.METHOD, ElementType.PARAMETER})
@@ -70,24 +76,36 @@ public final class RedisProtocolSupport {
         SubCommand value();
     }
 
+    /**
+     * An annotation, which indicates an option of a Redis command.
+     */
     @Documented
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.PARAMETER})
     public @interface Option {
     }
 
+    /**
+     * An annotation, which indicates a key for a Redis command.
+     */
     @Documented
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.PARAMETER, ElementType.FIELD})
     public @interface Key {
     }
 
+    /**
+     * An annotation, which indicates a tuple argument for a Redis command.
+     */
     @Documented
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.PARAMETER})
     public @interface Tuple {
     }
 
+    /**
+     * A parent interface for all tuple arguments.
+     */
     public interface TupleArgument {
 
         /**
@@ -107,9 +125,19 @@ public final class RedisProtocolSupport {
         void buildAttributes(RedisPartitionAttributesBuilder builder);
     }
 
+    /**
+     * A marker interface, which indicates tuples for {@link Command#BITFIELD BITFIELD} command.
+     */
     public interface BitfieldOperation extends TupleArgument {
     }
 
+    /**
+     * Values for the {@code type} argument for operations of the {@code BITFIELD} command.
+     * <p>
+     * Integer type is a composition of a prefix, followed by the number of bits of the integer type. For example,
+     * {@link IntegerType#I08 i8} is a signed integer of 8 bits and {@link IntegerType#U16 u16} is an unsigned integer
+     * of 16 bits.
+     */
     public enum IntegerType implements RedisData.CompleteRequestRedisData {
 
         I01("i1", 1), I02("i2", 2), I03("i3", 3), I04("i4", 4), I05("i5", 5), I06("i6", 6), I07("i7", 7), I08("i8", 8),
@@ -164,6 +192,9 @@ public final class RedisProtocolSupport {
         STALE, WRITE
     }
 
+    /**
+     * <a href="https://redis.io/commands">Redis Commands</a>.
+     */
     public enum Command implements RedisData.CompleteRequestRedisData {
 
         APPEND("APPEND", EnumSet.of(CommandFlag.WRITE, CommandFlag.DENYOOM), true),
@@ -379,6 +410,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Values for the {@code expire} argument of the {@code expireDuration} tuple of the {@code SET} command.
+     */
     public enum SetExpire implements RedisData.CompleteRequestRedisData {
 
         EX("EX"), PX("PX");
@@ -395,6 +429,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Expiration time.
+     */
     public static final class ExpireDuration implements TupleArgument {
 
         static final int SIZE = 2;
@@ -443,6 +480,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Redis sub commands.
+     */
     public enum SubCommand implements RedisData.CompleteRequestRedisData {
 
         ADDR("ADDR"), ADDSLOTS("ADDSLOTS"), AGGREGATE("AGGREGATE"), BLOCK("BLOCK"), BY("BY"), CHANNELS("CHANNELS"),
@@ -469,6 +509,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code overflow} argument of the {@code BITFIELD} command.
+     */
     public enum BitfieldOverflow implements RedisData.CompleteRequestRedisData {
 
         FAIL("FAIL"), SAT("SAT"), WRAP("WRAP");
@@ -485,6 +528,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code type} argument of the {@code CLIENT KILL} command.
+     */
     public enum ClientKillType implements RedisData.CompleteRequestRedisData {
 
         MASTER("master"), NORMAL("normal"), PUBSUB("pubsub"), SLAVE("slave");
@@ -501,6 +547,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code reply-mode} argument of the {@code CLIENT REPLY} command.
+     */
     public enum ClientReplyReplyMode implements RedisData.CompleteRequestRedisData {
 
         OFF("OFF"), ON("ON"), SKIP("SKIP");
@@ -517,6 +566,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code options} argument of the {@code CLUSTER FAILOVER} command.
+     */
     public enum ClusterFailoverOptions implements RedisData.CompleteRequestRedisData {
 
         FORCE("FORCE"), TAKEOVER("TAKEOVER");
@@ -533,6 +585,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code reset-type} argument of the {@code CLUSTER RESET} command.
+     */
     public enum ClusterResetResetType implements RedisData.CompleteRequestRedisData {
 
         HARD("HARD"), SOFT("SOFT");
@@ -549,6 +604,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code subcommand} argument of the {@code CLUSTER SETSLOT} command.
+     */
     public enum ClusterSetslotSubcommand implements RedisData.CompleteRequestRedisData {
 
         IMPORTING("IMPORTING"), MIGRATING("MIGRATING"), NODE("NODE"), STABLE("STABLE");
@@ -565,6 +623,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code async} argument of the {@code FLUSHALL} command.
+     */
     public enum FlushallAsync implements RedisData.CompleteRequestRedisData {
 
         ASYNC("ASYNC");
@@ -581,6 +642,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code async} argument of the {@code FLUSHDB} command.
+     */
     public enum FlushdbAsync implements RedisData.CompleteRequestRedisData {
 
         ASYNC("ASYNC");
@@ -597,6 +661,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code order} argument of the {@code GEORADIUS} command.
+     */
     public enum GeoradiusOrder implements RedisData.CompleteRequestRedisData {
 
         ASC("ASC"), DESC("DESC");
@@ -613,6 +680,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code unit} argument of the {@code GEORADIUS} command.
+     */
     public enum GeoradiusUnit implements RedisData.CompleteRequestRedisData {
 
         FT("ft"), KM("km"), M("m"), MI("mi");
@@ -629,6 +699,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code withcoord} argument of the {@code GEORADIUS} command.
+     */
     public enum GeoradiusWithcoord implements RedisData.CompleteRequestRedisData {
 
         WITHCOORD("WITHCOORD");
@@ -645,6 +718,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code withdist} argument of the {@code GEORADIUS} command.
+     */
     public enum GeoradiusWithdist implements RedisData.CompleteRequestRedisData {
 
         WITHDIST("WITHDIST");
@@ -661,6 +737,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code withhash} argument of the {@code GEORADIUS} command.
+     */
     public enum GeoradiusWithhash implements RedisData.CompleteRequestRedisData {
 
         WITHHASH("WITHHASH");
@@ -677,6 +756,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code order} argument of the {@code GEORADIUSBYMEMBER} command.
+     */
     public enum GeoradiusbymemberOrder implements RedisData.CompleteRequestRedisData {
 
         ASC("ASC"), DESC("DESC");
@@ -693,6 +775,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code unit} argument of the {@code GEORADIUSBYMEMBER} command.
+     */
     public enum GeoradiusbymemberUnit implements RedisData.CompleteRequestRedisData {
 
         FT("ft"), KM("km"), M("m"), MI("mi");
@@ -709,6 +794,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code withcoord} argument of the {@code GEORADIUSBYMEMBER} command.
+     */
     public enum GeoradiusbymemberWithcoord implements RedisData.CompleteRequestRedisData {
 
         WITHCOORD("WITHCOORD");
@@ -725,6 +813,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code withdist} argument of the {@code GEORADIUSBYMEMBER} command.
+     */
     public enum GeoradiusbymemberWithdist implements RedisData.CompleteRequestRedisData {
 
         WITHDIST("WITHDIST");
@@ -741,6 +832,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code withhash} argument of the {@code GEORADIUSBYMEMBER} command.
+     */
     public enum GeoradiusbymemberWithhash implements RedisData.CompleteRequestRedisData {
 
         WITHHASH("WITHHASH");
@@ -757,6 +851,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code where} argument of the {@code LINSERT} command.
+     */
     public enum LinsertWhere implements RedisData.CompleteRequestRedisData {
 
         AFTER("AFTER"), BEFORE("BEFORE");
@@ -773,6 +870,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code replace} argument of the {@code RESTORE} command.
+     */
     public enum RestoreReplace implements RedisData.CompleteRequestRedisData {
 
         REPLACE("REPLACE");
@@ -789,6 +889,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code mode} argument of the {@code SCRIPT DEBUG} command.
+     */
     public enum ScriptDebugMode implements RedisData.CompleteRequestRedisData {
 
         NO("NO"), SYNC("SYNC"), YES("YES");
@@ -805,6 +908,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code condition} argument of the {@code SET} command.
+     */
     public enum SetCondition implements RedisData.CompleteRequestRedisData {
 
         NX("NX"), XX("XX");
@@ -821,6 +927,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code save-mode} argument of the {@code SHUTDOWN} command.
+     */
     public enum ShutdownSaveMode implements RedisData.CompleteRequestRedisData {
 
         NOSAVE("NOSAVE"), SAVE("SAVE");
@@ -837,6 +946,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code order} argument of the {@code SORT} command.
+     */
     public enum SortOrder implements RedisData.CompleteRequestRedisData {
 
         ASC("ASC"), DESC("DESC");
@@ -853,6 +965,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code sorting} argument of the {@code SORT} command.
+     */
     public enum SortSorting implements RedisData.CompleteRequestRedisData {
 
         ALPHA("ALPHA");
@@ -869,6 +984,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code streams} argument of the {@code XREAD} command.
+     */
     public enum XreadStreams implements RedisData.CompleteRequestRedisData {
 
         STREAMS("STREAMS");
@@ -885,6 +1003,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code streams} argument of the {@code XREADGROUP} command.
+     */
     public enum XreadgroupStreams implements RedisData.CompleteRequestRedisData {
 
         STREAMS("STREAMS");
@@ -901,6 +1022,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code change} argument of the {@code ZADD} command.
+     */
     public enum ZaddChange implements RedisData.CompleteRequestRedisData {
 
         CH("CH");
@@ -917,6 +1041,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code condition} argument of the {@code ZADD} command.
+     */
     public enum ZaddCondition implements RedisData.CompleteRequestRedisData {
 
         NX("NX"), XX("XX");
@@ -933,6 +1060,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code increment} argument of the {@code ZADD} command.
+     */
     public enum ZaddIncrement implements RedisData.CompleteRequestRedisData {
 
         INCR("INCR");
@@ -949,6 +1079,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code aggregate} argument of the {@code ZINTERSTORE} command.
+     */
     public enum ZinterstoreAggregate implements RedisData.CompleteRequestRedisData {
 
         MAX("MAX"), MIN("MIN"), SUM("SUM");
@@ -965,6 +1098,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code withscores} argument of the {@code ZRANGE} command.
+     */
     public enum ZrangeWithscores implements RedisData.CompleteRequestRedisData {
 
         WITHSCORES("WITHSCORES");
@@ -981,6 +1117,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code withscores} argument of the {@code ZRANGEBYSCORE} command.
+     */
     public enum ZrangebyscoreWithscores implements RedisData.CompleteRequestRedisData {
 
         WITHSCORES("WITHSCORES");
@@ -997,6 +1136,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code withscores} argument of the {@code ZREVRANGE} command.
+     */
     public enum ZrevrangeWithscores implements RedisData.CompleteRequestRedisData {
 
         WITHSCORES("WITHSCORES");
@@ -1013,6 +1155,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code withscores} argument of the {@code ZREVRANGEBYSCORE} command.
+     */
     public enum ZrevrangebyscoreWithscores implements RedisData.CompleteRequestRedisData {
 
         WITHSCORES("WITHSCORES");
@@ -1029,6 +1174,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Value(s) for the {@code aggregate} argument of the {@code ZUNIONSTORE} command.
+     */
     public enum ZunionstoreAggregate implements RedisData.CompleteRequestRedisData {
 
         MAX("MAX"), MIN("MIN"), SUM("SUM");
@@ -1045,6 +1193,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * A tuple of {@code field}, {@code value}.
+     */
     public static final class BufferFieldValue implements TupleArgument {
 
         static final int SIZE = 2;
@@ -1093,6 +1244,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * A tuple of {@code group}, {@code consumer}.
+     */
     public static final class BufferGroupConsumer implements TupleArgument {
 
         static final int SIZE = 3;
@@ -1142,6 +1296,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * A tuple of {@code key}, {@code value}.
+     */
     public static final class BufferKeyValue implements TupleArgument {
 
         static final int SIZE = 2;
@@ -1192,6 +1349,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * A tuple of {@code longitude}, {@code latitude}, {@code member}.
+     */
     public static final class BufferLongitudeLatitudeMember implements TupleArgument {
 
         static final int SIZE = 3;
@@ -1246,6 +1406,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * A tuple of {@code score}, {@code member}.
+     */
     public static final class BufferScoreMember implements TupleArgument {
 
         static final int SIZE = 2;
@@ -1294,6 +1457,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * A tuple of {@code field}, {@code value}.
+     */
     public static final class FieldValue implements TupleArgument {
 
         static final int SIZE = 2;
@@ -1342,6 +1508,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * A tuple of {@code group}, {@code consumer}.
+     */
     public static final class GroupConsumer implements TupleArgument {
 
         static final int SIZE = 3;
@@ -1391,6 +1560,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * A tuple of {@code key}, {@code value}.
+     */
     public static final class KeyValue implements TupleArgument {
 
         static final int SIZE = 2;
@@ -1441,6 +1613,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * A tuple of {@code longitude}, {@code latitude}, {@code member}.
+     */
     public static final class LongitudeLatitudeMember implements TupleArgument {
 
         static final int SIZE = 3;
@@ -1495,6 +1670,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * A tuple of {@code offset}, {@code count}.
+     */
     public static final class OffsetCount implements TupleArgument {
 
         static final int SIZE = 3;
@@ -1544,6 +1722,9 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * A tuple of {@code score}, {@code member}.
+     */
     public static final class ScoreMember implements TupleArgument {
 
         static final int SIZE = 2;
@@ -1592,8 +1773,14 @@ public final class RedisProtocolSupport {
         }
     }
 
+    /**
+     * Defines operations for {@link Command#BITFIELD BITFIELD} command.
+     */
     public interface BitfieldOperations {
 
+        /**
+         * A tuple of {@code type}, {@code offset}.
+         */
         final class Get implements BitfieldOperation {
 
             static final int SIZE = 3;
@@ -1647,6 +1834,9 @@ public final class RedisProtocolSupport {
             }
         }
 
+        /**
+         * A tuple of {@code type}, {@code offset}, {@code increment}.
+         */
         final class Incrby implements BitfieldOperation {
 
             static final int SIZE = 4;
@@ -1706,6 +1896,9 @@ public final class RedisProtocolSupport {
             }
         }
 
+        /**
+         * A tuple of {@code type}, {@code offset}, {@code value}.
+         */
         final class Set implements BitfieldOperation {
 
             static final int SIZE = 4;
@@ -1765,6 +1958,9 @@ public final class RedisProtocolSupport {
             }
         }
 
+        /**
+         * A tuple of {@code strategy}.
+         */
         final class Overflow implements BitfieldOperation {
 
             static final int SIZE = 2;

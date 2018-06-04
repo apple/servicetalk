@@ -47,6 +47,9 @@ import static io.servicetalk.transport.api.FlushStrategy.flushBeforeEnd;
 import static java.lang.System.arraycopy;
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Factory methods for creating {@link RedisRequest}s.
+ */
 public final class RedisRequests {
 
     private RedisRequests() {

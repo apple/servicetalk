@@ -114,6 +114,10 @@ public interface RedisData {
     interface CompleteRequestRedisData extends CompleteRedisData, RequestRedisData {
     }
 
+    /**
+     * <a href="https://redis.io/topics/protocol#resp-simple-strings">Simple String</a> representation of
+     * {@link RedisData}.
+     */
     final class SimpleString extends DefaultBaseRedisData<CharSequence> implements CompleteRequestRedisData {
         public SimpleString(final CharSequence value) {
             super(value);
@@ -130,6 +134,10 @@ public interface RedisData {
         }
     }
 
+    /**
+     * <a href="https://redis.io/topics/protocol#resp-integers">Integer</a> representation of
+     * {@link RedisData}.
+     */
     final class Integer extends DefaultBaseRedisData<Long> implements CompleteRequestRedisData {
         private static final int CACHE_LOWER_BOUND_VALUE = -128;
         private static final int CACHE_UPPER_BOUND_VALUE = 128;
@@ -161,6 +169,10 @@ public interface RedisData {
         }
     }
 
+    /**
+     * Size part of <a href="https://redis.io/topics/protocol#resp-bulk-strings">Bulk String</a> representation of
+     * {@link RedisData}.
+     */
     final class BulkStringSize extends DefaultBaseRedisData<java.lang.Integer> implements RequestRedisData {
         public BulkStringSize(final int value) {
             super(value);
@@ -181,6 +193,10 @@ public interface RedisData {
         }
     }
 
+    /**
+     * One chunk of <a href="https://redis.io/topics/protocol#resp-bulk-strings">Bulk String</a> representation of
+     * {@link RedisData}.
+     */
     class BulkStringChunk extends DefaultBaseRedisData<Buffer> implements RequestRedisData {
         public BulkStringChunk(final Buffer value) {
             super(value);
@@ -197,6 +213,10 @@ public interface RedisData {
         }
     }
 
+    /**
+     * The last chunk of <a href="https://redis.io/topics/protocol#resp-bulk-strings">Bulk String</a> representation of
+     * {@link RedisData}.
+     */
     class LastBulkStringChunk extends BulkStringChunk {
         public LastBulkStringChunk(final Buffer value) {
             super(value);
@@ -215,6 +235,10 @@ public interface RedisData {
         }
     }
 
+    /**
+     * Complete <a href="https://redis.io/topics/protocol#resp-bulk-strings">Bulk String</a> representation of
+     * {@link RedisData}.
+     */
     final class CompleteBulkString extends LastBulkStringChunk implements CompleteRequestRedisData {
         public CompleteBulkString(final Buffer value) {
             super(value);
@@ -231,6 +255,10 @@ public interface RedisData {
         }
     }
 
+    /**
+     * Size part of <a href="https://redis.io/topics/protocol#resp-arrays">Array</a> representation of
+     * {@link RedisData}.
+     */
     final class ArraySize extends DefaultBaseRedisData<Long> implements RequestRedisData {
         public ArraySize(final long value) {
             super(value);
@@ -247,6 +275,11 @@ public interface RedisData {
         }
     }
 
+    /**
+     * <a href="https://redis.io/topics/protocol#resp-arrays">Array</a> representation of {@link RedisData}.
+     *
+     * @param <D> Type of the array elements.
+     */
     final class Array<D extends RedisData> extends DefaultBaseRedisData<List<D>> implements CompleteRedisData {
         public Array(final List<D> value) {
             super(value);
@@ -263,11 +296,17 @@ public interface RedisData {
         }
     }
 
+    /**
+     * <a href="https://redis.io/topics/protocol#null-elements-in-arrays">Null</a> representation of {@link RedisData}.
+     */
     final class Null implements CompleteRedisData {
         private Null() {
         }
     }
 
+    /**
+     * <a href="https://redis.io/topics/protocol#resp-errors">Error</a> representation of {@link RedisData}.
+     */
     final class Error extends DefaultBaseRedisData<CharSequence> implements CompleteRedisData {
         public Error(final CharSequence value) {
             super(value);

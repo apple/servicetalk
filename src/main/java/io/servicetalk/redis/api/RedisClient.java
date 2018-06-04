@@ -34,6 +34,9 @@ public abstract class RedisClient extends RedisRequester {
      */
     public abstract Single<? extends ReservedRedisConnection> reserveConnection(RedisRequest request);
 
+    /**
+     * A {@link RedisConnection} that is reserved for exclusive use until {@link #releaseAsync() released}.
+     */
     public abstract static class ReservedRedisConnection extends RedisConnection {
         /**
          * Releases this reserved {@link RedisConnection} to be used for subsequent requests.

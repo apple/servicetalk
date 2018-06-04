@@ -203,8 +203,7 @@ public interface BufferRedisCommander extends AsyncCloseable {
     <T> Single<List<T>> brpop(@RedisProtocolSupport.Key Collection<Buffer> keys, long timeout);
 
     /**
-     * Pop a value from a list, push it to another list and return it; or block until one is
-     * available.
+     * Pop a value from a list, push it to another list and return it; or block until one is available.
      *
      * @param source the source
      * @param destination the destination
@@ -216,8 +215,8 @@ public interface BufferRedisCommander extends AsyncCloseable {
                               long timeout);
 
     /**
-     * Remove and return the member with the highest score from one or more sorted sets, or block
-     * until one is available.
+     * Remove and return the member with the highest score from one or more sorted sets, or block until one is
+     * available.
      *
      * @param keys the keys
      * @param timeout the timeout
@@ -228,8 +227,7 @@ public interface BufferRedisCommander extends AsyncCloseable {
     <T> Single<List<T>> bzpopmax(@RedisProtocolSupport.Key Collection<Buffer> keys, long timeout);
 
     /**
-     * Remove and return the member with the lowest score from one or more sorted sets, or block
-     * until one is available.
+     * Remove and return the member with the lowest score from one or more sorted sets, or block until one is available.
      *
      * @param keys the keys
      * @param timeout the timeout
@@ -1150,8 +1148,8 @@ public interface BufferRedisCommander extends AsyncCloseable {
     <T> Single<List<T>> geopos(@RedisProtocolSupport.Key Buffer key, Collection<Buffer> members);
 
     /**
-     * Query a sorted set representing a geospatial index to fetch members matching a given maximum
-     * distance from a point.
+     * Query a sorted set representing a geospatial index to fetch members matching a given maximum distance from a
+     * point.
      *
      * @param key the key
      * @param longitude the longitude
@@ -1166,8 +1164,8 @@ public interface BufferRedisCommander extends AsyncCloseable {
                                   @RedisProtocolSupport.Option RedisProtocolSupport.GeoradiusUnit unit);
 
     /**
-     * Query a sorted set representing a geospatial index to fetch members matching a given maximum
-     * distance from a point.
+     * Query a sorted set representing a geospatial index to fetch members matching a given maximum distance from a
+     * point.
      *
      * @param key the key
      * @param longitude the longitude
@@ -1196,8 +1194,8 @@ public interface BufferRedisCommander extends AsyncCloseable {
                                   @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STOREDIST) @Nullable @RedisProtocolSupport.Key Buffer storedistKey);
 
     /**
-     * Query a sorted set representing a geospatial index to fetch members matching a given maximum
-     * distance from a member.
+     * Query a sorted set representing a geospatial index to fetch members matching a given maximum distance from a
+     * member.
      *
      * @param key the key
      * @param member the member
@@ -1211,8 +1209,8 @@ public interface BufferRedisCommander extends AsyncCloseable {
                                           @RedisProtocolSupport.Option RedisProtocolSupport.GeoradiusbymemberUnit unit);
 
     /**
-     * Query a sorted set representing a geospatial index to fetch members matching a given maximum
-     * distance from a member.
+     * Query a sorted set representing a geospatial index to fetch members matching a given maximum distance from a
+     * member.
      *
      * @param key the key
      * @param member the member
@@ -1996,8 +1994,7 @@ public interface BufferRedisCommander extends AsyncCloseable {
     Single<TransactedBufferRedisCommander> multi();
 
     /**
-     * Returns the kind of internal representation used in order to store the value associated with
-     * a key.
+     * Returns the kind of internal representation used in order to store the value associated with a key.
      *
      * @param key the key
      * @return a {@link Single} result
@@ -3464,8 +3461,7 @@ public interface BufferRedisCommander extends AsyncCloseable {
     Single<String> unwatch();
 
     /**
-     * Wait for the synchronous replication of all the write commands sent in the context of the
-     * current connection.
+     * Wait for the synchronous replication of all the write commands sent in the context of the current connection.
      *
      * @param numslaves the numslaves
      * @param timeout the timeout
@@ -3580,8 +3576,8 @@ public interface BufferRedisCommander extends AsyncCloseable {
     Single<Long> xlen(@RedisProtocolSupport.Key Buffer key);
 
     /**
-     * Return information and entries from a stream conusmer group pending entries list, that are
-     * messages fetched but never acknowledged.
+     * Return information and entries from a stream conusmer group pending entries list, that are messages fetched but
+     * never acknowledged.
      *
      * @param key the key
      * @param group the group
@@ -3592,8 +3588,8 @@ public interface BufferRedisCommander extends AsyncCloseable {
     <T> Single<List<T>> xpending(@RedisProtocolSupport.Key Buffer key, Buffer group);
 
     /**
-     * Return information and entries from a stream conusmer group pending entries list, that are
-     * messages fetched but never acknowledged.
+     * Return information and entries from a stream conusmer group pending entries list, that are messages fetched but
+     * never acknowledged.
      *
      * @param key the key
      * @param group the group
@@ -3635,8 +3631,8 @@ public interface BufferRedisCommander extends AsyncCloseable {
                                @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count);
 
     /**
-     * Return never seen elements in multiple streams, with IDs greater than the ones reported by
-     * the caller for each stream. Can block.
+     * Return never seen elements in multiple streams, with IDs greater than the ones reported by the caller for each
+     * stream. Can block.
      *
      * @param keys the keys
      * @param ids the ids
@@ -3647,8 +3643,8 @@ public interface BufferRedisCommander extends AsyncCloseable {
     <T> Single<List<T>> xread(@RedisProtocolSupport.Key Collection<Buffer> keys, Collection<Buffer> ids);
 
     /**
-     * Return never seen elements in multiple streams, with IDs greater than the ones reported by
-     * the caller for each stream. Can block.
+     * Return never seen elements in multiple streams, with IDs greater than the ones reported by the caller for each
+     * stream. Can block.
      *
      * @param count the count
      * @param blockMilliseconds the blockMilliseconds
@@ -3663,8 +3659,8 @@ public interface BufferRedisCommander extends AsyncCloseable {
                               @RedisProtocolSupport.Key Collection<Buffer> keys, Collection<Buffer> ids);
 
     /**
-     * Return new entries from a stream using a consumer group, or access the history of the pending
-     * entries for a given consumer. Can block.
+     * Return new entries from a stream using a consumer group, or access the history of the pending entries for a given
+     * consumer. Can block.
      *
      * @param groupConsumer the groupConsumer
      * @param keys the keys
@@ -3677,8 +3673,8 @@ public interface BufferRedisCommander extends AsyncCloseable {
                                    @RedisProtocolSupport.Key Collection<Buffer> keys, Collection<Buffer> ids);
 
     /**
-     * Return new entries from a stream using a consumer group, or access the history of the pending
-     * entries for a given consumer. Can block.
+     * Return new entries from a stream using a consumer group, or access the history of the pending entries for a given
+     * consumer. Can block.
      *
      * @param groupConsumer the groupConsumer
      * @param count the count
@@ -3695,8 +3691,8 @@ public interface BufferRedisCommander extends AsyncCloseable {
                                    @RedisProtocolSupport.Key Collection<Buffer> keys, Collection<Buffer> ids);
 
     /**
-     * Return a range of elements in a stream, with IDs matching the specified IDs interval, in
-     * reverse order (from greater to smaller IDs) compared to XRANGE.
+     * Return a range of elements in a stream, with IDs matching the specified IDs interval, in reverse order (from
+     * greater to smaller IDs) compared to XRANGE.
      *
      * @param key the key
      * @param end the end
@@ -3708,8 +3704,8 @@ public interface BufferRedisCommander extends AsyncCloseable {
     <T> Single<List<T>> xrevrange(@RedisProtocolSupport.Key Buffer key, Buffer end, Buffer start);
 
     /**
-     * Return a range of elements in a stream, with IDs matching the specified IDs interval, in
-     * reverse order (from greater to smaller IDs) compared to XRANGE.
+     * Return a range of elements in a stream, with IDs matching the specified IDs interval, in reverse order (from
+     * greater to smaller IDs) compared to XRANGE.
      *
      * @param key the key
      * @param end the end
@@ -4186,8 +4182,7 @@ public interface BufferRedisCommander extends AsyncCloseable {
                                   @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZrevrangeWithscores withscores);
 
     /**
-     * Return a range of members in a sorted set, by lexicographical range, ordered from higher to
-     * lower strings.
+     * Return a range of members in a sorted set, by lexicographical range, ordered from higher to lower strings.
      *
      * @param key the key
      * @param max the max
@@ -4199,8 +4194,7 @@ public interface BufferRedisCommander extends AsyncCloseable {
     <T> Single<List<T>> zrevrangebylex(@RedisProtocolSupport.Key Buffer key, Buffer max, Buffer min);
 
     /**
-     * Return a range of members in a sorted set, by lexicographical range, ordered from higher to
-     * lower strings.
+     * Return a range of members in a sorted set, by lexicographical range, ordered from higher to lower strings.
      *
      * @param key the key
      * @param max the max
