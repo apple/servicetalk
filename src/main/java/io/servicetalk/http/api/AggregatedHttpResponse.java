@@ -22,6 +22,8 @@ import java.util.function.Function;
 /**
  * The equivalent of {@link HttpResponse} but with an aggregated content instead of a {@link Publisher} as returned by
  * {@link HttpResponse#getPayloadBody()}.
+ *
+ * @param <T> Type of payload.
  */
 public interface AggregatedHttpResponse<T> extends HttpResponseMetaData, LastHttpMetaData {
     /**

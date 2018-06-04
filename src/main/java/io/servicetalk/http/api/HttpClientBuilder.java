@@ -23,8 +23,8 @@ import io.servicetalk.transport.api.ExecutionContext;
 /**
  * A builder of {@link HttpClient} objects.
  *
- * @param <ResolvedAddress> A resolved address that can be used to establish new {@link HttpConnection}s
- * @param <EventType> The type of {@link Event} which communicates address changes
+ * @param <ResolvedAddress> The type of resolved address that can be used to establish new {@link HttpConnection}s.
+ * @param <EventType> The type of {@link Event} which communicates address changes.
  */
 public interface HttpClientBuilder<ResolvedAddress, EventType extends Event<ResolvedAddress>> {
 

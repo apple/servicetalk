@@ -29,7 +29,7 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 /**
  * A builder for {@link HttpConnection} objects.
  *
- * @param <ResolvedAddress> A resolved address that can be used for connecting
+ * @param <ResolvedAddress> The type of resolved address that can be used for connecting.
  */
 public interface HttpConnectionBuilder<ResolvedAddress> {
 

@@ -15,6 +15,9 @@
  */
 package io.servicetalk.http.api;
 
+/**
+ * Meta data associated with an HTTP request.
+ */
 public interface HttpRequestMetaData extends HttpMetaData {
     /**
      * Returns the {@link HttpRequestMethod} of this {@link HttpRequest}.

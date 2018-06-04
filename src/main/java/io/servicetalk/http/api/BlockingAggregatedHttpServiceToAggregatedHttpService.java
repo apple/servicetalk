@@ -23,7 +23,7 @@ import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
 import static java.util.Objects.requireNonNull;
 
-public class BlockingAggregatedHttpServiceToAggregatedHttpService extends AggregatedHttpService {
+final class BlockingAggregatedHttpServiceToAggregatedHttpService extends AggregatedHttpService {
     private final BlockingAggregatedHttpService service;
 
     BlockingAggregatedHttpServiceToAggregatedHttpService(BlockingAggregatedHttpService service) {
