@@ -197,6 +197,9 @@
       <property name="tokens" value="ANNOTATION_DEF, ANNOTATION_FIELD_DEF, CLASS_DEF,
                                      CTOR_DEF, ENUM_DEF, INTERFACE_DEF, METHOD_DEF"/>
     </module>
+    <module name="JavadocType">
+      <property name="scope" value="protected"/>
+    </module>
     <module name="SingleLineJavadoc"/>
     <module name="RegexpSinglelineJava">
       <property name="format" value="^\s*\*\s*@author"/>

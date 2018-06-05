@@ -29,9 +29,11 @@
   <suppress checks="MethodName" files=".*[\\/]src[\\/]test[\\/].*"/>
   <suppress checks="JavadocMethod" files=".*[\\/]src[\\/]test[\\/].*"/>
   <suppress checks="JavadocPackage" files=".*[\\/]src[\\/]test[\\/].*"/>
+  <suppress checks="JavadocType" files=".*[\\/]src[\\/]test[\\/].*"/>
 
   <!-- testFixtures -->
   <suppress id="ConsolePrint" files=".*[\\/]src[\\/]testFixtures[\\/].*"/>
   <suppress checks="JavadocMethod" files=".*[\\/]src[\\/]testFixtures[\\/].*"/>
   <suppress checks="JavadocPackage" files=".*[\\/]src[\\/]testFixtures[\\/].*"/>
+  <suppress checks="JavadocType" files=".*[\\/]src[\\/]testFixtures[\\/].*"/>
 </suppressions>
