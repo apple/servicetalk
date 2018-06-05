@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.context.AsyncContext;
 import io.servicetalk.concurrent.context.AsyncContextMap;
 import io.servicetalk.concurrent.context.AsyncContextMap.Key;
 
+import org.apache.logging.log4j.ThreadContext;
 import org.apache.logging.log4j.spi.CleanableThreadContextMap;
 import org.apache.logging.log4j.spi.ReadOnlyThreadContextMap;
 import org.apache.logging.log4j.util.BiConsumer;
@@ -33,6 +34,9 @@ import javax.annotation.Nullable;
 
 import static java.util.Collections.unmodifiableMap;
 
+/**
+ * A {@link ThreadContext} that provides storage for MDC based upon {@link AsyncContext}.
+ */
 public class ServiceTalkThreadContextMap implements ReadOnlyThreadContextMap, CleanableThreadContextMap {
     private static final Key<Map<String, String>> key = Key.newKeyWithDebugToString("log4j2Mdc");
 
