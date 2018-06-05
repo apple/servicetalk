@@ -41,6 +41,7 @@ dependencyManagement {
     dependency "io.servicetalk:servicetalk-http-netty:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-http-api:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-http-utils:0.1.0-SNAPSHOT"
+    dependency "io.servicetalk:servicetalk-http-all-netty:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-redis-api:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-redis-netty:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-redis-utils:0.1.0-SNAPSHOT"
