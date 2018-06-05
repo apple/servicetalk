@@ -28,10 +28,8 @@ apply plugin: "idea"
 dependencies {
   api "io.servicetalk:servicetalk-bom:0.1.0-SNAPSHOT"
 
-  api "io.servicetalk:servicetalk-http-api"
-  api "io.servicetalk:servicetalk-http-netty"
+  api "io.servicetalk:servicetalk-http-all-netty"
   api "io.servicetalk:servicetalk-http-utils"
-  api "io.servicetalk:servicetalk-loadbalancer"
   api "io.servicetalk:servicetalk-http-router-jersey"
   api "io.servicetalk:servicetalk-http-router-predicate"
   api "io.servicetalk:servicetalk-data-jackson"
