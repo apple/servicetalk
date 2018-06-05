@@ -15,6 +15,9 @@
  */
 package io.servicetalk.buffer.api;
 
+/**
+ * Provides a mechanism to iterate over a collection of bytes.
+ */
 @FunctionalInterface
 public interface ByteProcessor {
     /**

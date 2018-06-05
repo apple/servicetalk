@@ -18,6 +18,9 @@ package io.servicetalk.buffer.api;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
+/**
+ * An API to allocate {@link Buffer}s.
+ */
 public interface BufferAllocator {
 
     /**

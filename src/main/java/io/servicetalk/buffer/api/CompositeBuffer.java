@@ -17,6 +17,9 @@ package io.servicetalk.buffer.api;
 
 import java.nio.ByteBuffer;
 
+/**
+ * A virtual {@link Buffer} which shows multiple buffers as a single merged buffer.
+ */
 public interface CompositeBuffer extends Buffer {
 
     /**
