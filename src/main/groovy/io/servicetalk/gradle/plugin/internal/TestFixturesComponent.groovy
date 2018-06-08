@@ -18,6 +18,7 @@ package io.servicetalk.gradle.plugin.internal
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.DependencyConstraint
+import org.gradle.api.artifacts.ExcludeRule
 import org.gradle.api.artifacts.ModuleDependency
 import org.gradle.api.artifacts.PublishArtifact
 import org.gradle.api.attributes.AttributeContainer
@@ -94,6 +95,11 @@ class TestFixturesComponent implements SoftwareComponentInternal {
     @Override
     AttributeContainer getAttributes() {
       EMPTY
+    }
+
+    @Override
+    Set<ExcludeRule> getGlobalExcludes() {
+      emptySet()
     }
   }
 }
