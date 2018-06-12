@@ -31,15 +31,16 @@ public final class EventLoopAwareNettyIoExecutors {
     /**
      * Attempts to convert the passed {@link IoExecutor} to a {@link EventLoopAwareNettyIoExecutor}.
      *
-     * @param executor {@link IoExecutor} to convert.
+     * @param ioExecutor {@link IoExecutor} to convert.
      * @return {@link EventLoopAwareNettyIoExecutor} corresponding to the passed {@link IoExecutor}.
      * @throws IllegalArgumentException If {@link IoExecutor} is not of type {@link EventLoopAwareNettyIoExecutor}.
      */
-    public static EventLoopAwareNettyIoExecutor toEventLoopAwareNettyIoExecutor(IoExecutor executor) {
-        requireNonNull(executor);
-        if (executor instanceof EventLoopAwareNettyIoExecutor) {
-            return (EventLoopAwareNettyIoExecutor) executor;
+    public static EventLoopAwareNettyIoExecutor toEventLoopAwareNettyIoExecutor(IoExecutor ioExecutor) {
+        requireNonNull(ioExecutor);
+        if (ioExecutor instanceof EventLoopAwareNettyIoExecutor) {
+            return (EventLoopAwareNettyIoExecutor) ioExecutor;
         }
-        throw new IllegalArgumentException("Incompatible IoExecutor: " + executor + ". Not a netty based IoExecutor.");
+        throw new IllegalArgumentException("Incompatible IoExecutor: " + ioExecutor +
+                ". Not a netty based IoExecutor.");
     }
 }

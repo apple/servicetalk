@@ -52,15 +52,16 @@ public final class NettyIoExecutors {
     /**
      * Attempts to convert the passed {@link IoExecutor} to a {@link NettyIoExecutor}.
      *
-     * @param executor {@link IoExecutor} to convert.
+     * @param ioExecutor {@link IoExecutor} to convert.
      * @return {@link NettyIoExecutor} corresponding to the passed {@link IoExecutor}.
      * @throws IllegalArgumentException If {@link IoExecutor} is not of type {@link NettyIoExecutor}.
      */
-    public static NettyIoExecutor toNettyIoExecutor(IoExecutor executor) {
-        requireNonNull(executor);
-        if (executor instanceof NettyIoExecutor) {
-            return (NettyIoExecutor) executor;
+    public static NettyIoExecutor toNettyIoExecutor(IoExecutor ioExecutor) {
+        requireNonNull(ioExecutor);
+        if (ioExecutor instanceof NettyIoExecutor) {
+            return (NettyIoExecutor) ioExecutor;
         }
-        throw new IllegalArgumentException("Incompatible IoExecutor: " + executor + ". Not a netty based IoExecutor.");
+        throw new IllegalArgumentException("Incompatible IoExecutor: " + ioExecutor +
+                ". Not a netty based IoExecutor.");
     }
 }
