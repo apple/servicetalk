@@ -21,8 +21,6 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.socket.SocketChannel;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
@@ -62,7 +60,7 @@ public final class NettyChannelListenableAsyncCloseable implements ListenableAsy
             protected void handleSubscribe(Subscriber subscriber) {
                 onClose.subscribe(subscriber);
                 if (closeTriggeredUpdater.compareAndSet(NettyChannelListenableAsyncCloseable.this, 0, 1)) {
-                    channel.eventLoop().execute(NettyChannelListenableAsyncCloseable.this::close0);
+                    channel.eventLoop().execute(channel::close);
                 }
             }
         };
@@ -71,28 +69,5 @@ public final class NettyChannelListenableAsyncCloseable implements ListenableAsy
     @Override
     public Completable onClose() {
         return onClose;
-    }
-
-    private void close0() {
-        try {
-            if (channel instanceof SocketChannel && channel.isActive() &&
-                    channel.config().getOption(ChannelOption.ALLOW_HALF_CLOSURE)) {
-                ((SocketChannel) channel).shutdownOutput().addListener(future -> onHalfClosed0());
-            } else {
-                channel.close();
-            }
-        } catch (Throwable cause) {
-            onClose.onError(cause);
-        }
-    }
-
-    private void onHalfClosed0() {
-        if (channel instanceof SocketChannel) {
-            SocketChannel socketChannel = (SocketChannel) channel;
-            if (socketChannel.isInputShutdown() && socketChannel.isOutputShutdown()) {
-                // basically to release the fd
-                socketChannel.close();
-            }
-        }
     }
 }

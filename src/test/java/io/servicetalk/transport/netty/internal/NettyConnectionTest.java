@@ -89,6 +89,7 @@ public class NettyConnectionTest {
         requestNSupplier = mock(Connection.RequestNSupplier.class);
         when(requestNSupplier.getRequestNFor(anyLong())).then(invocation1 -> (long) requestNext);
         conn = new NettyConnection<>(channel, context, empty(), new Connection.TerminalPredicate<>(o -> false));
+        verify(context).onClose(); // NettyConnection() with NOOP_CLOSE_HANDLER
         publisher = new TestPublisher<Buffer>().sendOnSubscribe();
     }
 
@@ -339,7 +340,7 @@ public class NettyConnectionTest {
         verify(context).closeAsync();
         verifyNoMoreInteractions(context);
         conn.onClose();
-        verify(context).onClose();
+        verify(context, times(2)).onClose();
         verifyNoMoreInteractions(context);
     }
 

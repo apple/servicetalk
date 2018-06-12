@@ -17,18 +17,23 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.Completable.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.FlushStrategy;
 import io.servicetalk.transport.api.FlushStrategyHolder;
+import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
+import io.netty.channel.EventLoop;
+import io.netty.channel.socket.ChannelInputShutdownReadComplete;
+import io.netty.channel.socket.ChannelOutputShutdownEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +48,7 @@ import javax.net.ssl.SSLSession;
 import static io.netty.util.ReferenceCountUtil.release;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
+import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.Flush.composeFlushes;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
 import static java.util.Objects.requireNonNull;
@@ -80,33 +86,67 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
     private final ConnectionContext context;
     private final Publisher<Read> read;
     private final TerminalPredicate<Read> terminalMsgPredicate;
+    private final CloseHandler closeHandler;
+    private final Completable onClosing;
+    /**
+     * Potentially contains more information when a protocol or channel level close event was observed.
+     */
+    @Nullable
+    private CloseEvent closeReason;
 
     /**
      * Create a new instance.
      *
      * @param channel Netty channel which represents the connection.
-     * @param context The ServiceTalk entity which represent the connection.
+     * @param context The ServiceTalk entity which represents the connection.
      * @param read {@link Publisher} which emits all data read from the underlying channel.
      */
     @SuppressWarnings("unchecked")
     public NettyConnection(Channel channel, ConnectionContext context, Publisher<Read> read) {
-        this(channel, context, read, PIPELINE_UNSUPPORTED_PREDICATE);
+        this(channel, context, read, PIPELINE_UNSUPPORTED_PREDICATE, NOOP_CLOSE_HANDLER);
     }
 
     /**
      * Create a new instance.
      *
      * @param channel Netty channel which represents the connection.
-     * @param context The ServiceTalk entity which represent the connection.
+     * @param context The ServiceTalk entity which represents the connection.
      * @param read {@link Publisher} which emits all data read from the underlying channel.
      * @param terminalMsgPredicate {@link TerminalPredicate} to detect end of a <i>response</i>.
      */
     public NettyConnection(Channel channel, ConnectionContext context, Publisher<Read> read,
                            TerminalPredicate<Read> terminalMsgPredicate) {
+        this(channel, context, read, terminalMsgPredicate, NOOP_CLOSE_HANDLER);
+    }
+
+    /**
+     * Create a new instance.
+     * @param channel Netty channel which represents the connection.
+     * @param context The ServiceTalk entity which represents the connection.
+     * @param read {@link Publisher} which emits all data read from the underlying channel.
+     * @param terminalMsgPredicate {@link TerminalPredicate} to detect end of a <i>response</i>.
+     * @param closeHandler handles connection closure and half-closure.
+     */
+    public NettyConnection(Channel channel, ConnectionContext context, Publisher<Read> read,
+                           TerminalPredicate<Read> terminalMsgPredicate,
+                           CloseHandler closeHandler) {
         this.channel = requireNonNull(channel);
         this.context = requireNonNull(context);
         this.read = requireNonNull(read);
         this.terminalMsgPredicate = requireNonNull(terminalMsgPredicate);
+        this.closeHandler = requireNonNull(closeHandler);
+        if (closeHandler == NOOP_CLOSE_HANDLER) {
+            onClosing = onClose();
+        } else {
+            onClosing = new CompletableProcessor();
+            closeHandler.registerEventHandler(channel, evt -> { // Called from EventLoop only!
+                if (closeReason == null) {
+                    closeReason = evt;
+                    LOGGER.debug("{} Emitted CloseEvent: {}", channel, evt);
+                    ((CompletableProcessor) onClosing).onComplete();
+                }
+            });
+        }
         channel.pipeline().addLast(new ChannelInboundHandler() {
             @Override
             public void channelWritabilityChanged(ChannelHandlerContext ctx) {
@@ -147,6 +187,14 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
 
             @Override
             public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+                if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
+                    // ChannelInputShutdownEvent is not always triggered and can get triggered before we tried to read
+                    // all the available data. ChannelInputShutdownReadComplete is the one that seems to (at least in
+                    // the current netty version) gets triggered reliably at the appropriate time.
+                    closeHandler.channelClosedInbound(ctx);
+                } else if (evt == ChannelOutputShutdownEvent.INSTANCE) {
+                    closeHandler.channelClosedOutbound(ctx);
+                }
                 release(evt);
             }
 
@@ -311,6 +359,29 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
     @Override
     public NettyIoExecutor getIoExecutor() {
         return toNettyIoExecutor(context.getIoExecutor());
+    }
+
+    /**
+     * Request this {@link Connection} to close gracefully with best effort.
+     * <p>
+     * TODO the implementation of AsyncCloseable#closeAsyncGracefully will call this
+     */
+    private void requestCloseGracefully() {
+        EventLoop eventLoop = channel.eventLoop();
+        if (eventLoop.inEventLoop()) {
+            invokeUserCloseHandler();
+        } else {
+            eventLoop.execute(this::invokeUserCloseHandler);
+        }
+    }
+
+    private void invokeUserCloseHandler() {
+        closeHandler.userClosing(channel);
+    }
+
+    @Override
+    public Completable onClosing() {
+        return onClosing;
     }
 
     @Override

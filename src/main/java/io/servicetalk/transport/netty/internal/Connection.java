@@ -44,6 +44,14 @@ public interface Connection<Read, Write> extends ConnectionContext {
     NettyIoExecutor getIoExecutor();
 
     /**
+     * Returns a {@link Completable} that notifies when the connection has begun its closing sequence.
+     *
+     * @return a {@link Completable} that notifies when the connection has begun its closing sequence. A configured
+     * {@link CloseHandler} will determine whether more reads or writes will be allowed on this {@link Connection}.
+     */
+    Completable onClosing();
+
+    /**
      * Returns {@link Publisher} that emits all items as read from this connection.
      *
      * @return {@link Publisher} that emits all items as read from this connection.

@@ -208,8 +208,6 @@ public final class BuilderUtils {
         } else if (option == ServiceTalkSocketOptions.WRITE_BUFFER_THRESHOLD) {
             Integer writeBufferThreshold = (Integer) value;
             channelOpts.put(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(writeBufferThreshold >>> 1, writeBufferThreshold));
-        } else if (option == ServiceTalkSocketOptions.ALLOW_HALF_CLOSURE) {
-            channelOpts.put(ChannelOption.ALLOW_HALF_CLOSURE, value);
         } else {
             throw new IllegalArgumentException("SocketOption " + option + " not supported");
         }
