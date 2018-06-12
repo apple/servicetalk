@@ -85,7 +85,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
     @Override
     void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
-        original.subscribe(new TimeoutSubscriber<>(this, subscriber, signalOffloader), signalOffloader);
+        original.subscribe(TimeoutSubscriber.newInstance(this, subscriber, signalOffloader), signalOffloader);
     }
 
     private static final class TimeoutSubscriber<X> implements Subscriber<X>, Subscription, Runnable {
@@ -131,24 +131,28 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         private volatile Cancellable timerCancellable;
         private volatile long lastOnNextNs;
 
-        TimeoutSubscriber(TimeoutPublisher<X> parent, Subscriber<? super X> target, SignalOffloader signalOffloader) {
+        private TimeoutSubscriber(TimeoutPublisher<X> parent,
+                                  Subscriber<? super X> target,
+                                  SignalOffloader signalOffloader) {
             this.parent = parent;
             this.target = target;
             this.signalOffloader = signalOffloader;
+        }
+
+        static <X> TimeoutSubscriber<X> newInstance(TimeoutPublisher<X> parent,
+                                                    Subscriber<? super X> target,
+                                                    SignalOffloader signalOffloader) {
+            TimeoutSubscriber<X> s = new TimeoutSubscriber<>(parent, target, signalOffloader);
             try {
-                lastOnNextNs = nanoTime();
-                // Note that we let "this" escape the constructor. This is a trade-off done for the following reasons:
-                // - it doesn't make semantic sense to use `timerCancellable` in `run()`
-                // - the exposure of what can be used by the `Schedule` thread is controlled internally by this class
-                // - timeouts maybe applied commonly and we can cut down on allocations which may be promoted into old
-                // GC generations
+                s.lastOnNextNs = nanoTime();
                 // CAS is just in case the timer fired, the run method schedule a new timer before this thread is able
                 // to set the initial timer value. in this case we don't want to overwrite the active timer.
-                timerCancellableUpdater.compareAndSet(this, null, requireNonNull(
-                        parent.timeoutExecutor.schedule(this, parent.durationNs, NANOSECONDS)));
+                timerCancellableUpdater.compareAndSet(s, null, requireNonNull(
+                        parent.timeoutExecutor.schedule(s, parent.durationNs, NANOSECONDS)));
             } catch (Throwable cause) {
-                handleConstructorException(cause);
+                handleConstructorException(s, cause);
             }
+            return s;
         }
 
         @Override
@@ -312,13 +316,13 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
          * This is unlikely to occur, so we extract the code into a private method.
          * @param cause The exception.
          */
-        private void handleConstructorException(Throwable cause) {
+        private static <X> void handleConstructorException(TimeoutSubscriber<X> s, Throwable cause) {
             // We must set local state so there are no further interactions with Subscriber in the future.
-            timerCancellable = LOCAL_IGNORE_CANCEL;
-            subscriberState = SUBSCRIBER_STATE_TERMINATED;
-            subscription = EMPTY_SUBSCRIPTION;
-            target.onSubscribe(EMPTY_SUBSCRIPTION);
-            target.onError(cause);
+            s.timerCancellable = LOCAL_IGNORE_CANCEL;
+            s.subscriberState = SUBSCRIBER_STATE_TERMINATED;
+            s.subscription = EMPTY_SUBSCRIPTION;
+            s.target.onSubscribe(EMPTY_SUBSCRIPTION);
+            s.target.onError(cause);
         }
     }
 }

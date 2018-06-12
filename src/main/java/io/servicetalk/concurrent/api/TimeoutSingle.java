@@ -51,7 +51,7 @@ final class TimeoutSingle<T> extends Single<T> {
 
     @Override
     protected void handleSubscribe(final Subscriber<? super T> subscriber) {
-        original.subscribe(new TimeoutSubscriber<>(this, subscriber));
+        original.subscribe(TimeoutSubscriber.newInstance(this, subscriber));
     }
 
     private static final class TimeoutSubscriber<X> implements Subscriber<X>, Cancellable, Runnable {
@@ -61,32 +61,33 @@ final class TimeoutSingle<T> extends Single<T> {
         private static final Cancellable LOCAL_IGNORE_CANCEL = () -> { };
         private static final AtomicReferenceFieldUpdater<TimeoutSubscriber, Cancellable>
                 cancellableUpdater = newUpdater(TimeoutSubscriber.class, Cancellable.class, "cancellable");
-        private final Cancellable timerCancellable;
         @Nullable
         private volatile Cancellable cancellable;
         private final TimeoutSingle<X> parent;
         private final Subscriber<? super X> target;
+        @Nullable
+        private Cancellable timerCancellable;
 
-        TimeoutSubscriber(TimeoutSingle<X> parent, Subscriber<? super X> target) {
+        private TimeoutSubscriber(TimeoutSingle<X> parent, Subscriber<? super X> target) {
             this.parent = parent;
             this.target = target;
+        }
+
+        static <X> TimeoutSubscriber<X> newInstance(TimeoutSingle<X> parent, Subscriber<? super X> target) {
+            TimeoutSubscriber<X> s = new TimeoutSubscriber<>(parent, target);
             Cancellable localTimerCancellable;
             try {
-                // Note that we let "this" escape the constructor. This is a trade-off done for the following reasons:
-                // - it doesn't make semantic sense to use `timerCancellable` in `run()`
-                // - the exposure of what can be used by the `Schedule` thread is controlled internally by this class
-                // - timeouts maybe applied commonly and we can cut down on allocations which may be promoted into old
-                // GC generations
                 localTimerCancellable = requireNonNull(
-                        parent.timeoutExecutor.schedule(this, parent.durationNs, NANOSECONDS));
+                        parent.timeoutExecutor.schedule(s, parent.durationNs, NANOSECONDS));
             } catch (Throwable cause) {
                 localTimerCancellable = IGNORE_CANCEL;
                 // We must set this to ignore so there are no further interactions with Subscriber in the future.
-                cancellable = LOCAL_IGNORE_CANCEL;
+                s.cancellable = LOCAL_IGNORE_CANCEL;
                 target.onSubscribe(IGNORE_CANCEL);
                 target.onError(cause);
             }
-            timerCancellable = localTimerCancellable;
+            s.timerCancellable = localTimerCancellable;
+            return s;
         }
 
         @Override
@@ -101,16 +102,22 @@ final class TimeoutSingle<T> extends Single<T> {
         @Override
         public void onSuccess(@Nullable final X result) {
             if (cancellableUpdater.getAndSet(this, LOCAL_IGNORE_CANCEL) != LOCAL_IGNORE_CANCEL) {
-                timerCancellable.cancel();
-                target.onSuccess(result);
+                try {
+                    stopTimer();
+                } finally {
+                    target.onSuccess(result);
+                }
             }
         }
 
         @Override
         public void onError(final Throwable t) {
             if (cancellableUpdater.getAndSet(this, LOCAL_IGNORE_CANCEL) != LOCAL_IGNORE_CANCEL) {
-                timerCancellable.cancel();
-                target.onError(t);
+                try {
+                    stopTimer();
+                } finally {
+                    target.onError(t);
+                }
             }
         }
 
@@ -118,10 +125,13 @@ final class TimeoutSingle<T> extends Single<T> {
         public void cancel() {
             Cancellable oldCancellable = cancellableUpdater.getAndSet(this, LOCAL_IGNORE_CANCEL);
             if (oldCancellable != LOCAL_IGNORE_CANCEL) {
-                // oldCancellable can't be null here, because we don't give out this object to onSubscribe unless the
-                // cancellable is set.
-                oldCancellable.cancel();
-                timerCancellable.cancel();
+                try {
+                    stopTimer();
+                } finally {
+                    // oldCancellable can't be null here, because we don't give out this object to onSubscribe unless the
+                    // cancellable is set.
+                    oldCancellable.cancel();
+                }
             }
         }
 
@@ -137,6 +147,11 @@ final class TimeoutSingle<T> extends Single<T> {
                 }
                 target.onError(new TimeoutException("timeout after " + NANOSECONDS.toMillis(parent.durationNs) + "ms"));
             }
+        }
+
+        private void stopTimer() {
+            assert timerCancellable != null;
+            timerCancellable.cancel();
         }
     }
 }
