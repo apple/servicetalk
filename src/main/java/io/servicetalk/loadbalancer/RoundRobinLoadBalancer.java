@@ -489,7 +489,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
         }
 
         private void deliverOnNext(T next, Subscriber<? super T> subscriber) {
-            sendOnNextWithConcurrentTerminationCheck(() -> subscriber.onNext(next), this::terminate,
+            sendOnNextWithConcurrentTerminationCheck(subscriber, next, this::terminate,
                     subscriberStateUpdater, terminalNotificationUpdater, this);
         }
 
