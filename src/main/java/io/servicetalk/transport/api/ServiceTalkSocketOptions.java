@@ -35,11 +35,6 @@ public final class ServiceTalkSocketOptions {
     public static final SocketOption<Integer> WRITE_BUFFER_THRESHOLD = new ServiceTalkSocketOption<>("WRITE_BUFFER_THRESHOLD", Integer.class);
 
     /**
-     * Allow to set if half-closure should be supported.
-     */
-    public static final SocketOption<Boolean> ALLOW_HALF_CLOSURE = new ServiceTalkSocketOption<>("ALLOW_HALF_CLOSURE", Boolean.class);
-
-    /**
      * Allow to idle timeout in milli seconds after which the connection is closed.
      */
     public static final SocketOption<Long> IDLE_TIMEOUT = new ServiceTalkSocketOption<>("IDLE_TIMEOUT", Long.class);
