@@ -146,14 +146,9 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
 
     private void scheduleSuspendedTimer(final long timeOut, final TimeUnit timeUnit, final Runnable r) {
         // timeOut<=0 means processing is suspended indefinitely: no need to actually schedule a task
-        if (timeOut <= 0) {
-            return;
+        if (timeOut > 0) {
+            suspendedTimerCancellable = executor.schedule(r, timeOut, timeUnit);
         }
-
-        suspendedTimerCancellable =
-                executor.schedule(timeOut, timeUnit)
-                        .doAfterComplete(r)
-                        .subscribe();
     }
 
     @Override
