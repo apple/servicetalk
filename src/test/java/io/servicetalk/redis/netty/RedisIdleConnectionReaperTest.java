@@ -15,8 +15,9 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.redis.api.RedisConnection;
@@ -31,8 +32,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
+import org.mockito.stubbing.Answer;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -50,9 +53,10 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -73,6 +77,9 @@ public class RedisIdleConnectionReaperTest {
     private NettyIoExecutor ioExecutor;
 
     @Mock
+    private Executor mockExecutor;
+
+    @Mock
     private RedisConnection delegateConnection;
 
     @Mock
@@ -80,7 +87,7 @@ public class RedisIdleConnectionReaperTest {
 
     private CompletableProcessor delegateConnectionOnCloseCompletable;
 
-    private final AtomicReference<CompletableProcessor> timerCompletableRef = new AtomicReference<>();
+    private final AtomicReference<Runnable> timerRunnableRef = new AtomicReference<>();
 
     private final AtomicBoolean timerCancelled = new AtomicBoolean();
     private final AtomicInteger timerSubscribed = new AtomicInteger();
@@ -89,8 +96,7 @@ public class RedisIdleConnectionReaperTest {
 
     @Before
     public void setup() {
-        reset(delegateConnection);
-        reset(connectionContext);
+        MockitoAnnotations.initMocks(this);
         ExecutionContext executionContext = mock(ExecutionContext.class);
         delegateConnectionOnCloseCompletable = new CompletableProcessor();
         when(delegateConnection.closeAsync()).thenReturn(delegateConnectionOnCloseCompletable);
@@ -100,27 +106,26 @@ public class RedisIdleConnectionReaperTest {
         when(delegateConnection.getExecutionContext()).thenReturn(executionContext);
         when(executionContext.getBufferAllocator()).thenReturn(DEFAULT_ALLOCATOR);
         when(connectionContext.getIoExecutor()).thenReturn(ioExecutor);
-        when(ioExecutor.scheduleOnEventloop(any(Long.class), any(TimeUnit.class))).then($ -> new Completable() {
-            @Override
-            protected void handleSubscribe(Subscriber subscriber) {
-                timerSubscribed.incrementAndGet();
-                final CompletableProcessor timerCompletable = new CompletableProcessor();
-                timerCancelled.set(false);
-                timerCompletableRef.set(timerCompletable);
-                timerCompletable.doBeforeCancel(() -> timerCancelled.set(true)).subscribe(subscriber);
-            }
-        });
+        when(ioExecutor.asExecutor()).thenReturn(mockExecutor);
+        doAnswer((Answer<Cancellable>) invocationOnMock -> {
+            timerRunnableRef.set(invocationOnMock.getArgument(0));
+            timerSubscribed.incrementAndGet();
+            timerCancelled.set(false);
+            return () -> timerCancelled.set(true);
+        }).when(mockExecutor).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
+        when(mockExecutor.timer(anyLong(), any(TimeUnit.class))).thenCallRealMethod();
 
         idleAwareConnection = new RedisIdleConnectionReaper(Duration.ofSeconds(1)).apply(delegateConnection);
 
         verify(delegateConnection).onClose();
-        verify(ioExecutor).scheduleOnEventloop(1_000_000_000L, NANOSECONDS);
+        verify(mockExecutor).schedule(any(Runnable.class), eq(1_000_000_000L), eq(NANOSECONDS));
         verify(delegateConnection).getConnectionContext();
         verify(connectionContext).getIoExecutor();
     }
 
     @After
     public void verifyMocks() {
+        verify(ioExecutor).asExecutor();
         verifyNoMoreInteractions(ioExecutor);
         verifyNoMoreInteractions(delegateConnection);
         verifyNoMoreInteractions(connectionContext);
@@ -140,7 +145,7 @@ public class RedisIdleConnectionReaperTest {
     @Test
     public void neverUsedConnectionIdles() {
         completeTimer();
-        verify(ioExecutor).scheduleOnEventloop(1_000_000_000L, NANOSECONDS);
+        verify(mockExecutor).schedule(any(Runnable.class), eq(1_000_000_000L), eq(NANOSECONDS));
         verify(delegateConnection).closeAsync();
     }
 
@@ -152,7 +157,7 @@ public class RedisIdleConnectionReaperTest {
 
         completeTimer();
         completeTimer();
-        verify(ioExecutor, times(1)).scheduleOnEventloop(1_000_000_000L, NANOSECONDS);
+        verify(mockExecutor, times(3)).schedule(any(Runnable.class), eq(1_000_000_000L), eq(NANOSECONDS));
         verify(delegateConnection, times(1)).getConnectionContext();
         verify(connectionContext, times(1)).getIoExecutor();
         assertThat("Unexpected timer subscriptions.", timerSubscribed.get(), is(3));
@@ -168,7 +173,7 @@ public class RedisIdleConnectionReaperTest {
 
         completeTimer();
         completeTimer();
-        verify(ioExecutor, times(1)).scheduleOnEventloop(1_000_000_000L, NANOSECONDS);
+        verify(mockExecutor, times(2)).schedule(any(Runnable.class), eq(1_000_000_000L), eq(NANOSECONDS));
         verify(delegateConnection, times(1)).getConnectionContext();
         verify(connectionContext, times(1)).getIoExecutor();
         assertThat("Unexpected timer subscriptions.", timerSubscribed.get(), is(2));
@@ -185,7 +190,7 @@ public class RedisIdleConnectionReaperTest {
                 .verifySuccess("pong");
 
         completeTimer();
-        verify(ioExecutor, times(1)).scheduleOnEventloop(1_000_000_000L, NANOSECONDS);
+        verify(mockExecutor, times(2)).schedule(any(Runnable.class), eq(1_000_000_000L), eq(NANOSECONDS));
         verify(delegateConnection, times(1)).getExecutionContext();
         verify(delegateConnection, times(2)).getConnectionContext();
         verify(connectionContext, times(1)).getIoExecutor();
@@ -194,6 +199,6 @@ public class RedisIdleConnectionReaperTest {
     }
 
     private void completeTimer() {
-        timerCompletableRef.get().onComplete();
+        timerRunnableRef.get().run();
     }
 }

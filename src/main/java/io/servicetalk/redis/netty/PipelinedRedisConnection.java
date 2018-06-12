@@ -32,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.channels.ClosedChannelException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
@@ -52,6 +51,7 @@ import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static io.servicetalk.redis.internal.RedisUtils.newRequestCompositeBuffer;
 import static io.servicetalk.redis.netty.RedisUtils.encodeRequestContent;
 import static io.servicetalk.redis.netty.TerminalMessagePredicates.forCommand;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 final class PipelinedRedisConnection extends AbstractRedisConnection {
@@ -83,7 +83,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
     private PipelinedRedisConnection(Connection<RedisData, ByteBuf> connection,
                                      ExecutionContext executionContext,
                                      ReadOnlyRedisClientConfig roConfig) {
-        super(durationNanos -> connection.getIoExecutor().scheduleOnEventloop(durationNanos, TimeUnit.NANOSECONDS),
+        super(durationNanos -> connection.getIoExecutor().asExecutor().timer(durationNanos, NANOSECONDS),
                 executionContext, roConfig);
         this.connection = new DefaultPipelinedConnection<>(connection, maxPendingRequests);
         rawConnection = connection;

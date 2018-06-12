@@ -106,7 +106,7 @@ public abstract class BaseRedisClientTest {
                         .build(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()),
                                 serviceDiscoverer.discover(new DefaultHostAndPort(redisHost, redisPort))),
                 retryWithExponentialBackoff(10, cause -> cause instanceof RetryableException, ofMillis(10),
-                        backoffNanos -> ioExecutor.next().scheduleOnEventloop(backoffNanos, NANOSECONDS)));
+                        backoffNanos -> ioExecutor.next().asExecutor().timer(backoffNanos, NANOSECONDS)));
 
         final String serverInfo = awaitIndefinitely(
                 client.request(newRequest(INFO, new CompleteBulkString(buf("SERVER"))))

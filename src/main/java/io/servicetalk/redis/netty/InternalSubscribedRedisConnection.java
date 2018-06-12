@@ -38,7 +38,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.channels.ClosedChannelException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -56,6 +55,7 @@ import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static io.servicetalk.redis.internal.RedisUtils.newRequestCompositeBuffer;
 import static io.servicetalk.redis.netty.RedisUtils.isSubscribeModeCommand;
 import static io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage.KeyType.SimpleString;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
@@ -74,7 +74,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
                                               ExecutionContext executionContext,
                                               ReadOnlyRedisClientConfig roConfig, int initialQueueCapacity,
                                               int maxBufferPerGroup) {
-        super(durationNanos -> connection.getIoExecutor().scheduleOnEventloop(durationNanos, TimeUnit.NANOSECONDS),
+        super(durationNanos -> connection.getIoExecutor().asExecutor().timer(durationNanos, NANOSECONDS),
                 executionContext, roConfig);
         this.connection = connection;
         this.deferSubscribeTillConnect = roConfig.isDeferSubscribeTillConnect();

@@ -162,12 +162,15 @@ public class RedisAuthConnectionFactoryClientTest {
         ioExecutor = toEventLoopAwareNettyIoExecutor(createIoExecutor());
         serviceDiscoverer = new DefaultDnsServiceDiscovererBuilder(ioExecutor.next(), immediate()).build();
         client = new RetryingRedisClient(
-                new DefaultRedisClientBuilder<InetSocketAddress>((eventPublisher, connectionFactory) -> new RoundRobinLoadBalancer<>(eventPublisher, new RedisAuthConnectionFactory<>(connectionFactory, ctx -> ctx.getBufferAllocator().fromAscii(password)), comparingInt(Object::hashCode)))
+                new DefaultRedisClientBuilder<InetSocketAddress>((eventPublisher, connectionFactory) ->
+                        new RoundRobinLoadBalancer<>(eventPublisher, new RedisAuthConnectionFactory<>(connectionFactory,
+                                ctx -> ctx.getBufferAllocator().fromAscii(password)), comparingInt(Object::hashCode)))
                         .setMaxPipelinedRequests(10)
                         .setIdleConnectionTimeout(ofSeconds(2))
                         .build(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()),
                                 serviceDiscoverer.discover(new DefaultHostAndPort(redisHost, redisPort))),
-                retryWithExponentialBackoff(10, cause -> cause instanceof RetryableException, ofMillis(10), backoffNanos -> ioExecutor.next().scheduleOnEventloop(backoffNanos, NANOSECONDS)));
+                retryWithExponentialBackoff(10, cause -> cause instanceof RetryableException, ofMillis(10),
+                        backoffNanos -> ioExecutor.next().asExecutor().timer(backoffNanos, NANOSECONDS)));
         clientConsumer.accept(client);
     }
 }
