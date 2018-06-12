@@ -15,13 +15,7 @@
  */
 package io.servicetalk.examples.http.service.composition;
 
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
-
-import java.time.Duration;
-import java.util.concurrent.TimeoutException;
-
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 // This class exists to fill the gap for missing operators in our async primitives.
 final class AsyncUtil {
@@ -58,26 +52,6 @@ final class AsyncUtil {
                 });
 
         return resp;
-    }
-
-    /**
-     * This operator is not currently available in ServiceTalk hence we provide a workaround to achieve the same
-     * results as a timeout. This operator applies a timeout to a {@link Single} such that if no result is emitted from
-     * this {@link Single} then it is cancelled and a {@link TimeoutException} is emitted from the
-     * {@link Single}.
-     *
-     * @param original {@link Single} on which a timeout is to be applied.
-     * @param <T> Type of item emitted by the original and returned {@link Single}.
-     * @return A {@link Single} that will emit the result of the original {@link Single} or terminate with a
-     * {@link TimeoutException} if result is not emitted in the specified time.
-     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
-     */
-    static <T> Single<T> timeout(Single<T> original, Executor executor, Duration timeout) {
-        // We do not currently have a timeout operator on our asynchronous sources, so we have to do the below
-        // workaround to achieve timeout.
-        return executor.schedule(timeout.toNanos(), NANOSECONDS)
-                .merge(original.toPublisher())
-                .first();
     }
 
     @FunctionalInterface

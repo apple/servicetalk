@@ -111,8 +111,7 @@ public class HelloWorldJaxRsResource {
     public CompletionStage<String> slowHello(@DefaultValue("world") @QueryParam("who") final String who,
                                              @Context final ConnectionContext ctx) {
         final CompletableFuture<String> delayedResponse = new CompletableFuture<>();
-        ctx.getExecutionContext().getExecutor()
-                .schedule(1, SECONDS)
+        ctx.getExecutionContext().getExecutor().timer(1, SECONDS)
                 .doAfterComplete(() -> delayedResponse.complete("well, hello " + who))
                 .subscribe();
         return delayedResponse;

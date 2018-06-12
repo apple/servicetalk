@@ -93,7 +93,7 @@ final class RecommendationBackend {
             }
 
             // Create a new random recommendation every 1 SECOND.
-            Publisher<Buffer> recommendations = ctx.getExecutor().schedule(1, SECONDS)
+            Publisher<Buffer> recommendations = ctx.getExecutor().timer(1, SECONDS)
                     // We use defer() here so that we do not eagerly create a Recommendation which will get emitted for
                     // every schedule. defer() helps us lazily create a new Recommendation object every time we the
                     // scheduler emits a tick.
