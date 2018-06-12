@@ -59,7 +59,7 @@ final class NettyHttpServer {
                 .andThen(getChannelInitializer(config, executor, service));
 
         // The ServerContext returned by TcpServerInitializer takes care of closing the contextFilter.
-        return initializer.start(address, contextFilter, channelInitializer, false)
+        return initializer.start(address, contextFilter, channelInitializer, executor, false)
                 .map((ServerContext delegate) -> new NettyHttpServerContext(delegate, service, executor));
     }
 
