@@ -17,15 +17,16 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
 
 import io.netty.channel.EventLoopGroup;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.ScheduledFuture;
 
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import static io.servicetalk.concurrent.internal.ExecutorUtil.executeOnService;
-import static io.servicetalk.concurrent.internal.ExecutorUtil.scheduleForSubscriber;
-
-abstract class AbstracttNettyIoExecutor<T extends EventLoopGroup> implements NettyIoExecutor {
+abstract class AbstracttNettyIoExecutor<T extends EventLoopGroup> implements NettyIoExecutor, Executor {
 
     protected final T eventLoop;
     protected final boolean interruptOnCancel;
@@ -76,18 +77,21 @@ abstract class AbstracttNettyIoExecutor<T extends EventLoopGroup> implements Net
         return result;
     }
 
-    @Override
-    public Cancellable executeOnEventloop(Runnable task) {
-        return executeOnService(eventLoop, task, interruptOnCancel);
-    }
+     @Override
+     public Executor asExecutor() {
+         return this;
+     }
 
-    @Override
-    public Completable scheduleOnEventloop(long duration, TimeUnit durationUnit) {
-        return new Completable() {
-            @Override
-            protected void handleSubscribe(Subscriber subscriber) {
-                scheduleForSubscriber(subscriber, eventLoop, interruptOnCancel, duration, durationUnit);
-            }
-        };
-    }
-}
+     @Override
+     public Cancellable execute(final Runnable task) throws RejectedExecutionException {
+        Future<?> future = eventLoop.submit(task);
+        return () -> future.cancel(interruptOnCancel);
+     }
+
+     @Override
+     public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit)
+             throws RejectedExecutionException {
+         ScheduledFuture<?> future = eventLoop.schedule(task, delay, unit);
+         return () -> future.cancel(interruptOnCancel);
+     }
+ }

@@ -15,12 +15,8 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.IoExecutor;
-
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
 
 /**
  * {@link IoExecutor} for netty.
@@ -30,32 +26,12 @@ import java.util.concurrent.TimeUnit;
  * If this assumption is violated, it will impact eventloop responsiveness and hence should be avoided.
  */
 public interface NettyIoExecutor extends IoExecutor {
-
     /**
-     * Executes the passed {@code task} on the eventloop as soon as possible.
-     *
+     * Get an {@link Executor} which will use an {@link IoExecutor} thread for execution.
      * <h2>Caution</h2>
-     * Implementation of this method assumes there would be no blocking code inside {@link Runnable}.
-     * If this assumption is violated, it will impact eventloop responsiveness and hence should be avoided.
-     *
-     * @param task to execute.
-     * @return {@link Cancellable} to cancel the task if not yet executed.
-     * @throws RejectedExecutionException If the task is rejected.
+     * Implementation of this method assumes there would be no blocking code inside the submitted {@link Runnable}s.
+     * If this assumption is violated, it will impact EventLoop responsiveness and hence should be avoided.
+     * @return an {@link Executor} which will use an {@link IoExecutor} thread for execution.
      */
-    Cancellable executeOnEventloop(Runnable task);
-
-    /**
-     * Schedules a tick for the passed {@code duration} on the eventloop to terminate the returned {@link Completable}
-     * when done.
-     *
-     * <h2>Caution</h2>
-     * Implementation of the returned {@link Completable} assumes there would be no blocking code run when interacting
-     * with it. If this assumption is violated, it will impact eventloop responsiveness and hence should be avoided.
-     *
-     * @param duration of the tick.
-     * @param durationUnit {@link TimeUnit} for the duration.
-     * @return A {@link Completable} that terminates successfully when the passed {@code duration} has passed.
-     * It will terminate with failure if the tick can not be scheduled or completed.
-     */
-    Completable scheduleOnEventloop(long duration, TimeUnit durationUnit);
+    Executor asExecutor();
 }
