@@ -52,10 +52,10 @@ public class DefaultHttpClientBuilderTest extends AbstractEchoServerBasedHttpReq
                 serverContext.getListenAddress(), true);
 
         // Simulate delayed discovery
-        CTX.getExecutor().schedule(300, MILLISECONDS).doAfterComplete(() -> {
+        CTX.getExecutor().schedule(() -> {
             sdPub.sendItems(sdEvent);
             sdPub.onComplete();
-        }).subscribe();
+        }, 300, MILLISECONDS);
 
         sendRequestAndValidate(sdPub);
     }

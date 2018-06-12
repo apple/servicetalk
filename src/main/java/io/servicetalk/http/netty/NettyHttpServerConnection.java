@@ -100,7 +100,7 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
     }
 
     private Completable maybeCloseConnection(final HttpKeepAlive keepAlive) {
-        return keepAlive.closeConnectionIfNecessary(executor.schedule(100, MILLISECONDS)
+        return keepAlive.closeConnectionIfNecessary(executor.timer(100, MILLISECONDS)
                 .andThen(closeAsyncDeferred()));
     }
 

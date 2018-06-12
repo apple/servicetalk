@@ -104,7 +104,7 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
 
             HttpResponse<HttpPayloadChunk> resp = awaitIndefinitelyNonNull(requester.request(request).retryWhen(
                     retryWithExponentialBackoff(10, t -> true, Duration.ofMillis(100),
-                            delayNanos -> CTX.getExecutor().schedule(delayNanos, NANOSECONDS))));
+                            delayNanos -> CTX.getExecutor().timer(delayNanos, NANOSECONDS))));
 
             assertThat(resp.getStatus().getCode(), equalTo(200));
 
