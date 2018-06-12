@@ -50,16 +50,19 @@ public class TcpServerInitializerContextFilterTest extends AbstractTcpServerTest
 
     enum FilterMode {
         ACCEPT_ALL(true, false, (executor, context) -> success(true)),
-        DELAY_ACCEPT_ALL(true, false, (executor, context) -> executor.schedule(100, MILLISECONDS).andThen(success(true))),
+        DELAY_ACCEPT_ALL(true, false, (executor, context) -> executor.timer(100, MILLISECONDS).andThen(success(true))),
         REJECT_ALL(false, false, (executor, context) -> success(false)),
-        DELAY_REJECT_ALL(false, false, (executor, context) -> executor.schedule(100, MILLISECONDS).andThen(success(false))),
+        DELAY_REJECT_ALL(false, false, (executor, context) ->
+                executor.timer(100, MILLISECONDS).andThen(success(false))),
         THROW_EXCEPTION(false, false, (executor, context) -> {
             throw DELIBERATE_EXCEPTION;
         }),
-        SINGLE_ERROR(false, false, (executor, context) -> executor.schedule(100, MILLISECONDS).andThen(error(new DeliberateException()))),
+        SINGLE_ERROR(false, false, (executor, context) ->
+                executor.timer(100, MILLISECONDS).andThen(error(DELIBERATE_EXCEPTION))),
         DELAY_SINGLE_ERROR(false, false, (executor, context) -> error(new DeliberateException())),
         INITIALIZER_THROW(false, true, (executor, context) -> success(true)),
-        DELAY_INITIALIZER_THROW(false, true, (executor, context) -> executor.schedule(100, MILLISECONDS).andThen(success(true)));
+        DELAY_INITIALIZER_THROW(false, true, (executor, context) ->
+                executor.timer(100, MILLISECONDS).andThen(success(true)));
 
         private final boolean expectAccept;
         private final boolean initializerThrow;
