@@ -136,7 +136,7 @@ final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<String, Ine
             addEntry(entry);
         } else {
             entry = new DiscoverEntry(address);
-            nettyIoExecutor.executeOnEventloop(() -> {
+            nettyIoExecutor.asExecutor().execute(() -> {
                 if (closed) {
                     entry.completeSubscription();
                 } else {
@@ -160,7 +160,7 @@ final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<String, Ine
         if (nettyIoExecutor.isCurrentThreadEventLoop()) {
             removeEntry0(entry);
         } else {
-            nettyIoExecutor.executeOnEventloop(() -> removeEntry0(entry));
+            nettyIoExecutor.asExecutor().execute(() -> removeEntry0(entry));
         }
     }
 
@@ -189,7 +189,7 @@ final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<String, Ine
                 if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                     closeAsync0();
                 } else {
-                    nettyIoExecutor.executeOnEventloop(DefaultDnsServiceDiscoverer.this::closeAsync0);
+                    nettyIoExecutor.asExecutor().execute(DefaultDnsServiceDiscoverer.this::closeAsync0);
                 }
             }
         };
@@ -288,7 +288,7 @@ final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<String, Ine
             if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                 initializeSubscriber0(subscriber);
             } else {
-                nettyIoExecutor.executeOnEventloop(() -> initializeSubscriber0(subscriber));
+                nettyIoExecutor.asExecutor().execute(() -> initializeSubscriber0(subscriber));
             }
         }
 
@@ -328,7 +328,7 @@ final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<String, Ine
                     if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                         request0(n);
                     } else {
-                        nettyIoExecutor.executeOnEventloop(() -> request0(n));
+                        nettyIoExecutor.asExecutor().execute(() -> request0(n));
                     }
                 }
 
@@ -337,7 +337,7 @@ final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<String, Ine
                     if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                         cancel0();
                     } else {
-                        nettyIoExecutor.executeOnEventloop(this::cancel0);
+                        nettyIoExecutor.asExecutor().execute(this::cancel0);
                     }
                 }
 
@@ -378,24 +378,7 @@ final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<String, Ine
                 private void scheduleQuery(long nanos) {
                     // This value is coming from DNS TTL for which the unit is seconds and the minimum value we accept
                     // in the constructor is 1 second.
-                    nettyIoExecutor.scheduleOnEventloop(nanos, NANOSECONDS).subscribe(new Completable.Subscriber() {
-                        @Override
-                        public void onSubscribe(Cancellable cancellable) {
-                            // It is assumed this will happen synchronously and on the same thread.
-                            cancellableForQuery = cancellable;
-                        }
-
-                        @Override
-                        public void onComplete() {
-                            doQuery();
-                        }
-
-                        @Override
-                        public void onError(Throwable t) {
-                            // This is likely because the timer was cancelled.
-                            cancel0();
-                        }
-                    });
+                    cancellableForQuery = nettyIoExecutor.asExecutor().schedule(this::doQuery, nanos, NANOSECONDS);
                 }
 
                 private void handleResolveDone(Future<List<InetAddress>> addressFuture) {
