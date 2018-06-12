@@ -25,6 +25,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.FileDescriptorSocketAddress;
 import io.servicetalk.transport.netty.internal.AbstractChannelReadHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 import io.servicetalk.transport.netty.internal.NettyConnection;
@@ -47,9 +48,12 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.netty.channel.ChannelOption.ALLOW_HALF_CLOSURE;
+import static io.netty.channel.ChannelOption.AUTO_CLOSE;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
+import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static io.servicetalk.transport.netty.internal.NettyConnectionContext.newContext;
 import static java.lang.String.format;
@@ -67,6 +71,7 @@ public final class TcpConnector<Read, Write> {
     private final Supplier<Predicate<Read>> terminalItemPredicate;
     @Nullable
     private final SocketAddress local;
+    private final CloseHandler closeHandler;
 
     /**
      * New instance.
@@ -75,14 +80,17 @@ public final class TcpConnector<Read, Write> {
      * @param terminalItemPredicate used for creating a new {@link Predicate} per channel to be passed to
      * {@link AbstractChannelReadHandler}.
      * @param local address.
+     * @param closeHandler handles connection closure and half-closure.
      */
     public TcpConnector(ReadOnlyTcpClientConfig config, ChannelInitializer channelInitializer,
                         Supplier<Predicate<Read>> terminalItemPredicate,
-                        @Nullable SocketAddress local) {
+                        @Nullable SocketAddress local,
+                        CloseHandler closeHandler) {
         this.config = requireNonNull(config);
         this.channelInitializer = requireNonNull(channelInitializer);
         this.terminalItemPredicate = requireNonNull(terminalItemPredicate);
         this.local = local;
+        this.closeHandler = requireNonNull(closeHandler);
     }
 
     /**
@@ -94,7 +102,7 @@ public final class TcpConnector<Read, Write> {
      */
     public TcpConnector(ReadOnlyTcpClientConfig config, ChannelInitializer channelInitializer,
                         Supplier<Predicate<Read>> terminalItemPredicate) {
-        this(config, channelInitializer, terminalItemPredicate, null);
+        this(config, channelInitializer, terminalItemPredicate, null, NOOP_CLOSE_HANDLER);
     }
 
     /**
@@ -181,7 +189,8 @@ public final class TcpConnector<Read, Write> {
                                 protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Read> newPublisher) {
                                     final Connection<Read, Write> connection;
                                     try {
-                                        connection = new NettyConnection<>(channel, context, newPublisher, predicate);
+                                        connection = new NettyConnection<>(channel, context, newPublisher, predicate,
+                                                closeHandler);
                                     } catch (Throwable cause) {
                                         channel.close();
                                         subscriber.onError(cause);
@@ -240,6 +249,11 @@ public final class TcpConnector<Read, Write> {
         bs.option(ChannelOption.AUTO_READ, config.isAutoRead());
         if (!config.isAutoRead()) {
             bs.option(ChannelOption.MAX_MESSAGES_PER_READ, 1);
+        }
+
+        if (closeHandler != NOOP_CLOSE_HANDLER) {
+            bs.option(ALLOW_HALF_CLOSURE, true);
+            bs.option(AUTO_CLOSE, false);
         }
 
         // Set the correct ByteBufAllocator based on our BufferAllocator to minimize memory copies.

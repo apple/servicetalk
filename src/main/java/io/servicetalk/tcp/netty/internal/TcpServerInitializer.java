@@ -22,6 +22,7 @@ import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 import io.servicetalk.transport.netty.internal.NettyServerContext;
@@ -41,6 +42,8 @@ import java.net.SocketAddress;
 import java.util.Map;
 import javax.annotation.Nullable;
 
+import static io.netty.channel.ChannelOption.ALLOW_HALF_CLOSURE;
+import static io.netty.channel.ChannelOption.AUTO_CLOSE;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
 import static io.servicetalk.transport.netty.internal.NettyConnectionContext.newContext;
@@ -115,7 +118,7 @@ public final class TcpServerInitializer {
      */
     public Single<ServerContext> start(SocketAddress listenAddress, ContextFilter contextFilter,
                                        ChannelInitializer channelInitializer, Executor executor) {
-        return start(listenAddress, contextFilter, channelInitializer, executor, true);
+        return start(listenAddress, contextFilter, channelInitializer, executor, true, false);
     }
 
     /**
@@ -127,11 +130,13 @@ public final class TcpServerInitializer {
      * @param channelInitializer to use for initializing all accepted connections.
      * @param checkForRefCountedTrapper Whether to log a warning if a {@link RefCountedTrapper} is not found in the
      * pipeline.
+     * @param enableHalfClosure whether half-closure should be enabled and a handler will be installed to manage closure
      * @return {@link Single} which completes when the server is started.
+     * @see CloseHandler to manage half-closing connections from the protocol
      */
     public Single<ServerContext> start(SocketAddress listenAddress, ContextFilter contextFilter,
                                        ChannelInitializer channelInitializer, Executor executor,
-                                       boolean checkForRefCountedTrapper) {
+                                       boolean checkForRefCountedTrapper, boolean enableHalfClosure) {
         requireNonNull(channelInitializer);
         requireNonNull(contextFilter);
         listenAddress = toNettyAddress(requireNonNull(listenAddress));
@@ -141,7 +146,7 @@ public final class TcpServerInitializer {
         EventLoopAwareNettyIoExecutor threadIoExecutor = nettyIoExecutor.next();
         // next() of an EventLoop will just return itself, which is expected because we did the selection above.
         EventLoop eventLoop = threadIoExecutor.getEventLoopGroup().next();
-        configure(bs, eventLoop, listenAddress.getClass());
+        configure(bs, eventLoop, listenAddress.getClass(), enableHalfClosure);
         //TODO: AdvancedChannelGroup is missing from ST 1.x.
         bs.childHandler(new io.netty.channel.ChannelInitializer<Channel>() {
             @Override
@@ -179,8 +184,8 @@ public final class TcpServerInitializer {
     }
 
     @SuppressWarnings("deprecation")
-    private void configure(ServerBootstrap bs,
-                           @Nullable EventLoopGroup eventLoopGroup, Class<? extends SocketAddress> bindAddressClass) {
+    private void configure(ServerBootstrap bs, @Nullable EventLoopGroup eventLoopGroup,
+                           Class<? extends SocketAddress> bindAddressClass, final boolean enableHalfClosure) {
         if (eventLoopGroup == null) {
             throw new IllegalStateException("IoExecutor must be specified before building");
         }
@@ -197,6 +202,11 @@ public final class TcpServerInitializer {
         bs.childOption(ChannelOption.AUTO_READ, config.isAutoRead());
         if (!config.isAutoRead()) {
             bs.childOption(ChannelOption.MAX_MESSAGES_PER_READ, 1);
+        }
+
+        if (enableHalfClosure) {
+            bs.childOption(ALLOW_HALF_CLOSURE, true);
+            bs.childOption(AUTO_CLOSE, false);
         }
 
         bs.option(ChannelOption.SO_BACKLOG, config.getBacklog());

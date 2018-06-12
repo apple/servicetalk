@@ -99,7 +99,7 @@ public class TcpServer {
         final ChannelInitializer channelInitializer = new TcpServerChannelInitializer(config)
                 .andThen(getChannelInitializer(service, executor));
         return awaitIndefinitelyNonNull(initializer.start(new InetSocketAddress(port), contextFilter,
-                channelInitializer, executor, false)
+                channelInitializer, executor, false, false)
                 .doBeforeSuccess(ctx -> LOGGER.info("Server started on port {}.", getServerPort(ctx)))
                 .doBeforeError(throwable -> LOGGER.error("Failed starting server on port {}.", port)));
     }
