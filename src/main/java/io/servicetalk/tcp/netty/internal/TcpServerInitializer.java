@@ -16,6 +16,7 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.netty.BufferUtil;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.ServerContext;
@@ -40,7 +41,7 @@ import java.net.SocketAddress;
 import java.util.Map;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
 import static io.servicetalk.transport.netty.internal.NettyConnectionContext.newContext;
 import static java.util.Objects.requireNonNull;
@@ -53,7 +54,7 @@ public final class TcpServerInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(TcpServerInitializer.class);
 
     private final EventLoopAwareNettyIoExecutor nettyIoExecutor;
-    private ReadOnlyTcpServerConfig config;
+    private final ReadOnlyTcpServerConfig config;
 
     /**
      * New instance.
@@ -98,8 +99,9 @@ public final class TcpServerInitializer {
      * @param channelInitializer to use for initializing all accepted connections.
      * @return {@link Single} which completes when the server is started.
      */
-    public Single<ServerContext> start(SocketAddress listenAddress, ContextFilter contextFilter, ChannelInitializer channelInitializer) {
-        return start(listenAddress, contextFilter, channelInitializer, true);
+    public Single<ServerContext> start(SocketAddress listenAddress, ContextFilter contextFilter,
+                                       ChannelInitializer channelInitializer) {
+        return start(listenAddress, contextFilter, channelInitializer, newCachedThreadExecutor());
     }
 
     /**
@@ -107,11 +109,28 @@ public final class TcpServerInitializer {
      *
      * @param listenAddress for the server.
      * @param contextFilter to use for filtering accepted connections.
+     * @param executor The {@link Executor} for invoking {@code contextFilter} and {@code channelInitializer}.
      * @param channelInitializer to use for initializing all accepted connections.
-     * @param checkForRefCountedTrapper Whether to log a warning if a {@link RefCountedTrapper} is not found in the pipeline.
      * @return {@link Single} which completes when the server is started.
      */
-    public Single<ServerContext> start(SocketAddress listenAddress, ContextFilter contextFilter, ChannelInitializer channelInitializer,
+    public Single<ServerContext> start(SocketAddress listenAddress, ContextFilter contextFilter,
+                                       ChannelInitializer channelInitializer, Executor executor) {
+        return start(listenAddress, contextFilter, channelInitializer, executor, true);
+    }
+
+    /**
+     * Starts a server using the passed {@code channelInitializer} on the {@code listenAddress}.
+     *
+     * @param listenAddress for the server.
+     * @param contextFilter to use for filtering accepted connections.
+     * @param executor The {@link Executor} for invoking {@code contextFilter} and {@code channelInitializer}.
+     * @param channelInitializer to use for initializing all accepted connections.
+     * @param checkForRefCountedTrapper Whether to log a warning if a {@link RefCountedTrapper} is not found in the
+     * pipeline.
+     * @return {@link Single} which completes when the server is started.
+     */
+    public Single<ServerContext> start(SocketAddress listenAddress, ContextFilter contextFilter,
+                                       ChannelInitializer channelInitializer, Executor executor,
                                        boolean checkForRefCountedTrapper) {
         requireNonNull(channelInitializer);
         requireNonNull(contextFilter);
@@ -127,11 +146,16 @@ public final class TcpServerInitializer {
         bs.childHandler(new io.netty.channel.ChannelInitializer<Channel>() {
             @Override
             protected void initChannel(Channel channel) {
-                // We rely on Netty to catch and log exceptions from the channel initializer.
-                // TODO: Use proper executor
-                newContext(channel, threadIoExecutor, immediate(), config.getAllocator(),
-                        new ContextFilterChannelInitializer(contextFilter, channelInitializer),
-                        checkForRefCountedTrapper);
+                executor.execute(() -> {
+                    try {
+                        newContext(channel, threadIoExecutor, executor, config.getAllocator(),
+                                new ContextFilterChannelInitializer(contextFilter, channelInitializer),
+                                checkForRefCountedTrapper);
+                    } catch (Throwable t) {
+                        LOGGER.warn("Failed to initialize a channel {}. Closing" + channel, t);
+                        channel.close();
+                    }
+                });
             }
         });
         ChannelFuture future = bs.bind(listenAddress);
@@ -155,7 +179,8 @@ public final class TcpServerInitializer {
     }
 
     @SuppressWarnings("deprecation")
-    private void configure(ServerBootstrap bs, @Nullable EventLoopGroup eventLoopGroup, Class<? extends SocketAddress> bindAddressClass) {
+    private void configure(ServerBootstrap bs,
+                           @Nullable EventLoopGroup eventLoopGroup, Class<? extends SocketAddress> bindAddressClass) {
         if (eventLoopGroup == null) {
             throw new IllegalStateException("IoExecutor must be specified before building");
         }
