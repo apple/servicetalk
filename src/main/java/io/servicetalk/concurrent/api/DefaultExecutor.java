@@ -19,8 +19,10 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -30,8 +32,6 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static io.servicetalk.concurrent.internal.ExecutorUtil.executeOnService;
-import static io.servicetalk.concurrent.internal.ExecutorUtil.scheduleForSubscriber;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -102,8 +102,8 @@ final class DefaultExecutor implements Executor {
     }
 
     @Override
-    public Completable schedule(long duration, TimeUnit durationUnit) {
-        return scheduler.apply(duration, durationUnit);
+    public Cancellable schedule(final Runnable task, final long duration, final TimeUnit unit) {
+        return scheduler.apply(task, duration, unit);
     }
 
     @Override
@@ -141,7 +141,8 @@ final class DefaultExecutor implements Executor {
     /**
      * {@link Runnable} interface will invoke {@link ScheduledExecutorService#shutdown()}.
      */
-    public interface InternalScheduler extends BiLongFunction<TimeUnit, Completable>, Runnable {
+    private interface InternalScheduler extends Runnable {
+        Cancellable apply(Runnable task, long delay, TimeUnit unit);
     }
 
     private static void shutdownExecutor(java.util.concurrent.Executor jdkExecutor) {
@@ -168,7 +169,8 @@ final class DefaultExecutor implements Executor {
 
                 @Override
                 public Cancellable apply(Runnable runnable) {
-                    return executeOnService(service, runnable, interruptOnCancel);
+                    Future<?> future = service.submit(runnable);
+                    return () -> future.cancel(interruptOnCancel);
                 }
             };
         }
@@ -193,8 +195,9 @@ final class DefaultExecutor implements Executor {
             }
 
             @Override
-            public Completable apply(long duration, TimeUnit timeUnit) {
-                return scheduleApply(service, true, duration, timeUnit);
+            public Cancellable apply(final Runnable task, final long delay, final TimeUnit unit) {
+                ScheduledFuture<?> future = service.schedule(task, delay, unit);
+                return () -> future.cancel(true);
             }
         };
     }
@@ -207,18 +210,9 @@ final class DefaultExecutor implements Executor {
             }
 
             @Override
-            public Completable apply(long duration, TimeUnit timeUnit) {
-                return scheduleApply(service, interruptOnCancel, duration, timeUnit);
-            }
-        };
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Completable scheduleApply(ScheduledExecutorService service, boolean interruptOnCancel, long duration, TimeUnit timeUnit) {
-        return new Completable() {
-            @Override
-            protected void handleSubscribe(Subscriber subscriber) {
-                scheduleForSubscriber(subscriber, service, interruptOnCancel, duration, timeUnit);
+            public Cancellable apply(final Runnable task, final long delay, final TimeUnit unit) {
+                ScheduledFuture<?> future = service.schedule(task, delay, unit);
+                return () -> future.cancel(interruptOnCancel);
             }
         };
     }

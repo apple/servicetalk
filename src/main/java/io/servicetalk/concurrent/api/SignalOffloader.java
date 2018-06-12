@@ -99,7 +99,7 @@ interface SignalOffloader {
     /**
      * Decorates the passed {@link Completable.Subscriber} such that all method calls to its {@link Cancellable} will be offloaded.
      * <em>None of the {@link Completable.Subscriber} methods will be offloaded.</em>
-     * <h2>Caution</h2>
+     * <h2>Caution</h2>LoadBalancerReadyHttpClientTest
      * This method MUST not be called concurrently with itself or other offload methods here on the same
      * {@link SignalOffloader} instance.
      *
@@ -120,4 +120,13 @@ interface SignalOffloader {
      * @param <T> Type of signal.
      */
     <T> void offloadSignal(T signal, Consumer<T> signalConsumer);
+
+    /**
+     * Determine if we are currently on the thread responsible for offloading signals.
+     * <p>
+     * If this method is used to conditionally avoid offloading it may impact ordering. If your events are sensitive to
+     * ordering you should use an alternative mechanism.
+     * @return {@code true} if we are currently on the thread responsible for offloading signals.
+     */
+    boolean isInOffloadThread();
 }

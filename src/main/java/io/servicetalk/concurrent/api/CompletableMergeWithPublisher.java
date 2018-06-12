@@ -114,7 +114,7 @@ final class CompletableMergeWithPublisher<T> extends Publisher<T> {
 
         @Override
         public void onNext(T t) {
-            sendOnNextWithConcurrentTerminationCheck(() -> subscriber.onNext(t), this::onTerminatedConcurrently,
+            sendOnNextWithConcurrentTerminationCheck(subscriber, t, this::onTerminatedConcurrently,
                     subscriberStateUpdater, terminalNotificationUpdater, this);
         }
 

@@ -64,13 +64,20 @@ public class MockedCompletableListenerRule implements TestRule {
     }
 
     public MockedCompletableListenerRule listen(Completable src) {
+        return listen(src, true);
+    }
+
+    public MockedCompletableListenerRule listen(Completable src, boolean expectOnSubscribe) {
         createSubscriber();
         assert subscriber != null;
         src.subscribe(subscriber);
-        ArgumentCaptor<Cancellable> cancellableCaptor = forClass(Cancellable.class);
-        verify(subscriber).onSubscribe(cancellableCaptor.capture());
-        cancellable = cancellableCaptor.getValue();
-        return verifyCancellable();
+        if (expectOnSubscribe) {
+            ArgumentCaptor<Cancellable> cancellableCaptor = forClass(Cancellable.class);
+            verify(subscriber).onSubscribe(cancellableCaptor.capture());
+            cancellable = cancellableCaptor.getValue();
+            return verifyCancellable();
+        }
+        return this;
     }
 
     public MockedCompletableListenerRule verifyCancelled() {

@@ -63,4 +63,9 @@ final class NoopSignalOffloader implements SignalOffloader {
     public <T> void offloadSignal(T signal, Consumer<T> signalConsumer) {
         signalConsumer.accept(signal);
     }
+
+    @Override
+    public boolean isInOffloadThread() {
+        return true;
+    }
 }

@@ -122,7 +122,8 @@ final class TakeUntilPublisher<T> extends AbstractSynchronousPublisherOperator<T
 
         @Override
         public void onNext(T t) {
-            sendOnNextWithConcurrentTerminationCheck(() -> subscriber.onNext(t), this::terminate, subscriberStateUpdater, terminalNotificationUpdater, this);
+            sendOnNextWithConcurrentTerminationCheck(subscriber, t, this::terminate, subscriberStateUpdater,
+                    terminalNotificationUpdater, this);
         }
 
         private void terminate(Object terminalNotification) {

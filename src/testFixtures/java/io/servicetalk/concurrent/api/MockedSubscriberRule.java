@@ -28,9 +28,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifyOriginalAndSuppressedCauses;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifySuppressed;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -55,15 +53,13 @@ public class MockedSubscriberRule<T> implements TestRule {
     }
 
     public MockedSubscriberRule<T> cancel() {
-        verifySubscription();
-        assert subscription != null;
+        assertNotNull(subscription);
         subscription.cancel();
         return this;
     }
 
     public MockedSubscriberRule<T> request(long n) {
-        verifySubscription();
-        assert subscription != null;
+        assertNotNull(subscription);
         subscription.request(n);
         return this;
     }
@@ -87,11 +83,7 @@ public class MockedSubscriberRule<T> implements TestRule {
         ArgumentCaptor<Subscription> subscriptionCaptor = forClass(Subscription.class);
         verify(subscriber).onSubscribe(subscriptionCaptor.capture());
         subscription = subscriptionCaptor.getValue();
-        return verifySubscription();
-    }
-
-    private MockedSubscriberRule<T> verifySubscription() {
-        assertThat("Subscription not found.", subscription, is(notNullValue()));
+        assertNotNull(subscription);
         return this;
     }
 
@@ -130,7 +122,7 @@ public class MockedSubscriberRule<T> implements TestRule {
 
     @SafeVarargs
     public final MockedSubscriberRule<T> verifyItems(Function<Subscriber<T>, Subscriber<T>> verifierSupplier, int startIndex, int endIndex, T... expected) {
-        verifySubscription();
+        assertNotNull(subscription);
         assert subscriber != null;
         verify(subscriber).onSubscribe(any());
         for (; startIndex < endIndex; ++startIndex) {
@@ -141,15 +133,13 @@ public class MockedSubscriberRule<T> implements TestRule {
     }
 
     public MockedSubscriberRule<T> requestAndVerifyFailure(Throwable cause) {
-        verifySubscription();
-        assert subscription != null;
+        assertNotNull(subscription);
         subscription.request(1);
         return verifyFailure(cause);
     }
 
     public MockedSubscriberRule<T> requestAndVerifySuppressedFailure(Throwable originalCause, Throwable suppressedCause) {
-        verifySubscription();
-        assert subscription != null;
+        assertNotNull(subscription);
         subscription.request(1);
         return verifySuppressedFailure(originalCause, suppressedCause);
     }
@@ -204,9 +194,8 @@ public class MockedSubscriberRule<T> implements TestRule {
         return subscriber;
     }
 
-    @Nullable
     public Subscription getSubscription() {
-        verifySubscription();
+        assertNotNull(subscription);
         return subscription;
     }
 

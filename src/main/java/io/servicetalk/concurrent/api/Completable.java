@@ -17,6 +17,9 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -28,6 +31,7 @@ import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -171,6 +175,84 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      */
     public final <T> Publisher<T> toPublisher(Supplier<T> valueSupplier) {
         return new CompletableToPublisher<>(this, valueSupplier);
+    }
+
+    /**
+     * Creates a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate
+     * with a {@link TimeoutException} if time {@code duration} elapses between {@link #subscribe(Subscriber)} and
+     * termination. The timer starts when the returned {@link Completable} is {@link #subscribe(Subscriber) subscribed}
+     * to.
+     * <p>
+     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
+     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
+     * {@link Subscriber#onError(Throwable) terminated}.
+     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onComplete()}.
+     * @param unit The units for {@code duration}.
+     * @return a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate with
+     * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    public final Completable timeout(long duration, TimeUnit unit) {
+        // TODO(scott): we should be using the Executor associate with this Completable instead of immediate()!
+        return timeout(duration, unit, immediate());
+    }
+
+    /**
+     * Creates a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate
+     * with a {@link TimeoutException} if time {@code duration} elapses between {@link #subscribe(Subscriber)} and
+     * termination. The timer starts when the returned {@link Completable} is {@link #subscribe(Subscriber) subscribed}
+     * to.
+     * <p>
+     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
+     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
+     * {@link Subscriber#onError(Throwable) terminated}.
+     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onComplete()}.
+     * @param unit The units for {@code duration}.
+     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
+     * @return a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate with
+     * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    public final Completable timeout(long duration, TimeUnit unit, Executor timeoutExecutor) {
+        return new TimeoutCompletable(this, duration, unit, timeoutExecutor);
+    }
+
+    /**
+     * Creates a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate
+     * with a {@link TimeoutException} if time {@code duration} elapses between {@link #subscribe(Subscriber)} and
+     * termination. The timer starts when the returned {@link Completable} is {@link #subscribe(Subscriber) subscribed}
+     * to.
+     * <p>
+     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
+     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
+     * {@link Subscriber#onError(Throwable) terminated}.
+     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onComplete()}.
+     * @return a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate with
+     * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    public final Completable timeout(Duration duration) {
+        // TODO(scott): we should be using the Executor associate with this Completable instead of immediate()!
+        return timeout(duration, immediate());
+    }
+
+    /**
+     * Creates a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate
+     * with a {@link TimeoutException} if time {@code duration} elapses between {@link #subscribe(Subscriber)} and
+     * termination. The timer starts when the returned {@link Completable} is {@link #subscribe(Subscriber) subscribed}
+     * to.
+     * <p>
+     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
+     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
+     * {@link Subscriber#onError(Throwable) terminated}.
+     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onComplete()}.
+     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
+     * @return a new {@link Completable} that will mimic the signals of this {@link Completable} but will terminate with
+     * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    public final Completable timeout(Duration duration, Executor timeoutExecutor) {
+        return new TimeoutCompletable(this, duration, timeoutExecutor);
     }
 
     /**
@@ -505,34 +587,6 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     }
 
     /**
-     * Creates a realized completed {@code Completable}.
-     *
-     * @return A new {@code Completable}.
-     */
-    public static Completable completed() {
-        return CompletedCompletable.INSTANCE;
-    }
-
-    /**
-     * Creates a realized failed {@code Completable}.
-     *
-     * @param cause error that the returned {@code Completable} completes with.
-     * @return A new {@code Completable}.
-     */
-    public static Completable error(Throwable cause) {
-        return new FailedCompletable(requireNonNull(cause));
-    }
-
-    /**
-     * Creates a {@link Completable} that never terminates.
-     *
-     * @return A new {@code Completable}.
-     */
-    public static Completable never() {
-        return NeverCompletable.INSTANCE;
-    }
-
-    /**
      * Re-subscribes to this {@link Completable} if an error is emitted and the passed {@link BiIntPredicate} returns {@code true}.
      *
      * @param shouldRetry {@link BiIntPredicate} that given the retry count and the most recent {@link Throwable} emitted from this
@@ -591,13 +645,43 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     }
 
     /**
+     * Creates a realized completed {@code Completable}.
+     *
+     * @return A new {@code Completable}.
+     */
+    public static Completable completed() {
+        return CompletedCompletable.INSTANCE;
+    }
+
+    /**
+     * Creates a realized failed {@code Completable}.
+     *
+     * @param cause error that the returned {@code Completable} completes with.
+     * @return A new {@code Completable}.
+     */
+    public static Completable error(Throwable cause) {
+        return new FailedCompletable(requireNonNull(cause));
+    }
+
+    /**
+     * Creates a {@link Completable} that never terminates.
+     *
+     * @return A new {@code Completable}.
+     */
+    public static Completable never() {
+        return NeverCompletable.INSTANCE;
+    }
+
+    /**
      * Defer creation of a {@link Completable} till it is subscribed to.
      *
-     * @param completableFactory {@link Supplier} to create a new {@link Completable} for every call to {@link #subscribe(Subscriber)} to the returned {@link Completable}.
-     * @return A new {@link Completable} that creates a new {@link Completable} using {@code completableFactory} for every call to {@link #subscribe(Subscriber)} and forwards
+     * @param completableSupplier {@link Supplier} to create a new {@link Completable} for every call to
+     * {@link #subscribe(Subscriber)} to the returned {@link Completable}.
+     * @return A new {@link Completable} that creates a new {@link Completable} using {@code completableFactory}
+     * for every call to {@link #subscribe(Subscriber)} and forwards
      * the termination signal from the newly created {@link Completable} to its {@link Subscriber}.
      */
-    public static Completable defer(Supplier<Completable> completableFactory) {
-        return new CompletableDefer(completableFactory);
+    public static Completable defer(Supplier<Completable> completableSupplier) {
+        return new CompletableDefer(completableSupplier);
     }
 }

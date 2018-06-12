@@ -17,6 +17,9 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -26,6 +29,7 @@ import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static java.util.Objects.requireNonNull;
 
@@ -99,6 +103,85 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      */
     public final Completable ignoreResult() {
         return new SingleToCompletable<>(this);
+    }
+
+    /**
+     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * with a {@link TimeoutException} if time {@code duration} elapses between {@link #subscribe(Subscriber)} and
+     * termination. The timer starts when the returned {@link Single} is {@link #subscribe(Subscriber) subscribed}
+     * to.
+     * <p>
+     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
+     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
+     * {@link Subscriber#onError(Throwable) terminated}.
+     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
+     * @param unit The units for {@code duration}.
+     * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    public final Single<T> timeout(long duration, TimeUnit unit) {
+        // TODO(scott): we should be using the Executor associate with this Completable instead of immediate()!
+        return timeout(duration, unit, immediate());
+    }
+
+    /**
+     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * with a {@link TimeoutException} if time {@code duration} elapses between {@link #subscribe(Subscriber)} and
+     * termination. The timer starts when the returned {@link Single} is {@link #subscribe(Subscriber) subscribed}
+     * to.
+     * <p>
+     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
+     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
+     * {@link Subscriber#onError(Throwable) terminated}.
+     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
+     * @param unit The units for {@code duration}.
+     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
+     * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    public final Single<T> timeout(long duration, TimeUnit unit, Executor timeoutExecutor) {
+        return new TimeoutSingle<>(this, duration, unit, timeoutExecutor);
+    }
+
+    /**
+     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * with a {@link TimeoutException} if time {@code duration} elapses between {@link #subscribe(Subscriber)} and
+     * termination. The timer starts when the returned {@link Single} is {@link #subscribe(Subscriber) subscribed}
+     * to.
+     * <p>
+     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
+     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
+     * {@link Subscriber#onError(Throwable) terminated}.
+     * {@link Subscriber} will via {@link Subscriber#onError(Throwable) terminated}.
+     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
+     * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    public final Single<T> timeout(Duration duration) {
+        // TODO(scott): we should be using the Executor associate with this Completable instead of immediate()!
+        return timeout(duration, immediate());
+    }
+
+    /**
+     * Creates a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * with a {@link TimeoutException} if time {@code duration} elapses between {@link #subscribe(Subscriber)} and
+     * termination. The timer starts when the returned {@link Single} is {@link #subscribe(Subscriber) subscribed}
+     * to.
+     * <p>
+     * In the event of timeout any {@link Cancellable} from {@link Subscriber#onSubscribe(Cancellable)} will be
+     * {@link Cancellable#cancel() cancelled} and the associated {@link Subscriber} will be
+     * {@link Subscriber#onError(Throwable) terminated}.
+     * @param duration The time duration which is allowed to elapse before {@link Subscriber#onSuccess(Object)}.
+     * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
+     * @return a new {@link Single} that will mimic the signals of this {@link Single} but will terminate with a
+     * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
+     * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
+     */
+    public final Single<T> timeout(Duration duration, Executor timeoutExecutor) {
+        return new TimeoutSingle<>(this, duration, timeoutExecutor);
     }
 
     /**
@@ -536,12 +619,14 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     /**
      * Defer creation of a {@link Single} till it is subscribed to.
      *
-     * @param singleFactory {@link Supplier} to create a new {@link Single} for every call to {@link #subscribe(Subscriber)} to the returned {@link Single}.
+     * @param singleSupplier {@link Supplier} to create a new {@link Single} for every call to
+     * {@link #subscribe(Subscriber)} to the returned {@link Single}.
      * @param <T> Type of the {@link Single}.
-     * @return A new {@link Single} that creates a new {@link Single} using {@code singleFactory} for every call to {@link #subscribe(Subscriber)} and forwards
-     * the result or error from the newly created {@link Single} to its {@link Subscriber}.
+     * @return A new {@link Single} that creates a new {@link Single} using {@code singleFactory} for every call to
+     * {@link #subscribe(Subscriber)} and forwards the result or error from the newly created {@link Single} to its
+     * {@link Subscriber}.
      */
-    public static <T> Single<T> defer(Supplier<Single<T>> singleFactory) {
-        return new SingleDefer<>(singleFactory);
+    public static <T> Single<T> defer(Supplier<Single<T>> singleSupplier) {
+        return new SingleDefer<>(singleSupplier);
     }
 }

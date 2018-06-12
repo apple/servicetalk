@@ -37,9 +37,11 @@ public final class Executors {
 
     /**
      * Returns an {@link Executor} that executes all tasks submitted via {@link Executor#execute(Runnable)} immediately
-     * by calling {@link Runnable#run()}. {@link Executor#schedule(long, TimeUnit)} will use a global scheduler.
+     * by calling {@link Runnable#run()} on the calling thread. {@link Executor#schedule(Runnable, long, TimeUnit)} will
+     * use a global scheduler.
      *
-     * @return An {@link Executor} that executes all tasks submitted via {@link Executor#execute(Runnable)} immediately.
+     * @return An {@link Executor} that executes all tasks submitted via {@link Executor#execute(Runnable)}
+     * immediately on the calling thread.
      */
     public static Executor immediate() {
         return IMMEDIATE;

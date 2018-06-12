@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Delayed;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -40,18 +42,29 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.api.Executors.from;
 import static io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor;
+import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
+import static java.time.Duration.ofNanos;
 import static java.util.concurrent.Executors.newScheduledThreadPool;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assume.assumeThat;
 import static org.junit.Assume.assumeTrue;
 
 @RunWith(Parameterized.class)
@@ -59,7 +72,7 @@ public final class DefaultExecutorTest {
 
     private static final int UNBOUNDED = -1;
     @Rule
-    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
+    public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final ExpectedException expected = ExpectedException.none();
 
@@ -80,14 +93,17 @@ public final class DefaultExecutorTest {
     public static Collection<Object[]> executors() {
         List<Object[]> nameAndExecutorPairs = new ArrayList<>();
         nameAndExecutorPairs.add(newParams(() -> newFixedSizeExecutor(2), "fixed-size-2", true, 2));
-        nameAndExecutorPairs.add(newParams(io.servicetalk.concurrent.api.Executors::newCachedThreadExecutor, "cached", true, UNBOUNDED));
+        nameAndExecutorPairs.add(newParams(io.servicetalk.concurrent.api.Executors::newCachedThreadExecutor, "cached",
+                true, UNBOUNDED));
         nameAndExecutorPairs.add(newParams(() -> {
             ExecutorService service = Executors.newCachedThreadPool();
             //noinspection Convert2MethodRef,FunctionalExpressionCanBeFolded
-            return io.servicetalk.concurrent.api.Executors.from(command -> service.execute(command));
+            return from(command -> service.execute(command));
         }, "simple-executor", false, UNBOUNDED));
-        nameAndExecutorPairs.add(newParams(() -> io.servicetalk.concurrent.api.Executors.from(newScheduledThreadPool(2)), "scheduled", true, UNBOUNDED /*Size defines core size, else is unbounded*/));
-        nameAndExecutorPairs.add(newParams(() -> io.servicetalk.concurrent.api.Executors.from(new ThreadPoolExecutor(2, 2, 60, SECONDS, new SynchronousQueue<>()), newScheduledThreadPool(2)), "different-executors", true, 2));
+        nameAndExecutorPairs.add(newParams(() -> from(newScheduledThreadPool(2)), "scheduled", true,
+                UNBOUNDED /*Size defines core size, else is unbounded*/));
+        nameAndExecutorPairs.add(newParams(() -> from(new ThreadPoolExecutor(2, 2, 60, SECONDS,
+                new SynchronousQueue<>()), newScheduledThreadPool(2)), "different-executors", true, 2));
         return nameAndExecutorPairs;
     }
 
@@ -130,10 +146,8 @@ public final class DefaultExecutorTest {
     @Test
     public void scheduledTasks() throws Throwable {
         Task scheduled = new Task();
-        MockedCompletableListenerRule subscriber = new MockedCompletableListenerRule();
-        subscriber.listen(executor.schedule(1, MILLISECONDS).doAfterComplete(scheduled));
+        executor.schedule(scheduled, 1, MILLISECONDS);
         scheduled.awaitDone();
-        subscriber.verifyCompletion();
     }
 
     @Test
@@ -161,23 +175,214 @@ public final class DefaultExecutorTest {
 
     @Test
     public void rejectSchedule() {
-        Executor executor = io.servicetalk.concurrent.api.Executors.from(new RejectAllScheduler());
-        MockedCompletableListenerRule sub = new MockedCompletableListenerRule();
-        sub.listen(executor.schedule(1, SECONDS)).verifyFailure(RejectedExecutionException.class);
+        Executor executor = from(new RejectAllScheduler());
+        expected.expect(RejectedExecutionException.class);
+        executor.schedule(() -> { }, 1, SECONDS);
     }
 
     @Test
-    public void cancelShouldNotPreventSuccessfulCompletion() throws InterruptedException {
-        Executor executor = io.servicetalk.concurrent.api.Executors.from(new WaitForCancelScheduler());
-        MockedCompletableListenerRule sub = new MockedCompletableListenerRule();
-        CountDownLatch latch = new CountDownLatch(1);
-        sub.listen(executor.schedule(1, SECONDS).doAfterComplete(latch::countDown));
-        sub.cancel();
-        latch.await();
+    public void timerRaw() throws ExecutionException, InterruptedException {
+        awaitIndefinitely(executor.timer(1, NANOSECONDS));
     }
 
-    private static Object[] newParams(Supplier<Executor> executorSupplier, String name, boolean supportsCancellation, int size) {
+    @Test
+    public void timerDuration() throws ExecutionException, InterruptedException {
+        awaitIndefinitely(executor.timer(ofNanos(1)));
+    }
+
+    @Test
+    public void timerRawCancel() throws InterruptedException {
+        timerCancel(executor.timer(100, MILLISECONDS));
+    }
+
+    @Test
+    public void timerDurationCancel() throws InterruptedException {
+        timerCancel(executor.timer(ofNanos(1)));
+    }
+
+    private void timerCancel(Completable timer) throws InterruptedException {
+        AtomicReference<Throwable> refCause = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        timer.doAfterCancel(latch::countDown)
+                .subscribe(new Completable.Subscriber() {
+                    @Override
+                    public void onSubscribe(final Cancellable cancellable) {
+                        cancellable.cancel();
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        // We don't want the timer to actually fire.
+                        refCause.compareAndSet(null, DELIBERATE_EXCEPTION);
+                    }
+
+                    @Override
+                    public void onError(final Throwable t) {
+                        refCause.compareAndSet(null, t);
+                    }
+                });
+        latch.await();
+        // Give the timer some time to fire, to see if the cancel actually takes effect. If we raced and the timer did
+        // fire before we cancelled we just ignore the test.
+        Thread.sleep(100);
+        Throwable cause = refCause.get();
+        assumeThat(cause, is(not(DELIBERATE_EXCEPTION)));
+        assertNull(cause);
+    }
+
+    @Test
+    public void timerRawRejected() throws ExecutionException, InterruptedException {
+        Executor executor = from(new RejectAllScheduler());
+        expected.expect(ExecutionException.class);
+        expected.expectCause(instanceOf(RejectedExecutionException.class));
+        awaitIndefinitely(executor.timer(1, NANOSECONDS));
+    }
+
+    @Test
+    public void timerDurationRejected() throws ExecutionException, InterruptedException {
+        Executor executor = from(new RejectAllScheduler());
+        expected.expect(ExecutionException.class);
+        expected.expectCause(instanceOf(RejectedExecutionException.class));
+        awaitIndefinitely(executor.timer(ofNanos(1)));
+    }
+
+    @Test
+    public void submitRunnable() throws Throwable {
+        Task submitted = new Task();
+        awaitIndefinitely(executor.submit(submitted));
+        submitted.awaitDone();
+    }
+
+    @Test
+    public void submitRunnableSupplier() throws Throwable {
+        Task submitted1 = new Task();
+        Task submitted2 = new Task();
+        AtomicBoolean returnedSubmitted1 = new AtomicBoolean();
+        Supplier<Runnable> runnableSupplier = () -> returnedSubmitted1.getAndSet(true) ? submitted2 : submitted1;
+        awaitIndefinitely(executor.submitRunnable(runnableSupplier));
+        submitted1.awaitDone();
+        awaitIndefinitely(executor.submitRunnable(runnableSupplier));
+        submitted2.awaitDone();
+    }
+
+    @Test
+    public void submitRunnableRejected() throws Throwable {
+        Executor executor = from(new RejectAllExecutor());
+        expected.expect(ExecutionException.class);
+        expected.expectCause(instanceOf(RejectedExecutionException.class));
+        awaitIndefinitely(executor.submit(() -> { }));
+    }
+
+    @Test
+    public void submitRunnableSupplierRejected() throws Throwable {
+        Executor executor = from(new RejectAllExecutor());
+        expected.expect(ExecutionException.class);
+        expected.expectCause(instanceOf(RejectedExecutionException.class));
+        awaitIndefinitely(executor.submitRunnable(() -> () -> { }));
+    }
+
+    @Test
+    public void submitRunnableThrows() throws Throwable {
+        expected.expect(ExecutionException.class);
+        expected.expectCause(instanceOf(DeliberateException.class));
+        awaitIndefinitely(executor.submit((Runnable) () -> {
+            throw DELIBERATE_EXCEPTION;
+        }));
+    }
+
+    @Test
+    public void submitRunnableSupplierThrows() throws Throwable {
+        expected.expect(ExecutionException.class);
+        expected.expectCause(instanceOf(DeliberateException.class));
+        awaitIndefinitely(executor.submitRunnable(() -> () -> {
+            throw DELIBERATE_EXCEPTION;
+        }));
+    }
+
+    @Test
+    public void submitCallable() throws Throwable {
+        CallableTask<Integer> submitted = new CallableTask<>(() -> 1);
+        Integer result = awaitIndefinitelyNonNull(executor.submit(submitted));
+        submitted.awaitDone();
+        assertThat(result, is(1));
+    }
+
+    @Test
+    public void submitCallableSupplier() throws Throwable {
+        CallableTask<Integer> submitted1 = new CallableTask<>(() -> 1);
+        CallableTask<Integer> submitted2 = new CallableTask<>(() -> 2);
+        AtomicBoolean returnedSubmitted1 = new AtomicBoolean();
+        Supplier<Callable<Integer>> callableSupplier =
+                () -> returnedSubmitted1.getAndSet(true) ? submitted2 : submitted1;
+        Integer result = awaitIndefinitelyNonNull(executor.submitCallable(callableSupplier));
+        submitted1.awaitDone();
+        assertThat(result, is(1));
+        result = awaitIndefinitelyNonNull(executor.submitCallable(callableSupplier));
+        submitted2.awaitDone();
+        assertThat(result, is(2));
+    }
+
+    @Test
+    public void submitCallableRejected() throws Throwable {
+        Executor executor = from(new RejectAllExecutor());
+        expected.expect(ExecutionException.class);
+        expected.expectCause(instanceOf(RejectedExecutionException.class));
+        awaitIndefinitely(executor.submit(() -> 1));
+    }
+
+    @Test
+    public void submitCallableSupplierRejected() throws Throwable {
+        Executor executor = from(new RejectAllExecutor());
+        expected.expect(ExecutionException.class);
+        expected.expectCause(instanceOf(RejectedExecutionException.class));
+        awaitIndefinitely(executor.submitCallable(() -> () -> 1));
+    }
+
+    @Test
+    public void submitCallableThrows() throws Throwable {
+        expected.expect(ExecutionException.class);
+        expected.expectCause(instanceOf(DeliberateException.class));
+        awaitIndefinitely(executor.submit((Callable<Integer>) () -> {
+            throw DELIBERATE_EXCEPTION;
+        }));
+    }
+
+    @Test
+    public void submitCallableSupplierThrows() throws Throwable {
+        expected.expect(ExecutionException.class);
+        expected.expectCause(instanceOf(DeliberateException.class));
+        awaitIndefinitely(executor.submitCallable(() -> (Callable<Integer>) () -> {
+            throw DELIBERATE_EXCEPTION;
+        }));
+    }
+
+    private static Object[] newParams(Supplier<Executor> executorSupplier, String name, boolean supportsCancellation,
+                                      int size) {
         return new Object[]{executorSupplier, name, supportsCancellation, size};
+    }
+
+    private static final class CallableTask<V> implements Callable<V> {
+        private final CountDownLatch started = new CountDownLatch(1);
+        private final CountDownLatch done = new CountDownLatch(1);
+        private final Callable<V> delegate;
+
+        CallableTask(Callable<V> delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public V call() throws Exception {
+            started.countDown();
+            try {
+                return delegate.call();
+            } finally {
+                done.countDown();
+            }
+        }
+
+        void awaitDone() throws Throwable {
+            done.await();
+        }
     }
 
     private static final class Task implements Runnable {
@@ -239,6 +444,13 @@ public final class DefaultExecutorTest {
         }
     }
 
+    private static final class RejectAllExecutor implements java.util.concurrent.Executor {
+        @Override
+        public void execute(final Runnable command) {
+            throw new RejectedExecutionException(DELIBERATE_EXCEPTION);
+        }
+    }
+
     private static final class RejectAllScheduler extends ThreadPoolExecutor implements ScheduledExecutorService {
 
         RejectAllScheduler() {
@@ -261,7 +473,8 @@ public final class DefaultExecutorTest {
         }
 
         @Override
-        public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
+        public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay,
+                                                         TimeUnit unit) {
             throw new RejectedExecutionException(DELIBERATE_EXCEPTION);
         }
     }
@@ -339,7 +552,8 @@ public final class DefaultExecutorTest {
         }
 
         @Override
-        public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
+        public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay,
+                                                         TimeUnit unit) {
             throw new UnsupportedOperationException();
         }
     }

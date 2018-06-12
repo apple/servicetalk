@@ -122,6 +122,11 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
     }
 
     @Override
+    public boolean isInOffloadThread() {
+        return executorThread == currentThread();
+    }
+
+    @Override
     public void run() {
         assert executorThread == null; // This only runs once.
         final Thread executorThread = currentThread();
