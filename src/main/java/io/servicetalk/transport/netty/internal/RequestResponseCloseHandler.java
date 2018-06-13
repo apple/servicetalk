@@ -73,17 +73,16 @@ class RequestResponseCloseHandler extends CloseHandler {
     protected interface State {
         byte READ = 0x01;
         byte WRITE = 0x02;
-        byte CLOSING = 0x08;
-        byte IN_CLOSED = 0x10;
-        byte OUT_CLOSED = 0x20;
-        byte CLOSED = 0x40;
+        byte CLOSING = 0x04;
+        byte IN_CLOSED = 0x08;
+        byte OUT_CLOSED = 0x10;
+        byte CLOSED = 0x20;
 
-        byte READ_WRITE = READ | WRITE;
         byte ALL_CLOSED = CLOSED | IN_CLOSED | OUT_CLOSED;
-        byte MASK_IDLE = READ_WRITE;
+        byte MASK_IDLE = READ | WRITE;
 
         static boolean idle(int pending, byte state) {
-            return (state & MASK_IDLE) == 0 && pending == 0;
+            return pending == 0 && (state & MASK_IDLE) == 0;
         }
 
         static boolean has(byte state, byte mask) {
@@ -210,10 +209,10 @@ class RequestResponseCloseHandler extends CloseHandler {
             closeChannel(channel, evt);
         } else if (isClient && evt == PROTOCOL_CLOSING_OUTBOUND) {
             // deferred half close after current request is done
-            halfCloseOutbound(channel, evt);
+            clientHalfCloseOutbound(channel, evt);
         } else if (!isClient && evt == PROTOCOL_CLOSING_INBOUND) {
             // deferred half close after current request is done
-            halfCloseInbound(channel, evt);
+            serverHalfCloseInbound(channel, evt);
         }
     }
 
@@ -223,27 +222,25 @@ class RequestResponseCloseHandler extends CloseHandler {
             closeChannel(channel, evt);
         } else if (isClient) {
             if (evt == PROTOCOL_CLOSING_INBOUND) {
-                if (!(has(state, WRITE) && pending == 0)) {
+                if (pending != 0 || !has(state, WRITE)) {
                     // eagerly close the outbound channel unless we are still writing the current request
-                    halfCloseOutbound(channel, evt);
+                    clientHalfCloseOutbound(channel, evt);
                 }
                 // discards extra pending requests when closing, ensures an eventual "idle" state
                 pending = 0;
             } else if (!has(state, WRITE)) { // only USER_CLOSING - Don't abort any request
-                halfCloseOutbound(channel, evt);
+                clientHalfCloseOutbound(channel, evt);
             }
-        } else { // Server
+        } else if (evt == PROTOCOL_CLOSING_OUTBOUND) { // Server
             // eagerly close inbound channel on an outbound close command, unless we are still reading
             // the current request, no eager close on PROTOCOL_CLOSING_INBOUND
-            if (evt == PROTOCOL_CLOSING_OUTBOUND) {
-                if (!(has(state, READ) && pending == 0)) { // Don't abort current request
-                    halfCloseInbound(channel, evt);
-                }
-                // discards extra pending requests when closing, ensures an eventual "idle" state
-                pending = 0;
-            } else if (!has(state, READ)) { // only USER_CLOSING - Don't abort any request
-                halfCloseInbound(channel, evt);
+            if (pending != 0 || !has(state, READ)) { // Don't abort current request
+                serverHalfCloseInbound(channel, evt);
             }
+            // discards extra pending requests when closing, ensures an eventual "idle" state
+            pending = 0;
+        } else if (!has(state, READ)) { // Server && USER_CLOSING - Don't abort any request
+            serverHalfCloseInbound(channel, evt);
         }
     }
 
@@ -258,58 +255,54 @@ class RequestResponseCloseHandler extends CloseHandler {
                 // READ == true => current request is cut off, abort
                 // pending > 0 + WRITE == true => next request for which we can't respond, abort
                 // pending == 0 + WRITE == true => current request still ongoing, defer close
-                if (has(state, READ) || (has(state, WRITE) && pending > 0)) {
-                    closeChannel(channel, evt, true);
+                if (pending != 0 && has(state, WRITE) || has(state, READ)) {
+                    closeAndResetChannel(channel, evt);
                 }
-            } else { // CHANNEL_CLOSED_OUTBOUND
-                if (has(state, WRITE)) {
-                    // ensure we finish reading pending responses, abort others
-                    if (pending > 0 && !has(state, READ)) {
-                        closeChannel(channel, evt, true);
-                    } else {
-                        // discards current request, ensures an eventual "idle" state
-                        pending--;
-                        setSocketResetOnClose(channel);
-                    }
+            } else if (has(state, WRITE)) { // evt == CHANNEL_CLOSED_OUTBOUND
+                // ensure we finish reading pending responses, abort others
+                setSocketResetOnClose(channel);
+                if (pending <= 1 && !has(state, READ)) {
+                    closeChannel(channel, evt);
+                } else if (pending != 0) {
+                    // discards current request, ensures an eventual "idle" state
+                    --pending;
                 }
             }
-        } else { // Server
-            if (evt == CHANNEL_CLOSED_INBOUND) {
-                if (has(state, READ)) {
-                    // abort if we can't read the current request to completion
-                    // continue writing pending responses
-                    if (pending == 0 || !has(state, WRITE)) {
-                        closeChannel(channel, evt, true);
-                    } else {
-                        // discards current request, ensures an eventual "idle" state
-                        pending--;
-                        setSocketResetOnClose(channel);
-                    }
-                }
-            } else { // CHANNEL_CLOSED_OUTBOUND
-                // ensure we finish reading pending request, abort others
-                // WRITE == true => current response is cut off, abort
-                // pending == 0 + READ = true => current request still ongoing, defer close
-                // pending > 0 => none of the pending requests can be responded to, abort
-                if (has(state, WRITE) || !(pending == 0 && has(state, READ))) {
-                    closeChannel(channel, evt, true);
+        } else if (evt == CHANNEL_CLOSED_INBOUND) { // Server
+            if (has(state, READ)) {
+                // abort if we can't read the current request to completion continue writing pending responses
+                setSocketResetOnClose(channel);
+                if (pending <= 1 && !has(state, WRITE)) {
+                    closeChannel(channel, evt);
+                } else if (pending != 0) {
+                    // discards current request, ensures an eventual "idle" state
+                    --pending;
                 }
             }
+        } else if (pending != 0 || has(state, WRITE) || !has(state, READ)) { // Server && CHANNEL_CLOSED_OUTBOUND
+            // ensure we finish reading pending request, abort others
+            // WRITE == true => current response is cut off, abort
+            // pending == 0 + READ = true => current request still ongoing, defer close
+            // pending > 0 => none of the pending requests can be responded to, abort
+            closeAndResetChannel(channel, evt);
         }
     }
 
     private void closeChannel(final Channel channel, @Nullable final CloseEvent evt) {
-        closeChannel(channel, evt, false);
-    }
-
-    private void closeChannel(final Channel channel, @Nullable final CloseEvent evt, final boolean forceReset) {
         if (!has(state, CLOSED)) {
             state = set(state, ALL_CLOSED);
-            LOGGER.debug("{} Closing channel – evt: {} - reset: {}", channel,
-                    evt == null ? "FullCloseAfterHalfClose" : evt, forceReset);
-            if (forceReset) {
-                setSocketResetOnClose(channel);
-            }
+            LOGGER.debug("{} Closing channel – evt: {}", channel,
+                    evt == null ? "FullCloseAfterHalfClose" : evt);
+            channel.close();
+        }
+    }
+
+    private void closeAndResetChannel(final Channel channel, @Nullable final CloseEvent evt) {
+        if (!has(state, CLOSED)) {
+            state = set(state, ALL_CLOSED);
+            LOGGER.debug("{} Closing channel – evt: {} - reset", channel,
+                    evt == null ? "FullCloseAfterHalfClose" : evt);
+            setSocketResetOnClose(channel);
             channel.close();
         }
     }
@@ -325,27 +318,21 @@ class RequestResponseCloseHandler extends CloseHandler {
         }
     }
 
-    private void halfCloseOutbound(final Channel channel, final CloseEvent evt) {
+    private void clientHalfCloseOutbound(final Channel channel, final CloseEvent evt) {
         assert isClient;
-        if (channel instanceof SocketChannel) {
-            SocketChannel sChannel = (SocketChannel) channel;
-            if (!has(state, OUT_CLOSED)) {
-                LOGGER.debug("{} Half-Closing: {}", channel, evt);
-                state = unset(state, WRITE);
-                sChannel.shutdownOutput().addListener((ChannelFutureListener) this::onHalfClosed);
-            }
+        if (!has(state, OUT_CLOSED) && channel instanceof SocketChannel) {
+            LOGGER.debug("{} Half-Closing: {}", channel, evt);
+            state = unset(state, WRITE);
+            ((SocketChannel) channel).shutdownOutput().addListener((ChannelFutureListener) this::onHalfClosed);
         }
     }
 
-    private void halfCloseInbound(final Channel channel, final CloseEvent evt) {
+    private void serverHalfCloseInbound(final Channel channel, final CloseEvent evt) {
         assert !isClient;
-        if (channel instanceof SocketChannel) {
-            SocketChannel sChannel = (SocketChannel) channel;
-            if (!has(state, IN_CLOSED)) {
-                LOGGER.debug("{} Half-Closing: {}", channel, evt);
-                state = unset(state, READ);
-                sChannel.shutdownInput().addListener((ChannelFutureListener) this::onHalfClosed);
-            }
+        if (!has(state, IN_CLOSED) && channel instanceof SocketChannel) {
+            LOGGER.debug("{} Half-Closing: {}", channel, evt);
+            state = unset(state, READ);
+            ((SocketChannel) channel).shutdownInput().addListener((ChannelFutureListener) this::onHalfClosed);
         }
     }
 

@@ -198,19 +198,25 @@ public class RequestResponseCloseHandlerTest {
                     {C, e(OB, IB, IE, OE, UC, FC), UCO, "interleaved full dup, idle, user close"},
                     {C, e(OB, IB, UC, IE, OE, FC), UCO, "interleaved full dup, user close"},
                     {C, e(IS, FC), CCI, "idle, inbound closed"},
-                    {C, e(OB, IS, FC), CCI, "req abort, inbound closed"},
-                    {C, e(OB, IB, IS, FC), CCI, "req abort, inbound closed"},
+                    {C, e(OB, IS, SR, FC), CCI, "req abort, inbound closed"},
+                    {C, e(OB, IB, IS, SR, FC), CCI, "req abort, inbound closed"},
                     {C, e(OB, IB, OE, IS, FC), CCI, "req complete, resp abort, inbound closed"},
                     {C, e(OB, IB, IE, IS, OE, FC), CCI, "continue write read completed, inbound closed"},
                     {C, e(OS, FC), CCO, "idle, outbound closed"},
                     {C, e(OB, OS, SR, FC), CCO, "req abort, outbound closed"},
                     {C, e(OB, OE, OB, IB, OS, SR, IE, FC), CCO, "new req abort, complete read, outbound closed"},
                     {C, e(OB, OE, OS, IB, IE, FC), CCO, "req complete, complete read, outbound closed"},
+                    {C, e(OB, IB, IE, OS, SR, FC), CCO, "outbound closed while not reading"},
+                    {C, e(OB, IB, OS, SR, IE, FC), CCO, "outbound closed while reading"},
+                    {C, e(OB, OE, OB, OS, SR, IB, IE, FC), CCO, "outbound closed while not reading, 2 pending"},
+                    {C, e(OB, OE, OB, IB, OS, SR, IE, FC), CCO, "outbound closed while reading, 1 pending"},
+                    {C, e(OB, OE, OB, OE, OB, OS, SR, IB, IE, IB, IE, FC), CCO, "outbound closed while not reading, >2 pending"},
+                    {C, e(OB, OE, OB, OE, OB, IB, OS, SR, IE, IB, IE, FC), CCO, "outbound closed while reading, >2 pending"},
                     {S, e(IS, FC), CCI, "idle, inbound closed"},
-                    {S, e(IB, IS, FC), CCI, "req aborted, inbound closed"},
+                    {S, e(IB, IS, SR, FC), CCI, "req aborted, inbound closed"},
                     {S, e(IB, OB, IE, IS, OE, FC), CCI, "continue resp, req completed, inbound closed"},
-                    {S, e(IB, OB, OE, IS, FC), CCI, "req aborted, resp completed, inbound closed"},
-                    {S, e(IB, OB, IE, IB, IS, OE, FC), CCI, "new req abort, complete resp, inbound closed"},
+                    {S, e(IB, OB, OE, IS, SR, FC), CCI, "req aborted, resp completed, inbound closed"},
+                    {S, e(IB, OB, IE, IB, IS, SR, OE, FC), CCI, "new req abort, complete resp, inbound closed"},
                     {S, e(OS, FC), CCO, "idle, outbound closed"},
                     {S, e(IB, OS, SR, FC), CCO, "req aborted, outbound closed"},
                     {S, e(IB, OB, OS, SR, FC), CCO, "req aborted, outbound shutdown, reset"},
@@ -235,6 +241,11 @@ public class RequestResponseCloseHandlerTest {
                     {S, e(IB, OB, IE, OE, UC, FC), UCO, "interleaved, idle, user close"},
                     {S, e(IB, OB, OE, IE, UC, FC), UCO, "interleaved full dup, idle, user close"},
                     {S, e(IB, OB, UC, OE, IE, FC), UCO, "interleaved full dup, user close"},
+                    {S, e(IB, OB, IS, SR, OE, FC), CCI, "inbound closed while reading no pipeline"},
+                    {S, e(IB, IE, IB, IS, SR, OB, OE, FC), CCI, "inbound closed while not writing pipelined, 2 pending"},
+                    {S, e(IB, IE, IB, OB, IS, SR, OE, FC), CCI, "inbound closed while writing pipelined, 1 pending"},
+                    {S, e(IB, IE, IB, IE, IB, IS, SR, OB, OE, OB, OE, FC), CCI, "inbound closed while not writing pipelined, >2 pending"},
+                    {S, e(IB, IE, IB, IE, IB, OB, IS, SR, OE, OB, OE, FC), CCI, "inbound closed while writing pipelined, >2 pending"},
             });
             String fileName = se.getFileName();
             int offset = se.getLineNumber() + 3; // Lines between `se` and first parameter
@@ -456,13 +467,13 @@ public class RequestResponseCloseHandlerTest {
         private volatile SocketChannel sChannel;
         private ServerSocketChannel ssChannel;
 
-        private CountDownLatch connectedLatch = new CountDownLatch(1);
-        private CountDownLatch clientInputShutdownLatch = new CountDownLatch(1);
-        private CountDownLatch clientInputShutdownReadCompleteLatch = new CountDownLatch(1);
-        private CountDownLatch clientOutputShutdownLatch = new CountDownLatch(1);
-        private CountDownLatch serverInputShutdownLatch = new CountDownLatch(1);
-        private CountDownLatch serverInputShutdownReadCompleteLatch = new CountDownLatch(1);
-        private CountDownLatch serverOutputShutdownLatch = new CountDownLatch(1);
+        private final CountDownLatch connectedLatch = new CountDownLatch(1);
+        private final CountDownLatch clientInputShutdownLatch = new CountDownLatch(1);
+        private final CountDownLatch clientInputShutdownReadCompleteLatch = new CountDownLatch(1);
+        private final CountDownLatch clientOutputShutdownLatch = new CountDownLatch(1);
+        private final CountDownLatch serverInputShutdownLatch = new CountDownLatch(1);
+        private final CountDownLatch serverInputShutdownReadCompleteLatch = new CountDownLatch(1);
+        private final CountDownLatch serverOutputShutdownLatch = new CountDownLatch(1);
 
         @Before
         @SuppressWarnings("unchecked")
@@ -480,7 +491,6 @@ public class RequestResponseCloseHandlerTest {
         }
 
         // Based on TcpServerInitializer
-        @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
         private ServerSocketChannel startServer() {
             EventLoopAwareNettyIoExecutor eventLoopAwareNettyIoExecutor =
                     toEventLoopAwareNettyIoExecutor(S_CTX.getIoExecutor());
@@ -515,8 +525,7 @@ public class RequestResponseCloseHandlerTest {
             bs.childOption(ALLOW_HALF_CLOSURE, true);
             bs.childOption(AUTO_CLOSE, false);
 
-            return (ServerSocketChannel) bs.bind(new InetSocketAddress("127.0.0.1", 0))
-                    .syncUninterruptibly().channel();
+            return (ServerSocketChannel) bs.bind(new InetSocketAddress(0)).syncUninterruptibly().channel();
         }
 
         // Based on TcpConnector
@@ -574,8 +583,7 @@ public class RequestResponseCloseHandlerTest {
             assertThat(sChannel.isInputShutdown(), is(true));
             assertThat(sChannel.isOutputShutdown(), is(false));
             assertThat(sChannel.isOpen(), is(true));
-            sChannel.writeAndFlush(sChannel.alloc().buffer(1).writeZero(1)); // triggers RST
-            sChannel.writeAndFlush(sChannel.alloc().buffer(1).writeZero(1)); // observes error
+            writeUntilFailure(sChannel);
             serverOutputShutdownLatch.await();
             assertThat(sChannel.isOutputShutdown(), is(true));
             assertThat(sChannel.isOpen(), is(true));
@@ -627,11 +635,25 @@ public class RequestResponseCloseHandlerTest {
             assertThat(cChannel.isInputShutdown(), is(true));
             assertThat(cChannel.isOutputShutdown(), is(false));
             assertThat(cChannel.isOpen(), is(true));
-            cChannel.writeAndFlush(cChannel.alloc().buffer(1).writeZero(1)); // triggers RST
-            cChannel.writeAndFlush(cChannel.alloc().buffer(1).writeZero(1)); // observes error
+            writeUntilFailure(cChannel);
             clientOutputShutdownLatch.await();
             assertThat(cChannel.isOutputShutdown(), is(true));
             assertThat(cChannel.isOpen(), is(true));
+        }
+
+        private void writeUntilFailure(Channel channel) throws InterruptedException {
+            channel.writeAndFlush(channel.alloc().buffer(1).writeZero(1)).syncUninterruptibly(); // triggers RST
+            for (;;) {
+                try {
+                    // observes error
+                    channel.writeAndFlush(channel.alloc().buffer(1).writeZero(1)).syncUninterruptibly();
+                } catch (Exception ignored) {
+                    break;
+                }
+                // macOS has been observed to write a TCP window probe after getting the first RST, and the peer may
+                // send multiple RSTs before the write attempt fails locally. So we back off a bit to wait for failure.
+                Thread.sleep(100);
+            }
         }
     }
 }
