@@ -38,17 +38,13 @@ dependencies {
 
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-serialization-api:0.1.0-SNAPSHOT"
 
   testImplementation "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
   testImplementation "io.servicetalk:servicetalk-buffer-netty:0.1.0-SNAPSHOT"
-  testImplementation sourceSets.testFixtures.output
   testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:0.1.0-SNAPSHOT"
   testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:0.1.0-SNAPSHOT"
   testImplementation "junit:junit"
   testImplementation "org.hamcrest:hamcrest-library"
   testImplementation "org.mockito:mockito-core"
-
-  testFixturesImplementation "junit:junit"
-  testFixturesImplementation "org.hamcrest:hamcrest-library"
-  testFixturesImplementation "org.mockito:mockito-core"
 }
