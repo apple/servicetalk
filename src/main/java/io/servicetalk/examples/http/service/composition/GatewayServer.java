@@ -18,9 +18,12 @@ package io.servicetalk.examples.http.service.composition;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
 import io.servicetalk.http.api.AggregatedHttpClient;
+import io.servicetalk.http.api.DefaultHttpSerializer;
 import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.api.HttpSerializer;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.netty.DefaultHttpClientBuilder;
 import io.servicetalk.http.netty.DefaultHttpServerStarter;
@@ -32,7 +35,6 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,7 +77,6 @@ public final class GatewayServer {
             // Add it as a resource to be cleaned up at the end.
             resources.concat(ioExecutor);
             DefaultHttpServerStarter starter = new DefaultHttpServerStarter(ioExecutor);
-            starter.setWireLoggerName("gateway");
             final Executor executor = newCachedThreadExecutor();
             resources.concat(executor);
             ExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, executor);
@@ -84,7 +85,9 @@ public final class GatewayServer {
                     new DefaultDnsServiceDiscovererBuilder(executionContext).build();
 
             // Use Jackson for serialization and deserialization.
-            final ObjectMapper objectMapper = new ObjectMapper();
+            // HttpSerializer validates HTTP metadata for serialization/deserialization and also provides higher level
+            // HTTP focused serialization APIs.
+            HttpSerializer httpSerializer = DefaultHttpSerializer.forJson(new JacksonSerializationProvider());
             // Create a ClientBuilder and use round robin load balancing.
             DefaultHttpClientBuilder<InetSocketAddress> clientBuilder = new DefaultHttpClientBuilder<>(newRoundRobinFactory());
             // Set retry and timeout filters for all clients.
@@ -96,13 +99,9 @@ public final class GatewayServer {
             });
 
             // Create clients for the different backends we are going to use in the gateway.
-            clientBuilder.setWireLoggerName("reco-client");
             HttpClient recommendationsClient = newClient(dnsDiscoverer, clientBuilder, ioExecutor, RECOMMENDATIONS_BACKEND_ADDRESS);
-            clientBuilder.setWireLoggerName("meta-client");
             AggregatedHttpClient metadataClient = newAggregatedClient(dnsDiscoverer, clientBuilder, ioExecutor, METADATA_BACKEND_ADDRESS);
-            clientBuilder.setWireLoggerName("user-client");
             AggregatedHttpClient userClient = newAggregatedClient(dnsDiscoverer, clientBuilder, ioExecutor, USER_BACKEND_ADDRESS);
-            clientBuilder.setWireLoggerName("rating-client");
             AggregatedHttpClient ratingsClient = newAggregatedClient(dnsDiscoverer, clientBuilder, ioExecutor, RATINGS_BACKEND_ADDRESS);
 
             // Gateway supports different endpoints for blocking, streaming or aggregated implementations.
@@ -111,15 +110,15 @@ public final class GatewayServer {
             final HttpService gatewayService =
                     routerBuilder.whenPathStartsWith("/recommendations/stream")
                             .thenRouteTo(new GatewayService(recommendationsClient, metadataClient, ratingsClient,
-                                    userClient, objectMapper))
+                                    userClient, httpSerializer))
                             .whenPathStartsWith("/recommendations/aggregated")
                             .thenRouteTo(new AggregatedGatewayService(recommendationsClient.asAggregatedClient(),
-                                    metadataClient, ratingsClient, userClient, objectMapper).asService())
+                                    metadataClient, ratingsClient, userClient, httpSerializer).asService())
                             .whenPathStartsWith("/recommendations/blocking")
                             .thenRouteTo(new BlockingGatewayService(recommendationsClient.asBlockingAggregatedClient(),
                                     metadataClient.asBlockingAggregatedClient(),
                                     ratingsClient.asBlockingAggregatedClient(),
-                                    userClient.asBlockingAggregatedClient(), objectMapper).asService())
+                                    userClient.asBlockingAggregatedClient(), httpSerializer).asService())
                             .build();
 
             // Starting the server will start listening for incoming client requests.

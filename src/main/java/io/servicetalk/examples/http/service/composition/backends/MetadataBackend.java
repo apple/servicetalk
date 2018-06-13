@@ -15,26 +15,20 @@
  */
 package io.servicetalk.examples.http.service.composition.backends;
 
-import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.examples.http.service.composition.pojo.Metadata;
 import io.servicetalk.http.api.AggregatedHttpRequest;
 import io.servicetalk.http.api.AggregatedHttpResponse;
 import io.servicetalk.http.api.AggregatedHttpService;
 import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpSerializer;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 import io.servicetalk.transport.api.ConnectionContext;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.data.jackson.JacksonSerializers.serializer;
 import static io.servicetalk.http.api.AggregatedHttpResponses.newResponse;
-import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
-import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static java.util.concurrent.ThreadLocalRandom.current;
@@ -45,10 +39,10 @@ import static java.util.concurrent.ThreadLocalRandom.current;
 final class MetadataBackend extends AggregatedHttpService {
 
     private static final String ENTITY_ID_QP_NAME = "entityId";
-    private final ObjectMapper objectMapper;
+    private final HttpSerializer serializer;
 
-    private MetadataBackend(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    private MetadataBackend(HttpSerializer serializer) {
+        this.serializer = serializer;
     }
 
     @Override
@@ -61,16 +55,13 @@ final class MetadataBackend extends AggregatedHttpService {
 
         // Create random names and author for the metadata
         Metadata metadata = new Metadata(entityId, createRandomString(15), createRandomString(5));
-        final Function<Metadata, Buffer> serializer = serializer(objectMapper, Metadata.class, ctx.getBufferAllocator());
-        final AggregatedHttpResponse<HttpPayloadChunk> response = newResponse(OK, serializer.apply(metadata));
-        response.getHeaders().set(CONTENT_TYPE, APPLICATION_JSON);
-        return success(response);
+        return success(serializer.serialize(newResponse(OK, metadata), ctx.getBufferAllocator()));
     }
 
-    static AggregatedHttpService newMetadataService(ObjectMapper objectMapper) {
+    static AggregatedHttpService newMetadataService(HttpSerializer serializer) {
         HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
         return routerBuilder.whenPathStartsWith("/metadata")
-                .thenRouteTo(new MetadataBackend(objectMapper))
+                .thenRouteTo(new MetadataBackend(serializer))
                 .buildAggregated();
     }
 

@@ -15,26 +15,20 @@
  */
 package io.servicetalk.examples.http.service.composition.backends;
 
-import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.examples.http.service.composition.pojo.Rating;
 import io.servicetalk.http.api.AggregatedHttpRequest;
 import io.servicetalk.http.api.AggregatedHttpResponse;
 import io.servicetalk.http.api.AggregatedHttpService;
 import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpSerializer;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 import io.servicetalk.transport.api.ConnectionContext;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.data.jackson.JacksonSerializers.serializer;
 import static io.servicetalk.http.api.AggregatedHttpResponses.newResponse;
-import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
-import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 
@@ -44,10 +38,10 @@ import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 final class RatingBackend extends AggregatedHttpService {
 
     private static final String ENTITY_ID_QP_NAME = "entityId";
-    private final ObjectMapper objectMapper;
+    private final HttpSerializer serializer;
 
-    private RatingBackend(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    private RatingBackend(HttpSerializer serializer) {
+        this.serializer = serializer;
     }
 
     @Override
@@ -60,16 +54,13 @@ final class RatingBackend extends AggregatedHttpService {
 
         // Create a random rating
         Rating rating = new Rating(entityId, ThreadLocalRandom.current().nextInt(1, 6));
-        final Function<Rating, Buffer> serializer = serializer(objectMapper, Rating.class, ctx.getBufferAllocator());
-        final AggregatedHttpResponse<HttpPayloadChunk> response = newResponse(OK, serializer.apply(rating));
-        response.getHeaders().set(CONTENT_TYPE, APPLICATION_JSON);
-        return success(response);
+        return success(serializer.serialize(newResponse(OK, rating), ctx.getBufferAllocator()));
     }
 
-    static AggregatedHttpService newRatingService(ObjectMapper objectMapper) {
+    static AggregatedHttpService newRatingService(HttpSerializer serializer) {
         HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
         return routerBuilder.whenPathStartsWith("/rating")
-                .thenRouteTo(new RatingBackend(objectMapper))
+                .thenRouteTo(new RatingBackend(serializer))
                 .buildAggregated();
     }
 }

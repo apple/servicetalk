@@ -15,27 +15,20 @@
  */
 package io.servicetalk.examples.http.service.composition.backends;
 
-import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.examples.http.service.composition.pojo.User;
 import io.servicetalk.http.api.AggregatedHttpRequest;
 import io.servicetalk.http.api.AggregatedHttpResponse;
 import io.servicetalk.http.api.AggregatedHttpService;
 import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpSerializer;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 import io.servicetalk.transport.api.ConnectionContext;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.data.jackson.JacksonSerializers.serializer;
 import static io.servicetalk.http.api.AggregatedHttpResponses.newResponse;
-import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
-import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static java.util.concurrent.ThreadLocalRandom.current;
@@ -46,10 +39,10 @@ import static java.util.concurrent.ThreadLocalRandom.current;
 final class UserBackend extends AggregatedHttpService {
 
     private static final String USER_ID_QP_NAME = "userId";
-    private final ObjectMapper objectMapper;
+    private final HttpSerializer serializer;
 
-    private UserBackend(ObjectMapper objectMapper, BufferAllocator allocator) {
-        this.objectMapper = objectMapper;
+    private UserBackend(HttpSerializer serializer) {
+        this.serializer = serializer;
     }
 
     @Override
@@ -62,16 +55,13 @@ final class UserBackend extends AggregatedHttpService {
 
         // Create a random rating
         User user = new User(userId, createRandomString(5), createRandomString(3));
-        final Function<User, Buffer> serializer = serializer(objectMapper, User.class, ctx.getBufferAllocator());
-        final AggregatedHttpResponse<HttpPayloadChunk> response = newResponse(OK, serializer.apply(user));
-        response.getHeaders().set(CONTENT_TYPE, APPLICATION_JSON);
-        return success(response);
+        return success(serializer.serialize(newResponse(OK, user), ctx.getBufferAllocator()));
     }
 
-    static AggregatedHttpService newUserService(ObjectMapper objectMapper, BufferAllocator allocator) {
+    static AggregatedHttpService newUserService(HttpSerializer serializer) {
         HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
         return routerBuilder.whenPathStartsWith("/user")
-                .thenRouteTo(new UserBackend(objectMapper, allocator))
+                .thenRouteTo(new UserBackend(serializer))
                 .buildAggregated();
     }
 

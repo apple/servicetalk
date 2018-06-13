@@ -25,25 +25,18 @@ import io.servicetalk.http.api.AggregatedHttpResponse;
 import io.servicetalk.http.api.BlockingAggregatedHttpClient;
 import io.servicetalk.http.api.BlockingAggregatedHttpService;
 import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpSerializer;
+import io.servicetalk.serialization.api.TypeHolder;
 import io.servicetalk.transport.api.ConnectionContext;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.api.Buffer.asInputStream;
-import static io.servicetalk.data.jackson.JacksonSerializers.serialize;
 import static io.servicetalk.http.api.AggregatedHttpRequests.newRequest;
 import static io.servicetalk.http.api.AggregatedHttpResponses.newResponse;
-import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
-import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
@@ -56,10 +49,10 @@ final class BlockingGatewayService extends BlockingAggregatedHttpService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BlockingGatewayService.class);
 
-    private static final TypeReference<List<Recommendation>> typeOfRecommendation = new TypeReference<List<Recommendation>>(){};
+    private static final TypeHolder<List<Recommendation>> typeOfRecommendation = new TypeHolder<List<Recommendation>>(){};
     private static final String USER_ID_QP_NAME = "userId";
 
-    private final ObjectMapper objectMapper;
+    private final HttpSerializer serializer;
 
     // Currently we do not have an aggregated Blocking Client variant in ServiceTalk. So, we use the HttpPayloadChunk
     // variant.
@@ -72,12 +65,12 @@ final class BlockingGatewayService extends BlockingAggregatedHttpService {
                                   final BlockingAggregatedHttpClient metadataClient,
                                   final BlockingAggregatedHttpClient ratingClient,
                                   final BlockingAggregatedHttpClient userClient,
-                                  final ObjectMapper objectMapper) {
+                                  final HttpSerializer serializer) {
         this.recommendationClient = recommendationClient;
         this.metadataClient = metadataClient;
         this.ratingClient = ratingClient;
         this.userClient = userClient;
-        this.objectMapper = objectMapper;
+        this.serializer = serializer;
     }
 
     @Override
@@ -89,21 +82,22 @@ final class BlockingGatewayService extends BlockingAggregatedHttpService {
             return newResponse(BAD_REQUEST);
         }
 
-        List<Recommendation> recommendations =
-                deserializeRecommendationPayload(recommendationClient.request(newRequest(GET, "/recommendations/aggregated?userId=" + userId)));
+        List<Recommendation> recommendations = serializer.deserialize(recommendationClient.request(newRequest(GET,
+                "/recommendations/aggregated?userId=" + userId)), typeOfRecommendation).getPayloadBody();
 
         List<FullRecommendation> fullRecommendations = new ArrayList<>(recommendations.size());
         for (Recommendation recommendation : recommendations) {
             // For each recommendation, fetch the details.
-            final Metadata metadata =
-                    deserializePayload(metadataClient.request(newRequest(GET, "/metadata?entityId=" + recommendation.getEntityId())), Metadata.class);
+            final Metadata metadata = serializer.deserialize(metadataClient.request(newRequest(GET,
+                    "/metadata?entityId=" + recommendation.getEntityId())), Metadata.class).getPayloadBody();
 
-            final User user =
-                    deserializePayload(userClient.request(newRequest(GET, "/user?userId=" + recommendation.getEntityId())), User.class);
+            final User user = serializer.deserialize(userClient.request(newRequest(GET,
+                    "/user?userId=" + recommendation.getEntityId())), User.class).getPayloadBody();
 
             Rating rating;
             try {
-                rating = deserializePayload(ratingClient.request(newRequest(GET, "/rating?entityId=" + recommendation.getEntityId())), Rating.class);
+                rating = serializer.deserialize(ratingClient.request(newRequest(GET,
+                        "/rating?entityId=" + recommendation.getEntityId())), Rating.class).getPayloadBody();
             } catch (Exception cause) {
                 // We consider ratings to be a non-critical data and hence we substitute the response
                 // with a static "unavailable" rating when the rating service is unavailable or provides
@@ -115,33 +109,6 @@ final class BlockingGatewayService extends BlockingAggregatedHttpService {
             fullRecommendations.add(new FullRecommendation(metadata, user, rating));
         }
 
-        return newResponse(OK, serialize(objectMapper.writer(), fullRecommendations, ctx.getBufferAllocator()));
-    }
-
-    private <T> T deserializeRecommendationPayload(AggregatedHttpResponse<HttpPayloadChunk> response) throws IOException {
-        validateResponse(response);
-        return objectMapper.readerFor(typeOfRecommendation).readValue(asInputStream(response.getPayloadBody().getContent()));
-    }
-
-    private <T> T deserializePayload(AggregatedHttpResponse<HttpPayloadChunk> response, Class<T> targetType) throws IOException {
-        validateResponse(response);
-        return objectMapper.readerFor(targetType).readValue(asInputStream(response.getPayloadBody().getContent()));
-    }
-
-    @Nullable
-    private void validateResponse(AggregatedHttpResponse<HttpPayloadChunk> response) {
-        if (response.getStatus() != OK) {
-            throw  new IllegalArgumentException("Invalid response, HTTP status: " + response.getStatus());
-        }
-
-        if (!response.getHeaders().contains(CONTENT_TYPE, APPLICATION_JSON)) {
-            final Iterator<? extends CharSequence> encodings = response.getHeaders().getAll(CONTENT_TYPE);
-            StringBuilder builder = new StringBuilder();
-            while (encodings.hasNext()) {
-                CharSequence next = encodings.next();
-                builder.append(next).append(", ");
-            }
-            throw  new IllegalArgumentException("Invalid response, Content type: " + builder.toString());
-        }
+        return serializer.serialize(newResponse(OK, fullRecommendations), ctx.getBufferAllocator());
     }
 }
