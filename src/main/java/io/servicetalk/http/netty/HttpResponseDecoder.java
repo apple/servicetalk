@@ -19,6 +19,7 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.buffer.ByteBuf;
 
@@ -36,6 +37,7 @@ import static io.servicetalk.http.api.HttpResponseStatuses.NOT_MODIFIED;
 import static io.servicetalk.http.api.HttpResponseStatuses.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatuses.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
+import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
 import static java.lang.Integer.parseInt;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
@@ -45,7 +47,12 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
 
     HttpResponseDecoder(Queue<HttpRequestMethod> methodQueue, HttpHeadersFactory headersFactory,
                         int maxInitialLineLength, int maxHeaderSize) {
-        super(headersFactory, maxInitialLineLength, maxHeaderSize);
+        this(methodQueue, headersFactory, maxInitialLineLength, maxHeaderSize, NOOP_CLOSE_HANDLER);
+    }
+
+    HttpResponseDecoder(Queue<HttpRequestMethod> methodQueue, HttpHeadersFactory headersFactory,
+                        int maxInitialLineLength, int maxHeaderSize, final CloseHandler closeHandler) {
+        super(headersFactory, maxInitialLineLength, maxHeaderSize, closeHandler);
         this.methodQueue = requireNonNull(methodQueue);
     }
 

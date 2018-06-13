@@ -40,6 +40,7 @@ import io.servicetalk.http.api.HttpRequestMethods;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.LastHttpPayloadChunk;
 import io.servicetalk.transport.netty.internal.ByteToMessageDecoder;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -76,6 +77,7 @@ import static io.servicetalk.http.api.HttpProtocolVersions.newProtocolVersion;
 import static io.servicetalk.http.api.HttpResponseStatuses.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.netty.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.netty.HeaderUtils.setTransferEncodingChunked;
+import static io.servicetalk.http.netty.HttpKeepAlive.shouldClose;
 import static java.lang.Character.isISOControl;
 import static java.lang.Character.isWhitespace;
 import static java.lang.Math.min;
@@ -101,6 +103,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     private final int maxHeaderSize;
 
     private final HttpHeadersFactory headersFactory;
+    private final CloseHandler closeHandler;
     @Nullable
     private T message;
     @Nullable
@@ -130,7 +133,9 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     /**
      * Creates a new instance with the specified parameters.
      */
-    protected HttpObjectDecoder(HttpHeadersFactory headersFactory, int maxInitialLineLength, int maxHeaderSize) {
+    protected HttpObjectDecoder(HttpHeadersFactory headersFactory, int maxInitialLineLength, int maxHeaderSize,
+                                final CloseHandler closeHandler) {
+        this.closeHandler = closeHandler;
         if (maxInitialLineLength <= 0) {
             throw new IllegalArgumentException("maxInitialLineLength: " + maxInitialLineLength + " (expected >0)");
         }
@@ -223,12 +228,16 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                                         buffer.slice(bStart, bEnd - bStart),
                                         cEnd >= 0 ? buffer.slice(cStart, cEnd - cStart) : Unpooled.EMPTY_BUFFER);
                 currentState = State.READ_HEADER;
+                closeHandler.protocolPayloadBeginInbound(ctx);
                 // fall-through
             }
             case READ_HEADER: {
                 State nextState = readHeaders(buffer);
                 if (nextState == null) {
                     return;
+                }
+                if (shouldClose(message)) {
+                    closeHandler.protocolClosingInbound(ctx);
                 }
                 currentState = nextState;
                 switch (nextState) {
@@ -237,6 +246,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                         // No content is expected.
                         ctx.fireChannelRead(message);
                         ctx.fireChannelRead(EmptyLastHttpPayloadChunk.INSTANCE);
+                        closeHandler.protocolPayloadEndInbound(ctx);
                         resetNow();
                         return;
                     case READ_CHUNK_SIZE:
@@ -252,6 +262,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                         if (contentLength == 0 || contentLength == -1 && isDecodingRequest()) {
                             ctx.fireChannelRead(message);
                             ctx.fireChannelRead(EmptyLastHttpPayloadChunk.INSTANCE);
+                            closeHandler.protocolPayloadEndInbound(ctx);
                             resetNow();
                             return;
                         }
@@ -307,6 +318,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                     // This is not chunked encoding so there will not be any trailers.
                     ctx.fireChannelRead(newLastPayloadChunk(newBufferFrom(content),
                                         headersFactory.newEmptyTrailers()));
+                    closeHandler.protocolPayloadEndInbound(ctx);
                     resetNow();
                 } else {
                     ctx.fireChannelRead(newPayloadChunk(newBufferFrom(content)));
@@ -364,6 +376,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                     return;
                 }
                 ctx.fireChannelRead(trailer);
+                closeHandler.protocolPayloadEndInbound(ctx);
                 resetNow();
                 return;
             }
@@ -408,6 +421,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             if (currentState == State.READ_VARIABLE_LENGTH_CONTENT && !in.isReadable() && !chunked) {
                 // End of connection.
                 ctx.fireChannelRead(EmptyLastHttpPayloadChunk.INSTANCE);
+                closeHandler.protocolPayloadEndInbound(ctx);
                 resetNow();
                 return;
             }
@@ -434,6 +448,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
             if (!prematureClosure) {
                 ctx.fireChannelRead(EmptyLastHttpPayloadChunk.INSTANCE);
+                closeHandler.protocolPayloadEndInbound(ctx);
             }
             resetNow();
         }

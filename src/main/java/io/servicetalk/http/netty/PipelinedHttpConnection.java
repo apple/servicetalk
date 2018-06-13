@@ -32,7 +32,8 @@ final class PipelinedHttpConnection extends AbstractHttpConnection<DefaultPipeli
 
     PipelinedHttpConnection(Connection<Object, Object> connection, ReadOnlyHttpClientConfig config,
                             ExecutionContext executionContext) {
-        super(new DefaultPipelinedConnection<>(connection, config.getMaxPipelinedRequests()), config, executionContext);
+        super(new DefaultPipelinedConnection<>(
+                connection, config.getMaxPipelinedRequests()), connection.onClosing(), config, executionContext);
     }
 
     @Override

@@ -15,9 +15,8 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
@@ -42,14 +41,22 @@ enum HttpKeepAlive {
         this.shouldAddConnectionHeader = shouldAddConnectionHeader;
     }
 
-    static HttpKeepAlive getResponseKeepAlive(final HttpRequest<HttpPayloadChunk> request) {
-        if (isSameVersion(HTTP_1_1, request.getVersion())) {
-            return request.getHeaders().contains(CONNECTION, CLOSE, false) ? CLOSE_ADD_HEADER : KEEP_ALIVE_NO_HEADER;
-        } else if (isSameVersion(HTTP_1_0, request.getVersion())) {
-            return request.getHeaders().contains(CONNECTION, KEEP_ALIVE, false) ? KEEP_ALIVE_ADD_HEADER : CLOSE_NO_HEADER;
+    // In the interest of performance we are not accommodating for the spec allowing multiple header fields
+    // or comma-separated values for the Connection header. See: https://tools.ietf.org/html/rfc7230#section-3.2.2
+    static HttpKeepAlive getResponseKeepAlive(final HttpMetaData metaData) {
+        if (isSameVersion(HTTP_1_1, metaData.getVersion())) {
+            return metaData.getHeaders().contains(CONNECTION, CLOSE, true) ?
+                    CLOSE_ADD_HEADER : KEEP_ALIVE_NO_HEADER;
+        } else if (isSameVersion(HTTP_1_0, metaData.getVersion())) {
+            return metaData.getHeaders().contains(CONNECTION, KEEP_ALIVE, true) ?
+                    KEEP_ALIVE_ADD_HEADER : CLOSE_NO_HEADER;
         } else {
             return CLOSE_NO_HEADER;
         }
+    }
+
+    static boolean shouldClose(final HttpMetaData metaData) {
+        return getResponseKeepAlive(metaData).shouldCloseConnection;
     }
 
     void addConnectionHeaderIfNecessary(final HttpResponse<HttpPayloadChunk> response) {
@@ -60,9 +67,5 @@ enum HttpKeepAlive {
                 response.getHeaders().set(CONNECTION, KEEP_ALIVE);
             }
         }
-    }
-
-    Completable closeConnectionIfNecessary(final Completable connectionClose) {
-        return shouldCloseConnection ? connectionClose : Completable.completed();
     }
 }

@@ -32,6 +32,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
@@ -41,6 +42,7 @@ import java.util.Queue;
 import static io.netty.buffer.ByteBufUtil.writeMediumBE;
 import static io.netty.buffer.ByteBufUtil.writeShortBE;
 import static io.netty.handler.codec.http.HttpConstants.SP;
+import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
 import static java.util.Objects.requireNonNull;
 
 final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
@@ -61,7 +63,23 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
      */
     HttpRequestEncoder(Queue<HttpRequestMethod> methodQueue,
                        int headersEncodedSizeAccumulator, int trailersEncodedSizeAccumulator) {
-        super(headersEncodedSizeAccumulator, trailersEncodedSizeAccumulator);
+        super(headersEncodedSizeAccumulator, trailersEncodedSizeAccumulator, NOOP_CLOSE_HANDLER);
+        this.methodQueue = requireNonNull(methodQueue);
+    }
+
+    /**
+     * Create a new instance.
+     * @param methodQueue A queue used to enforce HTTP protocol semantics related to request/response lengths.
+     * @param headersEncodedSizeAccumulator Used to calculate an exponential moving average of the encoded size of the
+     * initial line and the headers for a guess for future buffer allocations.
+     * @param trailersEncodedSizeAccumulator  Used to calculate an exponential moving average of the encoded size of
+     * the trailers for a guess for future buffer allocations.
+     * @param closeHandler observes protocol state events
+     */
+    HttpRequestEncoder(Queue<HttpRequestMethod> methodQueue,
+                       int headersEncodedSizeAccumulator, int trailersEncodedSizeAccumulator,
+                       final CloseHandler closeHandler) {
+        super(headersEncodedSizeAccumulator, trailersEncodedSizeAccumulator, closeHandler);
         this.methodQueue = requireNonNull(methodQueue);
     }
 

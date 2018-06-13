@@ -38,6 +38,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
@@ -80,7 +81,7 @@ public final class AbstractHttpConnectionTest {
     private class MockHttpConnection extends AbstractHttpConnection<Connection<Object, Object>> {
         protected MockHttpConnection(final Connection<Object, Object> connection,
                                      final ReadOnlyHttpClientConfig config) {
-            super(connection, config, ctx);
+            super(connection, never(), config, ctx);
         }
 
         @Override

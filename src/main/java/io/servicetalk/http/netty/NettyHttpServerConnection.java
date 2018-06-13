@@ -29,6 +29,7 @@ import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.LastHttpPayloadChunk;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.FlushStrategy;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.channel.Channel;
@@ -49,7 +50,6 @@ import static io.servicetalk.http.api.HttpResponseStatuses.INTERNAL_SERVER_ERROR
 import static io.servicetalk.http.api.HttpResponses.newResponse;
 import static io.servicetalk.http.netty.HeaderUtils.addResponseTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.SpliceFlatStreamToMetaSingle.flatten;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
 
@@ -62,9 +62,10 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
 
     NettyHttpServerConnection(final Channel channel, final Publisher<Object> requestObjectPublisher,
                               final TerminalPredicate<Object> terminalPredicate,
+                              final CloseHandler closeHandler,
                               final Executor executor, final ConnectionContext context,
                               final HttpService service) {
-        super(channel, context, requestObjectPublisher, terminalPredicate);
+        super(channel, context, requestObjectPublisher, terminalPredicate, closeHandler);
         this.executor = executor;
         this.context = context;
         this.service = service;
@@ -93,15 +94,9 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
 
             return handleRequest(request)
                     .map(response -> processResponse(requestMethod, keepAlive, drainRequestPayloadBody, response))
-                    .flatMapPublisher(resp -> flatten(executor, resp, HttpResponse::getPayloadBody))
-                    .concatWith(maybeCloseConnection(keepAlive));
+                    .flatMapPublisher(resp -> flatten(executor, resp, HttpResponse::getPayloadBody));
         });
         return writeResponse(responseObjectPublisher.repeat(val -> true));
-    }
-
-    private Completable maybeCloseConnection(final HttpKeepAlive keepAlive) {
-        return keepAlive.closeConnectionIfNecessary(executor.timer(100, MILLISECONDS)
-                .andThen(closeAsyncDeferred()));
     }
 
     private Single<HttpResponse<HttpPayloadChunk>> handleRequest(final HttpRequest<HttpPayloadChunk> request) {

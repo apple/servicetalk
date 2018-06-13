@@ -35,6 +35,7 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.LastHttpPayloadChunk;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
@@ -59,6 +60,7 @@ import static io.netty.util.internal.StringUtil.simpleClassName;
 import static io.servicetalk.buffer.netty.BufferUtil.toByteBufNoThrow;
 import static io.servicetalk.http.api.CharSequences.unwrapBuffer;
 import static io.servicetalk.http.netty.HeaderUtils.isTransferEncodingChunked;
+import static io.servicetalk.http.netty.HttpKeepAlive.shouldClose;
 import static java.lang.Long.toHexString;
 import static java.lang.Math.max;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -94,6 +96,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
      * a guess for future buffer allocations.
      */
     private float trailersEncodedSizeAccumulator;
+    private final CloseHandler closeHandler;
 
     /**
      * Create a new instance.
@@ -101,20 +104,22 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
      * initial line and the headers for a guess for future buffer allocations.
      * @param trailersEncodedSizeAccumulator  Used to calculate an exponential moving average of the encoded size of
      * the trailers for a guess for future buffer allocations.
+     * @param closeHandler observes protocol state events
      */
-    HttpObjectEncoder(int headersEncodedSizeAccumulator, int trailersEncodedSizeAccumulator) {
+    HttpObjectEncoder(int headersEncodedSizeAccumulator, int trailersEncodedSizeAccumulator,
+                      final CloseHandler closeHandler) {
         this.headersEncodedSizeAccumulator = max(16, headersEncodedSizeAccumulator);
         this.trailersEncodedSizeAccumulator = max(16, trailersEncodedSizeAccumulator);
+        this.closeHandler = closeHandler;
     }
 
     @Override
-    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         ByteBuf byteBuf = null;
         if (msg instanceof HttpMetaData) {
             if (state != ST_INIT) {
                 throw new IllegalStateException("unexpected message type: " + simpleClassName(msg));
             }
-
             T metaData = castMetaData(msg);
 
             byteBuf = ctx.alloc().buffer((int) headersEncodedSizeAccumulator);
@@ -127,7 +132,10 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
 
             encodeHeaders(metaData.getHeaders(), byteBuf);
             writeShortBE(byteBuf, CRLF_SHORT);
-
+            closeHandler.protocolPayloadBeginOutbound(ctx);
+            if (shouldClose(metaData)) {
+                closeHandler.protocolClosingOutbound(ctx);
+            }
             headersEncodedSizeAccumulator = HEADERS_WEIGHT_NEW * padSizeForAccumulation(byteBuf.readableBytes()) +
                                             HEADERS_WEIGHT_HISTORICAL * headersEncodedSizeAccumulator;
         }
@@ -169,10 +177,6 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                             }
                         }
 
-                        if (msg instanceof LastHttpPayloadChunk) {
-                            state = ST_INIT;
-                        }
-
                         break;
                     }
 
@@ -209,6 +213,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
 
             if (msg instanceof LastHttpPayloadChunk) {
                 state = ST_INIT;
+                promise.addListener(f -> closeHandler.protocolPayloadEndOutbound(ctx));
             }
         } else if (byteBuf != null) {
             ctx.write(byteBuf, promise);

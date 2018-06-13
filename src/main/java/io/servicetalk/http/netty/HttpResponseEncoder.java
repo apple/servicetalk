@@ -34,6 +34,7 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.buffer.ByteBuf;
 
@@ -50,6 +51,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESS_2XX
 import static io.servicetalk.http.api.HttpResponseStatuses.NOT_MODIFIED;
 import static io.servicetalk.http.api.HttpResponseStatuses.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatuses.SWITCHING_PROTOCOLS;
+import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
 import static java.util.Objects.requireNonNull;
 
 final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> {
@@ -62,11 +64,25 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
      * initial line and the headers for a guess for future buffer allocations.
      * @param trailersEncodedSizeAccumulator  Used to calculate an exponential moving average of the encoded size of
      * the trailers for a guess for future buffer allocations.
+     * @param closeHandler the {@link CloseHandler}
+     */
+    HttpResponseEncoder(Queue<HttpRequestMethod> methodQueue, int headersEncodedSizeAccumulator,
+                        int trailersEncodedSizeAccumulator, final CloseHandler closeHandler) {
+        super(headersEncodedSizeAccumulator, trailersEncodedSizeAccumulator, closeHandler);
+        this.methodQueue = requireNonNull(methodQueue);
+    }
+
+    /**
+     * Create a new instance.
+     * @param methodQueue A queue used to enforce HTTP protocol semantics related to request/response lengths.
+     * @param headersEncodedSizeAccumulator Used to calculate an exponential moving average of the encoded size of the
+     * initial line and the headers for a guess for future buffer allocations.
+     * @param trailersEncodedSizeAccumulator  Used to calculate an exponential moving average of the encoded size of
+     * the trailers for a guess for future buffer allocations.
      */
     HttpResponseEncoder(Queue<HttpRequestMethod> methodQueue,
                         int headersEncodedSizeAccumulator, int trailersEncodedSizeAccumulator) {
-        super(headersEncodedSizeAccumulator, trailersEncodedSizeAccumulator);
-        this.methodQueue = requireNonNull(methodQueue);
+        this(methodQueue, headersEncodedSizeAccumulator, trailersEncodedSizeAccumulator, NOOP_CLOSE_HANDLER);
     }
 
     @Override

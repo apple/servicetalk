@@ -28,6 +28,7 @@ import io.servicetalk.tcp.netty.internal.TcpConnector;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.Connection;
 
 import java.io.InputStream;
@@ -37,6 +38,7 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.UnaryOperator.identity;
 
@@ -95,11 +97,13 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
             @Override
             protected void handleSubscribe(
                     Subscriber<? super HttpConnection> subscriber) {
+
+                final CloseHandler closeHandler = forPipelinedRequestResponse(true);
                 final ChannelInitializer initializer = new TcpClientChannelInitializer(roConfig.getTcpClientConfig())
-                        .andThen(new HttpClientChannelInitializer(roConfig));
+                        .andThen(new HttpClientChannelInitializer(roConfig, closeHandler));
 
                 final TcpConnector<Object, Object> connector = new TcpConnector<>(roConfig.getTcpClientConfig(),
-                        initializer, DefaultHttpConnectionBuilder::getLastChunkPredicate);
+                        initializer, DefaultHttpConnectionBuilder::getLastChunkPredicate, null, closeHandler);
 
                 connector.connect(executionContext, resolvedAddress, false).map(mapper).subscribe(subscriber);
             }

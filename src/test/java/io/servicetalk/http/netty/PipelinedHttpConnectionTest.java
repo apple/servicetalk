@@ -34,6 +34,7 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersions.getProtocolVersion;
@@ -78,6 +79,7 @@ public class PipelinedHttpConnectionTest {
     @Before
     public void setup() {
         mockResp = newResponse(OK, emptyLastChunk);
+        when(connection.onClosing()).thenReturn(never());
         when(connection.getExecutor()).thenReturn(ctx.getExecutor());
         when(connection.getExecutionContext()).thenReturn(ctx);
         HttpClientConfig config = new HttpClientConfig(new TcpClientConfig(true));

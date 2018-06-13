@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.buffer.ByteBuf;
 
@@ -38,6 +39,7 @@ import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.http.api.HttpRequestMethods.PUT;
 import static io.servicetalk.http.api.HttpRequestMethods.TRACE;
 import static io.servicetalk.http.api.HttpRequestMethods.newRequestMethod;
+import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 
@@ -60,7 +62,12 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
 
     HttpRequestDecoder(Queue<HttpRequestMethod> methodQueue,
                        HttpHeadersFactory headersFactory, int maxInitialLineLength, int maxHeaderSize) {
-        super(headersFactory, maxInitialLineLength, maxHeaderSize);
+        this(methodQueue, headersFactory, maxInitialLineLength, maxHeaderSize, NOOP_CLOSE_HANDLER);
+    }
+
+    HttpRequestDecoder(Queue<HttpRequestMethod> methodQueue, HttpHeadersFactory headersFactory,
+                       int maxInitialLineLength, int maxHeaderSize, CloseHandler closeHandler) {
+        super(headersFactory, maxInitialLineLength, maxHeaderSize, closeHandler);
         this.methodQueue = requireNonNull(methodQueue);
     }
 

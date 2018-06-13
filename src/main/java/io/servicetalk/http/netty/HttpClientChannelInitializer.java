@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
@@ -30,13 +31,16 @@ import static java.lang.Math.min;
 final class HttpClientChannelInitializer implements ChannelInitializer {
 
     private final ReadOnlyHttpClientConfig roConfig;
+    private final CloseHandler closeHandler;
 
     /**
      * Creates a new instance.
      * @param roConfig read-only {@link HttpClientConfig}
+     * @param closeHandler observes protocol state events
      */
-    HttpClientChannelInitializer(ReadOnlyHttpClientConfig roConfig) {
+    HttpClientChannelInitializer(ReadOnlyHttpClientConfig roConfig, CloseHandler closeHandler) {
         this.roConfig = roConfig;
+        this.closeHandler = closeHandler;
     }
 
     @Override
@@ -44,9 +48,9 @@ final class HttpClientChannelInitializer implements ChannelInitializer {
         Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(min(8, roConfig.getMaxPipelinedRequests()));
         final ChannelPipeline pipeline = channel.pipeline();
         pipeline.addLast(new HttpResponseDecoder(methodQueue, roConfig.getHeadersFactory(),
-                roConfig.getMaxInitialLineLength(), roConfig.getMaxHeaderSize()));
+                roConfig.getMaxInitialLineLength(), roConfig.getMaxHeaderSize(), closeHandler));
         pipeline.addLast(new HttpRequestEncoder(methodQueue,
-                roConfig.getHeadersEncodedSizeEstimate(), roConfig.getTrailersEncodedSizeEstimate()));
+                roConfig.getHeadersEncodedSizeEstimate(), roConfig.getTrailersEncodedSizeEstimate(), closeHandler));
         return ctx;
     }
 }

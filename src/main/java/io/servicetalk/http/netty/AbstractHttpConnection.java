@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.Publisher.error;
 import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.netty.HeaderUtils.addRequestTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.SpliceFlatStreamToMetaSingle.flatten;
 import static java.util.Objects.requireNonNull;
@@ -44,15 +45,16 @@ abstract class AbstractHttpConnection<CC extends ConnectionContext> extends Http
     private static final Supplier<HttpPayloadChunk> LAST_CHUNK_SUPPLIER = () -> EmptyLastHttpPayloadChunk.INSTANCE;
 
     protected final CC connection;
-    protected final ReadOnlyHttpClientConfig config;
     protected final ExecutionContext executionContext;
+    private final Publisher<Integer> maxConcurrencySetting;
 
-    protected AbstractHttpConnection(CC connection,
+    protected AbstractHttpConnection(CC conn,
+                                     Completable onClosing,
                                      ReadOnlyHttpClientConfig config,
                                      ExecutionContext executionContext) {
-        this.connection = requireNonNull(connection);
-        this.config = requireNonNull(config);
+        this.connection = requireNonNull(conn);
         this.executionContext = requireNonNull(executionContext);
+        maxConcurrencySetting = just(config.getMaxPipelinedRequests()).concatWith(onClosing.andThen(success(0)));
     }
 
     @Override
@@ -64,7 +66,7 @@ abstract class AbstractHttpConnection<CC extends ConnectionContext> extends Http
     @Override
     public <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
         if (settingKey == SettingKey.MAX_CONCURRENCY) {
-            return (Publisher<T>) just(config.getMaxPipelinedRequests());
+            return (Publisher<T>) maxConcurrencySetting;
         }
         return error(new IllegalArgumentException("Unknown setting: " + settingKey));
     }

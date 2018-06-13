@@ -29,6 +29,7 @@ import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.AbstractChannelReadHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.Connection.TerminalPredicate;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -40,6 +41,7 @@ import java.util.function.Predicate;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
+import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 
 final class NettyHttpServer {
 
@@ -59,7 +61,7 @@ final class NettyHttpServer {
                 .andThen(getChannelInitializer(config, executor, service));
 
         // The ServerContext returned by TcpServerInitializer takes care of closing the contextFilter.
-        return initializer.start(address, contextFilter, channelInitializer, executor, false)
+        return initializer.start(address, contextFilter, channelInitializer, executor, false, true)
                 .map((ServerContext delegate) -> new NettyHttpServerContext(delegate, service, executor));
     }
 
@@ -67,11 +69,12 @@ final class NettyHttpServer {
             final ReadOnlyHttpServerConfig config, final Executor executor,
             final HttpService service) {
         return (channel, context) -> {
+            final CloseHandler closeHandler = forPipelinedRequestResponse(false);
             Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(2);
             channel.pipeline().addLast(new HttpRequestDecoder(methodQueue, config.getHeadersFactory(),
-                    config.getMaxInitialLineLength(), config.getMaxHeaderSize()));
+                    config.getMaxInitialLineLength(), config.getMaxHeaderSize(), closeHandler));
             channel.pipeline().addLast(new HttpResponseEncoder(methodQueue, config.getHeadersEncodedSizeEstimate(),
-                    config.getTrailersEncodedSizeEstimate()));
+                    config.getTrailersEncodedSizeEstimate(), closeHandler));
             channel.pipeline().addLast(new AbstractChannelReadHandler<Object>(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE,
                     executor) {
                 @Override
@@ -79,7 +82,7 @@ final class NettyHttpServer {
                                                    final Publisher<Object> requestObjectPublisher) {
                     final NettyHttpServerConnection connection = new NettyHttpServerConnection(
                             channelHandlerContext.channel(), requestObjectPublisher,
-                            new TerminalPredicate<>(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE),
+                            new TerminalPredicate<>(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE), closeHandler,
                             executor, context, service);
                     connection.process().subscribe();
                 }

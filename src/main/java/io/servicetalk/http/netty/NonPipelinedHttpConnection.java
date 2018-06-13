@@ -23,10 +23,9 @@ import static io.servicetalk.transport.api.FlushStrategy.flushBeforeEnd;
 
 final class NonPipelinedHttpConnection extends AbstractHttpConnection<Connection<Object, Object>> {
 
-    NonPipelinedHttpConnection(Connection<Object, Object> connection,
-                               ReadOnlyHttpClientConfig config,
+    NonPipelinedHttpConnection(Connection<Object, Object> connection, ReadOnlyHttpClientConfig config,
                                ExecutionContext executionContext) {
-        super(connection, config, executionContext);
+        super(connection, connection.onClosing(), config, executionContext);
     }
 
     @Override
