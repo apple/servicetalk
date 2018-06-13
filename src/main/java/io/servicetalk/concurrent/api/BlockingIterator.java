@@ -25,8 +25,7 @@ import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
 /**
- * An {@link Iterator} which supports {@link AutoCloseable#close()} and also whose blocking operations support timeout
- * durations.
+ * An {@link Iterator} that is also an {@link AutoCloseable} and whose blocking operations support timeout durations.
  * <p>
  * This interface is meant to be the synchronous API equivalent of {@link Subscriber} coupled with a
  * {@link Subscription}. If the data is not completely consumed from this {@link Iterable} then {@link #close()}
@@ -34,7 +33,7 @@ import javax.annotation.Nullable;
  * {@link #hasNext(long, TimeUnit)} return {@code false}) then this object is implicitly {@link #close() closed}.
  * @param <T> the type of elements returned by this {@link Iterator}.
  */
-public interface BlockingIterator<T> extends Iterator<T>, AutoCloseable {
+public interface BlockingIterator<T> extends CloseableIterator<T> {
     /**
      * The equivalent of {@link #hasNext()} but only waits for {@code timeout} duration amount of time.
      * <p>

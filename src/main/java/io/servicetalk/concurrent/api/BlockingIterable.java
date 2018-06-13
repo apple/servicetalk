@@ -35,7 +35,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * of being able to call the method multiple times and data availability in memory.
  * @param <T> the type of elements returned by the {@link BlockingIterator}.
  */
-public interface BlockingIterable<T> extends Iterable<T> {
+public interface BlockingIterable<T> extends CloseableIterable<T> {
     @Override
     BlockingIterator<T> iterator();
 
@@ -91,7 +91,8 @@ public interface BlockingIterable<T> extends Iterable<T> {
         while (iterator.hasNext(remainingTimeoutNanos, NANOSECONDS)) {
             final long timeStampBNanos = nanoTime();
             remainingTimeoutNanos -= timeStampBNanos - timeStampANanos;
-
+            // We do not check for timeout expiry here and instead let hasNext(), next() determine what a timeout of
+            // <= 0 means. It may be that those methods decide to throw a TimeoutException or provide a fallback value.
             action.accept(iterator.next(remainingTimeoutNanos, NANOSECONDS));
 
             timeStampANanos = nanoTime();
