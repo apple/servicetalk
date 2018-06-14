@@ -60,7 +60,7 @@ public final class HelloWorldClient {
 
             // Build the client, and register for DNS discovery events.
             HostAndPort address = new DefaultHostAndPort("localhost", 8080);
-            HttpClient client = clientBuilder.appendClientFilterFactory(c -> newHostHeaderFilter(address, c))
+            HttpClient client = clientBuilder.addClientFilterFactory(c -> newHostHeaderFilter(address, c))
                     .build(executionContext, dnsDiscoverer.discover(address));
 
             // Register resources to be cleaned up at the end.

@@ -65,7 +65,7 @@ public final class HelloWorldBlockingClient {
 
             // Build the client, and register for DNS discovery events.
             HostAndPort address = new DefaultHostAndPort("localhost", 8080);
-            BlockingHttpClient client = clientBuilder.appendClientFilterFactory(c -> newHostHeaderFilter(address, c))
+            BlockingHttpClient client = clientBuilder.addClientFilterFactory(c -> newHostHeaderFilter(address, c))
                     .buildBlocking(executionContext, dnsDiscoverer.discover(address));
 
             // Create a request, send the request, and wait for the response.

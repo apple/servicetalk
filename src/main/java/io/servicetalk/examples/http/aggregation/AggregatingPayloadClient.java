@@ -66,7 +66,7 @@ public final class AggregatingPayloadClient {
 
             // Build the client, and register for DNS discovery events.
             HostAndPort address = new DefaultHostAndPort("localhost", 8080);
-            AggregatedHttpClient client = clientBuilder.appendClientFilterFactory(c -> newHostHeaderFilter(address, c))
+            AggregatedHttpClient client = clientBuilder.addClientFilterFactory(c -> newHostHeaderFilter(address, c))
                     .buildAggregated(executionContext, dnsDiscoverer.discover(address));
 
             // Register resources to be cleaned up at the end.
