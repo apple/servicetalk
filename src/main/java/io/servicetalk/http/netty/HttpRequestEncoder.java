@@ -63,8 +63,7 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
      */
     HttpRequestEncoder(Queue<HttpRequestMethod> methodQueue,
                        int headersEncodedSizeAccumulator, int trailersEncodedSizeAccumulator) {
-        super(headersEncodedSizeAccumulator, trailersEncodedSizeAccumulator, NOOP_CLOSE_HANDLER);
-        this.methodQueue = requireNonNull(methodQueue);
+        this(methodQueue, headersEncodedSizeAccumulator, trailersEncodedSizeAccumulator, NOOP_CLOSE_HANDLER);
     }
 
     /**
