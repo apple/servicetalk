@@ -26,6 +26,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static java.lang.System.nanoTime;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 final class BlockingIterableFlatMap<T, R> implements BlockingIterable<R> {
@@ -36,8 +37,8 @@ final class BlockingIterableFlatMap<T, R> implements BlockingIterable<R> {
     private final Function<T, Iterable<R>> mapper;
 
     BlockingIterableFlatMap(final BlockingIterable<T> original, final Function<T, Iterable<R>> mapper) {
-        this.original = original;
-        this.mapper = mapper;
+        this.original = requireNonNull(original);
+        this.mapper = requireNonNull(mapper);
     }
 
     @Override
@@ -56,7 +57,6 @@ final class BlockingIterableFlatMap<T, R> implements BlockingIterable<R> {
                 }
                 long remainingTimeoutNanos = unit.toNanos(timeout);
                 long timeStampANanos = nanoTime();
-                long timeStampBNanos;
                 // A Buffer may not get deserialized into a T, so we need to make sure here that we can return
                 // a T from next, when called. So, we fetch a T beforehand and return from next() when called.
                 for (;;) {
@@ -67,15 +67,14 @@ final class BlockingIterableFlatMap<T, R> implements BlockingIterable<R> {
                         return false;
                     }
 
-                    timeStampBNanos = nanoTime();
+                    final long timeStampBNanos = nanoTime();
                     remainingTimeoutNanos -= timeStampBNanos - timeStampANanos;
-                    timeStampANanos = timeStampBNanos;
                     // We do not check for timeout expiry here and instead let hasNext(), next() determine what a
                     // timeout of <= 0 means. It may be that those methods decide to throw a TimeoutException or provide
                     // a fallback value.
                     intermediate = mapper.apply(originalIterator.next(remainingTimeoutNanos, NANOSECONDS)).iterator();
-                    timeStampBNanos = nanoTime();
-                    remainingTimeoutNanos -= timeStampBNanos - timeStampANanos;
+                    timeStampANanos = nanoTime();
+                    remainingTimeoutNanos -= timeStampANanos - timeStampBNanos;
                 }
             }
 
@@ -104,8 +103,7 @@ final class BlockingIterableFlatMap<T, R> implements BlockingIterable<R> {
                     if (tryFetchFromIntermediate()) {
                         return true;
                     }
-                    boolean moreData = originalIterator.hasNext();
-                    if (!moreData) {
+                    if (!originalIterator.hasNext()) {
                         return false;
                     }
                     intermediate = mapper.apply(originalIterator.next()).iterator();
