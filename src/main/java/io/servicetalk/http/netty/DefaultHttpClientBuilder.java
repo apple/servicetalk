@@ -254,8 +254,17 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
     }
 
     /**
-     * Append a client filter on to the existing {@link HttpClient} filter {@link BiFunction} from
+     * Adds a client filter on to the existing {@link HttpClient} filter {@link BiFunction} from
      * {@link #setClientFilterFactory(BiFunction)}.
+     * <p>
+     * The order of execution of these filters are in reverse order of addition. If 3 filters are added as follows:
+     * <pre>
+     *     builder.addClientFilterFactory(filter1).addClientFilterFactory(filter2).addClientFilterFactory(filter3)
+     * </pre>
+     * then while making a request to the client built by this builder the order of invocation of these filters will be:
+     * <pre>
+     *     filter3 =&gt; filter2 =&gt; filter1
+     * </pre>
      * @param clientFilterFactory {@link BiFunction} to decorate a {@link HttpClient} for the purpose of filtering.
      * The signature of the {@link BiFunction} is as follows:
      * <pre>
@@ -263,27 +272,36 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * </pre>
      * @return {@code this}
      */
-    public DefaultHttpClientBuilder<ResolvedAddress> appendClientFilterFactory(
+    public DefaultHttpClientBuilder<ResolvedAddress> addClientFilterFactory(
             final BiFunction<HttpClient, Publisher<Object>, HttpClient> clientFilterFactory) {
         requireNonNull(clientFilterFactory);
         BiFunction<HttpClient, Publisher<Object>, HttpClient> oldFilterFactory = this.clientFilterFactory;
         this.clientFilterFactory = (httpClient, objectPublisher) ->
-                oldFilterFactory.apply(clientFilterFactory.apply(httpClient, objectPublisher), objectPublisher);
+                clientFilterFactory.apply(oldFilterFactory.apply(httpClient, objectPublisher), objectPublisher);
         return this;
     }
 
     /**
      * Append a client filter on to the existing {@link HttpClient} filter {@link BiFunction} from
      * {@link #setClientFilterFactory(BiFunction)}.
+     * <p>
+     * The order of execution of these filters are in reverse order of addition. If 3 filters are added as follows:
+     * <pre>
+     *     builder.addClientFilterFactory(filter1).addClientFilterFactory(filter2).addClientFilterFactory(filter3)
+     * </pre>
+     * then while making a request to the client built by this builder the order of invocation of these filters will be:
+     * <pre>
+     *     filter3 =&gt; filter2 =&gt; filter1
+     * </pre>
      * @param clientFilterFactory {@link Function} to decorate a {@link HttpClient} for the purpose of filtering.
      * @return {@code this}
      */
-    public DefaultHttpClientBuilder<ResolvedAddress> appendClientFilterFactory(
+    public DefaultHttpClientBuilder<ResolvedAddress> addClientFilterFactory(
             final Function<HttpClient, HttpClient> clientFilterFactory) {
         requireNonNull(clientFilterFactory);
         BiFunction<HttpClient, Publisher<Object>, HttpClient> oldFilterFactory = this.clientFilterFactory;
         this.clientFilterFactory = (httpClient, objectPublisher) ->
-                oldFilterFactory.apply(clientFilterFactory.apply(httpClient), objectPublisher);
+                clientFilterFactory.apply(oldFilterFactory.apply(httpClient, objectPublisher));
         return this;
     }
 }
