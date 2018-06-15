@@ -16,31 +16,39 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.internal.RequestConcurrencyController;
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpResponse;
 
+import org.reactivestreams.Subscription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
-// TODO We can't make RequestConcurrencyController#requestFinished() work reliably with cancel() of HttpResponse.
-// This code will prematurely release connections when the cancel event is racing with the onComplete() of the
-// HttpRequest and gets ignored. This means that from the LoadBalancer's perspective the connection is free however
-// the user may still be subscribing and consume the payload.
-// This may be acceptable for now, with DefaultPipelinedConnection rejecting requests after a set maximum number and
-// this race condition expected to happen infrequently. For NonPipelinedHttpConnections there is no cap on
-// concurrent requests so we can expect to be making a pipelined request in this case.
 final class RequestCompletionHelperSingle extends Single<HttpResponse<HttpPayloadChunk>> {
-    private static final AtomicIntegerFieldUpdater<RequestCompletionHelperSingle> terminatedUpdater =
-            newUpdater(RequestCompletionHelperSingle.class, "terminated");
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RequestCompletionHelperSingle.class);
+
+    private static final int IDLE = 0;
+    private static final int CANCELLED = 1;
+    private static final int TERMINATED = 2;
+
+    private static final AtomicIntegerFieldUpdater<RequestCompletionHelperSingle> stateUpdater =
+            newUpdater(RequestCompletionHelperSingle.class, "state");
 
     private final RequestConcurrencyController limiter;
     private final Single<HttpResponse<HttpPayloadChunk>> response;
 
     @SuppressWarnings("unused")
-    private volatile int terminated;
+    private volatile int state;
 
     RequestCompletionHelperSingle(Single<HttpResponse<HttpPayloadChunk>> response,
                                   RequestConcurrencyController limiter) {
@@ -48,18 +56,95 @@ final class RequestCompletionHelperSingle extends Single<HttpResponse<HttpPayloa
         this.limiter = requireNonNull(limiter);
     }
 
-    private void finished() {
-        // Avoid double counting
-        if (terminatedUpdater.compareAndSet(this, 0, 1)) {
+    @Override
+    protected void handleSubscribe(final Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber) {
+        // Here we avoid calling limiter.requestFinished() when we get a cancel() on the Single after we have handed
+        // out the HttpResponse to the subscriber. Doing which will mean we double decrement the concurrency controller.
+        // In case, we do get an HttpResponse after we got cancel(), we subscribe to the payload Publisher and cancel
+        // to indicate to the Connection that there is no other Subscriber that will use the payload Publisher.
+        response.subscribe(new ConcurrencyControlManagingSubscriber(subscriber));
+    }
+
+    private final class ConcurrencyControlManagingSubscriber implements Subscriber<HttpResponse<HttpPayloadChunk>> {
+
+        private final Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber;
+
+        ConcurrencyControlManagingSubscriber(final Subscriber<? super HttpResponse<HttpPayloadChunk>> sub) {
+            this.subscriber = sub;
+        }
+
+        @Override
+        public void onSubscribe(final Cancellable cancellable) {
+            subscriber.onSubscribe(() -> {
+                if (stateUpdater.compareAndSet(RequestCompletionHelperSingle.this, IDLE, CANCELLED)) {
+                    limiter.requestFinished();
+                }
+                // Cancel unconditionally, let the original Single handle cancel post termination, if required
+                cancellable.cancel();
+            });
+        }
+
+        @Override
+        public void onSuccess(@Nullable final HttpResponse<HttpPayloadChunk> response) {
+            if (response == null) {
+                sendNullResponse();
+            } else if (stateUpdater.compareAndSet(RequestCompletionHelperSingle.this, IDLE, TERMINATED)) {
+                subscriber.onSuccess(response.transformPayloadBody(payload ->
+                        payload.doBeforeFinally(limiter::requestFinished)));
+            } else if (state == CANCELLED) {
+                subscriber.onSuccess(response.transformPayloadBody(payload -> {
+                    // We have been cancelled. Subscribe and cancel the content so that we do not hold up the
+                    // connection and indicate that there is no one else that will subscribe.
+                    payload.subscribe(CancelImmediatelySubscriber.INSTANCE);
+                    return Publisher.error(new CancellationException("Received response post cancel."));
+                }));
+                // If state != CANCELLED then it has to be TERMINATED since we failed the CAS from IDLE -> TERMINATED.
+                // Hence, we do not need to do anything special.
+            }
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+            if (stateUpdater.compareAndSet(RequestCompletionHelperSingle.this, IDLE, TERMINATED)) {
+                limiter.requestFinished();
+            }
+            subscriber.onError(t);
+        }
+
+        private void sendNullResponse() {
+            // Since, we are not giving out a response, no subscriber will arrive for the payload Publisher.
             limiter.requestFinished();
+            subscriber.onSuccess(null);
         }
     }
 
-    @Override
-    protected void handleSubscribe(final Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber) {
-        response.doBeforeError(e -> finished())
-                .doBeforeCancel(this::finished)
-                .map(resp -> resp.transformPayloadBody(payload -> payload.doBeforeFinally(this::finished)))
-                .subscribe(subscriber);
+    private static final class CancelImmediatelySubscriber implements org.reactivestreams.Subscriber<HttpPayloadChunk> {
+
+        static final CancelImmediatelySubscriber INSTANCE = new CancelImmediatelySubscriber();
+
+        private CancelImmediatelySubscriber() {
+            // Singleton
+        }
+
+        @Override
+        public void onSubscribe(final Subscription s) {
+            // Cancel immediately so that the connection can handle this as required.
+            s.cancel();
+        }
+
+        @Override
+        public void onNext(final HttpPayloadChunk chunk) {
+            // Can not be here since we never request.
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+            LOGGER.debug("Ignoring error from response payload, since subscriber has already cancelled.", t);
+        }
+
+        @Override
+        public void onComplete() {
+            // Ignore.
+        }
     }
 }
