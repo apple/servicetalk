@@ -108,23 +108,25 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
     }
 
     /**
-     * Enables wire-logging for the connections created by this builder.
+     * Enable wire-logging for connections created by this builder. All wire events will be logged at trace level.
      *
-     * @param loggerName Name of the logger.
+     * @param loggerName The name of the logger to log wire events.
      * @return {@code this}.
      */
-    public DefaultRedisClientBuilder<ResolvedAddress> enableWireLog(String loggerName) {
-        config.getTcpClientConfig().setWireLoggerName(loggerName);
+    public DefaultRedisClientBuilder<ResolvedAddress> enableWireLogging(String loggerName) {
+        config.getTcpClientConfig().enableWireLogging(loggerName);
         return this;
     }
 
     /**
-     * Disabled wire-logging for the connections created by this builder.
+     * Disable previously configured wire-logging for connections created by this builder.
+     * If wire-logging has not been configured before, this method has no effect.
      *
      * @return {@code this}.
+     * @see #enableWireLogging(String)
      */
-    public DefaultRedisClientBuilder<ResolvedAddress> disableWireLog() {
-        config.getTcpClientConfig().disableWireLog();
+    public DefaultRedisClientBuilder<ResolvedAddress> disableWireLogging() {
+        config.getTcpClientConfig().disableWireLogging();
         return this;
     }
 
