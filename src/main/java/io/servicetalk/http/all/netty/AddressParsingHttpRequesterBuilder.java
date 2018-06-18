@@ -139,23 +139,25 @@ public final class AddressParsingHttpRequesterBuilder {
     }
 
     /**
-     * Enables wire-logging for connections created by this builder.
+     * Enable wire-logging for connections created by this builder. All wire events will be logged at trace level.
      *
-     * @param loggerName The name of the logger.
+     * @param loggerName The name of the logger to log wire events.
      * @return {@code this}.
      */
-    public AddressParsingHttpRequesterBuilder setWireLoggerName(final String loggerName) {
-        clientBuilder.setWireLoggerName(loggerName);
+    public AddressParsingHttpRequesterBuilder enableWireLogging(final String loggerName) {
+        clientBuilder.enableWireLogging(loggerName);
         return this;
     }
 
     /**
-     * Disabled wire-logging for the connections created by this builder.
+     * Disable previously configured wire-logging for connections created by this builder.
+     * If wire-logging has not been configured before, this method has no effect.
      *
      * @return {@code this}.
+     * @see #enableWireLogging(String)
      */
-    public AddressParsingHttpRequesterBuilder disableWireLog() {
-        clientBuilder.disableWireLog();
+    public AddressParsingHttpRequesterBuilder disableWireLogging() {
+        clientBuilder.disableWireLogging();
         return this;
     }
 
