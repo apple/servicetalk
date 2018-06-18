@@ -18,26 +18,25 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import io.netty.channel.Channel;
-import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+
+import static io.netty.handler.logging.LogLevel.TRACE;
 
 /**
  * A {@link ChannelInitializer} that enables wire-logging for all channels.
+ * All wire events will be logged at trace level.
  */
-public class WireLogInitializer implements ChannelInitializer {
-
-    public static final WireLogInitializer GLOBAL_WIRE_LOGGER = new WireLogInitializer("servicetalk-global-wire-logger", LogLevel.DEBUG);
+public class WireLoggingInitializer implements ChannelInitializer {
 
     private final LoggingHandler loggingHandler;
 
     /**
-     * New instance.
+     * Create an instance that logs at trace level.
      *
-     * @param loggerName name of the logger.
-     * @param logLevel level to log at.
+     * @param loggerName The name of the logger to log wire events.
      */
-    public WireLogInitializer(String loggerName, LogLevel logLevel) {
-        loggingHandler = new LoggingHandler(loggerName, logLevel);
+    public WireLoggingInitializer(final String loggerName) {
+        loggingHandler = new LoggingHandler(loggerName, TRACE);
     }
 
     @Override
