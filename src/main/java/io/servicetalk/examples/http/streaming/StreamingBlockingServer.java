@@ -53,7 +53,6 @@ public final class StreamingBlockingServer {
 
             // Create configurable starter for HTTP server.
             DefaultHttpServerStarter starter = new DefaultHttpServerStarter(ioExecutor);
-            starter.setWireLoggerName("server");
             // Starting the server will start listening for incoming client requests.
             ServerContext serverContext = starter.start(8080, new StreamingBlockingService());
 

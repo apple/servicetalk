@@ -43,7 +43,6 @@ final class BackendStarter {
 
     ServerContext start(int listenPort, String name, HttpService service)
             throws ExecutionException, InterruptedException {
-        starter.setWireLoggerName(name);
         final ServerContext ctx = awaitIndefinitelyNonNull(starter.start(listenPort, service));
         LOGGER.info("Started {} listening on {}.", name, ctx.getListenAddress());
         return ctx;
