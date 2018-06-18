@@ -189,23 +189,25 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
     }
 
     /**
-     * Enables wire-logging for this server at debug level.
+     * Enable wire-logging for this server. All wire events will be logged at trace level.
      *
-     * @param loggerName Name of the logger.
+     * @param loggerName The name of the logger to log wire events.
      * @return {@code this}.
      */
-    public DefaultHttpServerStarter setWireLoggerName(final String loggerName) {
-        config.getTcpConfig().setWireLoggerName(loggerName);
+    public DefaultHttpServerStarter enableWireLogging(final String loggerName) {
+        config.getTcpConfig().enableWireLogging(loggerName);
         return this;
     }
 
     /**
-     * Disabled wire-logging for this server at debug level.
+     * Disable previously configured wire-logging for this server.
+     * If wire-logging has not been configured before, this method has no effect.
      *
      * @return {@code this}.
+     * @see #enableWireLogging(String)
      */
-    public DefaultHttpServerStarter disableWireLog() {
-        config.getTcpConfig().disableWireLog();
+    public DefaultHttpServerStarter disableWireLogging() {
+        config.getTcpConfig().disableWireLogging();
         return this;
     }
 
