@@ -36,8 +36,8 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
      */
     public TcpServerChannelInitializer(ReadOnlyTcpServerConfig config) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
-        if (config.getWireLogger() != null) {
-            delegate = delegate.andThen(config.getWireLogger());
+        if (config.getWireLoggingInitializer() != null) {
+            delegate = delegate.andThen(config.getWireLoggingInitializer());
         }
         if (config.getIdleTimeoutMs() > 0) {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.getIdleTimeoutMs()));

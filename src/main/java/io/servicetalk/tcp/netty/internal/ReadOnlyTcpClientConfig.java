@@ -16,7 +16,7 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
-import io.servicetalk.transport.netty.internal.WireLogInitializer;
+import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import io.netty.channel.ChannelOption;
 import io.netty.handler.ssl.SslContext;
@@ -26,7 +26,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.transport.netty.internal.WireLogInitializer.GLOBAL_WIRE_LOGGER;
 import static java.util.Collections.unmodifiableMap;
 
 /**
@@ -47,7 +46,7 @@ public class ReadOnlyTcpClientConfig {
     protected int sslHostnameVerificationPort;
     protected long idleTimeoutMs;
     @Nullable
-    protected WireLogInitializer wireLogger = GLOBAL_WIRE_LOGGER;
+    protected WireLoggingInitializer wireLoggingInitializer;
 
     /**
      * New instance.
@@ -75,7 +74,7 @@ public class ReadOnlyTcpClientConfig {
         sslHostnameVerificationHost = from.sslHostnameVerificationHost;
         sslHostnameVerificationPort = from.sslHostnameVerificationPort;
         idleTimeoutMs = from.idleTimeoutMs;
-        wireLogger = from.wireLogger;
+        wireLoggingInitializer = from.wireLoggingInitializer;
     }
 
     /**
@@ -141,12 +140,12 @@ public class ReadOnlyTcpClientConfig {
     }
 
     /**
-     * Returns the {@link WireLogInitializer} if any for this client.
+     * Returns the {@link WireLoggingInitializer} if any for this client.
      *
-     * @return {@link WireLogInitializer} if any.
+     * @return {@link WireLoggingInitializer} if any.
      */
     @Nullable
-    public WireLogInitializer getWireLogger() {
-        return wireLogger;
+    public WireLoggingInitializer getWireLoggingInitializer() {
+        return wireLoggingInitializer;
     }
 }

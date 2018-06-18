@@ -18,9 +18,7 @@ package io.servicetalk.tcp.netty.internal;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
-import io.servicetalk.transport.netty.internal.WireLogInitializer;
-
-import io.netty.handler.logging.LogLevel;
+import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import java.io.InputStream;
 import java.net.SocketOption;
@@ -88,23 +86,25 @@ public final class TcpClientConfig extends ReadOnlyTcpClientConfig {
     }
 
     /**
-     * Enables wire-logging for this client at debug level.
+     * Enable wire-logging for this client. All wire events will be logged at trace level.
      *
-     * @param loggerName Name of the logger.
+     * @param loggerName The name of the logger to log wire events.
      * @return {@code this}.
      */
-    public TcpClientConfig setWireLoggerName(String loggerName) {
-        wireLogger = new WireLogInitializer(loggerName, LogLevel.DEBUG);
+    public TcpClientConfig enableWireLogging(String loggerName) {
+        wireLoggingInitializer = new WireLoggingInitializer(loggerName);
         return this;
     }
 
     /**
-     * Disabled wire-logging for this client at debug level.
+     * Disable previously configured wire-logging for this client.
+     * If wire-logging has not been configured before, this method has no effect.
      *
      * @return {@code this}.
+     * @see #enableWireLogging(String)
      */
-    public TcpClientConfig disableWireLog() {
-        wireLogger = null;
+    public TcpClientConfig disableWireLogging() {
+        wireLoggingInitializer = null;
         return this;
     }
 

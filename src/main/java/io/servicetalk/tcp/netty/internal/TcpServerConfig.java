@@ -20,9 +20,8 @@ import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
-import io.servicetalk.transport.netty.internal.WireLogInitializer;
+import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
-import io.netty.handler.logging.LogLevel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.util.DomainMappingBuilder;
 
@@ -139,23 +138,25 @@ public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
     }
 
     /**
-     * Enables wire-logging for this server at debug level.
+     * Enable wire-logging for this server. All wire events will be logged at trace level.
      *
-     * @param loggerName Name of the logger.
+     * @param loggerName The name of the logger to log wire events.
      * @return {@code this}.
      */
-    public TcpServerConfig setWireLoggerName(String loggerName) {
-        wireLogger = new WireLogInitializer(loggerName, LogLevel.DEBUG);
+    public TcpServerConfig enableWireLogging(String loggerName) {
+        wireLoggingInitializer = new WireLoggingInitializer(loggerName);
         return this;
     }
 
     /**
-     * Disabled wire-logging for this server at debug level.
+     * Disable previously configured wire-logging for this server.
+     * If wire-logging has not been configured before, this method has no effect.
      *
      * @return {@code this}.
+     * @see #enableWireLogging(String)
      */
-    public TcpServerConfig disableWireLog() {
-        wireLogger = null;
+    public TcpServerConfig disableWireLogging() {
+        wireLoggingInitializer = null;
         return this;
     }
 
