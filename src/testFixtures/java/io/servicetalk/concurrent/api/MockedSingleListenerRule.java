@@ -105,6 +105,14 @@ public class MockedSingleListenerRule<T> implements TestRule {
         return this;
     }
 
+    public MockedSingleListenerRule<T> verifyFailure(ArgumentCaptor<Throwable> causeCaptor) {
+        verifyCancellable();
+        final InOrder verifier = inOrderVerifier();
+        verifier.verify(subscriber).onError(causeCaptor.capture());
+        verifier.verifyNoMoreInteractions();
+        return this;
+    }
+
     public MockedSingleListenerRule<T> verifyFailure(Class<? extends Throwable> cause) {
         verifyCancellable();
         final InOrder verifier = inOrderVerifier();

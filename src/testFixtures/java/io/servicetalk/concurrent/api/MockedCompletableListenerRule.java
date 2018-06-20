@@ -100,6 +100,13 @@ public class MockedCompletableListenerRule implements TestRule {
         return this;
     }
 
+    public MockedCompletableListenerRule verifyFailure(ArgumentCaptor<Throwable> causeCaptor) {
+        final InOrder verifier = inOrderVerifier();
+        verifier.verify(subscriber).onError(causeCaptor.capture());
+        verifier.verifyNoMoreInteractions();
+        return this;
+    }
+
     public MockedCompletableListenerRule verifyFailure(Class<? extends Throwable> cause) {
         final InOrder verifier = inOrderVerifier();
         verifier.verify(subscriber).onError(any(cause));

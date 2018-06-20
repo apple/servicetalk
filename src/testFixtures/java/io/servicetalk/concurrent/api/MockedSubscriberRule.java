@@ -152,6 +152,14 @@ public class MockedSubscriberRule<T> implements TestRule {
         return this;
     }
 
+    public MockedSubscriberRule<T> verifyFailure(ArgumentCaptor<Throwable> causeCaptor) {
+        assert subscriber != null;
+        verify(subscriber).onSubscribe(any());
+        verify(subscriber).onError(causeCaptor.capture());
+        verifyNoMoreInteractions(subscriber);
+        return this;
+    }
+
     public MockedSubscriberRule<T> verifyFailure(Class<? extends Throwable> cause) {
         assert subscriber != null;
         verify(subscriber).onSubscribe(any());
