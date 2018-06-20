@@ -16,7 +16,6 @@
 package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpConnection;
@@ -29,14 +28,14 @@ import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpResponseStatuses;
 import io.servicetalk.http.netty.DefaultHttpConnectionBuilder;
 import io.servicetalk.http.netty.DefaultHttpServerStarter;
-import io.servicetalk.transport.api.DefaultExecutionContext;
-import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.IoThreadFactory;
+import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
 import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.mockito.junit.MockitoJUnit;
@@ -49,7 +48,9 @@ import javax.annotation.Nullable;
 import javax.ws.rs.core.Application;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
+import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.internal.Await.awaitNonNull;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
@@ -83,42 +84,33 @@ public abstract class AbstractJerseyHttpServiceTest {
     @Rule
     public final ExpectedException expected = ExpectedException.none();
 
-    private IoExecutor serverIoExecutor;
-    private Executor serverExecutor;
+    @ClassRule
+    public static final ExecutionContextRule SERVER_CTX = new ExecutionContextRule(() -> DEFAULT_ALLOCATOR,
+            () -> createIoExecutor(new IoThreadFactory("st-server-io")),
+            () -> newCachedThreadExecutor(new DefaultThreadFactory("st-server-", true, NORM_PRIORITY)));
+    @ClassRule
+    public static final ExecutionContextRule CLIENT_CTX = new ExecutionContextRule(() -> DEFAULT_ALLOCATOR,
+            () -> createIoExecutor(new IoThreadFactory("st-client-io")),
+            () -> newCachedThreadExecutor(new DefaultThreadFactory("st-client-", true, NORM_PRIORITY)));
+
     private ServerContext serverContext;
-    private IoExecutor clientIoExecutor;
-    private Executor clientExecutor;
     private HttpConnection clientConnection;
 
     @Before
-    public void initServer() throws Exception {
-        serverExecutor = newCachedThreadExecutor(new DefaultThreadFactory("st-server-", true, NORM_PRIORITY));
-        serverIoExecutor = createIoExecutor(new IoThreadFactory("st-server-io"));
+    public void initServerAndClient() throws Exception {
         serverContext = awaitIndefinitelyNonNull(
-                new DefaultHttpServerStarter(serverIoExecutor)
-                        .start(new InetSocketAddress(0),
-                                serverExecutor,
+                new DefaultHttpServerStarter()
+                        .start(SERVER_CTX, new InetSocketAddress(0),
                                 new HttpJerseyRouterBuilder().build(getApplication())));
-    }
 
-    @Before
-    public void initClient() throws Exception {
-        clientExecutor = newCachedThreadExecutor(new DefaultThreadFactory("st-client-", true, NORM_PRIORITY));
-        clientIoExecutor = createIoExecutor(new IoThreadFactory("st-client-io"));
         clientConnection = awaitIndefinitelyNonNull(
                 new DefaultHttpConnectionBuilder<InetSocketAddress>()
-                        .build(new DefaultExecutionContext(DEFAULT_ALLOCATOR, clientIoExecutor, clientExecutor),
-                                (InetSocketAddress) serverContext.getListenAddress()));
+                        .build(CLIENT_CTX, (InetSocketAddress) serverContext.getListenAddress()));
     }
 
     @After
-    public void closeClient() {
-        clientConnection.closeAsync().merge(clientExecutor.closeAsync(), clientIoExecutor.closeAsync()).subscribe();
-    }
-
-    @After
-    public void closeServer() {
-        serverContext.closeAsync().merge(serverExecutor.closeAsync(), serverIoExecutor.closeAsync()).subscribe();
+    public void closeServerAndClient() throws Exception {
+        awaitIndefinitely(newCompositeCloseable().concat(clientConnection, serverContext).closeAsync());
     }
 
     protected abstract Application getApplication();
