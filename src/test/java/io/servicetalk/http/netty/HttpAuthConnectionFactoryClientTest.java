@@ -27,13 +27,11 @@ import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancer;
 import io.servicetalk.transport.api.ContextFilter;
-import io.servicetalk.transport.api.DefaultExecutionContext;
-import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.NettyIoExecutors;
+import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
 import org.junit.After;
-import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -41,8 +39,6 @@ import org.junit.rules.Timeout;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutionException;
 
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
@@ -63,14 +59,11 @@ public class HttpAuthConnectionFactoryClientTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    private IoExecutor ioExecutor;
+    @ClassRule
+    public static final ExecutionContextRule CTX = ExecutionContextRule.immediate();
+
     private HttpClient client;
     private ServerContext serverContext;
-
-    @Before
-    public void setup() {
-        ioExecutor = NettyIoExecutors.createIoExecutor();
-    }
 
     @After
     public void teardown() throws ExecutionException, InterruptedException {
@@ -80,29 +73,27 @@ public class HttpAuthConnectionFactoryClientTest {
         if (serverContext != null) {
             awaitIndefinitely(serverContext.closeAsync());
         }
-        awaitIndefinitely(ioExecutor.closeAsync());
     }
 
     @Test
-    public void simulateAuth() throws ExecutionException, InterruptedException {
-        serverContext = awaitIndefinitelyNonNull(new DefaultHttpServerStarter(ioExecutor)
-                .start(new InetSocketAddress(0), ContextFilter.ACCEPT_ALL, immediate(),
+    public void simulateAuth() throws Exception {
+        serverContext = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
+                .start(CTX, new InetSocketAddress(0), ContextFilter.ACCEPT_ALL,
                         fromAsync((ctx, req) -> success(newTestResponse()))));
         client = new DefaultHttpClientBuilder<InetSocketAddress>(
                 (eventPublisher, connectionFactory) -> new RoundRobinLoadBalancer<>(eventPublisher,
                         new TestHttpAuthConnectionFactory<>(connectionFactory), comparingInt(Object::hashCode)))
-                .build(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()),
-                        just(new Event<InetSocketAddress>() {
-                            @Override
-                            public InetSocketAddress getAddress() {
-                                return (InetSocketAddress) serverContext.getListenAddress();
-                            }
+                .build(CTX, just(new Event<InetSocketAddress>() {
+                    @Override
+                    public InetSocketAddress getAddress() {
+                        return (InetSocketAddress) serverContext.getListenAddress();
+                    }
 
-                            @Override
-                            public boolean isAvailable() {
-                                return true;
-                            }
-                        }));
+                    @Override
+                    public boolean isAvailable() {
+                        return true;
+                    }
+                }));
 
         HttpResponse<HttpPayloadChunk> response = awaitIndefinitely(client.request(newTestRequest("/foo")));
         assertEquals(OK, response.getStatus());

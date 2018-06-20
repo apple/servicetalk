@@ -15,17 +15,15 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.IoThreadFactory;
+import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +32,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
@@ -46,34 +45,29 @@ public abstract class AbstractNettyHttpServerTest {
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
 
+    @ClassRule
+    public static final ExecutionContextRule CTX = new ExecutionContextRule(() -> DEFAULT_ALLOCATOR,
+            () -> createIoExecutor(new IoThreadFactory("server-io-executor")),
+            () -> newCachedThreadExecutor(new DefaultThreadFactory("server-executor", true, NORM_PRIORITY)));
+
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractNettyHttpServerTest.class);
     private static final InetAddress LOOPBACK_ADDRESS = getLoopbackAddress();
-
-    private static IoExecutor ioExecutor;
 
     private ServerContext serverContext;
     private InetSocketAddress socketAddress;
 
-    @BeforeClass
-    public static void createServerIoExecutor() {
-        ioExecutor = createIoExecutor(new IoThreadFactory("server-io-executor"));
-    }
-
     @Before
     public void startServer() throws Exception {
         final InetSocketAddress bindAddress = new InetSocketAddress(LOOPBACK_ADDRESS, 0);
-
-        final Executor executor = newCachedThreadExecutor(new DefaultThreadFactory("server-executor", true,
-                NORM_PRIORITY));
         final TestService service = new TestService();
 
         // A small SNDBUF is needed to test that the server defers closing the connection until writes are complete.
         // However, if it is too small, tests that expect certain chunks of data will see those chunks broken up
         // differently.
         serverContext = awaitIndefinitelyNonNull(
-                new DefaultHttpServerStarter(ioExecutor)
+                new DefaultHttpServerStarter()
                         .setSocketOption(StandardSocketOptions.SO_SNDBUF, 100)
-                        .start(bindAddress, executor, service)
+                        .start(CTX, bindAddress, service)
                         .doBeforeSuccess(ctx -> LOGGER.debug("Server started on {}.", ctx.getListenAddress()))
                         .doBeforeError(throwable -> LOGGER.debug("Failed starting server on {}.", bindAddress)));
 
@@ -84,11 +78,6 @@ public abstract class AbstractNettyHttpServerTest {
     @After
     public void stopServer() throws Exception {
         awaitIndefinitely(serverContext.closeAsync());
-    }
-
-    @AfterClass
-    public static void shutdownServerIoExecutor() throws Exception {
-        awaitIndefinitely(ioExecutor.closeAsync());
     }
 
     InetSocketAddress getServerSocketAddress() {

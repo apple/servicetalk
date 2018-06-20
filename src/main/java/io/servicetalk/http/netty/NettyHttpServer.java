@@ -26,6 +26,7 @@ import io.servicetalk.http.api.LastHttpPayloadChunk;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpServerInitializer;
 import io.servicetalk.transport.api.ContextFilter;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.AbstractChannelReadHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
@@ -52,17 +53,17 @@ final class NettyHttpServer {
         // No instances
     }
 
-    static Single<ServerContext> bind(final ReadOnlyHttpServerConfig config, final SocketAddress address,
-                                      final ContextFilter contextFilter, final Executor executor,
+    static Single<ServerContext> bind(final ExecutionContext executionContext, final ReadOnlyHttpServerConfig config,
+                                      final SocketAddress address, final ContextFilter contextFilter,
                                       final HttpService service) {
-        final TcpServerInitializer initializer = new TcpServerInitializer(config.getTcpConfig());
+        final TcpServerInitializer initializer = new TcpServerInitializer(executionContext, config.getTcpConfig());
 
         final ChannelInitializer channelInitializer = new TcpServerChannelInitializer(config.getTcpConfig())
-                .andThen(getChannelInitializer(config, executor, service));
+                .andThen(getChannelInitializer(config, executionContext.getExecutor(), service));
 
         // The ServerContext returned by TcpServerInitializer takes care of closing the contextFilter.
-        return initializer.start(address, contextFilter, channelInitializer, executor, false, true)
-                .map((ServerContext delegate) -> new NettyHttpServerContext(delegate, service, executor));
+        return initializer.start(address, contextFilter, channelInitializer, false, true)
+                .map((ServerContext delegate) -> new NettyHttpServerContext(delegate, service));
     }
 
     private static ChannelInitializer getChannelInitializer(
@@ -96,9 +97,10 @@ final class NettyHttpServer {
         private final ServerContext delegate;
         private final ListenableAsyncCloseable asyncCloseable;
 
-        NettyHttpServerContext(final ServerContext delegate, final HttpService service, final Executor executor) {
+        NettyHttpServerContext(final ServerContext delegate, final HttpService service) {
             this.delegate = delegate;
-            asyncCloseable = toAsyncCloseable(() -> newCompositeCloseable().concat(service, delegate, executor).closeAsync());
+            asyncCloseable = toAsyncCloseable(() -> newCompositeCloseable()
+                    .concat(service, delegate).closeAsync());
         }
 
         @Override

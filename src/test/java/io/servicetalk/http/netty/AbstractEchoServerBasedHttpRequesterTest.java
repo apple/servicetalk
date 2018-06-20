@@ -69,8 +69,8 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
 
     @BeforeClass
     public static void startServer() throws ExecutionException, InterruptedException {
-        serverContext = awaitIndefinitelyNonNull(new DefaultHttpServerStarter(CTX.getIoExecutor())
-                .start(0, CTX.getExecutor(), new AbstractEchoServerBasedHttpRequesterTest.EchoService()));
+        serverContext = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
+                .start(CTX, 0, new EchoService()));
     }
 
     @AfterClass

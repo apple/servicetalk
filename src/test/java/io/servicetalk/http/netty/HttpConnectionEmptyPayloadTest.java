@@ -82,8 +82,8 @@ public class HttpConnectionEmptyPayloadTest {
         final int expectedContentLength = 128;
         byte[] expectedPayload = new byte[expectedContentLength];
         ThreadLocalRandom.current().nextBytes(expectedPayload);
-        serverContext = awaitIndefinitelyNonNull(new DefaultHttpServerStarter(executionContextRule.getIoExecutor())
-                .start(new InetSocketAddress(0), HttpService.fromAsync((ctx, req) ->
+        serverContext = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
+                .start(executionContextRule, new InetSocketAddress(0), HttpService.fromAsync((ctx, req) ->
                         success(newResponse(OK,
                         req.getMethod() == HEAD ? EMPTY_BUFFER : ctx.getExecutionContext().getBufferAllocator()
                                 .newBuffer(expectedContentLength).writeBytes(expectedPayload),

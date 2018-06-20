@@ -15,18 +15,15 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpServerStarter;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.transport.api.ContextFilter;
-import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
-import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
 import java.io.InputStream;
 import java.net.SocketAddress;
@@ -45,11 +42,9 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
 
     /**
      * New instance.
-     *
-     * @param ioExecutor {@link NettyIoExecutor} to use for the server.
      */
-    public DefaultHttpServerStarter(final IoExecutor ioExecutor) {
-        this.config = new HttpServerConfig(ioExecutor);
+    public DefaultHttpServerStarter() {
+        this.config = new HttpServerConfig();
     }
 
     /**
@@ -137,17 +132,6 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
     }
 
     /**
-     * Specify the {@link BufferAllocator} to use.
-     *
-     * @param allocator the {@link BufferAllocator} to use for allocate new buffers.
-     * @return this.
-     */
-    public DefaultHttpServerStarter setAllocator(final BufferAllocator allocator) {
-        config.getTcpConfig().setAllocator(allocator);
-        return this;
-    }
-
-    /**
      * Allows to setup SNI.
      * You can either use {@link #setSslConfig(SslConfig)} or this method.
      *
@@ -212,9 +196,8 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
     }
 
     @Override
-    public Single<ServerContext> start(final SocketAddress address, final ContextFilter contextFilter,
-                                       final Executor executor,
-                                       final HttpService service) {
-        return bind(config.asReadOnly(), address, contextFilter, executor, service);
+    public Single<ServerContext> start(final ExecutionContext executionContext, final SocketAddress address,
+                                       final ContextFilter contextFilter, final HttpService service) {
+        return bind(executionContext, config.asReadOnly(), address, contextFilter, service);
     }
 }

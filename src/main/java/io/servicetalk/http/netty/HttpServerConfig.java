@@ -18,9 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.tcp.netty.internal.TcpServerConfig;
-import io.servicetalk.transport.api.IoExecutor;
 
-import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
 import static java.util.Objects.requireNonNull;
 
 final class HttpServerConfig {
@@ -32,8 +30,8 @@ final class HttpServerConfig {
     private int headersEncodedSizeEstimate = 256;
     private int trailersEncodedSizeEstimate = 256;
 
-    HttpServerConfig(final IoExecutor ioExecutor) {
-        tcpConfig = new TcpServerConfig(false, toNettyIoExecutor(ioExecutor));
+    HttpServerConfig() {
+        tcpConfig = new TcpServerConfig(false);
     }
 
     HttpHeadersFactory getHeadersFactory() {
