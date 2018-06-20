@@ -17,14 +17,11 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.FileDescriptorSocketAddress;
 import io.servicetalk.transport.netty.internal.BufferHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.Connection;
-import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -45,10 +42,7 @@ import java.net.StandardSocketOptions;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static java.util.Objects.requireNonNull;
+import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assume.assumeTrue;
@@ -58,99 +52,72 @@ import static org.junit.Assume.assumeTrue;
  */
 public final class TcpClient {
 
-    private final TcpConnector<Buffer, Buffer> connector;
-    private final ReadOnlyTcpClientConfig roConfig;
-    private final ExecutionContext executionContext;
+    private final ReadOnlyTcpClientConfig config;
 
     /**
-     * New instance.
-     * @param nettyIoExecutor {@link NettyIoExecutor} for this client.
+     * New instance with default configuration.
      */
-    public TcpClient(NettyIoExecutor nettyIoExecutor) {
-        this(nettyIoExecutor, defaultConfig());
+    public TcpClient() {
+        this(defaultConfig());
     }
 
     /**
      * New instance.
-     * @param nettyIoExecutor {@link NettyIoExecutor} for this client.
+     *
      * @param config for the client.
      */
-    public TcpClient(NettyIoExecutor nettyIoExecutor, TcpClientConfig config) {
-        this(nettyIoExecutor, newCachedThreadExecutor(), config);
+    public TcpClient(TcpClientConfig config) {
+        this.config = config.asReadOnly();
     }
 
-    /**
-     * New instance.
-     * @param nettyIoExecutor {@link NettyIoExecutor} for this client.
-     * @param executor The {@link Executor} for this client.
-     * @param config for the client.
-     */
-    public TcpClient(NettyIoExecutor nettyIoExecutor, Executor executor, TcpClientConfig config) {
-        this(nettyIoExecutor, executor, DEFAULT_ALLOCATOR, config);
-    }
-
-    /**
-     * New instance.
-     * @param nettyIoExecutor {@link NettyIoExecutor} for this client.
-     * @param executor The {@link Executor} for this client.
-     * @param allocator the {@link BufferAllocator} for this client.
-     * @param config for the client.
-     */
-    public TcpClient(NettyIoExecutor nettyIoExecutor, Executor executor, BufferAllocator allocator,
-                     TcpClientConfig config) {
-        this(new DefaultExecutionContext(allocator, nettyIoExecutor, executor), config);
-    }
-
-    /**
-     * New instance.
-     * @param executionContext {@link NettyIoExecutor} for this client.
-     * @param config for the client.
-     */
-    public TcpClient(ExecutionContext executionContext, TcpClientConfig config) {
-        this.executionContext = requireNonNull(executionContext);
-        roConfig = config.asReadOnly();
-        ChannelInitializer initializer = new TcpClientChannelInitializer(roConfig);
+    private TcpConnector<Buffer, Buffer> createConnector(BufferAllocator allocator) {
+        ChannelInitializer initializer = new TcpClientChannelInitializer(config);
         initializer = initializer.andThen((channel, context) -> {
-            channel.pipeline().addLast(new BufferHandler(executionContext.getBufferAllocator()));
+            channel.pipeline().addLast(new BufferHandler(allocator));
             return context;
         });
-        connector = new TcpConnector<>(roConfig, initializer, () -> buffer -> false);
+        return new TcpConnector<>(config, initializer, () -> buffer -> false);
     }
 
     /**
      * Connect and await for the connection.
      *
+     * @param executionContext {@link ExecutionContext} to use for the connections.
+     * @param port to connect.
      * @return New {@link Connection}.
      * @throws ExecutionException If connect failed.
      * @throws InterruptedException If interrupted while waiting for connect to complete.
      */
-    public Connection<Buffer, Buffer> connectBlocking(int port) throws ExecutionException, InterruptedException {
-        return connectBlocking(new InetSocketAddress(port));
+    public Connection<Buffer, Buffer> connectBlocking(ExecutionContext executionContext, int port)
+            throws ExecutionException, InterruptedException {
+        return connectBlocking(executionContext, new InetSocketAddress(port));
     }
 
     /**
      * Connect and await for the connection.
      *
+     * @param executionContext {@link ExecutionContext} to use for the connections.
      * @param address to connect.
      * @return New {@link Connection}.
      * @throws ExecutionException If connect failed.
      * @throws InterruptedException If interrupted while waiting for connect to complete.
      */
-    public Connection<Buffer, Buffer> connectBlocking(SocketAddress address)
+    public Connection<Buffer, Buffer> connectBlocking(ExecutionContext executionContext, SocketAddress address)
             throws ExecutionException, InterruptedException {
-        //noinspection ConstantConditions
-        return awaitIndefinitely(connector.connect(executionContext, address));
+        TcpConnector<Buffer, Buffer> connector = createConnector(executionContext.getBufferAllocator());
+        return awaitIndefinitelyNonNull(connector.connect(executionContext, address));
     }
 
     /**
      * Connect using a {@link FileDescriptorSocketAddress} and await for the connection.
      *
+     * @param executionContext {@link ExecutionContext} to use for the connections.
      * @param address to connect.
      * @return New {@link Connection}.
      * @throws ExecutionException If connect failed.
      * @throws InterruptedException If interrupted while waiting for connect to complete.
      */
-    public Connection<Buffer, Buffer> connectWithFdBlocking(SocketAddress address)
+    public Connection<Buffer, Buffer> connectWithFdBlocking(ExecutionContext executionContext, SocketAddress address)
             throws ExecutionException, InterruptedException {
         assumeTrue(executionContext.getIoExecutor().isFileDescriptorSocketAddressSupported());
         assumeTrue(Epoll.isAvailable() || KQueue.isAvailable());
@@ -181,7 +148,7 @@ public final class TcpClient {
         // Unregister it from the netty EventLoop as we want to to handle it via ST.
         channel.deregister().syncUninterruptibly();
         FileDescriptorSocketAddress fd = new FileDescriptorSocketAddress(channel.fd().intValue());
-        Connection<Buffer, Buffer> connection = connectBlocking(fd);
+        Connection<Buffer, Buffer> connection = connectBlocking(executionContext, fd);
         assertThat("Data read on the FileDescriptor from netty pipeline.",
                 dataReadDirectlyFromNetty.get(), is(false));
         return connection;
@@ -193,7 +160,7 @@ public final class TcpClient {
      * @return {@link ReadOnlyTcpClientConfig} for this client.
      */
     public ReadOnlyTcpClientConfig getConfig() {
-        return roConfig;
+        return config;
     }
 
     private static TcpClientConfig defaultConfig() {

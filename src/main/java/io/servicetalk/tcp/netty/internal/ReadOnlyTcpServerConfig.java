@@ -15,9 +15,7 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
-import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import io.netty.channel.ChannelOption;
@@ -31,7 +29,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static java.util.Collections.unmodifiableMap;
 
 /**
@@ -43,9 +40,7 @@ public class ReadOnlyTcpServerConfig {
     protected final boolean autoRead;
     @SuppressWarnings("rawtypes")
     protected final Map<ChannelOption, Object> optionMap;
-    protected NettyIoExecutor executor;
     protected int backlog = NetUtil.SOMAXCONN;
-    protected BufferAllocator allocator = DEFAULT_ALLOCATOR;
     @Nullable
     protected SslContext sslContext;
     protected long idleTimeoutMs;
@@ -57,11 +52,9 @@ public class ReadOnlyTcpServerConfig {
     /**
      * New instance.
      *
-     * @param executor {@link NettyIoExecutor} to use for the server.
      * @param autoRead If the channels accepted by the server will have auto-read enabled.
      */
-    public ReadOnlyTcpServerConfig(boolean autoRead, NettyIoExecutor executor) {
-        this.executor = executor;
+    public ReadOnlyTcpServerConfig(boolean autoRead) {
         this.autoRead = autoRead;
         optionMap = new LinkedHashMap<>();
     }
@@ -74,9 +67,7 @@ public class ReadOnlyTcpServerConfig {
     ReadOnlyTcpServerConfig(TcpServerConfig from) {
         autoRead = from.autoRead;
         optionMap = unmodifiableMap(new HashMap<>(from.optionMap));
-        executor = from.executor;
         backlog = from.backlog;
-        allocator = from.allocator;
         sslContext = from.sslContext;
         idleTimeoutMs = from.idleTimeoutMs;
 
@@ -107,23 +98,6 @@ public class ReadOnlyTcpServerConfig {
      */
     public int getBacklog() {
         return backlog;
-    }
-
-    /**
-     * Returns the {@link BufferAllocator}.
-     * @return allocator
-     */
-    public BufferAllocator getAllocator() {
-        return allocator;
-    }
-
-    /**
-     * Returns the {@link NettyIoExecutor}.
-     *
-     * @return {@link NettyIoExecutor}.
-     */
-    public NettyIoExecutor getIoExecutor() {
-        return executor;
     }
 
     /**

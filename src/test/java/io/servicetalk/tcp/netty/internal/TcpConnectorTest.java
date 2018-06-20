@@ -16,7 +16,6 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.netty.internal.Connection;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -30,8 +29,6 @@ import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static java.net.InetSocketAddress.createUnresolved;
 import static java.nio.charset.Charset.defaultCharset;
@@ -46,12 +43,12 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
 
     @Test
     public void testConnect() throws Exception {
-        client.connectBlocking(serverPort);
+        client.connectBlocking(CLIENT_CTX, serverPort);
     }
 
     @Test
     public void testWriteAndRead() throws Exception {
-        testWriteAndRead(client.connectBlocking(serverPort));
+        testWriteAndRead(client.connectBlocking(CLIENT_CTX, serverPort));
     }
 
     private static void testWriteAndRead(Connection<Buffer, Buffer> connection)
@@ -65,7 +62,7 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
     @Test
     @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     public void testUnresolvedAddress() throws Exception {
-        testWriteAndRead(client.connectBlocking(createUnresolved("127.0.0.1", serverPort)));
+        testWriteAndRead(client.connectBlocking(CLIENT_CTX, createUnresolved("127.0.0.1", serverPort)));
     }
 
     @Test
@@ -73,12 +70,12 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
         thrown.expectCause(anyOf(instanceOf(ConnectException.class), instanceOf(ClosedChannelException.class)));
         awaitIndefinitely(serverContext.closeAsync());
         // Closing the server to increase probability of finding a port on which no one is listening.
-        client.connectBlocking(serverPort);
+        client.connectBlocking(CLIENT_CTX, serverPort);
     }
 
     @Test
     public void testConnectWithFD() throws Exception {
-        testWriteAndRead(client.connectWithFdBlocking(serverContext.getListenAddress()));
+        testWriteAndRead(client.connectWithFdBlocking(CLIENT_CTX, serverContext.getListenAddress()));
     }
 
     @Test
@@ -103,8 +100,7 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
                     });
                     return context;
                 }, () -> v -> true);
-        Connection<Buffer, Buffer> connection = awaitIndefinitely(connector.connect(
-                new DefaultExecutionContext(DEFAULT_ALLOCATOR, clientIoExecutor, immediate()),
+        Connection<Buffer, Buffer> connection = awaitIndefinitely(connector.connect(CLIENT_CTX,
                 serverContext.getListenAddress()));
         assert connection != null;
         awaitIndefinitely(connection.closeAsync());

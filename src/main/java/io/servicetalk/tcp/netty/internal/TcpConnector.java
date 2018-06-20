@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.FileDescriptorSocketAddress;
 import io.servicetalk.transport.netty.internal.AbstractChannelReadHandler;
@@ -167,8 +168,10 @@ public final class TcpConnector<Read, Write> {
                     final ConnectionContext context;
                     final AbstractChannelReadHandler readHandler;
                     try {
-                        context = newContext(channel, ioExecutorThread, executionContext.getExecutor(),
-                                executionContext.getBufferAllocator(), channelInitializer, checkForRefCountedTrapper);
+                        // Create ExecutionContext with selected IO thread
+                        context = newContext(new DefaultExecutionContext(executionContext.getBufferAllocator(),
+                                        ioExecutorThread, executionContext.getExecutor()),
+                                channel, channelInitializer, checkForRefCountedTrapper);
                         readHandler = channel.pipeline().get(AbstractChannelReadHandler.class);
                     } catch (Throwable cause) {
                         channel.close();

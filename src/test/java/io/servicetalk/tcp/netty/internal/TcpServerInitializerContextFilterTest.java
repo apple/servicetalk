@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ContextFilter;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.Connection;
 
@@ -90,17 +91,17 @@ public class TcpServerInitializerContextFilterTest extends AbstractTcpServerTest
 
     @Override
     TcpServer createServer() {
-        setContextFilter(filterMode.getContextFilter(getExecutor()));
+        setContextFilter(filterMode.getContextFilter(SERVER_CTX.getExecutor()));
         setService(conn -> {
             acceptedConnection = true;
             return conn.write(conn.read(), flushOnEach());
         });
 
         if (filterMode.initializerThrow) {
-            return new TcpServer(serverIoExecutor) {
+            return new TcpServer() {
                 @Override
-                ChannelInitializer getChannelInitializer(
-                        final Function<Connection<Buffer, Buffer>, Completable> service, final Executor executor) {
+                ChannelInitializer getChannelInitializer(Function<Connection<Buffer, Buffer>, Completable> service,
+                                                         ExecutionContext executionContext) {
                     return (channel, context) -> {
                         throw DELIBERATE_EXCEPTION;
                     };
@@ -117,7 +118,7 @@ public class TcpServerInitializerContextFilterTest extends AbstractTcpServerTest
 
     @Test
     public void testAcceptConnection() throws Exception {
-        Connection<Buffer, Buffer> connection = client.connectBlocking(serverPort);
+        Connection<Buffer, Buffer> connection = client.connectBlocking(CLIENT_CTX, serverPort);
         final Buffer buffer = connection.getBufferAllocator().fromAscii("Hello");
 
         // Write something, then try to read something and wait for a result.

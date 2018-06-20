@@ -15,11 +15,9 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
-import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import io.netty.handler.ssl.SslContext;
@@ -31,7 +29,6 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.netty.internal.SSLContextFactory.forServer;
-import static java.util.Objects.requireNonNull;
 
 /**
  * Configuration for TCP based servers. <p>Internal use only.</p>
@@ -42,10 +39,9 @@ public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
      * New instance.
      *
      * @param autoRead If the channels accepted by the server will have auto-read enabled.
-     * @param executor {@link NettyIoExecutor} to use for the server.
      */
-    public TcpServerConfig(boolean autoRead, NettyIoExecutor executor) {
-        super(autoRead, executor);
+    public TcpServerConfig(boolean autoRead) {
+        super(autoRead);
     }
 
     /**
@@ -60,16 +56,6 @@ public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
             throw new IllegalArgumentException("backlog must be >= 0");
         }
         this.backlog = backlog;
-        return this;
-    }
-
-    /**
-     * Specify the {@link BufferAllocator} to use.
-     * @param allocator the {@link BufferAllocator} to use for allocate new buffers.
-     * @return this.
-     */
-    public TcpServerConfig setAllocator(BufferAllocator allocator) {
-        this.allocator = requireNonNull(allocator);
         return this;
     }
 

@@ -17,40 +17,42 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.Connection;
-import io.servicetalk.transport.netty.internal.NettyIoExecutor;
+import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.Timeout;
 
 import java.util.function.Function;
 
-import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
 import static io.servicetalk.transport.api.FlushStrategy.defaultFlushStrategy;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
-import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
 
 public abstract class AbstractTcpServerTest {
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    protected static NettyIoExecutor serverIoExecutor;
-    protected static NettyIoExecutor clientIoExecutor;
+    @ClassRule
+    public static final ExecutionContextRule SERVER_CTX = new ExecutionContextRule(() -> DEFAULT_ALLOCATOR,
+            () -> createIoExecutor(new IoThreadFactory("server-io-executor")),
+            Executors::newCachedThreadExecutor);
+    @ClassRule
+    public static final ExecutionContextRule CLIENT_CTX = new ExecutionContextRule(() -> DEFAULT_ALLOCATOR,
+            () -> createIoExecutor(new IoThreadFactory("client-io-executor")),
+            Executors::newCachedThreadExecutor);
 
-    private Executor executor;
     private ContextFilter contextFilter = ACCEPT_ALL;
     private Function<Connection<Buffer, Buffer>, Completable> service =
             conn -> conn.write(conn.read(), defaultFlushStrategy());
@@ -67,41 +69,21 @@ public abstract class AbstractTcpServerTest {
         this.service = service;
     }
 
-    public Executor getExecutor() {
-        return executor;
-    }
-
-    @BeforeClass
-    public static void setupIoExecutors() {
-        serverIoExecutor = toNettyIoExecutor(createIoExecutor(new IoThreadFactory("server-io-executor")));
-        clientIoExecutor = toNettyIoExecutor(createIoExecutor(new IoThreadFactory("client-io-executor")));
-    }
-
-    @Before
-    public void createExecutor() {
-        executor = Executors.newCachedThreadExecutor();
-    }
-
     @Before
     public void startServer() throws Exception {
         server = createServer();
-        serverContext = server.start(0, contextFilter, service);
+        serverContext = server.start(SERVER_CTX, 0, contextFilter, service);
         serverPort = TcpServer.getServerPort(serverContext);
-        client = new TcpClient(clientIoExecutor);
+        client = new TcpClient();
     }
 
     // Visible for overriding.
     TcpServer createServer() {
-        return new TcpServer(serverIoExecutor);
+        return new TcpServer();
     }
 
     @After
     public void stopServer() throws Exception {
-        awaitIndefinitely(newCompositeCloseable().concat(serverContext, executor).closeAsync());
-    }
-
-    @AfterClass
-    public static void shutdownIoExectors() throws Exception {
-        awaitIndefinitely(newCompositeCloseable().merge(serverIoExecutor, clientIoExecutor).closeAsync());
+        awaitIndefinitely(serverContext.closeAsync());
     }
 }

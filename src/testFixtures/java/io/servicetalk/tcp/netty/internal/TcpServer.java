@@ -17,16 +17,15 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ContextFilter;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.AbstractChannelReadHandler;
 import io.servicetalk.transport.netty.internal.BufferHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.NettyConnection;
-import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
@@ -37,7 +36,6 @@ import java.net.SocketAddress;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
-import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
 
@@ -51,14 +49,14 @@ public class TcpServer {
 
     /**
      * New instance with default configuration.
-     * @param executor {@link NettyIoExecutor} to use for this server.
      */
-    public TcpServer(NettyIoExecutor executor) {
-        this(new TcpServerConfig(false, executor));
+    public TcpServer() {
+        this(new TcpServerConfig(false));
     }
 
     /**
      * New instance.
+     *
      * @param config for the server.
      */
     public TcpServer(TcpServerConfig config) {
@@ -69,48 +67,50 @@ public class TcpServer {
      * Starts the server at the passed {@code port} and invoke the passed {@code service} for each accepted connection.
      * Awaits for the server to start.
      *
+     * @param executionContext {@link ExecutionContext} to use for incoming connections.
      * @param port Port for the server.
      * @param service {@link Function} that is invoked for each accepted connection.
      * @return {@link ServerContext} for the started server.
      * @throws ExecutionException If the server start failed.
      * @throws InterruptedException If the calling thread was interrupted waiting for the server to start.
      */
-    public ServerContext start(int port, Function<Connection<Buffer, Buffer>, Completable> service)
+    public ServerContext start(ExecutionContext executionContext, int port,
+                               Function<Connection<Buffer, Buffer>, Completable> service)
             throws ExecutionException, InterruptedException {
-        return start(port, ACCEPT_ALL, service);
+        return start(executionContext, port, ACCEPT_ALL, service);
     }
 
     /**
      * Starts the server at the passed {@code port} and invoke the passed {@code service} for each accepted connection.
      * Awaits for the server to start.
      *
-     * @param port    Port for the server.
-     * @param contextFilter to use for filtering accepted connections.  The returned {@link ServerContext} manages the
+     * @param executionContext {@link ExecutionContext} to use for incoming connections.
+     * @param port Port for the server.
+     * @param contextFilter to use for filtering accepted connections. The returned {@link ServerContext} manages the
      * lifecycle of the {@code contextFilter}, ensuring it is closed when the {@link ServerContext} is closed.
      * @param service {@link Function} that is invoked for each accepted connection.
      * @return {@link ServerContext} for the started server.
      * @throws ExecutionException   If the server start failed.
      * @throws InterruptedException If the calling thread was interrupted waiting for the server to start.
      */
-    public ServerContext start(int port, ContextFilter contextFilter, Function<Connection<Buffer, Buffer>, Completable> service)
+    public ServerContext start(ExecutionContext executionContext, int port, ContextFilter contextFilter,
+                               Function<Connection<Buffer, Buffer>, Completable> service)
             throws ExecutionException, InterruptedException {
-        TcpServerInitializer initializer = new TcpServerInitializer(config);
-        final Executor executor = newCachedThreadExecutor();
-        final ChannelInitializer channelInitializer = new TcpServerChannelInitializer(config)
-                .andThen(getChannelInitializer(service, executor));
+        TcpServerInitializer initializer = new TcpServerInitializer(executionContext, config);
         return awaitIndefinitelyNonNull(initializer.start(new InetSocketAddress(port), contextFilter,
-                channelInitializer, executor, false, false)
+                new TcpServerChannelInitializer(config)
+                        .andThen(getChannelInitializer(service, executionContext)), false, false)
                 .doBeforeSuccess(ctx -> LOGGER.info("Server started on port {}.", getServerPort(ctx)))
                 .doBeforeError(throwable -> LOGGER.error("Failed starting server on port {}.", port)));
     }
 
     // Visible to allow tests to override.
     ChannelInitializer getChannelInitializer(final Function<Connection<Buffer, Buffer>, Completable> service,
-                                             final Executor executor) {
+                                             final ExecutionContext executionContext) {
         return (channel, context) -> {
-            channel.pipeline().addLast(new BufferHandler(config.getAllocator()));
+            channel.pipeline().addLast(new BufferHandler(executionContext.getBufferAllocator()));
             channel.pipeline()
-                    .addLast(new AbstractChannelReadHandler<Buffer>(buffer -> false, executor) {
+                    .addLast(new AbstractChannelReadHandler<Buffer>(buffer -> false, executionContext.getExecutor()) {
                         @Override
                         protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Buffer> newPublisher) {
                             Connection<Buffer, Buffer> conn = new NettyConnection<>(ctx.channel(), context,
