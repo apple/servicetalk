@@ -303,8 +303,8 @@ public class AddressParsingHttpRequesterBuilderTest {
 
     private static ServerContext startNewLocalServer(final HttpService httpService,
                                                      final CompositeCloseable closeables) throws Exception {
-        ServerContext serverContext = awaitIndefinitelyNonNull(new DefaultHttpServerStarter(CTX.getIoExecutor())
-                .start(new InetSocketAddress(HOSTNAME, 0), httpService));
+        ServerContext serverContext = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
+                .start(CTX, new InetSocketAddress(HOSTNAME, 0), httpService));
         closeables.merge(serverContext);
         return serverContext;
     }
