@@ -15,21 +15,15 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
-import io.servicetalk.transport.api.IoExecutor;
 
 import io.netty.channel.Channel;
-import io.netty.util.AttributeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
-import java.util.NoSuchElementException;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
@@ -42,27 +36,22 @@ public final class NettyConnectionContext implements ConnectionContext {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NettyConnectionContext.class);
 
-    private static final AttributeKey<ConnectionContext> SVC_CONTEXT = AttributeKey.newInstance(NettyConnectionContext.class.getName() + "_attr_service_context");
-
-    private final NettyChannelListenableAsyncCloseable close;
-    private final Channel channel;
     private final ExecutionContext executionContext;
+    private final Channel channel;
+    private final NettyChannelListenableAsyncCloseable close;
     @Nullable
     private volatile SSLSession sslSession;
 
     /**
      * New instance.
      *
+     * @param executionContext {@link ExecutionContext} for this connection.
      * @param channel {@link Channel} for this connection.
-     * @param ioExecutor {@link IoExecutor} for this connection.
-     * @param executor {@link Executor} for this connection.
-     * @param allocator {@link BufferAllocator} for this connection.
      */
-    private NettyConnectionContext(Channel channel, IoExecutor ioExecutor, Executor executor,
-                                   BufferAllocator allocator) {
+    private NettyConnectionContext(ExecutionContext executionContext, Channel channel) {
+        this.executionContext = requireNonNull(executionContext);
         this.channel = requireNonNull(channel);
         close = new NettyChannelListenableAsyncCloseable(channel);
-        executionContext = new DefaultExecutionContext(allocator, ioExecutor, executor);
     }
 
     @Override
@@ -76,6 +65,7 @@ public final class NettyConnectionContext implements ConnectionContext {
     }
 
     @Override
+    @Nullable
     public SSLSession getSslSession() {
         return sslSession;
     }
@@ -89,34 +79,30 @@ public final class NettyConnectionContext implements ConnectionContext {
      * Creates a new {@link NettyConnectionContext} by initializing the passed {@code channel} using the
      * {@code initializer}.
      *
+     * @param executionContext {@link ExecutionContext} for this connection.
      * @param channel for the newly created {@link NettyConnectionContext}.
-     * @param ioExecutor the {@link IoExecutor} to use.
-     * @param executor the {@link Executor} to use.
-     * @param allocator for the context.
      * @param initializer to initialize the channel.
      * @return New {@link ConnectionContext} for the channel.
      */
-    public static ConnectionContext newContext(Channel channel, IoExecutor ioExecutor, Executor executor,
-                                               BufferAllocator allocator, ChannelInitializer initializer) {
-        return newContext(channel, ioExecutor, executor, allocator, initializer, true);
+    public static ConnectionContext newContext(ExecutionContext executionContext, Channel channel,
+                                               ChannelInitializer initializer) {
+        return newContext(executionContext, channel, initializer, true);
     }
 
     /**
      * Creates a new {@link NettyConnectionContext} by initializing the passed {@code channel} using the
      * {@code initializer}.
      *
+     * @param executionContext {@link ExecutionContext} for this connection.
      * @param channel for the newly created {@link NettyConnectionContext}.
-     * @param ioExecutor the {@link IoExecutor} to use.
-     * @param executor the {@link Executor} to use.
-     * @param allocator for the context.
      * @param initializer to initialize the channel.
-     * @param checkForRefCountedTrapper Whether to log a warning if a {@link RefCountedTrapper} is not found in the pipeline.
+     * @param checkForRefCountedTrapper Whether to log a warning if a {@link RefCountedTrapper} is not found in the
+     * pipeline.
      * @return New {@link ConnectionContext} for the channel.
      */
-    public static ConnectionContext newContext(Channel channel, IoExecutor ioExecutor, Executor executor,
-                                               BufferAllocator allocator, ChannelInitializer initializer,
-                                               boolean checkForRefCountedTrapper) {
-        ConnectionContext context = new NettyConnectionContext(channel, ioExecutor, executor, allocator);
+    public static ConnectionContext newContext(ExecutionContext executionContext, Channel channel,
+                                               ChannelInitializer initializer, boolean checkForRefCountedTrapper) {
+        ConnectionContext context = new NettyConnectionContext(executionContext, channel);
         context = initializer.init(channel, context);
         if (checkForRefCountedTrapper) {
             RefCountedTrapper refCountedTrapper = channel.pipeline().get(RefCountedTrapper.class);
@@ -125,24 +111,7 @@ public final class NettyConnectionContext implements ConnectionContext {
                         RefCountedTrapper.class.getName());
             }
         }
-        channel.attr(SVC_CONTEXT).set(context);
         return context;
-    }
-
-    /**
-     * Retrieves the {@link ConnectionContext} associated with the passed {@code channel}.
-     *
-     * @param channel for which the context is to be retrieved.
-     * @return {@link ConnectionContext} associated with the channel.
-     *
-     * @throws NoSuchElementException If no {@link ConnectionContext} was ever created for this {@code channel}.
-     */
-    public static ConnectionContext forChannel(Channel channel) {
-        ConnectionContext ctx = channel.attr(SVC_CONTEXT).get();
-        if (ctx == null) {
-            throw new NoSuchElementException("No service context associated with this channel: " + channel);
-        }
-        return ctx;
     }
 
     void setSslSession(SSLSession session) {
