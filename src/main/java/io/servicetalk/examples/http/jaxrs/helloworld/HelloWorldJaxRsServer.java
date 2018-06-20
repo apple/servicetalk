@@ -15,15 +15,20 @@
  */
 package io.servicetalk.examples.http.jaxrs.helloworld;
 
+import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.http.api.HttpServerStarter;
 import io.servicetalk.http.netty.DefaultHttpServerStarter;
 import io.servicetalk.http.router.jersey.HttpJerseyRouterBuilder;
-import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.DefaultExecutionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
@@ -45,19 +50,23 @@ public final class HelloWorldJaxRsServer {
      * @throws Exception If the server could not be started.
      */
     public static void main(String[] args) throws Exception {
-        // Shared IoExecutor for the application.
-        IoExecutor ioExecutor = createIoExecutor();
-        try {
-            HttpServerStarter starter = new DefaultHttpServerStarter(ioExecutor);
+        // Create an AutoCloseable representing all resources used in this example.
+        try (CompositeCloseable resources = newCompositeCloseable()) {
+            // ExecutionContext for the server.
+            ExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR,
+                    createIoExecutor(), newCachedThreadExecutor());
+            // Add ExecutionContext components as resources to be cleaned up at the end.
+            resources.concat(executionContext.getIoExecutor(), executionContext.getExecutor());
 
-            ServerContext serverContext = awaitIndefinitelyNonNull(starter.start(8080,
+            // Create configurable starter for HTTP server.
+            HttpServerStarter starter = new DefaultHttpServerStarter();
+            ServerContext serverContext = awaitIndefinitelyNonNull(starter.start(executionContext, 8080,
                     new HttpJerseyRouterBuilder().build(new HelloWorldJaxrsApplication())));
 
             LOGGER.info("listening on {}", serverContext.getListenAddress());
 
+            // Stop listening/accepting more sockets and gracefully shutdown all open sockets.
             awaitIndefinitely(serverContext.onClose());
-        } finally {
-            awaitIndefinitely(ioExecutor.closeAsync());
         }
     }
 }

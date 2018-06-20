@@ -17,7 +17,6 @@ package io.servicetalk.examples.http.service.composition;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.concurrent.api.CompositeCloseable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
 import io.servicetalk.http.api.AggregatedHttpClient;
@@ -76,13 +75,18 @@ public final class GatewayServer {
             IoExecutor ioExecutor = createIoExecutor();
             // Add it as a resource to be cleaned up at the end.
             resources.concat(ioExecutor);
-            DefaultHttpServerStarter starter = new DefaultHttpServerStarter(ioExecutor);
-            final Executor executor = newCachedThreadExecutor();
-            resources.concat(executor);
-            ExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, executor);
+
+            // ExecutionContext for the server.
+            ExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR,
+                    ioExecutor, newCachedThreadExecutor());
+            // Add created executor as a resource to be cleaned up at the end.
+            resources.concat(executionContext.getExecutor());
+
             // In this example we will use DNS as our Service Discovery system.
             ServiceDiscoverer<HostAndPort, InetSocketAddress> dnsDiscoverer =
                     new DefaultDnsServiceDiscovererBuilder(executionContext).build();
+            // Add it as a resource to be cleaned up at the end.
+            resources.concat(dnsDiscoverer);
 
             // Use Jackson for serialization and deserialization.
             // HttpSerializer validates HTTP metadata for serialization/deserialization and also provides higher level
@@ -121,8 +125,11 @@ public final class GatewayServer {
                                     userClient.asBlockingAggregatedClient(), httpSerializer).asService())
                             .build();
 
+            // Create configurable starter for HTTP server.
+            DefaultHttpServerStarter starter = new DefaultHttpServerStarter();
             // Starting the server will start listening for incoming client requests.
-            ServerContext serverContext = awaitIndefinitelyNonNull(starter.start(8080, gatewayService));
+            ServerContext serverContext = awaitIndefinitelyNonNull(
+                    starter.start(executionContext, 8080, gatewayService));
 
             LOGGER.info("listening on {}", serverContext.getListenAddress());
 

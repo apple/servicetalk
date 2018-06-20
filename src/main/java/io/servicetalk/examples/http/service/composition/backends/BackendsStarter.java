@@ -48,23 +48,21 @@ public final class BackendsStarter {
     public static void main(String[] args) throws Exception {
         // Create an AutoCloseable representing all resources used in this example.
         try (CompositeCloseable resources = newCompositeCloseable()) {
-            // Used for serialization/deserialization in all backends.
+            // Shared IoExecutor for the application.
+            IoExecutor ioExecutor = createIoExecutor();
+            // Add it as a resource to be cleaned up at the end.
+            resources.concat(ioExecutor);
 
             // Use Jackson for serialization and deserialization.
             // HttpSerializer validates HTTP metadata for serialization/deserialization and also provides higher level
             // HTTP focused serialization APIs.
             HttpSerializer httpSerializer = DefaultHttpSerializer.forJson(new JacksonSerializationProvider());
 
-            // Shared IoExecutor for the application.
-            IoExecutor ioExecutor = createIoExecutor();
-            // Add it as a resource to be cleaned up at the end.
-            resources.concat(ioExecutor);
-
             // This is a single Completable used to await closing of all backends started by this class. It is used to
             // provide a way to not let main() exit.
             Completable allServicesOnClose = completed();
 
-            BackendStarter starter = new BackendStarter(ioExecutor);
+            BackendStarter starter = new BackendStarter(ioExecutor, resources);
             final ServerContext recommendationService =
                     starter.start(RECOMMENDATIONS_BACKEND_ADDRESS.getPort(), "recommendation-service",
                             newRecommendationsService(httpSerializer));

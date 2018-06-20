@@ -18,13 +18,16 @@ package io.servicetalk.examples.http.helloworld;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.http.api.HttpServerStarter;
 import io.servicetalk.http.netty.DefaultHttpServerStarter;
-import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.DefaultExecutionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
@@ -48,15 +51,17 @@ public final class HelloWorldServer {
     public static void main(String[] args) throws Exception {
         // Create an AutoCloseable representing all resources used in this example.
         try (CompositeCloseable resources = newCompositeCloseable()) {
-            // Shared IoExecutor for the application.
-            IoExecutor ioExecutor = createIoExecutor();
-            // Add it as a resource to be cleaned up at the end.
-            resources.concat(ioExecutor);
+            // ExecutionContext for the server.
+            ExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR,
+                    createIoExecutor(), newCachedThreadExecutor());
+            // Add ExecutionContext components as resources to be cleaned up at the end.
+            resources.concat(executionContext.getIoExecutor(), executionContext.getExecutor());
 
             // Create configurable starter for HTTP server.
-            HttpServerStarter starter = new DefaultHttpServerStarter(ioExecutor);
+            HttpServerStarter starter = new DefaultHttpServerStarter();
             // Starting the server will start listening for incoming client requests.
-            ServerContext serverContext = awaitIndefinitelyNonNull(starter.start(8080, new HelloWorldService()));
+            ServerContext serverContext = awaitIndefinitelyNonNull(
+                    starter.start(executionContext, 8080, new HelloWorldService()));
 
             LOGGER.info("listening on {}", serverContext.getListenAddress());
 
