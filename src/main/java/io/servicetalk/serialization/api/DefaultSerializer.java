@@ -17,11 +17,11 @@ package io.servicetalk.serialization.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.concurrent.api.AbstractCloseableIterable;
-import io.servicetalk.concurrent.api.BlockingIterable;
-import io.servicetalk.concurrent.api.BlockingIterator;
-import io.servicetalk.concurrent.api.CloseableIterable;
+import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.BlockingIterator;
+import io.servicetalk.concurrent.CloseableIterable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.internal.AbstractCloseableIterable;
 
 import org.reactivestreams.Subscriber;
 

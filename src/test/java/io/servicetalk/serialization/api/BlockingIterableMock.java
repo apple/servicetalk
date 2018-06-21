@@ -15,8 +15,8 @@
  */
 package io.servicetalk.serialization.api;
 
-import io.servicetalk.concurrent.api.BlockingIterable;
-import io.servicetalk.concurrent.api.BlockingIterator;
+import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.BlockingIterator;
 
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;

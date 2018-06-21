@@ -16,8 +16,8 @@
 package io.servicetalk.serialization.api;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.concurrent.api.BlockingIterable;
-import io.servicetalk.concurrent.api.BlockingIterator;
+import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.BlockingIterator;
 
 import java.util.ArrayList;
 import java.util.Iterator;

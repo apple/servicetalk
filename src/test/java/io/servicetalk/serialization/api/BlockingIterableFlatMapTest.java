@@ -15,7 +15,7 @@
  */
 package io.servicetalk.serialization.api;
 
-import io.servicetalk.concurrent.api.BlockingIterator;
+import io.servicetalk.concurrent.BlockingIterator;
 
 import org.junit.Before;
 import org.junit.Test;
