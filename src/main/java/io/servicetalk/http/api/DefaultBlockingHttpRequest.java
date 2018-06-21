@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.BlockingIterable;
+import io.servicetalk.concurrent.BlockingIterable;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;

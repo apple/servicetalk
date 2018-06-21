@@ -16,8 +16,8 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.GroupKey;
-import io.servicetalk.concurrent.api.BlockingIterable;
-import io.servicetalk.concurrent.api.BlockingIterator;
+import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.PublisherRule;

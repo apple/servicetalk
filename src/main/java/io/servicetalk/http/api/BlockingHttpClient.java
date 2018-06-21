@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.BlockingIterable;
+import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.http.api.AggregatedHttpClient.AggregatedReservedHttpConnection;
 import io.servicetalk.http.api.BlockingAggregatedHttpClient.BlockingAggregatedReservedHttpConnection;
 import io.servicetalk.http.api.BlockingHttpClientToHttpClient.BlockingToReservedHttpConnection;

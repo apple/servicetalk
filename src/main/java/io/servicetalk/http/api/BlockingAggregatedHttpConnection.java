@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.BlockingIterable;
+import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.http.api.HttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 

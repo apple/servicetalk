@@ -17,8 +17,8 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.concurrent.api.BlockingIterable;
-import io.servicetalk.concurrent.api.BlockingIterator;
+import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.serialization.api.DefaultSerializer;
 import io.servicetalk.serialization.api.SerializationException;
 import io.servicetalk.serialization.api.SerializationProvider;

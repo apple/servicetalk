@@ -15,8 +15,8 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.BlockingIterable;
-import io.servicetalk.concurrent.api.BlockingIterator;
+import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
