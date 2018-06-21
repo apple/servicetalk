@@ -16,7 +16,7 @@
   -->
 <Configuration status="info">
   <Properties>
-    <Property name="level">info</Property>
+    <Property name="level">${sys:logger.level:-INFO}</Property>
   </Properties>
   <Appenders>
     <Console name="Console" target="SYSTEM_OUT">
@@ -24,12 +24,10 @@
     </Console>
   </Appenders>
   <Loggers>
-    <Logger name="io.netty" level="${level}"/>
-    <Logger name="io.servicetalk" level="${level}"/>
-    <Logger name="servicetalk-global-wire-logger" level="${level}"/>
-    <Root level="info">
+    <Logger name="servicetalk-tests-client-wire-logger" level="TRACE"/>
+    <Logger name="servicetalk-tests-server-wire-logger" level="TRACE"/>
+    <Root level="${level}">
       <AppenderRef ref="Console"/>
     </Root>
   </Loggers>
 </Configuration>
-
