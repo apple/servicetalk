@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.BlockingIterator;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.function.Function;

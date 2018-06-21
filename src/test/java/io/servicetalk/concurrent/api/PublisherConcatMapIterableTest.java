@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.BlockingIterable;
+
 import org.junit.Rule;
 import org.junit.Test;
 

@@ -15,6 +15,9 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.BlockingIterator;
+
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
