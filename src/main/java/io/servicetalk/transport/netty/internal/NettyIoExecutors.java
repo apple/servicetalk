@@ -17,6 +17,8 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.IoExecutor;
 
+import io.netty.channel.EventLoop;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.kqueue.KQueue;
@@ -63,5 +65,25 @@ public final class NettyIoExecutors {
         }
         throw new IllegalArgumentException("Incompatible IoExecutor: " + ioExecutor +
                 ". Not a netty based IoExecutor.");
+    }
+
+    /**
+     * Creates a new instance of {@link NettyIoExecutor} using the passed {@link EventLoop}.
+     *
+     * @param eventLoop {@link EventLoop} to use to create a new {@link NettyIoExecutor}.
+     * @return New {@link NettyIoExecutor} using the passed {@link EventLoop}.
+     */
+    public static NettyIoExecutor fromNettyEventLoop(EventLoop eventLoop) {
+        return new EventLoopIoExecutor(eventLoop, true);
+    }
+
+    /**
+     * Creates a new instance of {@link NettyIoExecutor} using the passed {@link EventLoopGroup}.
+     *
+     * @param eventLoopGroup {@link EventLoopGroup} to use to create a new {@link NettyIoExecutor}.
+     * @return New {@link NettyIoExecutor} using the passed {@link EventLoopGroup}.
+     */
+    public static NettyIoExecutor fromNettyEventLoopGroup(EventLoopGroup eventLoopGroup) {
+        return new EventLoopGroupIoExecutor(eventLoopGroup, true);
     }
 }
