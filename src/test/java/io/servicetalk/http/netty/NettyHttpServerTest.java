@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.api.BlockingIterator;
+import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
