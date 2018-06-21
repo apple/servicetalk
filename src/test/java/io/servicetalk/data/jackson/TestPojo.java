@@ -15,7 +15,7 @@
  */
 package io.servicetalk.data.jackson;
 
-import io.servicetalk.concurrent.api.BlockingIterator;
+import io.servicetalk.concurrent.BlockingIterator;
 
 import java.util.Arrays;
 import java.util.Objects;
