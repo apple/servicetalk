@@ -364,4 +364,15 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
         ByteBuf byteBuf = toByteBufNoThrow(buffer);
         return byteBuf != null ? byteBuf : wrappedBuffer(buffer.toNioBuffer());
     }
+
+    static void writeBufferToByteBuf(Buffer src, ByteBuf dst) {
+        // If src is backed by a Single NIO ByteBuffer we can avoid the intermediate conversion to ByteBuffer and just
+        // directly use the NIO ByteBuffer. This is beneficial for example for static ReadOnlyByteBuffer objects that
+        // are not backed by Netty's ByteBuf, but is backed by an NIO ByteBuffer.
+        if (src.getNioBufferCount() == 1) {
+            dst.writeBytes(src.toNioBuffer());
+        } else {
+            dst.writeBytes(toByteBuf(src));
+        }
+    }
 }

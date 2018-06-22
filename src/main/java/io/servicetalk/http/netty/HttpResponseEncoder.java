@@ -92,11 +92,11 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
 
     @Override
     protected void encodeInitialLine(ByteBuf buf, HttpResponseMetaData message) {
-        buf.writeBytes(toByteBuf(message.getVersion().getHttpVersion()));
+        writeBufferToByteBuf(message.getVersion().getHttpVersion(), buf);
         buf.writeByte(SP);
-        buf.writeBytes(toByteBuf(message.getStatus().getCodeBuffer()));
+        writeBufferToByteBuf(message.getStatus().getCodeBuffer(), buf);
         buf.writeByte(SP);
-        buf.writeBytes(toByteBuf(message.getStatus().getReasonPhrase()));
+        writeBufferToByteBuf(message.getStatus().getReasonPhrase(), buf);
         writeShortBE(buf, CRLF_SHORT);
     }
 

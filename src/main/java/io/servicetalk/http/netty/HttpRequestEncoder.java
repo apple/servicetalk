@@ -103,7 +103,7 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
 
     @Override
     protected void encodeInitialLine(ByteBuf buf, HttpRequestMetaData message) {
-        buf.writeBytes(toByteBuf(message.getMethod().getName()));
+        writeBufferToByteBuf(message.getMethod().getName(), buf);
 
         String uri = message.getRequestTarget();
 
@@ -141,7 +141,7 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
             }
         }
 
-        buf.writeBytes(toByteBuf(message.getVersion().getHttpVersion()));
+        writeBufferToByteBuf(message.getVersion().getHttpVersion(), buf);
         writeShortBE(buf, CRLF_SHORT);
     }
 }
