@@ -182,6 +182,12 @@ public class RedirectingHttpClientGroupTest {
     }
 
     @Test
+    public void request307or308WithEmptyLocation() throws Exception {
+        testNoRedirectWasDone(MAX_REDIRECTS, GET, TEMPORARY_REDIRECT, null);
+        testNoRedirectWasDone(MAX_REDIRECTS, GET, PERMANENT_REDIRECT, null);
+    }
+
+    @Test
     public void nonGetOrHeadRequestWithTemporaryRedirect() throws Exception {
         testNoRedirectWasDone(MAX_REDIRECTS, POST, TEMPORARY_REDIRECT, "/new-location");
         testNoRedirectWasDone(MAX_REDIRECTS, PUT, TEMPORARY_REDIRECT, "/new-location");

@@ -167,10 +167,6 @@ final class RedirectSingle extends Single<HttpResponse<HttpPayloadChunk>> {
                     // https://tools.ietf.org/html/rfc7231#section-6.4.6
                     // The 306 (Unused) status code is no longer used, and the code is reserved.
                     return false;
-                case 307:
-                case 308:
-                    // TODO: remove these cases when we will support repeatable payload
-                    return originalMethod == GET || originalMethod == HEAD;
                 default:
                     // Server should return only 200 status code for TRACE.
                     // We don't see a clear use case for redirect for OPTIONS and CONNECT methods
@@ -184,6 +180,12 @@ final class RedirectSingle extends Single<HttpResponse<HttpPayloadChunk>> {
                         LOGGER.debug("No location header for redirect response");
                         return false;
                     }
+
+                    if (statusCode == 307 || statusCode == 308) {
+                        // TODO: remove these cases when we will support repeatable payload
+                        return originalMethod == GET || originalMethod == HEAD;
+                    }
+
                     return true;
             }
         }
