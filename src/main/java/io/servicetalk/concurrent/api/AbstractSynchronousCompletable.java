@@ -15,26 +15,24 @@
  */
 package io.servicetalk.concurrent.api;
 
-import org.reactivestreams.Subscriber;
-
 /**
- * Base class for all {@link Publisher}s that are created with already realized values and does not generate values asynchronously.
- *
- * @param <T> Type of items emitted.
+ * Base class for all {@link Completable}s that are created with already realized result and does not generate result
+ * asynchronously.
  */
-abstract class AbstractSynchronousPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
+abstract class AbstractSynchronousCompletable extends AbstractNoHandleSubscribeCompletable {
 
     @Override
-    final void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
+    final void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader) {
         // Wrap the passed Subscriber with the SignalOffloader to make sure they are not invoked in the thread that
         // asynchronously processes signals and hence may not be safe to execute user code.
+        // This saves the offload of doSubscribe since we know it is synchronous.
         doSubscribe(signalOffloader.offloadSubscriber(subscriber));
     }
 
     /**
      * Handles the subscribe call.
      *
-     *  @param subscriber {@link Subscriber} to this {@link Publisher}.
+     *  @param subscriber {@link Subscriber} to this {@link Completable}.
      */
-    abstract void doSubscribe(Subscriber<? super T> subscriber);
+    abstract void doSubscribe(Subscriber subscriber);
 }

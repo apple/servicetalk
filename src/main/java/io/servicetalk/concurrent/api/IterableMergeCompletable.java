@@ -24,41 +24,39 @@ import static java.util.Objects.requireNonNull;
 /**
  * A {@link Completable} implementation for merging {@link Iterable}s of {@link Completable}s.
  */
-final class IterableMergeCompletable extends Completable {
-    private final Completable original;
+final class IterableMergeCompletable extends AbstractMergeCompletableOperator {
     private final Iterable<? extends Completable> others;
     private final boolean delayError;
 
-    /**
-     * New instance.
-     * @param delayError {@code true} to wait until all {@code others} complete before propagating an error.
-     *                   {@code false} to fail fast and propagate an error on the first {@link Subscriber#onError(Throwable)} observed.
-     * @param original {@link Completable} to merge with {@code others}.
-     * @param others   {@link Completable}s to merge with {@code original}.
-     */
-    IterableMergeCompletable(boolean delayError, Completable original, Iterable<? extends Completable> others) {
+    IterableMergeCompletable(boolean delayError, Completable original, Iterable<? extends Completable> others,
+                             Executor executor) {
+        super(original, executor);
         this.delayError = delayError;
-        this.original = requireNonNull(original);
         this.others = requireNonNull(others);
     }
 
     @Override
-    public void handleSubscribe(Subscriber completableSubscriber) {
+    public MergeSubscriber apply(final Subscriber subscriber) {
         if (others instanceof Collection) {
-            FixedCountMergeSubscriber subscriber = new MergeCompletable.FixedCountMergeSubscriber(completableSubscriber, 1 + ((Collection) others).size(), delayError);
-            original.subscribe(subscriber);
-            for (Completable itr : others) {
-                itr.subscribe(subscriber);
-            }
+            return new FixedCountMergeSubscriber(subscriber, 1 + ((Collection) others).size(), delayError);
         } else {
-            DynamicCountSubscriber subscriber = new DynamicCountSubscriber(completableSubscriber, delayError);
-            original.subscribe(subscriber);
+            return new DynamicCountSubscriber(subscriber, delayError);
+        }
+    }
+
+    @Override
+    void doMerge(final MergeSubscriber subscriber) {
+        if (subscriber instanceof DynamicCountSubscriber) {
             int count = 1;
             for (Completable itr : others) {
                 ++count;
                 itr.subscribe(subscriber);
             }
-            subscriber.setExpectedCount(count);
+            ((DynamicCountSubscriber) subscriber).setExpectedCount(count);
+        } else {
+            for (Completable itr : others) {
+                itr.subscribe(subscriber);
+            }
         }
     }
 

@@ -28,12 +28,15 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor.AbortPolicy;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 /**
  * An implementation of {@link Executor} that uses an implementation of {@link java.util.concurrent.Executor} to execute tasks.
@@ -45,21 +48,40 @@ final class DefaultExecutor implements Executor {
      * We do not execute user code (potentially blocking/long running) on the scheduler thread and hence using a single
      * scheduler thread is usually ok. In cases, when it is not, one can always override the executor with a custom scheduler.
      */
-    private static final ScheduledExecutorService SINGLE_THREADED_SCHEDULER = newSingleThreadScheduledExecutor(new DefaultThreadFactory());
+    private static final ScheduledExecutorService SINGLE_THREADED_SCHEDULER =
+            newSingleThreadScheduledExecutor(new DefaultThreadFactory("servicetalk-global-scheduler", true, NORM_PRIORITY));
     /**
      * Schedulers are only used to generate a tick and do not execute any user code. This means they will never run any
      * blocking code and hence it does not matter whether we use the interruptOnCancel as sent by the user upon creation in the scheduler.
      * User code (completion of Completable on tick) will be executed on the configured executor and not the Scheduler thread.
      */
-    private static final InternalScheduler GLOBAL_SINGLE_THREADED_SCHEDULER = newSchedulerNoClose(SINGLE_THREADED_SCHEDULER);
+    private static final InternalScheduler GLOBAL_SINGLE_THREADED_SCHEDULER = new InternalScheduler() {
+        @Override
+        public void run() {
+            // This is a shared scheduler and hence there is no clear lifetime, so, we ignore shutdown. Since
+            // SINGLE_THREADED_SCHEDULER uses daemon threads, the threads will be shutdown on JVM shutdown.
+        }
+
+        @Override
+        public Cancellable apply(final Runnable task, final long delay, final TimeUnit unit) {
+            ScheduledFuture<?> future = SINGLE_THREADED_SCHEDULER.schedule(task, delay, unit);
+            return () -> future.cancel(true);
+        }
+    };
     private static final RejectedExecutionHandler DEFAULT_REJECTION_HANDLER = new AbortPolicy();
+    private static final AtomicReferenceFieldUpdater<DefaultExecutor, CompletableProcessor> onCloseUpdater =
+            newUpdater(DefaultExecutor.class, CompletableProcessor.class, "onClose");
 
     private final InternalExecutor executor;
     private final InternalScheduler scheduler;
-    private final CompletableProcessor onClose = new CompletableProcessor();
+
+    @SuppressWarnings("unused")
+    @Nullable
+    private volatile CompletableProcessor onClose;
 
     DefaultExecutor(int coreSize, int maxSize, ThreadFactory threadFactory) {
-        this(new ThreadPoolExecutor(coreSize, maxSize, DEFAULT_KEEP_ALIVE_TIME_SECONDS, SECONDS, new SynchronousQueue<>(), threadFactory, DEFAULT_REJECTION_HANDLER));
+        this(new ThreadPoolExecutor(coreSize, maxSize, DEFAULT_KEEP_ALIVE_TIME_SECONDS, SECONDS,
+                new SynchronousQueue<>(), threadFactory, DEFAULT_REJECTION_HANDLER));
     }
 
     DefaultExecutor(java.util.concurrent.Executor jdkExecutor) {
@@ -77,11 +99,13 @@ final class DefaultExecutor implements Executor {
         this(jdkExecutor, scheduler, true);
     }
 
-    DefaultExecutor(java.util.concurrent.Executor jdkExecutor, ScheduledExecutorService scheduler, boolean interruptOnCancel) {
+    DefaultExecutor(java.util.concurrent.Executor jdkExecutor, ScheduledExecutorService scheduler,
+                    boolean interruptOnCancel) {
         this(jdkExecutor, newScheduler(scheduler, interruptOnCancel), interruptOnCancel);
     }
 
-    private DefaultExecutor(@Nullable java.util.concurrent.Executor jdkExecutor, @Nullable InternalScheduler scheduler, boolean interruptOnCancel) {
+    private DefaultExecutor(@Nullable java.util.concurrent.Executor jdkExecutor, @Nullable InternalScheduler scheduler,
+                            boolean interruptOnCancel) {
         if (jdkExecutor == null) {
             if (scheduler != null) {
                 scheduler.run();
@@ -108,7 +132,7 @@ final class DefaultExecutor implements Executor {
 
     @Override
     public Completable onClose() {
-        return onClose;
+        return getOrCreateOnClose();
     }
 
     @Override
@@ -116,6 +140,7 @@ final class DefaultExecutor implements Executor {
         return new Completable() {
             @Override
             protected void handleSubscribe(Subscriber subscriber) {
+                CompletableProcessor onClose = getOrCreateOnClose();
                 onClose.subscribe(subscriber);
                 try {
                     try {
@@ -130,6 +155,20 @@ final class DefaultExecutor implements Executor {
                 onClose.onComplete();
             }
         };
+    }
+
+    private CompletableProcessor getOrCreateOnClose() {
+        CompletableProcessor onClose = this.onClose;
+        if (onClose != null) {
+            return onClose;
+        }
+        final CompletableProcessor newOnClose = new CompletableProcessor();
+        if (onCloseUpdater.compareAndSet(this, null, newOnClose)) {
+            return newOnClose;
+        }
+        onClose = this.onClose;
+        assert onClose != null;
+        return onClose;
     }
 
     /**
@@ -184,20 +223,6 @@ final class DefaultExecutor implements Executor {
             public Cancellable apply(Runnable runnable) {
                 jdkExecutor.execute(runnable);
                 return IGNORE_CANCEL;
-            }
-        };
-    }
-
-    private static InternalScheduler newSchedulerNoClose(ScheduledExecutorService service) {
-        return new InternalScheduler() {
-            @Override
-            public void run() {
-            }
-
-            @Override
-            public Cancellable apply(final Runnable task, final long delay, final TimeUnit unit) {
-                ScheduledFuture<?> future = service.schedule(task, delay, unit);
-                return () -> future.cancel(true);
             }
         };
     }

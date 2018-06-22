@@ -26,7 +26,7 @@ import static io.servicetalk.concurrent.internal.ConcurrentSubscription.wrap;
  *
  * @param <T> Item type emitted from the original {@link Publisher}.
  */
-final class PubToCompletable<T> extends Completable {
+final class PubToCompletable<T> extends AbstractNoHandleSubscribeCompletable {
     private final Publisher<T> source;
 
     /**
@@ -39,8 +39,11 @@ final class PubToCompletable<T> extends Completable {
     }
 
     @Override
-    public void handleSubscribe(Subscriber subscriber) {
-        source.subscribe(new PubToCompletableSubscriber<>(subscriber));
+    void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader) {
+        // Since this is converting a Publisher to a Completable, we should try to use the same SignalOffloader for
+        // subscribing to the original Publisher to avoid thread hop. Since, it is the same source, just viewed as a
+        // Completable, there is no additional risk of deadlock.
+        source.subscribe(new PubToCompletableSubscriber<>(subscriber), signalOffloader);
     }
 
     private static final class PubToCompletableSubscriber<T> implements org.reactivestreams.Subscriber<T> {

@@ -30,7 +30,7 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateS
  *
  * @param <T> Type of items emitted by this {@link Single}.
  */
-final class PubToSingle<T> extends Single<T> {
+final class PubToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     private final Publisher<T> source;
 
     /**
@@ -43,8 +43,11 @@ final class PubToSingle<T> extends Single<T> {
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber) {
-        source.subscribe(new PubToSingleSubscriber<>(subscriber));
+    void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
+        // Since this is converting a Publisher to a Single, we should try to use the same SignalOffloader for
+        // subscribing to the original Publisher to avoid thread hop. Since, it is the same source, just viewed as a
+        // Single, there is no additional risk of deadlock.
+        source.subscribe(new PubToSingleSubscriber<>(subscriber), signalOffloader);
     }
 
     private static final class PubToSingleSubscriber<T> implements org.reactivestreams.Subscriber<T> {

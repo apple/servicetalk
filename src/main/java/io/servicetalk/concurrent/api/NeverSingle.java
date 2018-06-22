@@ -17,15 +17,21 @@ package io.servicetalk.concurrent.api;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 
-final class NeverSingle extends Single {
-    static final NeverSingle INSTANCE = new NeverSingle();
+final class NeverSingle<T> extends AbstractSynchronousSingle<T> {
+
+    private static final NeverSingle<Object> INSTANCE = new NeverSingle<>();
 
     private NeverSingle() {
-        // singleton
+        // Singleton.
     }
 
     @Override
-    public void handleSubscribe(Subscriber subscriber) {
+    void doSubscribe(final Subscriber<? super T> subscriber) {
         subscriber.onSubscribe(IGNORE_CANCEL);
+    }
+
+    @SuppressWarnings("unchecked")
+    static <T> Single<T> neverSingle() {
+        return (Single<T>) INSTANCE;
     }
 }

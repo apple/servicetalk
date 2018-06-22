@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 
-final class CompletedCompletable extends Completable {
+final class CompletedCompletable extends AbstractSynchronousCompletable {
     static final CompletedCompletable INSTANCE = new CompletedCompletable();
 
     private CompletedCompletable() {
@@ -25,7 +25,7 @@ final class CompletedCompletable extends Completable {
     }
 
     @Override
-    protected void handleSubscribe(Subscriber subscriber) {
+    void doSubscribe(final Subscriber subscriber) {
         subscriber.onSubscribe(IGNORE_CANCEL);
         subscriber.onComplete();
     }

@@ -21,18 +21,18 @@ import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 
-final class DoAfterSubscriberCompletable extends Completable {
-    private final Completable original;
+final class DoAfterSubscriberCompletable extends AbstractSynchronousCompletableOperator {
     private final Supplier<Subscriber> subscriberSupplier;
 
-    DoAfterSubscriberCompletable(final Completable original, final Supplier<Subscriber> subscriberSupplier) {
-        this.original = requireNonNull(original);
+    DoAfterSubscriberCompletable(final Completable original, final Supplier<Subscriber> subscriberSupplier,
+                                 Executor executor) {
+        super(original, executor);
         this.subscriberSupplier = requireNonNull(subscriberSupplier);
     }
 
     @Override
-    protected void handleSubscribe(final Subscriber subscriber) {
-        original.subscribe(new DoAfterSubscriberCompletableSubscriber(subscriber, subscriberSupplier.get()));
+    public Subscriber apply(final Subscriber subscriber) {
+        return new DoAfterSubscriberCompletableSubscriber(subscriber, subscriberSupplier.get());
     }
 
     private static final class DoAfterSubscriberCompletableSubscriber implements Subscriber {

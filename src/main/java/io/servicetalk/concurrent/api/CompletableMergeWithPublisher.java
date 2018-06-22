@@ -35,19 +35,20 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
  *
  * @param <T> Type of data returned from the {@link Publisher}
  */
-final class CompletableMergeWithPublisher<T> extends Publisher<T> {
+final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
     private final Completable original;
     private final Publisher<T> mergeWith;
 
-    CompletableMergeWithPublisher(Completable original, Publisher<T> mergeWith) {
+    CompletableMergeWithPublisher(Completable original, Publisher<T> mergeWith, Executor executor) {
+        super(executor);
         this.mergeWith = mergeWith;
         this.original = original;
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber) {
-        new Merger<>(subscriber).merge(original, mergeWith);
+    void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
+        new Merger<>(subscriber, signalOffloader).merge(original, mergeWith, signalOffloader);
     }
 
     private static final class Merger<T> implements Subscriber<T> {
@@ -67,16 +68,20 @@ final class CompletableMergeWithPublisher<T> extends Publisher<T> {
         @SuppressWarnings("unused")
         private volatile Object terminalNotification;
 
-        private final Subscriber<? super T> subscriber;
-        private final CompletableSubscriber completableSubscriber = new CompletableSubscriber();
+        private final CompletableSubscriber completableSubscriber;
+        private final Subscriber<? super T> offloadedSubscriber;
         private final DelayedSubscription subscription = new DelayedSubscription();
 
-        private Merger(Subscriber<? super T> subscriber) {
-            this.subscriber = subscriber;
+        Merger(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
+            completableSubscriber = new CompletableSubscriber(subscriber);
+            // This is used only to deliver signals that original from the mergeWith Publisher. Since, we need to
+            // preserve the threading semantics of the original Completable, we offload the subscriber so that we do not
+            // invoke it from the mergeWith Publisher Executor thread.
+            this.offloadedSubscriber = signalOffloader.offloadSubscriber(subscriber);
         }
 
-        private void merge(Completable original, Publisher<? extends T> mergeWith) {
-            subscriber.onSubscribe(new Subscription() {
+        void merge(Completable original, Publisher<? extends T> mergeWith, SignalOffloader signalOffloader) {
+            offloadedSubscriber.onSubscribe(new Subscription() {
                 @Override
                 public void request(long n) {
                     subscription.request(n);
@@ -88,23 +93,14 @@ final class CompletableMergeWithPublisher<T> extends Publisher<T> {
                     completableSubscriber.cancel();
                 }
             });
-            original.subscribe(completableSubscriber);
+            original.subscribe(completableSubscriber, signalOffloader);
+            // SignalOffloader is associated with the original Completable. Since mergeWith Publisher is provided by
+            // the user, it will have its own Executor, hence we should not pass this signalOffloader to subscribe to
+            // mergeWith.
+            // Any signal originating from mergeWith Publisher should be offloaded before they are sent to the
+            // Subscriber of the resulting Publisher of CompletableMergeWithPublisher as the Executor associated with
+            // the original Completable defines the threading semantics for that Subscriber.
             mergeWith.subscribe(this);
-        }
-
-        private void onError0(Throwable t) {
-            if (checkTerminationValidWithConcurrentOnNextCheck(null, t,
-                    subscriberStateUpdater, terminalNotificationUpdater, this)) {
-                subscriber.onError(t);
-            }
-        }
-
-        private void onComplete0() {
-            if (completionCountUpdater.incrementAndGet(this) == 2 &&
-                    checkTerminationValidWithConcurrentOnNextCheck(null, complete(),
-                            subscriberStateUpdater, terminalNotificationUpdater, this)) {
-                subscriber.onComplete();
-            }
         }
 
         @Override
@@ -114,24 +110,31 @@ final class CompletableMergeWithPublisher<T> extends Publisher<T> {
 
         @Override
         public void onNext(T t) {
-            sendOnNextWithConcurrentTerminationCheck(subscriber, t, this::onTerminatedConcurrently,
+            sendOnNextWithConcurrentTerminationCheck(offloadedSubscriber, t, this::onTerminatedConcurrently,
                     subscriberStateUpdater, terminalNotificationUpdater, this);
         }
 
         @Override
         public void onError(Throwable t) {
             completableSubscriber.cancel();
-            onError0(t);
+            if (checkTerminationValidWithConcurrentOnNextCheck(null, t,
+                    subscriberStateUpdater, terminalNotificationUpdater, this)) {
+                offloadedSubscriber.onError(t);
+            }
         }
 
         @Override
         public void onComplete() {
-            onComplete0();
+            if (completionCountUpdater.incrementAndGet(this) == 2 &&
+                    checkTerminationValidWithConcurrentOnNextCheck(null, complete(),
+                            subscriberStateUpdater, terminalNotificationUpdater, this)) {
+                offloadedSubscriber.onComplete();
+            }
         }
 
         /**
          * Concurrency in this operator wrt the downstream {@link Subscriber} originates from the merged {@link
-         * Completable} when it terminates with an error and needs to cancel the {@link Publisher} to stop emitting.
+         * Completable} when it terminates with an error and needs to terminate the {@link Publisher}.
          * There is no alternative concurrent path where the {@link Publisher} {@link Subscriber} can be concurrently
          * terminated due to the {@link #completionCount}, so this method should only ever be called with a {@link
          * Throwable} argument.
@@ -140,10 +143,16 @@ final class CompletableMergeWithPublisher<T> extends Publisher<T> {
          */
         private void onTerminatedConcurrently(Object terminalNotification) {
             assert terminalNotification instanceof Throwable : "Should never concurrently complete";
-            subscriber.onError((Throwable) terminalNotification);
+            offloadedSubscriber.onError((Throwable) terminalNotification);
         }
 
         private final class CompletableSubscriber extends DelayedCancellable implements Completable.Subscriber {
+
+            private final Subscriber<? super T> subscriber;
+
+            CompletableSubscriber(final Subscriber<? super T> subscriber) {
+                this.subscriber = subscriber;
+            }
 
             @Override
             public void onSubscribe(Cancellable cancellable) {
@@ -152,13 +161,20 @@ final class CompletableMergeWithPublisher<T> extends Publisher<T> {
 
             @Override
             public void onComplete() {
-                onComplete0();
+                if (completionCountUpdater.incrementAndGet(Merger.this) == 2 &&
+                        checkTerminationValidWithConcurrentOnNextCheck(null, complete(),
+                                subscriberStateUpdater, terminalNotificationUpdater, Merger.this)) {
+                    subscriber.onComplete();
+                }
             }
 
             @Override
             public void onError(Throwable t) {
                 subscription.cancel();
-                onError0(t);
+                if (checkTerminationValidWithConcurrentOnNextCheck(null, t,
+                        subscriberStateUpdater, terminalNotificationUpdater, Merger.this)) {
+                    subscriber.onError(t);
+                }
             }
         }
     }

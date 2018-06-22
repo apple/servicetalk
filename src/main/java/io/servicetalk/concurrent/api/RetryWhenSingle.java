@@ -27,31 +27,32 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <T> Type of result of this {@link Single}.
  */
-final class RetryWhenSingle<T> extends Single<T> {
+final class RetryWhenSingle<T> extends AbstractRedoSingleOperator<T> {
 
-    private final Single<T> original;
     private final BiIntFunction<Throwable, Completable> shouldRetry;
 
-    RetryWhenSingle(Single<T> original, BiIntFunction<Throwable, Completable> shouldRetry) {
-        this.original = original;
+    RetryWhenSingle(Single<T> original, BiIntFunction<Throwable, Completable> shouldRetry, Executor executor) {
+        super(original, executor);
         this.shouldRetry = shouldRetry;
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber) {
-        final SequentialCancellable cancellable = new SequentialCancellable();
-        original.subscribe(new RetrySubscriber<>(cancellable, 0, subscriber, this));
+    Subscriber<? super T> redo(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
+        return new RetrySubscriber<>(new SequentialCancellable(), 0, subscriber, this,
+                signalOffloader);
     }
 
     private static final class RetrySubscriber<T> extends RetrySingle.AbstractRetrySubscriber<T> {
 
         private final SequentialCancellable retrySignalCancellable;
         private final RetryWhenSingle<T> retrySingle;
+        private final SignalOffloader signalOffloader;
 
         RetrySubscriber(SequentialCancellable cancellable, int redoCount, Subscriber<? super T> subscriber,
-                        RetryWhenSingle<T> retrySingle) {
+                        RetryWhenSingle<T> retrySingle, final SignalOffloader signalOffloader) {
             super(cancellable, subscriber, redoCount);
             this.retrySingle = retrySingle;
+            this.signalOffloader = signalOffloader;
             retrySignalCancellable = new SequentialCancellable();
         }
 
@@ -87,7 +88,8 @@ final class RetryWhenSingle<T> extends Single<T> {
 
                 @Override
                 public void onComplete() {
-                    retrySingle.original.subscribe(new RetrySubscriber<>(sequentialCancellable, retryCount + 1, target, retrySingle));
+                    retrySingle.subscribeToOriginal(new RetrySubscriber<>(sequentialCancellable,
+                            retryCount + 1, target, retrySingle, signalOffloader), signalOffloader);
                 }
 
                 @Override

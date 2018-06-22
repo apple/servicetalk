@@ -19,20 +19,19 @@ import io.servicetalk.concurrent.Cancellable;
 
 import static java.util.Objects.requireNonNull;
 
-final class DoCancellableCompletable extends Completable {
-    private final Completable original;
+final class DoCancellableCompletable extends AbstractSynchronousCompletableOperator {
     private final Cancellable cancellable;
     private final boolean before;
 
-    DoCancellableCompletable(Completable original, Cancellable cancellable, boolean before) {
-        this.original = requireNonNull(original);
+    DoCancellableCompletable(Completable original, Cancellable cancellable, boolean before, Executor executor) {
+        super(original, executor);
         this.cancellable = requireNonNull(cancellable);
         this.before = before;
     }
 
     @Override
-    protected void handleSubscribe(Subscriber subscriber) {
-        original.subscribe(new DoCancellableCompletableSubscriber(subscriber, this));
+    public Subscriber apply(final Subscriber subscriber) {
+        return new DoCancellableCompletableSubscriber(subscriber, this);
     }
 
     private static final class DoCancellableCompletableSubscriber implements Subscriber {

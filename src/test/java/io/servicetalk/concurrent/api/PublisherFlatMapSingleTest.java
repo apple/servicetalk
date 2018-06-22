@@ -54,7 +54,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class PublisherFlatmapSingleTest {
+public class PublisherFlatMapSingleTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout(30, SECONDS);
     @Rule
@@ -368,7 +368,7 @@ public class PublisherFlatmapSingleTest {
         for (int i = 0; i < expectedNumbers.length; ++i) {
             expectedNumbers[i] = i;
         }
-        PublisherFlatmapSingle<Integer, String> pub = new PublisherFlatmapSingle<>(Publisher.from(expectedNumbers),
+        PublisherFlatMapSingle<Integer, String> pub = new PublisherFlatMapSingle<>(Publisher.from(expectedNumbers),
                 value -> Single.success(Integer.toString(value)),
                 1, false, immediate());
         pub.subscribe(new Subscriber<String>() {

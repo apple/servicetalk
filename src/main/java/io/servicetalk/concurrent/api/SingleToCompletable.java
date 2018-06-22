@@ -21,15 +21,16 @@ import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
-final class SingleToCompletable<T> extends Completable {
+final class SingleToCompletable<T> extends AbstractNoHandleSubscribeCompletable {
     private final Single<T> original;
 
-    SingleToCompletable(Single<T> original) {
+    SingleToCompletable(Single<T> original, Executor executor) {
+        super(executor);
         this.original = requireNonNull(original);
     }
 
     @Override
-    protected void handleSubscribe(Subscriber subscriber) {
+    void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader) {
         original.subscribe(new Single.Subscriber<T>() {
             @Override
             public void onSubscribe(Cancellable cancellable) {
@@ -45,6 +46,10 @@ final class SingleToCompletable<T> extends Completable {
             public void onError(Throwable t) {
                 subscriber.onError(t);
             }
-        });
+        },
+                // Since this is converting a Single to a Completable, we should try to use the same SignalOffloader for
+                // subscribing to the original Single to avoid thread hop. Since, it is the same source, just viewed as
+                // a Completable, there is no additional risk of deadlock.
+                signalOffloader);
     }
 }

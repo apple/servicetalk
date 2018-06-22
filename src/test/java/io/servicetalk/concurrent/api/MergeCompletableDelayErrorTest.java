@@ -19,6 +19,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static java.util.Arrays.copyOfRange;
 
 public class MergeCompletableDelayErrorTest {
@@ -26,22 +27,23 @@ public class MergeCompletableDelayErrorTest {
     public final MergeCompletableTest.CompletableHolder holder = new MergeCompletableTest.CompletableHolder() {
         @Override
         protected Completable createCompletable(Completable[] completables) {
-            return new MergeCompletable(true, completables[0], copyOfRange(completables, 1, completables.length));
+            return new MergeCompletable(true, completables[0], immediate(),
+                    copyOfRange(completables, 1, completables.length));
         }
     };
 
     @Test
-    public void testCompletion() throws Exception {
+    public void testCompletion() {
         holder.init(2).listen().completeAll().verifyCompletion();
     }
 
     @Test
-    public void testCompletionFew() throws Exception {
+    public void testCompletionFew() {
         holder.init(2).listen().complete(1, 2).verifyNoEmissions().complete(0).verifyCompletion();
     }
 
     @Test
-    public void testFailFirstEvent() throws Exception {
+    public void testFailFirstEvent() {
         holder.init(2).listen().fail(1).verifyNoEmissions().complete(0, 2).verifyFailure(DELIBERATE_EXCEPTION);
     }
 
@@ -56,7 +58,7 @@ public class MergeCompletableDelayErrorTest {
     }
 
     @Test
-    public void testMergeWithOne() throws Exception {
+    public void testMergeWithOne() {
         holder.init(1).listen().completeAll().verifyCompletion();
     }
 }

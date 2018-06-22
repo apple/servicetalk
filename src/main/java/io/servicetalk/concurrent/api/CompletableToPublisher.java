@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import java.util.function.Supplier;
@@ -26,31 +27,37 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static java.util.Objects.requireNonNull;
 
-final class CompletableToPublisher<T> extends Publisher<T> {
+/**
+ * {@link Publisher} created from a {@link Completable}.
+ * @param <T> Type of item emitted by the {@link Publisher}.
+ */
+final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     private final Supplier<T> valueSupplier;
-    private final Completable parent;
+    private final Completable original;
 
-    CompletableToPublisher(Completable parent, Supplier<T> valueSupplier) {
+    CompletableToPublisher(Completable original, Supplier<T> valueSupplier, Executor executor) {
+        super(executor);
         this.valueSupplier = requireNonNull(valueSupplier);
-        this.parent = parent;
+        this.original = original;
     }
 
     @Override
-    protected void handleSubscribe(org.reactivestreams.Subscriber<? super T> subscriber) {
-        subscriber.onSubscribe(new ConversionSubscriber<>(valueSupplier, parent, subscriber));
+    void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
+        subscriber.onSubscribe(new ConversionSubscriber<>(this, subscriber, signalOffloader));
     }
 
     private static final class ConversionSubscriber<T> implements Completable.Subscriber, Subscription {
         private final SequentialCancellable sequentialCancellable;
-        private final org.reactivestreams.Subscriber<? super T> subscriber;
-        private final Completable parent;
-        private final Supplier<T> valueSupplier;
+        private final Subscriber<? super T> subscriber;
+        private final SignalOffloader signalOffloader;
+        private final CompletableToPublisher<T> parent;
         private boolean subscribedToParent;
 
-        private ConversionSubscriber(Supplier<T> valueSupplier, Completable parent, org.reactivestreams.Subscriber<? super T> subscriber) {
-            this.valueSupplier = valueSupplier;
+        private ConversionSubscriber(CompletableToPublisher<T> parent,
+                                     Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
             this.parent = parent;
             this.subscriber = subscriber;
+            this.signalOffloader = signalOffloader;
             sequentialCancellable = new SequentialCancellable();
         }
 
@@ -62,7 +69,7 @@ final class CompletableToPublisher<T> extends Publisher<T> {
         @Override
         public void onComplete() {
             try {
-                subscriber.onNext(valueSupplier.get());
+                subscriber.onNext(parent.valueSupplier.get());
             } catch (Throwable cause) {
                 subscriber.onError(cause);
                 return;
@@ -80,7 +87,10 @@ final class CompletableToPublisher<T> extends Publisher<T> {
             if (!subscribedToParent) {
                 subscribedToParent = true;
                 if (isRequestNValid(n)) {
-                    parent.subscribe(this);
+                    // Since this is converting a Completable to a Publisher, we should try to use the same
+                    // SignalOffloader for subscribing to the original Completable to avoid thread hop. Since, it is the
+                    // same source, just viewed as a Publisher, there is no additional risk of deadlock.
+                    parent.original.subscribe(this, signalOffloader);
                 } else {
                     subscriber.onError(newExceptionForInvalidRequestN(n));
                 }

@@ -29,7 +29,7 @@ import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Single.success;
 
-public final class SingleFlatmapCompletableTest {
+public final class SingleFlatMapCompletableTest {
 
     @Rule
     public final MockedCompletableListenerRule listener = new MockedCompletableListenerRule();
@@ -37,38 +37,38 @@ public final class SingleFlatmapCompletableTest {
     private TestCompletable completable;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         single = new TestSingle<>();
         completable = new TestCompletable();
     }
 
     @Test
-    public void testSuccess() throws Exception {
+    public void testSuccess() {
         listener.listen(success(1).flatMapCompletable(s -> completed()));
         listener.verifyCompletion();
     }
 
     @Test
-    public void testFirstEmitsError() throws Exception {
+    public void testFirstEmitsError() {
         listener.listen(Single.error(DELIBERATE_EXCEPTION).flatMapCompletable(s -> completable));
         listener.verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
-    public void testSecondEmitsError() throws Exception {
+    public void testSecondEmitsError() {
         listener.listen(success(1).flatMapCompletable(s -> error(DELIBERATE_EXCEPTION)));
         listener.verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
-    public void testCancelBeforeFirst() throws Exception {
+    public void testCancelBeforeFirst() {
         listener.listen(single.flatMapCompletable(s -> completable));
         listener.cancel();
         single.verifyCancelled();
     }
 
     @Test
-    public void testCancelBeforeSecond() throws Exception {
+    public void testCancelBeforeSecond() {
         listener.listen(single.flatMapCompletable(s -> completable));
         single.onSuccess("Hello");
         listener.cancel();

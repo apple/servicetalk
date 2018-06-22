@@ -32,6 +32,9 @@ final class CompletableDefer extends Completable {
 
     @Override
     protected void handleSubscribe(Subscriber subscriber) {
+        // There are technically two sources, one this Completable and the other returned by completableFactory.
+        // Since, we are invoking user code (completableFactory) we need this method to be run using an Executor
+        // and also use the configured Executor for subscribing to the Completable returned from completableFactory
         completableFactory.get().subscribe(subscriber);
     }
 }

@@ -30,6 +30,8 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Executors.newOffloader;
+import static io.servicetalk.concurrent.api.NeverSingle.neverSingle;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static java.util.Objects.requireNonNull;
 
@@ -41,6 +43,24 @@ import static java.util.Objects.requireNonNull;
 public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     private static final AtomicReference<BiConsumer<? super Subscriber, Consumer<? super Subscriber>>> SUBSCRIBE_PLUGIN_REF = new AtomicReference<>();
 
+    private final Executor executor;
+
+    /**
+     * New instance.
+     */
+    protected Single() {
+        this(immediate());
+    }
+
+    /**
+     * New instance.
+     *
+     * @param executor {@link Executor} to use for this {@link Single}.
+     */
+    Single(Executor executor) {
+        this.executor = requireNonNull(executor);
+    }
+
     /**
      * Add a plugin that will be invoked on each {@link #subscribe(Subscriber)} call. This can be used for visibility or to
      * extend functionality to all {@link Subscriber}s which pass through {@link #subscribe(Subscriber)}.
@@ -50,31 +70,74 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     public static void addSubscribePlugin(BiConsumer<? super Subscriber, Consumer<? super Subscriber>> subscribePlugin) {
         requireNonNull(subscribePlugin);
         SUBSCRIBE_PLUGIN_REF.updateAndGet(currentPlugin -> currentPlugin == null ? subscribePlugin :
-                (subscriber, handleSubscribe) -> subscribePlugin.accept(subscriber, subscriber2 -> subscribePlugin.accept(subscriber2, handleSubscribe))
+                (subscriber, handleSubscribe) -> subscribePlugin.accept(subscriber,
+                        subscriber2 -> subscribePlugin.accept(subscriber2, handleSubscribe))
         );
     }
 
+    @Override
+    public final void subscribe(Subscriber<? super T> subscriber) {
+        // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader
+        // to use.
+        final SignalOffloader signalOffloader = newOffloader(executor);
+        // Since this is a user-driven subscribe (end of the execution chain), offload Cancellable
+        subscribe(signalOffloader.offloadCancellable(subscriber), signalOffloader);
+    }
+
     /**
-     * Handles a subscriber to this {@code Single}.
-     * <p>
-     * This method is invoked internally by {@link Single} for every call to the {@link Single#subscribe(Subscriber)} method.
+     * Handles a subscriber to this {@link Single}.
+     *
      * @param subscriber the subscriber.
      */
     protected abstract void handleSubscribe(Subscriber<? super T> subscriber);
 
-    @Override
-    public final void subscribe(Subscriber<? super T> subscriber) {
+    /**
+     * A special subscribe mode that uses the passed {@link SignalOffloader} instead of creating a new
+     * {@link SignalOffloader} like {@link #subscribe(Subscriber)}. This will call
+     * {@link #handleSubscribe(Subscriber, SignalOffloader)} to handle this subscribe instead of
+     * {@link #handleSubscribe(Subscriber)}.<p>
+     *
+     *     This method is used by operator implementations to inherit a chosen {@link SignalOffloader} per
+     *     {@link Subscriber} where possible.
+     *     This method does not wrap the passed {@link Subscriber} or {@link Cancellable} to offload processing to
+     *     {@link SignalOffloader}.
+     *     That is done by {@link #handleSubscribe(Subscriber, SignalOffloader)} and hence can be overridden by
+     *     operators that do not require this wrapping.
+     *
+     * @param subscriber {@link Subscriber} to this {@link Single}.
+     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
+     */
+    final void subscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
         requireNonNull(subscriber);
         BiConsumer<? super Subscriber, Consumer<? super Subscriber>> plugin = SUBSCRIBE_PLUGIN_REF.get();
         if (plugin != null) {
-            plugin.accept(subscriber, this::handleSubscribe);
+            plugin.accept(subscriber, sub -> handleSubscribe(sub, signalOffloader));
         } else {
-            handleSubscribe(subscriber);
+            handleSubscribe(subscriber, signalOffloader);
         }
     }
 
     /**
-     * Subscribe to this {@link Single}, emits the result to the passed {@link Consumer} and log any {@link Subscriber#onError(Throwable)}.
+     * Override for {@link #handleSubscribe(Subscriber)} to offload the {@link #handleSubscribe(Subscriber)} call to the
+     * passed {@link SignalOffloader}. <p>
+     *
+     *     This method wraps the passed {@link Subscriber} using {@link SignalOffloader#offloadSubscriber(Subscriber)}
+     *     and then calls {@link #handleSubscribe(Subscriber)} using
+     *     {@link SignalOffloader#offloadSignal(Object, Consumer)}.
+     *     Operators that do not wish to wrap the passed {@link Subscriber} can override this method and omit the
+     *     wrapping.
+     *
+     * @param subscriber the subscriber.
+     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
+     */
+    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
+        Subscriber<? super T> safeSubscriber = signalOffloader.offloadSubscriber(subscriber);
+        signalOffloader.offloadSignal(safeSubscriber, this::handleSubscribe);
+    }
+
+    /**
+     * Subscribe to this {@link Single}, emits the result to the passed {@link Consumer} and log any
+     * {@link Subscriber#onError(Throwable)}.
      *
      * @param resultConsumer {@link Consumer} to accept the result of this {@link Single}.
      *
@@ -93,7 +156,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return A {@link Publisher} that emits at most a single item which is emitted by this {@code Single}.
      */
     public final Publisher<T> toPublisher() {
-        return new SingleToPublisher<>(this);
+        return new SingleToPublisher<>(this, executor);
     }
 
     /**
@@ -102,7 +165,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return A {@link Completable} that mirrors the terminal signal from this {@code Single}.
      */
     public final Completable ignoreResult() {
-        return new SingleToCompletable<>(this);
+        return new SingleToCompletable<>(this, executor);
     }
 
     /**
@@ -121,8 +184,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Single<T> timeout(long duration, TimeUnit unit) {
-        // TODO(scott): we should be using the Executor associate with this Completable instead of immediate()!
-        return timeout(duration, unit, immediate());
+        return timeout(duration, unit, executor);
     }
 
     /**
@@ -161,8 +223,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Single<T> timeout(Duration duration) {
-        // TODO(scott): we should be using the Executor associate with this Completable instead of immediate()!
-        return timeout(duration, immediate());
+        return timeout(duration, executor);
     }
 
     /**
@@ -191,7 +252,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return A {@link Single} that ignores error from this {@code Single} and resume with the {@link Single} produced by {@code nextFactory}.
      */
     public final Single<T> onErrorResume(Function<Throwable, Single<T>> nextFactory) {
-        return new ResumeSingle<>(this, nextFactory);
+        return new ResumeSingle<>(this, nextFactory, executor);
     }
 
     /**
@@ -202,7 +263,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return A new {@link Single} that will now have the result of type {@link R}.
      */
     public final <R> Single<R> map(Function<T, R> mapper) {
-        return new MapSingle<>(this, mapper);
+        return new MapSingle<>(this, mapper, executor);
     }
 
     /**
@@ -214,7 +275,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return New {@link Single} that switches to the {@link Single} returned by {@code next} after this {@link Single} completes successfully.
      */
     public final <R> Single<R> flatMap(Function<T, Single<R>> next) {
-        return new SingleFlatmapSingle<>(this, next);
+        return new SingleFlatMapSingle<>(this, next, executor);
     }
 
     /**
@@ -225,7 +286,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return New {@link Completable} that switches to the {@link Completable} returned by {@code next} after this {@link Single} completes successfully.
      */
     public final Completable flatMapCompletable(Function<T, Completable> next) {
-        return new SingleFlatmapCompletable<>(this, next);
+        return new SingleFlatMapCompletable<>(this, next, executor);
     }
 
     /**
@@ -237,7 +298,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return New {@link Publisher} that switches to the {@link Publisher} returned by {@code next} after this {@link Single} completes successfully.
      */
     public final <R> Publisher<R> flatMapPublisher(Function<T, Publisher<R>> next) {
-        return new SingleFlatmapPublisher<>(this, next);
+        return new SingleFlatMapPublisher<>(this, next, executor);
     }
 
     /**
@@ -363,7 +424,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return The new {@link Single}.
      */
     public final Single<T> doBeforeCancel(Runnable onCancel) {
-        return new DoCancellableSingle<>(this, onCancel::run, true);
+        return new DoCancellableSingle<>(this, onCancel::run, true, executor);
     }
 
     /**
@@ -385,7 +446,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return The new {@link Single}.
      */
     public final Single<T> doBeforeFinally(Runnable doFinally) {
-        return new DoBeforeFinallySingle<>(this, doFinally);
+        return new DoBeforeFinallySingle<>(this, doFinally, executor);
     }
 
     /**
@@ -397,7 +458,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return The new {@link Single}.
      */
     public final Single<T> doBeforeSubscriber(Supplier<Subscriber<? super T>> subscriberSupplier) {
-        return new DoBeforeSubscriberSingle<>(this, subscriberSupplier);
+        return new DoBeforeSubscriberSingle<>(this, subscriberSupplier, executor);
     }
 
     /**
@@ -488,7 +549,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return The new {@link Single}.
      */
     public final Single<T> doAfterCancel(Runnable onCancel) {
-        return new DoCancellableSingle<>(this, onCancel::run, false);
+        return new DoCancellableSingle<>(this, onCancel::run, false, executor);
     }
 
     /**
@@ -522,7 +583,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return The new {@link Single}.
      */
     public final Single<T> doAfterSubscriber(Supplier<Subscriber<? super T>> subscriberSupplier) {
-        return new DoAfterSubscriberSingle<>(this, subscriberSupplier);
+        return new DoAfterSubscriberSingle<>(this, subscriberSupplier, executor);
     }
 
     /**
@@ -535,7 +596,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
     public final Single<T> retry(BiIntPredicate<Throwable> shouldRetry) {
-        return new RetrySingle<>(this, shouldRetry);
+        return new RetrySingle<>(this, shouldRetry, executor);
     }
 
     /**
@@ -552,7 +613,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
     public final Single<T> retryWhen(BiIntFunction<Throwable, Completable> retryWhen) {
-        return new RetryWhenSingle<>(this, retryWhen);
+        return new RetryWhenSingle<>(this, retryWhen, executor);
     }
 
     /**
@@ -588,6 +649,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      *
      * @param value result of the {@link Single}.
      * @param <T>   Type of the {@link Single}.
+     *
      * @return A new {@link Single}.
      */
     public static <T> Single<T> success(@Nullable T value) {
@@ -597,8 +659,9 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     /**
      * Creates a realized {@link Single} which always completes with the provided error {@code cause}.
      *
-     * @param <T>   Type of the {@link Single}.
      * @param cause result of the {@link Single}.
+     * @param <T>   Type of the {@link Single}.
+     *
      * @return A new {@link Single}.
      */
     public static <T> Single<T> error(Throwable cause) {
@@ -611,9 +674,8 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @param <T> Type of the {@link Single}.
      * @return A new {@link Single}.
      */
-    @SuppressWarnings("unchecked")
     public static <T> Single<T> never() {
-        return (Single<T>) NeverSingle.INSTANCE;
+        return neverSingle();
     }
 
     /**

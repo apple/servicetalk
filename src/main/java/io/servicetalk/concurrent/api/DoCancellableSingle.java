@@ -19,20 +19,19 @@ import io.servicetalk.concurrent.Cancellable;
 
 import static java.util.Objects.requireNonNull;
 
-final class DoCancellableSingle<T> extends Single<T> {
-    private final Single<T> original;
+final class DoCancellableSingle<T> extends AbstractAsynchronousSingleOperator<T, T> {
     private final Cancellable cancellable;
     private final boolean before;
 
-    DoCancellableSingle(Single<T> original, Cancellable cancellable, boolean before) {
-        this.original = requireNonNull(original);
+    DoCancellableSingle(Single<T> original, Cancellable cancellable, boolean before, Executor executor) {
+        super(original, executor);
         this.cancellable = requireNonNull(cancellable);
         this.before = before;
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber) {
-        original.subscribe(new DoCancellableSingleSubscriber<>(subscriber, this));
+    public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
+        return new DoCancellableSingleSubscriber<>(subscriber, this);
     }
 
     private static final class DoCancellableSingleSubscriber<T> implements Subscriber<T> {

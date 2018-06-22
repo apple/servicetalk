@@ -18,16 +18,18 @@ package io.servicetalk.concurrent.api;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Arrays;
-
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.api.Executors.immediate;
+import static java.util.Arrays.asList;
 
 public class IterableMergeCompletableDelayErrorTest {
+
     @Rule
     public final MergeCompletableTest.CompletableHolder collectionHolder = new MergeCompletableTest.CompletableHolder() {
         @Override
         protected Completable createCompletable(Completable[] completables) {
-            return new IterableMergeCompletable(true, completables[0], Arrays.asList(completables).subList(1, completables.length));
+            return new IterableMergeCompletable(true, completables[0],
+                    asList(completables).subList(1, completables.length), immediate());
         }
     };
 
@@ -35,22 +37,23 @@ public class IterableMergeCompletableDelayErrorTest {
     public final MergeCompletableTest.CompletableHolder iterableHolder = new MergeCompletableTest.CompletableHolder() {
         @Override
         protected Completable createCompletable(Completable[] completables) {
-            return new IterableMergeCompletable(true, completables[0], () -> Arrays.asList(completables).subList(1, completables.length).iterator());
+            return new IterableMergeCompletable(true, completables[0],
+                    () -> asList(completables).subList(1, completables.length).iterator(), immediate());
         }
     };
 
     @Test
-    public void testCollectionCompletion() throws Exception {
+    public void testCollectionCompletion() {
         collectionHolder.init(2).listen().completeAll().verifyCompletion();
     }
 
     @Test
-    public void testCollectionCompletionFew() throws Exception {
+    public void testCollectionCompletionFew() {
         collectionHolder.init(2).listen().complete(1, 2).verifyNoEmissions().complete(0).verifyCompletion();
     }
 
     @Test
-    public void testCollectionFailFirstEvent() throws Exception {
+    public void testCollectionFailFirstEvent() {
         collectionHolder.init(2).listen().fail(1).verifyNoEmissions().complete(0, 2).verifyFailure(DELIBERATE_EXCEPTION);
     }
 
@@ -65,22 +68,22 @@ public class IterableMergeCompletableDelayErrorTest {
     }
 
     @Test
-    public void testCollectionMergeWithOne() throws Exception {
+    public void testCollectionMergeWithOne() {
         collectionHolder.init(1).listen().completeAll().verifyCompletion();
     }
 
     @Test
-    public void testIterableCompletion() throws Exception {
+    public void testIterableCompletion() {
         iterableHolder.init(2).listen().completeAll().verifyCompletion();
     }
 
     @Test
-    public void testIterableCompletionFew() throws Exception {
+    public void testIterableCompletionFew() {
         iterableHolder.init(2).listen().complete(1, 2).verifyNoEmissions().complete(0).verifyCompletion();
     }
 
     @Test
-    public void testIterableFailFirstEvent() throws Exception {
+    public void testIterableFailFirstEvent() {
         iterableHolder.init(2).listen().fail(1).verifyNoEmissions().complete(0, 2).verifyFailure(DELIBERATE_EXCEPTION);
     }
 
@@ -95,7 +98,7 @@ public class IterableMergeCompletableDelayErrorTest {
     }
 
     @Test
-    public void testIterableMergeWithOne() throws Exception {
+    public void testIterableMergeWithOne() {
         iterableHolder.init(1).listen().completeAll().verifyCompletion();
     }
 }

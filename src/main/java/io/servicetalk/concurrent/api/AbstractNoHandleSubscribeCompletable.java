@@ -16,18 +16,24 @@
 package io.servicetalk.concurrent.api;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static java.util.Objects.requireNonNull;
 
-final class FailedCompletable extends AbstractSynchronousCompletable {
-    private final Throwable cause;
+/**
+ * A {@link Completable} that does not expect to receive a call to {@link #handleSubscribe(Subscriber)} since it
+ * overrides {@link #handleSubscribe(Subscriber, SignalOffloader)}.
+ */
+abstract class AbstractNoHandleSubscribeCompletable extends Completable {
 
-    FailedCompletable(Throwable cause) {
-        this.cause = requireNonNull(cause);
+    AbstractNoHandleSubscribeCompletable() {
+    }
+
+    AbstractNoHandleSubscribeCompletable(Executor executor) {
+        super(executor);
     }
 
     @Override
-    void doSubscribe(final Subscriber subscriber) {
+    protected final void handleSubscribe(Subscriber subscriber) {
         subscriber.onSubscribe(IGNORE_CANCEL);
-        subscriber.onError(cause);
+        subscriber.onError(new UnsupportedOperationException("Subscribe with no executor is not supported for "
+                + getClass()));
     }
 }

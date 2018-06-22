@@ -17,15 +17,15 @@ package io.servicetalk.concurrent.api;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 
-final class NeverCompletable extends Completable {
+final class NeverCompletable extends AbstractSynchronousCompletable {
     static final NeverCompletable INSTANCE = new NeverCompletable();
 
     private NeverCompletable() {
-        // singleton
+        // Singleton.
     }
 
     @Override
-    protected void handleSubscribe(Subscriber subscriber) {
+    void doSubscribe(final Subscriber subscriber) {
         subscriber.onSubscribe(IGNORE_CANCEL);
     }
 }

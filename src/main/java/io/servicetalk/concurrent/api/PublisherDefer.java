@@ -36,6 +36,9 @@ final class PublisherDefer<T> extends Publisher<T> {
 
     @Override
     protected void handleSubscribe(Subscriber<? super T> subscriber) {
+        // There are technically two sources, one this Publisher and the other returned by publisherFactory.
+        // Since, we are invoking user code (publisherFactory) we need this method to be run using an Executor
+        // and also use the configured Executor for subscribing to the Publisher returned from publisherFactory
         publisherFactory.get().subscribe(subscriber);
     }
 }

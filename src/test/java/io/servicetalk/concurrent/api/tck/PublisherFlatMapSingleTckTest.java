@@ -15,15 +15,15 @@
  */
 package io.servicetalk.concurrent.api.tck;
 
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
 import org.testng.annotations.Test;
 
 @Test
-public class SingleFlatmapTckTest extends AbstractSingleOperatorTckTest<String> {
-
+public class PublisherFlatMapSingleTckTest extends AbstractPublisherOperatorTckTest<Integer> {
     @Override
-    protected Single<String> composeSingle(Single<Integer> single) {
-        return single.flatMap(v -> Single.success(String.valueOf(v)));
+    protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
+        return publisher.flatMapSingle(Single::success, 10);
     }
 }

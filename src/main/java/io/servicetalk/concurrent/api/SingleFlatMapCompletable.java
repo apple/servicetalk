@@ -26,24 +26,19 @@ import static java.util.Objects.requireNonNull;
 /**
  * {@link Single} as returned by {@link Single#flatMapCompletable(Function)}.
  */
-final class SingleFlatmapCompletable<T> extends Completable {
+final class SingleFlatMapCompletable<T> extends AbstractNoHandleSubscribeCompletable {
     private final Single<T> first;
     private final Function<T, Completable> nextFactory;
 
-    /**
-     * New instance.
-     *
-     * @param first Source.
-     * @param nextFactory For creating the next {@link Completable}.
-     */
-    SingleFlatmapCompletable(Single<T> first, Function<T, Completable> nextFactory) {
+    SingleFlatMapCompletable(Single<T> first, Function<T, Completable> nextFactory, Executor executor) {
+        super(executor);
         this.first = requireNonNull(first);
         this.nextFactory = requireNonNull(nextFactory);
     }
 
     @Override
-    protected void handleSubscribe(Subscriber subscriber) {
-        first.subscribe(new SubscriberImpl<>(subscriber, nextFactory));
+    void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader) {
+        first.subscribe(new SubscriberImpl<>(subscriber, nextFactory), signalOffloader);
     }
 
     private static final class SubscriberImpl<T> implements Single.Subscriber<T>, Subscriber {

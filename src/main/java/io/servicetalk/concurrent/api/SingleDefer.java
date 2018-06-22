@@ -34,6 +34,9 @@ final class SingleDefer<T> extends Single<T> {
 
     @Override
     protected void handleSubscribe(Subscriber<? super T> subscriber) {
+        // There are technically two sources, one this Single and the other returned by singleFactory.
+        // Since, we are invoking user code (singleFactory) we need this method to be run using an Executor
+        // and also use the configured Executor for subscribing to the Single returned from singleFactory
         singleFactory.get().subscribe(subscriber);
     }
 }

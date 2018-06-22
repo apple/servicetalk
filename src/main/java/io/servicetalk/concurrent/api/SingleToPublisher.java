@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import javax.annotation.Nullable;
@@ -27,35 +28,37 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionFor
 
 /**
  * {@link Publisher} created from a {@link Single}.
- *
  * @param <T> Type of item emitted by the {@link Publisher}.
  */
-final class SingleToPublisher<T> extends Publisher<T> {
-    private final Single<T> parent;
+final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
+    private final Single<T> original;
 
     /**
      * New instance.
      *
-     * @param parent Source {@link Single}.
+     * @param original Source {@link Single}.
      */
-    SingleToPublisher(Single<T> parent) {
-        this.parent = parent;
+    SingleToPublisher(Single<T> original, Executor executor) {
+        super(executor);
+        this.original = original;
     }
 
     @Override
-    public void handleSubscribe(final org.reactivestreams.Subscriber<? super T> subscriber) {
-        subscriber.onSubscribe(new State<>(parent, subscriber));
+    void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
+        subscriber.onSubscribe(new State<>(original, subscriber, signalOffloader));
     }
 
     private static final class State<T> implements Subscription, Single.Subscriber<T> {
         private final SequentialCancellable sequentialCancellable;
-        private final org.reactivestreams.Subscriber<? super T> subscriber;
+        private final Subscriber<? super T> subscriber;
+        private final SignalOffloader signalOffloader;
         private final Single<T> parent;
         private boolean subscribedToParent;
 
-        private State(Single<T> parent, org.reactivestreams.Subscriber<? super T> subscriber) {
+        private State(Single<T> parent, Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
             this.parent = parent;
             this.subscriber = subscriber;
+            this.signalOffloader = signalOffloader;
             sequentialCancellable = new SequentialCancellable();
         }
 
@@ -85,7 +88,10 @@ final class SingleToPublisher<T> extends Publisher<T> {
             if (!subscribedToParent) {
                 subscribedToParent = true;
                 if (isRequestNValid(n)) {
-                    parent.subscribe(this);
+                    // Since this is converting a Single to a Publisher, we should try to use the same SignalOffloader
+                    // for subscribing to the original Single to avoid thread hop. Since, it is the same source, just
+                    // viewed as a Publisher, there is no additional risk of deadlock.
+                    parent.subscribe(this, signalOffloader);
                 } else {
                     subscriber.onError(newExceptionForInvalidRequestN(n));
                 }

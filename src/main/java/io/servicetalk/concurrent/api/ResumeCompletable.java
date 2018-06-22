@@ -26,36 +26,34 @@ import static java.util.Objects.requireNonNull;
 /**
  * {@link Completable} as returned by {@link Completable#onErrorResume(Function)}.
  */
-final class ResumeCompletable extends Completable {
-    private final Completable first;
+final class ResumeCompletable extends AbstractNoHandleSubscribeCompletable {
+    private final Completable original;
     private final Function<Throwable, Completable> nextFactory;
 
-    /**
-     * New instance.
-     *
-     * @param first Source.
-     * @param nextFactory For creating the next {@link Single}.
-     */
-    ResumeCompletable(Completable first, Function<Throwable, Completable> nextFactory) {
-        this.first = requireNonNull(first);
+    ResumeCompletable(Completable original, Function<Throwable, Completable> nextFactory, Executor executor) {
+        super(executor);
+        this.original = original;
         this.nextFactory = requireNonNull(nextFactory);
     }
 
     @Override
-    protected void handleSubscribe(Subscriber subscriber) {
-        first.subscribe(new SubscriberImpl(subscriber, nextFactory));
+    void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader) {
+        original.subscribe(new ResumeSubscriber(subscriber, nextFactory, signalOffloader), signalOffloader);
     }
 
-    private static final class SubscriberImpl implements Subscriber {
+    private static final class ResumeSubscriber implements Subscriber {
         private final Subscriber subscriber;
         @Nullable
         private volatile Function<Throwable, Completable> nextFactory;
+        private final SignalOffloader signalOffloader;
         @Nullable
         private volatile SequentialCancellable sequentialCancellable;
 
-        SubscriberImpl(Subscriber subscriber, Function<Throwable, Completable> nextFactory) {
+        ResumeSubscriber(Subscriber subscriber, Function<Throwable, Completable> nextFactory,
+                         final SignalOffloader signalOffloader) {
             this.subscriber = subscriber;
             this.nextFactory = nextFactory;
+            this.signalOffloader = signalOffloader;
         }
 
         @Override
@@ -92,7 +90,12 @@ final class ResumeCompletable extends Completable {
                 subscriber.onError(t);
                 return;
             }
-            next.subscribe(this);
+            // We are subscribing to a new Completable which will send signals to the original Subscriber. This means
+            // that the threading semantics may differ with respect to the original Subscriber when we emit signals from
+            // the new Completable. This is the reason we use the original offloader now to offload signals which
+            // originate from this new Completable.
+            final Subscriber offloadedSubscriber = signalOffloader.offloadSubscriber(this);
+            next.subscribe(offloadedSubscriber);
         }
     }
 }

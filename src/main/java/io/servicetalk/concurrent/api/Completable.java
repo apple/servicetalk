@@ -30,8 +30,10 @@ import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Executors.newOffloader;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -40,6 +42,24 @@ import static java.util.Objects.requireNonNull;
 public abstract class Completable implements io.servicetalk.concurrent.Completable {
     private static final AtomicReference<BiConsumer<? super Subscriber, Consumer<? super Subscriber>>> SUBSCRIBE_PLUGIN_REF = new AtomicReference<>();
     private static final Object CONVERSION_VALUE = new Object();
+
+    private final Executor executor;
+
+    /**
+     * New instance.
+     */
+    protected Completable() {
+        this(immediate());
+    }
+
+    /**
+     * New instance.
+     *
+     * @param executor {@link Executor} to use for this {@link Completable}.
+     */
+    Completable(final Executor executor) {
+        this.executor = requireNonNull(executor);
+    }
 
     /**
      * Add a plugin that will be invoked on each {@link #subscribe(Subscriber)} call. This can be used for visibility or to
@@ -54,23 +74,67 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
         );
     }
 
+    @Override
+    public final void subscribe(Subscriber subscriber) {
+        // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader
+        // to use.
+        final SignalOffloader signalOffloader = newOffloader(executor);
+        // Since this is a user-driven subscribe (end of the execution chain), offload Cancellable
+        subscribe(signalOffloader.offloadCancellable(subscriber), signalOffloader);
+    }
+
     /**
      * Handles a subscriber to this {@code Completable}.
      * <p>
-     * This method is invoked internally by {@link Completable} for every call to the {@link Completable#subscribe(Completable.Subscriber)} method.
+     * This method is invoked internally by {@link Completable} for every call to the
+     * {@link Completable#subscribe(Subscriber)} method.
+     *
      * @param subscriber the subscriber.
      */
     protected abstract void handleSubscribe(Subscriber subscriber);
 
-    @Override
-    public final void subscribe(Subscriber subscriber) {
+    /**
+     * A special subscribe mode that uses the passed {@link SignalOffloader} instead of creating a new
+     * {@link SignalOffloader} like {@link #subscribe(Subscriber)}. This will call
+     * {@link #handleSubscribe(Subscriber, SignalOffloader)} to handle this subscribe instead of
+     * {@link #handleSubscribe(Subscriber)}.<p>
+     *
+     *     This method is used by operator implementations to inherit a chosen {@link SignalOffloader} per
+     *     {@link Subscriber} where possible.
+     *     This method does not wrap the passed {@link Subscriber} or {@link Cancellable} to offload processing to
+     *     {@link SignalOffloader}.
+     *     That is done by {@link #handleSubscribe(Subscriber, SignalOffloader)} and hence can be overridden by
+     *     operators that do not require this wrapping.
+     *
+     * @param subscriber {@link Subscriber} to this {@link Completable}.
+     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
+     */
+    final void subscribe(Subscriber subscriber, SignalOffloader signalOffloader) {
         requireNonNull(subscriber);
         BiConsumer<? super Subscriber, Consumer<? super Subscriber>> plugin = SUBSCRIBE_PLUGIN_REF.get();
         if (plugin != null) {
-            plugin.accept(subscriber, this::handleSubscribe);
+            plugin.accept(subscriber, sub -> handleSubscribe(sub, signalOffloader));
         } else {
-            handleSubscribe(subscriber);
+            handleSubscribe(subscriber, signalOffloader);
         }
+    }
+
+    /**
+     * Override for {@link #handleSubscribe(Subscriber)} to offload the {@link #handleSubscribe(Subscriber)} call to the
+     * passed {@link SignalOffloader}. <p>
+     *
+     *     This method wraps the passed {@link Subscriber} using {@link SignalOffloader#offloadSubscriber(Subscriber)}
+     *     and then calls {@link #handleSubscribe(Subscriber)} using
+     *     {@link SignalOffloader#offloadSignal(Object, Consumer)}.
+     *     Operators that do not wish to wrap the passed {@link Subscriber} can override this method and omit the
+     *     wrapping.
+     *
+     * @param subscriber the subscriber.
+     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
+     */
+    void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader) {
+        Subscriber safeSubscriber = signalOffloader.offloadSubscriber(subscriber);
+        signalOffloader.offloadSignal(safeSubscriber, this::handleSubscribe);
     }
 
     /**
@@ -93,7 +157,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @return {@link Completable} that terminates successfully when this and all {@code other} {@link Completable}s complete or terminates with an error when any one terminates with an error.
      */
     public final Completable merge(Completable... other) {
-        return new MergeCompletable(false, this, other);
+        return new MergeCompletable(false, this, executor, other);
     }
 
     /**
@@ -104,7 +168,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @return {@link Completable} that terminates successfully when this and all {@code other} {@link Completable}s complete or terminates with an error when any one terminates with an error.
      */
     public final Completable merge(Iterable<? extends Completable> other) {
-        return new IterableMergeCompletable(false, this, other);
+        return new IterableMergeCompletable(false, this, other, executor);
     }
 
     /**
@@ -125,7 +189,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
      */
     public final <T> Publisher<T> merge(Publisher<T> mergeWith) {
-        return new CompletableMergeWithPublisher<>(this, mergeWith);
+        return new CompletableMergeWithPublisher<>(this, mergeWith, executor);
     }
 
     /**
@@ -138,7 +202,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * terminates in an error, then the return value will also terminate in an error.
      */
     public final Completable mergeDelayError(Completable... other) {
-        return new MergeCompletable(true, this, other);
+        return new MergeCompletable(true, this, executor, other);
     }
 
     /**
@@ -151,7 +215,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * terminates in an error, then the return value will also terminate in an error.
      */
     public final Completable mergeDelayError(Iterable<? extends Completable> other) {
-        return new IterableMergeCompletable(true, this, other);
+        return new IterableMergeCompletable(true, this, other, executor);
     }
 
     /**
@@ -161,20 +225,19 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @param <T> The value type of the resulting {@link Publisher}.
      * @return A {@link Publisher} that mirrors the terminal signal from this {@link Completable}.
      */
-    public final <T> Publisher<T> toPublisher(T value) {
-        requireNonNull(value);
+    public final <T> Publisher<T> toPublisher(@Nullable T value) {
         return toPublisher(() -> value);
     }
 
     /**
      * Converts this {@code Completable} to a {@link Publisher}.
-     * @param valueSupplier A {@link Supplier} that produces the value to deliver to {@link org.reactivestreams.Subscriber#onNext(Object)}
-     *                      when this {@link Completable} completes. {@code null} return values are not allowed.
+     * @param valueSupplier A {@link Supplier} that produces the value to deliver to
+     * {@link org.reactivestreams.Subscriber#onNext(Object)} when this {@link Completable} completes.
      * @param <T> The value type of the resulting {@link Publisher}.
      * @return A {@link Publisher} that mirrors the terminal signal from this {@link Completable}.
      */
     public final <T> Publisher<T> toPublisher(Supplier<T> valueSupplier) {
-        return new CompletableToPublisher<>(this, valueSupplier);
+        return new CompletableToPublisher<>(this, valueSupplier, executor);
     }
 
     /**
@@ -193,8 +256,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Completable timeout(long duration, TimeUnit unit) {
-        // TODO(scott): we should be using the Executor associate with this Completable instead of immediate()!
-        return timeout(duration, unit, immediate());
+        return timeout(duration, unit, executor);
     }
 
     /**
@@ -232,8 +294,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
     public final Completable timeout(Duration duration) {
-        // TODO(scott): we should be using the Executor associate with this Completable instead of immediate()!
-        return timeout(duration, immediate());
+        return timeout(duration, executor);
     }
 
     /**
@@ -264,7 +325,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @return A {@link Completable} that emits the terminal signal of {@code next} {@link Completable}, after this {@link Completable} has terminated successfully.
      */
     public final Completable andThen(Completable next) {
-        return new CompletableAndThenCompletable(this, next);
+        return new CompletableAndThenCompletable(this, next, executor);
     }
 
     /**
@@ -277,7 +338,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @return A {@link Single} that emits the result of {@code next} {@link Single}, after this {@link Completable} has terminated successfully.
      */
     public final <T> Single<T> andThen(Single<T> next) {
-        return new CompletableAndThenSingle<>(this, next);
+        return new CompletableAndThenSingle<>(this, next, executor);
     }
 
     /**
@@ -323,7 +384,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @return A {@link Single} that mirrors the terminal signal from this {@link Completable}.
      */
     public final <T> Single<T> toSingle(Supplier<T> valueSupplier) {
-        return new CompletableToSingle<>(this, valueSupplier);
+        return new CompletableToSingle<>(this, valueSupplier, executor);
     }
 
     /**
@@ -414,7 +475,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @return The new {@link Completable}.
      */
     public final Completable doBeforeCancel(Runnable onCancel) {
-        return new DoCancellableCompletable(this, onCancel::run, true);
+        return new DoCancellableCompletable(this, onCancel::run, true, executor);
     }
 
     /**
@@ -448,7 +509,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @return The new {@link Completable}.
      */
     public final Completable doBeforeSubscriber(Supplier<Subscriber> subscriberSupplier) {
-        return new DoBeforeSubscriberCompletable(this, subscriberSupplier);
+        return new DoBeforeSubscriberCompletable(this, subscriberSupplier, executor);
     }
 
     /**
@@ -539,7 +600,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @return The new {@link Completable}.
      */
     public final Completable doAfterCancel(Runnable onCancel) {
-        return new DoCancellableCompletable(this, onCancel::run, false);
+        return new DoCancellableCompletable(this, onCancel::run, false, executor);
     }
 
     /**
@@ -561,7 +622,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @return The new {@link Completable}.
      */
     public final Completable doAfterFinally(Runnable doFinally) {
-        return new DoAfterFinallyCompletable(this, doFinally);
+        return new DoAfterFinallyCompletable(this, doFinally, executor);
     }
 
     /**
@@ -573,7 +634,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @return The new {@link Completable}.
      */
     public final Completable doAfterSubscriber(Supplier<Subscriber> subscriberSupplier) {
-        return new DoAfterSubscriberCompletable(this, subscriberSupplier);
+        return new DoAfterSubscriberCompletable(this, subscriberSupplier, executor);
     }
 
     /**
@@ -583,7 +644,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @return The new {@link Completable}.
      */
     public final Completable onErrorResume(Function<Throwable, Completable> nextFactory) {
-        return new ResumeCompletable(this, nextFactory);
+        return new ResumeCompletable(this, nextFactory, executor);
     }
 
     /**
@@ -629,12 +690,13 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     }
 
     /**
-     * Re-subscribes to this {@link Single} when it completes and the {@link Completable} returned by the supplied {@link IntFunction} completes successfully.
-     * If the returned {@link Completable} emits an error, the returned {@link Single} emits an error.
+     * Re-subscribes to this {@link Completable} when it completes and the {@link Completable} returned by the supplied
+     * {@link IntFunction} completes successfully.
+     * If the returned {@link Completable} emits an error, the returned {@link Completable} emits an error.
      *
      * @param repeatWhen {@link IntFunction} that given the repeat count returns a {@link Completable}.
-     * If this {@link Completable} emits an error repeat is terminated, otherwise, original {@link Single} is re-subscribed
-     * when this {@link Completable} completes.
+     * If this {@link Completable} emits an error repeat is terminated, otherwise, original {@link Completable} is
+     * re-subscribed when this {@link Completable} completes.
      *
      * @return A {@link Completable} that completes after all re-subscriptions completes.
      *

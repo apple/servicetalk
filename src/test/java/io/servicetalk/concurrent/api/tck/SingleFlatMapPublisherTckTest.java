@@ -21,9 +21,10 @@ import io.servicetalk.concurrent.api.Single;
 import org.testng.annotations.Test;
 
 @Test
-public class PublisherFlatmapSingleDelayErrorTckTest extends AbstractPublisherOperatorTckTest<Integer> {
+public class SingleFlatMapPublisherTckTest extends AbstractSingleTckTest<Integer> {
+
     @Override
-    protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
-        return publisher.flatMapSingleDelayError(Single::success, 10);
+    public Publisher<Integer> createPublisher(long elements) {
+        return Single.success(1).flatMapPublisher(Publisher::from);
     }
 }

@@ -28,30 +28,35 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <T> Type of items emitted by this {@link Publisher}.
  */
-final class ResumePublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
+final class ResumePublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
+    private final Publisher<T> original;
     private final Function<Throwable, Publisher<T>> nextFactory;
 
-    ResumePublisher(Publisher<T> first, Function<Throwable, Publisher<T>> nextFactory, Executor executor) {
-        super(first, executor);
+    ResumePublisher(Publisher<T> original, Function<Throwable, Publisher<T>> nextFactory, Executor executor) {
+        super(executor);
+        this.original = original;
         this.nextFactory = requireNonNull(nextFactory);
     }
 
     @Override
-    public Subscriber<? super T> apply(Subscriber<? super T> subscriber) {
-        return new ResumeSubscriber<>(subscriber, nextFactory);
+    void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
+        original.subscribe(new ResumeSubscriber<>(subscriber, nextFactory, signalOffloader), signalOffloader);
     }
 
     private static final class ResumeSubscriber<T> implements Subscriber<T> {
         private final Subscriber<? super T> subscriber;
         @Nullable
         private volatile Function<Throwable, Publisher<T>> nextFactory;
+        private final SignalOffloader signalOffloader;
         @Nullable
         private volatile SequentialSubscription sequentialSubscription;
 
-        ResumeSubscriber(Subscriber<? super T> subscriber, Function<Throwable, Publisher<T>> nextFactory) {
+        ResumeSubscriber(Subscriber<? super T> subscriber, Function<Throwable, Publisher<T>> nextFactory,
+                         final SignalOffloader signalOffloader) {
             this.subscriber = subscriber;
             this.nextFactory = nextFactory;
+            this.signalOffloader = signalOffloader;
         }
 
         @Override
@@ -91,7 +96,13 @@ final class ResumePublisher<T> extends AbstractSynchronousPublisherOperator<T, T
                 subscriber.onError(throwable);
                 return;
             }
-            next.subscribe(this);
+
+            // We are subscribing to a new Publisher which will send signals to the original Subscriber. This means
+            // that the threading semantics may differ with respect to the original Subscriber when we emit signals from
+            // the new Publisher. This is the reason we use the original offloader now to offload signals which
+            // originate from this new Publisher.
+            final Subscriber<? super T> offloadedSubscriber = signalOffloader.offloadSubscriber(this);
+            next.subscribe(offloadedSubscriber);
         }
 
         @Override

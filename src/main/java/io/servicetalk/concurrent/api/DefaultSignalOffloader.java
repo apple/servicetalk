@@ -81,7 +81,7 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
     }
 
     DefaultSignalOffloader(Executor executor, int expectedOffloadingEntities, int publisherSignalQueueInitialCapacity) {
-        this.executor = executor;
+        this.executor = requireNonNull(executor);
         this.publisherSignalQueueInitialCapacity = publisherSignalQueueInitialCapacity;
         offloadedEntities = new OffloadedEntity[expectedOffloadingEntities];
     }

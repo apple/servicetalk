@@ -26,7 +26,7 @@ import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEP
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
 
-public final class SingleFlatmapSingleTest {
+public final class SingleFlatMapSingleTest {
 
     @Rule
     public final MockedSingleListenerRule<String> listener = new MockedSingleListenerRule<>();
@@ -34,44 +34,44 @@ public final class SingleFlatmapSingleTest {
     private TestSingle<String> second;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         first = new TestSingle<>();
         second = new TestSingle<>();
     }
 
     @Test
-    public void testFirstAndSecondPropagate() throws Exception {
+    public void testFirstAndSecondPropagate() {
         listener.listen(success(1).flatMap(s -> success("Hello" + s)));
         listener.verifySuccess("Hello1");
     }
 
     @Test
-    public void testSuccess() throws Exception {
+    public void testSuccess() {
         listener.listen(success(1).flatMap(s -> success("Hello")));
         listener.verifySuccess("Hello");
     }
 
     @Test
-    public void testFirstEmitsError() throws Exception {
+    public void testFirstEmitsError() {
         listener.listen(error(DELIBERATE_EXCEPTION).flatMap(s -> success("Hello")));
         listener.verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
-    public void testSecondEmitsError() throws Exception {
+    public void testSecondEmitsError() {
         listener.listen(success(1).flatMap(s -> error(DELIBERATE_EXCEPTION)));
         listener.verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
-    public void testCancelBeforeFirst() throws Exception {
+    public void testCancelBeforeFirst() {
         listener.listen(first.flatMap(s -> second));
         listener.cancel();
         first.verifyCancelled();
     }
 
     @Test
-    public void testCancelBeforeSecond() throws Exception {
+    public void testCancelBeforeSecond() {
         listener.listen(first.flatMap(s -> second));
         first.onSuccess("Hello");
         listener.cancel();

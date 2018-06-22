@@ -19,7 +19,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 
-final class SucceededSingle<T> extends Single<T> {
+final class SucceededSingle<T> extends AbstractSynchronousSingle<T> {
     @Nullable
     private final T value;
 
@@ -28,7 +28,7 @@ final class SucceededSingle<T> extends Single<T> {
     }
 
     @Override
-    protected void handleSubscribe(Single.Subscriber<? super T> subscriber) {
+    void doSubscribe(final Subscriber<? super T> subscriber) {
         subscriber.onSubscribe(IGNORE_CANCEL);
         subscriber.onSuccess(value);
     }

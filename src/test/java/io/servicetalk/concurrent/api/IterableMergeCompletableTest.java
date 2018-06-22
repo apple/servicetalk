@@ -18,16 +18,17 @@ package io.servicetalk.concurrent.api;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Arrays;
-
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.api.Executors.immediate;
+import static java.util.Arrays.asList;
 
 public class IterableMergeCompletableTest {
     @Rule
     public final MergeCompletableTest.CompletableHolder collectionHolder = new MergeCompletableTest.CompletableHolder() {
         @Override
         protected Completable createCompletable(Completable[] completables) {
-            return new IterableMergeCompletable(false, completables[0], Arrays.asList(completables).subList(1, completables.length));
+            return new IterableMergeCompletable(false, completables[0],
+                    asList(completables).subList(1, completables.length), immediate());
         }
     };
 
@@ -35,47 +36,48 @@ public class IterableMergeCompletableTest {
     public final MergeCompletableTest.CompletableHolder iterableHolder = new MergeCompletableTest.CompletableHolder() {
         @Override
         protected Completable createCompletable(Completable[] completables) {
-            return new IterableMergeCompletable(false, completables[0], () -> Arrays.asList(completables).subList(1, completables.length).iterator());
+            return new IterableMergeCompletable(false, completables[0],
+                    () -> asList(completables).subList(1, completables.length).iterator(), immediate());
         }
     };
 
     @Test
-    public void testCollectionCompletion() throws Exception {
+    public void testCollectionCompletion() {
         collectionHolder.init(2).listen().completeAll().verifyCompletion();
     }
 
     @Test
-    public void testCollectionCompletionFew() throws Exception {
+    public void testCollectionCompletionFew() {
         collectionHolder.init(2).listen().complete(1, 2).verifyNoEmissions().complete(0).verifyCompletion();
     }
 
     @Test
-    public void testCollectionFail() throws Exception {
+    public void testCollectionFail() {
         collectionHolder.init(2).listen().fail(1).verifyFailure(DELIBERATE_EXCEPTION).verifyCancelled(0, 2);
     }
 
     @Test
-    public void testCollectionMergeWithOne() throws Exception {
+    public void testCollectionMergeWithOne() {
         collectionHolder.init(1).listen().completeAll().verifyCompletion();
     }
 
     @Test
-    public void testIterableCompletion() throws Exception {
+    public void testIterableCompletion() {
         iterableHolder.init(2).listen().completeAll().verifyCompletion();
     }
 
     @Test
-    public void testIterableCompletionFew() throws Exception {
+    public void testIterableCompletionFew() {
         iterableHolder.init(2).listen().complete(1, 2).verifyNoEmissions().complete(0).verifyCompletion();
     }
 
     @Test
-    public void testIterableFail() throws Exception {
+    public void testIterableFail() {
         iterableHolder.init(2).listen().fail(1).verifyFailure(DELIBERATE_EXCEPTION).verifyCancelled(0, 2);
     }
 
     @Test
-    public void testIterableMergeWithOne() throws Exception {
+    public void testIterableMergeWithOne() {
         iterableHolder.init(1).listen().completeAll().verifyCompletion();
     }
 }

@@ -59,10 +59,18 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
 
     private final Executor executor;
 
+    /**
+     * New instance.
+     */
     protected Publisher() {
         this(immediate());
     }
 
+    /**
+     * New instance.
+     *
+     * @param executor {@link Executor} to use for this {@link Publisher}.
+     */
     Publisher(Executor executor) {
         this.executor = requireNonNull(executor);
     }
@@ -383,7 +391,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see #flatMapSingle(Function, int)
      */
     public final <R> Publisher<R> flatMapSingle(Function<T, Single<R>> mapper) {
-        return new PublisherFlatmapSingle<>(this, mapper, false, executor);
+        return new PublisherFlatMapSingle<>(this, mapper, false, executor);
     }
 
     /**
@@ -400,7 +408,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      */
     public final <R> Publisher<R> flatMapSingle(Function<T, Single<R>> mapper, int maxConcurrency) {
-        return new PublisherFlatmapSingle<>(this, mapper, maxConcurrency, false, executor);
+        return new PublisherFlatMapSingle<>(this, mapper, maxConcurrency, false, executor);
     }
 
     /**
@@ -422,7 +430,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see #flatMapSingleDelayError(Function, int)
      */
     public final <R> Publisher<R> flatMapSingleDelayError(Function<T, Single<R>> mapper) {
-        return new PublisherFlatmapSingle<>(this, mapper, true, executor);
+        return new PublisherFlatMapSingle<>(this, mapper, true, executor);
     }
 
     /**
@@ -442,7 +450,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
      */
     public final <R> Publisher<R> flatMapSingleDelayError(Function<T, Single<R>> mapper, int maxConcurrency) {
-        return new PublisherFlatmapSingle<>(this, mapper, maxConcurrency, true, executor);
+        return new PublisherFlatMapSingle<>(this, mapper, maxConcurrency, true, executor);
     }
 
     /**

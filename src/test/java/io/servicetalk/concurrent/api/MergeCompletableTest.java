@@ -19,17 +19,14 @@ import io.servicetalk.concurrent.Cancellable;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.stubbing.Answer;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static java.util.Arrays.copyOfRange;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -39,7 +36,8 @@ public class MergeCompletableTest {
     public final CompletableHolder holder = new CompletableHolder() {
         @Override
         protected Completable createCompletable(Completable[] completables) {
-            return new MergeCompletable(false, completables[0], copyOfRange(completables, 1, completables.length));
+            return new MergeCompletable(false, completables[0], immediate(),
+                    copyOfRange(completables, 1, completables.length));
         }
     };
 
@@ -82,13 +80,15 @@ public class MergeCompletableTest {
             cancellables = new Cancellable[count + 1];
             subscribers = new Completable.Subscriber[count + 1];
             for (int i = 0; i < cancellables.length; i++) {
-                completables[i] = mock(Completable.class);
                 cancellables[i] = mock(Cancellable.class);
                 final int finalI = i;
-                doAnswer((Answer<Void>) invocation -> {
-                    invocation.<Completable.Subscriber>getArgument(0).onSubscribe(cancellables[finalI]);
-                    return null;
-                }).when(completables[i]).handleSubscribe(any());
+                completables[i] = new Completable() {
+                    @Override
+                    protected void handleSubscribe(final Subscriber subscriber) {
+                        subscribers[finalI] = subscriber;
+                        subscriber.onSubscribe(cancellables[finalI]);
+                    }
+                };
             }
             mergeCompletable = createCompletable(completables);
             return this;
@@ -96,12 +96,6 @@ public class MergeCompletableTest {
 
         CompletableHolder listen() {
             super.listen(mergeCompletable);
-            for (int i = 0; i < completables.length; i++) {
-                Completable completable = completables[i];
-                ArgumentCaptor<Completable.Subscriber> captor = ArgumentCaptor.forClass(Completable.Subscriber.class);
-                verify(completable).handleSubscribe(captor.capture());
-                subscribers[i] = captor.getValue();
-            }
             return this;
         }
 

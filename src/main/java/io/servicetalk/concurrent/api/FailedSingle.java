@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static java.util.Objects.requireNonNull;
 
-final class FailedSingle<T> extends Single<T> {
+final class FailedSingle<T> extends AbstractSynchronousSingle<T> {
     private final Throwable cause;
 
     FailedSingle(Throwable cause) {
@@ -26,7 +26,7 @@ final class FailedSingle<T> extends Single<T> {
     }
 
     @Override
-    public void handleSubscribe(Subscriber<? super T> subscriber) {
+    void doSubscribe(final Subscriber<? super T> subscriber) {
         subscriber.onSubscribe(IGNORE_CANCEL);
         subscriber.onError(cause);
     }

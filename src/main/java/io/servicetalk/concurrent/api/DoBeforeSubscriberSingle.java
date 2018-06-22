@@ -21,18 +21,18 @@ import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 
-final class DoBeforeSubscriberSingle<T> extends Single<T> {
-    private final Single<T> original;
+final class DoBeforeSubscriberSingle<T> extends AbstractSynchronousSingleOperator<T, T> {
     private final Supplier<Subscriber<? super T>> subscriberSupplier;
 
-    DoBeforeSubscriberSingle(Single<T> original, Supplier<Subscriber<? super T>> subscriberSupplier) {
-        this.original = requireNonNull(original);
+    DoBeforeSubscriberSingle(Single<T> original, Supplier<Subscriber<? super T>> subscriberSupplier,
+                             Executor executor) {
+        super(original, executor);
         this.subscriberSupplier = requireNonNull(subscriberSupplier);
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber) {
-        original.subscribe(new DoBeforeSubscriberSingleSubscriber<>(subscriber, subscriberSupplier.get()));
+    public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
+        return new DoBeforeSubscriberSingleSubscriber<>(subscriber, subscriberSupplier.get());
     }
 
     private static final class DoBeforeSubscriberSingleSubscriber<T> implements Subscriber<T> {

@@ -51,19 +51,19 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
  * @param <R> Type of items emitted by this {@link Publisher}
  * @param <T> Type of items emitted by source {@link Publisher}
  */
-final class PublisherFlatmapSingle<T, R> extends AbstractAsynchronousPublisherOperator<T, R> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(PublisherFlatmapSingle.class);
+final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOperator<T, R> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PublisherFlatMapSingle.class);
 
     private final Function<T, Single<R>> mapper;
     private final int maxConcurrency;
     private final boolean delayError;
 
-    PublisherFlatmapSingle(Publisher<T> original, Function<T, Single<R>> mapper, boolean delayError,
+    PublisherFlatMapSingle(Publisher<T> original, Function<T, Single<R>> mapper, boolean delayError,
                            Executor executor) {
         this(original, mapper, 16, delayError, executor);
     }
 
-    PublisherFlatmapSingle(Publisher<T> original, Function<T, Single<R>> mapper, int maxConcurrency, boolean delayError,
+    PublisherFlatMapSingle(Publisher<T> original, Function<T, Single<R>> mapper, int maxConcurrency, boolean delayError,
                            Executor executor) {
         super(original, executor);
         this.mapper = requireNonNull(mapper);
@@ -76,24 +76,24 @@ final class PublisherFlatmapSingle<T, R> extends AbstractAsynchronousPublisherOp
 
     @Override
     public Subscriber<? super T> apply(Subscriber<? super R> subscriber) {
-        return new FlatmapSubscriber<>(this, subscriber);
+        return new FlatMapSubscriber<>(this, subscriber);
     }
 
-    private static final class FlatmapSubscriber<T, R> implements org.reactivestreams.Subscriber<T>, Subscription {
-        private static final AtomicReferenceFieldUpdater<FlatmapSubscriber, CompositeException> delayedErrorUpdater =
-                newUpdater(FlatmapSubscriber.class, CompositeException.class, "delayedError");
-        private static final AtomicIntegerFieldUpdater<FlatmapSubscriber> emittingUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(FlatmapSubscriber.class, "emitting");
-        private static final AtomicLongFieldUpdater<FlatmapSubscriber> requestedUpdater =
-                AtomicLongFieldUpdater.newUpdater(FlatmapSubscriber.class, "requested");
-        private static final AtomicLongFieldUpdater<FlatmapSubscriber> sourceRequestedUpdater =
-                AtomicLongFieldUpdater.newUpdater(FlatmapSubscriber.class, "sourceRequested");
-        private static final AtomicLongFieldUpdater<FlatmapSubscriber> sourceEmittedUpdater =
-                AtomicLongFieldUpdater.newUpdater(FlatmapSubscriber.class, "sourceEmitted");
-        private static final AtomicIntegerFieldUpdater<FlatmapSubscriber> activeUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(FlatmapSubscriber.class, "active");
-        private static final AtomicReferenceFieldUpdater<FlatmapSubscriber, TerminalNotification> terminalNotificationUpdater =
-                newUpdater(FlatmapSubscriber.class, TerminalNotification.class, "terminalNotification");
+    private static final class FlatMapSubscriber<T, R> implements org.reactivestreams.Subscriber<T>, Subscription {
+        private static final AtomicReferenceFieldUpdater<FlatMapSubscriber, CompositeException> delayedErrorUpdater =
+                newUpdater(FlatMapSubscriber.class, CompositeException.class, "delayedError");
+        private static final AtomicIntegerFieldUpdater<FlatMapSubscriber> emittingUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(FlatMapSubscriber.class, "emitting");
+        private static final AtomicLongFieldUpdater<FlatMapSubscriber> requestedUpdater =
+                AtomicLongFieldUpdater.newUpdater(FlatMapSubscriber.class, "requested");
+        private static final AtomicLongFieldUpdater<FlatMapSubscriber> sourceRequestedUpdater =
+                AtomicLongFieldUpdater.newUpdater(FlatMapSubscriber.class, "sourceRequested");
+        private static final AtomicLongFieldUpdater<FlatMapSubscriber> sourceEmittedUpdater =
+                AtomicLongFieldUpdater.newUpdater(FlatMapSubscriber.class, "sourceEmitted");
+        private static final AtomicIntegerFieldUpdater<FlatMapSubscriber> activeUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(FlatMapSubscriber.class, "active");
+        private static final AtomicReferenceFieldUpdater<FlatMapSubscriber, TerminalNotification> terminalNotificationUpdater =
+                newUpdater(FlatMapSubscriber.class, TerminalNotification.class, "terminalNotification");
 
         @SuppressWarnings("unused")
         @Nullable
@@ -122,7 +122,7 @@ final class PublisherFlatmapSingle<T, R> extends AbstractAsynchronousPublisherOp
 
         private final Queue<Object> pending;
         private final DynamicCompositeCancellable cancellable = new MapDynamicCompositeCancellable();
-        private final PublisherFlatmapSingle<T, R> source;
+        private final PublisherFlatMapSingle<T, R> source;
         private final org.reactivestreams.Subscriber<? super R> target;
 
         /*
@@ -130,7 +130,7 @@ final class PublisherFlatmapSingle<T, R> extends AbstractAsynchronousPublisherOp
          */
         private static final Object SINGLE_ERROR = new Object();
 
-        FlatmapSubscriber(PublisherFlatmapSingle<T, R> source, org.reactivestreams.Subscriber<? super R> target) {
+        FlatMapSubscriber(PublisherFlatMapSingle<T, R> source, org.reactivestreams.Subscriber<? super R> target) {
             this.source = source;
             this.target = target;
             // Start with a small capacity as maxConcurrency can be large.
@@ -165,7 +165,7 @@ final class PublisherFlatmapSingle<T, R> extends AbstractAsynchronousPublisherOp
             if (!checkDuplicateSubscription(subscription, s)) {
                 return;
             }
-            // We assume that FlatmapSubscriber#cancel() will never be called before this method, and therefore we
+            // We assume that FlatMapSubscriber#cancel() will never be called before this method, and therefore we
             // don't have to worry about being cancelled before the onSubscribe method is called.
             subscription = ConcurrentSubscription.wrap(s);
             target.onSubscribe(this);
@@ -324,11 +324,11 @@ final class PublisherFlatmapSingle<T, R> extends AbstractAsynchronousPublisherOp
                 if (allDone || !source.delayError) {
                     onError0(t, true, true);
                 } else {
-                    CompositeException de = FlatmapSubscriber.this.delayedError;
+                    CompositeException de = FlatMapSubscriber.this.delayedError;
                     if (de == null) {
                         de = new CompositeException(t);
-                        if (!delayedErrorUpdater.compareAndSet(FlatmapSubscriber.this, null, de)) {
-                            de = FlatmapSubscriber.this.delayedError;
+                        if (!delayedErrorUpdater.compareAndSet(FlatMapSubscriber.this, null, de)) {
+                            de = FlatMapSubscriber.this.delayedError;
                             assert de != null;
                             de.add(t);
                         }
@@ -343,7 +343,7 @@ final class PublisherFlatmapSingle<T, R> extends AbstractAsynchronousPublisherOp
                 assert singleCancellable != null;
                 cancellable.remove(singleCancellable);
                 // The ordering of events is important here. If this changes then onComplete must also change otherwise there is a race condition.
-                return activeUpdater.decrementAndGet(FlatmapSubscriber.this) == 0 && terminalNotification != null;
+                return activeUpdater.decrementAndGet(FlatMapSubscriber.this) == 0 && terminalNotification != null;
             }
         }
     }

@@ -26,24 +26,17 @@ import static java.util.Objects.requireNonNull;
 /**
  * {@link Single} as returned by {@link Single#flatMap(Function)}.
  */
-final class SingleFlatmapSingle<T, R> extends Single<R> {
-    private final Single<T> first;
+final class SingleFlatMapSingle<T, R> extends AbstractAsynchronousSingleOperator<T, R> {
     private final Function<T, Single<R>> nextFactory;
 
-    /**
-     * New instance.
-     *
-     * @param first Source.
-     * @param nextFactory For creating the next {@link Single}.
-     */
-    SingleFlatmapSingle(Single<T> first, Function<T, Single<R>> nextFactory) {
-        this.first = requireNonNull(first);
+    SingleFlatMapSingle(Single<T> first, Function<T, Single<R>> nextFactory, Executor executor) {
+        super(first, executor);
         this.nextFactory = requireNonNull(nextFactory);
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super R> subscriber) {
-        first.subscribe(new SubscriberImpl<>(subscriber, nextFactory));
+    public Subscriber<? super T> apply(final Subscriber<? super R> subscriber) {
+        return new SubscriberImpl<>(subscriber, nextFactory);
     }
 
     private static final class SubscriberImpl<T, R> implements Subscriber<T> {

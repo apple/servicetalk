@@ -18,9 +18,6 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import javax.annotation.Nullable;
 
 /**
@@ -28,22 +25,19 @@ import javax.annotation.Nullable;
  *
  * @param <T> Type of result of this {@link Single}.
  */
-final class RetrySingle<T> extends Single<T> {
+final class RetrySingle<T> extends AbstractRedoSingleOperator<T> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(RetrySingle.class);
-
-    private final Single<T> original;
     private final BiIntPredicate<Throwable> shouldRetry;
 
-    RetrySingle(Single<T> original, BiIntPredicate<Throwable> shouldRetry) {
-        this.original = original;
+    RetrySingle(Single<T> original, BiIntPredicate<Throwable> shouldRetry, Executor executor) {
+        super(original, executor);
         this.shouldRetry = shouldRetry;
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber) {
-        SequentialCancellable cancellable = new SequentialCancellable();
-        original.subscribe(new RetrySubscriber<>(cancellable, this, subscriber, 0));
+    Subscriber<? super T> redo(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
+        return new RetrySubscriber<>(new SequentialCancellable(), this, subscriber, 0,
+                signalOffloader);
     }
 
     abstract static class AbstractRetrySubscriber<T> implements Subscriber<T> {
@@ -52,7 +46,8 @@ final class RetrySingle<T> extends Single<T> {
         final Subscriber<? super T> target;
         final int retryCount;
 
-        AbstractRetrySubscriber(SequentialCancellable sequentialCancellable, Subscriber<? super T> target, int retryCount) {
+        AbstractRetrySubscriber(SequentialCancellable sequentialCancellable, Subscriber<? super T> target,
+                                int retryCount) {
             this.sequentialCancellable = sequentialCancellable;
             this.target = target;
             this.retryCount = retryCount;
@@ -75,11 +70,13 @@ final class RetrySingle<T> extends Single<T> {
     private static final class RetrySubscriber<T> extends AbstractRetrySubscriber<T> {
 
         private final RetrySingle<T> retrySingle;
+        private final SignalOffloader signalOffloader;
 
-        RetrySubscriber(SequentialCancellable sequentialCancellable, RetrySingle<T> retrySingle, Subscriber<? super T> target,
-                        int retryCount) {
+        RetrySubscriber(SequentialCancellable sequentialCancellable, RetrySingle<T> retrySingle,
+                        Subscriber<? super T> target, int retryCount, final SignalOffloader signalOffloader) {
             super(sequentialCancellable, target, retryCount);
             this.retrySingle = retrySingle;
+            this.signalOffloader = signalOffloader;
         }
 
         @Override
@@ -98,7 +95,8 @@ final class RetrySingle<T> extends Single<T> {
                 return;
             }
             if (shouldRetry) {
-                retrySingle.original.subscribe(new RetrySubscriber<>(sequentialCancellable, retrySingle, target, retryCount + 1));
+                retrySingle.subscribeToOriginal(new RetrySubscriber<>(sequentialCancellable, retrySingle, target,
+                        retryCount + 1, signalOffloader), signalOffloader);
             } else {
                 target.onError(t);
             }

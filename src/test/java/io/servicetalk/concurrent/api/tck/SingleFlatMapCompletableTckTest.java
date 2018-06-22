@@ -15,16 +15,21 @@
  */
 package io.servicetalk.concurrent.api.tck;
 
-import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
 import org.testng.annotations.Test;
 
 @Test
-public class SingleFlatmapPublisherTckTest extends AbstractSingleTckTest<Integer> {
+public class SingleFlatMapCompletableTckTest extends AbstractSingleOperatorTckTest<Object> {
 
     @Override
-    public Publisher<Integer> createPublisher(long elements) {
-        return Single.success(1).flatMapPublisher(Publisher::from);
+    protected Single<Object> composeSingle(Single<Integer> single) {
+        return single.flatMapCompletable(v -> Completable.completed()).toSingle(Object::new);
+    }
+
+    @Override
+    public long maxElementsFromPublisher() {
+        return 0;
     }
 }

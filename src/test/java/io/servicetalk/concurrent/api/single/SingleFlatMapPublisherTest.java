@@ -30,7 +30,7 @@ import static io.servicetalk.concurrent.api.Single.success;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public final class SingleFlatmapPublisherTest {
+public final class SingleFlatMapPublisherTest {
 
     @Rule
     public final MockedSubscriberRule<String> subscriber = new MockedSubscriberRule<>();
@@ -38,45 +38,45 @@ public final class SingleFlatmapPublisherTest {
     private TestSingle<String> single;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         single = new TestSingle<>();
     }
 
     @Test
-    public void testFirstAndSecondPropagate() throws Exception {
+    public void testFirstAndSecondPropagate() {
         subscriber.subscribe(success(1).flatMapPublisher(s -> from(new String[]{"Hello1", "Hello2"}).map(str -> str + s))).request(2);
         subscriber.verifySuccess("Hello11", "Hello21");
     }
 
     @Test
-    public void testSuccess() throws Exception {
+    public void testSuccess() {
         subscriber.subscribe(success(1).flatMapPublisher(s -> publisher.sendOnSubscribe())).request(2);
         publisher.sendItems("Hello1", "Hello2").onComplete();
         subscriber.verifySuccess("Hello1", "Hello2");
     }
 
     @Test
-    public void testPublisherEmitsError() throws Exception {
+    public void testPublisherEmitsError() {
         subscriber.subscribe(success(1).flatMapPublisher(s -> publisher.sendOnSubscribe())).request(1);
         publisher.fail();
         subscriber.verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
-    public void testSingleEmitsError() throws Exception {
+    public void testSingleEmitsError() {
         subscriber.subscribe(error(DELIBERATE_EXCEPTION).flatMapPublisher(s -> publisher.sendOnSubscribe())).request(1);
         subscriber.verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
-    public void testCancelBeforeNextPublisher() throws Exception {
+    public void testCancelBeforeNextPublisher() {
         subscriber.subscribe(single.flatMapPublisher(s -> publisher)).request(2);
         subscriber.cancel();
         assertThat("Original single not cancelled.", single.isCancelled(), is(true));
     }
 
     @Test
-    public void testCancelNoRequest() throws Exception {
+    public void testCancelNoRequest() {
         subscriber.subscribe(single.flatMapPublisher(s -> publisher));
         subscriber.cancel();
         subscriber.request(1);
@@ -84,7 +84,7 @@ public final class SingleFlatmapPublisherTest {
     }
 
     @Test
-    public void testCancelBeforeOnSubscribe() throws Exception {
+    public void testCancelBeforeOnSubscribe() {
         subscriber.subscribe(single.flatMapPublisher(s -> publisher)).request(2);
         single.onSuccess("Hello");
         subscriber.cancel();
@@ -94,7 +94,7 @@ public final class SingleFlatmapPublisherTest {
     }
 
     @Test
-    public void testCancelPostOnSubscribe() throws Exception {
+    public void testCancelPostOnSubscribe() {
         subscriber.subscribe(success(1).flatMapPublisher(s -> publisher.sendOnSubscribe())).request(2);
         subscriber.cancel();
         publisher.verifyCancelled();

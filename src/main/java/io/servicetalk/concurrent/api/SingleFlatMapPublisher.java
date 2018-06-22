@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import java.util.function.Function;
@@ -27,28 +28,23 @@ import static java.util.Objects.requireNonNull;
 /**
  * {@link Single} as returned by {@link Single#flatMapPublisher(Function)}.
  */
-final class SingleFlatmapPublisher<T, R> extends Publisher<R> {
+final class SingleFlatMapPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R> {
     private final Single<T> original;
     private final Function<T, Publisher<R>> nextFactory;
 
-    /**
-     * New instance.
-     *
-     * @param original Source.
-     * @param nextFactory For creating the next {@link Publisher}.
-     */
-    SingleFlatmapPublisher(Single<T> original, Function<T, Publisher<R>> nextFactory) {
+    SingleFlatMapPublisher(Single<T> original, Function<T, Publisher<R>> nextFactory, Executor executor) {
+        super(executor);
         this.original = requireNonNull(original);
         this.nextFactory = requireNonNull(nextFactory);
     }
 
     @Override
-    public void handleSubscribe(org.reactivestreams.Subscriber<? super R> s) {
-        original.subscribe(new SubscriberImpl<>(s, nextFactory));
+    void handleSubscribe(final Subscriber<? super R> subscriber, final SignalOffloader signalOffloader) {
+        original.subscribe(new SubscriberImpl<>(subscriber, nextFactory), signalOffloader);
     }
 
     private static final class SubscriberImpl<T, R> implements Single.Subscriber<T>, org.reactivestreams.Subscriber<R> {
-        private final org.reactivestreams.Subscriber<? super R> subscriber;
+        private final Subscriber<? super R> subscriber;
         private final Function<T, Publisher<R>> nextFactory;
         @Nullable
         private volatile SequentialSubscription sequentialSubscription;

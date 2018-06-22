@@ -27,18 +27,37 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <T> Type of result of this {@link Single}.
  */
-final class CompletableAndThenSingle<T> extends Single<T> {
+final class CompletableAndThenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     private final Completable original;
     private final Single<T> next;
 
-    CompletableAndThenSingle(Completable original, Single<T> next) {
+    CompletableAndThenSingle(Completable original, Single<T> next, Executor executor) {
+        super(executor);
         this.original = requireNonNull(original);
         this.next = requireNonNull(next);
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber) {
-        original.subscribe(new AndThenSubscriber<>(subscriber, next));
+    protected void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader offloader) {
+        // Since we use the same Subscriber for two sources we always need to offload it. We do not subscribe to the
+        // next source using the same offloader so we have the following cases:
+        //
+        //  (1) Original Completable was not using an Executor but the next Single uses an Executor.
+        //  (2) Original Completable uses an Executor but the next Single does not.
+        //  (3) None of the sources use an Executor.
+        //  (4) Both the sources use an Executor.
+        //
+        // SignalOffloader passed here is created from the Executor of the original Completable.
+        // While subscribing to the next Single, we do not pass any SignalOffloader so whatever is chosen for that
+        // Single will be used.
+        //
+        // The only interesting case is (2) above where for the first Subscriber we are running on an Executor thread
+        // but for the second we are not which changes the threading model such that blocking code could run on the
+        // eventloop. Important thing to note is that once the next Single is subscribed we never touch the Cancellable
+        // of the original Completable. So, we do not need to do anything special there.
+        // In order to cover for this case ((2) above) we always offload the passed Subscriber here.
+        Subscriber<? super T> offloadSubscriber = offloader.offloadSubscriber(subscriber);
+        original.subscribe(new AndThenSubscriber<>(offloadSubscriber, next), offloader);
     }
 
     private static final class AndThenSubscriber<T> implements Subscriber<T>, Completable.Subscriber {
@@ -54,6 +73,10 @@ final class CompletableAndThenSingle<T> extends Single<T> {
 
         @Override
         public void onComplete() {
+            // Do not use the same SignalOffloader as used for original as that may cause deadlock.
+            // Using a regular subscribe helps us to inherit the threading model for this next source. However, since
+            // we always offload the original Subscriber (in handleSubscribe above) we are assured that this Subscriber
+            // is not called unexpectedly on an eventloop if this source does not use an Executor.
             next.subscribe(this);
         }
 

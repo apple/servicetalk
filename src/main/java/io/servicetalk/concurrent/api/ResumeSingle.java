@@ -26,36 +26,41 @@ import static java.util.Objects.requireNonNull;
 /**
  * {@link Single} as returned by {@link Single#onErrorResume(Function)}.
  */
-final class ResumeSingle<T> extends Single<T> {
-    private final Single<T> first;
+final class ResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
+
+    private final Single<T> original;
     private final Function<Throwable, Single<T>> nextFactory;
 
     /**
      * New instance.
      *
-     * @param first Source.
+     * @param original Source.
      * @param nextFactory For creating the next {@link Single}.
      */
-    ResumeSingle(Single<T> first, Function<Throwable, Single<T>> nextFactory) {
-        this.first = requireNonNull(first);
+    ResumeSingle(Single<T> original, Function<Throwable, Single<T>> nextFactory, Executor executor) {
+        super(executor);
+        this.original = original;
         this.nextFactory = requireNonNull(nextFactory);
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber) {
-        first.subscribe(new SubscriberImpl<>(subscriber, nextFactory));
+    void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
+        original.subscribe(new ResumeSubscriber<>(subscriber, nextFactory, signalOffloader), signalOffloader);
     }
 
-    private static final class SubscriberImpl<T> implements Subscriber<T> {
+    private static final class ResumeSubscriber<T> implements Subscriber<T> {
         private final Subscriber<? super T> subscriber;
         @Nullable
         private volatile Function<Throwable, Single<T>> nextFactory;
+        private final SignalOffloader signalOffloader;
         @Nullable
         private volatile SequentialCancellable sequentialCancellable;
 
-        SubscriberImpl(Subscriber<? super T> subscriber, Function<Throwable, Single<T>> nextFactory) {
+        ResumeSubscriber(Subscriber<? super T> subscriber, Function<Throwable, Single<T>> nextFactory,
+                         final SignalOffloader signalOffloader) {
             this.subscriber = subscriber;
             this.nextFactory = nextFactory;
+            this.signalOffloader = signalOffloader;
         }
 
         @Override
@@ -92,7 +97,12 @@ final class ResumeSingle<T> extends Single<T> {
                 subscriber.onError(t);
                 return;
             }
-            next.subscribe(this);
+            // We are subscribing to a new Single which will send signals to the original Subscriber. This means
+            // that the threading semantics may differ with respect to the original Subscriber when we emit signals from
+            // the new Single. This is the reason we use the original offloader now to offload signals which
+            // originate from this new Single.
+            final Subscriber<? super T> offloadedSubscriber = signalOffloader.offloadSubscriber(this);
+            next.subscribe(offloadedSubscriber);
         }
     }
 }

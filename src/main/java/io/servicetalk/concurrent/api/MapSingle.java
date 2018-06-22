@@ -22,19 +22,18 @@ import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
-final class MapSingle<T, R> extends Single<R> {
+final class MapSingle<T, R> extends AbstractSynchronousSingleOperator<T, R> {
 
-    private final Single<T> source;
     private final Function<T, R> mapper;
 
-    MapSingle(Single<T> source, Function<T, R> mapper) {
-        this.source = requireNonNull(source);
+    MapSingle(Single<T> source, Function<T, R> mapper, Executor executor) {
+        super(source, executor);
         this.mapper = requireNonNull(mapper);
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super R> subscriber) {
-        source.subscribe(new Subscriber<T>() {
+    public Subscriber<? super T> apply(final Subscriber<? super R> subscriber) {
+        return new Subscriber<T>() {
             @Override
             public void onSubscribe(Cancellable cancellable) {
                 subscriber.onSubscribe(cancellable);
@@ -56,6 +55,6 @@ final class MapSingle<T, R> extends Single<R> {
             public void onError(Throwable t) {
                 subscriber.onError(t);
             }
-        });
+        };
     }
 }

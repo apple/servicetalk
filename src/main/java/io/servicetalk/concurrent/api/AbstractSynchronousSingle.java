@@ -15,14 +15,13 @@
  */
 package io.servicetalk.concurrent.api;
 
-import org.reactivestreams.Subscriber;
-
 /**
- * Base class for all {@link Publisher}s that are created with already realized values and does not generate values asynchronously.
+ * Base class for all {@link Single}s that are created with already realized result and does not generate result
+ * asynchronously.
  *
- * @param <T> Type of items emitted.
+ * @param <T> Type of the result of the single.
  */
-abstract class AbstractSynchronousPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
+abstract class AbstractSynchronousSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
 
     @Override
     final void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
@@ -34,7 +33,7 @@ abstract class AbstractSynchronousPublisher<T> extends AbstractNoHandleSubscribe
     /**
      * Handles the subscribe call.
      *
-     *  @param subscriber {@link Subscriber} to this {@link Publisher}.
+     *  @param subscriber {@link Subscriber} to this {@link Single}.
      */
     abstract void doSubscribe(Subscriber<? super T> subscriber);
 }
