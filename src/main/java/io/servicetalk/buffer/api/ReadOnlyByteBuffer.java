@@ -43,9 +43,17 @@ import static java.nio.ByteBuffer.allocateDirect;
 final class ReadOnlyByteBuffer extends AbstractBuffer {
     private final ByteBuffer buffer;
 
-    ReadOnlyByteBuffer(ByteBuffer buffer) {
+    private ReadOnlyByteBuffer(ByteBuffer buffer) {
         super(buffer.position(), buffer.limit());
-        this.buffer = buffer.asReadOnlyBuffer();
+        this.buffer = buffer;
+    }
+
+    static ReadOnlyByteBuffer newBuffer(ByteBuffer buffer) {
+        return new ReadOnlyByteBuffer(buffer.isReadOnly() ? buffer : buffer.asReadOnlyBuffer());
+    }
+
+    static ReadOnlyByteBuffer newBufferFromModifiable(ByteBuffer buffer) {
+        return new ReadOnlyByteBuffer(buffer.asReadOnlyBuffer());
     }
 
     @Override
@@ -393,7 +401,7 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
     private Buffer copy(ByteBuffer byteBufferSlice, int length) {
         ByteBuffer tmpBuf = isDirect() ? allocateDirect(length) : allocate(length);
         tmpBuf.put(byteBufferSlice);
-        return new ReadOnlyByteBuffer(tmpBuf);
+        return new ReadOnlyByteBuffer(tmpBuf.asReadOnlyBuffer());
     }
 
     @Override
@@ -418,6 +426,11 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
     @Override
     public int getNioBufferCount() {
         return 1;
+    }
+
+    @Override
+    public ByteBuffer toNioBuffer() {
+        return sliceByteBuffer0(getReaderIndex(), getReadableBytes());
     }
 
     @Override

@@ -544,7 +544,7 @@ abstract class AbstractBuffer implements Buffer {
     }
 
     @Override
-    public final ByteBuffer toNioBuffer() {
+    public ByteBuffer toNioBuffer() {
         return toNioBuffer(readerIndex, getReadableBytes());
     }
 

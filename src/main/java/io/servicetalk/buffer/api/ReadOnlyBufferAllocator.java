@@ -22,6 +22,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 
+import static io.servicetalk.buffer.api.ReadOnlyByteBuffer.newBufferFromModifiable;
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -82,7 +83,7 @@ final class ReadOnlyBufferAllocator implements BufferAllocator {
             throw new IllegalArgumentException(e);
         }
         byteBuffer.flip();
-        return new ReadOnlyByteBuffer(byteBuffer);
+        return newBufferFromModifiable(byteBuffer);
     }
 
     @Override
@@ -107,16 +108,16 @@ final class ReadOnlyBufferAllocator implements BufferAllocator {
         // possible.
         data.codePoints().forEach(c -> byteBuffer.put((byte) c));
         byteBuffer.flip();
-        return new ReadOnlyByteBuffer(byteBuffer);
+        return newBufferFromModifiable(byteBuffer);
     }
 
     @Override
     public Buffer wrap(byte[] bytes) {
-        return new ReadOnlyByteBuffer(ByteBuffer.wrap(bytes));
+        return newBufferFromModifiable(ByteBuffer.wrap(bytes));
     }
 
     @Override
     public Buffer wrap(ByteBuffer buffer) {
-        return new ReadOnlyByteBuffer(buffer);
+        return ReadOnlyByteBuffer.newBuffer(buffer);
     }
 }
