@@ -52,7 +52,6 @@ import static io.servicetalk.http.api.HttpResponses.newResponse;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasToString;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -104,7 +103,7 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
 
             HttpResponse<HttpPayloadChunk> resp = awaitIndefinitelyNonNull(requester.request(request).retryWhen(
                     retryWithExponentialBackoff(10, t -> true, Duration.ofMillis(100),
-                            delayNanos -> CTX.getExecutor().timer(delayNanos, NANOSECONDS))));
+                            CTX.getExecutor())));
 
             assertThat(resp.getStatus().getCode(), equalTo(200));
 
