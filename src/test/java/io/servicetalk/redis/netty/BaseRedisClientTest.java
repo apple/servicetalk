@@ -56,7 +56,6 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 import static java.util.Comparator.comparingInt;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.IntStream.rangeClosed;
 import static org.hamcrest.Matchers.is;
@@ -97,16 +96,18 @@ public abstract class BaseRedisClientTest {
         serviceDiscoverer = new DefaultDnsServiceDiscovererBuilder(ioExecutor.next(), immediate()).build();
         RedisClientConfig config = new RedisClientConfig(new TcpClientConfig(false))
                 .setDeferSubscribeTillConnect(true);
+        final DefaultExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor,
+                immediate());
         client = new RetryingRedisClient(new DefaultRedisClientBuilder<InetSocketAddress>(
                 (eventPublisher, connectionFactory) -> new RoundRobinLoadBalancer<>(eventPublisher, connectionFactory,
                         comparingInt(Object::hashCode)), config)
                         .setMaxPipelinedRequests(10)
                         .setIdleConnectionTimeout(ofSeconds(2))
                         .setPingPeriod(ofSeconds(PING_PERIOD_SECONDS))
-                        .build(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()),
+                        .build(executionContext,
                                 serviceDiscoverer.discover(new DefaultHostAndPort(redisHost, redisPort))),
                 retryWithExponentialBackoff(10, cause -> cause instanceof RetryableException, ofMillis(10),
-                        backoffNanos -> ioExecutor.next().asExecutor().timer(backoffNanos, NANOSECONDS)));
+                        executionContext.getExecutor()));
 
         final String serverInfo = awaitIndefinitely(
                 client.request(newRequest(INFO, new CompleteBulkString(buf("SERVER"))))
