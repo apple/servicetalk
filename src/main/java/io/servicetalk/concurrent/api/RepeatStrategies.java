@@ -18,10 +18,10 @@ package io.servicetalk.concurrent.api;
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.IntFunction;
-import java.util.function.LongFunction;
 
 import static io.servicetalk.concurrent.api.Completable.error;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * A set of strategies to use for repeating with {@link Publisher#repeatWhen(IntFunction)}, {@link Single#repeatWhen(IntFunction)}
@@ -52,20 +52,20 @@ public final class RepeatStrategies {
      * @param maxRepeats Maximum number of allowed repeats, after which the returned {@link IntFunction} will return
      *                   a failed {@link Completable} with {@link TerminateRepeatException} as the cause.
      * @param backoff Constant {@link Duration} of backoff between repeats.
-     * @param timerProvider {@link LongFunction} that given a duration in nanoseconds, returns a {@link Completable}
-     *                      that completes after the passed duration has passed.
+     * @param timerExecutor {@link Executor} to be used to schedule timers for backoff.
+     *
      * @return An {@link IntFunction} to be used for repeats which given a repeat count returns a {@link Completable}
      * that terminates successfully when the source has to be repeated or terminates with error if the source should not be repeated.
      */
-    public static IntFunction<Completable> repeatWithConstantBackoff(int maxRepeats, Duration backoff,
-                                                                     LongFunction<? extends Completable> timerProvider) {
-        requireNonNull(timerProvider);
+    public static IntFunction<Completable> repeatWithConstantBackoff(final int maxRepeats, final Duration backoff,
+                                                                     final Executor timerExecutor) {
+        requireNonNull(timerExecutor);
         final long backoffNanos = backoff.toNanos();
         return repeatCount -> {
             if (repeatCount > maxRepeats) {
                 return terminateRepeat();
             }
-            return timerProvider.apply(backoffNanos);
+            return timerExecutor.timer(backoffNanos, NANOSECONDS);
         };
     }
 
@@ -78,20 +78,21 @@ public final class RepeatStrategies {
      * @param maxRepeats Maximum number of allowed repeats, after which the returned {@link IntFunction} will return
      *                   a failed {@link Completable} with {@link TerminateRepeatException} as the cause.
      * @param initialDelay Delay {@link Duration} for the first repeat and increased exponentially with each repeat.
-     * @param timerProvider {@link LongFunction} that given a duration in nanoseconds, returns a {@link Completable}
-     *                      that completes after the passed duration has passed.
+     * @param timerExecutor {@link Executor} to be used to schedule timers for backoff.
+     *
      * @return An {@link IntFunction} to be used for repeats which given a repeat count returns a {@link Completable}
      * that terminates successfully when the source has to be repeated or terminates with error if the source should not be repeated.
      */
-    public static IntFunction<Completable> repeatWithExponentialBackoff(int maxRepeats, Duration initialDelay,
-                                                                        LongFunction<? extends Completable> timerProvider) {
-        requireNonNull(timerProvider);
+    public static IntFunction<Completable> repeatWithExponentialBackoff(final int maxRepeats,
+                                                                        final Duration initialDelay,
+                                                                        final Executor timerExecutor) {
+        requireNonNull(timerExecutor);
         final long initialDelayNanos = initialDelay.toNanos();
         return repeatCount -> {
             if (repeatCount > maxRepeats) {
                 return terminateRepeat();
             }
-            return timerProvider.apply(initialDelayNanos << (repeatCount - 1));
+            return timerExecutor.timer(initialDelayNanos << (repeatCount - 1), NANOSECONDS);
         };
     }
 
@@ -105,20 +106,22 @@ public final class RepeatStrategies {
      * @param maxRepeats Maximum number of allowed repeats, after which the returned {@link IntFunction} will return
      *                   a failed {@link Completable} with {@link TerminateRepeatException} as the cause.
      * @param initialDelay Delay {@link Duration} for the first repeat and increased exponentially with each repeat.
-     * @param timerProvider {@link LongFunction} that given a duration in nanoseconds, returns a {@link Completable}
-     *                      that completes after the passed duration has passed.
+     * @param timerExecutor {@link Executor} to be used to schedule timers for backoff.
+     *
      * @return An {@link IntFunction} to be used for repeats which given a repeat count returns a {@link Completable}
      * that terminates successfully when the source has to be repeated or terminates with error if the source should not be repeated.
      */
-    public static IntFunction<Completable> repeatWithExponentialBackoffAndJitter(int maxRepeats, Duration initialDelay,
-                                                                                 LongFunction<? extends Completable> timerProvider) {
-        requireNonNull(timerProvider);
+    public static IntFunction<Completable> repeatWithExponentialBackoffAndJitter(final int maxRepeats,
+                                                                                 final Duration initialDelay,
+                                                                                 final Executor timerExecutor) {
+        requireNonNull(timerExecutor);
         final long initialDelayNanos = initialDelay.toNanos();
         return repeatCount -> {
             if (repeatCount > maxRepeats) {
                 return terminateRepeat();
             }
-            return timerProvider.apply(ThreadLocalRandom.current().nextLong(0, initialDelayNanos << (repeatCount - 1)));
+            return timerExecutor.timer(ThreadLocalRandom.current().nextLong(0, initialDelayNanos << (repeatCount - 1)),
+                    NANOSECONDS);
         };
     }
 

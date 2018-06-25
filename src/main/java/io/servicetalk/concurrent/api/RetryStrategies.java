@@ -17,11 +17,11 @@ package io.servicetalk.concurrent.api;
 
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.LongFunction;
 import java.util.function.Predicate;
 
 import static io.servicetalk.concurrent.api.Completable.error;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * A set of strategies to use for retrying with {@link Publisher#retryWhen(BiIntFunction)}, {@link Single#retryWhen(BiIntFunction)}
@@ -40,22 +40,24 @@ public final class RetryStrategies {
      *                   a failed {@link Completable} with the passed {@link Throwable} as the cause.
      * @param causeFilter A {@link Predicate} that selects whether a {@link Throwable} cause should be retried.
      * @param backoff Constant {@link Duration} of backoff between retries.
-     * @param timerProvider {@link LongFunction} that given a duration in nanoseconds, returns a {@link Completable}
-     *                      that completes after the passed duration has passed.
+     * @param timerExecutor {@link Executor} to be used to schedule timers for backoff.
+     *
      * @return A {@link BiIntFunction} to be used for retries which given a retry count and a {@link Throwable} returns
      * a {@link Completable} that terminates successfully when the source has to be retried or terminates with error
      * if the source should not be retried for the passed {@link Throwable}.
      */
-    public static BiIntFunction<Throwable, Completable> retryWithConstantBackoff(int maxRetries, Predicate<Throwable> causeFilter, Duration backoff,
-                                                                                 LongFunction<? extends Completable> timerProvider) {
-        requireNonNull(timerProvider);
+    public static BiIntFunction<Throwable, Completable> retryWithConstantBackoff(final int maxRetries,
+                                                                                 final Predicate<Throwable> causeFilter,
+                                                                                 final Duration backoff,
+                                                                                 final Executor timerExecutor) {
+        requireNonNull(timerExecutor);
         requireNonNull(causeFilter);
         final long backoffNanos = backoff.toNanos();
         return (retryCount, cause) -> {
             if (retryCount > maxRetries || !causeFilter.test(cause)) {
                 return error(cause);
             }
-            return timerProvider.apply(backoffNanos);
+            return timerExecutor.timer(backoffNanos, NANOSECONDS);
         };
     }
 
@@ -69,22 +71,24 @@ public final class RetryStrategies {
      *                   a failed {@link Completable} with the passed {@link Throwable} as the cause.
      * @param causeFilter A {@link Predicate} that selects whether a {@link Throwable} cause should be retried.
      * @param initialDelay Delay {@link Duration} for the first retry and increased exponentially with each retry.
-     * @param timerProvider {@link LongFunction} that given a duration in nanoseconds, returns a {@link Completable}
-     *                      that completes after the passed duration has passed.
+     * @param timerExecutor {@link Executor} to be used to schedule timers for backoff.
+     *
      * @return A {@link BiIntFunction} to be used for retries which given a retry count and a {@link Throwable} returns
      * a {@link Completable} that terminates successfully when the source has to be retried or terminates with error
      * if the source should not be retried for the passed {@link Throwable}.
      */
-    public static BiIntFunction<Throwable, Completable> retryWithExponentialBackoff(int maxRetries, Predicate<Throwable> causeFilter, Duration initialDelay,
-                                                                                    LongFunction<? extends Completable> timerProvider) {
-        requireNonNull(timerProvider);
+    public static BiIntFunction<Throwable, Completable> retryWithExponentialBackoff(final int maxRetries,
+                                                                                    final Predicate<Throwable> causeFilter,
+                                                                                    final Duration initialDelay,
+                                                                                    final Executor timerExecutor) {
+        requireNonNull(timerExecutor);
         requireNonNull(causeFilter);
         final long initialDelayNanos = initialDelay.toNanos();
         return (retryCount, cause) -> {
             if (retryCount > maxRetries || !causeFilter.test(cause)) {
                 return error(cause);
             }
-            return timerProvider.apply(initialDelayNanos << (retryCount - 1));
+            return timerExecutor.timer(initialDelayNanos << (retryCount - 1), NANOSECONDS);
         };
     }
 
@@ -99,22 +103,25 @@ public final class RetryStrategies {
      *                   a failed {@link Completable} with the passed {@link Throwable} as the cause.
      * @param causeFilter A {@link Predicate} that selects whether a {@link Throwable} cause should be retried.
      * @param initialDelay Delay {@link Duration} for the first retry and increased exponentially with each retry.
-     * @param timerProvider {@link LongFunction} that given a duration in nanoseconds, returns a {@link Completable}
-     *                      that completes after the passed duration has passed.
+     * @param timerExecutor {@link Executor} to be used to schedule timers for backoff.
+     *
      * @return A {@link BiIntFunction} to be used for retries which given a retry count and a {@link Throwable} returns
      * a {@link Completable} that terminates successfully when the source has to be retried or terminates with error
      * if the source should not be retried for the passed {@link Throwable}.
      */
-    public static BiIntFunction<Throwable, Completable> retryWithExponentialBackoffAndJitter(int maxRetries, Predicate<Throwable> causeFilter, Duration initialDelay,
-                                                                                             LongFunction<? extends Completable> timerProvider) {
-        requireNonNull(timerProvider);
+    public static BiIntFunction<Throwable, Completable> retryWithExponentialBackoffAndJitter(final int maxRetries,
+                                                                                             final Predicate<Throwable> causeFilter,
+                                                                                             final Duration initialDelay,
+                                                                                             final Executor timerExecutor) {
+        requireNonNull(timerExecutor);
         requireNonNull(causeFilter);
         final long initialDelayNanos = initialDelay.toNanos();
         return (retryCount, cause) -> {
             if (retryCount > maxRetries || !causeFilter.test(cause)) {
                 return error(cause);
             }
-            return timerProvider.apply(ThreadLocalRandom.current().nextLong(0, initialDelayNanos << (retryCount - 1)));
+            return timerExecutor.timer(ThreadLocalRandom.current().nextLong(0, initialDelayNanos << (retryCount - 1)),
+                    NANOSECONDS);
         };
     }
 }

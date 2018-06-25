@@ -24,6 +24,7 @@ import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBac
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoff;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoffAndJitter;
 import static java.time.Duration.ofSeconds;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -32,106 +33,114 @@ public class RetryStrategiesTest extends RedoStrategiesTest {
     @Test
     public void testBackoff() throws Exception {
         Duration backoff = ofSeconds(1);
-        RetryStrategy strategy = new RetryStrategy(retryWithConstantBackoff(2, cause -> true, backoff, timerProvider));
+        RetryStrategy strategy = new RetryStrategy(retryWithConstantBackoff(2, cause -> true, backoff,
+                timerExecutor));
         MockedCompletableListenerRule signalListener = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
-        verify(timerProvider).apply(backoff.toNanos());
+        verify(timerExecutor).timer(backoff.toNanos(), NANOSECONDS);
         timers.take().verifyListenCalled().onComplete();
         signalListener.verifyCompletion();
-        verifyNoMoreInteractions(timerProvider);
+        verifyNoMoreInteractions(timerExecutor);
     }
 
     @Test
     public void testBackoffMaxRetries() throws Exception {
         Duration backoff = ofSeconds(1);
-        testMaxRetries(retryWithExponentialBackoff(1, cause -> true, backoff, timerProvider), backoff);
+        testMaxRetries(retryWithExponentialBackoff(1, cause -> true, backoff, timerExecutor), backoff);
     }
 
     @Test
     public void testBackoffCauseFilter() {
-        testCauseFilter(retryWithConstantBackoff(1, cause -> cause instanceof IllegalStateException, ofSeconds(1), timerProvider));
+        testCauseFilter(retryWithConstantBackoff(1, cause -> cause instanceof IllegalStateException,
+                ofSeconds(1), timerExecutor));
     }
 
     @Test
     public void testExpBackoff() throws Exception {
         Duration initialDelay = ofSeconds(1);
-        RetryStrategy strategy = new RetryStrategy(retryWithExponentialBackoff(2, cause -> true, initialDelay, timerProvider));
+        RetryStrategy strategy = new RetryStrategy(retryWithExponentialBackoff(2, cause -> true, initialDelay,
+                timerExecutor));
         MockedCompletableListenerRule signalListener = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
-        verify(timerProvider).apply(initialDelay.toNanos());
+        verify(timerExecutor).timer(initialDelay.toNanos(), NANOSECONDS);
         timers.take().verifyListenCalled().onComplete();
         signalListener.verifyCompletion();
-        verifyNoMoreInteractions(timerProvider);
+        verifyNoMoreInteractions(timerExecutor);
 
         signalListener = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
-        verify(timerProvider).apply(initialDelay.toNanos() << 1);
+        verify(timerExecutor).timer(initialDelay.toNanos() << 1, NANOSECONDS);
         timers.take().verifyListenCalled().onComplete();
         signalListener.verifyCompletion();
-        verifyNoMoreInteractions(timerProvider);
+        verifyNoMoreInteractions(timerExecutor);
     }
 
     @Test
     public void testExpBackoffMaxRetries() throws Exception {
         Duration backoff = ofSeconds(1);
-        testMaxRetries(retryWithExponentialBackoff(1, cause -> true, backoff, timerProvider), backoff);
+        testMaxRetries(retryWithExponentialBackoff(1, cause -> true, backoff, timerExecutor), backoff);
     }
 
     @Test
     public void testExpBackoffCauseFilter() {
-        testCauseFilter(retryWithExponentialBackoff(1, cause -> cause instanceof IllegalStateException, ofSeconds(1), timerProvider));
+        testCauseFilter(retryWithExponentialBackoff(1, cause -> cause instanceof IllegalStateException,
+                ofSeconds(1), timerExecutor));
     }
 
     @Test
     public void testExpBackoffWithJitter() throws Exception {
         Duration initialDelay = ofSeconds(1);
-        RetryStrategy strategy = new RetryStrategy(retryWithExponentialBackoffAndJitter(2, cause -> true, initialDelay, timerProvider));
+        RetryStrategy strategy = new RetryStrategy(retryWithExponentialBackoffAndJitter(2, cause -> true,
+                initialDelay, timerExecutor));
         MockedCompletableListenerRule signalListener = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
         verifyDelayWithJitter(initialDelay.toNanos(), 1);
 
         timers.take().verifyListenCalled().onComplete();
         signalListener.verifyCompletion();
-        verifyNoMoreInteractions(timerProvider);
+        verifyNoMoreInteractions(timerExecutor);
 
         signalListener = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
         long nextDelay = initialDelay.toNanos() << 1;
         verifyDelayWithJitter(nextDelay, 2);
         timers.take().verifyListenCalled().onComplete();
         signalListener.verifyCompletion();
-        verifyNoMoreInteractions(timerProvider);
+        verifyNoMoreInteractions(timerExecutor);
     }
 
     @Test
     public void testExpBackoffWithJitterMaxRetries() throws Exception {
         Duration backoff = ofSeconds(1);
-        testMaxRetries(retryWithExponentialBackoffAndJitter(1, cause -> true, backoff, timerProvider),
+        testMaxRetries(retryWithExponentialBackoffAndJitter(1, cause -> true, backoff, timerExecutor),
                 () -> verifyDelayWithJitter(backoff.toNanos(), 1));
     }
 
     @Test
     public void testExpBackoffWithJitterCauseFilter() {
-        testCauseFilter(retryWithExponentialBackoffAndJitter(1, cause -> cause instanceof IllegalStateException, ofSeconds(1), timerProvider));
+        testCauseFilter(retryWithExponentialBackoffAndJitter(1,
+                cause -> cause instanceof IllegalStateException, ofSeconds(1), timerExecutor));
     }
 
     private void testCauseFilter(BiIntFunction<Throwable, Completable> actualStrategy) {
         RetryStrategy strategy = new RetryStrategy(actualStrategy);
         MockedCompletableListenerRule signalListener = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
-        verifyNoMoreInteractions(timerProvider);
+        verifyNoMoreInteractions(timerExecutor);
         signalListener.verifyFailure(DELIBERATE_EXCEPTION);
     }
 
-    private void testMaxRetries(BiIntFunction<Throwable, Completable> actualStrategy, Duration backoff) throws Exception {
-        testMaxRetries(actualStrategy, () -> verify(timerProvider).apply(backoff.toNanos()));
+    private void testMaxRetries(BiIntFunction<Throwable, Completable> actualStrategy, Duration backoff)
+            throws Exception {
+        testMaxRetries(actualStrategy, () -> verify(timerExecutor).timer(backoff.toNanos(), NANOSECONDS));
     }
 
-    private void testMaxRetries(BiIntFunction<Throwable, Completable> actualStrategy, Runnable verifyTimerProvider) throws Exception {
+    private void testMaxRetries(BiIntFunction<Throwable, Completable> actualStrategy, Runnable verifyTimerProvider)
+            throws Exception {
         RetryStrategy strategy = new RetryStrategy(actualStrategy);
         MockedCompletableListenerRule signalListener = strategy.invokeAndListen(DELIBERATE_EXCEPTION);
         verifyTimerProvider.run();
         timers.take().verifyListenCalled().onComplete();
         signalListener.verifyCompletion();
-        verifyNoMoreInteractions(timerProvider);
+        verifyNoMoreInteractions(timerExecutor);
 
         DeliberateException de = new DeliberateException();
         signalListener = strategy.invokeAndListen(de);
-        verifyNoMoreInteractions(timerProvider);
+        verifyNoMoreInteractions(timerExecutor);
         signalListener.verifyFailure(de);
     }
 

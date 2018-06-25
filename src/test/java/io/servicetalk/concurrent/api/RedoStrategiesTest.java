@@ -22,12 +22,15 @@ import org.junit.Rule;
 import org.mockito.ArgumentCaptor;
 
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.function.LongFunction;
+import java.util.concurrent.TimeUnit;
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -37,15 +40,16 @@ public class RedoStrategiesTest {
 
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
+
     protected LinkedBlockingQueue<TestCompletable> timers;
-    protected LongFunction<TestCompletable> timerProvider;
+    protected Executor timerExecutor;
 
     @SuppressWarnings("unchecked")
     @Before
     public void setUp() throws Exception {
         timers = new LinkedBlockingQueue<>();
-        timerProvider = mock(LongFunction.class);
-        when(timerProvider.apply(anyLong())).thenAnswer(invocation -> {
+        timerExecutor = mock(Executor.class);
+        when(timerExecutor.timer(anyLong(), any(TimeUnit.class))).thenAnswer(invocation -> {
             TestCompletable completable = new TestCompletable();
             timers.add(completable);
             return completable;
@@ -54,7 +58,7 @@ public class RedoStrategiesTest {
 
     protected void verifyDelayWithJitter(long exponentialDelayNanos, int invocationCount) {
         ArgumentCaptor<Long> backoffWithJitter = ArgumentCaptor.forClass(Long.class);
-        verify(timerProvider, times(invocationCount)).apply(backoffWithJitter.capture());
+        verify(timerExecutor, times(invocationCount)).timer(backoffWithJitter.capture(), eq(NANOSECONDS));
         assertThat("Unexpected backoff value.", backoffWithJitter.getValue(), greaterThanOrEqualTo(0L));
         assertThat("Unexpected backoff value.", backoffWithJitter.getValue(), lessThanOrEqualTo(exponentialDelayNanos));
     }

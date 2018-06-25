@@ -25,6 +25,7 @@ import static io.servicetalk.concurrent.api.RepeatStrategies.repeatWithConstantB
 import static io.servicetalk.concurrent.api.RepeatStrategies.repeatWithExponentialBackoff;
 import static io.servicetalk.concurrent.api.RepeatStrategies.repeatWithExponentialBackoffAndJitter;
 import static java.time.Duration.ofSeconds;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -33,71 +34,71 @@ public class RepeatStrategiesTest extends RedoStrategiesTest {
     @Test
     public void testBackoff() throws Exception {
         Duration backoff = ofSeconds(1);
-        RepeatStrategy strategy = new RepeatStrategy(repeatWithConstantBackoff(2, backoff, timerProvider));
+        RepeatStrategy strategy = new RepeatStrategy(repeatWithConstantBackoff(2, backoff, timerExecutor));
         MockedCompletableListenerRule signalListener = strategy.invokeAndListen();
-        verify(timerProvider).apply(backoff.toNanos());
+        verify(timerExecutor).timer(backoff.toNanos(), NANOSECONDS);
         timers.take().verifyListenCalled().onComplete();
         signalListener.verifyCompletion();
-        verifyNoMoreInteractions(timerProvider);
+        verifyNoMoreInteractions(timerExecutor);
     }
 
     @Test
     public void testBackoffMaxRepeats() throws Exception {
         Duration backoff = ofSeconds(1);
-        testMaxRepeats(repeatWithConstantBackoff(1, backoff, timerProvider), backoff);
+        testMaxRepeats(repeatWithConstantBackoff(1, backoff, timerExecutor), backoff);
     }
 
     @Test
     public void testExpBackoff() throws Exception {
         Duration initialDelay = ofSeconds(1);
-        RepeatStrategy strategy = new RepeatStrategy(repeatWithExponentialBackoff(2, initialDelay, timerProvider));
+        RepeatStrategy strategy = new RepeatStrategy(repeatWithExponentialBackoff(2, initialDelay, timerExecutor));
         MockedCompletableListenerRule signalListener = strategy.invokeAndListen();
-        verify(timerProvider).apply(initialDelay.toNanos());
+        verify(timerExecutor).timer(initialDelay.toNanos(), NANOSECONDS);
         timers.take().verifyListenCalled().onComplete();
         signalListener.verifyCompletion();
-        verifyNoMoreInteractions(timerProvider);
+        verifyNoMoreInteractions(timerExecutor);
 
         signalListener = strategy.invokeAndListen();
-        verify(timerProvider).apply(initialDelay.toNanos() << 1);
+        verify(timerExecutor).timer(initialDelay.toNanos() << 1, NANOSECONDS);
         timers.take().verifyListenCalled().onComplete();
         signalListener.verifyCompletion();
-        verifyNoMoreInteractions(timerProvider);
+        verifyNoMoreInteractions(timerExecutor);
     }
 
     @Test
     public void testExpBackoffMaxRepeats() throws Exception {
         Duration backoff = ofSeconds(1);
-        testMaxRepeats(repeatWithExponentialBackoff(1, backoff, timerProvider), backoff);
+        testMaxRepeats(repeatWithExponentialBackoff(1, backoff, timerExecutor), backoff);
     }
 
     @Test
     public void testExpBackoffWithJitter() throws Exception {
         Duration initialDelay = ofSeconds(1);
-        RepeatStrategy strategy = new RepeatStrategy(repeatWithExponentialBackoffAndJitter(2, initialDelay, timerProvider));
+        RepeatStrategy strategy = new RepeatStrategy(repeatWithExponentialBackoffAndJitter(2, initialDelay, timerExecutor));
         MockedCompletableListenerRule signalListener = strategy.invokeAndListen();
         verifyDelayWithJitter(initialDelay.toNanos(), 1);
 
         timers.take().verifyListenCalled().onComplete();
         signalListener.verifyCompletion();
-        verifyNoMoreInteractions(timerProvider);
+        verifyNoMoreInteractions(timerExecutor);
 
         signalListener = strategy.invokeAndListen();
         long nextDelay = initialDelay.toNanos() << 1;
         verifyDelayWithJitter(nextDelay, 2);
         timers.take().verifyListenCalled().onComplete();
         signalListener.verifyCompletion();
-        verifyNoMoreInteractions(timerProvider);
+        verifyNoMoreInteractions(timerExecutor);
     }
 
     @Test
     public void testExpBackoffWithJitterMaxRepeats() throws Exception {
         Duration backoff = ofSeconds(1);
-        testMaxRepeats(repeatWithExponentialBackoffAndJitter(1, backoff, timerProvider),
+        testMaxRepeats(repeatWithExponentialBackoffAndJitter(1, backoff, timerExecutor),
                 () -> verifyDelayWithJitter(backoff.toNanos(), 1));
     }
 
     private void testMaxRepeats(IntFunction<Completable> actualStrategy, Duration backoff) throws Exception {
-        testMaxRepeats(actualStrategy, () -> verify(timerProvider).apply(backoff.toNanos()));
+        testMaxRepeats(actualStrategy, () -> verify(timerExecutor).timer(backoff.toNanos(), NANOSECONDS));
     }
 
     private void testMaxRepeats(IntFunction<Completable> actualStrategy, Runnable verifyTimerProvider) throws Exception {
@@ -106,10 +107,10 @@ public class RepeatStrategiesTest extends RedoStrategiesTest {
         verifyTimerProvider.run();
         timers.take().verifyListenCalled().onComplete();
         signalListener.verifyCompletion();
-        verifyNoMoreInteractions(timerProvider);
+        verifyNoMoreInteractions(timerExecutor);
 
         signalListener = strategy.invokeAndListen();
-        verifyNoMoreInteractions(timerProvider);
+        verifyNoMoreInteractions(timerExecutor);
         signalListener.verifyFailure(TerminateRepeatException.class);
     }
 
