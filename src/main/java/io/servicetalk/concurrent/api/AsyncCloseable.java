@@ -15,16 +15,58 @@
  */
 package io.servicetalk.concurrent.api;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 /**
- * Called when the life-cycle ends.
+ * Used to close/shutdown a resource.
  */
 @FunctionalInterface
 public interface AsyncCloseable {
 
     /**
-     * Called once a life-cycle ends.
+     * Used to close/shutdown a resource.
      *
-     * @return the {@link Completable} that is notified once the close is complete.
+     * @return A {@link Completable} that is notified once the close is complete.
      */
     Completable closeAsync();
+
+    /**
+     * Used to close/shutdown a resource, similar to {@link #closeAsync()}, but attempts to close gracefully. This is
+     * generally done by signalling a desire to close/shutdown to internal components/resources, and waiting for them
+     * to finish what they're doing and close/shutdown themselves.
+     * <p>
+     * <b>Note</b>: This has no timeout, so the previously mentioned waiting may wait indefinitely. In this case, the
+     * returned {@link Completable} will not complete until {@link #closeAsync()} or
+     * {@link #closeAsyncGracefully(long, TimeUnit)} is called.
+     * </p>
+     * <p>
+     * Implementations <i>may</i> choose to ignore the "graceful" part of this and simply call {@link #closeAsync}.
+     *
+     * @return A {@link Completable} that is notified once the close is complete.
+     */
+    default Completable closeAsyncGracefully() {
+        return closeAsync();
+    }
+
+    /**
+     * Used to close/shutdown a resource, similar to {@link #closeAsync()}, but attempts to close gracefully. This is
+     * generally done by:
+     * <ol>
+     * <li>signalling a desire to close/shutdown to internal components/resources,</li>
+     * <li>waiting some amount of time for them to finish what they're doing and close/shutdown themselves,</li>
+     * <li>after the time has elapsed, non-gracefully closing anything that hadn't yet finished.</li>
+     * </ol>
+     * Implementations <i>may</i> choose to ignore the "graceful" part of this and simply call {@link #closeAsync}.
+     *
+     * @param timeout approximate upper bound on how long to wait for the graceful closure to complete before closing
+     * non-gracefully.
+     * @param timeoutUnit The units for {@code timeout}.
+     * @return A {@link Completable} that is notified once the close is complete.
+     */
+    default Completable closeAsyncGracefully(long timeout, TimeUnit timeoutUnit) {
+        return closeAsyncGracefully().timeout(timeout, timeoutUnit).onErrorResume(
+                t -> t instanceof TimeoutException ? closeAsync() : Completable.error(t)
+        );
+    }
 }

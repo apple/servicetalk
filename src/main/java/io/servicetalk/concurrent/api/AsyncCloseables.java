@@ -87,6 +87,17 @@ public final class AsyncCloseables {
                     }
                 };
             }
+
+            @Override
+            public Completable closeAsyncGracefully() {
+                return new Completable() {
+                    @Override
+                    protected void handleSubscribe(final Subscriber subscriber) {
+                        asyncCloseable.closeAsyncGracefully().subscribe(onClose);
+                        onClose.subscribe(subscriber);
+                    }
+                };
+            }
         };
     }
 
