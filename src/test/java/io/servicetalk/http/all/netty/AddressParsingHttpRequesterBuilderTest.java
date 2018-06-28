@@ -41,8 +41,6 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -53,6 +51,7 @@ import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
+import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
 import static io.servicetalk.http.api.HttpRequestMethods.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpRequestMethods.OPTIONS;
@@ -83,9 +82,8 @@ import static org.mockito.Mockito.verify;
 
 public class AddressParsingHttpRequesterBuilderTest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AddressParsingHttpRequesterBuilderTest.class);
-
     private static final String HOSTNAME = "localhost";
+    private static final String X_REQUESTED_LOCATION = "X-Requested-Location";
 
     @ClassRule
     public static final ExecutionContextRule CTX = immediate();
@@ -111,13 +109,17 @@ public class AddressParsingHttpRequesterBuilderTest {
         afterClassCloseables.concat(requester);
 
         httpService = fromAsync((ctx, request) -> {
-            request.getPayloadBody().ignoreElements().subscribe();
             if (request.getMethod() == OPTIONS || request.getMethod() == CONNECT) {
                 return success(newResponse(OK));
             }
             try {
                 HttpResponseStatuses status = HttpResponseStatuses.valueOf(request.getPath().substring(1));
-                return success(newResponse(status));
+                final HttpResponse<HttpPayloadChunk> response = newResponse(status);
+                final CharSequence locationHeader = request.getHeaders().get(X_REQUESTED_LOCATION);
+                if (locationHeader != null) {
+                    response.getHeaders().set(LOCATION, locationHeader);
+                }
+                return success(response);
             } catch (Exception e) {
                 return success(newResponse(BAD_REQUEST));
             }
@@ -270,7 +272,15 @@ public class AddressParsingHttpRequesterBuilderTest {
     }
 
     @Test
-    public void multipleRequestsToMultipleServers() {
+    public void requestWithRedirect() throws Exception {
+        HttpRequest<HttpPayloadChunk> request = newRequest(GET, "/MOVED_PERMANENTLY");
+        request.getHeaders().set(HOST, hostHeader);
+        request.getHeaders().set(X_REQUESTED_LOCATION, "/OK");  // Location for redirect
+        requestAndValidate(request, OK);
+    }
+
+    @Test
+    public void multipleRequestsToMultipleServers() throws Exception {
         try (CompositeCloseable closeables = newCompositeCloseable()) {
             ServerContext serverCtx2 = startNewLocalServer(httpService, closeables);
             ServerContext serverCtx3 = startNewLocalServer(httpService, closeables);
@@ -284,8 +294,6 @@ public class AddressParsingHttpRequesterBuilderTest {
                 makeGetRequestAndValidate(serverCtx2, status);
                 makeGetRequestAndValidate(serverCtx3, status);
             }
-        } catch (Throwable t) {
-            LOGGER.error(String.valueOf(System.currentTimeMillis()), t);
         }
     }
 

@@ -42,6 +42,7 @@ import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequester;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.netty.DefaultHttpClientBuilder;
+import io.servicetalk.http.utils.RedirectingHttpClientGroup;
 import io.servicetalk.transport.api.DefaultHostAndPort;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
@@ -75,11 +76,17 @@ import static java.util.function.UnaryOperator.identity;
  */
 public final class AddressParsingHttpRequesterBuilder {
 
+    // https://tools.ietf.org/html/rfc2068#section-10.3 says:
+    // A user agent SHOULD NOT automatically redirect a request more than 5 times,
+    // since such redirections usually indicate an infinite loop.
+    private static final int DEFAULT_MAX_REDIRECTS = 5;
+
     private final DefaultHttpClientBuilder<InetSocketAddress> clientBuilder;
     @Nullable
     private ServiceDiscoverer<HostAndPort, InetSocketAddress> serviceDiscoverer;
     private UnaryOperator<HttpRequester> requesterFilterFactory = identity();
     private UnaryOperator<HttpClientGroup<HostAndPort>> clientGroupFilterFactory = identity();
+    private int maxRedirects = DEFAULT_MAX_REDIRECTS;
 
     /**
      * Create a new instance with a default {@link LoadBalancerFactory}.
@@ -308,6 +315,17 @@ public final class AddressParsingHttpRequesterBuilder {
     }
 
     /**
+     * Set a maximum number of redirects to follow.
+     *
+     * @param maxRedirects The maximum number of redirects to follow. Use a nonpositive number to disable redirects.
+     * @return {@code this}.
+     */
+    public AddressParsingHttpRequesterBuilder setMaxRedirects(final int maxRedirects) {
+        this.maxRedirects = maxRedirects;
+        return this;
+    }
+
+    /**
      * Build a new {@link HttpRequester}.
      *
      * @param executionContext The {@link ExecutionContext} used for {@link HttpRequester#getExecutionContext()} and
@@ -328,8 +346,12 @@ public final class AddressParsingHttpRequesterBuilder {
                 groupKey -> copiedBuilder.build(executionContext, serviceDiscoverer.discover(groupKey.getAddress()));
         final CacheableRequestToGroupKeyFunction toGroupKeyFunction =
                 new CacheableRequestToGroupKeyFunction(executionContext);
-        final HttpRequester requester = clientGroupFilterFactory.apply(newHttpClientGroup(clientFactory))
-                .asRequester(toGroupKeyFunction, executionContext);
+        HttpClientGroup<HostAndPort> clientGroup =
+                clientGroupFilterFactory.apply(newHttpClientGroup(clientFactory));
+        clientGroup = maxRedirects > 0 ?
+                new RedirectingHttpClientGroup<>(clientGroup, toGroupKeyFunction, executionContext, maxRedirects) :
+                clientGroup;
+        final HttpRequester requester = clientGroup.asRequester(toGroupKeyFunction, executionContext);
 
         final CompositeCloseable closeables = newCompositeCloseable();
         closeables.concat(requester, toGroupKeyFunction);
