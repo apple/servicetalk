@@ -241,6 +241,11 @@ final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<String, Ine
             }
 
             @Override
+            public Completable closeAsyncGracefully() {
+                return DefaultDnsServiceDiscoverer.this.closeAsyncGracefully();
+            }
+
+            @Override
             public Completable onClose() {
                 return DefaultDnsServiceDiscoverer.this.onClose();
             }
