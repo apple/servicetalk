@@ -40,6 +40,14 @@ public interface RedisCommander extends AsyncCloseable {
     Completable closeAsync();
 
     /**
+     * {@inheritDoc}
+     * <p>
+     * This will close the underlying {@link RedisRequester}!
+     */
+    @Override
+    Completable closeAsyncGracefully();
+
+    /**
      * Append a value to a key.
      *
      * @param key the key
