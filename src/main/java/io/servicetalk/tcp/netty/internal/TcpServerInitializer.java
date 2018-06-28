@@ -23,6 +23,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
+import io.servicetalk.transport.netty.internal.ChannelSet;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 import io.servicetalk.transport.netty.internal.NettyServerContext;
@@ -32,6 +33,8 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import org.slf4j.Logger;
@@ -126,7 +129,17 @@ public final class TcpServerInitializer {
         listenAddress = toNettyAddress(requireNonNull(listenAddress));
         ServerBootstrap bs = new ServerBootstrap();
         configure(bs, nettyIoExecutor.getEventLoopGroup(), listenAddress.getClass(), enableHalfClosure);
-        //TODO: AdvancedChannelGroup is missing from ST 1.x.
+
+        ChannelSet channelSet = new ChannelSet();
+        bs.handler(new ChannelInboundHandlerAdapter() {
+            @Override
+            public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+                if (msg instanceof Channel && !channelSet.addIfAbsent((Channel) msg)) {
+                    LOGGER.warn("Channel ({}) not added to ChannelSet", msg);
+                }
+                ctx.fireChannelRead(msg);
+            }
+        });
         bs.childHandler(new io.netty.channel.ChannelInitializer<Channel>() {
             @Override
             protected void initChannel(Channel channel) {
@@ -146,19 +159,20 @@ public final class TcpServerInitializer {
                 });
             }
         });
+
         ChannelFuture future = bs.bind(listenAddress);
         return new Single<ServerContext>() {
             @Override
             protected void handleSubscribe(Subscriber<? super ServerContext> subscriber) {
                 subscriber.onSubscribe(() -> future.cancel(true));
                 ChannelFutureListener channelFutureListener = f -> {
-                    if (f.isSuccess()) {
-                        subscriber.onSuccess(NettyServerContext.wrap(f.channel(), contextFilter.closeAsync()));
-                    } else if (f.cause() != null) {
-                        subscriber.onError(f.cause());
+                    Channel channel = f.channel();
+                    Throwable cause = f.cause();
+                    if (cause == null) {
+                        subscriber.onSuccess(NettyServerContext.wrap(channel, channelSet, contextFilter));
                     } else {
-                        // Bind cancelled, so close the channel.
-                        f.channel().close();
+                        channel.close();
+                        subscriber.onError(f.cause());
                     }
                 };
                 future.addListener(channelFutureListener);
