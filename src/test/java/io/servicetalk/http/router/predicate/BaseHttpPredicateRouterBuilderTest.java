@@ -36,6 +36,7 @@ import org.mockito.stubbing.Answer;
 import java.util.Iterator;
 import java.util.Spliterator;
 
+import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static java.util.Arrays.asList;
@@ -76,6 +77,20 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
         when(serviceD.handle(ctx, request)).thenReturn(responseD);
         when(serviceE.handle(ctx, request)).thenReturn(responseE);
         when(fallbackService.handle(ctx, request)).thenReturn(fallbackResponse);
+
+        when(serviceA.closeAsync()).thenReturn(completed());
+        when(serviceB.closeAsync()).thenReturn(completed());
+        when(serviceC.closeAsync()).thenReturn(completed());
+        when(serviceD.closeAsync()).thenReturn(completed());
+        when(serviceE.closeAsync()).thenReturn(completed());
+        when(fallbackService.closeAsync()).thenReturn(completed());
+
+        when(serviceA.closeAsyncGracefully()).thenReturn(completed());
+        when(serviceB.closeAsyncGracefully()).thenReturn(completed());
+        when(serviceC.closeAsyncGracefully()).thenReturn(completed());
+        when(serviceD.closeAsyncGracefully()).thenReturn(completed());
+        when(serviceE.closeAsyncGracefully()).thenReturn(completed());
+        when(fallbackService.closeAsyncGracefully()).thenReturn(completed());
     }
 
     @SuppressWarnings("unchecked")

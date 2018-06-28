@@ -15,7 +15,9 @@
  */
 package io.servicetalk.http.router.predicate;
 
+import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
@@ -23,9 +25,9 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 
-import java.util.ArrayList;
 import java.util.List;
 
+import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -40,7 +42,7 @@ final class InOrderRouter extends HttpService {
 
     private final HttpService fallbackService;
     private final PredicateServicePair[] predicateServicePairs;
-    private final Completable closeCompletable;
+    private final AsyncCloseable closeable;
 
     /**
      * Constructs a router service with the specified fallback service, and predicate-service pairs to evaluate.
@@ -52,13 +54,11 @@ final class InOrderRouter extends HttpService {
         this.fallbackService = requireNonNull(fallbackService);
         this.predicateServicePairs = predicateServicePairs.toArray(new PredicateServicePair[0]);
 
-        final List<Completable> completables = new ArrayList<>(predicateServicePairs.size() + 1);
+        final CompositeCloseable closeable = newCompositeCloseable().merge(fallbackService);
         for (final PredicateServicePair predicateServicePair : predicateServicePairs) {
-            final HttpService service = predicateServicePair.getService();
-            completables.add(service.closeAsync());
+            closeable.merge(predicateServicePair.getService());
         }
-        completables.add(fallbackService.closeAsync());
-        closeCompletable = Completable.completed().mergeDelayError(completables);
+        this.closeable = closeable;
     }
 
     @Override
@@ -74,6 +74,11 @@ final class InOrderRouter extends HttpService {
 
     @Override
     public Completable closeAsync() {
-        return closeCompletable;
+        return closeable.closeAsync();
+    }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return closeable.closeAsyncGracefully();
     }
 }
