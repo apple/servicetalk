@@ -84,4 +84,9 @@ final class DefaultHttpClient extends HttpClient {
     public Completable closeAsync() {
         return loadBalancer.closeAsync();
     }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return loadBalancer.closeAsyncGracefully();
+    }
 }

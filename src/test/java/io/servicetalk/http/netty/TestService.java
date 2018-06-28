@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
@@ -50,14 +51,20 @@ final class TestService extends HttpService {
     static final String SVC_COUNTER_NO_LAST_CHUNK = "/counterNoLastChunk";
     static final String SVC_COUNTER = "/counter";
     static final String SVC_LARGE_LAST = "/largeLast";
+    static final String SVC_PUBLISHER_RULE = "/publisherRule";
     static final String SVC_NO_CONTENT = "/noContent";
     static final String SVC_ROT13 = "/rot13";
     static final String SVC_THROW_ERROR = "/throwError";
     static final String SVC_SINGLE_ERROR = "/singleError";
     static final String SVC_ERROR_BEFORE_READ = "/errorBeforeRead";
     static final String SVC_ERROR_DURING_READ = "/errorDuringRead";
+    private final Function<HttpRequest<HttpPayloadChunk>, Publisher<HttpPayloadChunk>> publisherSupplier;
 
     private int counter;
+
+    TestService(final Function<HttpRequest<HttpPayloadChunk>, Publisher<HttpPayloadChunk>> publisherSupplier) {
+        this.publisherSupplier = publisherSupplier;
+    }
 
     @Override
     public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext context,
@@ -76,6 +83,9 @@ final class TestService extends HttpService {
                 break;
             case SVC_LARGE_LAST:
                 response = newLargeLastChunkResponse(context, req);
+                break;
+            case SVC_PUBLISHER_RULE:
+                response = newPublisherRuleResponse(context, req);
                 break;
             case SVC_NO_CONTENT:
                 response = newNoContentResponse(req);
@@ -142,6 +152,11 @@ final class TestService extends HttpService {
         final Publisher<HttpPayloadChunk> responseBody = from(chunk, lastChunk);
 
         return newResponse(req.getVersion(), OK, responseBody);
+    }
+
+    private HttpResponse<HttpPayloadChunk> newPublisherRuleResponse(
+            final ConnectionContext context, final HttpRequest<HttpPayloadChunk> req) {
+        return newResponse(req.getVersion(), OK, publisherSupplier.apply(req));
     }
 
     private HttpResponse<HttpPayloadChunk> newNoContentResponse(final HttpRequest<HttpPayloadChunk> req) {

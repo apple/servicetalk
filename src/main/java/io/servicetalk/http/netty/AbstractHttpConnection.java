@@ -105,4 +105,9 @@ abstract class AbstractHttpConnection<CC extends ConnectionContext> extends Http
     public Completable closeAsync() {
         return connection.closeAsync();
     }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return connection.closeAsyncGracefully();
+    }
 }

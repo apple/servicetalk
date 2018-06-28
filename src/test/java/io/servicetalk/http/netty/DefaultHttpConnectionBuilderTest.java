@@ -104,6 +104,11 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
         public Completable closeAsync() {
             return delegate.closeAsync();
         }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return delegate.closeAsyncGracefully();
+        }
     }
 
     @Test

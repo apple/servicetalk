@@ -75,6 +75,11 @@ final class LoadBalancedHttpConnection extends ReservedHttpConnection
     }
 
     @Override
+    public Completable closeAsyncGracefully() {
+        return delegate.closeAsyncGracefully();
+    }
+
+    @Override
     public boolean tryReserve() {
         return limiter.tryReserve();
     }

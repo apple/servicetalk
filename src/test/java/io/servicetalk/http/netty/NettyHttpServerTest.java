@@ -16,10 +16,13 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.BlockingIterator;
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpPayloadChunk;
@@ -53,8 +56,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.internal.Await.await;
@@ -81,16 +83,22 @@ import static io.servicetalk.http.netty.TestService.SVC_ERROR_BEFORE_READ;
 import static io.servicetalk.http.netty.TestService.SVC_ERROR_DURING_READ;
 import static io.servicetalk.http.netty.TestService.SVC_LARGE_LAST;
 import static io.servicetalk.http.netty.TestService.SVC_NO_CONTENT;
+import static io.servicetalk.http.netty.TestService.SVC_PUBLISHER_RULE;
 import static io.servicetalk.http.netty.TestService.SVC_ROT13;
 import static io.servicetalk.http.netty.TestService.SVC_SINGLE_ERROR;
 import static io.servicetalk.http.netty.TestService.SVC_THROW_ERROR;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 @Ignore("TODO JO Fix flaky test")
 @RunWith(Parameterized.class)
@@ -100,6 +108,8 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
+    @Rule
+    public final PublisherRule<HttpPayloadChunk> publisherRule = new PublisherRule<>();
 
     private static IoExecutor ioExecutor;
     private final Executor executor;
@@ -317,6 +327,80 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     }
 
     @Test
+    public void testGracefulShutdownWhileIdle() throws Exception {
+        final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_COUNTER);
+        final HttpResponse<HttpPayloadChunk> response1 = makeRequest(request1);
+        assertResponse(response1, HTTP_1_1, OK, asList("Testing1\n", ""));
+        assertFalse(response1.getHeaders().contains(CONNECTION));
+
+        // Use a very high timeout for the graceful close. It should happen quite quickly because there are no
+        // active requests/responses.
+        awaitIndefinitely(getServerContext().closeAsyncGracefully(1000, SECONDS));
+        assertConnectionClosed();
+    }
+
+    @Test
+    public void testGracefulShutdownWhileReadingPayload() throws Exception {
+        when(publisherSupplier.apply(any())).thenReturn(publisherRule.getPublisher());
+
+        final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_PUBLISHER_RULE);
+        final HttpResponse<HttpPayloadChunk> response1 = makeRequest(request1);
+
+        getServerContext().closeAsyncGracefully(1000, SECONDS).subscribe();
+        publisherRule.sendItems(getChunkFromString("Hello"));
+        publisherRule.complete();
+
+        assertResponse(response1, HTTP_1_1, OK, asList("Hello", ""));
+        assertFalse(response1.getHeaders().contains(CONNECTION)); // Eventually this should be assertTrue
+
+        assertConnectionClosed();
+    }
+
+    @Test
+    public void testImmediateShutdownWhileReadingPayload() throws Exception {
+        final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_PUBLISHER_RULE);
+        makeRequest(request1);
+
+        awaitIndefinitely(getServerContext().closeAsync());
+
+        assertConnectionClosed();
+    }
+
+    @Test
+    public void testCancelGracefulShutdownWhileReadingPayload() throws Exception {
+        final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_PUBLISHER_RULE);
+        makeRequest(request1);
+
+        // cancelling the Completable does not cancel the shutdown.
+        getServerContext().closeAsyncGracefully(1000, SECONDS).doAfterSubscribe(Cancellable::cancel).subscribe();
+
+        assertConnectionClosed();
+    }
+
+    @Test
+    public void testGracefulShutdownTimesOutWhileReadingPayload() throws Exception {
+        final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_PUBLISHER_RULE);
+        makeRequest(request1);
+
+        awaitIndefinitely(getServerContext().closeAsyncGracefully(500, MILLISECONDS));
+
+        assertConnectionClosed();
+    }
+
+    @Test
+    public void testImmediateCloseAfterGracefulShutdownWhileReadingPayload() throws Exception {
+        final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_PUBLISHER_RULE);
+        makeRequest(request1);
+
+        getServerContext().closeAsyncGracefully(1000, SECONDS).subscribe();
+        // Wait 500 millis for the "immediate" close to happen, since there are multiple threads involved.
+        // If it takes any longer than that, it probably didn't work, but the graceful close would make the test pass.
+        awaitIndefinitely(getServerContext().closeAsync());
+
+        assertConnectionClosed();
+    }
+
+    @Test
     public void testDeferCloseConnection() throws Exception {
         /*
         TODO: This test is not quite as robust as it could be.
@@ -424,10 +508,14 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         final List<HttpPayloadChunk> chunks = new ArrayList<>(texts.length);
         final int end = texts.length - 1;
         for (int i = 0; i < end; ++i) {
-            chunks.add(HttpPayloadChunks.newPayloadChunk(DEFAULT_ALLOCATOR.fromAscii(texts[i])));
+            chunks.add(getChunkFromString(texts[i]));
         }
         chunks.add(HttpPayloadChunks.newLastPayloadChunk(DEFAULT_ALLOCATOR.fromAscii(texts[end]), EmptyHttpHeaders.INSTANCE));
         return Publisher.from(chunks);
+    }
+
+    private HttpPayloadChunk getChunkFromString(final String text) {
+        return HttpPayloadChunks.newPayloadChunk(DEFAULT_ALLOCATOR.fromAscii(text));
     }
 
     private static List<String> getBodyAsListOfStrings(final HttpResponse<HttpPayloadChunk> response)
@@ -439,7 +527,31 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
                 }));
     }
 
-    private void assertConnectionClosed() throws InterruptedException, ExecutionException, TimeoutException {
-        await(httpConnection.onClose(), 1000, TimeUnit.MILLISECONDS);
+    private void assertConnectionClosed() throws Exception {
+        try {
+            await(httpConnection.onClose(), 100, MILLISECONDS);
+            return;
+        } catch (Exception e) {
+            // Try sending a request, since sometimes we need to read/write to cause the client to notice the connection
+            // has been closed.
+        }
+
+        final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_COUNTER);
+        try {
+            final HttpResponse<HttpPayloadChunk> response = makeRequest(request);
+            assertResponse(response, HTTP_1_1, OK, asList("Testing1\n", ""));
+            fail("Expected an exception");
+        } catch (ExecutionException e) {
+            // Expected.
+        }
+    }
+
+    private static class PublisherSupplier implements Supplier<Publisher<HttpPayloadChunk>> {
+        private final TestPublisher testPublisher = new TestPublisher();
+
+        @Override
+        public Publisher<HttpPayloadChunk> get() {
+            return testPublisher;
+        }
     }
 }

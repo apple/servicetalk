@@ -87,6 +87,11 @@ final class HttpConnectionConcurrentRequestsFilter extends HttpConnection {
     }
 
     @Override
+    public Completable closeAsyncGracefully() {
+        return next.closeAsyncGracefully();
+    }
+
+    @Override
     public String toString() {
         return HttpConnectionConcurrentRequestsFilter.class.getSimpleName() + "(" + next + ")";
     }

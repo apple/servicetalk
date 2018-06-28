@@ -139,6 +139,11 @@ public class HttpAuthConnectionFactoryClientTest {
         public Completable closeAsync() {
             return delegate.closeAsync();
         }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return delegate.closeAsyncGracefully();
+        }
     }
 
     private static HttpRequest<HttpPayloadChunk> newTestRequest(String requestTarget) {

@@ -156,5 +156,10 @@ public class ClientFilterFactoryTest {
         public Completable closeAsync() {
             return httpClient.closeAsync();
         }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return httpClient.closeAsyncGracefully();
+        }
     }
 }

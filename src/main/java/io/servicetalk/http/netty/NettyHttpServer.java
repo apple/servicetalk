@@ -25,6 +25,7 @@ import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.LastHttpPayloadChunk;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpServerInitializer;
+import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
@@ -32,6 +33,8 @@ import io.servicetalk.transport.netty.internal.AbstractChannelReadHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.Connection.TerminalPredicate;
+import io.servicetalk.transport.netty.internal.NettyConnection;
+import io.servicetalk.transport.netty.internal.NettyConnectionHolder;
 
 import io.netty.channel.ChannelHandlerContext;
 
@@ -39,6 +42,7 @@ import java.net.SocketAddress;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
@@ -76,18 +80,7 @@ final class NettyHttpServer {
                     config.getMaxInitialLineLength(), config.getMaxHeaderSize(), closeHandler));
             channel.pipeline().addLast(new HttpResponseEncoder(methodQueue, config.getHeadersEncodedSizeEstimate(),
                     config.getTrailersEncodedSizeEstimate(), closeHandler));
-            channel.pipeline().addLast(new AbstractChannelReadHandler<Object>(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE,
-                    executor) {
-                @Override
-                protected void onPublisherCreation(final ChannelHandlerContext channelHandlerContext,
-                                                   final Publisher<Object> requestObjectPublisher) {
-                    final NettyHttpServerConnection connection = new NettyHttpServerConnection(
-                            channelHandlerContext.channel(), requestObjectPublisher,
-                            new TerminalPredicate<>(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE), closeHandler,
-                            executor, context, service);
-                    connection.process().subscribe();
-                }
-            });
+            channel.pipeline().addLast(new HttpChannelReadHandler(executor, closeHandler, context, service));
             return context;
         };
     }
@@ -114,8 +107,47 @@ final class NettyHttpServer {
         }
 
         @Override
+        public Completable closeAsyncGracefully() {
+            return asyncCloseable.closeAsyncGracefully();
+        }
+
+        @Override
         public Completable onClose() {
             return asyncCloseable.onClose();
+        }
+    }
+
+    private static final class HttpChannelReadHandler extends AbstractChannelReadHandler<Object>
+            implements NettyConnectionHolder {
+        private final Executor executor;
+        private final CloseHandler closeHandler;
+        private final ConnectionContext context;
+        private final HttpService service;
+        @Nullable
+        NettyHttpServerConnection connection;
+
+        HttpChannelReadHandler(final Executor executor, final CloseHandler closeHandler,
+                               final ConnectionContext context, final HttpService service) {
+            super(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE, executor);
+            this.executor = executor;
+            this.closeHandler = closeHandler;
+            this.context = context;
+            this.service = service;
+        }
+
+        @Override
+        protected void onPublisherCreation(final ChannelHandlerContext channelHandlerContext,
+                                           final Publisher<Object> requestObjectPublisher) {
+            connection = new NettyHttpServerConnection(
+                    channelHandlerContext.channel(), requestObjectPublisher,
+                    new TerminalPredicate<>(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE), closeHandler,
+                    executor, context, service);
+            connection.process().subscribe();
+        }
+
+        @Override
+        public NettyConnection getConnection() {
+            return connection;
         }
     }
 }

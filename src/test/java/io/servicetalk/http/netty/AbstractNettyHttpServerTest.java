@@ -15,8 +15,11 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
@@ -25,12 +28,16 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnit;
+import org.mockito.junit.MockitoRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
+import java.util.function.Function;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
@@ -44,6 +51,8 @@ public abstract class AbstractNettyHttpServerTest {
 
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
+    @Rule
+    public final MockitoRule rule = MockitoJUnit.rule().silent();
 
     @ClassRule
     public static final ExecutionContextRule CTX = new ExecutionContextRule(() -> DEFAULT_ALLOCATOR,
@@ -56,10 +65,13 @@ public abstract class AbstractNettyHttpServerTest {
     private ServerContext serverContext;
     private InetSocketAddress socketAddress;
 
+    @Mock
+    Function<HttpRequest<HttpPayloadChunk>, Publisher<HttpPayloadChunk>> publisherSupplier;
+
     @Before
     public void startServer() throws Exception {
         final InetSocketAddress bindAddress = new InetSocketAddress(LOOPBACK_ADDRESS, 0);
-        final TestService service = new TestService();
+        final TestService service = new TestService(publisherSupplier);
 
         // A small SNDBUF is needed to test that the server defers closing the connection until writes are complete.
         // However, if it is too small, tests that expect certain chunks of data will see those chunks broken up
@@ -80,7 +92,15 @@ public abstract class AbstractNettyHttpServerTest {
         awaitIndefinitely(serverContext.closeAsync());
     }
 
+    ServerContext getServerContext() {
+        return serverContext;
+    }
+
     InetSocketAddress getServerSocketAddress() {
         return socketAddress;
+    }
+
+    Function<HttpRequest<HttpPayloadChunk>, Publisher<HttpPayloadChunk>> getPublisherSupplier() {
+        return publisherSupplier;
     }
 }
