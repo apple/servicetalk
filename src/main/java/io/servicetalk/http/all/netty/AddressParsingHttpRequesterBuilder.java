@@ -475,5 +475,10 @@ public final class AddressParsingHttpRequesterBuilder {
         public Completable closeAsync() {
             return closeable.closeAsync();
         }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return closeable.closeAsyncGracefully();
+        }
     }
 }
