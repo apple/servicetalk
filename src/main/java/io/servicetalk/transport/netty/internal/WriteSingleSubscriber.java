@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOutboundInvoker;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -34,8 +33,6 @@ final class WriteSingleSubscriber implements Single.Subscriber<Object>, NettyCon
     private final SequentialCancellable sequentialCancellable;
     @SuppressWarnings("unused")
     private volatile int terminated;
-    @Nullable
-    private ChannelFuture lastWriteFuture;
 
     WriteSingleSubscriber(ChannelOutboundInvoker channel, Completable.Subscriber subscriber) {
         this.channel = channel;
@@ -53,8 +50,7 @@ final class WriteSingleSubscriber implements Single.Subscriber<Object>, NettyCon
     public void onSuccess(@Nullable Object result) {
         // If we are not on the EventLoop then both the write and the flush will be enqueued on the EventLoop so
         // ordering should be correct.
-        lastWriteFuture = channel.writeAndFlush(result);
-        lastWriteFuture.addListener(future -> {
+        channel.writeAndFlush(result).addListener(future -> {
             Throwable cause = future.cause();
             if (cause == null) {
                 notifyComplete();
@@ -80,11 +76,6 @@ final class WriteSingleSubscriber implements Single.Subscriber<Object>, NettyCon
         // invoke a write associated with this subscriber.
         sequentialCancellable.cancel();
         notifyError(closedException);
-    }
-
-    @Override
-    public ChannelFuture getLastWriteFuture() {
-        return lastWriteFuture;
     }
 
     private void notifyComplete() {

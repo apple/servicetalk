@@ -193,6 +193,11 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
     }
 
     @Override
+    public Completable closeAsyncGracefully() {
+        return connection.closeAsyncGracefully();
+    }
+
+    @Override
     public String toString() {
         return DefaultPipelinedConnection.class.getSimpleName() + "(" + connection + ")";
     }

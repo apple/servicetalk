@@ -32,7 +32,6 @@ import java.util.function.Supplier;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * Test helper that creates and disposes an {@link ExecutionContext} for your test case or suite.
@@ -84,7 +83,7 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
     @Override
     protected void after() {
         try {
-            awaitIndefinitely(ctx.getIoExecutor().closeAsync(0, 0, MILLISECONDS)
+            awaitIndefinitely(ctx.getIoExecutor().closeAsync()
                     .mergeDelayError(ctx.getExecutor().closeAsync()));
         } catch (Throwable t) {
             throw new RuntimeException(t);

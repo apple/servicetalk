@@ -17,7 +17,7 @@ package io.servicetalk.transport.netty.internal;
 
 import io.netty.channel.EventLoopGroup;
 
-final class EventLoopGroupIoExecutor extends AbstracttNettyIoExecutor<EventLoopGroup> implements EventLoopAwareNettyIoExecutor {
+final class EventLoopGroupIoExecutor extends AbstractNettyIoExecutor<EventLoopGroup> implements EventLoopAwareNettyIoExecutor {
 
     EventLoopGroupIoExecutor(EventLoopGroup eventLoopGroup, boolean interruptOnCancel) {
         super(eventLoopGroup, interruptOnCancel);

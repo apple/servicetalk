@@ -26,18 +26,35 @@ import io.netty.util.concurrent.ScheduledFuture;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
-abstract class AbstracttNettyIoExecutor<T extends EventLoopGroup> implements NettyIoExecutor, Executor {
+import static java.lang.Math.min;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+abstract class AbstractNettyIoExecutor<T extends EventLoopGroup> implements NettyIoExecutor, Executor {
 
     protected final T eventLoop;
     protected final boolean interruptOnCancel;
 
-    AbstracttNettyIoExecutor(T eventLoop, boolean interruptOnCancel) {
+    AbstractNettyIoExecutor(T eventLoop, boolean interruptOnCancel) {
         this.eventLoop = eventLoop;
         this.interruptOnCancel = interruptOnCancel;
     }
 
     @Override
-    public Completable closeAsync(long quietPeriod, long timeout, TimeUnit unit) {
+    public Completable closeAsync() {
+        return new NettyFutureCompletable(() -> eventLoop.shutdownGracefully(0, 0, NANOSECONDS));
+    }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return new NettyFutureCompletable(eventLoop::shutdownGracefully);
+    }
+
+    @Override
+    public Completable closeAsyncGracefully(long timeout, TimeUnit unit) {
+        // The `AsyncCloseable` interface doesn't support `quietPeriod`.
+        // Instead, we use the shorter of 2 seconds or half the timeout.
+        final long quietPeriod = min(unit.convert(2, SECONDS), timeout / 2);
         return new NettyFutureCompletable(() -> eventLoop.shutdownGracefully(quietPeriod, timeout, unit));
     }
 
@@ -65,7 +82,7 @@ abstract class AbstracttNettyIoExecutor<T extends EventLoopGroup> implements Net
             return false;
         }
 
-        AbstracttNettyIoExecutor<?> that = (AbstracttNettyIoExecutor<?>) o;
+        AbstractNettyIoExecutor<?> that = (AbstractNettyIoExecutor<?>) o;
 
         return interruptOnCancel == that.interruptOnCancel && eventLoop.equals(that.eventLoop);
     }
@@ -77,21 +94,21 @@ abstract class AbstracttNettyIoExecutor<T extends EventLoopGroup> implements Net
         return result;
     }
 
-     @Override
-     public Executor asExecutor() {
-         return this;
-     }
+    @Override
+    public Executor asExecutor() {
+        return this;
+    }
 
-     @Override
-     public Cancellable execute(final Runnable task) throws RejectedExecutionException {
+    @Override
+    public Cancellable execute(final Runnable task) throws RejectedExecutionException {
         Future<?> future = eventLoop.submit(task);
         return () -> future.cancel(interruptOnCancel);
-     }
+    }
 
-     @Override
-     public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit)
-             throws RejectedExecutionException {
-         ScheduledFuture<?> future = eventLoop.schedule(task, delay, unit);
-         return () -> future.cancel(interruptOnCancel);
-     }
- }
+    @Override
+    public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit)
+            throws RejectedExecutionException {
+        ScheduledFuture<?> future = eventLoop.schedule(task, delay, unit);
+        return () -> future.cancel(interruptOnCancel);
+    }
+}

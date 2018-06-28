@@ -127,4 +127,9 @@ public final class NettyConnectionContext implements ConnectionContext {
     public Completable closeAsync() {
         return close.closeAsync();
     }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return close.closeAsyncGracefully();
+    }
 }

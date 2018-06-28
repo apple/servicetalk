@@ -17,7 +17,6 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
@@ -34,14 +33,12 @@ import org.junit.Test;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.transport.api.FlushStrategy.defaultFlushStrategy;
 import static io.servicetalk.transport.api.FlushStrategy.flushBeforeEnd;
 import static io.servicetalk.transport.netty.internal.ReadAwareFlushStrategyHolder.flushOnReadComplete;
@@ -305,21 +302,6 @@ public class NettyConnectionTest {
         assertThat(channel.isOpen(), is(false));
         writeListener.verifyFailure(ClosedChannelException.class);
         pollChannelAndVerifyWrites();
-    }
-
-    @Test
-    public void testCloseAsyncDefer() throws ExecutionException, InterruptedException {
-        writeListener.listen(conn.write(publisher, flushBeforeEnd()));
-        Buffer hello1 = newBuffer("Hello1");
-        Buffer hello2 = newBuffer("Hello2");
-        publisher.sendItems(hello1);
-        Completable closeAsyncDeferred = conn.closeAsyncDeferred();
-        publisher.sendItems(hello2);
-        assertThat(channel.isOpen(), is(true));
-        awaitIndefinitely(closeAsyncDeferred);
-        writeListener.verifyFailure(ClosedChannelException.class);
-        assertThat(channel.isOpen(), is(false));
-        pollChannelAndVerifyWrites("Hello1", "Hello2");
     }
 
     @Test

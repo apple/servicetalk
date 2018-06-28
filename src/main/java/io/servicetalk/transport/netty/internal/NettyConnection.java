@@ -27,8 +27,6 @@ import io.servicetalk.transport.api.FlushStrategyHolder;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.EventLoop;
@@ -299,34 +297,18 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
         return context.closeAsync();
     }
 
-    /**
-     * Defers the call to {@link #closeAsync()} until after the last write operation has been flushed to the underlying
-     * operating system.
-     * <p>
-     * This method is designed to achieve ordering between writes and close of the socket which {@link #closeAsync()}
-     * does not provide. However, this method assumes that the desired ordering is achieved externally and hence this
-     * method is called after all the expected writes are enqueued to the connection. Failure to do so will also fail
-     * to guarantee that the writes are done before the socket is closed.
-     *
-     * @return {@link Completable} that closes the connection when subscribed to, deferring the close until the
-     * last write operation has been flushed to the underlying {@link Channel}.
-     */
-    public Completable closeAsyncDeferred() {
+    @Override
+    public Completable closeAsyncGracefully() {
         return new Completable() {
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {
-                final ChannelFuture channelFuture = writableListener.getLastWriteFuture();
-                if (channelFuture == null) {
-                    closeAsync().subscribe(subscriber);
-                    return;
+                onClose().subscribe(subscriber);
+                EventLoop eventLoop = channel.eventLoop();
+                if (eventLoop.inEventLoop()) {
+                    invokeUserCloseHandler();
+                } else {
+                    eventLoop.execute(NettyConnection.this::invokeUserCloseHandler);
                 }
-                // If there is a pending write, the FlushStrategy may not have flushed it yet. Flush it so we can close.
-                channel.flush();
-                channelFuture.addListener((ChannelFutureListener) future -> {
-                    // Since it is unlikely that we cancel close(), it is ok to delay onSubscribe till the last write
-                    // finishes.
-                    closeAsync().subscribe(subscriber);
-                });
             }
         };
     }
@@ -359,20 +341,6 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
     @Override
     public NettyIoExecutor getIoExecutor() {
         return toNettyIoExecutor(context.getIoExecutor());
-    }
-
-    /**
-     * Request this {@link Connection} to close gracefully with best effort.
-     * <p>
-     * TODO the implementation of AsyncCloseable#closeAsyncGracefully will call this
-     */
-    private void requestCloseGracefully() {
-        EventLoop eventLoop = channel.eventLoop();
-        if (eventLoop.inEventLoop()) {
-            invokeUserCloseHandler();
-        } else {
-            eventLoop.execute(this::invokeUserCloseHandler);
-        }
     }
 
     private void invokeUserCloseHandler() {
@@ -427,16 +395,6 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
          * @param closedException the exception which describes the close rational.
          */
         void channelClosed(Throwable closedException);
-
-        /**
-         * Get the {@link ChannelFuture} from the last write operation, or null if there have been no writes.
-         * <p>
-         * This method is designed to provide {@link #closeAsyncDeferred()} with a mechanism for knowing when writes
-         * have been flushed to the underlying operating system. For particulars about ordering guarantees see
-         * {@link #closeAsyncDeferred}.
-         */
-        @Nullable
-        ChannelFuture getLastWriteFuture();
     }
 
     private static final class NoopWritableListener implements WritableListener {
@@ -446,12 +404,6 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
 
         @Override
         public void channelClosed(Throwable closedException) {
-        }
-
-        @Override
-        @Nullable
-        public ChannelFuture getLastWriteFuture() {
-            return null;
         }
     }
 }

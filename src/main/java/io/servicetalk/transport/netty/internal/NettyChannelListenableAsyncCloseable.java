@@ -16,51 +16,59 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFutureListener;
-
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static java.util.Objects.requireNonNull;
 
 /**
  * Implements {@link ListenableAsyncCloseable} using a netty {@link Channel}.
  */
-public final class NettyChannelListenableAsyncCloseable implements ListenableAsyncCloseable {
+final class NettyChannelListenableAsyncCloseable implements ListenableAsyncCloseable {
 
-    private static final AtomicIntegerFieldUpdater<NettyChannelListenableAsyncCloseable> closeTriggeredUpdater =
-            AtomicIntegerFieldUpdater.newUpdater(NettyChannelListenableAsyncCloseable.class, "closeTriggered");
-    protected final Channel channel;
-    private final CompletableProcessor onClose = new CompletableProcessor();
-    @SuppressWarnings("unused")
-    private volatile int closeTriggered;
+    private final Channel channel;
+    private final CloseState state = new CloseState();
 
     /**
      * New instance.
+     *
      * @param channel to use.
      */
-    public NettyChannelListenableAsyncCloseable(Channel channel) {
+    NettyChannelListenableAsyncCloseable(Channel channel) {
         this.channel = requireNonNull(channel);
-        channel.closeFuture().addListener((ChannelFutureListener) future -> {
-            if (future.isSuccess()) {
-                onClose.onComplete();
-            } else if (future.cause() != null) {
-                onClose.onError(future.cause());
-            }
-        });
     }
 
     @Override
     public Completable closeAsync() {
         return new Completable() {
             @Override
-            protected void handleSubscribe(Subscriber subscriber) {
-                onClose.subscribe(subscriber);
-                if (closeTriggeredUpdater.compareAndSet(NettyChannelListenableAsyncCloseable.this, 0, 1)) {
-                    channel.eventLoop().execute(channel::close);
+            protected void handleSubscribe(final Subscriber subscriber) {
+                onClose().subscribe(subscriber);
+                if (state.tryCloseAsync()) {
+                    channel.close();
+                }
+            }
+        };
+    }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return new Completable() {
+            @Override
+            protected void handleSubscribe(final Subscriber subscriber) {
+                if (!state.tryCloseAsyncGracefully()) {
+                    onClose().subscribe(subscriber);
+                    return;
+                }
+
+                final NettyConnectionHolder holder = channel.pipeline().get(NettyConnectionHolder.class);
+                NettyConnection connection = holder == null ? null : holder.getConnection();
+                if (connection != null) {
+                    connection.closeAsyncGracefully().subscribe(subscriber);
+                } else {
+                    onClose().subscribe(subscriber);
+                    channel.close();
                 }
             }
         };
@@ -68,6 +76,6 @@ public final class NettyChannelListenableAsyncCloseable implements ListenableAsy
 
     @Override
     public Completable onClose() {
-        return onClose;
+        return new NettyFutureCompletable(channel::closeFuture);
     }
 }
