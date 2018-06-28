@@ -199,6 +199,11 @@ public final class PowerSetPartitionMap<T extends AsyncCloseable> implements Par
         return asyncCloseable.closeAsync();
     }
 
+    @Override
+    public Completable closeAsyncGracefully() {
+        return asyncCloseable.closeAsyncGracefully();
+    }
+
     private Completable closeAllValues(Map<PartitionAttributes, ValueHolder<T>> wildCardToValueMap) {
         List<Completable> completables = new ArrayList<>(wildCardToValueMap.size());
         wildCardToValueMap.forEach((attributes, holder) -> completables.add(holder.value.closeAsync()));
