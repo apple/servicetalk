@@ -37,6 +37,9 @@ public abstract class TypeHolder<T> {
 
     private final Type type;
 
+    /**
+     * Creates a new instance.
+     */
     protected TypeHolder() {
         Type superclass = getClass().getGenericSuperclass();
         if (superclass instanceof ParameterizedType) {
