@@ -25,8 +25,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.HttpRequests.fromBlockingRequest;
 import static java.util.Objects.requireNonNull;
 
@@ -53,8 +52,8 @@ final class HttpClientToBlockingHttpClient extends BlockingHttpClient {
             throws Exception {
         // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
-        return new ReservedHttpConnectionToBlocking(awaitIndefinitelyNonNull(client.reserveConnection(
-                fromBlockingRequest(request))));
+        return new ReservedHttpConnectionToBlocking(
+                blockingInvocation(client.reserveConnection(fromBlockingRequest(request))));
     }
 
     @Override
@@ -62,14 +61,14 @@ final class HttpClientToBlockingHttpClient extends BlockingHttpClient {
             final BlockingHttpRequest<HttpPayloadChunk> request) throws Exception {
         // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
-        UpgradableHttpResponse<HttpPayloadChunk> upgradeResponse = awaitIndefinitelyNonNull(
+        UpgradableHttpResponse<HttpPayloadChunk> upgradeResponse = blockingInvocation(
                 client.upgradeConnection(fromBlockingRequest(request)));
         return new UpgradableHttpResponseToBlocking<>(upgradeResponse, upgradeResponse.getPayloadBody().toIterable());
     }
 
     @Override
     public void close() throws Exception {
-        BlockingUtils.close(client);
+        blockingInvocation(client.closeAsync());
     }
 
     Completable onClose() {
@@ -82,52 +81,50 @@ final class HttpClientToBlockingHttpClient extends BlockingHttpClient {
     }
 
     static final class ReservedHttpConnectionToBlocking extends BlockingReservedHttpConnection {
-        private final ReservedHttpConnection reservedConnection;
+        private final ReservedHttpConnection connection;
 
-        ReservedHttpConnectionToBlocking(ReservedHttpConnection reservedConnection) {
-            this.reservedConnection = requireNonNull(reservedConnection);
+        ReservedHttpConnectionToBlocking(ReservedHttpConnection connection) {
+            this.connection = requireNonNull(connection);
         }
 
         @Override
         public void release() throws Exception {
-            // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter).
-            // So we don't apply any explicit timeout here and just wait forever.
-            awaitIndefinitely(reservedConnection.releaseAsync());
+            blockingInvocation(connection.releaseAsync());
         }
 
         @Override
         public ConnectionContext getConnectionContext() {
-            return reservedConnection.getConnectionContext();
+            return connection.getConnectionContext();
         }
 
         @Override
         public <T> BlockingIterable<T> getSettingIterable(final HttpConnection.SettingKey<T> settingKey) {
-            return reservedConnection.getSettingStream(settingKey).toIterable();
+            return connection.getSettingStream(settingKey).toIterable();
         }
 
         @Override
         public BlockingHttpResponse<HttpPayloadChunk> request(final BlockingHttpRequest<HttpPayloadChunk> request)
                 throws Exception {
-            return BlockingUtils.request(reservedConnection, request);
+            return BlockingUtils.request(connection, request);
         }
 
         @Override
         public ExecutionContext getExecutionContext() {
-            return reservedConnection.getExecutionContext();
+            return connection.getExecutionContext();
         }
 
         @Override
         public void close() throws Exception {
-            BlockingUtils.close(reservedConnection);
+            blockingInvocation(connection.closeAsync());
         }
 
         Completable onClose() {
-            return reservedConnection.onClose();
+            return connection.onClose();
         }
 
         @Override
         ReservedHttpConnection asConnectionInternal() {
-            return reservedConnection;
+            return connection;
         }
     }
 

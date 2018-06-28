@@ -17,8 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.transport.api.ConnectionContext;
 
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.HttpRequests.fromBlockingRequest;
 import static java.util.Objects.requireNonNull;
 
@@ -36,14 +35,12 @@ final class HttpServiceToBlockingHttpService extends BlockingHttpService {
         // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
         return new DefaultBlockingHttpResponse<>(
-                awaitIndefinitelyNonNull(service.handle(ctx, fromBlockingRequest(request))));
+                blockingInvocation(service.handle(ctx, fromBlockingRequest(request))));
     }
 
     @Override
     public void close() throws Exception {
-        // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
-        // apply any explicit timeout here and just wait forever.
-        awaitIndefinitely(service.closeAsync());
+        blockingInvocation(service.closeAsync());
     }
 
     @Override

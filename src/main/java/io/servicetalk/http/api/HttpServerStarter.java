@@ -23,7 +23,7 @@ import io.servicetalk.transport.api.ServerContext;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
 
 /**
@@ -211,7 +211,7 @@ public interface HttpServerStarter {
      */
     default ServerContext start(ExecutionContext executionContext, SocketAddress address, ContextFilter contextFilter,
                                 BlockingHttpService service) throws Exception {
-        return awaitIndefinitelyNonNull(start(executionContext, address, contextFilter, service.asService()));
+        return blockingInvocation(start(executionContext, address, contextFilter, service.asService()));
     }
 
     /**
@@ -283,7 +283,7 @@ public interface HttpServerStarter {
      */
     default ServerContext start(ExecutionContext executionContext, SocketAddress address, ContextFilter contextFilter,
                                 BlockingAggregatedHttpService service) throws Exception {
-        return awaitIndefinitelyNonNull(start(executionContext, address, contextFilter, service.asService()));
+        return blockingInvocation(start(executionContext, address, contextFilter, service.asService()));
     }
 
     /**

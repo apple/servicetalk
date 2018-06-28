@@ -19,7 +19,7 @@ import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.http.api.BlockingAggregatedHttpClient.BlockingAggregatedReservedHttpConnection;
 
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static java.util.Objects.requireNonNull;
 
 final class AggregatedHttpClientGroupToBlockingAggregatedHttpClientGroup<UnresolvedAddress>
@@ -37,20 +37,20 @@ final class AggregatedHttpClientGroupToBlockingAggregatedHttpClientGroup<Unresol
             throws Exception {
         // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
-        return awaitIndefinitelyNonNull(clientGroup.request(key, request));
+        return blockingInvocation(clientGroup.request(key, request));
     }
 
     @Override
     public BlockingAggregatedReservedHttpConnection reserveConnection(final GroupKey<UnresolvedAddress> key,
                                                                   final AggregatedHttpRequest<HttpPayloadChunk> request)
             throws Exception {
-        return awaitIndefinitelyNonNull(clientGroup.reserveConnection(key, request))
+        return blockingInvocation(clientGroup.reserveConnection(key, request))
                 .asBlockingAggregatedReservedConnection();
     }
 
     @Override
     public void close() throws Exception {
-        BlockingUtils.close(clientGroup);
+        blockingInvocation(clientGroup.closeAsync());
     }
 
     @Override

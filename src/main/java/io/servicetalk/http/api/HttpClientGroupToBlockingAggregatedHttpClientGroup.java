@@ -19,7 +19,7 @@ import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.http.api.BlockingAggregatedHttpClient.BlockingAggregatedReservedHttpConnection;
 
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.DefaultAggregatedHttpRequest.toHttpRequest;
 import static io.servicetalk.http.api.DefaultAggregatedHttpResponse.from;
 import static java.util.Objects.requireNonNull;
@@ -36,7 +36,7 @@ final class HttpClientGroupToBlockingAggregatedHttpClientGroup<UnresolvedAddress
     public AggregatedHttpResponse<HttpPayloadChunk> request(final GroupKey<UnresolvedAddress> key,
                                                             final AggregatedHttpRequest<HttpPayloadChunk> request)
             throws Exception {
-        return awaitIndefinitelyNonNull(clientGroup.request(key, toHttpRequest(request)).flatMap(response ->
+        return blockingInvocation(clientGroup.request(key, toHttpRequest(request)).flatMap(response ->
                             from(response, key.getExecutionContext().getBufferAllocator())));
     }
 
@@ -44,13 +44,13 @@ final class HttpClientGroupToBlockingAggregatedHttpClientGroup<UnresolvedAddress
     public BlockingAggregatedReservedHttpConnection reserveConnection(final GroupKey<UnresolvedAddress> key,
                                                                   final AggregatedHttpRequest<HttpPayloadChunk> request)
             throws Exception {
-        return awaitIndefinitelyNonNull(clientGroup.reserveConnection(key, toHttpRequest(request))
+        return blockingInvocation(clientGroup.reserveConnection(key, toHttpRequest(request))
                 .map(HttpClient.ReservedHttpConnection::asBlockingAggregatedReservedConnection));
     }
 
     @Override
     public void close() throws Exception {
-        BlockingUtils.close(clientGroup);
+        blockingInvocation(clientGroup.closeAsync());
     }
 
     @Override

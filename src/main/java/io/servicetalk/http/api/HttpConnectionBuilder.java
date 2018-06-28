@@ -24,7 +24,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 
 /**
  * A builder for {@link HttpConnection} objects.
@@ -64,7 +64,7 @@ public interface HttpConnectionBuilder<ResolvedAddress> {
      */
     default BlockingHttpConnection buildBlocking(ExecutionContext executionContext,
                                                  ResolvedAddress resolvedAddress) throws Exception {
-        return awaitIndefinitelyNonNull(build(executionContext, resolvedAddress)).asBlockingConnection();
+        return blockingInvocation(build(executionContext, resolvedAddress)).asBlockingConnection();
     }
 
     /**
@@ -77,7 +77,7 @@ public interface HttpConnectionBuilder<ResolvedAddress> {
      */
     default BlockingAggregatedHttpConnection buildBlockingAggregated(ExecutionContext executionContext,
                                                                      ResolvedAddress resolvedAddress) throws Exception {
-        return awaitIndefinitelyNonNull(build(executionContext, resolvedAddress)).asBlockingAggregatedConnection();
+        return blockingInvocation(build(executionContext, resolvedAddress)).asBlockingAggregatedConnection();
     }
 
     /**

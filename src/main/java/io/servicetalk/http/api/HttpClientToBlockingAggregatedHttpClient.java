@@ -23,8 +23,7 @@ import io.servicetalk.http.api.HttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.DefaultAggregatedHttpRequest.toHttpRequest;
 import static io.servicetalk.http.api.HttpClientToAggregatedHttpClient.doUpgradeConnection;
 import static java.util.Objects.requireNonNull;
@@ -39,14 +38,14 @@ final class HttpClientToBlockingAggregatedHttpClient extends BlockingAggregatedH
     @Override
     public BlockingAggregatedReservedHttpConnection reserveConnection(
             final AggregatedHttpRequest<HttpPayloadChunk> request) throws Exception {
-        return awaitIndefinitelyNonNull(client.reserveConnection(toHttpRequest(request))
+        return blockingInvocation(client.reserveConnection(toHttpRequest(request))
                 .map(ReservedHttpConnectionToBlockingAggregated::new));
     }
 
     @Override
     public AggregatedUpgradableHttpResponse<HttpPayloadChunk> upgradeConnection(
             final AggregatedHttpRequest<HttpPayloadChunk> request) throws Exception {
-        return awaitIndefinitelyNonNull(doUpgradeConnection(client, request));
+        return blockingInvocation(doUpgradeConnection(client, request));
     }
 
     @Override
@@ -62,7 +61,7 @@ final class HttpClientToBlockingAggregatedHttpClient extends BlockingAggregatedH
 
     @Override
     public void close() throws Exception {
-        BlockingUtils.close(client);
+        blockingInvocation(client.closeAsync());
     }
 
     @Override
@@ -83,9 +82,7 @@ final class HttpClientToBlockingAggregatedHttpClient extends BlockingAggregatedH
 
         @Override
         public void release() throws Exception {
-            // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter).
-            // So we don't apply any explicit timeout here and just wait forever.
-            awaitIndefinitely(connection.releaseAsync());
+            blockingInvocation(connection.releaseAsync());
         }
 
         @Override
@@ -111,7 +108,7 @@ final class HttpClientToBlockingAggregatedHttpClient extends BlockingAggregatedH
 
         @Override
         public void close() throws Exception {
-            BlockingUtils.close(connection);
+            blockingInvocation(connection.closeAsync());
         }
 
         @Override

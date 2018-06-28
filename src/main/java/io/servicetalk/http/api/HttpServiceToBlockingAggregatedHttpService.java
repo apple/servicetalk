@@ -17,7 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.transport.api.ConnectionContext;
 
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.DefaultAggregatedHttpRequest.toHttpRequest;
 import static io.servicetalk.http.api.DefaultAggregatedHttpResponse.from;
 import static java.util.Objects.requireNonNull;
@@ -33,13 +33,13 @@ final class HttpServiceToBlockingAggregatedHttpService extends BlockingAggregate
     public AggregatedHttpResponse<HttpPayloadChunk> handle(final ConnectionContext ctx,
                                                            final AggregatedHttpRequest<HttpPayloadChunk> request)
             throws Exception {
-        return awaitIndefinitelyNonNull(service.handle(ctx, toHttpRequest(request)).flatMap(response ->
+        return blockingInvocation(service.handle(ctx, toHttpRequest(request)).flatMap(response ->
                 from(response, ctx.getExecutionContext().getBufferAllocator())));
     }
 
     @Override
     public void close() throws Exception {
-        BlockingUtils.close(service);
+        blockingInvocation(service.closeAsync());
     }
 
     @Override

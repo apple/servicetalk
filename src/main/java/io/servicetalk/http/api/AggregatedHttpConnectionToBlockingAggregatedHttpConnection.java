@@ -21,6 +21,7 @@ import io.servicetalk.http.api.HttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static java.util.Objects.requireNonNull;
 
 final class AggregatedHttpConnectionToBlockingAggregatedHttpConnection extends BlockingAggregatedHttpConnection {
@@ -53,7 +54,7 @@ final class AggregatedHttpConnectionToBlockingAggregatedHttpConnection extends B
 
     @Override
     public void close() throws Exception {
-        BlockingUtils.close(connection);
+        blockingInvocation(connection.closeAsync());
     }
 
     @Override

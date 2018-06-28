@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static java.util.Objects.requireNonNull;
 
 final class HttpRequesterToBlockingAggregatedHttpRequester extends BlockingAggregatedHttpRequester {
@@ -40,7 +41,7 @@ final class HttpRequesterToBlockingAggregatedHttpRequester extends BlockingAggre
 
     @Override
     public void close() throws Exception {
-        BlockingUtils.close(requester);
+        blockingInvocation(requester.closeAsync());
     }
 
     @Override

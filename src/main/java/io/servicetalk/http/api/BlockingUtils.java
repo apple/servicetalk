@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
@@ -24,6 +23,7 @@ import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static io.servicetalk.http.api.DefaultAggregatedHttpRequest.from;
 import static io.servicetalk.http.api.DefaultAggregatedHttpRequest.toHttpRequest;
 import static io.servicetalk.http.api.DefaultAggregatedHttpResponse.from;
@@ -33,6 +33,9 @@ import static io.servicetalk.http.api.HttpResponses.fromBlockingResponse;
 import static java.lang.Thread.currentThread;
 
 final class BlockingUtils {
+
+    private static final Object DUMMY = new Object();
+
     private BlockingUtils() {
         // no instances
     }
@@ -91,19 +94,12 @@ final class BlockingUtils {
         };
     }
 
-    static void close(AsyncCloseable closeable) throws ExecutionException, InterruptedException {
-        // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
-        // apply any explicit timeout here and just wait forever.
-        awaitIndefinitely(closeable.closeAsync());
-    }
-
     static BlockingHttpResponse<HttpPayloadChunk> request(final HttpRequester requester,
                                                           final BlockingHttpRequest<HttpPayloadChunk> request)
             throws Exception {
         // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
-        return new DefaultBlockingHttpResponse<>(
-                awaitIndefinitelyNonNull(requester.request(fromBlockingRequest(request))));
+        return new DefaultBlockingHttpResponse<>(blockingInvocation(requester.request(fromBlockingRequest(request))));
     }
 
     static Single<HttpResponse<HttpPayloadChunk>> request(final BlockingAggregatedHttpRequester requester,
@@ -118,7 +114,7 @@ final class BlockingUtils {
             throws Exception {
         // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
-        return awaitIndefinitelyNonNull(requester.request(request));
+        return blockingInvocation(requester.request(request));
     }
 
     static AggregatedHttpResponse<HttpPayloadChunk> request(final HttpRequester requester,
@@ -126,7 +122,7 @@ final class BlockingUtils {
             throws Exception {
         // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
-        return awaitIndefinitelyNonNull(requester.request(toHttpRequest(request)).flatMap(response ->
+        return blockingInvocation(requester.request(toHttpRequest(request)).flatMap(response ->
                 from(response, requester.getExecutionContext().getBufferAllocator())));
     }
 
@@ -139,5 +135,30 @@ final class BlockingUtils {
     static Single<AggregatedHttpResponse<HttpPayloadChunk>> request(final BlockingAggregatedHttpRequester requester,
                                                                 final AggregatedHttpRequest<HttpPayloadChunk> request) {
         return blockingToSingle(() -> requester.request(request));
+    }
+
+    static <T> T blockingInvocation(Single<T> source) throws Exception {
+        // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
+        // apply any explicit timeout here and just wait forever.
+        try {
+            return awaitIndefinitelyNonNull(source);
+        } catch (final ExecutionException e) {
+            throwException(e.getCause());
+            return uncheckedCast(); // Used to fool the compiler, but actually should never be invoked at runtime.
+        }
+    }
+
+    static void blockingInvocation(Completable source) throws Exception {
+        // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
+        // apply any explicit timeout here and just wait forever.
+        try {
+            awaitIndefinitely(source);
+        } catch (final ExecutionException e) {
+            throwException(e.getCause());
+        }
+    }
+
+    private static <T> T uncheckedCast() {
+        return (T) DUMMY;
     }
 }
