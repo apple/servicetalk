@@ -207,4 +207,9 @@ final class DefaultHttpClientGroup<UnresolvedAddress> extends HttpClientGroup<Un
     public Completable closeAsync() {
         return asyncCloseable.closeAsync();
     }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return asyncCloseable.closeAsyncGracefully();
+    }
 }

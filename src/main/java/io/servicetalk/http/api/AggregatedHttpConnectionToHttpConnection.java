@@ -63,6 +63,11 @@ final class AggregatedHttpConnectionToHttpConnection extends HttpConnection {
     }
 
     @Override
+    public Completable closeAsyncGracefully() {
+        return aggregatedConnection.closeAsyncGracefully();
+    }
+
+    @Override
     AggregatedHttpConnection asAggregatedConnectionInternal() {
         return aggregatedConnection;
     }

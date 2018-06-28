@@ -72,4 +72,9 @@ final class AggregatedHttpClientGroupToAggregatedHttpRequester<UnresolvedAddress
     public Completable closeAsync() {
         return clientGroup.closeAsync();
     }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return clientGroup.closeAsyncGracefully();
+    }
 }

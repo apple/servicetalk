@@ -71,4 +71,9 @@ final class HttpClientGroupToHttpRequester<UnresolvedAddress> extends HttpReques
     public Completable closeAsync() {
         return clientGroup.closeAsync();
     }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return clientGroup.closeAsyncGracefully();
+    }
 }

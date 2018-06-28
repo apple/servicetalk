@@ -88,6 +88,11 @@ public final class LoadBalancerReadyHttpClient extends HttpClient {
         return next.closeAsync();
     }
 
+    @Override
+    public Completable closeAsyncGracefully() {
+        return next.closeAsyncGracefully();
+    }
+
     private BiIntFunction<Throwable, Completable> retryWhenFunction() {
         return (count, cause) -> count <= maxRetryCount && cause instanceof RetryableException ?
                 loadBalancerReadySubscriber.onHostsAvailable() : error(cause);

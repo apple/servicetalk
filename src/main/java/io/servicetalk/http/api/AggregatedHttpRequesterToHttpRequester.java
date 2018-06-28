@@ -51,6 +51,11 @@ final class AggregatedHttpRequesterToHttpRequester extends HttpRequester {
     }
 
     @Override
+    public Completable closeAsyncGracefully() {
+        return aggregatedRequester.closeAsyncGracefully();
+    }
+
+    @Override
     AggregatedHttpRequester asAggregatedRequesterInternal() {
         return aggregatedRequester;
     }

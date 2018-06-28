@@ -57,6 +57,11 @@ final class AggregatedHttpClientGroupToHttpClientGroup<UnresolvedAddress> extend
     }
 
     @Override
+    public Completable closeAsyncGracefully() {
+        return aggregatedGroup.closeAsyncGracefully();
+    }
+
+    @Override
     AggregatedHttpClientGroup<UnresolvedAddress> asAggregatedClientGroupInternal() {
         return aggregatedGroup;
     }

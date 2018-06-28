@@ -79,6 +79,11 @@ final class HttpClientToAggregatedHttpClient extends AggregatedHttpClient {
     }
 
     @Override
+    public Completable closeAsyncGracefully() {
+        return client.closeAsyncGracefully();
+    }
+
+    @Override
     HttpClient asClientInternal() {
         return client;
     }
@@ -124,6 +129,11 @@ final class HttpClientToAggregatedHttpClient extends AggregatedHttpClient {
         @Override
         public Completable closeAsync() {
             return reservedConnection.closeAsync();
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return reservedConnection.closeAsyncGracefully();
         }
 
         @Override

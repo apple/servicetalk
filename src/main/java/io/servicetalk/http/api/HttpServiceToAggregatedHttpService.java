@@ -43,6 +43,11 @@ final class HttpServiceToAggregatedHttpService extends AggregatedHttpService {
     }
 
     @Override
+    public Completable closeAsyncGracefully() {
+        return service.closeAsyncGracefully();
+    }
+
+    @Override
     HttpService asServiceInternal() {
         return service;
     }
