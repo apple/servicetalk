@@ -56,6 +56,7 @@ import java.net.SocketOption;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -273,10 +274,15 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
     }
 
     private static final class DefaultPartitionedRedisClient<ResolvedAddress> extends PartitionedRedisClient {
+        private static final AtomicIntegerFieldUpdater<DefaultPartitionedRedisClient> cancelledUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(DefaultPartitionedRedisClient.class, "cancelled");
+
         private final Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFactory;
         private final SequentialCancellable sequentialCancellable;
         private final PartitionMap<Partition> partitionMap;
         private final ExecutionContext executionContext;
+        @SuppressWarnings("unused")
+        private volatile int cancelled;
 
         DefaultPartitionedRedisClient(ExecutionContext executionContext,
                                       Publisher<PartitionedEvent<ResolvedAddress>> addressEventStream,
@@ -450,7 +456,20 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
         public Completable closeAsync() {
             // Cancel doesn't provide any status and is assumed to complete immediately so we just cancel when subscribe
             // is called.
-            return partitionMap.closeAsync().doBeforeSubscribe($ -> sequentialCancellable.cancel());
+            return partitionMap.closeAsync().doBeforeSubscribe($ -> cancel());
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            // Cancel doesn't provide any status and is assumed to complete immediately so we just cancel when subscribe
+            // is called.
+            return partitionMap.closeAsyncGracefully().doBeforeSubscribe($ -> cancel());
+        }
+
+        private void cancel() {
+            if (cancelledUpdater.compareAndSet(this, 0, 1)) {
+                sequentialCancellable.cancel();
+            }
         }
     }
 

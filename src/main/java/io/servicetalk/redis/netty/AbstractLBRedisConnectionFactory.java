@@ -52,4 +52,9 @@ abstract class AbstractLBRedisConnectionFactory<ResolvedAddress>
     public final Completable closeAsync() {
         return close.closeAsync();
     }
+
+    @Override
+    public final Completable closeAsyncGracefully() {
+        return close.closeAsyncGracefully();
+    }
 }

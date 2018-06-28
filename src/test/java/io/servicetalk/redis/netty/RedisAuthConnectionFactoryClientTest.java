@@ -50,7 +50,6 @@ import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecu
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 import static java.util.Comparator.comparingInt;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
@@ -81,7 +80,8 @@ public class RedisAuthConnectionFactoryClientTest {
         } else {
             assert ioExecutor != null;
             assert serviceDiscoverer != null;
-            awaitIndefinitely(client.closeAsync().andThen(serviceDiscoverer.closeAsync()).andThen(ioExecutor.closeAsync(0, 0, SECONDS)));
+            awaitIndefinitely(
+                    client.closeAsync().andThen(serviceDiscoverer.closeAsync()).andThen(ioExecutor.closeAsync()));
         }
     }
 

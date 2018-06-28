@@ -41,7 +41,6 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
@@ -69,7 +68,7 @@ public class RedisAuthConnectionFactoryConnectionTest {
                     .flatMap(connection -> connection.closeAsync().onErrorResume(cause -> completed()).toSingle(connection))
                     .ignoreResult()
                     .onErrorResume(cause -> completed())
-                    .andThen(ioExecutor.closeAsync(0, 0, SECONDS)));
+                    .andThen(ioExecutor.closeAsync()));
         }
     }
 

@@ -265,6 +265,11 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
             return subscribeLb.closeAsync().mergeDelayError(pipelineLb.closeAsync());
         }
 
+        @Override
+        public Completable closeAsyncGracefully() {
+            return subscribeLb.closeAsyncGracefully().mergeDelayError(pipelineLb.closeAsyncGracefully());
+        }
+
         private LoadBalancer<LoadBalancedRedisConnection> getLbForCommand(RedisProtocolSupport.Command cmd) {
             return isSubscribeModeCommand(cmd) ? subscribeLb : pipelineLb;
         }

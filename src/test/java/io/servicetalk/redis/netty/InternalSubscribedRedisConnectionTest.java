@@ -91,9 +91,9 @@ public class InternalSubscribedRedisConnectionTest {
     }
 
     @AfterClass
-    public static void tearDown() {
+    public static void tearDown() throws ExecutionException, InterruptedException {
         if (ioExecutor != null) {
-            ioExecutor.closeAsync(0, 0, SECONDS).subscribe();
+            awaitIndefinitely(ioExecutor.closeAsync());
         }
     }
 

@@ -70,7 +70,6 @@ import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIo
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.time.Duration.ofSeconds;
 import static java.util.Comparator.comparingInt;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -181,7 +180,7 @@ public class PartitionedRedisClientTest {
             return;
         }
 
-        awaitIndefinitely(client.closeAsync().andThen(ioExecutor.closeAsync(0, 0, SECONDS)));
+        awaitIndefinitely(client.closeAsync().andThen(ioExecutor.closeAsync()));
     }
 
     @Test

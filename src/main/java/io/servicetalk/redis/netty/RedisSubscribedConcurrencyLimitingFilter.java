@@ -41,6 +41,11 @@ final class RedisSubscribedConcurrencyLimitingFilter extends RedisConnection {
     }
 
     @Override
+    public Completable closeAsyncGracefully() {
+        return next.closeAsyncGracefully();
+    }
+
+    @Override
     public Completable onClose() {
         return next.onClose();
     }

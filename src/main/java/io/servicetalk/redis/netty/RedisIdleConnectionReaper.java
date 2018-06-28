@@ -149,6 +149,11 @@ final class RedisIdleConnectionReaper implements UnaryOperator<RedisConnection> 
         }
 
         @Override
+        public Completable closeAsyncGracefully() {
+            return delegate.closeAsyncGracefully();
+        }
+
+        @Override
         public Publisher<RedisData> request(final RedisRequest request) {
             return delegate.request(request)
                     .doBeforeSubscribe($ -> onRequestStarted())

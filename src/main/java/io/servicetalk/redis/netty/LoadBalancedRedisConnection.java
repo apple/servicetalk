@@ -69,6 +69,11 @@ final class LoadBalancedRedisConnection extends ReservedRedisConnection
     }
 
     @Override
+    public Completable closeAsyncGracefully() {
+        return delegate.closeAsyncGracefully();
+    }
+
+    @Override
     public boolean tryReserve() {
         return limiter.tryReserve();
     }

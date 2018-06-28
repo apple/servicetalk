@@ -234,6 +234,12 @@ public class RedisClientTest extends BaseRedisClientTest {
                 closeCalled.set(true);
                 return delegate.closeAsync();
             }
+
+            @Override
+            public Completable closeAsyncGracefully() {
+                closeCalled.set(true);
+                return delegate.closeAsyncGracefully();
+            }
         };
 
         RedisCommander commander = filteredClient.asCommander();

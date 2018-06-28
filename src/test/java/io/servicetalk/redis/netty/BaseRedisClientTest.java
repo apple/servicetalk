@@ -45,6 +45,7 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoff;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
@@ -56,7 +57,6 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 import static java.util.Comparator.comparingInt;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.IntStream.rangeClosed;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
@@ -104,7 +104,7 @@ public abstract class BaseRedisClientTest {
                         .setMaxPipelinedRequests(10)
                         .setIdleConnectionTimeout(ofSeconds(2))
                         .setPingPeriod(ofSeconds(PING_PERIOD_SECONDS))
-                        .build(executionContext,
+                .build(executionContext,
                                 serviceDiscoverer.discover(new DefaultHostAndPort(redisHost, redisPort))),
                 retryWithExponentialBackoff(10, cause -> cause instanceof RetryableException, ofMillis(10),
                         executionContext.getExecutor()));
@@ -129,8 +129,7 @@ public abstract class BaseRedisClientTest {
             }
             return;
         }
-
-        awaitIndefinitely(client.closeAsync().andThen(serviceDiscoverer.closeAsync()).andThen(ioExecutor.closeAsync(0, 0, SECONDS)));
+        awaitIndefinitely(newCompositeCloseable().concat(client, serviceDiscoverer, ioExecutor).closeAsync());
     }
 
     protected static Buffer buf(final CharSequence cs) {
