@@ -27,24 +27,27 @@ import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
 public interface RedisPartitionAttributesBuilder {
     /**
      * Add a key corresponding to a request which may impact the partition.
+     *
      * @param key a key corresponding to a request which may impact the partition.
      * @return {@code this}.
-     * @throws DuplicateAttributeException A best effort will be made to detect adding duplicate keys, and if a duplicate
-     * key is detected this exception will be thrown.
+     * @throws DuplicateAttributeException A best effort will be made to detect adding duplicate keys, and if a
+     * duplicate key is detected this exception will be thrown.
      */
     RedisPartitionAttributesBuilder addKey(CharSequence key);
 
     /**
      * Add a key corresponding to a request which may impact the partition.
+     *
      * @param key a key corresponding to a request which may impact the partition.
      * @return {@code this}.
-     * @throws DuplicateAttributeException A best effort will be made to detect adding duplicate keys, and if a duplicate
-     * key is detected this exception will be thrown.
+     * @throws DuplicateAttributeException A best effort will be made to detect adding duplicate keys, and if a
+     * duplicate key is detected this exception will be thrown.
      */
     RedisPartitionAttributesBuilder addKey(Buffer key);
 
     /**
      * Build the {@link PartitionAttributes} which is used to select the partition.
+     *
      * @return the {@link PartitionAttributes} which is used to select the partition.
      * @throws DuplicateAttributeException If there are any duplicate {@link Key}s detected.
      */

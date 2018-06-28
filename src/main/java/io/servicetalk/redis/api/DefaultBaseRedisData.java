@@ -31,7 +31,7 @@ public abstract class DefaultBaseRedisData<T> implements RedisData {
      *
      * @param value the data value.
      */
-    public DefaultBaseRedisData(final T value) {
+    protected DefaultBaseRedisData(final T value) {
         this.value = requireNonNull(value);
     }
 

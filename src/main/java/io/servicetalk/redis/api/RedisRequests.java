@@ -69,7 +69,7 @@ public final class RedisRequests {
     /**
      * Instantiates a new {@link RedisRequest} for a no-arg {@link Command} and {@link SubCommand}.
      *
-     * @param command    the request {@link Command}.
+     * @param command the request {@link Command}.
      * @param subCommand the request {@link SubCommand}.
      * @return a new {@link RedisRequest}.
      */
@@ -81,7 +81,7 @@ public final class RedisRequests {
      * Instantiates a new {@link RedisRequest} for a single-arg {@link Command}.
      *
      * @param command the request {@link Command}.
-     * @param arg     the command argument.
+     * @param arg the command argument.
      * @return a new {@link RedisRequest}.
      */
     public static RedisRequest newRequest(final Command command, final CompleteBulkString arg) {
@@ -91,9 +91,9 @@ public final class RedisRequests {
     /**
      * Instantiates a new {@link RedisRequest} for a single-arg {@link Command} and {@link SubCommand}.
      *
-     * @param command    the request {@link Command}.
+     * @param command the request {@link Command}.
      * @param subCommand the request {@link SubCommand}.
-     * @param arg        the command argument.
+     * @param arg the command argument.
      * @return a new {@link RedisRequest}.
      */
     public static RedisRequest newRequest(final Command command, final SubCommand subCommand, final CompleteBulkString arg) {
@@ -104,7 +104,7 @@ public final class RedisRequests {
      * Instantiates a new {@link RedisRequest}.
      *
      * @param command the request {@link Command}.
-     * @param args    the command arguments.
+     * @param args the command arguments.
      * @return a new {@link RedisRequest}.
      */
     public static RedisRequest newRequest(final Command command, final CompleteBulkString... args) {
@@ -119,9 +119,9 @@ public final class RedisRequests {
     /**
      * Instantiates a new {@link RedisRequest}.
      *
-     * @param command    the request {@link Command}.
+     * @param command the request {@link Command}.
      * @param subCommand the request {@link SubCommand}.
-     * @param args       the command arguments.
+     * @param args the command arguments.
      * @return a new {@link RedisRequest}.
      */
     public static RedisRequest newRequest(final Command command, final SubCommand subCommand, final CompleteBulkString... args) {
@@ -139,7 +139,8 @@ public final class RedisRequests {
      *
      * @param content the complete request.
      * @return a new {@link RequestRedisData}.
-     * @see <a href="https://redis.io/topics/protocol#sending-commands-to-a-redis-server">Sending commands to a Redis Server</a>
+     * @see <a href="https://redis.io/topics/protocol#sending-commands-to-a-redis-server">Sending commands to a Redis
+     * Server</a>
      */
     public static RedisRequest newRequest(final Array<CompleteRequestRedisData> content) {
         @SuppressWarnings("unchecked")
@@ -168,8 +169,8 @@ public final class RedisRequests {
     /**
      * Instantiates a new {@link RedisRequest}.
      *
-     * @param command       the request {@link Command}.
-     * @param content       a {@link Publisher} that provides the request content.
+     * @param command the request {@link Command}.
+     * @param content a {@link Publisher} that provides the request content.
      * @param flushStrategy the {@link FlushStrategy} to use with this request.
      * @return a new {@link RedisRequest}.
      */
@@ -185,7 +186,8 @@ public final class RedisRequests {
      * @param command the request command {@link Command}, provided for information only.
      * @param content the complete request.
      * @return a new {@link RedisRequest}.
-     * @see <a href="https://redis.io/topics/protocol#sending-commands-to-a-redis-server">Sending commands to a Redis Server</a>
+     * @see <a href="https://redis.io/topics/protocol#sending-commands-to-a-redis-server">Sending commands to a Redis
+     * Server</a>
      */
     public static RedisRequest newRequest(final Command command,
                                           final Buffer content) {
@@ -195,11 +197,12 @@ public final class RedisRequests {
     /**
      * Instantiates a new {@link RedisRequest} from a prepared {@link Buffer} that contains a complete Redis request.
      *
-     * @param command       the request command {@link Command}, provided for information only.
-     * @param content       the complete request.
+     * @param command the request command {@link Command}, provided for information only.
+     * @param content the complete request.
      * @param flushStrategy the {@link FlushStrategy} to use with this request.
      * @return a new {@link RedisRequest}.
-     * @see <a href="https://redis.io/topics/protocol#sending-commands-to-a-redis-server">Sending commands to a Redis Server</a>
+     * @see <a href="https://redis.io/topics/protocol#sending-commands-to-a-redis-server">Sending commands to a Redis
+     * Server</a>
      */
     public static RedisRequest newRequest(final Command command,
                                           final Buffer content,

@@ -28,8 +28,8 @@ public abstract class RedisClient extends RedisRequester {
      * Reserve a {@link RedisConnection} for the for handling the provided {@link RedisRequest}
      * but <b>does not execute it</b>!
      *
-     * @param request Allows the underlying layers to know what {@link RedisConnection}s are valid to reserve. For example
-     *                this may provide some insight into shard or other info.
+     * @param request Allows the underlying layers to know what {@link RedisConnection}s are valid to reserve.
+     * For example this may provide some insight into shard or other info.
      * @return a {@link ReservedRedisConnection}.
      */
     public abstract Single<? extends ReservedRedisConnection> reserveConnection(RedisRequest request);

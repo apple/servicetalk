@@ -45,6 +45,7 @@ public abstract class RedisConnection extends RedisRequester {
 
     /**
      * A key which identifies a configuration setting for a connection. Setting values may change over time.
+     *
      * @param <T> Type of the value of this setting.
      */
     @SuppressWarnings("unused")
@@ -68,7 +69,7 @@ public abstract class RedisConnection extends RedisRequester {
          * Creates a new {@link SettingKey} with the specific {@code name}.
          *
          * @param stringRepresentation of the option. This is only used for debugging purpose and not for key equality.
-         * @param <T>                  Type of the value of the option.
+         * @param <T> Type of the value of the option.
          * @return A new {@link SettingKey}.
          */
         static <T> SettingKey<T> newKeyWithDebugToString(String stringRepresentation) {

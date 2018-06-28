@@ -135,8 +135,7 @@ public interface RedisData {
     }
 
     /**
-     * <a href="https://redis.io/topics/protocol#resp-integers">Integer</a> representation of
-     * {@link RedisData}.
+     * <a href="https://redis.io/topics/protocol#resp-integers">Integer</a> representation of {@link RedisData}.
      */
     final class Integer extends DefaultBaseRedisData<Long> implements CompleteRequestRedisData {
         private static final int CACHE_LOWER_BOUND_VALUE = -128;

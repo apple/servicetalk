@@ -22,6 +22,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 /**
  * A builder of {@link RedisClient} objects.
+ *
  * @param <ResolvedAddress> An resolved address that can be used to establish new {@link RedisConnection}s.
  * @param <EventType> The type of {@link Event} which communicates address changes.
  */
@@ -31,10 +32,9 @@ public interface RedisClientBuilder<ResolvedAddress, EventType extends Event<Res
     /**
      * Build a new {@link RedisClient}.
      *
-     * @param executionContext {@link ExecutionContext} used for {@link RedisConnection#getExecutionContext()} and to
-     * build new {@link RedisConnection}s.
+     * @param executionContext {@link ExecutionContext} used by the returned {@link RedisClient}.
      * @param addressEventStream A stream of events (typically from a {@link ServiceDiscoverer#discover(Object)}) that
-     *                           provides the addresses used to create new {@link RedisConnection}s.
+     * provides the addresses used to create new {@link RedisConnection}s.
      * @return A new {@link RedisClient}.
      */
     RedisClient build(ExecutionContext executionContext, Publisher<EventType> addressEventStream);

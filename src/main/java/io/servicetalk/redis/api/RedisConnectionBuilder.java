@@ -43,6 +43,7 @@ public interface RedisConnectionBuilder<ResolvedAddress> {
     /**
      * Convert this {@link RedisConnectionBuilder} to a {@link ConnectionFactory}. This can be useful to take advantage
      * of connection filters targeted at the {@link ConnectionFactory} API.
+     *
      * @param executionContext {@link ExecutionContext} to use when building {@link RedisConnection}s.
      * {@link ConnectionFactory}.
      * @return A {@link ConnectionFactory} that will use the {@link #build(ExecutionContext, Object)} method to

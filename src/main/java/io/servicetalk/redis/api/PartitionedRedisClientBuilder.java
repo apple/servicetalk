@@ -29,11 +29,9 @@ public interface PartitionedRedisClientBuilder<ResolvedAddress> {
     /**
      * Build a new {@link PartitionedRedisClient}.
      *
-     * @param executionContext {@link ExecutionContext} used for {@link RedisConnection#getExecutionContext()} and to
-     * build new {@link RedisConnection}s.
-     * {@link PartitionedRedisClient}.
+     * @param executionContext {@link ExecutionContext} used by the returned {@link PartitionedRedisClient}.
      * @param addressEventStream A stream of events (typically from a {@link ServiceDiscoverer#discover(Object)}) that
-     *                           provides the addresses used to create new {@link RedisConnection}s.
+     * provides the addresses used to create new {@link RedisConnection}s.
      * @return A new {@link PartitionedRedisClient}.
      */
     PartitionedRedisClient build(ExecutionContext executionContext,

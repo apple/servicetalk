@@ -61,6 +61,7 @@ public abstract class RedisRequester implements ListenableAsyncCloseable {
      * <p>
      * Note that the {@link ExecutionContext#getIoExecutor()} will not necessarily be associated with a specific thread
      * unless that was how this object was built.
+     *
      * @return the {@link ExecutionContext} used during construction of this object.
      */
     public abstract ExecutionContext getExecutionContext();
@@ -94,8 +95,8 @@ public abstract class RedisRequester implements ListenableAsyncCloseable {
 
     /**
      * Provides an alternative java API to this {@link RedisRequester}. The {@link RedisCommander} return value has
-     * equivalent networking semantics and lifetime as this {@link RedisRequester}, and exists primarily to provide a more
-     * expressive java API targeted at the Redis protocol which favors {@link CharSequence} and {@link String}.
+     * equivalent networking semantics and lifetime as this {@link RedisRequester}, and exists primarily to provide a
+     * more expressive java API targeted at the Redis protocol which favors {@link CharSequence} and {@link String}.
      * <p>
      * Calling {@link RedisCommander#closeAsync()} will also close this {@link RedisRequester}!
      *
@@ -114,9 +115,9 @@ public abstract class RedisRequester implements ListenableAsyncCloseable {
     }
 
     /**
-     * Provides an alternative java API to this {@link RedisRequester}. The {@link BufferRedisCommander} return value has
-     * equivalent networking semantics and lifetime as this {@link RedisRequester}, and exists primarily to provide a more
-     * expressive java API targeted at the Redis protocol which favors {@link Buffer}.
+     * Provides an alternative java API to this {@link RedisRequester}. The {@link BufferRedisCommander} return value
+     * has equivalent networking semantics and lifetime as this {@link RedisRequester}, and exists primarily to provide
+     * a more expressive java API targeted at the Redis protocol which favors {@link Buffer}.
      * <p>
      * Calling {@link BufferRedisCommander#closeAsync()} will also close this {@link RedisRequester}!
      *

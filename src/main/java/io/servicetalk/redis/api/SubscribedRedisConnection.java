@@ -22,6 +22,7 @@ import javax.annotation.Generated;
 
 /**
  * A Redis command client that streams data.
+ *
  * @param <S> the streamed data type
  */
 @Generated({})
@@ -29,6 +30,7 @@ public interface SubscribedRedisConnection<S> extends AsyncCloseable {
 
     /**
      * Messages that are received by this client.
+     *
      * @return a {@link Publisher} of messages
      */
     Publisher<S> getMessages();

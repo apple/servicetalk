@@ -28,11 +28,13 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * <strong>Important:</strong>
- * We realize the restrictions of <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.1/README.md#2.13">Reactive Streams 2.13</a>,
- * but in this case the "source publisher" is internal and known to handle exceptions in such a way that the exception
- * will be pushed to {@link org.reactivestreams.Subscriber#onError(Throwable)} and untimely to the user.
- * This is decided to be a better alternative than just cancelling the {@link org.reactivestreams.Subscription} and logging an
- * error because it provides more visibility and direct feedback for users.
+ * We realize the restrictions of
+ * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.1/README.md#2.13">
+ * Reactive Streams 2.13</a>, but in this case the "source publisher" is internal and known to handle exceptions in such
+ * a way that the exception will be pushed to {@link org.reactivestreams.Subscriber#onError(Throwable)} and untimely to
+ * the user. This is decided to be a better alternative than just cancelling the
+ * {@link org.reactivestreams.Subscription} and logging an error because it provides more visibility and direct feedback
+ * for users.
  */
 final class RedisCoercions {
 
