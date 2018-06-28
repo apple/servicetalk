@@ -70,4 +70,9 @@ public abstract class DelegatingRedisClient extends RedisClient {
     public Completable closeAsync() {
         return wrapped.closeAsync();
     }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return wrapped.closeAsyncGracefully();
+    }
 }

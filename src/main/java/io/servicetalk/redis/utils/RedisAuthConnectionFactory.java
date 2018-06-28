@@ -77,4 +77,9 @@ public class RedisAuthConnectionFactory<ResolvedAddress> implements ConnectionFa
     public Completable closeAsync() {
         return delegate.closeAsync();
     }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return delegate.closeAsyncGracefully();
+    }
 }
