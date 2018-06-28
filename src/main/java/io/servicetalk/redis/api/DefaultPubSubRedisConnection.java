@@ -50,6 +50,11 @@ final class DefaultPubSubRedisConnection implements PubSubRedisConnection {
     }
 
     @Override
+    public Completable closeAsyncGracefully() {
+        return reservedCnx.closeAsyncGracefully();
+    }
+
+    @Override
     public Publisher<PubSubRedisMessage> getMessages() {
         return publisher;
     }

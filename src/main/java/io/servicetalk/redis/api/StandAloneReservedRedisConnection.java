@@ -81,6 +81,11 @@ final class StandAloneReservedRedisConnection extends RedisClient.ReservedRedisC
     }
 
     @Override
+    public Completable closeAsyncGracefully() {
+        return delegate.closeAsyncGracefully().doBeforeSubscribe(cancellable -> released = 1);
+    }
+
+    @Override
     public String toString() {
         return StandAloneReservedRedisConnection.class.getSimpleName() + "(" + delegate + ")";
     }

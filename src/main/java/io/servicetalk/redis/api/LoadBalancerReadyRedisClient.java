@@ -82,6 +82,11 @@ public final class LoadBalancerReadyRedisClient extends RedisClient {
         return next.closeAsync();
     }
 
+    @Override
+    public Completable closeAsyncGracefully() {
+        return next.closeAsyncGracefully();
+    }
+
     private BiIntFunction<Throwable, Completable> retryWhenFunction() {
         return (count, cause) -> count <= maxRetryCount && cause instanceof RetryableException ?
                 loadBalancerReadySubscriber.onHostsAvailable() : error(cause);

@@ -59,6 +59,11 @@ final class DefaultPartitionedRedisCommander implements RedisCommander {
     }
 
     @Override
+    public Completable closeAsyncGracefully() {
+        return partitionedRedisClient.closeAsyncGracefully();
+    }
+
+    @Override
     public Single<Long> append(@RedisProtocolSupport.Key final CharSequence key, final CharSequence value) {
         requireNonNull(key);
         requireNonNull(value);

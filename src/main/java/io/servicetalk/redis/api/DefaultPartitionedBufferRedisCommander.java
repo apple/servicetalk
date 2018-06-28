@@ -59,6 +59,11 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
     }
 
     @Override
+    public Completable closeAsyncGracefully() {
+        return partitionedRedisClient.closeAsyncGracefully();
+    }
+
+    @Override
     public Single<Long> append(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);

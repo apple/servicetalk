@@ -53,6 +53,11 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
+    public Completable closeAsyncGracefully() {
+        return requester.closeAsyncGracefully();
+    }
+
+    @Override
     public Single<Long> append(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);

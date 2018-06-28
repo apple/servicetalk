@@ -41,6 +41,11 @@ class DefaultSubscribedRedisConnection<S> implements SubscribedRedisConnection<S
     }
 
     @Override
+    public Completable closeAsyncGracefully() {
+        return reservedCnx.closeAsyncGracefully();
+    }
+
+    @Override
     public Publisher<S> getMessages() {
         return publisher;
     }

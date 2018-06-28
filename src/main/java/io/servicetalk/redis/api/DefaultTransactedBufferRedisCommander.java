@@ -53,6 +53,11 @@ final class DefaultTransactedBufferRedisCommander implements TransactedBufferRed
     }
 
     @Override
+    public Completable closeAsyncGracefully() {
+        return reservedCnx.closeAsyncGracefully();
+    }
+
+    @Override
     public Single<String> append(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);

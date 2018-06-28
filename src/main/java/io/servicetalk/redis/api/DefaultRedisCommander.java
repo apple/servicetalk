@@ -53,6 +53,11 @@ final class DefaultRedisCommander implements RedisCommander {
     }
 
     @Override
+    public Completable closeAsyncGracefully() {
+        return requester.closeAsyncGracefully();
+    }
+
+    @Override
     public Single<Long> append(@RedisProtocolSupport.Key final CharSequence key, final CharSequence value) {
         requireNonNull(key);
         requireNonNull(value);

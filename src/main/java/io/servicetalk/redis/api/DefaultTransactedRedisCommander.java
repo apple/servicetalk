@@ -53,6 +53,11 @@ final class DefaultTransactedRedisCommander implements TransactedRedisCommander 
     }
 
     @Override
+    public Completable closeAsyncGracefully() {
+        return reservedCnx.closeAsyncGracefully();
+    }
+
+    @Override
     public Single<String> append(@RedisProtocolSupport.Key final CharSequence key, final CharSequence value) {
         requireNonNull(key);
         requireNonNull(value);
