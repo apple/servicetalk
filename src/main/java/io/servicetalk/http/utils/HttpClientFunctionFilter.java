@@ -80,4 +80,9 @@ public final class HttpClientFunctionFilter extends HttpClient {
     public Completable closeAsync() {
         return next.closeAsync();
     }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return next.closeAsyncGracefully();
+    }
 }

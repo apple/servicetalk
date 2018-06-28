@@ -66,4 +66,9 @@ public abstract class DelegatingHttpClientGroup<UnresolvedAddress> extends HttpC
     public Completable closeAsync() {
         return delegate.closeAsync();
     }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return delegate.closeAsyncGracefully();
+    }
 }

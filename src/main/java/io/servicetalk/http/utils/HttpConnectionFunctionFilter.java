@@ -82,4 +82,9 @@ public final class HttpConnectionFunctionFilter extends HttpConnection {
     public Completable closeAsync() {
         return next.closeAsync();
     }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return next.closeAsyncGracefully();
+    }
 }
