@@ -57,8 +57,23 @@ public interface ContextFilter extends AsyncCloseable {
      *          {@code after}
      */
     default ContextFilter andThen(ContextFilter after) {
-        return context -> filter(context).flatMap(
-                result -> (result == null || !result) ? Single.success(result) : after.filter(context));
+        return new ContextFilter() {
+            @Override
+            public Single<Boolean> filter(final ConnectionContext context) {
+                return ContextFilter.this.filter(context).flatMap(
+                        result -> (result == null || !result) ? Single.success(result) : after.filter(context));
+            }
+
+            @Override
+            public Completable closeAsync() {
+                return ContextFilter.this.closeAsync().merge(after.closeAsync());
+            }
+
+            @Override
+            public Completable closeAsyncGracefully() {
+                return ContextFilter.this.closeAsyncGracefully().merge(after.closeAsyncGracefully());
+            }
+        };
     }
 
     /**
@@ -108,6 +123,11 @@ public interface ContextFilter extends AsyncCloseable {
             @Override
             public Completable closeAsync() {
                 return filter.closeAsync();
+            }
+
+            @Override
+            public Completable closeAsyncGracefully() {
+                return filter.closeAsyncGracefully();
             }
         };
     }

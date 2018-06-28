@@ -15,13 +15,9 @@
  */
 package io.servicetalk.transport.api;
 
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * {@link Executor} that handles IO.
@@ -30,28 +26,15 @@ public interface IoExecutor extends ListenableAsyncCloseable {
 
     /**
      * Determine if <a href="https://en.wikipedia.org/wiki/Unix_domain_socket">Unix Domain Sockets</a> are supported.
+     *
      * @return {@code true} if <a href="https://en.wikipedia.org/wiki/Unix_domain_socket">Unix Domain Sockets</a> are supported.
      */
     boolean isUnixDomainSocketSupported();
 
     /**
      * Determine if fd addresses are supported.
+     *
      * @return {@code true} if supported
      */
     boolean isFileDescriptorSocketAddressSupported();
-
-    /**
-     * Signals this object should be closed with a delay.
-     * @param quietPeriod the object will not accept new work within this time duration.
-     * @param timeout     the maximum amount of time to wait until this object is closed
-     *                    regardless if new work was submitted during the quiet period.
-     * @param unit        the unit of {@code quietPeriod} and {@code timeout}.
-     * @return a future that will complete when this object is closed.
-     */
-    Completable closeAsync(long quietPeriod, long timeout, TimeUnit unit);
-
-    @Override
-    default Completable closeAsync() {
-        return closeAsync(2, 15, SECONDS);
-    }
 }

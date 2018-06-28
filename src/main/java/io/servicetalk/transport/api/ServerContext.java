@@ -15,7 +15,6 @@
  */
 package io.servicetalk.transport.api;
 
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 import java.net.SocketAddress;
@@ -31,20 +30,4 @@ public interface ServerContext extends ListenableAsyncCloseable {
      * @return Address which the associated server is listening at.
      */
     SocketAddress getListenAddress();
-
-    /**
-     * Shutdown the server associated with this context.
-     *
-     * @return {@link Completable} which terminates successfully when the close was successful.
-     */
-    @Override
-    Completable closeAsync();
-
-    /**
-     * Listen to shutdown of the server associated with this context.
-     *
-     * @return {@link Completable} which terminates successfully when the server is successfully shutdown.
-     */
-    @Override
-    Completable onClose();
 }
