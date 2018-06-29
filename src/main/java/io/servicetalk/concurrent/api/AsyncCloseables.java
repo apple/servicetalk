@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
 
@@ -27,6 +29,20 @@ public final class AsyncCloseables {
 
     private AsyncCloseables() {
         // No instances.
+    }
+
+    /**
+     * Invokes {@link AsyncCloseable#closeAsyncGracefully()} on the {@code closable}, applies a timeout, and if the
+     * timeout fires forces a call to {@link AsyncCloseable#closeAsync()}.
+     * @param closable The {@link AsyncCloseable} to initiate {@link AsyncCloseable#closeAsyncGracefully()} on.
+     * @param timeout The timeout duration to wait for {@link AsyncCloseable#closeAsyncGracefully()} to complete.
+     * @param timeoutUnit The time unit applied to {@code timeout}.
+     * @return A {@link Completable} that is notified once the close is complete.
+     */
+    public static Completable closeAsyncGracefully(AsyncCloseable closable, long timeout, TimeUnit timeoutUnit) {
+        return closable.closeAsyncGracefully().timeout(timeout, timeoutUnit).onErrorResume(
+                t -> t instanceof TimeoutException ? closable.closeAsync() : Completable.error(t)
+        );
     }
 
     /**
