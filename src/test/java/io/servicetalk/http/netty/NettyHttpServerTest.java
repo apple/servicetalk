@@ -59,6 +59,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.AsyncCloseables.closeAsyncGracefully;
 import static io.servicetalk.concurrent.internal.Await.await;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
@@ -335,7 +336,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
         // Use a very high timeout for the graceful close. It should happen quite quickly because there are no
         // active requests/responses.
-        awaitIndefinitely(getServerContext().closeAsyncGracefully(1000, SECONDS));
+        awaitIndefinitely(closeAsyncGracefully(getServerContext(), 1000, SECONDS));
         assertConnectionClosed();
     }
 
@@ -346,7 +347,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_PUBLISHER_RULE);
         final HttpResponse<HttpPayloadChunk> response1 = makeRequest(request1);
 
-        getServerContext().closeAsyncGracefully(1000, SECONDS).subscribe();
+        closeAsyncGracefully(getServerContext(), 1000, SECONDS).subscribe();
         publisherRule.sendItems(getChunkFromString("Hello"));
         publisherRule.complete();
 
@@ -372,7 +373,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         makeRequest(request1);
 
         // cancelling the Completable does not cancel the shutdown.
-        getServerContext().closeAsyncGracefully(1000, SECONDS).doAfterSubscribe(Cancellable::cancel).subscribe();
+        closeAsyncGracefully(getServerContext(), 1000, SECONDS).doAfterSubscribe(Cancellable::cancel).subscribe();
 
         assertConnectionClosed();
     }
@@ -382,7 +383,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_PUBLISHER_RULE);
         makeRequest(request1);
 
-        awaitIndefinitely(getServerContext().closeAsyncGracefully(500, MILLISECONDS));
+        awaitIndefinitely(closeAsyncGracefully(getServerContext(), 500, MILLISECONDS));
 
         assertConnectionClosed();
     }
@@ -392,7 +393,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_PUBLISHER_RULE);
         makeRequest(request1);
 
-        getServerContext().closeAsyncGracefully(1000, SECONDS).subscribe();
+        closeAsyncGracefully(getServerContext(), 1000, SECONDS).subscribe();
         // Wait 500 millis for the "immediate" close to happen, since there are multiple threads involved.
         // If it takes any longer than that, it probably didn't work, but the graceful close would make the test pass.
         awaitIndefinitely(getServerContext().closeAsync());
