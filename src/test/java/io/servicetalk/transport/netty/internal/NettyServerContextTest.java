@@ -37,6 +37,7 @@ import org.mockito.junit.MockitoRule;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.servicetalk.concurrent.api.AsyncCloseables.closeAsyncGracefully;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -153,7 +154,7 @@ public class NettyServerContextTest {
     @Test
     public void testCloseAsyncGracefulOrdering() {
         closeBeforeCloseAsyncGracefulCompletable.verifyListenNotCalled();
-        fixture.closeAsyncGracefully(100, SECONDS).subscribe();
+        closeAsyncGracefully(fixture, 100, SECONDS).subscribe();
         closeBeforeCloseAsyncGracefulCompletable.verifyListenCalled();
 
         channelSetCloseAsyncGracefulCompletable.verifyListenNotCalled();

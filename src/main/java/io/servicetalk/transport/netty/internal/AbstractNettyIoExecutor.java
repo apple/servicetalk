@@ -26,9 +26,7 @@ import io.netty.util.concurrent.ScheduledFuture;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 abstract class AbstractNettyIoExecutor<T extends EventLoopGroup> implements NettyIoExecutor, Executor {
 
@@ -48,14 +46,6 @@ abstract class AbstractNettyIoExecutor<T extends EventLoopGroup> implements Nett
     @Override
     public Completable closeAsyncGracefully() {
         return new NettyFutureCompletable(eventLoop::shutdownGracefully);
-    }
-
-    @Override
-    public Completable closeAsyncGracefully(long timeout, TimeUnit unit) {
-        // The `AsyncCloseable` interface doesn't support `quietPeriod`.
-        // Instead, we use the shorter of 2 seconds or half the timeout.
-        final long quietPeriod = min(unit.convert(2, SECONDS), timeout / 2);
-        return new NettyFutureCompletable(() -> eventLoop.shutdownGracefully(quietPeriod, timeout, unit));
     }
 
     @Override
