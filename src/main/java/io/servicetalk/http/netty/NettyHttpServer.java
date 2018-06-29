@@ -32,9 +32,9 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.AbstractChannelReadHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
+import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.Connection.TerminalPredicate;
-import io.servicetalk.transport.netty.internal.NettyConnection;
-import io.servicetalk.transport.netty.internal.NettyConnectionHolder;
+import io.servicetalk.transport.netty.internal.ConnectionHolderChannelHandler;
 
 import io.netty.channel.ChannelHandlerContext;
 
@@ -118,13 +118,13 @@ final class NettyHttpServer {
     }
 
     private static final class HttpChannelReadHandler extends AbstractChannelReadHandler<Object>
-            implements NettyConnectionHolder {
+            implements ConnectionHolderChannelHandler<Object, Object> {
         private final Executor executor;
         private final CloseHandler closeHandler;
         private final ConnectionContext context;
         private final HttpService service;
         @Nullable
-        NettyHttpServerConnection connection;
+        private NettyHttpServerConnection connection;
 
         HttpChannelReadHandler(final Executor executor, final CloseHandler closeHandler,
                                final ConnectionContext context, final HttpService service) {
@@ -146,7 +146,7 @@ final class NettyHttpServer {
         }
 
         @Override
-        public NettyConnection getConnection() {
+        public Connection<Object, Object> getConnection() {
             return connection;
         }
     }
