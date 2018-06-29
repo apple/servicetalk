@@ -15,21 +15,12 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.netty.channel.ChannelHandler;
+final class CloseStates {
+    static final int OPEN = 0;
+    static final int GRACEFULLY_CLOSING = 1;
+    static final int CLOSING = 2;
 
-import javax.annotation.Nullable;
-
-/**
- * A {@link ChannelHandler} that provides access to a {@link NettyConnection}.
- */
-public interface NettyConnectionHolder extends ChannelHandler {
-
-    /**
-     * Get the {@link NettyConnection} that is associated with this handler. May be null if the channel pipeline has
-     * not yet been initialized.
-     *
-     * @return the {@link NettyConnection} that is associated with this handler.
-     */
-    @Nullable
-    NettyConnection getConnection();
+    private CloseStates() {
+        // no instances
+    }
 }

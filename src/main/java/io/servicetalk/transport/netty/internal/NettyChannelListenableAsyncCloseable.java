@@ -20,15 +20,23 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 import io.netty.channel.Channel;
 
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+
+import static io.servicetalk.transport.netty.internal.CloseStates.CLOSING;
+import static io.servicetalk.transport.netty.internal.CloseStates.GRACEFULLY_CLOSING;
+import static io.servicetalk.transport.netty.internal.CloseStates.OPEN;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
  * Implements {@link ListenableAsyncCloseable} using a netty {@link Channel}.
  */
 final class NettyChannelListenableAsyncCloseable implements ListenableAsyncCloseable {
-
+    private static final AtomicIntegerFieldUpdater<NettyChannelListenableAsyncCloseable> stateUpdater =
+            newUpdater(NettyChannelListenableAsyncCloseable.class, "state");
     private final Channel channel;
-    private final CloseState state = new CloseState();
+    @SuppressWarnings("unused")
+    private volatile int state;
 
     /**
      * New instance.
@@ -45,7 +53,7 @@ final class NettyChannelListenableAsyncCloseable implements ListenableAsyncClose
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {
                 onClose().subscribe(subscriber);
-                if (state.tryCloseAsync()) {
+                if (stateUpdater.getAndSet(NettyChannelListenableAsyncCloseable.this, CLOSING) != CLOSING) {
                     channel.close();
                 }
             }
@@ -57,13 +65,14 @@ final class NettyChannelListenableAsyncCloseable implements ListenableAsyncClose
         return new Completable() {
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {
-                if (!state.tryCloseAsyncGracefully()) {
+                if (!stateUpdater.compareAndSet(NettyChannelListenableAsyncCloseable.this, OPEN, GRACEFULLY_CLOSING)) {
                     onClose().subscribe(subscriber);
                     return;
                 }
 
-                final NettyConnectionHolder holder = channel.pipeline().get(NettyConnectionHolder.class);
-                NettyConnection connection = holder == null ? null : holder.getConnection();
+                final ConnectionHolderChannelHandler<?, ?> holder =
+                        channel.pipeline().get(ConnectionHolderChannelHandler.class);
+                Connection<?, ?> connection = holder == null ? null : holder.getConnection();
                 if (connection != null) {
                     connection.closeAsyncGracefully().subscribe(subscriber);
                 } else {

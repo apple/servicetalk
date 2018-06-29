@@ -66,7 +66,7 @@ public class ChannelSetTest {
     @Mock
     private ChannelPipeline channelPipeline;
     @Mock
-    private NettyConnectionHolder nettyConnectionHolder;
+    private ConnectionHolderChannelHandler connectionHolderChannelHandler;
     @Mock
     private NettyConnection nettyConnection;
 
@@ -86,8 +86,8 @@ public class ChannelSetTest {
         });
         when(channelCloseFuture.channel()).thenReturn(channel);
         when(channel.pipeline()).thenReturn(channelPipeline);
-        when(channelPipeline.get(NettyConnectionHolder.class)).thenReturn(nettyConnectionHolder);
-        when(nettyConnectionHolder.getConnection()).thenReturn(nettyConnection);
+        when(channelPipeline.get(ConnectionHolderChannelHandler.class)).thenReturn(connectionHolderChannelHandler);
+        when(connectionHolderChannelHandler.getConnection()).thenReturn(nettyConnection);
         when(nettyConnection.closeAsync()).thenReturn(closeAsyncCompletable);
         when(nettyConnection.closeAsyncGracefully()).thenReturn(closeAsyncGracefullyCompletable);
         when(channelCloseFuture.addListener(any())).then((invocation) -> {
@@ -122,7 +122,7 @@ public class ChannelSetTest {
 
     @Test
     public void closeAsyncGracefullyWithoutNettyConnectionChannelHandler() throws Exception {
-        when(channelPipeline.get(NettyConnectionHolder.class)).thenReturn(null);
+        when(channelPipeline.get(ConnectionHolderChannelHandler.class)).thenReturn(null);
         Completable completable = fixture.closeAsyncGracefully(100, SECONDS);
         verify(channel, never()).close();
         subscriberRule1.listen(completable);

@@ -25,10 +25,15 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelId;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.transport.netty.internal.CloseStates.CLOSING;
+import static io.servicetalk.transport.netty.internal.CloseStates.GRACEFULLY_CLOSING;
+import static io.servicetalk.transport.netty.internal.CloseStates.OPEN;
+import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
  * Manages a set of {@link Channel}s to provide a mechanism for closing all of them.
@@ -36,21 +41,22 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
  * Channels are removed from the set when they are closed.
  */
 public final class ChannelSet implements ListenableAsyncCloseable {
+    private static final AtomicIntegerFieldUpdater<ChannelSet> stateUpdater = newUpdater(ChannelSet.class, "state");
 
     private final ChannelFutureListener remover = new ChannelFutureListener() {
         @Override
         public void operationComplete(final ChannelFuture future) {
-            final Channel channel = future.channel();
-            final boolean wasRemoved = channelMap.remove(channel.id()) != null;
-            if (wasRemoved && state.isClosing() && channelMap.isEmpty()) {
+            final boolean wasRemoved = channelMap.remove(future.channel().id()) != null;
+            if (wasRemoved && state != OPEN && channelMap.isEmpty()) {
                 onClose.onComplete();
             }
         }
     };
 
-    private final ConcurrentMap<ChannelId, Channel> channelMap = new ConcurrentHashMap<>();
+    private final Map<ChannelId, Channel> channelMap = new ConcurrentHashMap<>();
     private final CompletableProcessor onClose = new CompletableProcessor();
-    private final CloseState state = new CloseState();
+    @SuppressWarnings("unused")
+    private volatile int state;
 
     /**
      * Add a {@link Channel} to this {@link ChannelSet}, if it is not already present. {@link Channel#id()} is used to
@@ -62,7 +68,7 @@ public final class ChannelSet implements ListenableAsyncCloseable {
     public boolean addIfAbsent(final Channel channel) {
         final boolean added = channelMap.putIfAbsent(channel.id(), channel) == null;
 
-        if (state.isClosing()) {
+        if (state != OPEN) {
             if (added) {
                 channelMap.remove(channel.id(), channel);
                 channel.close();
@@ -80,7 +86,7 @@ public final class ChannelSet implements ListenableAsyncCloseable {
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {
                 onClose.subscribe(subscriber);
-                if (!state.tryCloseAsync()) {
+                if (stateUpdater.getAndSet(ChannelSet.this, CLOSING) == CLOSING) {
                     return;
                 }
 
@@ -103,7 +109,7 @@ public final class ChannelSet implements ListenableAsyncCloseable {
         return new Completable() {
             @Override
             protected void handleSubscribe(final Subscriber subscriber) {
-                if (!state.tryCloseAsyncGracefully()) {
+                if (!stateUpdater.compareAndSet(ChannelSet.this, OPEN, GRACEFULLY_CLOSING)) {
                     onClose.subscribe(subscriber);
                     return;
                 }
@@ -117,8 +123,9 @@ public final class ChannelSet implements ListenableAsyncCloseable {
                 CompositeCloseable closeable = newCompositeCloseable().concat(() -> onClose);
 
                 for (final Channel channel : channelMap.values()) {
-                    final NettyConnectionHolder holder = channel.pipeline().get(NettyConnectionHolder.class);
-                    NettyConnection connection = holder == null ? null : holder.getConnection();
+                    final ConnectionHolderChannelHandler<?, ?> holder =
+                            channel.pipeline().get(ConnectionHolderChannelHandler.class);
+                    Connection<?, ?> connection = holder == null ? null : holder.getConnection();
                     if (connection != null) {
                         closeable = closeable.merge(connection);
                     } else {
