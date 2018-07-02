@@ -707,6 +707,68 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     }
 
     /**
+     * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
+     * to compose existing operator(s) to satisfy your use case.</strong>
+     * <p>
+     * Returns a {@link Completable} that when {@link Completable#subscribe(Subscriber)} is called the {@code operator}
+     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Completable}.
+     * <pre>{@code
+     *     Completable<X> pub = ...;
+     *     pub.map(..) // A
+     *        .liftSynchronous(original -> modified)
+     *        .doAfterFinally(..) // B
+     * }</pre>
+     * The {@code original -> modified} "operator" <strong>MUST</strong> be "synchronous" in that it does not interact
+     * with the original {@link Subscriber} from outside the modified {@link Subscriber} or {@link Cancellable}
+     * threads. That is to say this operator will not impact the {@link Executor} constraints already in place between
+     * <i>A</i> and <i>B</i> above. If you need asynchronous behavior, or are unsure, see
+     * {@link #liftAsynchronous(CompletableOperator)}.
+     * @param operator The custom operator logic. The input is the "original" {@link Subscriber} to this
+     * {@link Completable} and the return is the "modified" {@link Subscriber} that provides custom operator business
+     * logic.
+     * @return a {@link Completable} that when {@link Completable#subscribe(Subscriber)} is called the {@code operator}
+     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Completable}.
+     * @see #liftAsynchronous(CompletableOperator)
+     */
+    public final Completable liftSynchronous(CompletableOperator operator) {
+        return new LiftSynchronousCompletableOperator(this, operator, executor);
+    }
+
+    /**
+     * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
+     * to compose existing operator(s) to satisfy your use case.</strong>
+     * <p>
+     * Returns a {@link Completable} that when {@link Completable#subscribe(Subscriber)} is called the {@code operator}
+     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Completable}.
+     * <pre>{@code
+     *     Publisher<X> pub = ...;
+     *     pub.map(..) // A
+     *        .liftAsynchronous(original -> modified)
+     *        .doAfterFinally(..) // B
+     * }</pre>
+     * The {@code original -> modified} "operator" MAY be "asynchronous" in that it may interact with the original
+     * {@link Subscriber} from outside the modified {@link Subscriber} or {@link Cancellable} threads. More
+     * specifically:
+     * <ul>
+     *  <li>all of the {@link Subscriber} invocations going "downstream" (i.e. from <i>A</i> to <i>B</i> above) MAY be
+     *  offloaded via an {@link Executor}</li>
+     *  <li>all of the {@link Cancellable} invocations going "upstream" (i.e. from <i>B</i> to <i>A</i> above) MAY be
+     *  offloaded via an {@link Executor}</li>
+     * </ul>
+     * This behavior exists to prevent blocking code negatively impacting the thread that powers the upstream source of
+     * data (e.g. an EventLoop).
+     * @param operator The custom operator logic. The input is the "original" {@link Subscriber} to this
+     * {@link Completable} and the return is the "modified" {@link Subscriber} that provides custom operator business
+     * logic.
+     * @return a {@link Completable} that when {@link Completable#subscribe(Subscriber)} is called the {@code operator}
+     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Completable}.
+     * @see #liftSynchronous(CompletableOperator)
+     */
+    public final Completable liftAsynchronous(CompletableOperator operator) {
+        return new LiftAsynchronousCompletableOperator(this, operator, executor);
+    }
+
+    /**
      * Creates a realized completed {@code Completable}.
      *
      * @return A new {@code Completable}.

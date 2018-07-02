@@ -21,12 +21,12 @@ import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 
-final class LiftAsynchronousOperator<T, R> extends AbstractAsynchronousPublisherOperator<T, R> {
+final class LiftAsynchronousPublisherOperator<T, R> extends AbstractAsynchronousPublisherOperator<T, R> {
     private final Function<Subscriber<? super R>, Subscriber<? super T>> customOperator;
 
-    LiftAsynchronousOperator(Publisher<T> original,
-                             Function<Subscriber<? super R>, Subscriber<? super T>> customOperator,
-                             Executor executor) {
+    LiftAsynchronousPublisherOperator(Publisher<T> original,
+                                      Function<Subscriber<? super R>, Subscriber<? super T>> customOperator,
+                                      Executor executor) {
         super(original, executor);
         this.customOperator = requireNonNull(customOperator);
     }

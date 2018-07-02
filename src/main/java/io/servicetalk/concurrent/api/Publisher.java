@@ -166,7 +166,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see #liftAsynchronous(PublisherOperator)
      */
     public final <R> Publisher<R> liftSynchronous(PublisherOperator<T, R> operator) {
-        return new LiftSynchronousOperator<>(this, operator, executor);
+        return new LiftSynchronousPublisherOperator<>(this, operator, executor);
     }
 
     /**
@@ -178,7 +178,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * <pre>{@code
      *     Publisher<X> pub = ...;
      *     pub.map(..) // A
-     *        .liftSynchronous(original -> modified)
+     *        .liftAsynchronous(original -> modified)
      *        .filter(..) // B
      * }</pre>
      * The {@code original -> modified} "operator" MAY be "asynchronous" in that it may interact with the original
@@ -201,7 +201,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see #liftSynchronous(PublisherOperator)
      */
     public final <R> Publisher<R> liftAsynchronous(PublisherOperator<T, R> operator) {
-        return new LiftAsynchronousOperator<>(this, operator, executor);
+        return new LiftAsynchronousPublisherOperator<>(this, operator, executor);
     }
 
     /**

@@ -645,6 +645,70 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     }
 
     /**
+     * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
+     * to compose existing operator(s) to satisfy your use case.</strong>
+     * <p>
+     * Returns a {@link Single} that when {@link Single#subscribe(Subscriber)} is called the {@code operator}
+     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Single}.
+     * <pre>{@code
+     *     Single<X> pub = ...;
+     *     pub.map(..) // A
+     *        .liftSynchronous(original -> modified)
+     *        .doAfterFinally(..) // B
+     * }</pre>
+     * The {@code original -> modified} "operator" <strong>MUST</strong> be "synchronous" in that it does not interact
+     * with the original {@link Subscriber} from outside the modified {@link Subscriber} or {@link Cancellable}
+     * threads. That is to say this operator will not impact the {@link Executor} constraints already in place between
+     * <i>A</i> and <i>B</i> above. If you need asynchronous behavior, or are unsure, see
+     * {@link #liftAsynchronous(SingleOperator)}.
+     * @param operator The custom operator logic. The input is the "original" {@link Subscriber} to this
+     * {@link Single} and the return is the "modified" {@link Subscriber} that provides custom operator business
+     * logic.
+     * @param <R> Type of the items emitted by the returned {@link Single}.
+     * @return a {@link Single} that when {@link Single#subscribe(Subscriber)} is called the {@code operator}
+     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Single}.
+     * @see #liftAsynchronous(SingleOperator)
+     */
+    public final <R> Single<R> liftSynchronous(SingleOperator<T, R> operator) {
+        return new LiftSynchronousSingleOperator<>(this, operator, executor);
+    }
+
+    /**
+     * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
+     * to compose existing operator(s) to satisfy your use case.</strong>
+     * <p>
+     * Returns a {@link Single} that when {@link Single#subscribe(Subscriber)} is called the {@code operator}
+     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Single}.
+     * <pre>{@code
+     *     Publisher<X> pub = ...;
+     *     pub.map(..) // A
+     *        .liftAsynchronous(original -> modified)
+     *        .doAfterFinally(..) // B
+     * }</pre>
+     * The {@code original -> modified} "operator" MAY be "asynchronous" in that it may interact with the original
+     * {@link Subscriber} from outside the modified {@link Subscriber} or {@link Cancellable} threads. More
+     * specifically:
+     * <ul>
+     *  <li>all of the {@link Subscriber} invocations going "downstream" (i.e. from <i>A</i> to <i>B</i> above) MAY be
+     *  offloaded via an {@link Executor}</li>
+     *  <li>all of the {@link Cancellable} invocations going "upstream" (i.e. from <i>B</i> to <i>A</i> above) MAY be
+     *  offloaded via an {@link Executor}</li>
+     * </ul>
+     * This behavior exists to prevent blocking code negatively impacting the thread that powers the upstream source of
+     * data (e.g. an EventLoop).
+     * @param operator The custom operator logic. The input is the "original" {@link Subscriber} to this
+     * {@link Single} and the return is the "modified" {@link Subscriber} that provides custom operator business
+     * logic.
+     * @param <R> Type of the items emitted by the returned {@link Single}.
+     * @return a {@link Single} that when {@link Single#subscribe(Subscriber)} is called the {@code operator}
+     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Single}.
+     * @see #liftSynchronous(SingleOperator)
+     */
+    public final <R> Single<R> liftAsynchronous(SingleOperator<T, R> operator) {
+        return new LiftAsynchronousSingleOperator<>(this, operator, executor);
+    }
+
+    /**
      * Creates a realized {@link Single} which always completes successfully with the provided {@code value}.
      *
      * @param value result of the {@link Single}.
