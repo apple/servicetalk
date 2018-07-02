@@ -30,17 +30,13 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.util.CharsetUtil;
-
 import java.util.Queue;
 
-import static io.netty.buffer.ByteBufUtil.writeMediumBE;
-import static io.netty.buffer.ByteBufUtil.writeShortBE;
 import static io.netty.handler.codec.http.HttpConstants.SP;
 import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
 import static java.util.Objects.requireNonNull;
@@ -102,15 +98,15 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
     }
 
     @Override
-    protected void encodeInitialLine(ByteBuf buf, HttpRequestMetaData message) {
-        writeBufferToByteBuf(message.getMethod().getName(), buf);
+    protected void encodeInitialLine(Buffer stBuffer, HttpRequestMetaData message) {
+        message.getMethod().writeNameTo(stBuffer);
 
         String uri = message.getRequestTarget();
 
         if (uri.isEmpty()) {
             // Add " / " as absolute path if uri is not present.
             // See http://tools.ietf.org/html/rfc2616#section-5.1.2
-            writeMediumBE(buf, SPACE_SLASH_AND_SPACE_MEDIUM);
+            stBuffer.writeMedium(SPACE_SLASH_AND_SPACE_MEDIUM);
         } else {
             CharSequence uriCharSequence = uri;
             boolean needSlash = false;
@@ -132,16 +128,17 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
                 }
             }
 
-            buf.writeByte(SP).writeCharSequence(uriCharSequence, CharsetUtil.UTF_8);
+            stBuffer.writeByte(SP);
+            stBuffer.writeUtf8(uriCharSequence);
             if (needSlash) {
                 // write "/ " after uri
-                writeShortBE(buf, SLASH_AND_SPACE_SHORT);
+                stBuffer.writeShort(SLASH_AND_SPACE_SHORT);
             } else {
-                buf.writeByte(SP);
+                stBuffer.writeByte(SP);
             }
         }
 
-        writeBufferToByteBuf(message.getVersion().getHttpVersion(), buf);
-        writeShortBE(buf, CRLF_SHORT);
+        message.getVersion().writeHttpVersionTo(stBuffer);
+        stBuffer.writeShort(CRLF_SHORT);
     }
 }

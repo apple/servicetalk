@@ -50,7 +50,6 @@ import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponses.newResponse;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
-import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasToString;
@@ -86,7 +85,7 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
 
             resp.getHeaders()
                     .set("test-req-target", request.getRequestTarget())
-                    .set("test-req-method", request.getMethod().getName().toString(US_ASCII));
+                    .set("test-req-method", request.getMethod().toString());
 
             HttpHeaders headers = resp.getHeaders();
             request.getHeaders().forEach(entry -> headers.set("test-req-header-" + entry.getKey(), entry.getValue()));
@@ -111,7 +110,7 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
                     .map(ch -> ch.getContent().toString(UTF_8));
 
             HttpHeaders headers = resp.getHeaders();
-            assertThat(headers.get("test-req-method"), hasToString(GET.getName().toString(US_ASCII)));
+            assertThat(headers.get("test-req-method"), hasToString(GET.toString()));
             assertThat(headers.get("test-req-target"), hasToString("/request?foo=bar&foo=baz"));
             assertThat(headers.get("test-req-header-host"), hasToString("mock.servicetalk.io"));
             assertThat(headers.get("test-req-header-transfer-encoding"), equalTo(CHUNKED));

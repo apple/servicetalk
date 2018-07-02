@@ -30,17 +30,15 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
-import io.netty.buffer.ByteBuf;
-
 import java.util.Queue;
 
-import static io.netty.buffer.ByteBufUtil.writeShortBE;
 import static io.netty.handler.codec.http.HttpConstants.SP;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_VERSION;
@@ -91,13 +89,13 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
     }
 
     @Override
-    protected void encodeInitialLine(ByteBuf buf, HttpResponseMetaData message) {
-        writeBufferToByteBuf(message.getVersion().getHttpVersion(), buf);
-        buf.writeByte(SP);
-        writeBufferToByteBuf(message.getStatus().getCodeBuffer(), buf);
-        buf.writeByte(SP);
-        writeBufferToByteBuf(message.getStatus().getReasonPhrase(), buf);
-        writeShortBE(buf, CRLF_SHORT);
+    protected void encodeInitialLine(Buffer stBuffer, HttpResponseMetaData message) {
+        message.getVersion().writeHttpVersionTo(stBuffer);
+        stBuffer.writeByte(SP);
+        message.getStatus().writeCodeTo(stBuffer);
+        stBuffer.writeByte(SP);
+        message.getStatus().writeReasonPhraseTo(stBuffer);
+        stBuffer.writeShort(CRLF_SHORT);
     }
 
     @Override

@@ -57,6 +57,7 @@ import static io.netty.handler.codec.http.HttpConstants.CR;
 import static io.netty.handler.codec.http.HttpConstants.LF;
 import static io.netty.handler.codec.http.HttpConstants.SP;
 import static io.netty.util.internal.StringUtil.simpleClassName;
+import static io.servicetalk.buffer.netty.BufferUtil.PREFER_DIRECT_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferUtil.toByteBufNoThrow;
 import static io.servicetalk.http.api.CharSequences.unwrapBuffer;
 import static io.servicetalk.http.netty.HeaderUtils.isTransferEncodingChunked;
@@ -122,9 +123,12 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
             }
             T metaData = castMetaData(msg);
 
-            byteBuf = ctx.alloc().buffer((int) headersEncodedSizeAccumulator);
+            Buffer stBuffer = PREFER_DIRECT_ALLOCATOR.newBuffer((int) headersEncodedSizeAccumulator);
+            byteBuf = toByteBufNoThrow(stBuffer);
+            assert byteBuf != null;
+
             // Encode the message.
-            encodeInitialLine(byteBuf, metaData);
+            encodeInitialLine(stBuffer, metaData);
             state = isContentAlwaysEmpty(metaData) ? ST_CONTENT_ALWAYS_EMPTY :
                     isTransferEncodingChunked(metaData.getHeaders()) ? ST_CONTENT_CHUNK : ST_CONTENT_NON_CHUNK;
 
@@ -245,10 +249,10 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
 
     /**
      * Encode the <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1">start line</a>.
-     * @param buf The {@link ByteBuf} to encode to.
+     * @param buf The {@link Buffer} to encode to.
      * @param message The message to encode.
      */
-    protected abstract void encodeInitialLine(ByteBuf buf, T message);
+    protected abstract void encodeInitialLine(Buffer buf, T message);
 
     /**
      * Encode the {@link HttpHeaders} into a {@link ByteBuf}.
@@ -363,16 +367,5 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
     static ByteBuf toByteBuf(Buffer buffer) {
         ByteBuf byteBuf = toByteBufNoThrow(buffer);
         return byteBuf != null ? byteBuf : wrappedBuffer(buffer.toNioBuffer());
-    }
-
-    static void writeBufferToByteBuf(Buffer src, ByteBuf dst) {
-        // If src is backed by a Single NIO ByteBuffer we can avoid the intermediate conversion to ByteBuffer and just
-        // directly use the NIO ByteBuffer. This is beneficial for example for static ReadOnlyByteBuffer objects that
-        // are not backed by Netty's ByteBuf, but is backed by an NIO ByteBuffer.
-        if (src.getNioBufferCount() == 1) {
-            dst.writeBytes(src.toNioBuffer());
-        } else {
-            dst.writeBytes(toByteBuf(src));
-        }
     }
 }
