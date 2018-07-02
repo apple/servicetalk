@@ -45,7 +45,6 @@ import static io.servicetalk.http.router.jersey.Context.CONNECTION_CONTEXT_REF_T
 import static io.servicetalk.http.router.jersey.Context.HTTP_REQUEST_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.initResponseChunkPublisherRef;
 import static io.servicetalk.http.router.jersey.DummyHttpUtils.getBaseUri;
-import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.glassfish.jersey.server.internal.ContainerUtils.encodeUnsafeCharacters;
 
 final class DefaultJerseyHttpRouter extends HttpService {
@@ -150,7 +149,7 @@ final class DefaultJerseyHttpRouter extends HttpService {
         final ContainerRequest containerRequest = new ContainerRequest(
                 URI.create(baseUri.toString()),
                 URI.create(requestUriBuilder.toString()),
-                req.getMethod().getName().toString(US_ASCII),
+                req.getMethod().getName(),
                 UNAUTHENTICATED_SECURITY_CONTEXT,
                 new MapPropertiesDelegate());
 

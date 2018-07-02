@@ -229,7 +229,11 @@ public abstract class AbstractJerseyHttpServiceTest {
             assertThat(res.getVersion(), is(expectedHttpVersion));
             final HttpResponseStatus status = res.getStatus();
             assertThat(status.getCode(), is(expectedStatus.getCode()));
-            assertThat(status.getReasonPhrase(), is(expectedStatus.getReasonPhrase()));
+            Buffer reasonPhrase = DEFAULT_ALLOCATOR.newBuffer();
+            status.writeReasonPhraseTo(reasonPhrase);
+            Buffer expectedReasonPhrase = DEFAULT_ALLOCATOR.newBuffer();
+            expectedStatus.writeReasonPhraseTo(expectedReasonPhrase);
+            assertThat(reasonPhrase, is(expectedReasonPhrase));
 
             if (expectedContentType != null) {
                 assertThat(res.getHeaders().get(CONTENT_TYPE), is(expectedContentType));
