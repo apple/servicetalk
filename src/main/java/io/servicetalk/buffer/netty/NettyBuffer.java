@@ -651,7 +651,7 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
         if (src instanceof NettyBuffer) {
             buffer.writeBytes(((NettyBuffer) src).buffer, srcIndex, length);
         } else {
-            ByteBuffer nioBuffer = src.toNioBuffer(src.getReaderIndex(), length);
+            ByteBuffer nioBuffer = src.toNioBuffer(srcIndex, length);
             buffer.writeBytes(nioBuffer);
         }
         return this;
