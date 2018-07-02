@@ -28,13 +28,14 @@ public interface HttpResponseStatus {
     int getCode();
 
     /**
-     * Get a {@link Buffer} version of {@link #getCode()} that can be used for encoding.
-     * @return a {@link Buffer} version of {@link #getCode()} that can be used for encoding.
+     * Write the equivalent of {@link #getCode()} to a {@link Buffer}.
+     * @param buffer The {@link Buffer} to write to.
      */
-    Buffer getCodeBuffer();
+    void writeCodeTo(Buffer buffer);
 
     /**
-     * Get the <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1.2">reason-phrase</a> portion of the response.
+     * Write the <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1.2">reason-phrase</a> portion of the
+     * response to a {@link Buffer}.
      * <pre>
      *     The reason-phrase element exists for the sole purpose of providing a
      *     textual description associated with the numeric status code, mostly
@@ -42,9 +43,9 @@ public interface HttpResponseStatus {
      *     more frequently used with interactive text clients.  A client SHOULD
      *     ignore the reason-phrase content.
      * </pre>
-     * @return the <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1.2">reason-phrase</a> portion of the response.
+     * @param buffer The {@link Buffer} to write to.
      */
-    Buffer getReasonPhrase();
+    void writeReasonPhraseTo(Buffer buffer);
 
     /**
      * Get the {@link StatusClass} for this {@link HttpResponseStatus}.

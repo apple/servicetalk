@@ -60,8 +60,13 @@ public enum HttpRequestMethods implements HttpRequestMethod {
     }
 
     @Override
-    public Buffer getName() {
-        return methodName.duplicate();
+    public void writeNameTo(final Buffer buffer) {
+        buffer.writeBytes(methodName, methodName.getReaderIndex(), methodName.getReadableBytes());
+    }
+
+    @Override
+    public String getName() {
+        return toString();
     }
 
     @Override

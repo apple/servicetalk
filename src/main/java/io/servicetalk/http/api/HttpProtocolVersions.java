@@ -86,8 +86,8 @@ public enum HttpProtocolVersions implements HttpProtocolVersion {
     }
 
     @Override
-    public Buffer getHttpVersion() {
-        return httpVersion.duplicate();
+    public void writeHttpVersionTo(final Buffer buffer) {
+        buffer.writeBytes(httpVersion, httpVersion.getReaderIndex(), httpVersion.getReadableBytes());
     }
 
     @Override
@@ -128,8 +128,13 @@ public enum HttpProtocolVersions implements HttpProtocolVersion {
         }
 
         @Override
-        public Buffer getHttpVersion() {
-            return httpVersion.duplicate();
+        public void writeHttpVersionTo(final Buffer buffer) {
+            buffer.writeBytes(httpVersion, httpVersion.getReaderIndex(), httpVersion.getReadableBytes());
+        }
+
+        @Override
+        public String toString() {
+            return httpVersion.toString(US_ASCII);
         }
     }
 }

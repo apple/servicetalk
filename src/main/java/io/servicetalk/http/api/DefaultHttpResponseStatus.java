@@ -45,13 +45,13 @@ final class DefaultHttpResponseStatus implements HttpResponseStatus {
     }
 
     @Override
-    public Buffer getCodeBuffer() {
-        return statusCodeBuffer.duplicate();
+    public void writeCodeTo(final Buffer buffer) {
+        buffer.writeBytes(statusCodeBuffer, statusCodeBuffer.getReaderIndex(), statusCodeBuffer.getReadableBytes());
     }
 
     @Override
-    public Buffer getReasonPhrase() {
-        return reasonPhrase;
+    public void writeReasonPhraseTo(final Buffer buffer) {
+        buffer.writeBytes(reasonPhrase, reasonPhrase.getReaderIndex(), reasonPhrase.getReadableBytes());
     }
 
     @Override

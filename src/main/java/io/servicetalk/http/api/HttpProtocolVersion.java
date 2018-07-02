@@ -34,8 +34,9 @@ public interface HttpProtocolVersion {
     int getMinorVersion();
 
     /**
-     * Get the <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP-version</a>.
-     * @return the <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP-version</a>.
+     * Write the <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP-version</a> to {@code buffer}.
+     * @param buffer The {@link Buffer} to write
+     * <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP-version</a>.
      */
-    Buffer getHttpVersion();
+    void writeHttpVersionTo(Buffer buffer);
 }

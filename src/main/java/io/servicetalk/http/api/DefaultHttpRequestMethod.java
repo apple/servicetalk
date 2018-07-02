@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 
 final class DefaultHttpRequestMethod implements HttpRequestMethod {
 
+    private final String nameString;
     private final Buffer name;
     private final Properties properties;
 
@@ -33,11 +34,17 @@ final class DefaultHttpRequestMethod implements HttpRequestMethod {
     DefaultHttpRequestMethod(final Buffer name, final Properties properties) {
         this.name = requireNonNull(name);
         this.properties = requireNonNull(properties);
+        this.nameString = name.toString(US_ASCII);
     }
 
     @Override
-    public Buffer getName() {
-        return name.duplicate();
+    public void writeNameTo(final Buffer buffer) {
+        buffer.writeBytes(name, name.getReaderIndex(), name.getReadableBytes());
+    }
+
+    @Override
+    public String getName() {
+        return nameString;
     }
 
     @Override
@@ -56,17 +63,17 @@ final class DefaultHttpRequestMethod implements HttpRequestMethod {
 
         final DefaultHttpRequestMethod that = (DefaultHttpRequestMethod) o;
 
-        return name.equals(that.name) && properties.equals(that.properties);
+        return nameString.equals(that.nameString) && properties.equals(that.properties);
     }
 
     @Override
     public int hashCode() {
-        return 31 * name.hashCode() + properties.hashCode();
+        return 31 * nameString.hashCode() + properties.hashCode();
     }
 
     @Override
     public String toString() {
-        return name.toString(US_ASCII);
+        return nameString;
     }
 
     static final class DefaultHttpRequestMethodProperties implements Properties {

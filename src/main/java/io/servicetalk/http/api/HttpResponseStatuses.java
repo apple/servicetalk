@@ -337,17 +337,13 @@ public enum HttpResponseStatuses implements HttpResponseStatus {
     }
 
     @Override
-    public Buffer getCodeBuffer() {
-        // duplicate the buffer just to be safe, otherwise someone could modified the reader/writer indexes of the
-        // constants and prevent correct encoding/decoding.
-        return statusCodeBuffer.duplicate();
+    public void writeCodeTo(final Buffer buffer) {
+        buffer.writeBytes(statusCodeBuffer, statusCodeBuffer.getReaderIndex(), statusCodeBuffer.getReadableBytes());
     }
 
     @Override
-    public Buffer getReasonPhrase() {
-        // duplicate the buffer just to be safe, otherwise someone could modified the reader/writer indexes of the
-        // constants and prevent correct encoding/decoding.
-        return reasonPhrase.duplicate();
+    public void writeReasonPhraseTo(final Buffer buffer) {
+        buffer.writeBytes(reasonPhrase, reasonPhrase.getReaderIndex(), reasonPhrase.getReadableBytes());
     }
 
     /**

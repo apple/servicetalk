@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.Buffer;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_DIRECT_ALLOCATOR;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 
 final class DefaultHttpProtocolVersion implements HttpProtocolVersion {
 
@@ -42,8 +43,8 @@ final class DefaultHttpProtocolVersion implements HttpProtocolVersion {
     }
 
     @Override
-    public Buffer getHttpVersion() {
-        return httpVersion.duplicate();
+    public void writeHttpVersionTo(final Buffer buffer) {
+        buffer.writeBytes(httpVersion, httpVersion.getReaderIndex(), httpVersion.getReadableBytes());
     }
 
     @Override
@@ -63,6 +64,11 @@ final class DefaultHttpProtocolVersion implements HttpProtocolVersion {
     @Override
     public int hashCode() {
         return major * 31 + minor;
+    }
+
+    @Override
+    public String toString() {
+        return httpVersion.toString(US_ASCII);
     }
 
     static Buffer httpVersionToBuffer(int major, int minor) {

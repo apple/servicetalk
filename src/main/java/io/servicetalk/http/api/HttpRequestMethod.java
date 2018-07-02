@@ -25,10 +25,16 @@ import io.servicetalk.buffer.api.Buffer;
  */
 public interface HttpRequestMethod {
     /**
-     * Get the <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>.
-     * @return the <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>.
+     * Write the <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a> to {@code buffer}.
+     * @param buffer the {@link Buffer} to write to.
      */
-    Buffer getName();
+    void writeNameTo(Buffer buffer);
+
+    /**
+     * Get the <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>.
+     * @return The <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>.
+     */
+    String getName();
 
     /**
      * Get the {@link Properties} associated with this object.
