@@ -115,7 +115,10 @@ final class PublisherAsInputStream<T> extends InputStream {
             }
             leftover = serializer.apply(iterator.next());
             if (leftover != null) {
-                return readSingleByteFromLeftover(leftover);
+                if (leftover.length != 0) {
+                    return readSingleByteFromLeftover(leftover);
+                }
+                resetLeftover();
             }
         }
     }

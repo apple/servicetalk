@@ -154,6 +154,27 @@ public final class PublisherAsInputStreamTest {
     }
 
     @Test
+    public void singleByteReadWithEmptyIterable() throws IOException {
+        Character[] src = {'1'};
+        InputStream stream = from(src).toInputStream(c -> new byte[0]);
+        assertThat("Unexpected bytes read.", stream.read(), is(-1));
+        // We have left over state across reads, do a second read to make sure we do not have such state.
+        // Since, we only ever emit 1 item from the source, we are sure that no other state will change after this read.
+        assertThat("Unexpected bytes from second read.", stream.read(), is(-1));
+    }
+
+    @Test
+    public void readWithEmptyIterable() throws IOException {
+        Character[] src = {'1'};
+        InputStream stream = from(src).toInputStream(c -> new byte[0]);
+        byte[] r = new byte[1];
+        assertThat("Unexpected bytes read.", stream.read(r, 0, 1), is(-1));
+        // We have left over state across reads, do a second read to make sure we do not have such state.
+        // Since, we only ever emit 1 item from the source, we are sure that no other state will change after this read.
+        assertThat("Unexpected bytes from second read.", stream.read(r), is(-1));
+    }
+
+    @Test
     public void zeroLengthReadShouldBeValid() throws IOException {
         Character[] src = {'1'};
         InputStream stream = from(src).toInputStream(c -> new byte[]{(byte) c.charValue()});
