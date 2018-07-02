@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.Cancellable;
 
 import static java.util.Objects.requireNonNull;
 
-final class DoCancellableSingle<T> extends AbstractAsynchronousSingleOperator<T, T> {
+final class DoCancellableSingle<T> extends AbstractSynchronousSingleOperator<T, T> {
     private final Cancellable cancellable;
     private final boolean before;
 

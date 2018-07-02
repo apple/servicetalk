@@ -40,18 +40,21 @@ final class SingleFlatMapPublisher<T, R> extends AbstractNoHandleSubscribePublis
 
     @Override
     void handleSubscribe(final Subscriber<? super R> subscriber, final SignalOffloader signalOffloader) {
-        original.subscribe(new SubscriberImpl<>(subscriber, nextFactory), signalOffloader);
+        original.subscribe(new SubscriberImpl<>(subscriber, nextFactory, signalOffloader), signalOffloader);
     }
 
     private static final class SubscriberImpl<T, R> implements Single.Subscriber<T>, org.reactivestreams.Subscriber<R> {
         private final Subscriber<? super R> subscriber;
         private final Function<T, Publisher<R>> nextFactory;
+        private final SignalOffloader signalOffloader;
         @Nullable
         private volatile SequentialSubscription sequentialSubscription;
 
-        SubscriberImpl(org.reactivestreams.Subscriber<? super R> subscriber, Function<T, Publisher<R>> nextFactory) {
+        SubscriberImpl(Subscriber<? super R> subscriber, Function<T, Publisher<R>> nextFactory,
+                       final SignalOffloader signalOffloader) {
             this.subscriber = subscriber;
             this.nextFactory = requireNonNull(nextFactory);
+            this.signalOffloader = signalOffloader;
         }
 
         @Override
@@ -92,7 +95,11 @@ final class SingleFlatMapPublisher<T, R> extends AbstractNoHandleSubscribePublis
                 subscriber.onError(cause);
                 return;
             }
-            next.subscribe(this);
+            // We need to preserve the threading semantics for the original subscriber. Since here we are subscribing to
+            // a new source which may have different threading semantics, we explicitly offload signals going down to
+            // the original subscriber. If we do not do this and next source does not support blocking operations,
+            // whereas original subscriber does, we will violate threading assumptions.
+            next.subscribe(signalOffloader.offloadSubscriber((Subscriber<R>) this));
         }
 
         @Override

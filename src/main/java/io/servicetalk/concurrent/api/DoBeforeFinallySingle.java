@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static java.util.Objects.requireNonNull;
 
-final class DoBeforeFinallySingle<T> extends AbstractAsynchronousSingleOperator<T, T> {
+final class DoBeforeFinallySingle<T> extends AbstractSynchronousSingleOperator<T, T> {
 
     private final Runnable runnable;
 

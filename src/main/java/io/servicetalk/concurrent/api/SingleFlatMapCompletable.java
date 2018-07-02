@@ -38,18 +38,21 @@ final class SingleFlatMapCompletable<T> extends AbstractNoHandleSubscribeComplet
 
     @Override
     void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader) {
-        first.subscribe(new SubscriberImpl<>(subscriber, nextFactory), signalOffloader);
+        first.subscribe(new SubscriberImpl<>(subscriber, nextFactory, signalOffloader), signalOffloader);
     }
 
     private static final class SubscriberImpl<T> implements Single.Subscriber<T>, Subscriber {
         private final Subscriber subscriber;
         private final Function<T, Completable> nextFactory;
+        private final SignalOffloader signalOffloader;
         @Nullable
         private volatile SequentialCancellable sequentialCancellable;
 
-        SubscriberImpl(Subscriber subscriber, Function<T, Completable> nextFactory) {
+        SubscriberImpl(Subscriber subscriber, Function<T, Completable> nextFactory,
+                       final SignalOffloader signalOffloader) {
             this.subscriber = subscriber;
             this.nextFactory = nextFactory;
+            this.signalOffloader = signalOffloader;
         }
 
         @Override
@@ -77,7 +80,11 @@ final class SingleFlatMapCompletable<T> extends AbstractNoHandleSubscribeComplet
                 subscriber.onError(cause);
                 return;
             }
-            next.subscribe(this);
+            // We need to preserve the threading semantics for the original subscriber. Since here we are subscribing to
+            // a new source which may have different threading semantics, we explicitly offload signals going down to
+            // the original subscriber. If we do not do this and next source does not support blocking operations,
+            // whereas original subscriber does, we will violate threading assumptions.
+            next.subscribe(signalOffloader.offloadSubscriber((Subscriber) this));
         }
 
         @Override
