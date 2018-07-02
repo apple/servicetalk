@@ -123,6 +123,9 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
             }
             T metaData = castMetaData(msg);
 
+            // We prefer a direct allocation here because it is expected the resulted encoded Buffer will be written
+            // to a socket. In order to do the write to the socket the memory typically needs to be allocated in direct
+            // memory and will be copied to direct memory if not. Using a direct buffer will avoid the copy.
             Buffer stBuffer = PREFER_DIRECT_ALLOCATOR.newBuffer((int) headersEncodedSizeAccumulator);
             byteBuf = toByteBufNoThrow(stBuffer);
             assert byteBuf != null;
