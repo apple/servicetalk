@@ -33,7 +33,6 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
-import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 
@@ -62,7 +61,6 @@ public class DefaultFallbackServiceTest {
         assert response != null;
         assertEquals(HTTP_1_1, response.getVersion());
         assertEquals(404, response.getStatus().getCode());
-        assertEquals("Not Found", response.getStatus().getReasonPhrase().toString(US_ASCII));
         assertEquals("0", response.getHeaders().get("content-length"));
         assertEquals(newAsciiString("text/plain"), response.getHeaders().get("content-type"));
     }
