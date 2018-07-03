@@ -186,13 +186,13 @@
     <!-- Javadocs -->
     <module name="AtclauseOrder"/>
     <module name="JavadocMethod">
-      <property name="scope" value="public"/>
+      <property name="scope" value="protected"/>
       <property name="allowUndeclaredRTE" value="true"/>
       <property name="validateThrows" value="true"/>
     </module>
     <module name="NonEmptyAtclauseDescription"/>
     <module name="JavadocStyle">
-      <property name="scope" value="public"/>
+      <property name="scope" value="protected"/>
       <property name="checkEmptyJavadoc" value="true"/>
       <property name="tokens" value="ANNOTATION_DEF, ANNOTATION_FIELD_DEF, CLASS_DEF,
                                      CTOR_DEF, ENUM_DEF, INTERFACE_DEF, METHOD_DEF"/>
