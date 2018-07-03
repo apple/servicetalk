@@ -68,8 +68,11 @@ public interface HttpCookie {
     Long getMaxAge();
 
     /**
-     * Returns the expire date of this {@link HttpCookie} according to <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">Expires</a>.
-     * @return the expire date of this {@link HttpCookie} according to <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">Expires</a>.
+     * Returns the expire date of this {@link HttpCookie} according
+     * to <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">Expires</a>.
+     *
+     * @return the expire date of this {@link HttpCookie} according
+     * to <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">Expires</a>.
      */
     @Nullable
     CharSequence getExpires();

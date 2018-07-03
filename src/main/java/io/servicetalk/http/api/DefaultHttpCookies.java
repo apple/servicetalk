@@ -54,6 +54,7 @@ final class DefaultHttpCookies extends MultiMap<CharSequence, HttpCookie> implem
 
     /**
      * Create a new instance.
+     *
      * @param httpHeaders the {@link HttpHeaders} to parse cookie headers from
      * @param cookieHeaderName the header name to parse cookies from
      * @param validateContent if true, validate the contents of the cookie headers
@@ -110,6 +111,14 @@ final class DefaultHttpCookies extends MultiMap<CharSequence, HttpCookie> implem
     public HttpCookies addCookie(final HttpCookie cookie) {
         put(cookie.getName(), cookie);
         return this;
+    }
+
+    @Override
+    public HttpCookies addCookie(final CharSequence name, final CharSequence value,
+                                 @Nullable final CharSequence path, @Nullable final CharSequence domain,
+                                 @Nullable final CharSequence expires, @Nullable final Long maxAge,
+                                 final boolean wrapped, final boolean secure, final boolean httpOnly) {
+        return addCookie(new DefaultHttpCookie(name, value, path, domain, expires, maxAge, wrapped, secure, httpOnly));
     }
 
     @Override
@@ -446,6 +455,7 @@ final class DefaultHttpCookies extends MultiMap<CharSequence, HttpCookie> implem
 
     /**
      * <a href="https://tools.ietf.org/html/rfc6265#section-5.1.3">Domain Matching</a>.
+     *
      * @param requestDomain The domain from the request.
      * @param cookieDomain The domain from the cookie.
      * @return {@code true} if there is a match.
@@ -472,6 +482,7 @@ final class DefaultHttpCookies extends MultiMap<CharSequence, HttpCookie> implem
 
     /**
      * <a href="https://tools.ietf.org/html/rfc6265#section-5.1.4">Path Matching</a>.
+     *
      * @param requestPath The path from the request.
      * @param cookiePath The path from the cookie.
      * @return {@code true} if there is a match.
@@ -495,6 +506,7 @@ final class DefaultHttpCookies extends MultiMap<CharSequence, HttpCookie> implem
     /**
      * Extract a hex value and validate according to the
      * <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-octet</a> format.
+     *
      * @param cookieHeaderValue The cookie's value.
      * @param i The index where we detected a '%' character indicating a hex value is to follow.
      */
@@ -515,7 +527,8 @@ final class DefaultHttpCookies extends MultiMap<CharSequence, HttpCookie> implem
 
     /**
      * <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">
-     *     cookie-octet = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E</a>
+     * cookie-octet = %x21 / %x23-2B / %x2D-3A / %x3C-5B / %x5D-7E</a>
+     *
      * @param hexValue The decimal representation of the hexadecimal value.
      */
     private static void validateCookieOctetHexValue(final int hexValue) {

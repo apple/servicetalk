@@ -28,32 +28,41 @@ final class EmptyHttpCookies implements HttpCookies {
 
     @Nullable
     @Override
-    public HttpCookie getCookie(CharSequence name) {
+    public HttpCookie getCookie(final CharSequence name) {
         return null;
     }
 
     @Override
-    public Iterator<? extends HttpCookie> getCookies(CharSequence name) {
+    public Iterator<? extends HttpCookie> getCookies(final CharSequence name) {
         return emptyIterator();
     }
 
     @Override
-    public Iterator<? extends HttpCookie> getCookies(CharSequence name, CharSequence domain, CharSequence path) {
+    public Iterator<? extends HttpCookie> getCookies(final CharSequence name, final CharSequence domain,
+                                                     final CharSequence path) {
         return emptyIterator();
     }
 
     @Override
-    public HttpCookies addCookie(HttpCookie cookie) {
-        throw new UnsupportedOperationException();
+    public HttpCookies addCookie(final HttpCookie cookie) {
+        throw newAddNotSupportedException();
     }
 
     @Override
-    public boolean removeCookies(CharSequence name) {
+    public HttpCookies addCookie(final CharSequence name, final CharSequence value,
+                                 @Nullable final CharSequence path, @Nullable final CharSequence domain,
+                                 @Nullable final CharSequence expires, @Nullable final Long maxAge,
+                                 final boolean wrapped, final boolean secure, final boolean httpOnly) {
+        throw newAddNotSupportedException();
+    }
+
+    @Override
+    public boolean removeCookies(final CharSequence name) {
         return false;
     }
 
     @Override
-    public boolean removeCookies(CharSequence name, CharSequence domain, CharSequence path) {
+    public boolean removeCookies(final CharSequence name, final CharSequence domain, final CharSequence path) {
         return false;
     }
 
@@ -74,5 +83,9 @@ final class EmptyHttpCookies implements HttpCookies {
     @Override
     public Iterator<HttpCookie> iterator() {
         return emptyIterator();
+    }
+
+    private static UnsupportedOperationException newAddNotSupportedException() {
+        return new UnsupportedOperationException("addCookie not supported for EmptyHttpCookies");
     }
 }
