@@ -16,10 +16,19 @@
 
 package io.servicetalk.http.api;
 
-import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CoderResult;
 import java.util.Objects;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
+
+import static io.servicetalk.http.api.StringUtil.decodeHexByte;
+import static java.nio.charset.CodingErrorAction.REPLACE;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Accepts a <a href="https://tools.ietf.org/html/rfc7230#section-2.7">HTTP URI</a> and breaks down the components.
@@ -29,20 +38,34 @@ import javax.annotation.Nullable;
  * get wrong. {@link HttpUri} attempts to address these issues.
  */
 final class HttpUri {
+    /**
+     * Default character set (UTF-8)
+     */
+    public static final Charset DEFAULT_CHARSET = UTF_8;
+    private static final String SPACE = " ";
+
     static final int DEFAULT_PORT_HTTP = 80;
     static final int DEFAULT_PORT_HTTPS = 443;
 
     private final String uri;
     @Nullable
     private final String hostHeader;
-    private final String requestTarget;
+    private final String relativeReference;
     private final boolean isSsl;
+    @Nullable
+    private final String scheme;
+    @Nullable
+    private String userInfo;
     @Nullable
     private final String host;
     private final int port;
     private final boolean explicitPort;
     @Nullable
+    private String rawPath;
+    @Nullable
     private String path;
+    @Nullable
+    private String rawQuery;
 
     /**
      * See <a href="https://tools.ietf.org/html/rfc3986#section-3">URI Syntax</a>.
@@ -53,7 +76,7 @@ final class HttpUri {
      * scheme     authority       path        query   fragment
      *                       \__________________________/
      *                                |
-     *                                  file
+     *                                  relativeReference
      * </pre>
      *
      * @param uri The URI from a HTTP request line.
@@ -71,14 +94,15 @@ final class HttpUri {
      * scheme     authority       path        query   fragment
      *                       \__________________________/
      *                                |
-     *                                  file
+     *                                  relativeReference
      * </pre>
      *
-     * @param uri               The URI from a HTTP request line.
+     * @param uri The URI from a HTTP request line.
      * @param defaultHostHeader Will be called if the host header couldn't be parsed and the host:port will be used.
      */
     HttpUri(final String uri,
             final Supplier<String> defaultHostHeader) throws IllegalArgumentException {
+
         int begin = 0;
         int lastColon = -1;
         int ipliteral = -1;
@@ -89,9 +113,11 @@ final class HttpUri {
         int parsedPort = -1;
         // -1 = undefined, 0 = http, 1 = https
         int parsedScheme = -1;
-        int requestTargetStart = -1;
+        int relativeReferenceStart = -1;
+        boolean authorityFound = false;
 
         int i = 0;
+
         while (i < uri.length()) {
             final char c = uri.charAt(i);
             if (c == '/') {
@@ -99,9 +125,9 @@ final class HttpUri {
                     if (parsedScheme != -1) {
                         throw new IllegalArgumentException("duplicate scheme");
                     }
-                    if (i == 5 && uri.regionMatches(0, "http", 0, 4)) {
+                    if (i == 5 && uri.regionMatches(true, 0, "http", 0, 4)) {
                         parsedScheme = 0;
-                    } else if (i == 6 && uri.regionMatches(0, "https", 0, 5)) {
+                    } else if (i == 6 && uri.regionMatches(true, 0, "https", 0, 5)) {
                         parsedScheme = 1;
                     } else {
                         throw new IllegalArgumentException("unsupported scheme");
@@ -109,7 +135,7 @@ final class HttpUri {
                     begin = i += 2;
                     lastColon = -1;
                 } else if (begin != 0) {
-                    requestTargetStart = i;
+                    relativeReferenceStart = i;
                     break;
                 } else if (uri.length() > 1 && uri.charAt(0) == '/' && uri.charAt(1) == '/') {
                     begin = 2;
@@ -118,12 +144,13 @@ final class HttpUri {
                     break;
                 }
             } else if (c == '?' || c == '#') {
-                requestTargetStart = begin == 0 ? 0 : i;
+                relativeReferenceStart = begin == 0 ? 0 : i;
                 break;
             } else if (c == '@') {
                 if (begin == 0 || parsedScheme < 0 && uri.charAt(begin - 1) == '/') {
                     invalidAuthority();
                 }
+                userInfo = uri.substring(begin, i);
                 begin = i += 1;
                 lastColon = -1;
             } else if (c == '[') {
@@ -150,6 +177,7 @@ final class HttpUri {
             parsedPort = parsePort(uri, lastColon + 1, i);
             parsedHost = uri.substring(begin, lastColon);
             parsedHostHeader = uri.substring(begin, i);
+            authorityFound = true;
         } else if (begin != i &&
                 ((begin > 1 && uri.charAt(begin - 1) == '/' && uri.charAt(begin - 2) == '/') ||
                         (begin > 0 && uri.charAt(begin - 1) == '@'))) {
@@ -157,10 +185,11 @@ final class HttpUri {
                 invalidAuthority();
             }
             parsedHost = uri.substring(begin, i);
-            parsedHostHeader = uri.substring(begin, i);
+            parsedHostHeader = parsedHost;
+            authorityFound = true;
         } else {
-            if (requestTargetStart < 0) {
-                requestTargetStart = 0;
+            if (relativeReferenceStart < 0) {
+                relativeReferenceStart = 0;
             }
             parsedHostHeader = defaultHostHeader.get();
             if (parsedHostHeader != null) {
@@ -200,15 +229,20 @@ final class HttpUri {
             }
         }
 
-        if (requestTargetStart == 0 || (begin == 0 && i == uri.length())) {
-            verifyFirstPathSegment(uri, 0);
-            requestTarget = uri;
-        } else if (requestTargetStart > 0) {
-            verifyFirstPathSegment(uri, requestTargetStart);
-            requestTarget = uri.substring(requestTargetStart);
+        if (relativeReferenceStart == 0 || (begin == 0 && i == uri.length())) {
+            if (authorityFound || "*".equals(uri)) {
+                relativeReference = "";
+            } else {
+                verifyFirstPathSegment(uri, 0);
+                relativeReference = uri;
+            }
+        } else if (relativeReferenceStart > 0) {
+            verifyFirstPathSegment(uri, relativeReferenceStart);
+            relativeReference = uri.substring(relativeReferenceStart);
         } else {
-            requestTarget = "";
+            relativeReference = "";
         }
+        scheme = parsedScheme == 0 ? "http" : parsedScheme == 1 ? "https" : null;
         host = parsedHost;
         hostHeader = parsedHostHeader;
         isSsl = parsedScheme == 1;
@@ -222,6 +256,16 @@ final class HttpUri {
     }
 
     @Nullable
+    String getScheme() {
+        return scheme;
+    }
+
+    @Nullable
+    String getUserInfo() {
+        return userInfo;
+    }
+
+    @Nullable
     String getHost() {
         return host;
     }
@@ -230,26 +274,61 @@ final class HttpUri {
         return port;
     }
 
-    boolean hasExplicitPort() {
-        return explicitPort;
+    int getExplicitPort() {
+        return explicitPort ? port : -1;
+    }
+
+    String getRawPath() {
+        if (rawPath != null) {
+            return rawPath;
+        }
+
+        if (!relativeReference.isEmpty()) {
+            final int queryStart = relativeReference.indexOf('?');
+            if (queryStart >= 0) {
+                rawPath = relativeReference.substring(0, queryStart);
+                return rawPath;
+            }
+
+            final int fragmentStart = relativeReference.indexOf('#');
+            if (fragmentStart >= 0) {
+                rawPath = relativeReference.substring(0, fragmentStart);
+                return rawPath;
+            }
+        }
+
+        rawPath = relativeReference;
+        return rawPath;
     }
 
     String getPath() {
-        String path = this.path;
         if (path == null) {
-            for (int i = 0; i < requestTarget.length(); ++i) {
-                final char c = requestTarget.charAt(i);
-                if (c == '?' || c == '#') {
-                    return this.path = requestTarget.substring(0, i);
-                }
-            }
-            this.path = path = requestTarget;
+            final String raw = getRawPath();
+            path = decodeComponent(raw, 0, raw.length(), true);
         }
         return path;
     }
 
-    String getRequestTarget() {
-        return requestTarget;
+    String getRawQuery() {
+        if (rawQuery != null) {
+            return rawQuery;
+        }
+
+        final int rawPathLength = getRawPath().length();
+        if (rawPathLength == relativeReference.length()) {
+            rawQuery = "";
+            return rawQuery;
+        }
+
+        final int fragmentStart = relativeReference.indexOf('#', rawPathLength);
+        rawQuery = fragmentStart == rawPathLength ? "" :
+                fragmentStart < 0 ? relativeReference.substring(rawPathLength + 1) :
+                        relativeReference.substring(rawPathLength + 1, fragmentStart);
+        return rawQuery;
+    }
+
+    String getRelativeReference() {
+        return relativeReference;
     }
 
     @Nullable
@@ -265,27 +344,26 @@ final class HttpUri {
         return port == rhs.port && (host == rhs.host || (host != null && host.equals(rhs.host)));
     }
 
-    InetSocketAddress toAddress() {
-        return InetSocketAddress.createUnresolved(host, port);
-    }
-
-    static String buildRequestTarget(final String scheme, @Nullable final String host, @Nullable final Integer port,
-                                     @Nullable final String path, @Nullable final String query, @Nullable final String file) {
-        if (file == null) {
+    static String buildRequestTarget(final String scheme, @Nullable final String host, final int port,
+                                     @Nullable final String path, @Nullable final String query,
+                                     @Nullable final String relativeReference) {
+        if (relativeReference == null) {
             assert path != null;
             assert query != null;
         }
-        final int approximateLength = (host == null ? 0 : scheme.length() + 3 + host.length() + (port == null ? 0 : 4))
-                + (file != null ? file.length() : path.length() + 1 + query.length());
+        final int approximateLength = (host == null ? 0 : scheme.length() + 3 + host.length() + (port >= 0 ? 0 : 4))
+                + (relativeReference != null ? relativeReference.length() :
+                path.length() + 1 + query.length());
+
         final StringBuilder uri = new StringBuilder(approximateLength);
         if (host != null) {
             uri.append(scheme).append("://").append(host);
-            if (port != null) {
+            if (port >= 0) {
                 uri.append(':').append(port);
             }
         }
-        if (file != null) {
-            uri.append(file);
+        if (relativeReference != null) {
+            uri.append(relativeReference);
         } else {
             uri.append(path);
             if (!query.isEmpty()) {
@@ -308,6 +386,70 @@ final class HttpUri {
     @Override
     public String toString() {
         return uri;
+    }
+
+    static String decodeComponent(final String s, final int from, final int toExcluded, final boolean isPath) {
+        final int len = toExcluded - from;
+        if (len <= 0) {
+            return "";
+        }
+        int firstEscaped = -1;
+        for (int i = from; i < toExcluded; i++) {
+            final char c = s.charAt(i);
+            if (c == '%' || c == '+' && !isPath) {
+                firstEscaped = i;
+                break;
+            }
+        }
+        if (firstEscaped == -1) {
+            return s.substring(from, toExcluded);
+        }
+
+        final CharsetDecoder decoder = DEFAULT_CHARSET.newDecoder()
+                .onMalformedInput(REPLACE).onUnmappableCharacter(REPLACE);
+
+        // Each encoded byte takes 3 characters (e.g. "%20")
+        final int decodedCapacity = (toExcluded - firstEscaped) / 3;
+        final ByteBuffer byteBuf = ByteBuffer.allocate(decodedCapacity);
+        final CharBuffer charBuf = CharBuffer.allocate(decodedCapacity);
+
+        final StringBuilder strBuf = new StringBuilder(len);
+        strBuf.append(s, from, firstEscaped);
+
+        for (int i = firstEscaped; i < toExcluded; i++) {
+            final char c = s.charAt(i);
+            if (c != '%') {
+                strBuf.append(c != '+' || isPath ? c : SPACE);
+                continue;
+            }
+
+            byteBuf.clear();
+            do {
+                if (i + 3 > toExcluded) {
+                    throw new IllegalArgumentException("unterminated escape sequence at index " + i + " of: " + s);
+                }
+                byteBuf.put(decodeHexByte(s, i + 1));
+                i += 3;
+            } while (i < toExcluded && s.charAt(i) == '%');
+            i--;
+
+            byteBuf.flip();
+            charBuf.clear();
+            CoderResult result = decoder.reset().decode(byteBuf, charBuf, true);
+            try {
+                if (!result.isUnderflow()) {
+                    result.throwException();
+                }
+                result = decoder.flush(charBuf);
+                if (!result.isUnderflow()) {
+                    result.throwException();
+                }
+            } catch (final CharacterCodingException ex) {
+                throw new IllegalArgumentException(ex);
+            }
+            strBuf.append(charBuf.flip());
+        }
+        return strBuf.toString();
     }
 
     private static int parsePort(final String uri, final int begin, final int end) {
@@ -352,7 +494,7 @@ final class HttpUri {
      * <a href="https://tools.ietf.org/html/rfc3986#section-3.3">Path</a>
      * <pre>the first path segment cannot contain a colon (":") character</pre>
      *
-     * @param uri   The original uri.
+     * @param uri The original uri.
      * @param begin the start of the path.
      */
     private static void verifyFirstPathSegment(final String uri, final int begin) {

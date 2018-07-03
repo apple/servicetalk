@@ -25,7 +25,7 @@ public class DefaultHttpRequestMetaDataTest extends AbstractHttpRequestMetaDataT
 
     @Override
     protected void createFixture(final String uri) {
-        fixture = new DefaultHttpRequestMetaData(GET, uri, HTTP_1_1, EmptyHttpHeaders.INSTANCE);
+        fixture = new DefaultHttpRequestMetaData(GET, uri, HTTP_1_1, DefaultHttpHeadersFactory.INSTANCE.newHeaders());
     }
 
     @Override

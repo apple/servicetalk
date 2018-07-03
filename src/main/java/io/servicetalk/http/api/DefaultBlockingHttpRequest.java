@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.BlockingIterable;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
@@ -40,6 +41,29 @@ final class DefaultBlockingHttpRequest<I> implements BlockingHttpRequest<I> {
                                        final BlockingIterable<I> payloadIterable) {
         this.httpRequest = httpRequest.httpRequest;
         this.payloadIterable = requireNonNull(payloadIterable);
+    }
+
+    @Nullable
+    @Override
+    public String getScheme() {
+        return httpRequest.getScheme();
+    }
+
+    @Nullable
+    @Override
+    public String getUserInfo() {
+        return httpRequest.getUserInfo();
+    }
+
+    @Nullable
+    @Override
+    public String getHost() {
+        return httpRequest.getHost();
+    }
+
+    @Override
+    public int getPort() {
+        return httpRequest.getPort();
     }
 
     @Override
@@ -68,6 +92,17 @@ final class DefaultBlockingHttpRequest<I> implements BlockingHttpRequest<I> {
     public BlockingHttpRequest<I> setRawQuery(final String query) {
         httpRequest.setRawQuery(query);
         return this;
+    }
+
+    @Nullable
+    @Override
+    public String getEffectiveHost() {
+        return httpRequest.getEffectiveHost();
+    }
+
+    @Override
+    public int getEffectivePort() {
+        return httpRequest.getEffectivePort();
     }
 
     @Override
@@ -129,8 +164,8 @@ final class DefaultBlockingHttpRequest<I> implements BlockingHttpRequest<I> {
     }
 
     @Override
-    public <R> BlockingHttpRequest<R> transformPayloadBody(final Function<BlockingIterable<I>,
-                                                                          BlockingIterable<R>> transformer) {
+    public <R> BlockingHttpRequest<R> transformPayloadBody(
+            final Function<BlockingIterable<I>, BlockingIterable<R>> transformer) {
         return new DefaultBlockingHttpRequest<>(this, transformer.apply(payloadIterable));
     }
 

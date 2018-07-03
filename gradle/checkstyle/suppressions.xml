@@ -19,5 +19,5 @@
     "http://checkstyle.sourceforge.net/dtds/suppressions_1_2.dtd">
 
 <suppressions>
-  <suppress checks="ModifiedControlVariable" files="io/servicetalk/http/api/QueryStringDecoder.java"/>
+  <suppress checks="ModifiedControlVariable" files="io/servicetalk/http/api/HttpUri.java"/>
 </suppressions>

@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Single;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.http.api.HttpPayloadChunks.aggregateChunks;
@@ -31,7 +32,7 @@ final class DefaultAggregatedHttpRequest<T> implements AggregatedHttpRequest<T> 
     private final T payloadBody;
     private final HttpHeaders trailers;
 
-    DefaultAggregatedHttpRequest(HttpRequestMetaData original, T payloadBody, HttpHeaders trailers) {
+    DefaultAggregatedHttpRequest(final HttpRequestMetaData original, final T payloadBody, final HttpHeaders trailers) {
         this.original = original;
         this.payloadBody = payloadBody;
         this.trailers = trailers;
@@ -124,6 +125,29 @@ final class DefaultAggregatedHttpRequest<T> implements AggregatedHttpRequest<T> 
         return this;
     }
 
+    @Nullable
+    @Override
+    public String getScheme() {
+        return original.getScheme();
+    }
+
+    @Nullable
+    @Override
+    public String getUserInfo() {
+        return original.getUserInfo();
+    }
+
+    @Nullable
+    @Override
+    public String getHost() {
+        return original.getHost();
+    }
+
+    @Override
+    public int getPort() {
+        return original.getPort();
+    }
+
     @Override
     public String getRawPath() {
         return original.getRawPath();
@@ -134,7 +158,18 @@ final class DefaultAggregatedHttpRequest<T> implements AggregatedHttpRequest<T> 
         return original.getPath();
     }
 
-    static HttpRequest<HttpPayloadChunk> toHttpRequest(AggregatedHttpRequest<HttpPayloadChunk> request) {
+    @Nullable
+    @Override
+    public String getEffectiveHost() {
+        return original.getEffectiveHost();
+    }
+
+    @Override
+    public int getEffectivePort() {
+        return original.getEffectivePort();
+    }
+
+    static HttpRequest<HttpPayloadChunk> toHttpRequest(final AggregatedHttpRequest<HttpPayloadChunk> request) {
         return new DefaultHttpRequest<>(request.getMethod(), request.getRequestTarget(), request.getVersion(),
                 // We can not simply write "request" here as the encoder will see two metadata objects,
                 // one created by splice and the next the chunk itself.
@@ -142,8 +177,8 @@ final class DefaultAggregatedHttpRequest<T> implements AggregatedHttpRequest<T> 
                 request.getHeaders());
     }
 
-    static Single<AggregatedHttpRequest<HttpPayloadChunk>> from(HttpRequest<HttpPayloadChunk> original,
-                                                                BufferAllocator allocator) {
+    static Single<AggregatedHttpRequest<HttpPayloadChunk>> from(final HttpRequest<HttpPayloadChunk> original,
+                                                                final BufferAllocator allocator) {
         final Single<LastHttpPayloadChunk> reduce = aggregateChunks(original.getPayloadBody(), allocator);
         return reduce.map(payload -> new DefaultAggregatedHttpRequest<>(original, payload, payload.getTrailers()));
     }

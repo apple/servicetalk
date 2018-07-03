@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Spliterator;
 import java.util.stream.StreamSupport;
 
+import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static java.util.Arrays.asList;
 import static java.util.Collections.addAll;
 import static java.util.Collections.singleton;
@@ -36,6 +37,7 @@ import static java.util.Collections.singletonList;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaData> {
 
@@ -47,7 +49,7 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
 
     protected T fixture;
 
-    final Map<String, List<String>> params = new LinkedHashMap<>();
+    private final Map<String, List<String>> params = new LinkedHashMap<>();
 
     protected abstract void createFixture(String uri);
 
@@ -58,33 +60,159 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     public void testParseUriOriginForm() {
         createFixture("/some/path?foo=bar&abc=def&foo=baz");
 
+        assertNull(fixture.getScheme());
+        assertNull(fixture.getUserInfo());
+        assertNull(fixture.getHost());
+        assertEquals(-1, fixture.getPort());
         assertEquals("/some/path", fixture.getPath());
         assertEquals("/some/path", fixture.getRawPath());
         assertEquals("foo=bar&abc=def&foo=baz", fixture.getRawQuery());
         assertEquals("/some/path?foo=bar&abc=def&foo=baz", fixture.getRequestTarget());
+
+        assertNull(fixture.getEffectiveHost());
+        assertEquals(-1, fixture.getEffectivePort());
+
+        // Host header provides effective host and port
+        fixture.getHeaders().set(HOST, "other.site.com:8080");
+        assertEquals("other.site.com", fixture.getEffectiveHost());
+        assertEquals(8080, fixture.getEffectivePort());
     }
 
     // https://tools.ietf.org/html/rfc7230#section-5.3.2
     @Test
     public void testParseHttpUriAbsoluteForm() {
-        // TODO: need to include user-info
         createFixture("http://my.site.com/some/path?foo=bar&abc=def&foo=baz");
 
+        assertEquals("http", fixture.getScheme());
+        assertNull(fixture.getUserInfo());
+        assertEquals("my.site.com", fixture.getHost());
+        assertEquals(-1, fixture.getPort());
         assertEquals("/some/path", fixture.getPath());
         assertEquals("/some/path", fixture.getRawPath());
         assertEquals("foo=bar&abc=def&foo=baz", fixture.getRawQuery());
         assertEquals("http://my.site.com/some/path?foo=bar&abc=def&foo=baz", fixture.getRequestTarget());
+
+        assertEquals("my.site.com", fixture.getEffectiveHost());
+        assertEquals(-1, fixture.getEffectivePort());
+
+        // Host header ignored when request-target is absolute.
+        fixture.getHeaders().set(HOST, "other.site.com:8080");
+        assertEquals("my.site.com", fixture.getEffectiveHost());
+        assertEquals(-1, fixture.getEffectivePort());
     }
 
     @Test
     public void testParseHttpsUriAbsoluteForm() {
-        // TODO: need to include user-info
-        createFixture("https://my.site.com/some/path?foo=bar&abc=def&foo=baz");
+        createFixture("https://jdoe@my.site.com/some/path?foo=bar&abc=def&foo=baz");
 
+        assertEquals("https", fixture.getScheme());
+        assertEquals("jdoe", fixture.getUserInfo());
+        assertEquals("my.site.com", fixture.getHost());
+        assertEquals(-1, fixture.getPort());
         assertEquals("/some/path", fixture.getPath());
         assertEquals("/some/path", fixture.getRawPath());
         assertEquals("foo=bar&abc=def&foo=baz", fixture.getRawQuery());
-        assertEquals("https://my.site.com/some/path?foo=bar&abc=def&foo=baz", fixture.getRequestTarget());
+        assertEquals("https://jdoe@my.site.com/some/path?foo=bar&abc=def&foo=baz", fixture.getRequestTarget());
+
+        assertEquals("my.site.com", fixture.getEffectiveHost());
+        assertEquals(-1, fixture.getEffectivePort());
+
+        // Host header ignored when request-target is absolute
+        fixture.getHeaders().set(HOST, "other.site.com:8080");
+        assertEquals("my.site.com", fixture.getEffectiveHost());
+        assertEquals(-1, fixture.getPort());
+    }
+
+    // https://tools.ietf.org/html/rfc7230#section-5.3.3
+    @Test
+    public void testParseHttpUriAuthorityForm() {
+        createFixture("my.site.com:80");
+
+        assertNull(fixture.getScheme());
+        assertNull(fixture.getUserInfo());
+        assertEquals("my.site.com", fixture.getHost());
+        assertEquals(80, fixture.getPort());
+        assertEquals("", fixture.getPath());
+        assertEquals("", fixture.getRawPath());
+        assertEquals("", fixture.getRawQuery());
+        assertEquals("my.site.com:80", fixture.getRequestTarget());
+
+        assertEquals("my.site.com", fixture.getEffectiveHost());
+        assertEquals(80, fixture.getEffectivePort());
+
+        // Host header ignored when request-target has authority form
+        fixture.getHeaders().set(HOST, "other.site.com:8080");
+        assertEquals("my.site.com", fixture.getEffectiveHost());
+        assertEquals(80, fixture.getEffectivePort());
+    }
+
+    // https://tools.ietf.org/html/rfc7230#section-5.3.4
+    @Test
+    public void testParseHttpUriAsteriskForm() {
+        createFixture("*");
+
+        assertNull(fixture.getScheme());
+        assertNull(fixture.getUserInfo());
+        assertNull(fixture.getHost());
+        assertEquals(-1, fixture.getPort());
+        assertEquals("", fixture.getPath());
+        assertEquals("", fixture.getRawPath());
+        assertEquals("", fixture.getRawQuery());
+        assertEquals("*", fixture.getRequestTarget());
+
+        assertNull(fixture.getEffectiveHost());
+        assertEquals(-1, fixture.getEffectivePort());
+
+        // Host header provides effective host and port
+        fixture.getHeaders().set(HOST, "other.site.com:8080");
+        assertEquals("other.site.com", fixture.getEffectiveHost());
+        assertEquals(8080, fixture.getEffectivePort());
+    }
+
+    @Test
+    public void testParseUriOriginFormWithHostHeader() {
+        createFixture("/some/path?foo=bar&abc=def&foo=baz");
+        fixture.getHeaders().set(HOST, "host.header.com");
+
+        assertNull(fixture.getScheme());
+        assertNull(fixture.getUserInfo());
+        assertNull(fixture.getHost());
+        assertEquals(-1, fixture.getPort());
+        assertEquals("/some/path", fixture.getPath());
+        assertEquals("/some/path", fixture.getRawPath());
+        assertEquals("foo=bar&abc=def&foo=baz", fixture.getRawQuery());
+        assertEquals("/some/path?foo=bar&abc=def&foo=baz", fixture.getRequestTarget());
+
+        assertEquals("host.header.com", fixture.getEffectiveHost());
+        assertEquals(-1, fixture.getEffectivePort());
+
+        // Host header provides effective host and port
+        fixture.getHeaders().set(HOST, "other.site.com:8080");
+        assertEquals("other.site.com", fixture.getEffectiveHost());
+        assertEquals(8080, fixture.getEffectivePort());
+    }
+
+    @Test
+    public void testParseHttpUriAbsoluteFormWithHost() {
+        createFixture("http://my.site.com/some/path?foo=bar&abc=def&foo=baz");
+        fixture.getHeaders().set(HOST, "host.header.com");
+
+        assertEquals("http", fixture.getScheme());
+        assertNull(fixture.getUserInfo());
+        assertEquals("my.site.com", fixture.getHost());
+        assertEquals(-1, fixture.getPort());
+        assertEquals("/some/path", fixture.getPath());
+        assertEquals("/some/path", fixture.getRawPath());
+        assertEquals("foo=bar&abc=def&foo=baz", fixture.getRawQuery());
+        assertEquals("http://my.site.com/some/path?foo=bar&abc=def&foo=baz", fixture.getRequestTarget());
+
+        assertEquals("my.site.com", fixture.getEffectiveHost());
+        assertEquals(-1, fixture.getEffectivePort());
+
+        // Host header ignored when request-target is absolute.
+        fixture.getHeaders().set(HOST, "other.site.com:8080");
+        assertEquals("my.site.com", fixture.getEffectiveHost());
+        assertEquals(-1, fixture.getEffectivePort());
     }
 
     @Test
@@ -171,6 +299,16 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
     }
 
     @Test
+    public void testParseEmptyAndEncodeQuery() {
+        createFixture("/some/path");
+        final HttpQuery query = fixture.parseQuery();
+        query.add("foo", "bar");
+
+        query.encodeToRequestTarget();
+        assertEquals("/some/path?foo=bar", fixture.getRequestTarget());
+    }
+
+    @Test
     public void testReencodeQuery() {
         createFixture("/some/path?foo=bar&abc=def&foo=baz");
         final HttpQuery query = fixture.parseQuery();
@@ -190,6 +328,31 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         query.encodeToRequestTarget();
 
         assertEquals("/some/path?foo=bar&foo=baz&abc=new", fixture.getRequestTarget());
+    }
+
+    @Test
+    public void testSetRequestTargetAndReparse() {
+        createFixture("/some/path?foo=bar&abc=def&foo=baz");
+
+        // parse it
+        assertEquals("/some/path?foo=bar&abc=def&foo=baz", fixture.getRequestTarget());
+        assertEquals("/some/path", fixture.getRawPath());
+        assertEquals("/some/path", fixture.getPath());
+        assertEquals("foo=bar&abc=def&foo=baz", fixture.getRawQuery());
+        final HttpQuery query = fixture.parseQuery();
+        assertEquals(asList("bar", "baz"), iteratorAsList(query.getAll("foo")));
+        assertEquals(singletonList("def"), iteratorAsList(query.getAll("abc")));
+
+        // change it
+        fixture.setRequestTarget("/new/%24path%24?another=bar");
+
+        // parse it again
+        assertEquals("/new/%24path%24?another=bar", fixture.getRequestTarget());
+        assertEquals("/new/%24path%24", fixture.getRawPath());
+        assertEquals("/new/$path$", fixture.getPath());
+        assertEquals("another=bar", fixture.getRawQuery());
+        final HttpQuery newQuery = fixture.parseQuery();
+        assertEquals(singletonList("bar"), iteratorAsList(newQuery.getAll("another")));
     }
 
     @Test
@@ -287,6 +450,9 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         setFixtureQueryParams(params);
 
         assertEquals("http://my.site.com/some/path?foo=new", fixture.getRequestTarget());
+
+        assertEquals("my.site.com", fixture.getEffectiveHost());
+        assertEquals(-1, fixture.getEffectivePort());
     }
 
     @SuppressWarnings("unchecked")

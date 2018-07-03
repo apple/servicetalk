@@ -30,6 +30,8 @@
  */
 package io.servicetalk.http.api;
 
+import javax.annotation.Nullable;
+
 final class StringUtil {
 
     private StringUtil() {
@@ -40,7 +42,7 @@ final class StringUtil {
      * Helper to decode half of a hexadecimal number from a string.
      *
      * @param c The ASCII character of the hexadecimal number to decode.
-     *          Must be in the range {@code [0-9a-fA-F]}.
+     * Must be in the range {@code [0-9a-fA-F]}.
      * @return The hexadecimal value represented in the ASCII character
      * given, or {@code -1} if the character is invalid.
      */
@@ -70,5 +72,10 @@ final class StringUtil {
                     "invalid hex byte '%s' at index %d of '%s'", s.subSequence(pos, pos + 2), pos, s));
         }
         return (byte) ((hi << 4) + lo);
+    }
+
+    @Nullable
+    static String toString(@Nullable final Object o) {
+        return o != null ? o.toString() : null;
     }
 }

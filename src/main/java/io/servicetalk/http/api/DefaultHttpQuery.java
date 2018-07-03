@@ -96,7 +96,7 @@ public final class DefaultHttpQuery implements HttpQuery {
 
     @Override
     public HttpQuery set(final String key, final String value) {
-        final ArrayList<String> list = new ArrayList<>(DefaultHttpQuery.DEFAULT_LIST_SIZE);
+        final ArrayList<String> list = new ArrayList<>(DEFAULT_LIST_SIZE);
         list.add(value);
         params.put(key, list);
         return this;
@@ -104,7 +104,7 @@ public final class DefaultHttpQuery implements HttpQuery {
 
     @Override
     public HttpQuery set(final String key, final Iterable<String> values) {
-        final ArrayList<String> list = new ArrayList<>(DefaultHttpQuery.DEFAULT_LIST_SIZE);
+        final ArrayList<String> list = new ArrayList<>(DEFAULT_LIST_SIZE);
         for (final String value : values) {
             list.add(value);
         }
@@ -114,7 +114,7 @@ public final class DefaultHttpQuery implements HttpQuery {
 
     @Override
     public HttpQuery set(final String key, final String... values) {
-        final ArrayList<String> list = new ArrayList<>(DefaultHttpQuery.DEFAULT_LIST_SIZE);
+        final ArrayList<String> list = new ArrayList<>(DEFAULT_LIST_SIZE);
         addAll(list, values);
         params.put(key, list);
         return this;
@@ -174,7 +174,7 @@ public final class DefaultHttpQuery implements HttpQuery {
     }
 
     private List<String> getValues(final String key) {
-        return params.computeIfAbsent(key, k -> new ArrayList<>(DefaultHttpQuery.DEFAULT_LIST_SIZE));
+        return params.computeIfAbsent(key, k -> new ArrayList<>(DEFAULT_LIST_SIZE));
     }
 
     private static final class QueryIterator implements Iterator<Map.Entry<String, String>> {
