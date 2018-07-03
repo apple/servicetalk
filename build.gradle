@@ -35,6 +35,7 @@ dependencies {
   api "com.google.code.findbugs:jsr305"
   api "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
   api "io.servicetalk:servicetalk-http-api:0.1.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-http-utils:0.1.0-SNAPSHOT"
   api "org.glassfish.jersey.core:jersey-server:$jerseyVersion"
 
   testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:0.1.0-SNAPSHOT"

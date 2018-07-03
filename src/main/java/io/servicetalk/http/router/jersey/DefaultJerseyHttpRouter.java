@@ -34,6 +34,7 @@ import org.glassfish.jersey.server.spi.Container;
 
 import java.net.URI;
 import java.security.Principal;
+import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 import javax.ws.rs.core.SecurityContext;
 
@@ -44,7 +45,7 @@ import static io.servicetalk.http.router.jersey.CharSequenceUtils.ensureNoLeadin
 import static io.servicetalk.http.router.jersey.Context.CONNECTION_CONTEXT_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.HTTP_REQUEST_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.initResponseChunkPublisherRef;
-import static io.servicetalk.http.router.jersey.DummyHttpUtils.getBaseUri;
+import static java.util.Objects.requireNonNull;
 import static org.glassfish.jersey.server.internal.ContainerUtils.encodeUnsafeCharacters;
 
 final class DefaultJerseyHttpRouter extends HttpService {
@@ -75,10 +76,12 @@ final class DefaultJerseyHttpRouter extends HttpService {
 
     private final ApplicationHandler applicationHandler;
     private final int publisherInputStreamQueueCapacity;
+    private final BiFunction<ConnectionContext, HttpRequest<HttpPayloadChunk>, String> baseUriFunction;
     private final Container container;
 
     DefaultJerseyHttpRouter(final ApplicationHandler applicationHandler,
-                            final int publisherInputStreamQueueCapacity) {
+                            final int publisherInputStreamQueueCapacity,
+                            final BiFunction<ConnectionContext, HttpRequest<HttpPayloadChunk>, String> baseUriFunction) {
         if (!applicationHandler.getConfiguration().isEnabled(ServiceTalkFeature.class)) {
             throw new IllegalStateException("The " + ServiceTalkFeature.class.getSimpleName()
                     + " needs to be enabled for this application.");
@@ -86,6 +89,7 @@ final class DefaultJerseyHttpRouter extends HttpService {
 
         this.applicationHandler = applicationHandler;
         this.publisherInputStreamQueueCapacity = publisherInputStreamQueueCapacity;
+        this.baseUriFunction = requireNonNull(baseUriFunction);
 
         container = new DefaultContainer(applicationHandler);
         applicationHandler.onStartup(container);
@@ -129,7 +133,7 @@ final class DefaultJerseyHttpRouter extends HttpService {
                          final Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber,
                          final DelayedCancellable delayedCancellable) {
 
-        final CharSequence baseUri = getBaseUri(ctx, req);
+        final CharSequence baseUri = baseUriFunction.apply(ctx, req);
         final CharSequence path = ensureNoLeadingSlash(req.getRawPath());
 
         // Jersey needs URI-unsafe query chars to be encoded

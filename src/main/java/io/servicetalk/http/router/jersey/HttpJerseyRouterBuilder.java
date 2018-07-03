@@ -17,12 +17,18 @@ package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpService;
+import io.servicetalk.transport.api.ConnectionContext;
 
 import org.glassfish.jersey.server.ApplicationHandler;
 
 import java.io.InputStream;
+import java.util.function.BiFunction;
 import javax.ws.rs.core.Application;
+
+import static io.servicetalk.http.utils.HttpRequestUriUtils.getBaseRequestUri;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Builds an {@link HttpService}{@code <}{@link HttpPayloadChunk}{@code >} which routes requests
@@ -35,6 +41,8 @@ import javax.ws.rs.core.Application;
  */
 public final class HttpJerseyRouterBuilder {
     private int publisherInputStreamQueueCapacity = 16;
+    private BiFunction<ConnectionContext, HttpRequest<HttpPayloadChunk>, String> baseUriFunction =
+            (ctx, req) -> getBaseRequestUri(ctx, req, false);
 
     /**
      * Set the hint for the capacity of the intermediary queue that stores items when adapting {@link Publisher}s
@@ -49,6 +57,22 @@ public final class HttpJerseyRouterBuilder {
                     + " (expected > 0).");
         }
         this.publisherInputStreamQueueCapacity = publisherInputStreamQueueCapacity;
+        return this;
+    }
+
+    /**
+     * Set the function used to compute the base URI for incoming {@link HttpRequest}s.
+     * <b>The computed base URI must have {@code /} as path, and no query nor fragment.</b>
+     *
+     * @param baseUriFunction a {@link BiFunction} that computes a base URI {@link String}
+     * for the provided {@link ConnectionContext} and {@link HttpRequest}.
+     * @return this
+     * @see <a href="https://tools.ietf.org/html/rfc3986#section-3">URI Syntax Components</a>
+     */
+    public HttpJerseyRouterBuilder setBaseUriFunction(
+            final BiFunction<ConnectionContext, HttpRequest<HttpPayloadChunk>, String> baseUriFunction) {
+
+        this.baseUriFunction = requireNonNull(baseUriFunction);
         return this;
     }
 
@@ -79,6 +103,6 @@ public final class HttpJerseyRouterBuilder {
      * @return the {@link HttpService}.
      */
     public HttpService build(final ApplicationHandler applicationHandler) {
-        return new DefaultJerseyHttpRouter(applicationHandler, publisherInputStreamQueueCapacity);
+        return new DefaultJerseyHttpRouter(applicationHandler, publisherInputStreamQueueCapacity, baseUriFunction);
     }
 }
