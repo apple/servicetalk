@@ -117,5 +117,12 @@ public abstract class AbstractChannelReadHandler<T> extends ChannelInboundHandle
         ctx.fireChannelReadComplete();
     }
 
+    /**
+     * Callback to consume {@link Publisher} created for reading data from this {@link Channel}.
+     * This method will be invoked at most once, for each time this channel becomes active.
+     *
+     * @param ctx Netty's {@link ChannelHandlerContext}.
+     * @param newPublisher A newly created {@link Publisher} for current {@link Channel}.
+     */
     protected abstract void onPublisherCreation(ChannelHandlerContext ctx, Publisher<T> newPublisher);
 }

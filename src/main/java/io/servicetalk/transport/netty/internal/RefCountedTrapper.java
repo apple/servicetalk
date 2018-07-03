@@ -15,6 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 
 import io.netty.channel.ChannelDuplexHandler;
@@ -33,6 +34,11 @@ public abstract class RefCountedTrapper extends ChannelDuplexHandler {
 
     protected final BufferAllocator allocator;
 
+    /**
+     * Creates a new instance.
+     *
+     * @param allocator {@link BufferAllocator} to allocate new {@link Buffer}s for read messages.
+     */
     protected RefCountedTrapper(BufferAllocator allocator) {
         this.allocator = requireNonNull(allocator);
     }

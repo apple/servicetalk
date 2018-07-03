@@ -45,6 +45,13 @@ public abstract class AbstractSslChannelInitializer implements ChannelInitialize
         return nettyServiceContext;
     }
 
+    /**
+     * Returns a {@link SslHandler}, if added for this {@link Channel}. {@code null}, if none added.
+     *
+     * @param channel A Netty's {@link Channel}.
+     * @param context A {@link ConnectionContext} for the channel.
+     * @return The {@link SslHandler}.
+     */
     @Nullable
     protected abstract SslHandler addNettySslHandler(Channel channel, ConnectionContext context);
 

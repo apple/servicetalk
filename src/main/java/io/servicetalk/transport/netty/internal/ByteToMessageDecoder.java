@@ -111,6 +111,9 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
     private int discardAfterReads = 16;
     private int numReads;
 
+    /**
+     * Create a new instance.
+     */
     protected ByteToMessageDecoder() {
         ensureNotSharable();
     }
@@ -235,16 +238,28 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
         }
     }
 
+    /**
+     * May discard some, all, or none of read bytes depending on its internal implementation to reduce overall memory
+     * bandwidth consumption at the cost of potentially additional memory consumption.
+     */
     protected void discardSomeReadBytes() {
         assert cumulation != null;
         cumulation.discardSomeReadBytes();
     }
 
+    /**
+     * Returns cumulation reader index.
+     *
+     * @return reader index of cumulation.
+     */
     protected final int getCumulationReaderIndex() {
         assert cumulation != null;
         return cumulation.readerIndex();
     }
 
+    /**
+     * Resets cumulation.
+     */
     protected void cumulationReset() {
     }
 
