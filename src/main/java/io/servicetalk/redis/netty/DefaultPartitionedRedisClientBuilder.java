@@ -17,6 +17,7 @@ package io.servicetalk.redis.netty;
 
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
+import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscoverer.Event;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionMap;
@@ -30,13 +31,11 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Publisher.Group;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
-import io.servicetalk.redis.api.BufferRedisCommander;
 import io.servicetalk.redis.api.PartitionedRedisClient;
 import io.servicetalk.redis.api.PartitionedRedisClientBuilder;
 import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
 import io.servicetalk.redis.api.RedisClientBuilder;
-import io.servicetalk.redis.api.RedisCommander;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisPartitionAttributesBuilder;
@@ -92,9 +91,11 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
 
     /**
      * Create a new instance.
+     *
      * @param loadBalancerFactory {@link LoadBalancerFactory} to use for creating new {@link LoadBalancer} instances.
-     * @param redisPartitionAttributesBuilderFactory Supplies new {@link RedisPartitionAttributesBuilder} objects which
-     * is used in {@link RedisCommander} and {@link BufferRedisCommander} when making requests.
+     * @param redisPartitionAttributesBuilderFactory A {@link Function} to provide
+     * {@link RedisPartitionAttributesBuilder} for each {@link Command} executed by the returned
+     * {@link PartitionedRedisClient}.
      */
     public DefaultPartitionedRedisClientBuilder(
             LoadBalancerFactory<ResolvedAddress, RedisConnection> loadBalancerFactory,
@@ -107,6 +108,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
 
     /**
      * Create a new instance.
+     *
      * @param loadBalancerFactory A factory which generates {@link LoadBalancer} objects.
      */
     protected DefaultPartitionedRedisClientBuilder(
@@ -119,6 +121,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
 
     /**
      * Enable SSL/TLS using the provided {@link SslConfig}. To disable SSL pass in {@code null}.
+     *
      * @param config the {@link SslConfig}.
      * @return {@code this}.
      * @throws IllegalStateException if accessing the cert/key throws when {@link InputStream#close()} is called.
@@ -202,6 +205,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
      * Sets the maximum amount of {@link Event} objects that will be queued for each partition.
      * <p>It is assumed that the {@link Subscriber}s will process events in a timely manner (typically synchronously)
      * so this typically doesn't need to be very large.
+     *
      * @param serviceDiscoveryMaxQueueSize the maximum amount of {@link Event} objects that will be queued for each
      * partition.
      * @return {@code this}.
@@ -221,6 +225,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
      * <p>
      * Filtering allows you to wrap a {@link RedisClient} and modify behavior during request/response processing.
      * Some potential candidates for filtering include logging, metrics, and decorating responses.
+     *
      * @param clientFilterFactory {@link Function} to filter the used {@link RedisClient}.
      * @return {@code this}.
      */
@@ -235,6 +240,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
      * <p>
      * Filtering allows you to wrap a {@link RedisConnection} and modify behavior during request/response processing.
      * Some potential candidates for filtering include logging, metrics, and decorating responses.
+     *
      * @param connectionFilterFactory {@link UnaryOperator} to filter the used {@link RedisConnection}.
      * @return {@code this}.
      */
@@ -249,6 +255,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
      * <p>
      * Note this method will be used to decorate the result of {@link #build(ExecutionContext, Publisher)} before it is
      * returned to the user.
+     *
      * @param partitionedClientFilterFactory {@link UnaryOperator} to filter the used {@link PartitionedRedisClient}.
      * @return {@code this}.
      */
@@ -264,6 +271,17 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
         return build(executionContext, addressEventStream, requireNonNull(redisPartitionAttributesBuilderFactory));
     }
 
+    /**
+     * Build a new {@link PartitionedRedisClient}.
+     *
+     * @param executionContext {@link ExecutionContext} used by the returned {@link PartitionedRedisClient}.
+     * @param addressEventStream A stream of events (typically from a {@link ServiceDiscoverer#discover(Object)}) that
+     * provides the addresses used to create new {@link RedisConnection}s.
+     * @param redisPartitionAttributesBuilderFactory A {@link Function} to provide
+     * {@link RedisPartitionAttributesBuilder} for each {@link Command} executed by the returned
+     * {@link PartitionedRedisClient}.
+     * @return A new {@link PartitionedRedisClient}.
+     */
     protected PartitionedRedisClient build(ExecutionContext executionContext,
               Publisher<PartitionedEvent<ResolvedAddress>> addressEventStream,
               Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFactory) {
