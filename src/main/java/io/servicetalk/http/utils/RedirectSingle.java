@@ -47,6 +47,9 @@ final class RedirectSingle extends Single<HttpResponse<HttpPayloadChunk>> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RedirectSingle.class);
 
+    private static final int DEFAULT_PORT_HTTP = 80;
+    private static final int DEFAULT_PORT_HTTPS = 443;
+
     private final Single<HttpResponse<HttpPayloadChunk>> originalResponse;
     private final HttpRequest<HttpPayloadChunk> originalRequest;
     private final int maxRedirects;
@@ -195,24 +198,22 @@ final class RedirectSingle extends Single<HttpResponse<HttpPayloadChunk>> {
             final HttpRequestMethod method = defineRedirectMethod(request.getMethod());
             final CharSequence locationHeader = response.getHeaders().get(LOCATION);
             assert locationHeader != null;
-            final HttpUri uri = new HttpUri(locationHeader.toString(), () -> {
-                // Try to extract host header from the previous request in case that relative location provided
-                final CharSequence hostHeader = request.getHeaders().get(HOST);
-                return hostHeader == null ? null : hostHeader.toString();
-            });
-            String hostHeader = uri.getHostHeader();
-            if (hostHeader == null) {
-                // Original request had an absolute-form request-target without HOST header, parse it from there
-                hostHeader = new HttpUri(request.getRequestTarget()).getHostHeader();
-                if (hostHeader == null) {
+
+            final HttpRequest<HttpPayloadChunk> redirectRequest =
+                    newRequest(request.getVersion(), method, locationHeader.toString());
+
+            String redirectHost = redirectRequest.getEffectiveHost();
+            if (redirectHost == null) {
+                // origin-form request-target in Location header, extract host & port info from original request
+                redirectHost = request.getEffectiveHost();
+                if (redirectHost == null) {
                     // Should never happen, otherwise the original request had to fail
                     throw new InvalidRedirectException("No host information for redirect");
                 }
+                redirectRequest.getHeaders().set(HOST,
+                        buildHostHeader(redirectHost, request.getEffectivePort()));
             }
-            // Send only requests with relative-URI, for proxying users may use filters
-            final HttpRequest<HttpPayloadChunk> redirectRequest =
-                    newRequest(request.getVersion(), method, uri.getRequestTarget());
-            redirectRequest.getHeaders().set(HOST, hostHeader);
+
             // NOTE: for security reasons we do not keep any headers from original request.
             // If users need to add some custom or authentication headers, they have to apply them via filters.
             return redirectRequest;
@@ -231,6 +232,13 @@ final class RedirectSingle extends Single<HttpResponse<HttpPayloadChunk>> {
             // GET or HEAD request: https://tools.ietf.org/html/rfc7231#section-6.4.4
             return originalMethod == HEAD ? HEAD : GET;
             // TODO: It also could be originalMethod for 307 & 308, when we will support repeatable payloadBody
+        }
+
+        private static String buildHostHeader(final String host, final int port) {
+            if (port < 0 || port == DEFAULT_PORT_HTTP || port == DEFAULT_PORT_HTTPS) {
+                return host;
+            }
+            return host + ':' + port;
         }
     }
 }

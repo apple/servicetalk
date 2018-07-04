@@ -364,15 +364,10 @@ public class RedirectingHttpClientGroupTest {
     }
 
     private static <I> GroupKey<String> createGroupKey(HttpRequest<I> request) {
-        final HttpUri uri = new HttpUri(request.getRequestTarget(), () -> {
-            final CharSequence hostHeader = request.getHeaders().get(HOST);
-            return hostHeader == null ? null : hostHeader.toString();
-        });
-
-        final String host = uri.getHost();
+        final String host = request.getEffectiveHost();
         if (host == null) {
             throw new IllegalArgumentException("HttpRequest does not contain information about target server address");
         }
-        return new DefaultGroupKey<>(host + ':' + uri.getPort(), executionContext);
+        return new DefaultGroupKey<>(host, executionContext);
     }
 }
