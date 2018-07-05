@@ -45,7 +45,7 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
-import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
+import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 
 final class NettyHttpServer {
@@ -92,8 +92,8 @@ final class NettyHttpServer {
 
         NettyHttpServerContext(final ServerContext delegate, final HttpService service) {
             this.delegate = delegate;
-            asyncCloseable = toAsyncCloseable(() -> newCompositeCloseable()
-                    .concat(service, delegate).closeAsync());
+            asyncCloseable = toListenableAsyncCloseable(newCompositeCloseable()
+                    .concat(service, delegate));
         }
 
         @Override

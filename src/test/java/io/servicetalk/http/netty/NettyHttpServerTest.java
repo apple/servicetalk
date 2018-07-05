@@ -359,6 +359,8 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void testImmediateShutdownWhileReadingPayload() throws Exception {
+        when(publisherSupplier.apply(any())).thenReturn(publisherRule.getPublisher());
+
         final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_PUBLISHER_RULE);
         makeRequest(request1);
 
@@ -369,6 +371,8 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void testCancelGracefulShutdownWhileReadingPayload() throws Exception {
+        when(publisherSupplier.apply(any())).thenReturn(publisherRule.getPublisher());
+
         final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_PUBLISHER_RULE);
         makeRequest(request1);
 
@@ -380,6 +384,8 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void testGracefulShutdownTimesOutWhileReadingPayload() throws Exception {
+        when(publisherSupplier.apply(any())).thenReturn(publisherRule.getPublisher());
+
         final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_PUBLISHER_RULE);
         makeRequest(request1);
 
@@ -390,6 +396,8 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void testImmediateCloseAfterGracefulShutdownWhileReadingPayload() throws Exception {
+        when(publisherSupplier.apply(any())).thenReturn(publisherRule.getPublisher());
+
         final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_PUBLISHER_RULE);
         makeRequest(request1);
 
