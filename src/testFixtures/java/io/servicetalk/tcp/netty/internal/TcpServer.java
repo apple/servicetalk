@@ -110,7 +110,7 @@ public class TcpServer {
         return (channel, context) -> {
             channel.pipeline().addLast(new BufferHandler(executionContext.getBufferAllocator()));
             channel.pipeline()
-                    .addLast(new AbstractChannelReadHandler<Buffer>(buffer -> false, executionContext.getExecutor()) {
+                    .addLast(new AbstractChannelReadHandler<Buffer>(buffer -> false) {
                         @Override
                         protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Buffer> newPublisher) {
                             Connection<Buffer, Buffer> conn = new NettyConnection<>(ctx.channel(), context,

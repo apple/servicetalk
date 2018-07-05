@@ -187,7 +187,7 @@ public final class TcpConnector<Read, Write> {
                         try {
                             Connection.TerminalPredicate<Read> predicate =
                                     new Connection.TerminalPredicate<>(terminalItemPredicate.get());
-                            channel.pipeline().addLast(new AbstractChannelReadHandler<Read>(predicate, executionContext.getExecutor()) {
+                            channel.pipeline().addLast(new AbstractChannelReadHandler<Read>(predicate) {
                                 @Override
                                 protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Read> newPublisher) {
                                     final Connection<Read, Write> connection;
