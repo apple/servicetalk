@@ -85,7 +85,9 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
     private final Publisher<Read> read;
     private final TerminalPredicate<Read> terminalMsgPredicate;
     private final CloseHandler closeHandler;
-    private final Completable onClosing;
+    @Nullable
+    private final CompletableProcessor onClosing;
+
     /**
      * Potentially contains more information when a protocol or channel level close event was observed.
      */
@@ -130,20 +132,22 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
                            CloseHandler closeHandler) {
         this.channel = requireNonNull(channel);
         this.context = requireNonNull(context);
-        this.read = requireNonNull(read);
+        // Offload any reads off the EventLoop to support potential blocking calls.
+        // TODO: Technically, we only need to offload signals to the Subscriber and not Subscription.
+        this.read = read.publishAndSubscribeOnOverride(context.getExecutor());
         this.terminalMsgPredicate = requireNonNull(terminalMsgPredicate);
         this.closeHandler = requireNonNull(closeHandler);
-        if (closeHandler == NOOP_CLOSE_HANDLER) {
-            onClosing = onClose();
-        } else {
+        if (closeHandler != NOOP_CLOSE_HANDLER) {
             onClosing = new CompletableProcessor();
             closeHandler.registerEventHandler(channel, evt -> { // Called from EventLoop only!
                 if (closeReason == null) {
                     closeReason = evt;
                     LOGGER.debug("{} Emitted CloseEvent: {}", channel, evt);
-                    ((CompletableProcessor) onClosing).onComplete();
+                    onClosing.onComplete();
                 }
             });
+        } else {
+            onClosing = null;
         }
         channel.pipeline().addLast(new ChannelInboundHandler() {
             @Override
@@ -252,6 +256,11 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
                         readAwareFlushStrategyHolder = holder;
                     }
                     composeFlushes(channel, writeWithFlush.getSource(), writeWithFlush.getFlushSignals())
+                            // Since there can be blocking code on the Single that is being written, we offload signals to and
+                            // from the Single. This protects the EventLoop from being blocked.
+                            // TODO: Technically we only need to offload calls to Subscription here as write to channel
+                            // will not be done on the user thread by netty.
+                            .publishAndSubscribeOnOverride(context.getExecutor())
                             .subscribe(subscriber);
                 }
             }
@@ -266,7 +275,11 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
             protected void handleSubscribe(Subscriber completableSubscriber) {
                 WriteSingleSubscriber subscriber = new WriteSingleSubscriber(channel, requireNonNull(completableSubscriber));
                 if (failIfWriteActive(subscriber, completableSubscriber)) {
-                    write.subscribe(subscriber);
+                    // Since there can be blocking code on the Single that is being written, we offload signals to and
+                    // from the Single. This protects the EventLoop from being blocked.
+                    // TODO: Technically we only need to offload calls to Cancellable here as write to channel is
+                    // will not be done on the user thread by netty.
+                    write.publishAndSubscribeOnOverride(context.getExecutor()).subscribe(subscriber);
                 }
             }
         });
@@ -294,7 +307,9 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
 
     @Override
     public Completable closeAsync() {
-        return context.closeAsync();
+        // Close can be triggered from EventLoop so we offload to protect EventLoop from blocking operations.
+        // TODO: Technically, we only need to offload signals to the Subscriber and not Cancellable.
+        return context.closeAsync().publishAndSubscribeOnOverride(context.getExecutor());
     }
 
     @Override
@@ -315,7 +330,8 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
 
     @Override
     public Completable onClose() {
-        return context.onClose();
+        // TODO: Technically, we only need to offload signals to the Subscriber and not Cancellable.
+        return context.onClose().publishAndSubscribeOnOverride(context.getExecutor());
     }
 
     @Override
@@ -349,7 +365,8 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
 
     @Override
     public Completable onClosing() {
-        return onClosing;
+        // TODO: Technically, we only need to offload signals to the Subscriber and not Cancellable.
+        return onClosing == null ? onClose() : onClosing.publishAndSubscribeOnOverride(context.getExecutor());
     }
 
     @Override
@@ -359,7 +376,10 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
 
     private Completable cleanupStateWhenDone(Completable completable) {
         // This must happen before we actually trigger the original Subscribers methods so using doBefore* variants.
-        return completable.doBeforeFinally(this::cleanupOnWriteTerminated);
+        return completable.doBeforeFinally(this::cleanupOnWriteTerminated)
+                // Since the Completable will be notified from the EventLoop, we offload signals to the Subscriber
+                // TODO: We can avoid offloading Cancellable calls here but that is not supported for now.
+                .publishAndSubscribeOnOverride(context.getExecutor());
     }
 
     private boolean failIfWriteActive(WritableListener newWritableListener, Subscriber subscriber) {

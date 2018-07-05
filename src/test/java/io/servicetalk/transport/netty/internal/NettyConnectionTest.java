@@ -37,6 +37,7 @@ import java.util.concurrent.CompletableFuture;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.transport.api.FlushStrategy.defaultFlushStrategy;
@@ -82,11 +83,13 @@ public class NettyConnectionTest {
         channel = new EmbeddedChannel();
         context = mock(ConnectionContext.class);
         when(context.closeAsync()).thenReturn(new NettyFutureCompletable(channel::close));
+        when(context.onClose()).thenReturn(new NettyFutureCompletable(channel::closeFuture));
         when(context.getExecutionContext()).thenReturn(executionContext);
+        when(context.getExecutor()).thenReturn(immediate());
+        when(executionContext.getExecutor()).thenReturn(immediate());
         requestNSupplier = mock(Connection.RequestNSupplier.class);
         when(requestNSupplier.getRequestNFor(anyLong())).then(invocation1 -> (long) requestNext);
         conn = new NettyConnection<>(channel, context, empty(), new Connection.TerminalPredicate<>(o -> false));
-        verify(context).onClose(); // NettyConnection() with NOOP_CLOSE_HANDLER
         publisher = new TestPublisher<Buffer>().sendOnSubscribe();
     }
 
@@ -306,8 +309,10 @@ public class NettyConnectionTest {
 
     @Test
     public void testContextDelegation() {
+        verify(context).getExecutor();
         conn.getExecutionContext();
         verify(context).getExecutionContext();
+        verify(context).getExecutor();
         verifyNoMoreInteractions(context);
         conn.getLocalAddress();
         verify(context).getLocalAddress();
@@ -320,9 +325,11 @@ public class NettyConnectionTest {
         verifyNoMoreInteractions(context);
         conn.closeAsync();
         verify(context).closeAsync();
+        verify(context, times(2)).getExecutor(); // One in NettyConnection constructor and one in closeAsync
         verifyNoMoreInteractions(context);
         conn.onClose();
-        verify(context, times(2)).onClose();
+        verify(context).onClose();
+        verify(context, times(3)).getExecutor(); // One more than above in onClose
         verifyNoMoreInteractions(context);
     }
 

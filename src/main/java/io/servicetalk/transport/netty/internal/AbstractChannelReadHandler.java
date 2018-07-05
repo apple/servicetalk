@@ -15,7 +15,6 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 
 import io.netty.channel.Channel;
@@ -44,7 +43,6 @@ public abstract class AbstractChannelReadHandler<T> extends ChannelInboundHandle
     @Nullable
     private NettyChannelPublisher<T> publisher;
     private final Predicate<T> isTerminal;
-    private final Executor executor;
 
     /**
      * New instance.
@@ -52,12 +50,9 @@ public abstract class AbstractChannelReadHandler<T> extends ChannelInboundHandle
      *
      * @param isTerminal {@link Predicate} for detecting terminal events per {@link Subscriber} of the emitted
      * {@link Publisher}.
-     * @param executor {@link Executor} to create the {@link Publisher} passed to
-     * {@link #onPublisherCreation(ChannelHandlerContext, Publisher)}.
      */
-    protected AbstractChannelReadHandler(Predicate<T> isTerminal, Executor executor) {
+    protected AbstractChannelReadHandler(Predicate<T> isTerminal) {
         this.isTerminal = requireNonNull(isTerminal);
-        this.executor = executor;
     }
 
     @Override

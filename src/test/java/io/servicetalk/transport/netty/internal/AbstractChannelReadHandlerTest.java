@@ -35,7 +35,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -52,7 +51,7 @@ public class AbstractChannelReadHandlerTest {
         AtomicReference<Throwable> errorRef = new AtomicReference<>();
         AtomicReference<Throwable> errorRef2 = new AtomicReference<>();
 
-        EmbeddedChannel channel = new EmbeddedChannel(new AbstractChannelReadHandler<Object>(v -> true, immediate()) {
+        EmbeddedChannel channel = new EmbeddedChannel(new AbstractChannelReadHandler<Object>(v -> true) {
             @Override
             protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Object> newPublisher) {
                 newPublisher.subscribe(new Subscriber<Object>() {
@@ -113,7 +112,7 @@ public class AbstractChannelReadHandlerTest {
                         throw DELIBERATE_EXCEPTION;
                     }
                 },
-        new AbstractChannelReadHandler<Object>(v -> true, immediate()) {
+        new AbstractChannelReadHandler<Object>(v -> true) {
             @Override
             protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Object> newPublisher) {
                 newPublisher.subscribe(new Subscriber<Object>() {
@@ -196,7 +195,7 @@ public class AbstractChannelReadHandlerTest {
         final AtomicBoolean readFired = new AtomicBoolean();
         final AtomicBoolean readCompleteFired = new AtomicBoolean();
         private final CountDownLatch publisherLatch = new CountDownLatch(1);
-        private final ChannelHandler assertHandler = new AbstractChannelReadHandler<Object>(v -> true, immediate()) {
+        private final ChannelHandler assertHandler = new AbstractChannelReadHandler<Object>(v -> true) {
             @Override
             protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Object> newPublisher) {
                 assertEquals(active, activeFired.get());
