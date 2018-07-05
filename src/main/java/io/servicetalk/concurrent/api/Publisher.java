@@ -90,6 +90,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
 
     @Override
     public final void subscribe(Subscriber<? super T> subscriber) {
+        requireNonNull(subscriber);
         // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader to use.
         final SignalOffloader signalOffloader = newOffloader(executor);
         // Since this is a user-driven subscribe (end of the execution chain), offload subscription methods
@@ -1374,6 +1375,45 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     }
 
     /**
+     * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
+     * <ul>
+     *     <li>All {@link Subscriber} methods.</li>
+     *     <li>All {@link Subscription} methods.</li>
+     *     <li>The {@link #handleSubscribe(Subscriber)} method.</li>
+     * </ul>
+     * This method does <em>not</em> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}. If such an override is required, {@link #publishAndSubscribeOnOverride(Executor)} can be used.
+     *
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods
+     * {@link Subscriber}, {@link Subscription} and {@link #handleSubscribe(Subscriber)}.
+     */
+    public final Publisher<T> publishAndSubscribeOn(Executor executor) {
+        return PublishAndSubscribeOnPublishers.publishAndSubscribeOn(this, executor);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
+     * <ul>
+     *     <li>All {@link Subscriber} methods.</li>
+     *     <li>All {@link Subscription} methods.</li>
+     *     <li>The {@link #handleSubscribe(Subscriber)} method.</li>
+     * </ul>
+     * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Publisher}.
+     * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
+     * If such an override is not required, {@link #publishAndSubscribeOn(Executor)} can be used.
+     *
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
+     * {@link Subscriber}, {@link Subscription} and {@link #handleSubscribe(Subscriber)} both for the returned
+     * {@link Publisher} as well as {@code this} {@link Publisher}.
+     */
+    public final Publisher<T> publishAndSubscribeOnOverride(Executor executor) {
+        return PublishAndSubscribeOnPublishers.publishAndSubscribeOnOverride(this, executor);
+    }
+
+    /**
      * Creates a new {@link Publisher} that emits {@code value} to its {@link Subscriber} and then {@link Subscriber#onComplete()}.
      *
      * @param value Value that the returned {@link Publisher} will emit.
@@ -1518,6 +1558,15 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
             return (Publisher<T>) publisher;
         }
         return new ReactiveStreamsPublisher<>(publisher);
+    }
+
+    /**
+     * Returns the {@link Executor} used for this {@link Publisher}.
+     *
+     * @return {@link Executor} used for this {@link Publisher} via {@link #Publisher(Executor)}.
+     */
+    final Executor getExecutor() {
+        return executor;
     }
 
     /**

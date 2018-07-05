@@ -769,6 +769,45 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     }
 
     /**
+     * Creates a new {@link Completable} that will use the passed {@link Executor} to invoke the following methods:
+     * <ul>
+     *     <li>All {@link Subscriber} methods.</li>
+     *     <li>All {@link Cancellable} methods.</li>
+     *     <li>The {@link #handleSubscribe(Completable.Subscriber)} method.</li>
+     * </ul>
+     * This method does <em>not</em> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Completable}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}. If such an override is required, {@link #publishAndSubscribeOnOverride(Executor)} can be used.
+     *
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods
+     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(Completable.Subscriber)}.
+     */
+    public final Completable publishAndSubscribeOn(Executor executor) {
+        return PublishAndSubscribeOnCompletables.publishAndSubscribeOn(this, executor);
+    }
+
+    /**
+     * Creates a new {@link Completable} that will use the passed {@link Executor} to invoke the following methods:
+     * <ul>
+     *     <li>All {@link Subscriber} methods.</li>
+     *     <li>All {@link Cancellable} methods.</li>
+     *     <li>The {@link #handleSubscribe(Completable.Subscriber)} method.</li>
+     * </ul>
+     * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Completable}.
+     * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
+     * If such an override is not required, {@link #publishAndSubscribeOn(Executor)} can be used.
+     *
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods of
+     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(Completable.Subscriber)} both for the
+     * returned {@link Completable} as well as {@code this} {@link Completable}.
+     */
+    public final Completable publishAndSubscribeOnOverride(Executor executor) {
+        return PublishAndSubscribeOnCompletables.publishAndSubscribeOnOverride(this, executor);
+    }
+
+    /**
      * Creates a realized completed {@code Completable}.
      *
      * @return A new {@code Completable}.
@@ -807,5 +846,14 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      */
     public static Completable defer(Supplier<Completable> completableSupplier) {
         return new CompletableDefer(completableSupplier);
+    }
+
+    /**
+     * Returns the {@link Executor} used for this {@link Completable}.
+     *
+     * @return {@link Executor} used for this {@link Completable} via {@link #Completable(Executor)}.
+     */
+    final Executor getExecutor() {
+        return executor;
     }
 }
