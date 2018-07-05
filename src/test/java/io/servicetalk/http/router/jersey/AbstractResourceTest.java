@@ -21,7 +21,6 @@ import io.servicetalk.http.router.jersey.resources.AsynchronousResources;
 import io.servicetalk.http.router.jersey.resources.SynchronousResources;
 
 import org.glassfish.jersey.server.ResourceConfig;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.lang.annotation.ElementType;
@@ -152,7 +151,6 @@ public abstract class AbstractResourceTest extends AbstractJerseyHttpServiceTest
         sendAndAssertResponse(withHeader(get("/text"), "hp", "bar"), OK, TEXT_PLAIN, "GOT: null & bar");
     }
 
-    @Ignore("Publisher#toInputStream deadlock")
     @Test
     public void postText() {
         // Small payload
@@ -163,7 +161,6 @@ public abstract class AbstractResourceTest extends AbstractJerseyHttpServiceTest
         sendAndAssertResponse(post("/text", payload, TEXT_PLAIN), OK, TEXT_PLAIN, is("GOT: " + payload), $ -> null);
     }
 
-    @Ignore("Publisher#toInputStream deadlock")
     @Test
     public void postTextNoEntity() {
         sendAndAssertResponse(noPayloadRequest(POST, "/text"), OK, TEXT_PLAIN, "GOT: ");
@@ -176,14 +173,12 @@ public abstract class AbstractResourceTest extends AbstractJerseyHttpServiceTest
         assertThat(res.getHeaders().get("X-Test"), is(newAsciiString("bar")));
     }
 
-    @Ignore("Publisher#toInputStream deadlock")
     @Test
     public void postTextResponse() {
         sendAndAssertResponse(withHeader(post("/text-response", "foo", TEXT_PLAIN), "hdr", "bar"),
                 ACCEPTED, TEXT_PLAIN, "GOT: foo");
     }
 
-    @Ignore("Publisher#toInputStream deadlock")
     @Test
     public void filtered() {
         HttpResponse<HttpPayloadChunk> res = sendAndAssertResponse(post("/filtered", "foo1", TEXT_PLAIN),
@@ -201,7 +196,6 @@ public abstract class AbstractResourceTest extends AbstractJerseyHttpServiceTest
                 jsonStringEquals("{\"foo\":\"bar1\"}"), String::length);
     }
 
-    @Ignore("Publisher#toInputStream deadlock")
     @Test
     public void putJsonResponse() {
         final HttpResponse<HttpPayloadChunk> res =

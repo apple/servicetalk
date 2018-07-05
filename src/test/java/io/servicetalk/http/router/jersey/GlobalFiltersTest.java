@@ -22,7 +22,6 @@ import io.servicetalk.http.router.jersey.resources.SynchronousResources;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.glassfish.jersey.server.ResourceConfig;
-import org.junit.Ignore;
 
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
@@ -36,7 +35,6 @@ import javax.ws.rs.ext.Provider;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 
-@Ignore("Publisher#toInputStream deadlock")
 public class GlobalFiltersTest extends AbstractFilterInterceptorTest {
     @Provider
     public static class TestGlobalFilter implements ContainerRequestFilter, ContainerResponseFilter {

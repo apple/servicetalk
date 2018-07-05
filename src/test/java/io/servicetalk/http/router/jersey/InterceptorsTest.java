@@ -22,7 +22,6 @@ import io.servicetalk.http.router.jersey.resources.SynchronousResources;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.glassfish.jersey.server.ResourceConfig;
-import org.junit.Ignore;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,7 +38,6 @@ import javax.ws.rs.ext.WriterInterceptorContext;
 import static io.servicetalk.http.router.jersey.TestUtils.asChunkPublisher;
 import static javax.ws.rs.Priorities.ENTITY_CODER;
 
-@Ignore("Publisher#toInputStream deadlock")
 public class InterceptorsTest extends AbstractFilterInterceptorTest {
     @Priority(ENTITY_CODER)
     @Provider

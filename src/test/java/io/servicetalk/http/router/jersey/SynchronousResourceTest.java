@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.router.jersey;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
@@ -68,13 +67,11 @@ public class SynchronousResourceTest extends AbstractResourceTest {
         sendAndAssertResponse(get("/text").setVersion(HTTP_1_0), HTTP_1_0, OK, TEXT_PLAIN, is("GOT: null & null"), $ -> 16);
     }
 
-    @Ignore("Publisher#toInputStream deadlock")
     @Test
     public void postTextStrInPubOut() {
         sendAndAssertResponse(post("/text-strin-pubout", "bar2", TEXT_PLAIN), OK, TEXT_PLAIN, is("GOT: bar2"), $ -> null);
     }
 
-    @Ignore("Publisher#toInputStream deadlock")
     @Test
     public void postTextPubInStrOut() {
         sendAndAssertResponse(post("/text-pubin-strout", "bar3", TEXT_PLAIN), OK, TEXT_PLAIN, "GOT: bar3");
@@ -90,7 +87,6 @@ public class SynchronousResourceTest extends AbstractResourceTest {
         sendAndAssertResponse(get("/text-pub-response?i=206"), PARTIAL_CONTENT, TEXT_PLAIN, "GOT: 206");
     }
 
-    @Ignore("Publisher#toInputStream deadlock")
     @Test
     public void postTextOioStreams() {
         // Small payload
@@ -101,14 +97,12 @@ public class SynchronousResourceTest extends AbstractResourceTest {
         sendAndAssertResponse(post("/text-oio-streams", payload, TEXT_PLAIN), OK, TEXT_PLAIN, is("GOT: " + payload), $ -> null);
     }
 
-    @Ignore("Publisher#toInputStream deadlock")
     @Test
     public void postJsonMapInPubOut() {
         sendAndAssertResponse(post("/json-mapin-pubout", "{\"key\":\"val2\"}", APPLICATION_JSON),
                 OK, APPLICATION_JSON, jsonEquals("{\"key\":\"val2\",\"foo\":\"bar3\"}"), $ -> null);
     }
 
-    @Ignore("Publisher#toInputStream deadlock")
     @Test
     public void postJsonPubInMapOut() {
         sendAndAssertResponse(post("/json-pubin-mapout", "{\"key\":\"val3\"}", APPLICATION_JSON),
