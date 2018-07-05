@@ -17,8 +17,9 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.internal.RequestConcurrencyController;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.Single.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.SingleOperator;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpResponse;
 
@@ -33,36 +34,35 @@ import javax.annotation.Nullable;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
-final class RequestCompletionHelperSingle extends Single<HttpResponse<HttpPayloadChunk>> {
+final class ConcurrencyControlSingleOperator
+        implements SingleOperator<HttpResponse<HttpPayloadChunk>, HttpResponse<HttpPayloadChunk>> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(RequestCompletionHelperSingle.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConcurrencyControlSingleOperator.class);
 
     private static final int IDLE = 0;
     private static final int CANCELLED = 1;
     private static final int TERMINATED = 2;
 
-    private static final AtomicIntegerFieldUpdater<RequestCompletionHelperSingle> stateUpdater =
-            newUpdater(RequestCompletionHelperSingle.class, "state");
+    private static final AtomicIntegerFieldUpdater<ConcurrencyControlSingleOperator> stateUpdater =
+            newUpdater(ConcurrencyControlSingleOperator.class, "state");
 
     private final RequestConcurrencyController limiter;
-    private final Single<HttpResponse<HttpPayloadChunk>> response;
 
     @SuppressWarnings("unused")
     private volatile int state;
 
-    RequestCompletionHelperSingle(Single<HttpResponse<HttpPayloadChunk>> response,
-                                  RequestConcurrencyController limiter) {
-        this.response = requireNonNull(response);
+    ConcurrencyControlSingleOperator(RequestConcurrencyController limiter) {
         this.limiter = requireNonNull(limiter);
     }
 
     @Override
-    protected void handleSubscribe(final Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber) {
+    public Subscriber<? super HttpResponse<HttpPayloadChunk>> apply(
+            final Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber) {
         // Here we avoid calling limiter.requestFinished() when we get a cancel() on the Single after we have handed
         // out the HttpResponse to the subscriber. Doing which will mean we double decrement the concurrency controller.
         // In case, we do get an HttpResponse after we got cancel(), we subscribe to the payload Publisher and cancel
         // to indicate to the Connection that there is no other Subscriber that will use the payload Publisher.
-        response.subscribe(new ConcurrencyControlManagingSubscriber(subscriber));
+        return new ConcurrencyControlManagingSubscriber(subscriber);
     }
 
     private final class ConcurrencyControlManagingSubscriber implements Subscriber<HttpResponse<HttpPayloadChunk>> {
@@ -76,7 +76,7 @@ final class RequestCompletionHelperSingle extends Single<HttpResponse<HttpPayloa
         @Override
         public void onSubscribe(final Cancellable cancellable) {
             subscriber.onSubscribe(() -> {
-                if (stateUpdater.compareAndSet(RequestCompletionHelperSingle.this, IDLE, CANCELLED)) {
+                if (stateUpdater.compareAndSet(ConcurrencyControlSingleOperator.this, IDLE, CANCELLED)) {
                     limiter.requestFinished();
                 }
                 // Cancel unconditionally, let the original Single handle cancel post termination, if required
@@ -88,7 +88,7 @@ final class RequestCompletionHelperSingle extends Single<HttpResponse<HttpPayloa
         public void onSuccess(@Nullable final HttpResponse<HttpPayloadChunk> response) {
             if (response == null) {
                 sendNullResponse();
-            } else if (stateUpdater.compareAndSet(RequestCompletionHelperSingle.this, IDLE, TERMINATED)) {
+            } else if (stateUpdater.compareAndSet(ConcurrencyControlSingleOperator.this, IDLE, TERMINATED)) {
                 subscriber.onSuccess(response.transformPayloadBody(payload ->
                         payload.doBeforeFinally(limiter::requestFinished)));
             } else if (state == CANCELLED) {
@@ -105,7 +105,7 @@ final class RequestCompletionHelperSingle extends Single<HttpResponse<HttpPayloa
 
         @Override
         public void onError(final Throwable t) {
-            if (stateUpdater.compareAndSet(RequestCompletionHelperSingle.this, IDLE, TERMINATED)) {
+            if (stateUpdater.compareAndSet(ConcurrencyControlSingleOperator.this, IDLE, TERMINATED)) {
                 limiter.requestFinished();
             }
             subscriber.onError(t);

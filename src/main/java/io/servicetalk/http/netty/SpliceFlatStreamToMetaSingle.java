@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
@@ -70,7 +69,6 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
     /**
      * Operator to flatten a {@code Data}&lt;{@code Payload}&gt; into a {@link Publisher}&lt;{@link Object}&gt;.
      *
-     * @param executor the executor to use for the new {@link Publisher}
      * @param data object containing a {@link Publisher}&lt;{@code Payload}&gt;
      * @param unpack function to unpack the {@link Publisher}&lt;{@code Payload}&gt; from the container
      * @param <Data> type of container, eg. {@code HttpResponse}&lt;{@code HttpPayloadChunk}&gt;
@@ -78,8 +76,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
      * @return a flattened {@link Publisher}&lt;{@link Object}&gt;
      */
     @SuppressWarnings("unchecked")
-    static <Data, Payload> Publisher<Object> flatten(Executor executor, Data data,
-                                                     Function<Data, Publisher<Payload>> unpack) {
+    static <Data, Payload> Publisher<Object> flatten(Data data, Function<Data, Publisher<Payload>> unpack) {
         return ((Publisher) Publisher.just(data)).concatWith(unpack.apply(data));
     }
 

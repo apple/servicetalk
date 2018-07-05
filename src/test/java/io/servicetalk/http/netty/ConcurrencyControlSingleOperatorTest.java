@@ -37,7 +37,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Publisher.never;
-import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponses.newResponse;
@@ -51,7 +50,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class RequestCompletionHelperSingleTest {
+public class ConcurrencyControlSingleOperatorTest {
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
@@ -61,9 +60,9 @@ public class RequestCompletionHelperSingleTest {
     @Test
     public void nullAsSuccess() {
         final RequestConcurrencyController controller = mock(RequestConcurrencyController.class);
-        RequestCompletionHelperSingle helper = new RequestCompletionHelperSingle(success(null), controller);
+        ConcurrencyControlSingleOperator helper = new ConcurrencyControlSingleOperator(controller);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
-        helper.subscribe(subscriber);
+        Single.<HttpResponse<HttpPayloadChunk>>success(null).liftSynchronous(helper).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
         verify(controller).requestFinished();
 
@@ -84,9 +83,9 @@ public class RequestCompletionHelperSingleTest {
         };
 
         final RequestConcurrencyController controller = mock(RequestConcurrencyController.class);
-        RequestCompletionHelperSingle helper = new RequestCompletionHelperSingle(original, controller);
+        ConcurrencyControlSingleOperator operator = new ConcurrencyControlSingleOperator(controller);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
-        helper.subscribe(subscriber);
+        original.liftSynchronous(operator).subscribe(subscriber);
         assertThat("Original Single not subscribed.", subRef.get(), is(notNullValue()));
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
@@ -108,9 +107,9 @@ public class RequestCompletionHelperSingleTest {
     public void cancelBeforeOnSuccess() throws ExecutionException, InterruptedException {
         TestSingle<HttpResponse<HttpPayloadChunk>> responseSingle = new TestSingle<>(true);
         final RequestConcurrencyController controller = mock(RequestConcurrencyController.class);
-        RequestCompletionHelperSingle helper = new RequestCompletionHelperSingle(responseSingle, controller);
+        ConcurrencyControlSingleOperator operator = new ConcurrencyControlSingleOperator(controller);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
-        helper.subscribe(subscriber);
+        responseSingle.liftSynchronous(operator).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         subscriber.cancellable.cancel();
@@ -132,9 +131,9 @@ public class RequestCompletionHelperSingleTest {
     public void cancelBeforeOnError() {
         TestSingle<HttpResponse<HttpPayloadChunk>> responseSingle = new TestSingle<>(true);
         final RequestConcurrencyController controller = mock(RequestConcurrencyController.class);
-        RequestCompletionHelperSingle helper = new RequestCompletionHelperSingle(responseSingle, controller);
+        ConcurrencyControlSingleOperator operator = new ConcurrencyControlSingleOperator(controller);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
-        helper.subscribe(subscriber);
+        responseSingle.liftSynchronous(operator).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         subscriber.cancellable.cancel();
@@ -150,9 +149,9 @@ public class RequestCompletionHelperSingleTest {
     public void cancelAfterOnSuccess() {
         TestSingle<HttpResponse<HttpPayloadChunk>> responseSingle = new TestSingle<>(true);
         final RequestConcurrencyController controller = mock(RequestConcurrencyController.class);
-        RequestCompletionHelperSingle helper = new RequestCompletionHelperSingle(responseSingle, controller);
+        ConcurrencyControlSingleOperator operator = new ConcurrencyControlSingleOperator(controller);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
-        helper.subscribe(subscriber);
+        responseSingle.liftSynchronous(operator).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         final HttpResponse<HttpPayloadChunk> response = newResponse(OK, never());
@@ -172,9 +171,9 @@ public class RequestCompletionHelperSingleTest {
     public void cancelAfterOnError() {
         TestSingle<HttpResponse<HttpPayloadChunk>> responseSingle = new TestSingle<>(true);
         final RequestConcurrencyController controller = mock(RequestConcurrencyController.class);
-        RequestCompletionHelperSingle helper = new RequestCompletionHelperSingle(responseSingle, controller);
+        ConcurrencyControlSingleOperator operator = new ConcurrencyControlSingleOperator(controller);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
-        helper.subscribe(subscriber);
+        responseSingle.liftSynchronous(operator).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         responseSingle.onError(DELIBERATE_EXCEPTION);
@@ -194,9 +193,9 @@ public class RequestCompletionHelperSingleTest {
         payload.sendOnSubscribe();
         TestSingle<HttpResponse<HttpPayloadChunk>> responseSingle = new TestSingle<>(true);
         final RequestConcurrencyController controller = mock(RequestConcurrencyController.class);
-        RequestCompletionHelperSingle helper = new RequestCompletionHelperSingle(responseSingle, controller);
+        ConcurrencyControlSingleOperator operator = new ConcurrencyControlSingleOperator(controller);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
-        helper.subscribe(subscriber);
+        responseSingle.liftSynchronous(operator).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         final HttpResponse<HttpPayloadChunk> response = newResponse(OK, payload);

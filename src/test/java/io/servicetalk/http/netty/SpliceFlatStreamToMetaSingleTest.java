@@ -29,7 +29,6 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
@@ -65,7 +64,7 @@ public class SpliceFlatStreamToMetaSingleTest {
     @Test
     public void flattenShouldBreakDownGroupWithEmbeddedPayloadIntoFlatHeterogeneousPublisherOfObject()
             throws ExecutionException, InterruptedException {
-        List<Object> flattened = awaitIndefinitely(flatten(immediate(), data, Data::getPayload));
+        List<Object> flattened = awaitIndefinitely(flatten(data, Data::getPayload));
         assertThat(flattened, contains(data, one, two, last));
     }
 

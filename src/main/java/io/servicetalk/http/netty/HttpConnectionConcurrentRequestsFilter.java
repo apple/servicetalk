@@ -61,7 +61,7 @@ final class HttpConnectionConcurrentRequestsFilter extends HttpConnection {
             @Override
             protected void handleSubscribe(final Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber) {
                 if (limiter.tryRequest()) {
-                    new RequestCompletionHelperSingle(next.request(request), limiter).subscribe(subscriber);
+                    next.request(request).liftSynchronous(new ConcurrencyControlSingleOperator(limiter)).subscribe(subscriber);
                 } else {
                     subscriber.onSubscribe(IGNORE_CANCEL);
                     subscriber.onError(new MaxRequestLimitExceededException("Max concurrent requests saturated for: " +

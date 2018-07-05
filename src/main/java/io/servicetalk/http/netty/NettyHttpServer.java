@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -63,16 +62,15 @@ final class NettyHttpServer {
         final TcpServerInitializer initializer = new TcpServerInitializer(executionContext, config.getTcpConfig());
 
         final ChannelInitializer channelInitializer = new TcpServerChannelInitializer(config.getTcpConfig())
-                .andThen(getChannelInitializer(config, executionContext.getExecutor(), service));
+                .andThen(getChannelInitializer(config, service));
 
         // The ServerContext returned by TcpServerInitializer takes care of closing the contextFilter.
         return initializer.start(address, contextFilter, channelInitializer, false, true)
                 .map((ServerContext delegate) -> new NettyHttpServerContext(delegate, service));
     }
 
-    private static ChannelInitializer getChannelInitializer(
-            final ReadOnlyHttpServerConfig config, final Executor executor,
-            final HttpService service) {
+    private static ChannelInitializer getChannelInitializer(final ReadOnlyHttpServerConfig config,
+                                                            final HttpService service) {
         return (channel, context) -> {
             final CloseHandler closeHandler = forPipelinedRequestResponse(false);
             Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(2);
@@ -80,7 +78,7 @@ final class NettyHttpServer {
                     config.getMaxInitialLineLength(), config.getMaxHeaderSize(), closeHandler));
             channel.pipeline().addLast(new HttpResponseEncoder(methodQueue, config.getHeadersEncodedSizeEstimate(),
                     config.getTrailersEncodedSizeEstimate(), closeHandler));
-            channel.pipeline().addLast(new HttpChannelReadHandler(executor, closeHandler, context, service));
+            channel.pipeline().addLast(new HttpChannelReadHandler(closeHandler, context, service));
             return context;
         };
     }
@@ -119,17 +117,15 @@ final class NettyHttpServer {
 
     private static final class HttpChannelReadHandler extends AbstractChannelReadHandler<Object>
             implements ConnectionHolderChannelHandler<Object, Object> {
-        private final Executor executor;
         private final CloseHandler closeHandler;
         private final ConnectionContext context;
         private final HttpService service;
         @Nullable
         private NettyHttpServerConnection connection;
 
-        HttpChannelReadHandler(final Executor executor, final CloseHandler closeHandler,
+        HttpChannelReadHandler(final CloseHandler closeHandler,
                                final ConnectionContext context, final HttpService service) {
-            super(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE, executor);
-            this.executor = executor;
+            super(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE);
             this.closeHandler = closeHandler;
             this.context = context;
             this.service = service;
@@ -140,8 +136,7 @@ final class NettyHttpServer {
                                            final Publisher<Object> requestObjectPublisher) {
             connection = new NettyHttpServerConnection(
                     channelHandlerContext.channel(), requestObjectPublisher,
-                    new TerminalPredicate<>(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE), closeHandler,
-                    executor, context, service);
+                    new TerminalPredicate<>(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE), closeHandler, context, service);
             connection.process().subscribe();
         }
 

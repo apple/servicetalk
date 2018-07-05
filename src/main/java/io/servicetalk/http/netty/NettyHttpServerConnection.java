@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.EmptyHttpHeaders;
@@ -56,17 +55,15 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
     private static final Logger LOGGER = LoggerFactory.getLogger(NettyHttpServerConnection.class);
     private static final Predicate<HttpPayloadChunk> LAST_HTTP_PAYLOAD_CHUNK_PREDICATE =
             p -> p instanceof LastHttpPayloadChunk;
-    private final Executor executor;
     private final ConnectionContext context;
     private final HttpService service;
 
     NettyHttpServerConnection(final Channel channel, final Publisher<Object> requestObjectPublisher,
                               final TerminalPredicate<Object> terminalPredicate,
                               final CloseHandler closeHandler,
-                              final Executor executor, final ConnectionContext context,
+                              final ConnectionContext context,
                               final HttpService service) {
         super(channel, context, requestObjectPublisher, terminalPredicate, closeHandler);
-        this.executor = executor;
         this.context = context;
         this.service = service;
     }
@@ -94,7 +91,7 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
 
             return handleRequest(request)
                     .map(response -> processResponse(requestMethod, keepAlive, drainRequestPayloadBody, response))
-                    .flatMapPublisher(resp -> flatten(executor, resp, HttpResponse::getPayloadBody));
+                    .flatMapPublisher(resp -> flatten(resp, HttpResponse::getPayloadBody));
         });
         return writeResponse(responseObjectPublisher.repeat(val -> true));
     }

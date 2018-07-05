@@ -26,7 +26,7 @@ import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.DefaultPipelinedConnection;
 
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
-import static io.servicetalk.transport.api.FlushStrategy.flushBeforeEnd;
+import static io.servicetalk.transport.api.FlushStrategy.flushOnEach;
 
 final class PipelinedHttpConnection extends AbstractHttpConnection<DefaultPipelinedConnection<Object, Object>> {
 
@@ -51,6 +51,6 @@ final class PipelinedHttpConnection extends AbstractHttpConnection<DefaultPipeli
     @Override
     protected Publisher<Object> writeAndRead(Publisher<Object> requestStream) {
         // TODO flush strategy needs to be configurable
-        return connection.request(requestStream, flushBeforeEnd());
+        return connection.request(requestStream, flushOnEach());
     }
 }

@@ -67,7 +67,7 @@ final class DefaultHttpClient extends HttpClient {
         // takes ownership of it (e.g. connection initialization) and in that case they will not be following the
         // LoadBalancer API which this Client depends upon to ensure the concurrent request count state is correct.
         return loadBalancer.selectConnection(SELECTOR_FOR_REQUEST)
-                .flatMap(c -> new RequestCompletionHelperSingle(c.request(request), c));
+                .flatMap(c -> c.request(request).liftSynchronous(new ConcurrencyControlSingleOperator(c)));
     }
 
     @Override

@@ -75,8 +75,7 @@ abstract class AbstractHttpConnection<CC extends ConnectionContext> extends Http
     public Single<HttpResponse<HttpPayloadChunk>> request(HttpRequest<HttpPayloadChunk> request) {
         addRequestTransferEncodingIfNecessary(request); // See https://tools.ietf.org/html/rfc7230#section-3.3.3
         return new SpliceFlatStreamToMetaSingle<HttpResponse<HttpPayloadChunk>, HttpResponseMetaData, HttpPayloadChunk>(
-                writeAndRead(flatten(executionContext.getExecutor(), request, AbstractHttpConnection::unpack)),
-                AbstractHttpConnection::newResponse);
+                writeAndRead(flatten(request, AbstractHttpConnection::unpack)), AbstractHttpConnection::newResponse);
     }
 
     @Override
