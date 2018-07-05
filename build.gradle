@@ -29,15 +29,16 @@ buildscript {
 apply plugin: "servicetalk-library"
 
 dependencies {
-  api "io.servicetalk:servicetalk-bom-internal:0.1.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-bom-internal:0.1.0-SNAPSHOT"
 
-  api "com.fasterxml.jackson.core:jackson-core"
   api "com.fasterxml.jackson.core:jackson-databind"
   api "io.servicetalk:servicetalk-buffer-api:0.1.0-SNAPSHOT"
   api "io.servicetalk:servicetalk-concurrent-api:0.1.0-SNAPSHOT"
 
+  implementation "com.fasterxml.jackson.core:jackson-core"
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-concurrent-internal:0.1.0-SNAPSHOT"
   implementation "io.servicetalk:servicetalk-serialization-api:0.1.0-SNAPSHOT"
 
   testImplementation "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
