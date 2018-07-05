@@ -29,21 +29,23 @@ buildscript {
 apply plugin: "servicetalk-library"
 
 dependencies {
-  api "io.servicetalk:servicetalk-bom-internal:0.1.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-bom-internal:0.1.0-SNAPSHOT"
 
-  api "com.google.code.findbugs:jsr305"
-  api "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
-  api "io.servicetalk:servicetalk-concurrent-api:0.1.0-SNAPSHOT"
   api "io.servicetalk:servicetalk-buffer-netty:0.1.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-concurrent-api:0.1.0-SNAPSHOT"
   api "io.servicetalk:servicetalk-transport-api:0.1.0-SNAPSHOT"
   api "io.netty:netty-handler"
-  api group: "io.netty", name: "netty-transport-native-epoll", classifier: "linux-x86_64"
-  api group: "io.netty", name: "netty-transport-native-kqueue", classifier: "osx-x86_64"
-  api "org.slf4j:slf4j-api"
 
-  testImplementation "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
+  implementation "com.google.code.findbugs:jsr305"
+  implementation group: "io.netty", name: "netty-transport-native-epoll", classifier: "linux-x86_64"
+  implementation group: "io.netty", name: "netty-transport-native-kqueue", classifier: "osx-x86_64"
+  implementation "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-concurrent-internal:0.1.0-SNAPSHOT"
+  implementation "org.slf4j:slf4j-api"
+
   testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:0.1.0-SNAPSHOT"
   testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:0.1.0-SNAPSHOT"
+  testImplementation "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
   testImplementation "junit:junit"
   testImplementation "org.hamcrest:hamcrest-library"
   testImplementation "org.mockito:mockito-core"
