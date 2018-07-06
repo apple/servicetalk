@@ -53,9 +53,7 @@ public final class StreamingServer {
         try (CompositeCloseable resources = newCompositeCloseable()) {
             // ExecutionContext for the server.
             ExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR,
-                    createIoExecutor(), newCachedThreadExecutor());
-            // Add ExecutionContext components as resources to be cleaned up at the end.
-            resources.concat(executionContext.getIoExecutor(), executionContext.getExecutor());
+                    resources.prepend(createIoExecutor()), resources.prepend(newCachedThreadExecutor()));
 
             // Create configurable starter for HTTP server.
             HttpServerStarter starter = new DefaultHttpServerStarter();

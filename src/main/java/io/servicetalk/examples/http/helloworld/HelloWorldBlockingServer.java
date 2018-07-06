@@ -53,9 +53,7 @@ public final class HelloWorldBlockingServer {
             // ExecutionContext for the server.
             ExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR,
                     // TODO(scott): Executor offloading has a bug, so use immediate() for now.
-                    createIoExecutor(), immediate());
-            // Add ExecutionContext components as resources to be cleaned up at the end.
-            resources.concat(executionContext.getIoExecutor()/*, executionContext.getExecutor()*/);
+                    resources.prepend(createIoExecutor()), resources.prepend(immediate()));
 
             // Create configurable starter for HTTP server.
             HttpServerStarter starter = new DefaultHttpServerStarter();

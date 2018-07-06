@@ -54,15 +54,13 @@ public final class StreamingBlockingClient {
         // Collection of all resources in this test that can be closed together at the end.
         try (CompositeCloseable resources = AsyncCloseables.newCompositeCloseable()) {
             // Setup the ExecutionContext to offload user code onto a cached Executor.
-            ExecutionContext executionContext =
-                    new DefaultExecutionContext(DEFAULT_ALLOCATOR, createIoExecutor(), newCachedThreadExecutor());
+            ExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR,
+                    resources.prepend(createIoExecutor()),
+                    resources.prepend(newCachedThreadExecutor()));
 
             // In this example we will use DNS as our Service Discovery system.
             ServiceDiscoverer<HostAndPort, InetSocketAddress> dnsDiscoverer =
-                    new DefaultDnsServiceDiscovererBuilder(executionContext).build();
-
-            // Register resources to be cleaned up at the end.
-            resources.concat(dnsDiscoverer, executionContext.getExecutor(), executionContext.getIoExecutor());
+                    resources.prepend(new DefaultDnsServiceDiscovererBuilder(executionContext).build());
 
             // Create a ClientBuilder and use round robin load balancing.
             DefaultHttpClientBuilder<InetSocketAddress> clientBuilder =

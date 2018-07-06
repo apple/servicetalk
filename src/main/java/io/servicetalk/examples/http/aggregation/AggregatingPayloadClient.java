@@ -53,12 +53,12 @@ public final class AggregatingPayloadClient {
         // Collection of all resources in this test that can be closed together at the end.
         try (CompositeCloseable resources = AsyncCloseables.newCompositeCloseable()) {
             // Setup the ExecutionContext to offload user code onto a cached Executor.
-            ExecutionContext executionContext =
-                    new DefaultExecutionContext(DEFAULT_ALLOCATOR, createIoExecutor(), newCachedThreadExecutor());
+            ExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR,
+                    resources.prepend(createIoExecutor()), resources.prepend(newCachedThreadExecutor()));
 
             // In this example we will use DNS as our Service Discovery system.
             ServiceDiscoverer<HostAndPort, InetSocketAddress> dnsDiscoverer =
-                    new DefaultDnsServiceDiscovererBuilder(executionContext).build();
+                    resources.prepend(new DefaultDnsServiceDiscovererBuilder(executionContext).build());
 
             // Create a ClientBuilder and use round robin load balancing.
             DefaultHttpClientBuilder<InetSocketAddress> clientBuilder =
@@ -66,11 +66,9 @@ public final class AggregatingPayloadClient {
 
             // Build the client, and register for DNS discovery events.
             HostAndPort address = new DefaultHostAndPort("localhost", 8080);
-            AggregatedHttpClient client = clientBuilder.addClientFilterFactory(c -> newHostHeaderFilter(address, c))
-                    .buildAggregated(executionContext, dnsDiscoverer.discover(address));
-
-            // Register resources to be cleaned up at the end.
-            resources.concat(client, dnsDiscoverer, executionContext.getExecutor(), executionContext.getIoExecutor());
+            AggregatedHttpClient client = resources.prepend(clientBuilder
+                    .addClientFilterFactory(c -> newHostHeaderFilter(address, c))
+                    .buildAggregated(executionContext, dnsDiscoverer.discover(address)));
 
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
             // before the response has been processed. This isn't typical usage for a streaming API but is useful for

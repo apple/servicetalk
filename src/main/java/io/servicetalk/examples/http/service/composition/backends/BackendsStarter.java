@@ -49,9 +49,7 @@ public final class BackendsStarter {
         // Create an AutoCloseable representing all resources used in this example.
         try (CompositeCloseable resources = newCompositeCloseable()) {
             // Shared IoExecutor for the application.
-            IoExecutor ioExecutor = createIoExecutor();
-            // Add it as a resource to be cleaned up at the end.
-            resources.concat(ioExecutor);
+            IoExecutor ioExecutor = resources.prepend(createIoExecutor());
 
             // Use Jackson for serialization and deserialization.
             // HttpSerializer validates HTTP metadata for serialization/deserialization and also provides higher level

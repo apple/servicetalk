@@ -72,21 +72,15 @@ public final class GatewayServer {
         // Create an AutoCloseable representing all resources used in this example.
         try (CompositeCloseable resources = newCompositeCloseable()) {
             // Shared IoExecutor for the application.
-            IoExecutor ioExecutor = createIoExecutor();
-            // Add it as a resource to be cleaned up at the end.
-            resources.concat(ioExecutor);
+            IoExecutor ioExecutor = resources.prepend(createIoExecutor());
 
             // ExecutionContext for the server.
             ExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR,
-                    ioExecutor, newCachedThreadExecutor());
-            // Add created executor as a resource to be cleaned up at the end.
-            resources.concat(executionContext.getExecutor());
+                    ioExecutor, resources.prepend(newCachedThreadExecutor()));
 
             // In this example we will use DNS as our Service Discovery system.
             ServiceDiscoverer<HostAndPort, InetSocketAddress> dnsDiscoverer =
-                    new DefaultDnsServiceDiscovererBuilder(executionContext).build();
-            // Add it as a resource to be cleaned up at the end.
-            resources.concat(dnsDiscoverer);
+                    resources.prepend(new DefaultDnsServiceDiscovererBuilder(executionContext).build());
 
             // Use Jackson for serialization and deserialization.
             // HttpSerializer validates HTTP metadata for serialization/deserialization and also provides higher level

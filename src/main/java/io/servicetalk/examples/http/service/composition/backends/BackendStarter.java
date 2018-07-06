@@ -56,9 +56,7 @@ final class BackendStarter {
             throws ExecutionException, InterruptedException {
         // Create ExecutionContext for this ServerContext with new Executor.
         final ExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR,
-                ioExecutor, newCachedThreadExecutor());
-        // Add created executor as a resource to be cleaned up at the end.
-        resources.concat(executionContext.getExecutor());
+                ioExecutor, resources.prepend(newCachedThreadExecutor()));
         // Starting the server will start listening for incoming client requests.
         final ServerContext ctx = awaitIndefinitelyNonNull(starter.start(executionContext, listenPort, service));
         LOGGER.info("Started {} listening on {}.", name, ctx.getListenAddress());

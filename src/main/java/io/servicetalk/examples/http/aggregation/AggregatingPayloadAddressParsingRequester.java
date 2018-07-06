@@ -42,16 +42,13 @@ public final class AggregatingPayloadAddressParsingRequester {
         // Collection of all resources in this test that can be closed together at the end.
         try (CompositeCloseable resources = AsyncCloseables.newCompositeCloseable()) {
             // Setup the ExecutionContext to offload user code onto a cached Executor.
-            ExecutionContext executionContext =
-                    new DefaultExecutionContext(DEFAULT_ALLOCATOR, createIoExecutor(), newCachedThreadExecutor());
+            ExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR,
+                    resources.prepend(createIoExecutor()), resources.prepend(newCachedThreadExecutor()));
 
             // Build the requester.
             // This builder sets appropriate defaults for Service Discovery and load balancing.
-            final AggregatedHttpRequester requester = new AddressParsingHttpRequesterBuilder()
-                    .buildAggregated(executionContext);
-
-            // Register resources to be cleaned up at the end.
-            resources.concat(requester, executionContext.getExecutor(), executionContext.getIoExecutor());
+            final AggregatedHttpRequester requester = resources.prepend(new AddressParsingHttpRequesterBuilder()
+                    .buildAggregated(executionContext));
 
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
             // before the response has been processed. This isn't typical usage for a streaming API but is useful for
