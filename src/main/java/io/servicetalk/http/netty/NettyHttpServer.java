@@ -90,8 +90,7 @@ final class NettyHttpServer {
 
         NettyHttpServerContext(final ServerContext delegate, final HttpService service) {
             this.delegate = delegate;
-            asyncCloseable = toListenableAsyncCloseable(newCompositeCloseable()
-                    .concat(service, delegate));
+            asyncCloseable = toListenableAsyncCloseable(newCompositeCloseable().appendAll(service, delegate));
         }
 
         @Override

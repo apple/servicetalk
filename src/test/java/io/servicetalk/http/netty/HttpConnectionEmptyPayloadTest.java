@@ -28,15 +28,12 @@ import io.servicetalk.http.api.HttpService;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
-import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.concurrent.api.Single.success;
@@ -60,69 +57,56 @@ public class HttpConnectionEmptyPayloadTest {
     @Rule
     public final ExecutionContextRule executionContextRule = immediate();
 
-    @Nullable
-    private ServerContext serverContext;
-    @Nullable
-    private HttpConnection connection;
-
-    @After
-    public void cleanup() {
-        CompositeCloseable closeable = AsyncCloseables.newCompositeCloseable();
-        if (serverContext != null) {
-            closeable.merge(serverContext);
-        }
-        if (connection != null) {
-            closeable.merge(connection);
-        }
-        closeable.closeAsync().subscribe();
-    }
-
     @Test
-    public void headRequestContentEmpty() throws ExecutionException, InterruptedException {
-        final int expectedContentLength = 128;
-        byte[] expectedPayload = new byte[expectedContentLength];
-        ThreadLocalRandom.current().nextBytes(expectedPayload);
-        serverContext = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
-                .start(executionContextRule, new InetSocketAddress(0), HttpService.fromAsync((ctx, req) ->
-                        success(newResponse(OK,
-                        req.getMethod() == HEAD ? EMPTY_BUFFER : ctx.getExecutionContext().getBufferAllocator()
-                                .newBuffer(expectedContentLength).writeBytes(expectedPayload),
-                        INSTANCE.newHeaders().add(CONTENT_LENGTH, String.valueOf(expectedContentLength)))))));
-        connection = awaitIndefinitelyNonNull(new DefaultHttpConnectionBuilder<>()
-                .setMaxPipelinedRequests(3)
-                .build(executionContextRule, serverContext.getListenAddress()));
+    public void headRequestContentEmpty() throws Exception {
+        try (CompositeCloseable closeable = AsyncCloseables.newCompositeCloseable()) {
+            final int expectedContentLength = 128;
+            byte[] expectedPayload = new byte[expectedContentLength];
+            ThreadLocalRandom.current().nextBytes(expectedPayload);
+            ServerContext serverContext = closeable.merge(awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
+                    .start(executionContextRule, new InetSocketAddress(0), HttpService.fromAsync((ctx, req) ->
+                            success(newResponse(OK, req.getMethod() == HEAD ? EMPTY_BUFFER :
+                                            ctx.getExecutionContext().getBufferAllocator()
+                                                    .newBuffer(expectedContentLength).writeBytes(expectedPayload),
+                                    INSTANCE.newHeaders()
+                                            .add(CONTENT_LENGTH, String.valueOf(expectedContentLength))))))));
 
-        // Request HEAD, GET, HEAD to verify that we can keep reading data despite a HEAD request providing a hint
-        // about content-length (and not actually providing the content).
-        Single<HttpResponse<HttpPayloadChunk>> response1Single = connection.request(HttpRequests.newRequest(HEAD, "/"));
-        Single<HttpResponse<HttpPayloadChunk>> response2Single = connection.request(HttpRequests.newRequest(GET, "/"));
-        Single<HttpResponse<HttpPayloadChunk>> response3Single = connection.request(HttpRequests.newRequest(HEAD, "/"));
+            HttpConnection connection = closeable.merge(awaitIndefinitelyNonNull(new DefaultHttpConnectionBuilder<>()
+                    .setMaxPipelinedRequests(3)
+                    .build(executionContextRule, serverContext.getListenAddress())));
 
-        HttpResponse<HttpPayloadChunk> response = awaitIndefinitelyNonNull(response1Single);
-        assertEquals(OK, response.getStatus());
-        CharSequence contentLength = response.getHeaders().get(CONTENT_LENGTH);
-        assertNotNull(contentLength);
-        assertEquals(expectedContentLength, parseInt(contentLength.toString()));
-        // Drain the current response content so we will be able to read the next response.
-        awaitIndefinitely(response.getPayloadBody().ignoreElements());
+            // Request HEAD, GET, HEAD to verify that we can keep reading data despite a HEAD request providing a hint
+            // about content-length (and not actually providing the content).
+            Single<HttpResponse<HttpPayloadChunk>> response1Single = connection.request(HttpRequests.newRequest(HEAD, "/"));
+            Single<HttpResponse<HttpPayloadChunk>> response2Single = connection.request(HttpRequests.newRequest(GET, "/"));
+            Single<HttpResponse<HttpPayloadChunk>> response3Single = connection.request(HttpRequests.newRequest(HEAD, "/"));
 
-        response = awaitIndefinitelyNonNull(response2Single);
-        assertEquals(OK, response.getStatus());
-        contentLength = response.getHeaders().get(CONTENT_LENGTH);
-        assertNotNull(contentLength);
-        assertEquals(expectedContentLength, parseInt(contentLength.toString()));
-        Buffer buffer = awaitIndefinitelyNonNull(response.getPayloadBody().reduce(
-                () -> connection.getConnectionContext().getExecutionContext().getBufferAllocator().newBuffer(),
-                (buf, chunk) -> buf.writeBytes(chunk.getContent())));
-        byte[] actualBytes = new byte[buffer.getReadableBytes()];
-        buffer.readBytes(actualBytes);
-        assertArrayEquals(expectedPayload, actualBytes);
+            HttpResponse<HttpPayloadChunk> response = awaitIndefinitelyNonNull(response1Single);
+            assertEquals(OK, response.getStatus());
+            CharSequence contentLength = response.getHeaders().get(CONTENT_LENGTH);
+            assertNotNull(contentLength);
+            assertEquals(expectedContentLength, parseInt(contentLength.toString()));
+            // Drain the current response content so we will be able to read the next response.
+            awaitIndefinitely(response.getPayloadBody().ignoreElements());
 
-        response = awaitIndefinitelyNonNull(response3Single);
-        assertEquals(OK, response.getStatus());
-        contentLength = response.getHeaders().get(CONTENT_LENGTH);
-        assertNotNull(contentLength);
-        assertEquals(expectedContentLength, parseInt(contentLength.toString()));
-        awaitIndefinitely(response.getPayloadBody().ignoreElements());
+            response = awaitIndefinitelyNonNull(response2Single);
+            assertEquals(OK, response.getStatus());
+            contentLength = response.getHeaders().get(CONTENT_LENGTH);
+            assertNotNull(contentLength);
+            assertEquals(expectedContentLength, parseInt(contentLength.toString()));
+            Buffer buffer = awaitIndefinitelyNonNull(response.getPayloadBody().reduce(
+                    () -> connection.getConnectionContext().getExecutionContext().getBufferAllocator().newBuffer(),
+                    (buf, chunk) -> buf.writeBytes(chunk.getContent())));
+            byte[] actualBytes = new byte[buffer.getReadableBytes()];
+            buffer.readBytes(actualBytes);
+            assertArrayEquals(expectedPayload, actualBytes);
+
+            response = awaitIndefinitelyNonNull(response3Single);
+            assertEquals(OK, response.getStatus());
+            contentLength = response.getHeaders().get(CONTENT_LENGTH);
+            assertNotNull(contentLength);
+            assertEquals(expectedContentLength, parseInt(contentLength.toString()));
+            awaitIndefinitely(response.getPayloadBody().ignoreElements());
+        }
     }
 }
