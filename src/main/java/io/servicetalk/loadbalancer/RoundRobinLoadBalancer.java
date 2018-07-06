@@ -190,8 +190,9 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
             discoveryCancellable.cancel();
             eventStream.sendOnComplete();
             @SuppressWarnings("unchecked")
-            List<Host<ResolvedAddress, C>> currentList = activeHostsUpdater.getAndSet(RoundRobinLoadBalancer.this, Collections.<Host<ResolvedAddress, C>>emptyList());
-            return newCompositeCloseable().concat(currentList).concat(connectionFactory).closeAsync();
+            List<Host<ResolvedAddress, C>> currentList = activeHostsUpdater
+                    .getAndSet(RoundRobinLoadBalancer.this, Collections.<Host<ResolvedAddress, C>>emptyList());
+            return newCompositeCloseable().appendAll(currentList).appendAll(connectionFactory).closeAsync();
         });
     }
 
