@@ -31,7 +31,10 @@ apply plugin: "servicetalk-library"
 dependencies {
   implementation "io.servicetalk:servicetalk-bom-internal:0.1.0-SNAPSHOT"
 
+  api "io.servicetalk:servicetalk-buffer-api:0.1.0-SNAPSHOT"
   api "io.servicetalk:servicetalk-client-api:0.1.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-concurrent-api:0.1.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-transport-api:0.1.0-SNAPSHOT"
 
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.servicetalk:servicetalk-buffer-netty:0.1.0-SNAPSHOT"
