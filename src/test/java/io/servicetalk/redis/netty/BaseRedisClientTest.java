@@ -129,7 +129,7 @@ public abstract class BaseRedisClientTest {
             }
             return;
         }
-        awaitIndefinitely(newCompositeCloseable().concat(client, serviceDiscoverer, ioExecutor).closeAsync());
+        awaitIndefinitely(newCompositeCloseable().appendAll(client, serviceDiscoverer, ioExecutor).closeAsync());
     }
 
     protected static Buffer buf(final CharSequence cs) {
