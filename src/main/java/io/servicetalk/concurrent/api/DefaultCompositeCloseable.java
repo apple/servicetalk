@@ -19,13 +19,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static java.util.Arrays.stream;
+import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.StreamSupport.stream;
 
 final class DefaultCompositeCloseable implements CompositeCloseable {
 
@@ -35,23 +36,61 @@ final class DefaultCompositeCloseable implements CompositeCloseable {
     private Completable closeAsyncGracefully = completed();
 
     @Override
-    public CompositeCloseable merge(final AsyncCloseable... asyncCloseables) {
-        return merge(stream(asyncCloseables));
+    public <T extends AsyncCloseable> T merge(final T closeable) {
+        mergeCloseableDelayError(closeable);
+        return closeable;
     }
 
     @Override
-    public CompositeCloseable merge(Iterable<? extends AsyncCloseable> asyncCloseables) {
-        return merge(StreamSupport.stream(asyncCloseables.spliterator(), false));
+    public CompositeCloseable mergeAll(final AsyncCloseable... asyncCloseables) {
+        mergeCloseableDelayError(asList(asyncCloseables));
+        return this;
     }
 
     @Override
-    public CompositeCloseable concat(final AsyncCloseable... asyncCloseables) {
-        return concat(stream(asyncCloseables));
+    public CompositeCloseable mergeAll(Iterable<? extends AsyncCloseable> asyncCloseables) {
+        mergeCloseableDelayError(stream(asyncCloseables.spliterator(), false).collect(toList()));
+        return this;
     }
 
     @Override
-    public CompositeCloseable concat(final Iterable<? extends AsyncCloseable> asyncCloseables) {
-        return concat(StreamSupport.stream(asyncCloseables.spliterator(), false));
+    public <T extends AsyncCloseable> T append(final T closeable) {
+        concatCloseableDelayError(closeable);
+        return closeable;
+    }
+
+    @Override
+    public CompositeCloseable appendAll(final AsyncCloseable... asyncCloseables) {
+        for (AsyncCloseable closeable : asyncCloseables) {
+            concatCloseableDelayError(closeable);
+        }
+        return this;
+    }
+
+    @Override
+    public CompositeCloseable appendAll(final Iterable<? extends AsyncCloseable> asyncCloseables) {
+        asyncCloseables.forEach(this::concatCloseableDelayError);
+        return this;
+    }
+
+    @Override
+    public <T extends AsyncCloseable> T prepend(final T closeable) {
+        prependCloseableDelayError(closeable);
+        return closeable;
+    }
+
+    @Override
+    public CompositeCloseable prependAll(final AsyncCloseable... asyncCloseables) {
+        for (AsyncCloseable closeable : asyncCloseables) {
+            prependCloseableDelayError(closeable);
+        }
+        return this;
+    }
+
+    @Override
+    public CompositeCloseable prependAll(final Iterable<? extends AsyncCloseable> asyncCloseables) {
+        asyncCloseables.forEach(this::prependCloseableDelayError);
+        return this;
     }
 
     @Override
@@ -73,29 +112,40 @@ final class DefaultCompositeCloseable implements CompositeCloseable {
         }
     }
 
-    private CompositeCloseable merge(final Stream<? extends AsyncCloseable> closeables) {
-        closeables.forEach(closeable -> {
-            closeAsync = closeAsync.mergeDelayError(closeable.closeAsync());
-            closeAsyncGracefully = closeAsyncGracefully.mergeDelayError(closeable.closeAsyncGracefully());
-        });
-        return this;
+    private void mergeCloseableDelayError(final AsyncCloseable closeable) {
+        closeAsync = closeAsync.mergeDelayError(closeable.closeAsync());
+        closeAsyncGracefully = closeAsyncGracefully.mergeDelayError(closeable.closeAsyncGracefully());
     }
 
-    private CompositeCloseable concat(final Stream<? extends AsyncCloseable> closeables) {
-        closeables.forEach(closeable -> {
-                    closeAsync = closeAsync.andThen(closeable.closeAsync().onErrorResume(th -> {
-                        //TODO: This should use concatDelayError when available.
-                        LOGGER.debug("Ignored failure to close {}.", closeable, th);
-                        return completed();
-                    }));
-                    closeAsyncGracefully = closeAsyncGracefully.andThen(
-                            closeable.closeAsyncGracefully().onErrorResume(th -> {
-                                //TODO: This should use concatDelayError when available.
-                                LOGGER.debug("Ignored failure to close {}.", closeable, th);
-                                return completed();
-                            }));
-                }
-        );
-        return this;
+    private void mergeCloseableDelayError(final List<AsyncCloseable> closeables) {
+        closeAsync = closeAsync.mergeDelayError(closeables.stream().map(AsyncCloseable::closeAsync).collect(toList()));
+        closeAsyncGracefully = closeAsyncGracefully.mergeDelayError(
+                closeables.stream().map(AsyncCloseable::closeAsyncGracefully).collect(toList()));
+    }
+
+    private void concatCloseableDelayError(final AsyncCloseable closeable) {
+        closeAsync = closeAsync.andThen(closeable.closeAsync().onErrorResume(th -> {
+            //TODO: This should use concatDelayError when available.
+            LOGGER.debug("Ignored failure to close {}.", closeable, th);
+            return completed();
+        }));
+        closeAsyncGracefully = closeAsyncGracefully.andThen(closeable.closeAsyncGracefully().onErrorResume(th -> {
+            //TODO: This should use concatDelayError when available.
+            LOGGER.debug("Ignored failure to close {}.", closeable, th);
+            return completed();
+        }));
+    }
+
+    private void prependCloseableDelayError(final AsyncCloseable closeable) {
+        closeAsync = closeable.closeAsync().onErrorResume(th -> {
+            //TODO: This should use prependDelayError when available.
+            LOGGER.debug("Ignored failure to close {}.", closeable, th);
+            return completed();
+        }).andThen(closeAsync);
+        closeAsyncGracefully = closeable.closeAsync().onErrorResume(th -> {
+            //TODO: This should use prependDelayError when available.
+            LOGGER.debug("Ignored failure to close {}.", closeable, th);
+            return completed();
+        }).andThen(closeAsyncGracefully);
     }
 }
