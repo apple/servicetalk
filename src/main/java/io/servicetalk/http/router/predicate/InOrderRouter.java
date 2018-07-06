@@ -17,7 +17,6 @@ package io.servicetalk.http.router.predicate;
 
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
@@ -29,6 +28,7 @@ import java.util.List;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toList;
 
 /**
  * An {@link HttpService} implementation which routes requests to a number of other {@link HttpService}s based on
@@ -53,12 +53,9 @@ final class InOrderRouter extends HttpService {
     InOrderRouter(final HttpService fallbackService, final List<PredicateServicePair> predicateServicePairs) {
         this.fallbackService = requireNonNull(fallbackService);
         this.predicateServicePairs = predicateServicePairs.toArray(new PredicateServicePair[0]);
-
-        final CompositeCloseable closeable = newCompositeCloseable().merge(fallbackService);
-        for (final PredicateServicePair predicateServicePair : predicateServicePairs) {
-            closeable.merge(predicateServicePair.getService());
-        }
-        this.closeable = closeable;
+        this.closeable = newCompositeCloseable()
+                .mergeAll(fallbackService)
+                .mergeAll(predicateServicePairs.stream().map(PredicateServicePair::getService).collect(toList()));
     }
 
     @Override
