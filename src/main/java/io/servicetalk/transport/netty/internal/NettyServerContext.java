@@ -50,7 +50,7 @@ public final class NettyServerContext implements ServerContext {
      */
     public static ServerContext wrap(NettyServerContext toWrap, AsyncCloseable closeBefore) {
         return new NettyServerContext(toWrap.listenChannel,
-                toListenableAsyncCloseable(newCompositeCloseable().concat(closeBefore, toWrap.closeable)));
+                toListenableAsyncCloseable(newCompositeCloseable().appendAll(closeBefore, toWrap.closeable)));
     }
 
     /**
@@ -63,7 +63,7 @@ public final class NettyServerContext implements ServerContext {
      */
     public static ServerContext wrap(Channel listenChannel, ListenableAsyncCloseable channelSetCloseable,
                                      AsyncCloseable closeBefore) {
-        final CompositeCloseable closeAsync = newCompositeCloseable().concat(
+        final CompositeCloseable closeAsync = newCompositeCloseable().appendAll(
                 closeBefore, new NettyChannelListenableAsyncCloseable(listenChannel), channelSetCloseable);
         return new NettyServerContext(listenChannel, toListenableAsyncCloseable(closeAsync));
     }

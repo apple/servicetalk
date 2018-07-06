@@ -120,14 +120,14 @@ public final class ChannelSet implements ListenableAsyncCloseable {
                     return;
                 }
 
-                CompositeCloseable closeable = newCompositeCloseable().concat(() -> onClose);
+                CompositeCloseable closeable = newCompositeCloseable().appendAll(() -> onClose);
 
                 for (final Channel channel : channelMap.values()) {
                     final ConnectionHolderChannelHandler<?, ?> holder =
                             channel.pipeline().get(ConnectionHolderChannelHandler.class);
                     Connection<?, ?> connection = holder == null ? null : holder.getConnection();
                     if (connection != null) {
-                        closeable = closeable.merge(connection);
+                        closeable.merge(connection);
                     } else {
                         channel.close();
                     }
