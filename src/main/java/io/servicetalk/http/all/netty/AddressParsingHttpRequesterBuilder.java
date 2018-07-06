@@ -87,6 +87,7 @@ public final class AddressParsingHttpRequesterBuilder {
     private UnaryOperator<HttpRequester> requesterFilterFactory = identity();
     private UnaryOperator<HttpClientGroup<HostAndPort>> clientGroupFilterFactory = identity();
     private int maxRedirects = DEFAULT_MAX_REDIRECTS;
+    private boolean isSsl;
 
     /**
      * Create a new instance with a default {@link LoadBalancerFactory}.
@@ -129,6 +130,7 @@ public final class AddressParsingHttpRequesterBuilder {
      */
     public AddressParsingHttpRequesterBuilder setSslConfig(@Nullable final SslConfig sslConfig) {
         clientBuilder.setSslConfig(sslConfig);
+        isSsl = sslConfig != null;
         return this;
     }
 
@@ -348,7 +350,7 @@ public final class AddressParsingHttpRequesterBuilder {
             final Function<GroupKey<HostAndPort>, HttpClient> clientFactory = groupKey ->
                     copiedBuilder.build(executionContext, serviceDiscoverer.discover(groupKey.getAddress()));
             final CacheableRequestToGroupKeyFunction toGroupKeyFunction =
-                    closeables.prepend(new CacheableRequestToGroupKeyFunction(executionContext));
+                    closeables.prepend(new CacheableRequestToGroupKeyFunction(executionContext, isSsl));
             HttpClientGroup<HostAndPort> clientGroup = closeables.prepend(
                     clientGroupFilterFactory.apply(closeables.prepend(newHttpClientGroup(clientFactory))));
             clientGroup = maxRedirects > 0 ?
@@ -401,28 +403,29 @@ public final class AddressParsingHttpRequesterBuilder {
     private static final class CacheableRequestToGroupKeyFunction
             implements Function<HttpRequest<HttpPayloadChunk>, GroupKey<HostAndPort>>, AsyncCloseable {
 
+        private static final int DEFAULT_PORT_HTTP = 80;
+        private static final int DEFAULT_PORT_HTTPS = 443;
+
         private final Map<String, GroupKey<HostAndPort>> groupKeyCache = new ConcurrentHashMap<>();
         private final ExecutionContext executionContext;
+        private final boolean isSsl;
 
-        CacheableRequestToGroupKeyFunction(final ExecutionContext executionContext) {
+        CacheableRequestToGroupKeyFunction(final ExecutionContext executionContext, final boolean isSsl) {
             this.executionContext = requireNonNull(executionContext);
+            this.isSsl = isSsl;
         }
 
         @Override
         public GroupKey<HostAndPort> apply(final HttpRequest<HttpPayloadChunk> request) {
-            final HttpUri uri = new HttpUri(request.getRequestTarget(), () -> {
-                final CharSequence hostHeader = request.getHeaders().get(HOST);
-                return hostHeader == null ? null : hostHeader.toString();
-            });
-
-            final String host = uri.getHost();
+            final String host = request.getEffectiveHost();
             if (host == null) {
                 throw new IllegalArgumentException(
                         "HttpRequest does not contain information about target server address." +
                         " Request-target: " + request.getRequestTarget() +
                         ", HOST header: " + request.getHeaders().get(HOST));
             }
-            final int port = uri.getPort();
+            final int requestPort = request.getEffectivePort();
+            final int port = requestPort >= 0 ? requestPort : (isSsl ? DEFAULT_PORT_HTTPS : DEFAULT_PORT_HTTP);
             final String authority = host + ':' + port;
 
             final GroupKey<HostAndPort> key = groupKeyCache.get(authority);

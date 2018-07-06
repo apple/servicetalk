@@ -245,7 +245,6 @@ public class AddressParsingHttpRequesterBuilderTest {
                 .verifyFailure(IllegalArgumentException.class);
     }
 
-    @Ignore("HttpUri does not support hostHeader-form URIs") // FIXME: remove @Ignore annotation
     @Test
     public void requestWithAuthorityFormRequestTargetWithHostHeader() throws Exception {
         HttpRequest<HttpPayloadChunk> request = newRequest(CONNECT, hostHeader);
