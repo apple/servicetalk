@@ -334,33 +334,34 @@ public final class AddressParsingHttpRequesterBuilder {
      */
     public HttpRequester build(final ExecutionContext executionContext) {
         requireNonNull(executionContext);
-
-        final boolean serviceDiscovererProvided = serviceDiscoverer != null;
-        final ServiceDiscoverer<HostAndPort, InetSocketAddress> serviceDiscoverer = serviceDiscovererProvided ?
-                this.serviceDiscoverer : new DefaultDnsServiceDiscovererBuilder(executionContext).build();
-
-        // Copy existing HttpClientBuilder to prevent runtime changes of clientFactory via this builder
-        final DefaultHttpClientBuilder<InetSocketAddress> copiedBuilder = new DefaultHttpClientBuilder<>(clientBuilder);
-
-        final Function<GroupKey<HostAndPort>, HttpClient> clientFactory =
-                groupKey -> copiedBuilder.build(executionContext, serviceDiscoverer.discover(groupKey.getAddress()));
-        final CacheableRequestToGroupKeyFunction toGroupKeyFunction =
-                new CacheableRequestToGroupKeyFunction(executionContext);
-        HttpClientGroup<HostAndPort> clientGroup =
-                clientGroupFilterFactory.apply(newHttpClientGroup(clientFactory));
-        clientGroup = maxRedirects > 0 ?
-                new RedirectingHttpClientGroup<>(clientGroup, toGroupKeyFunction, executionContext, maxRedirects) :
-                clientGroup;
-        final HttpRequester requester = clientGroup.asRequester(toGroupKeyFunction, executionContext);
-
         final CompositeCloseable closeables = newCompositeCloseable();
-        closeables.concat(requester, toGroupKeyFunction);
-        if (!serviceDiscovererProvided) {
-            closeables.concat(serviceDiscoverer);
-        }
+        try {
+            final boolean serviceDiscovererProvided = serviceDiscoverer != null;
+            final ServiceDiscoverer<HostAndPort, InetSocketAddress> serviceDiscoverer = serviceDiscovererProvided ?
+                    this.serviceDiscoverer :
+                    closeables.prepend(new DefaultDnsServiceDiscovererBuilder(executionContext).build());
 
-        return requesterFilterFactory.apply(
-                new AddressParsingHttpRequester(requester, toAsyncCloseable(closeables::closeAsync)));
+            // Copy existing HttpClientBuilder to prevent runtime changes of clientFactory via this builder
+            final DefaultHttpClientBuilder<InetSocketAddress> copiedBuilder =
+                    new DefaultHttpClientBuilder<>(clientBuilder);
+
+            final Function<GroupKey<HostAndPort>, HttpClient> clientFactory = groupKey ->
+                    copiedBuilder.build(executionContext, serviceDiscoverer.discover(groupKey.getAddress()));
+            final CacheableRequestToGroupKeyFunction toGroupKeyFunction =
+                    closeables.prepend(new CacheableRequestToGroupKeyFunction(executionContext));
+            HttpClientGroup<HostAndPort> clientGroup = closeables.prepend(
+                    clientGroupFilterFactory.apply(closeables.prepend(newHttpClientGroup(clientFactory))));
+            clientGroup = maxRedirects > 0 ?
+                    new RedirectingHttpClientGroup<>(clientGroup, toGroupKeyFunction, executionContext, maxRedirects) :
+                    clientGroup;
+            final HttpRequester requester = closeables.prepend(requesterFilterFactory.apply(
+                            closeables.prepend(clientGroup.asRequester(toGroupKeyFunction, executionContext))));
+
+            return new AddressParsingHttpRequester(requester, toAsyncCloseable(closeables::closeAsync));
+        } catch (final Exception e) {
+            closeables.closeAsync().subscribe();
+            throw e;
+        }
     }
 
     /**

@@ -94,7 +94,7 @@ public class AddressParsingHttpRequesterBuilderTest {
     @Rule
     public final MockedSingleListenerRule<HttpResponse<HttpPayloadChunk>> listener = new MockedSingleListenerRule<>();
 
-    private static CompositeCloseable afterClassCloseables;
+    private static final CompositeCloseable afterClassCloseables = newCompositeCloseable();
     private static HttpService httpService;
     private static ServerContext serverCtx;
     private static int serverPort;
@@ -103,10 +103,7 @@ public class AddressParsingHttpRequesterBuilderTest {
 
     @BeforeClass
     public static void beforeClass() throws Exception {
-        afterClassCloseables = newCompositeCloseable();
-
-        requester = new AddressParsingHttpRequesterBuilder().build(CTX);
-        afterClassCloseables.concat(requester);
+        requester = afterClassCloseables.merge(new AddressParsingHttpRequesterBuilder().build(CTX));
 
         httpService = fromAsync((ctx, request) -> {
             if (request.getMethod() == OPTIONS || request.getMethod() == CONNECT) {
@@ -124,7 +121,7 @@ public class AddressParsingHttpRequesterBuilderTest {
                 return success(newResponse(BAD_REQUEST));
             }
         });
-        serverCtx = startNewLocalServer(httpService, afterClassCloseables);
+        serverCtx = afterClassCloseables.merge(startNewLocalServer(httpService));
         serverPort = ((InetSocketAddress) serverCtx.getListenAddress()).getPort();
         hostHeader = HOSTNAME + ':' + serverPort;
     }
@@ -282,8 +279,8 @@ public class AddressParsingHttpRequesterBuilderTest {
     @Test
     public void multipleRequestsToMultipleServers() throws Exception {
         try (CompositeCloseable closeables = newCompositeCloseable()) {
-            ServerContext serverCtx2 = startNewLocalServer(httpService, closeables);
-            ServerContext serverCtx3 = startNewLocalServer(httpService, closeables);
+            ServerContext serverCtx2 = closeables.merge(startNewLocalServer(httpService));
+            ServerContext serverCtx3 = closeables.merge(startNewLocalServer(httpService));
 
             List<HttpResponseStatus> statuses = asList(OK, CREATED, ACCEPTED,
                     MOVED_PERMANENTLY, SEE_OTHER, PERMANENT_REDIRECT,
@@ -309,11 +306,8 @@ public class AddressParsingHttpRequesterBuilderTest {
         assertThat(response.getStatus(), is(expectedStatus));
     }
 
-    private static ServerContext startNewLocalServer(final HttpService httpService,
-                                                     final CompositeCloseable closeables) throws Exception {
-        ServerContext serverContext = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
+    private static ServerContext startNewLocalServer(final HttpService httpService) throws Exception {
+        return awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
                 .start(CTX, new InetSocketAddress(HOSTNAME, 0), httpService));
-        closeables.merge(serverContext);
-        return serverContext;
     }
 }
