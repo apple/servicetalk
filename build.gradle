@@ -33,6 +33,9 @@ dependencies {
   // including group id, artifact id and version.
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   // The version for all ServiceTalk dependencies will be resolved based on information in `servicetalk-bom`.
+  implementation "io.servicetalk:servicetalk-annotations"
+  implementation "io.servicetalk:servicetalk-buffer-netty"
+  implementation "io.servicetalk:servicetalk-concurrent-internal" // hmm
   implementation "io.servicetalk:servicetalk-data-jackson"
   implementation "io.servicetalk:servicetalk-dns-discovery-netty"
   implementation "io.servicetalk:servicetalk-http-all-netty"
@@ -43,6 +46,7 @@ dependencies {
   implementation "io.servicetalk:servicetalk-http-utils"
   implementation "io.servicetalk:servicetalk-loadbalancer"
   implementation "io.servicetalk:servicetalk-serialization-api"
+  implementation "io.servicetalk:servicetalk-transport-netty"
   implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
   implementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 
