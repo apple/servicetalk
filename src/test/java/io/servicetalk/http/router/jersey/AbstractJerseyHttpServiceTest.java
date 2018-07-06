@@ -110,7 +110,7 @@ public abstract class AbstractJerseyHttpServiceTest {
 
     @After
     public void closeServerAndClient() throws Exception {
-        awaitIndefinitely(newCompositeCloseable().concat(clientConnection, serverContext).closeAsync());
+        awaitIndefinitely(newCompositeCloseable().appendAll(clientConnection, serverContext).closeAsync());
     }
 
     protected abstract Application getApplication();
