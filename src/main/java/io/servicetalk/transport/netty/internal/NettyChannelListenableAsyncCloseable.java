@@ -22,6 +22,7 @@ import io.netty.channel.Channel;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.transport.netty.internal.CloseStates.CLOSING;
 import static io.servicetalk.transport.netty.internal.CloseStates.GRACEFULLY_CLOSING;
 import static io.servicetalk.transport.netty.internal.CloseStates.OPEN;
@@ -37,6 +38,7 @@ final class NettyChannelListenableAsyncCloseable implements ListenableAsyncClose
     private final Channel channel;
     @SuppressWarnings("unused")
     private volatile int state;
+    private final Completable onClose;
 
     /**
      * New instance.
@@ -45,6 +47,13 @@ final class NettyChannelListenableAsyncCloseable implements ListenableAsyncClose
      */
     NettyChannelListenableAsyncCloseable(Channel channel) {
         this.channel = requireNonNull(channel);
+        onClose = new Completable() {
+            @Override
+            protected void handleSubscribe(final Subscriber subscriber) {
+                subscriber.onSubscribe(IGNORE_CANCEL);
+                NettyFutureCompletable.connectToSubscriber(subscriber, channel.closeFuture());
+            }
+        };
     }
 
     @Override
@@ -85,6 +94,6 @@ final class NettyChannelListenableAsyncCloseable implements ListenableAsyncClose
 
     @Override
     public Completable onClose() {
-        return new NettyFutureCompletable(channel::closeFuture);
+        return onClose;
     }
 }

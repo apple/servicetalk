@@ -41,6 +41,10 @@ final class NettyFutureCompletable extends Completable {
     protected void handleSubscribe(Subscriber subscriber) {
         Future<?> future = futureSupplier.get();
         subscriber.onSubscribe(() -> future.cancel(true));
+        connectToSubscriber(subscriber, future);
+    }
+
+    static void connectToSubscriber(final Subscriber subscriber, final Future<?> future) {
         future.addListener(f -> {
             Throwable cause = f.cause();
             if (cause == null) {
