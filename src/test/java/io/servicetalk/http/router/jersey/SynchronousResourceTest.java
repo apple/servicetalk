@@ -110,6 +110,12 @@ public class SynchronousResourceTest extends AbstractResourceTest {
     }
 
     @Test
+    public void postJsonPubInPubOut() {
+        sendAndAssertResponse(post("/json-pubin-pubout", "{\"key\":\"val4\"}", APPLICATION_JSON),
+                OK, APPLICATION_JSON, jsonEquals("{\"key\":\"val4\",\"foo\":\"bar5\"}"), $ -> null);
+    }
+
+    @Test
     public void defaultSecurityContext() {
         sendAndAssertResponse(get("/security-context"),
                 OK, APPLICATION_JSON, jsonEquals("{\"authenticationScheme\":null,\"secure\":false,\"userPrincipal\":null}"),

@@ -16,12 +16,15 @@
 package io.servicetalk.http.router.jersey.resources;
 
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpPayloadChunks;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.router.jersey.AbstractResourceTest.TestFiltered;
+import io.servicetalk.serialization.api.DefaultSerializer;
+import io.servicetalk.serialization.api.Serializer;
+import io.servicetalk.serialization.api.TypeHolder;
 import io.servicetalk.transport.api.ConnectionContext;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,6 +55,7 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.http.router.jersey.TestUtils.asChunkPublisher;
 import static io.servicetalk.http.router.jersey.TestUtils.getContentAsString;
 import static io.servicetalk.http.router.jersey.resources.SynchronousResources.PATH;
@@ -72,10 +76,15 @@ import static javax.ws.rs.core.Response.status;
  */
 @Path(PATH)
 public class SynchronousResources {
+    public static final String PATH = "/sync";
+
+    private static final Serializer SERIALIZER = new DefaultSerializer(new JacksonSerializationProvider());
+    private static final TypeHolder<Map<String, Object>> STRING_OBJECT_MAP_TYPE =
+            new TypeHolder<Map<String, Object>>() {
+            };
+
     @Context
     private ConnectionContext ctx;
-
-    public static final String PATH = "/sync";
 
     @Produces(TEXT_PLAIN)
     @Path("/uris/{type:(relative|absolute)}")
@@ -235,6 +244,8 @@ public class SynchronousResources {
     @Path("/json-response")
     @PUT
     public Response putJsonResponse(final Map<String, Object> requestContent) {
+        // Jersey's JacksonJsonProvider (thus blocking IO) is used for both request deserialization
+        // and response serialization
         final Map<String, Object> responseContent = new HashMap<>(requestContent);
         responseContent.put("foo", "bar2");
         return accepted(responseContent).header("X-Test", "test-header").build();
@@ -246,10 +257,12 @@ public class SynchronousResources {
     @POST
     public Publisher<HttpPayloadChunk> postJsonMapInPubOut(final Map<String, Object> requestContent)
             throws IOException {
+        // Jersey's JacksonJsonProvider (thus blocking IO) is used for request deserialization
+        // and ServiceTalk streaming serialization is used for the response
         final Map<String, Object> responseContent = new HashMap<>(requestContent);
         responseContent.put("foo", "bar3");
-        return asChunkPublisher(new ObjectMapper().writeValueAsBytes(responseContent),
-                ctx.getExecutionContext().getBufferAllocator());
+        return SERIALIZER.serialize(just(responseContent), ctx.getExecutionContext().getBufferAllocator(),
+                STRING_OBJECT_MAP_TYPE).map(HttpPayloadChunks::newPayloadChunk);
     }
 
     @Consumes(APPLICATION_JSON)
@@ -258,11 +271,33 @@ public class SynchronousResources {
     @POST
     public Map<String, Object> postJsonPubInMapOut(final Publisher<HttpPayloadChunk> requestContent)
             throws IOException {
-        @SuppressWarnings("unchecked")
-        final Map<String, Object> responseContent =
-                new HashMap<>(new ObjectMapper().readValue(getContentAsString(requestContent), Map.class));
+        // ServiceTalk streaming deserialization is used for the request
+        // and Jersey's JacksonJsonProvider (thus blocking IO) is used for response serialization
+        final Map<String, Object> requestData =
+                SERIALIZER.deserialize(requestContent.map(HttpPayloadChunk::getContent), STRING_OBJECT_MAP_TYPE)
+                        .toIterable().iterator().next();
+        final Map<String, Object> responseContent = new HashMap<>(requestData);
         responseContent.put("foo", "bar4");
         return responseContent;
+    }
+
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Path("/json-pubin-pubout")
+    @POST
+    public Publisher<HttpPayloadChunk> postJsonPubInPubOut(final Publisher<HttpPayloadChunk> requestContent)
+            throws IOException {
+        // ServiceTalk streaming is used for both request deserialization and response serialization
+        final Publisher<Map<String, Object>> response =
+                SERIALIZER.deserialize(requestContent.map(HttpPayloadChunk::getContent), STRING_OBJECT_MAP_TYPE)
+                        .map(requestData -> {
+                            final Map<String, Object> responseContent = new HashMap<>(requestData);
+                            responseContent.put("foo", "bar5");
+                            return responseContent;
+                        });
+
+        return SERIALIZER.serialize(response, ctx.getExecutionContext().getBufferAllocator(), STRING_OBJECT_MAP_TYPE)
+                .map(HttpPayloadChunks::newPayloadChunk);
     }
 
     @Produces(APPLICATION_JSON)
