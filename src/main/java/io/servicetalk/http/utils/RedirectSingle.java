@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.http.api.HttpClientGroup;
+import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMethod;
@@ -30,8 +31,10 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
+import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpRequestMethods.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpRequestMethods.HEAD;
@@ -202,6 +205,10 @@ final class RedirectSingle extends Single<HttpResponse<HttpPayloadChunk>> {
             final HttpRequest<HttpPayloadChunk> redirectRequest =
                     newRequest(request.getVersion(), method, locationHeader.toString());
 
+            final HttpHeaders headers = redirectRequest.getHeaders();
+            // TODO CONTENT_LENGTH could be non ZERO, when we will support repeatable payloadBody
+            headers.set(CONTENT_LENGTH, ZERO);
+
             String redirectHost = redirectRequest.getEffectiveHost();
             if (redirectHost == null) {
                 // origin-form request-target in Location header, extract host & port info from original request
@@ -210,8 +217,7 @@ final class RedirectSingle extends Single<HttpResponse<HttpPayloadChunk>> {
                     // Should never happen, otherwise the original request had to fail
                     throw new InvalidRedirectException("No host information for redirect");
                 }
-                redirectRequest.getHeaders().set(HOST,
-                        buildHostHeader(redirectHost, request.getEffectivePort()));
+                headers.set(HOST, buildHostHeader(redirectHost, request.getEffectivePort()));
             }
 
             // NOTE: for security reasons we do not keep any headers from original request.
