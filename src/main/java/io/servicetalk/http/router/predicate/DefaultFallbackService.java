@@ -26,6 +26,7 @@ import io.servicetalk.transport.api.ConnectionContext;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
+import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatuses.NOT_FOUND;
 
 final class DefaultFallbackService extends HttpService {
@@ -40,7 +41,7 @@ final class DefaultFallbackService extends HttpService {
     public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
                                                          final HttpRequest<HttpPayloadChunk> request) {
         final HttpResponse<HttpPayloadChunk> response = HttpResponses.newResponse(request.getVersion(), NOT_FOUND);
-        response.getHeaders().set(CONTENT_LENGTH, "0")
+        response.getHeaders().set(CONTENT_LENGTH, ZERO)
                 .set(CONTENT_TYPE, TEXT_PLAIN);
         // TODO(derek): Set keepalive once we have an isKeepAlive helper method.
         return Single.success(response);

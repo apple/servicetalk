@@ -31,8 +31,12 @@ import org.mockito.junit.MockitoRule;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.http.api.CharSequences.newAsciiString;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
+import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
+import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
+import static io.servicetalk.http.api.HttpResponseStatuses.NOT_FOUND;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 
@@ -60,8 +64,8 @@ public class DefaultFallbackServiceTest {
         final HttpResponse<HttpPayloadChunk> response = awaitIndefinitely(responseSingle);
         assert response != null;
         assertEquals(HTTP_1_1, response.getVersion());
-        assertEquals(404, response.getStatus().getCode());
-        assertEquals("0", response.getHeaders().get("content-length"));
-        assertEquals(newAsciiString("text/plain"), response.getHeaders().get("content-type"));
+        assertEquals(NOT_FOUND, response.getStatus());
+        assertEquals(ZERO, response.getHeaders().get(CONTENT_LENGTH));
+        assertEquals(TEXT_PLAIN, response.getHeaders().get(CONTENT_TYPE));
     }
 }
