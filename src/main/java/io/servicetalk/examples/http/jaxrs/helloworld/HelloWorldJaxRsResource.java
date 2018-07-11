@@ -76,7 +76,7 @@ public class HelloWorldJaxRsResource {
      * <p>
      * Test with:
      * <pre>
-     * curl -X POST -H 'accept: application/json' http://localhost:8080/greetings/hello
+     * curl -H 'content-type: application/json' -d '{}' http://localhost:8080/greetings/hello
      * curl -H 'content-type: application/json' -d '{"who":"turnip"}' http://localhost:8080/greetings/hello
      * </pre>
      *
