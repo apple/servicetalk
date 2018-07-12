@@ -94,7 +94,7 @@ public class HttpResponseEncoderTest {
 
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, EmptyHttpHeaders.INSTANCE);
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK,
-                new DefaultHttpHeadersFactory(false).newHeaders());
+                new DefaultHttpHeadersFactory(false, false).newHeaders());
         response.getHeaders()
                 .add(" " + CONNECTION + " ", " " + KEEP_ALIVE)
                 .add("  " + SERVER + "   ", "    unit-test   ")

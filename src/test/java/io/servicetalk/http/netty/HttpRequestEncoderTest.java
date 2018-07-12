@@ -96,7 +96,7 @@ public class HttpRequestEncoderTest {
 
         LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, EmptyHttpHeaders.INSTANCE);
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1, GET, "/some/path?foo=bar&baz=yyy",
-                new DefaultHttpHeadersFactory(false).newHeaders());
+                new DefaultHttpHeadersFactory(false, false).newHeaders());
         request.getHeaders()
                 .add(" " + CONNECTION + " ", " " + KEEP_ALIVE)
                 .add("  " + USER_AGENT + "   ", "    unit-test   ")
