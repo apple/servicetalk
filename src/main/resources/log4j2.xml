@@ -15,21 +15,22 @@
   ~ limitations under the License.
   -->
 <Configuration status="info">
-  <Properties>
-    <Property name="level">info</Property>
-  </Properties>
   <Appenders>
     <Console name="Console" target="SYSTEM_OUT">
       <PatternLayout pattern="%d %30t [%-5level] %-30logger{1} - %msg%n"/>
     </Console>
   </Appenders>
   <Loggers>
-    <Logger name="io.netty" level="${level}"/>
-    <Logger name="io.servicetalk" level="${level}"/>
-    <Logger name="servicetalk-global-wire-logger" level="${level}"/>
-    <Root level="info">
+    <!--
+        This is an example of how to configure logging of wire events:
+          1. Add a Logger with `TRACE` level;
+          2. Use this new Logger name as an argument for `enableWireLogging(name)` method with desired builder/starter.
+    -->
+    <Logger name="servicetalk-tests-client-wire-logger" level="TRACE"/>
+    <Logger name="servicetalk-tests-server-wire-logger" level="TRACE"/>
+    <!-- Use `-Dservicetalk.logger.level=DEBUG` to change the root logger level via command line  -->
+    <Root level="${sys:servicetalk.logger.level:-INFO}">
       <AppenderRef ref="Console"/>
     </Root>
   </Loggers>
 </Configuration>
-
