@@ -13,28 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-buildscript {
-  if (!repositories) {
-    repositories {
-      jcenter()
-      maven { url "https://plugins.gradle.org/m2/" }
-    }
-  }
+/**
+ * The test resources package.
+ */
+@ElementsAreNonnullByDefault
+package io.servicetalk.test.resources;
 
-  dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.1.0-SNAPSHOT"
-  }
-}
-
-apply plugin: "servicetalk-library"
-
-dependencies {
-  implementation "io.servicetalk:servicetalk-bom-internal:0.1.0-SNAPSHOT"
-
-  api "org.apache.logging.log4j:log4j-core"
-  api "org.apache.logging.log4j:log4j-slf4j-impl"
-
-  implementation "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
-
-  testImplementation "junit:junit"
-}
+import io.servicetalk.annotations.ElementsAreNonnullByDefault;
