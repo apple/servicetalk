@@ -20,9 +20,10 @@ package io.servicetalk.http.api;
  */
 public final class DefaultHttpHeadersFactory implements HttpHeadersFactory {
 
-    public static final HttpHeadersFactory INSTANCE = new DefaultHttpHeadersFactory(true);
+    public static final HttpHeadersFactory INSTANCE = new DefaultHttpHeadersFactory(true, true);
 
     private final boolean validateNames;
+    private final boolean validateCookies;
     private final int headersArraySizeHint;
     private final int trailersArraySizeHint;
 
@@ -30,37 +31,40 @@ public final class DefaultHttpHeadersFactory implements HttpHeadersFactory {
      * Create an instance of the factory with the default array size hint.
      *
      * @param validateNames {@code true} to validate header/trailer names.
+     * @param validateCookies {@code true} to validate cookie contents when parsing.
      */
-    public DefaultHttpHeadersFactory(final boolean validateNames) {
-        this(validateNames, 16, 4);
+    public DefaultHttpHeadersFactory(final boolean validateNames, final boolean validateCookies) {
+        this(validateNames, validateCookies, 16, 4);
     }
 
     /**
      * Create an instance of the factory.
      *
      * @param validateNames {@code true} to validate header/trailer names.
+     * @param validateCookies {@code true} to validate cookie contents when parsing.
      * @param headersArraySizeHint A hint as to how large the hash data structure should be for the headers.
      * @param trailersArraySizeHint A hint as to how large the hash data structure should be for the trailers.
      */
-    public DefaultHttpHeadersFactory(final boolean validateNames, final int headersArraySizeHint,
-                                     final int trailersArraySizeHint) {
+    public DefaultHttpHeadersFactory(final boolean validateNames, final boolean validateCookies,
+                                     final int headersArraySizeHint, final int trailersArraySizeHint) {
         this.validateNames = validateNames;
+        this.validateCookies = validateCookies;
         this.headersArraySizeHint = headersArraySizeHint;
         this.trailersArraySizeHint = trailersArraySizeHint;
     }
 
     @Override
     public HttpHeaders newHeaders() {
-        return new DefaultHttpHeaders(headersArraySizeHint, validateNames);
+        return new DefaultHttpHeaders(headersArraySizeHint, validateNames, validateCookies);
     }
 
     @Override
     public HttpHeaders newTrailers() {
-        return new DefaultHttpHeaders(trailersArraySizeHint, validateNames);
+        return new DefaultHttpHeaders(trailersArraySizeHint, validateNames, validateCookies);
     }
 
     @Override
     public HttpHeaders newEmptyTrailers() {
-        return new DefaultHttpHeaders(0, validateNames);
+        return new DefaultHttpHeaders(0, validateNames, validateCookies);
     }
 }

@@ -26,7 +26,8 @@ import javax.annotation.Nullable;
 /**
  * HTTP <a href="https://tools.ietf.org/html/rfc7230.html#section-3.2">Header Fields</a>.
  * <p>
- * All header field names are compared in a <a href="https://tools.ietf.org/html/rfc7230#section-3.2">case-insensitive manner</a>.
+ * All header field names are compared in a
+ * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">case-insensitive manner</a>.
  */
 public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>> {
 
@@ -328,64 +329,138 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
     String toString(BiFunction<? super CharSequence, ? super CharSequence, CharSequence> filter);
 
     /**
-     * Parse the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a> headers and return it as a {@link HttpCookies}.
-     * <p>
-     * Updates made to the {@link HttpCookies} object will be reflected in this {@link HttpHeaders}
-     * <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a> headers after {@link HttpCookies#encodeToHttpHeaders()}
-     * is invoked. However the reverse direction is <strong>not</strong> true. If updates are made to the
-     * <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a> headers it will not be visible in the returned
-     * {@link HttpCookies}. In this case you <strong>must</strong> call {@link #parseCookies()} again to get the changed state.
-     * @return a {@link HttpCookies} representation of the
-     * <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a> headers.
-     * @see HttpCookies#encodeToHttpHeaders()
+     * Get a <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a> identified by {@code name}. If there
+     * is more than one {@link HttpCookie} for the specified name, the first {@link HttpCookie} in insertion order is
+     * returned.
+     *
+     * @param name The cookie-name to look for.
+     * @return a {@link HttpCookie} identified by {@code name}.
      */
-    default HttpCookies parseCookies() {
-        return parseCookies(true);
-    }
+    @Nullable
+    HttpCookie getCookie(CharSequence name);
 
     /**
-     * Parse the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a> headers and return it as a {@link HttpCookies}.
-     * <p>
-     * Updates made to the {@link HttpCookies} object will be reflected in this {@link HttpHeaders}
-     * <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a> headers after {@link HttpCookies#encodeToHttpHeaders()}
-     * is invoked. However the reverse direction is <strong>not</strong> true. If updates are made to the
-     * <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a> headers it will not be visible in the returned
-     * {@link HttpCookies}. In this case you <strong>must</strong> call {@link #parseCookies(boolean)} again to get the changed state.
-     * @param validateContent {@code true} to validate the content of the cookies while parsing.
-     * @return a {@link HttpCookies} representation of the
-     * <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a> headers.
-     * @see HttpCookies#encodeToHttpHeaders()
+     * Get a <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> identified by {@code name}. If
+     * there is more than one {@link HttpCookie} for the specified name, the first {@link HttpCookie} in insertion order
+     * is returned.
+     *
+     * @param name The cookie-name to look for.
+     * @return a {@link HttpCookie} identified by {@code name}.
      */
-    HttpCookies parseCookies(boolean validateContent);
+    @Nullable
+    HttpCookie getSetCookie(CharSequence name);
 
     /**
-     * Parse the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> headers and return it as a {@link HttpCookies}.
-     * <p>
-     * Updates made to the {@link HttpCookies} object will be reflected in this {@link HttpHeaders}
-     * <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> headers after {@link HttpCookies#encodeToHttpHeaders()}
-     * is invoked. However the reverse direction is <strong>not</strong> true. If updates are made to the
-     * <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> headers it will not be visible in the returned
-     * {@link HttpCookies}. In this case you <strong>must</strong> call {@link #parseSetCookies()} again to get the changed state.
-     * @return a {@link HttpCookies} representation of the
-     * <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> headers.
-     * @see HttpCookies#encodeToHttpHeaders()
+     * Get all the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s.
+     *
+     * @return An {@link Iterator} with all the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s.
      */
-    default HttpCookies parseSetCookies() {
-        return parseSetCookies(true);
-    }
+    Iterator<? extends HttpCookie> getCookies();
 
     /**
-     * Parse the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> headers and return it as a {@link HttpCookies}.
-     * <p>
-     * Updates made to the {@link HttpCookies} object will be reflected in this {@link HttpHeaders}
-     * <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> headers after {@link HttpCookies#encodeToHttpHeaders()}
-     * is invoked. However the reverse direction is <strong>not</strong> true. If updates are made to the
-     * <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> headers it will not be visible in the returned
-     * {@link HttpCookies}. In this case you <strong>must</strong> call {@link #parseSetCookies(boolean)} again to get the changed state.
-     * @param validateContent {@code true} to validate the content of the cookies while parsing.
-     * @return a {@link HttpCookies} representation of the
-     * <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> headers.
-     * @see HttpCookies#encodeToHttpHeaders()
+     * Get the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s with the same name.
+     *
+     * @param name the cookie-name of the {@link HttpCookie}s to get.
+     * @return An {@link Iterator} where all the {@link HttpCookie}s have the same name.
      */
-    HttpCookies parseSetCookies(boolean validateContent);
+    Iterator<? extends HttpCookie> getCookies(CharSequence name);
+
+    /**
+     * Get all the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s.
+     *
+     * @return An {@link Iterator} with all the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s.
+     */
+    Iterator<? extends HttpCookie> getSetCookies();
+
+    /**
+     * Get the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s with the same name.
+     *
+     * @param name the cookie-name of the {@link HttpCookie}s to get.
+     * @return An {@link Iterator} where all the {@link HttpCookie}s have the same name.
+     */
+    Iterator<? extends HttpCookie> getSetCookies(CharSequence name);
+
+    /**
+     * Get the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s with the same name.
+     *
+     * @param name the cookie-name of the {@link HttpCookie}s to get.
+     * @param domain the domain-value of the {@link HttpCookie}s to get. This value may be matched according
+     * to the <a href="https://tools.ietf.org/html/rfc6265#section-5.1.3">Domain Matching</a> algorithm.
+     * @param path the path-av of the {@link HttpCookie}s to get. This value may be matched according
+     * to the <a href="https://tools.ietf.org/html/rfc6265#section-5.1.4">Path Matching</a> algorithm.
+     * @return An {@link Iterator} where all the {@link HttpCookie}s match the parameter values.
+     */
+    Iterator<? extends HttpCookie> getCookies(CharSequence name, CharSequence domain, CharSequence path);
+
+    /**
+     * Get the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s with the same name.
+     *
+     * @param name the cookie-name of the {@link HttpCookie}s to get.
+     * @param domain the domain-value of the {@link HttpCookie}s to get. This value may be matched according
+     * to the <a href="https://tools.ietf.org/html/rfc6265#section-5.1.3">Domain Matching</a> algorithm.
+     * @param path the path-av of the {@link HttpCookie}s to get. This value may be matched according
+     * to the <a href="https://tools.ietf.org/html/rfc6265#section-5.1.4">Path Matching</a> algorithm.
+     * @return An {@link Iterator} where all the {@link HttpCookie}s match the parameter values.
+     */
+    Iterator<? extends HttpCookie> getSetCookies(CharSequence name, CharSequence domain, CharSequence path);
+
+    /**
+     * Add a <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>.
+     * <p>
+     * This may result in multiple {@link HttpCookie}s with same name.
+     *
+     * @param cookie The cookie to add.
+     * @return this.
+     */
+    HttpHeaders addCookie(HttpCookie cookie);
+
+    /**
+     * Add a <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>.
+     * <p>
+     * This may result in multiple {@link HttpCookie}s with same name.
+     *
+     * @param cookie The cookie to add.
+     * @return this.
+     */
+    HttpHeaders addSetCookie(HttpCookie cookie);
+
+    /**
+     * Remove all <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a> identified by {@code name}.
+     *
+     * @param name the cookie-name of the {@link HttpCookie}s to remove.
+     * @return {@code true} if at least one entry has been removed.
+     */
+    boolean removeCookies(CharSequence name);
+
+    /**
+     * Remove all <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> identified by {@code name}.
+     *
+     * @param name the cookie-name of the {@link HttpCookie}s to remove.
+     * @return {@code true} if at least one entry has been removed.
+     */
+    boolean removeSetCookies(CharSequence name);
+
+    /**
+     * Remove all <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a> identified by {@code name}.
+     *
+     * @param name the cookie-name of the {@link HttpCookie}s to remove.
+     * @param domain the domain-value of the {@link HttpCookie}s to remove. This value may be matched according
+     * to the <a href="https://tools.ietf.org/html/rfc6265#section-5.1.3">Domain Matching</a> algorithm.
+     * @param path the path-av of the {@link HttpCookie}s to remove. This value may be matched according
+     * to the <a href="https://tools.ietf.org/html/rfc6265#section-5.1.4">Path Matching</a> algorithm.
+     * @return {@code true} if at least one entry has been removed.
+     */
+    boolean removeCookies(CharSequence name, CharSequence domain, CharSequence path);
+
+    /**
+     * Remove all <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> identified by {@code name}.
+     *
+     * @param name the cookie-name of the {@link HttpCookie}s to remove.
+     * @param domain the domain-value of the {@link HttpCookie}s to remove. This value may be matched according
+     * to the <a href="https://tools.ietf.org/html/rfc6265#section-5.1.3">Domain Matching</a> algorithm.
+     * @param path the path-av of the {@link HttpCookie}s to remove. This value may be matched according
+     * to the <a href="https://tools.ietf.org/html/rfc6265#section-5.1.4">Path Matching</a> algorithm.
+     * @return {@code true} if at least one entry has been removed.
+     */
+    boolean removeSetCookies(CharSequence name, CharSequence domain, CharSequence path);
 }

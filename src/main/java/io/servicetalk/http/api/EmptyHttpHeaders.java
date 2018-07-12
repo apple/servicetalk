@@ -181,13 +181,77 @@ public final class EmptyHttpHeaders implements HttpHeaders {
         return toString();
     }
 
+    @Nullable
     @Override
-    public HttpCookies parseCookies(boolean validateContent) {
-        return EmptyHttpCookies.INSTANCE;
+    public HttpCookie getCookie(final CharSequence name) {
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public HttpCookie getSetCookie(final CharSequence name) {
+        return null;
     }
 
     @Override
-    public HttpCookies parseSetCookies(boolean validateContent) {
-        return EmptyHttpCookies.INSTANCE;
+    public Iterator<? extends HttpCookie> getCookies() {
+        return emptyIterator();
+    }
+
+    @Override
+    public Iterator<? extends HttpCookie> getCookies(final CharSequence name) {
+        return emptyIterator();
+    }
+
+    @Override
+    public Iterator<? extends HttpCookie> getSetCookies() {
+        return emptyIterator();
+    }
+
+    @Override
+    public Iterator<? extends HttpCookie> getSetCookies(final CharSequence name) {
+        return emptyIterator();
+    }
+
+    @Override
+    public Iterator<? extends HttpCookie> getCookies(final CharSequence name, final CharSequence domain,
+                                                     final CharSequence path) {
+        return emptyIterator();
+    }
+
+    @Override
+    public Iterator<? extends HttpCookie> getSetCookies(final CharSequence name, final CharSequence domain,
+                                                        final CharSequence path) {
+        return emptyIterator();
+    }
+
+    @Override
+    public HttpHeaders addCookie(final HttpCookie cookie) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public HttpHeaders addSetCookie(final HttpCookie cookie) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean removeCookies(final CharSequence name) {
+        return false;
+    }
+
+    @Override
+    public boolean removeSetCookies(final CharSequence name) {
+        return false;
+    }
+
+    @Override
+    public boolean removeCookies(final CharSequence name, final CharSequence domain, final CharSequence path) {
+        return false;
+    }
+
+    @Override
+    public boolean removeSetCookies(final CharSequence name, final CharSequence domain, final CharSequence path) {
+        return false;
     }
 }

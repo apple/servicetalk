@@ -20,9 +20,15 @@ import io.servicetalk.buffer.api.ByteProcessor;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.function.BiFunction;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.http.api.CharSequences.contentEquals;
+import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
+import static io.servicetalk.http.api.CharSequences.regionMatches;
+import static io.servicetalk.http.api.NetUtil.isValidIpV4Address;
+import static io.servicetalk.http.api.NetUtil.isValidIpV6Address;
+import static java.lang.Math.min;
 import static java.lang.System.lineSeparator;
 
 final class HeaderUtils {
@@ -123,6 +129,57 @@ final class HeaderUtils {
         } else {
             validateCookieTokenAndHeaderName0(key);
         }
+    }
+
+    /**
+     * <a href="https://tools.ietf.org/html/rfc6265#section-5.1.3">Domain Matching</a>.
+     *
+     * @param requestDomain The domain from the request.
+     * @param cookieDomain The domain from the cookie.
+     * @return {@code true} if there is a match.
+     */
+    static boolean domainMatches(final CharSequence requestDomain, @Nullable final CharSequence cookieDomain) {
+        if (cookieDomain == null || requestDomain.length() == 0) {
+            return false;
+        }
+        final int startIndex = cookieDomain.length() - requestDomain.length();
+        if (startIndex == 0) {
+            // The RFC has an ambiguous statement [1] related to case sensitivity here but since domain names are
+            // generally compared in a case insensitive fashion we do the same here.
+            // [1] https://tools.ietf.org/html/rfc6265#section-5.1.3
+            // the domain string and the string will have been canonicalized to lower case at this point
+            return contentEqualsIgnoreCase(cookieDomain, requestDomain);
+        }
+        final boolean queryEndsInDot = requestDomain.charAt(requestDomain.length() - 1) == '.';
+        return ((queryEndsInDot && startIndex >= -1 &&
+                regionMatches(cookieDomain, true, startIndex + 1, requestDomain, 0, requestDomain.length() - 1)) ||
+                (!queryEndsInDot && startIndex > 0 &&
+                        regionMatches(cookieDomain, true, startIndex, requestDomain, 0, requestDomain.length()))) &&
+                !isValidIpV4Address(cookieDomain) && !isValidIpV6Address(cookieDomain);
+    }
+
+    /**
+     * <a href="https://tools.ietf.org/html/rfc6265#section-5.1.4">Path Matching</a>.
+     *
+     * @param requestPath The path from the request.
+     * @param cookiePath The path from the cookie.
+     * @return {@code true} if there is a match.
+     */
+    static boolean pathMatches(final CharSequence requestPath, @Nullable final CharSequence cookiePath) {
+        // cookiePath cannot be empty, but we check for 0 length to protect against IIOBE below.
+        if (cookiePath == null || cookiePath.length() == 0 || requestPath.length() == 0) {
+            return false;
+        }
+
+        if (requestPath.length() == cookiePath.length()) {
+            return requestPath.equals(cookiePath);
+        }
+        final boolean actualStartsWithSlash = cookiePath.charAt(0) == '/';
+        final int length = min(actualStartsWithSlash ? cookiePath.length() - 1 :
+                cookiePath.length(), requestPath.length());
+        return regionMatches(requestPath, false, requestPath.charAt(0) == '/' &&
+                !actualStartsWithSlash ? 1 : 0, cookiePath, 0, length) &&
+                (requestPath.length() > cookiePath.length() || cookiePath.charAt(length) == '/');
     }
 
     private static void validateCookieTokenAndHeaderName0(final CharSequence key) {

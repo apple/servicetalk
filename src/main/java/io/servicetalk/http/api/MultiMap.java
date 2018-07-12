@@ -80,7 +80,7 @@ abstract class MultiMap<K, V> {
      * @param keyHash The hash code for {@code key}.
      * @return a new {@link MultiMapEntry} to represent an entry in this {@link MultiMap}.
      */
-    protected abstract MultiMapEntry<K, V> newEntry(K key, V value, int keyHash);
+    abstract MultiMapEntry<K, V> newEntry(K key, V value, int keyHash);
 
     /**
      * Generate a hash code for {@code key} used as an index in this {@link MultiMap}.
@@ -186,11 +186,11 @@ abstract class MultiMap<K, V> {
         assert e != null;
         do {
             if (e.keyHash == keyHash && equals(key, e.getKey())) {
-                break;
+                return new ValuesByNameIterator(keyHash, key, e);
             }
             e = e.bucketNext;
         } while (e != null);
-        return e == null ? emptyIterator() : new ValuesByNameIterator(keyHash, key, e);
+        return emptyIterator();
     }
 
     public final boolean contains(final K key, final V value) {
@@ -601,7 +601,7 @@ abstract class MultiMap<K, V> {
         }
     }
 
-    class ValuesByNameIterator implements Iterator<V> {
+    private final class ValuesByNameIterator implements Iterator<V> {
         final int keyHashCode;
         final K key;
         @Nullable
@@ -616,12 +616,12 @@ abstract class MultiMap<K, V> {
         }
 
         @Override
-        public final boolean hasNext() {
+        public boolean hasNext() {
             return current != null;
         }
 
         @Override
-        public final V next() {
+        public V next() {
             if (current == null) {
                 throw new NoSuchElementException();
             }
@@ -631,7 +631,7 @@ abstract class MultiMap<K, V> {
         }
 
         @Override
-        public final void remove() {
+        public void remove() {
             if (previous == null) {
                 throw new IllegalStateException();
             }
@@ -641,7 +641,7 @@ abstract class MultiMap<K, V> {
         }
 
         @Nullable
-        MultiMapEntry<K, V> findNext(@Nullable MultiMapEntry<K, V> entry) {
+        private MultiMapEntry<K, V> findNext(@Nullable MultiMapEntry<K, V> entry) {
             while (entry != null) {
                 if (entry.keyHash == keyHashCode && MultiMap.this.equals(key, entry.getKey())) {
                     return entry;
