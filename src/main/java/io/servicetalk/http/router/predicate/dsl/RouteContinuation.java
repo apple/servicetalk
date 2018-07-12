@@ -120,24 +120,6 @@ public interface RouteContinuation {
     CookieMatcher andCookie(String name);
 
     /**
-     * Extends the current route with a {@link CookieMatcher} that matches against {@link HttpCookie}s with a name
-     * matching the regex {@code regex}.
-     *
-     * @param regex the regex to match against the cookie name.
-     * @return {@link CookieMatcher} for the next steps of building a route.
-     */
-    CookieMatcher andCookieNameMatches(String regex);
-
-    /**
-     * Extends the current route with a {@link CookieMatcher} that matches against {@link HttpCookie}s with a name
-     * matching the regex {@code regex}.
-     *
-     * @param regex the regex to match against the cookie name.
-     * @return {@link CookieMatcher} for the next steps of building a route.
-     */
-    CookieMatcher andCookieNameMatches(Pattern regex);
-
-    /**
      * Extends the current route such that it matches requests that are over SSL/TLS.
      *
      * @return {@link RouteContinuation} for the next steps of building a route.

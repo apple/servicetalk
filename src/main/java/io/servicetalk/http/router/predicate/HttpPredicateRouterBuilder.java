@@ -43,7 +43,6 @@ import static io.servicetalk.http.router.predicate.Predicates.pathRegex;
 import static io.servicetalk.http.router.predicate.Predicates.pathStartsWith;
 import static io.servicetalk.http.router.predicate.Predicates.regex;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.StreamSupport.stream;
 
 /**
  * Builds an {@link HttpService} which routes requests to a number of other {@link HttpService}s based on user
@@ -124,17 +123,7 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
     @Override
     public CookieMatcher whenCookie(final String name) {
         requireNonNull(name);
-        return new CookieMatcherImpl(req -> req.getHeaders().parseCookies().getCookies(name));
-    }
-
-    @Override
-    public CookieMatcher whenCookieNameMatches(final String regex) {
-        return new CookieMatcherImpl(getCookiesWithNameFunction(regex(regex)));
-    }
-
-    @Override
-    public CookieMatcher whenCookieNameMatches(final Pattern regex) {
-        return new CookieMatcherImpl(getCookiesWithNameFunction(regex(regex)));
+        return new CookieMatcherImpl(req -> req.getHeaders().getCookies(name));
     }
 
     @Override
@@ -173,12 +162,6 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
         } else {
             predicate = predicate.and(newPredicate);
         }
-    }
-
-    private static Function<HttpRequest<HttpPayloadChunk>, Iterator<? extends HttpCookie>> getCookiesWithNameFunction(
-            final Predicate<CharSequence> cookieNamePredicate) {
-        return req -> stream(req.getHeaders().parseCookies().spliterator(), false)
-                .filter(cookie -> cookieNamePredicate.test(cookie.getName())).iterator();
     }
 
     private class RouteContinuationImpl implements RouteContinuation {
@@ -231,16 +214,6 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
         @Override
         public CookieMatcher andCookie(final String name) {
             return whenCookie(name);
-        }
-
-        @Override
-        public CookieMatcher andCookieNameMatches(final String regex) {
-            return whenCookieNameMatches(regex);
-        }
-
-        @Override
-        public CookieMatcher andCookieNameMatches(final Pattern regex) {
-            return whenCookieNameMatches(regex);
         }
 
         @Override

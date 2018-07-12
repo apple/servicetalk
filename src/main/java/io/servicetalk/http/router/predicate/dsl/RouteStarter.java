@@ -117,24 +117,6 @@ public interface RouteStarter {
     CookieMatcher whenCookie(String name);
 
     /**
-     * Begin a route with a {@link CookieMatcher} that matches against {@link HttpCookie}s with a name matching the
-     * regex {@code regex}.
-     *
-     * @param regex the regex to match against the cookie name.
-     * @return {@link CookieMatcher} for the next steps of building a route.
-     */
-    CookieMatcher whenCookieNameMatches(String regex);
-
-    /**
-     * Begin a route with a {@link CookieMatcher} that matches against {@link HttpCookie}s with a name matching the
-     * regex {@code regex}.
-     *
-     * @param regex the regex to match against the cookie name.
-     * @return {@link CookieMatcher} for the next steps of building a route.
-     */
-    CookieMatcher whenCookieNameMatches(Pattern regex);
-
-    /**
      * Begin a route that matches requests that are over SSL/TLS.
      *
      * @return {@link RouteContinuation} for the next steps of building a route.
