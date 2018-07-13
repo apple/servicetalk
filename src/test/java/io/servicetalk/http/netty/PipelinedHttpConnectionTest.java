@@ -37,7 +37,7 @@ import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
-import static io.servicetalk.http.api.HttpProtocolVersions.getProtocolVersion;
+import static io.servicetalk.http.api.HttpProtocolVersions.newProtocolVersion;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
@@ -103,7 +103,7 @@ public class PipelinedHttpConnectionTest {
     @Test
     public void http09RequestShouldReturnOnError() {
         Single<HttpResponse<HttpPayloadChunk>> request = pipe.request(
-                newRequest(getProtocolVersion(0, 9), GET, "/Foo"));
+                newRequest(newProtocolVersion(0, 9), GET, "/Foo"));
         dataSubscriber1.subscribe(request).request(1).verifyFailure(IllegalArgumentException.class);
     }
 
