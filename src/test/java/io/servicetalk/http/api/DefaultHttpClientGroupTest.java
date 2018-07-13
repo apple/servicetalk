@@ -32,7 +32,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
@@ -65,7 +65,7 @@ public class DefaultHttpClientGroupTest {
     private final ExecutionContext executionContext = mock(ExecutionContext.class);
 
     @SuppressWarnings("unchecked")
-    private final Function<GroupKey<String>, HttpClient> clientFactory = mock(Function.class);
+    private final BiFunction<GroupKey<String>, HttpRequestMetaData, HttpClient> clientFactory = mock(BiFunction.class);
 
     private final GroupKey<String> key = mockKey(1);
     @SuppressWarnings("unchecked")
@@ -89,7 +89,7 @@ public class DefaultHttpClientGroupTest {
 
     @Before
     public void setUp() {
-        when(clientFactory.apply(any())).thenReturn(httpClient);
+        when(clientFactory.apply(any(), any())).thenReturn(httpClient);
         when(httpClient.request(request)).thenReturn(success(expectedResponse));
         // Mockito type-safe API can't deal with wildcard on ReservedHttpConnection
         doReturn(success(expectedReservedCon)).when(httpClient).reserveConnection(request);
@@ -126,34 +126,34 @@ public class DefaultHttpClientGroupTest {
     public void successfulReservedConnection() {
         reservedHttpConnectionListener.listen(clientGroup.reserveConnection(key, request))
                 .verifySuccess(expectedReservedCon);
-        verify(clientFactory).apply(key);
+        verify(clientFactory).apply(key, request);
     }
 
     @Test
     public void failedReservedConnection() {
-        when(clientFactory.apply(key)).thenThrow(DELIBERATE_EXCEPTION);
+        when(clientFactory.apply(key, request)).thenThrow(DELIBERATE_EXCEPTION);
         reservedHttpConnectionListener.listen(clientGroup.reserveConnection(key, request))
                 .verifyFailure(DELIBERATE_EXCEPTION);
-        verify(clientFactory).apply(key);
+        verify(clientFactory).apply(key, request);
     }
 
     @Test
     public void successfulRequestWithNewClient() {
         httpResponseListener.listen(clientGroup.request(key, request))
                 .verifySuccess(expectedResponse);
-        verify(clientFactory).apply(key);
+        verify(clientFactory).apply(key, request);
     }
 
     @Test
     public void successfulRequestWithExistingClient() {
         httpResponseListener.listen(clientGroup.request(key, request))
                 .verifySuccess(expectedResponse);
-        verify(clientFactory).apply(key);
+        verify(clientFactory).apply(key, request);
 
         httpResponseListener.resetSubscriberMock()
                 .listen(clientGroup.request(key, request))
                 .verifySuccess(expectedResponse);
-        verify(clientFactory).apply(key);
+        verify(clientFactory).apply(key, request);
 
         clientGroup.closeAsync().subscribe();
         verify(httpClient).closeAsync();
@@ -163,13 +163,13 @@ public class DefaultHttpClientGroupTest {
     public void successfulRequestsWithDifferentKeys() {
         httpResponseListener.listen(clientGroup.request(key, request))
                 .verifySuccess(expectedResponse);
-        verify(clientFactory).apply(key);
+        verify(clientFactory).apply(key, request);
 
         final GroupKey<String> key2 = mockKey(2);
         httpResponseListener.resetSubscriberMock()
                 .listen(clientGroup.request(key2, request))
                 .verifySuccess(expectedResponse);
-        verify(clientFactory, times(2)).apply(any());
+        verify(clientFactory, times(2)).apply(any(), any());
     }
 
     @Test
@@ -177,7 +177,7 @@ public class DefaultHttpClientGroupTest {
         clientGroup.closeAsync().subscribe();
         httpResponseListener.listen(clientGroup.request(key, request))
                 .verifyFailure(IllegalStateException.class);
-        verify(clientFactory, never()).apply(key);
+        verify(clientFactory, never()).apply(key, request);
         verify(httpClient, never()).closeAsync();
         clientGroup.closeAsync().subscribe();
         verify(httpClient, never()).closeAsync();
@@ -185,18 +185,18 @@ public class DefaultHttpClientGroupTest {
 
     @Test
     public void clientFactoryReturnsNull() {
-        when(clientFactory.apply(key)).thenReturn(null);
+        when(clientFactory.apply(key, request)).thenReturn(null);
         httpResponseListener.listen(clientGroup.request(key, request))
                 .verifyFailure(IllegalStateException.class);
-        verify(clientFactory).apply(key);
+        verify(clientFactory).apply(key, request);
     }
 
     @Test
     public void clientFactoryThrowsException() {
-        when(clientFactory.apply(key)).thenThrow(DELIBERATE_EXCEPTION);
+        when(clientFactory.apply(key, request)).thenThrow(DELIBERATE_EXCEPTION);
         httpResponseListener.listen(clientGroup.request(key, request))
                 .verifyFailure(DELIBERATE_EXCEPTION);
-        verify(clientFactory).apply(key);
+        verify(clientFactory).apply(key, request);
     }
 
     @Test
@@ -206,7 +206,7 @@ public class DefaultHttpClientGroupTest {
 
         final AtomicBoolean invoked = new AtomicBoolean();
         final AtomicBoolean returned = new AtomicBoolean();
-        final HttpClientGroup<String> clientGroup = newHttpClientGroup(gk -> {
+        final HttpClientGroup<String> clientGroup = newHttpClientGroup((gk, md) -> {
             invoked.set(true);
             latchForCancel.countDown();
             try {

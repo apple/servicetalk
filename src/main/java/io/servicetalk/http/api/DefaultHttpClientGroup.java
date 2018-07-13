@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
@@ -78,7 +78,7 @@ final class DefaultHttpClientGroup<UnresolvedAddress> extends HttpClientGroup<Un
 
     private volatile boolean closed;
     private final ConcurrentMap<GroupKey<UnresolvedAddress>, HttpClient> clientMap = new ConcurrentHashMap<>();
-    private final Function<GroupKey<UnresolvedAddress>, HttpClient> clientFactory;
+    private final BiFunction<GroupKey<UnresolvedAddress>, HttpRequestMetaData, HttpClient> clientFactory;
     private final ListenableAsyncCloseable asyncCloseable = toAsyncCloseable(() -> {
                 closed = true;
                 return completed().mergeDelayError(clientMap.keySet().stream()
@@ -89,7 +89,8 @@ final class DefaultHttpClientGroup<UnresolvedAddress> extends HttpClientGroup<Un
             }
     );
 
-    DefaultHttpClientGroup(final Function<GroupKey<UnresolvedAddress>, HttpClient> clientFactory) {
+    DefaultHttpClientGroup(
+            final BiFunction<GroupKey<UnresolvedAddress>, HttpRequestMetaData, HttpClient> clientFactory) {
         this.clientFactory = requireNonNull(clientFactory);
     }
 
@@ -103,7 +104,7 @@ final class DefaultHttpClientGroup<UnresolvedAddress> extends HttpClientGroup<Un
             protected void handleSubscribe(final Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber) {
                 final Single<HttpResponse<HttpPayloadChunk>> response;
                 try {
-                    response = selectClient(key).request(request);
+                    response = selectClient(key, request).request(request);
                 } catch (final Throwable t) {
                     subscriber.onSubscribe(IGNORE_CANCEL);
                     subscriber.onError(t);
@@ -124,7 +125,7 @@ final class DefaultHttpClientGroup<UnresolvedAddress> extends HttpClientGroup<Un
             protected void handleSubscribe(final Subscriber<? super ReservedHttpConnection> subscriber) {
                 final Single<? extends ReservedHttpConnection> reservedHttpConnection;
                 try {
-                    reservedHttpConnection = selectClient(key).reserveConnection(request);
+                    reservedHttpConnection = selectClient(key, request).reserveConnection(request);
                 } catch (final Throwable t) {
                     subscriber.onSubscribe(IGNORE_CANCEL);
                     subscriber.onError(t);
@@ -135,7 +136,7 @@ final class DefaultHttpClientGroup<UnresolvedAddress> extends HttpClientGroup<Un
         };
     }
 
-    private HttpClient selectClient(final GroupKey<UnresolvedAddress> key) {
+    private HttpClient selectClient(final GroupKey<UnresolvedAddress> key, final HttpRequestMetaData requestMetaData) {
         // It is assumed that clientFactory will not acquire synchronization primitives which may be held by threads
         // in the spin/wait loop below to avoid livelock. This allows us to avoid acquiring locks/monitors
         // for the expected steady state where the key will already exist in the map.
@@ -170,7 +171,7 @@ final class DefaultHttpClientGroup<UnresolvedAddress> extends HttpClientGroup<Un
         try {
             throwIfClosed();
 
-            client = clientFactory.apply(key);
+            client = clientFactory.apply(key, requestMetaData);
             if (client == null) {
                 throw new IllegalStateException("Newly created client can not be null");
             }

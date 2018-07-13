@@ -17,7 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.GroupKey;
 
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 /**
  * Factory methods for creating {@link HttpClientGroup}s.
@@ -37,7 +37,7 @@ public final class HttpClientGroups {
      * @return A new {@link HttpClientGroup}.
      */
     public static <UnresolvedAddress> HttpClientGroup<UnresolvedAddress> newHttpClientGroup(
-            final Function<GroupKey<UnresolvedAddress>, HttpClient> clientFactory) {
+            final BiFunction<GroupKey<UnresolvedAddress>, HttpRequestMetaData, HttpClient> clientFactory) {
         return new DefaultHttpClientGroup<>(clientFactory);
     }
 }
