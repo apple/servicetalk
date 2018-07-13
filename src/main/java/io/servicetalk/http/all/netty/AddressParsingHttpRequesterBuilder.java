@@ -39,6 +39,7 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequester;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.netty.DefaultHttpClientBuilder;
@@ -48,11 +49,10 @@ import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.SslConfig;
 
-import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -61,9 +61,11 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
+import static io.servicetalk.http.all.netty.SslConfigProviders.plainByDefault;
 import static io.servicetalk.http.api.HttpClientGroups.newHttpClientGroup;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
+import static io.servicetalk.transport.api.SslConfigBuilder.forClient;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.UnaryOperator.identity;
 
@@ -87,7 +89,7 @@ public final class AddressParsingHttpRequesterBuilder {
     private UnaryOperator<HttpRequester> requesterFilterFactory = identity();
     private UnaryOperator<HttpClientGroup<HostAndPort>> clientGroupFilterFactory = identity();
     private int maxRedirects = DEFAULT_MAX_REDIRECTS;
-    private boolean isSsl;
+    private SslConfigProvider sslConfigProvider = plainByDefault();
 
     /**
      * Create a new instance with a default {@link LoadBalancerFactory}.
@@ -99,7 +101,7 @@ public final class AddressParsingHttpRequesterBuilder {
     /**
      * Create a new instance.
      *
-     * @param loadBalancerFactory The {@link LoadBalancerFactory} which generates {@link LoadBalancer} objects.
+     * @param loadBalancerFactory A {@link LoadBalancerFactory} which generates {@link LoadBalancer} objects.
      */
     public AddressParsingHttpRequesterBuilder(
             final LoadBalancerFactory<InetSocketAddress, HttpConnection> loadBalancerFactory) {
@@ -109,7 +111,7 @@ public final class AddressParsingHttpRequesterBuilder {
     /**
      * Set a {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
      *
-     * @param serviceDiscoverer The {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
+     * @param serviceDiscoverer A {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
      * Lifecycle of the provided {@link ServiceDiscoverer} is managed externally and it should be
      * {@link ServiceDiscoverer#closeAsync() closed} after all built {@link HttpRequester}s will be closed and this
      * {@link ServiceDiscoverer} is no longer needed.
@@ -122,24 +124,22 @@ public final class AddressParsingHttpRequesterBuilder {
     }
 
     /**
-     * Enable SSL/TLS using the provided {@link SslConfig}. To disable SSL pass in {@code null}.
+     * Set a {@link SslConfigProvider} for appropriate {@link SslConfig}s.
      *
-     * @param sslConfig The {@link SslConfig}.
+     * @param sslConfigProvider A {@link SslConfigProvider} to use.
      * @return {@code this}.
-     * @throws IllegalStateException if accessing the cert/key throws when {@link InputStream#close()} is called.
      */
-    public AddressParsingHttpRequesterBuilder setSslConfig(@Nullable final SslConfig sslConfig) {
-        clientBuilder.setSslConfig(sslConfig);
-        isSsl = sslConfig != null;
+    public AddressParsingHttpRequesterBuilder setSslConfigProvider(final SslConfigProvider sslConfigProvider) {
+        this.sslConfigProvider = requireNonNull(sslConfigProvider);
         return this;
     }
 
     /**
      * Add a {@link SocketOption} for all connections.
      *
-     * @param <T> The type of the value.
-     * @param option The option to apply.
-     * @param value The value of the option.
+     * @param <T> A type of the value.
+     * @param option An option to apply.
+     * @param value A value of the option.
      * @return {@code this}.
      */
     public <T> AddressParsingHttpRequesterBuilder setSocketOption(final SocketOption<T> option, final T value) {
@@ -150,7 +150,7 @@ public final class AddressParsingHttpRequesterBuilder {
     /**
      * Enable wire-logging for connections created by this builder. All wire events will be logged at trace level.
      *
-     * @param loggerName The name of the logger to log wire events.
+     * @param loggerName A name of the logger to log wire events.
      * @return {@code this}.
      */
     public AddressParsingHttpRequesterBuilder enableWireLogging(final String loggerName) {
@@ -173,7 +173,7 @@ public final class AddressParsingHttpRequesterBuilder {
     /**
      * Set the {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} when decoding responses.
      *
-     * @param headersFactory the {@link HttpHeadersFactory} to use.
+     * @param headersFactory A {@link HttpHeadersFactory} to use.
      * @return {@code this}.
      */
     public AddressParsingHttpRequesterBuilder setHeadersFactory(final HttpHeadersFactory headersFactory) {
@@ -184,7 +184,7 @@ public final class AddressParsingHttpRequesterBuilder {
     /**
      * Set the maximum size of the initial HTTP line for created {@link HttpRequester}.
      *
-     * @param maxInitialLineLength The {@link HttpRequester} will throw TooLongFrameException if the initial
+     * @param maxInitialLineLength A {@link HttpRequester} will throw TooLongFrameException if the initial
      * HTTP line exceeds this length.
      * @return {@code this}.
      */
@@ -196,7 +196,7 @@ public final class AddressParsingHttpRequesterBuilder {
     /**
      * Set the maximum total size of HTTP headers, which could be send be created {@link HttpRequester}.
      *
-     * @param maxHeaderSize The {@link HttpRequester} will throw TooLongFrameException if the total size of all
+     * @param maxHeaderSize A {@link HttpRequester} will throw TooLongFrameException if the total size of all
      * HTTP headers exceeds this length.
      * @return {@code this}.
      */
@@ -237,7 +237,7 @@ public final class AddressParsingHttpRequesterBuilder {
      * <p>
      * Request pipelining requires HTTP 1.1.
      *
-     * @param maxPipelinedRequests The maximum number of pipelined requests to queue up.
+     * @param maxPipelinedRequests A maximum number of pipelined requests to queue up.
      * @return {@code this}.
      */
     public AddressParsingHttpRequesterBuilder setMaxPipelinedRequests(final int maxPipelinedRequests) {
@@ -319,7 +319,7 @@ public final class AddressParsingHttpRequesterBuilder {
     /**
      * Set a maximum number of redirects to follow.
      *
-     * @param maxRedirects The maximum number of redirects to follow. Use a nonpositive number to disable redirects.
+     * @param maxRedirects A maximum number of redirects to follow. Use a nonpositive number to disable redirects.
      * @return {@code this}.
      */
     public AddressParsingHttpRequesterBuilder setMaxRedirects(final int maxRedirects) {
@@ -330,7 +330,7 @@ public final class AddressParsingHttpRequesterBuilder {
     /**
      * Build a new {@link HttpRequester}.
      *
-     * @param executionContext The {@link ExecutionContext} used for {@link HttpRequester#getExecutionContext()} and
+     * @param executionContext A {@link ExecutionContext} used for {@link HttpRequester#getExecutionContext()} and
      * to build new {@link HttpClient}s.
      * @return A new {@link HttpRequester}.
      */
@@ -343,21 +343,17 @@ public final class AddressParsingHttpRequesterBuilder {
                     this.serviceDiscoverer :
                     closeables.prepend(new DefaultDnsServiceDiscovererBuilder(executionContext).build());
 
-            // Copy existing HttpClientBuilder to prevent runtime changes of clientFactory via this builder
-            final DefaultHttpClientBuilder<InetSocketAddress> copiedBuilder =
-                    new DefaultHttpClientBuilder<>(clientBuilder);
-
-            final Function<GroupKey<HostAndPort>, HttpClient> clientFactory = groupKey ->
-                    copiedBuilder.build(executionContext, serviceDiscoverer.discover(groupKey.getAddress()));
-            final CacheableRequestToGroupKeyFunction toGroupKeyFunction =
-                    closeables.prepend(new CacheableRequestToGroupKeyFunction(executionContext, isSsl));
-            HttpClientGroup<HostAndPort> clientGroup = closeables.prepend(
-                    clientGroupFilterFactory.apply(closeables.prepend(newHttpClientGroup(clientFactory))));
-            clientGroup = maxRedirects > 0 ?
-                    new RedirectingHttpClientGroup<>(clientGroup, toGroupKeyFunction, executionContext, maxRedirects) :
-                    clientGroup;
+            final ClientBuilderFactory clientBuilderFactory =
+                    new ClientBuilderFactory(clientBuilder, sslConfigProvider);
+            HttpClientGroup<HostAndPort> clientGroup = closeables.prepend(clientGroupFilterFactory.apply(
+                    closeables.prepend(newHttpClientGroup((gk, md) -> clientBuilderFactory.apply(gk, md)
+                            .build(executionContext, serviceDiscoverer.discover(gk.getAddress()))))));
+            final CacheableGroupKeyFactory groupKeyFactory =
+                    closeables.prepend(new CacheableGroupKeyFactory(executionContext, sslConfigProvider));
+            clientGroup = maxRedirects <= 0 ? clientGroup :
+                    new RedirectingHttpClientGroup<>(clientGroup, groupKeyFactory, executionContext, maxRedirects);
             final HttpRequester requester = closeables.prepend(requesterFilterFactory.apply(
-                            closeables.prepend(clientGroup.asRequester(toGroupKeyFunction, executionContext))));
+                            closeables.prepend(clientGroup.asRequester(groupKeyFactory, executionContext))));
 
             return new AddressParsingHttpRequester(requester, toAsyncCloseable(closeables::closeAsync));
         } catch (final Exception e) {
@@ -400,19 +396,19 @@ public final class AddressParsingHttpRequesterBuilder {
         return build(executionContext).asBlockingAggregatedRequester();
     }
 
-    private static final class CacheableRequestToGroupKeyFunction
+    /**
+     * Returns a cached {@link GroupKey} or creates a new one based on {@link HttpRequest} information.
+     */
+    private static final class CacheableGroupKeyFactory
             implements Function<HttpRequest<HttpPayloadChunk>, GroupKey<HostAndPort>>, AsyncCloseable {
 
-        private static final int DEFAULT_PORT_HTTP = 80;
-        private static final int DEFAULT_PORT_HTTPS = 443;
-
-        private final Map<String, GroupKey<HostAndPort>> groupKeyCache = new ConcurrentHashMap<>();
+        private final ConcurrentMap<String, GroupKey<HostAndPort>> groupKeyCache = new ConcurrentHashMap<>();
         private final ExecutionContext executionContext;
-        private final boolean isSsl;
+        private final SslConfigProvider sslConfigProvider;
 
-        CacheableRequestToGroupKeyFunction(final ExecutionContext executionContext, final boolean isSsl) {
+        CacheableGroupKeyFactory(final ExecutionContext executionContext, final SslConfigProvider sslConfigProvider) {
             this.executionContext = requireNonNull(executionContext);
-            this.isSsl = isSsl;
+            this.sslConfigProvider = sslConfigProvider;
         }
 
         @Override
@@ -424,20 +420,21 @@ public final class AddressParsingHttpRequesterBuilder {
                         " Request-target: " + request.getRequestTarget() +
                         ", HOST header: " + request.getHeaders().get(HOST));
             }
-            final int requestPort = request.getEffectivePort();
-            final int port = requestPort >= 0 ? requestPort : (isSsl ? DEFAULT_PORT_HTTPS : DEFAULT_PORT_HTTP);
+            final int effectivePort = request.getEffectivePort();
+            final int port = effectivePort >= 0 ? effectivePort :
+                    sslConfigProvider.defaultPort(HttpScheme.from(request.getScheme()), host);
             final String authority = host + ':' + port;
 
-            final GroupKey<HostAndPort> key = groupKeyCache.get(authority);
-            return key != null ? key : groupKeyCache.computeIfAbsent(authority, ignore -> new DefaultGroupKey<>(
-                    new DefaultHostAndPort(host, port), executionContext));
+            final GroupKey<HostAndPort> groupKey = groupKeyCache.get(authority);
+            return groupKey != null ? groupKey : groupKeyCache.computeIfAbsent(authority, ignore ->
+                    new DefaultGroupKey<>(new DefaultHostAndPort(host, port), executionContext));
         }
 
         @Override
         public Completable closeAsync() {
             // Make a best effort to clear the map. Note that we don't attempt to resolve race conditions between
-            // closing the ClientGroup and in flight requests adding Keys to the map. We also don't attempt to
-            // remove from the map if a request fails, or a request is made after the ClientGroup is closed.
+            // closing the Requester and in flight requests adding Keys to the map. We also don't attempt to remove
+            // from the map if a request fails, or a request is made after the Requester is closed.
             return new Completable() {
                 @Override
                 protected void handleSubscribe(final Subscriber subscriber) {
@@ -446,6 +443,50 @@ public final class AddressParsingHttpRequesterBuilder {
                     subscriber.onComplete();
                 }
             };
+        }
+    }
+
+    /**
+     * Creates a new {@link DefaultHttpClientBuilder} with appropriate {@link SslConfig} for specified
+     * {@link HostAndPort}.
+     */
+    private static final class ClientBuilderFactory implements BiFunction<GroupKey<HostAndPort>, HttpRequestMetaData,
+            DefaultHttpClientBuilder<InetSocketAddress>> {
+
+        private final DefaultHttpClientBuilder<InetSocketAddress> clientBuilder;
+        private final SslConfigProvider sslConfigProvider;
+
+        ClientBuilderFactory(final DefaultHttpClientBuilder<InetSocketAddress> clientBuilder,
+                             final SslConfigProvider sslConfigProvider) {
+            // Copy existing builder to prevent runtime changes after build() was invoked
+            this.clientBuilder = new DefaultHttpClientBuilder<>(clientBuilder);
+            this.sslConfigProvider = sslConfigProvider;
+        }
+
+        @Override
+        public DefaultHttpClientBuilder<InetSocketAddress> apply(final GroupKey<HostAndPort> groupKey,
+                                                                 final HttpRequestMetaData requestMetaData) {
+            final HttpScheme scheme = HttpScheme.from(requestMetaData.getScheme());
+            final HostAndPort hostAndPort = groupKey.getAddress();
+            SslConfig sslConfig;
+            switch (scheme) {
+                case HTTP:
+                    sslConfig = null;
+                    break;
+                case HTTPS:
+                    sslConfig = sslConfigProvider.forHostAndPort(hostAndPort);
+                    if (sslConfig == null) {
+                        sslConfig = forClient(hostAndPort).build();
+                    }
+                    break;
+                case NONE:
+                    sslConfig = sslConfigProvider.forHostAndPort(hostAndPort);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown scheme: " + scheme);
+            }
+            return sslConfig != null ? new DefaultHttpClientBuilder<>(clientBuilder).setSslConfig(sslConfig)
+                    : clientBuilder;
         }
     }
 
