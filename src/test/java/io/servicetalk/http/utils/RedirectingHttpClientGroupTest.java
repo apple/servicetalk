@@ -108,7 +108,7 @@ public class RedirectingHttpClientGroupTest {
             }
         });
         when(httpClient.closeAsync()).thenReturn(completed());
-        clientGroup = newHttpClientGroup(groupKey -> httpClient);
+        clientGroup = newHttpClientGroup((groupKey, metaData) -> httpClient);
     }
 
     @After
