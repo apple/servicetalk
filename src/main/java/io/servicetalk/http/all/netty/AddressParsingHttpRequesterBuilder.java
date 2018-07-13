@@ -64,6 +64,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.http.all.netty.SslConfigProviders.plainByDefault;
 import static io.servicetalk.http.api.HttpClientGroups.newHttpClientGroup;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
+import static io.servicetalk.http.utils.HttpHostHeaderFilter.newHostHeaderFilter;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static io.servicetalk.transport.api.SslConfigBuilder.forClient;
 import static java.util.Objects.requireNonNull;
@@ -485,8 +486,10 @@ public final class AddressParsingHttpRequesterBuilder {
                 default:
                     throw new IllegalArgumentException("Unknown scheme: " + scheme);
             }
-            return sslConfig != null ? new DefaultHttpClientBuilder<>(clientBuilder).setSslConfig(sslConfig)
-                    : clientBuilder;
+
+            return new DefaultHttpClientBuilder<>(clientBuilder)
+                    .setSslConfig(sslConfig)
+                    .addClientFilterFactory(c -> newHostHeaderFilter(hostAndPort, c));
         }
     }
 

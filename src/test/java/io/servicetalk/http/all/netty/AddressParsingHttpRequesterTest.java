@@ -51,6 +51,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
+import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethods.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpRequestMethods.OPTIONS;
@@ -104,6 +105,10 @@ public class AddressParsingHttpRequesterTest {
 
         final HttpHeaders httpHeaders = DefaultHttpHeadersFactory.INSTANCE.newHeaders().set(CONTENT_LENGTH, ZERO);
         httpService = fromAsync((ctx, request) -> {
+            if (request.getVersion() == HTTP_1_1 && !request.getHeaders().contains(HOST)) {
+                return success(newResponse(BAD_REQUEST, httpHeaders));
+            }
+
             if (request.getMethod() == OPTIONS || request.getMethod() == CONNECT) {
                 return success(newResponse(OK, httpHeaders));
             }
