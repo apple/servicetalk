@@ -50,10 +50,12 @@ public final class TcpClientConfig extends ReadOnlyTcpClientConfig {
 
     /**
      * Enable SSL/TLS using the provided {@link SslConfig}. To disable it pass in {@code null}.
+     *
      * @param config the {@link SslConfig}.
      * @return this.
-     * @throws IllegalStateException if the {@link SslConfig#getKeyCertChainSupplier()}, {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()}
-     * throws when {@link InputStream#close()} is called.
+     * @throws IllegalStateException if the {@link SslConfig#getKeyCertChainSupplier()},
+     * {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()} throws when
+     * {@link InputStream#close()} is called.
      */
     public TcpClientConfig setSslConfig(@Nullable SslConfig config) {
         if (config != null) {
@@ -64,6 +66,8 @@ public final class TcpClientConfig extends ReadOnlyTcpClientConfig {
         } else {
             sslContext = null;
             sslHostnameVerificationAlgorithm = null;
+            sslHostnameVerificationHost = null;
+            sslHostnameVerificationPort = -1;
         }
         return this;
     }

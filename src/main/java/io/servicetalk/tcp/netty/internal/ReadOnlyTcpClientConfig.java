@@ -43,7 +43,7 @@ public class ReadOnlyTcpClientConfig {
     protected String sslHostnameVerificationAlgorithm;
     @Nullable
     protected String sslHostnameVerificationHost;
-    protected int sslHostnameVerificationPort;
+    protected int sslHostnameVerificationPort = -1;
     protected long idleTimeoutMs;
     @Nullable
     protected WireLoggingInitializer wireLoggingInitializer;
@@ -88,6 +88,7 @@ public class ReadOnlyTcpClientConfig {
 
     /**
      * Returns the {@link SslContext}.
+     *
      * @return {@link SslContext}, {@code null} if none specified.
      */
     @Nullable
@@ -97,6 +98,7 @@ public class ReadOnlyTcpClientConfig {
 
     /**
      * Returns the hostname verification algorithm, if any.
+     *
      * @return hostname verification algorithm, {@code null} if none specified.
      */
     @Nullable
@@ -106,6 +108,7 @@ public class ReadOnlyTcpClientConfig {
 
     /**
      * Get the non-authoritative name of the host.
+     *
      * @return the non-authoritative name of the host.
      */
     @Nullable
@@ -117,6 +120,7 @@ public class ReadOnlyTcpClientConfig {
      * Get the non-authoritative port.
      * <p>
      * Only valid if {@link #getSslHostnameVerificationHost()} is not {@code null}.
+     *
      * @return the non-authoritative port.
      */
     public int getSslHostnameVerificationPort() {
@@ -125,6 +129,7 @@ public class ReadOnlyTcpClientConfig {
 
     /**
      * Returns the idle timeout as expressed via option {@link ServiceTalkSocketOptions#IDLE_TIMEOUT}.
+     *
      * @return idle timeout.
      */
     public long getIdleTimeoutMs() {
@@ -133,6 +138,7 @@ public class ReadOnlyTcpClientConfig {
 
     /**
      * Returns the {@link ChannelOption}s for all channels created by this client.
+     *
      * @return Unmodifiable map of options.
      */
     public Map<ChannelOption, Object> getOptions() {
