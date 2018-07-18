@@ -217,7 +217,8 @@ final class RedirectSingle extends Single<HttpResponse<HttpPayloadChunk>> {
                     // Should never happen, otherwise the original request had to fail
                     throw new InvalidRedirectException("No host information for redirect");
                 }
-                headers.set(HOST, buildHostHeader(redirectHost, request.getEffectivePort()));
+                final int redirectPort = request.getEffectivePort();
+                headers.set(HOST, redirectPort < 0 ? redirectHost : redirectHost + ':' + redirectPort);
             }
 
             // NOTE: for security reasons we do not keep any headers from original request.
@@ -238,13 +239,6 @@ final class RedirectSingle extends Single<HttpResponse<HttpPayloadChunk>> {
             // GET or HEAD request: https://tools.ietf.org/html/rfc7231#section-6.4.4
             return originalMethod == HEAD ? HEAD : GET;
             // TODO: It also could be originalMethod for 307 & 308, when we will support repeatable payloadBody
-        }
-
-        private static String buildHostHeader(final String host, final int port) {
-            if (port < 0 || port == DEFAULT_PORT_HTTP || port == DEFAULT_PORT_HTTPS) {
-                return host;
-            }
-            return host + ':' + port;
         }
     }
 }
