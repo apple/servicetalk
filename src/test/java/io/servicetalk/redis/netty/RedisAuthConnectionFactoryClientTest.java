@@ -28,7 +28,6 @@ import io.servicetalk.redis.utils.RedisAuthConnectionFactory;
 import io.servicetalk.redis.utils.RedisAuthorizationException;
 import io.servicetalk.redis.utils.RetryingRedisClient;
 import io.servicetalk.transport.api.DefaultExecutionContext;
-import io.servicetalk.transport.api.DefaultHostAndPort;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
@@ -167,7 +166,7 @@ public class RedisAuthConnectionFactoryClientTest {
                         .setMaxPipelinedRequests(10)
                         .setIdleConnectionTimeout(ofSeconds(2))
                         .build(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()),
-                                serviceDiscoverer.discover(new DefaultHostAndPort(redisHost, redisPort))),
+                                serviceDiscoverer.discover(HostAndPort.of(redisHost, redisPort))),
                 retryWithExponentialBackoff(10, cause -> cause instanceof RetryableException, ofMillis(10),
                         ioExecutor.next().asExecutor()));
         clientConsumer.accept(client);

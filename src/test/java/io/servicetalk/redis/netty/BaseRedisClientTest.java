@@ -27,7 +27,6 @@ import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.utils.RetryingRedisClient;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.DefaultExecutionContext;
-import io.servicetalk.transport.api.DefaultHostAndPort;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
@@ -105,7 +104,7 @@ public abstract class BaseRedisClientTest {
                         .setIdleConnectionTimeout(ofSeconds(2))
                         .setPingPeriod(ofSeconds(PING_PERIOD_SECONDS))
                 .build(executionContext,
-                                serviceDiscoverer.discover(new DefaultHostAndPort(redisHost, redisPort))),
+                                serviceDiscoverer.discover(HostAndPort.of(redisHost, redisPort))),
                 retryWithExponentialBackoff(10, cause -> cause instanceof RetryableException, ofMillis(10),
                         executionContext.getExecutor()));
 
