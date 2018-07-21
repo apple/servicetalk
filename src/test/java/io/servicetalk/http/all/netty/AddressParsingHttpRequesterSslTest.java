@@ -24,7 +24,6 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.netty.DefaultHttpServerStarter;
-import io.servicetalk.transport.api.DefaultHostAndPort;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
@@ -105,7 +104,7 @@ public class AddressParsingHttpRequesterSslTest {
         when(httpService.closeAsyncGracefully()).thenReturn(completed());
         serverCtx = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
                 .start(CTX, new InetSocketAddress(HOSTNAME, 0), httpService));
-        serverHostHeader = new DefaultHostAndPort(HOSTNAME,
+        serverHostHeader = HostAndPort.of(HOSTNAME,
                 ((InetSocketAddress) serverCtx.getListenAddress()).getPort()).toString();
 
         // Configure HTTPS server
@@ -115,7 +114,7 @@ public class AddressParsingHttpRequesterSslTest {
         secureServerCtx = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
                 .setSslConfig(SslConfigBuilder.forServer(() -> loadServerPem(), () -> loadServerKey()).build())
                 .start(CTX, new InetSocketAddress(HOSTNAME, 0), secureHttpService));
-        secureServerHostHeader = new DefaultHostAndPort(HOSTNAME,
+        secureServerHostHeader = HostAndPort.of(HOSTNAME,
                 ((InetSocketAddress) secureServerCtx.getListenAddress()).getPort()).toString();
     }
 

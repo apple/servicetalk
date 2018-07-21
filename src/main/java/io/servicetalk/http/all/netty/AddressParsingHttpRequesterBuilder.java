@@ -44,7 +44,6 @@ import io.servicetalk.http.api.HttpRequester;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.netty.DefaultHttpClientBuilder;
 import io.servicetalk.http.utils.RedirectingHttpClientGroup;
-import io.servicetalk.transport.api.DefaultHostAndPort;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.SslConfig;
@@ -428,7 +427,7 @@ public final class AddressParsingHttpRequesterBuilder {
 
             final GroupKey<HostAndPort> groupKey = groupKeyCache.get(authority);
             return groupKey != null ? groupKey : groupKeyCache.computeIfAbsent(authority, ignore ->
-                    new DefaultGroupKey<>(new DefaultHostAndPort(host, port), executionContext));
+                    new DefaultGroupKey<>(HostAndPort.of(host, port), executionContext));
         }
 
         @Override

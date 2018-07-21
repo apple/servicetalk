@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.all.netty;
 
-import io.servicetalk.transport.api.DefaultHostAndPort;
 import io.servicetalk.transport.api.HostAndPort;
 
 import org.junit.Test;
@@ -47,6 +46,6 @@ public class SslConfigProvidersTest {
         assertEquals(HTTP.getDefaultPort(), secureByDefault().defaultPort(HTTP, "test"));
         assertEquals(HTTPS.getDefaultPort(), secureByDefault().defaultPort(HTTPS, "test"));
 
-        assertNotNull(secureByDefault().forHostAndPort(new DefaultHostAndPort("test", HTTPS.getDefaultPort())));
+        assertNotNull(secureByDefault().forHostAndPort(HostAndPort.of("test", HTTPS.getDefaultPort())));
     }
 }
