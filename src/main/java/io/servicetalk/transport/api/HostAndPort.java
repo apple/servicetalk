@@ -30,4 +30,15 @@ public interface HostAndPort {
      * @return The port.
      */
     int getPort();
+
+    /**
+     * Returns a {@link HostAndPort} object for the specified values.
+     *
+     * @param host host name
+     * @param port port
+     * @return the {@link HostAndPort}
+     */
+    static HostAndPort of(String host, int port) {
+        return new DefaultHostAndPort(host, port);
+    }
 }

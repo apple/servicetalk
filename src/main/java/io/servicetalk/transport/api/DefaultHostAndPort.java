@@ -20,7 +20,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * A default immutable implementation of {@link HostAndPort}.
  */
-public final class DefaultHostAndPort implements HostAndPort {
+final class DefaultHostAndPort implements HostAndPort {
     private final String hostName;
     private final int port;
 
@@ -29,7 +29,7 @@ public final class DefaultHostAndPort implements HostAndPort {
      * @param hostName the host name.
      * @param port the port.
      */
-    public DefaultHostAndPort(String hostName, int port) {
+    DefaultHostAndPort(String hostName, int port) {
         this.hostName = requireNonNull(hostName);
         this.port = port;
     }
