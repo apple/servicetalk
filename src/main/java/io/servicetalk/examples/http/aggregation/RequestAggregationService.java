@@ -16,9 +16,9 @@
 package io.servicetalk.examples.http.aggregation;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.AggregatedHttpService;
 import io.servicetalk.http.api.AggregatedHttpRequest;
 import io.servicetalk.http.api.AggregatedHttpResponse;
+import io.servicetalk.http.api.AggregatedHttpService;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.transport.api.ConnectionContext;
 

@@ -15,7 +15,6 @@
  */
 package io.servicetalk.examples.http.service.composition.backends;
 
-import io.servicetalk.transport.api.DefaultHostAndPort;
 import io.servicetalk.transport.api.HostAndPort;
 
 /**
@@ -24,11 +23,11 @@ import io.servicetalk.transport.api.HostAndPort;
  */
 public final class PortRegistry {
 
-    public static final HostAndPort RECOMMENDATIONS_BACKEND_ADDRESS = new DefaultHostAndPort("127.0.0.1", 8081);
+    public static final HostAndPort RECOMMENDATIONS_BACKEND_ADDRESS = HostAndPort.of("127.0.0.1", 8081);
 
-    public static final HostAndPort METADATA_BACKEND_ADDRESS = new DefaultHostAndPort("127.0.0.1", 8082);
+    public static final HostAndPort METADATA_BACKEND_ADDRESS = HostAndPort.of("127.0.0.1", 8082);
 
-    public static final HostAndPort RATINGS_BACKEND_ADDRESS = new DefaultHostAndPort("127.0.0.1", 8083);
+    public static final HostAndPort RATINGS_BACKEND_ADDRESS = HostAndPort.of("127.0.0.1", 8083);
 
-    public static final HostAndPort USER_BACKEND_ADDRESS = new DefaultHostAndPort("127.0.0.1", 8084);
+    public static final HostAndPort USER_BACKEND_ADDRESS = HostAndPort.of("127.0.0.1", 8084);
 }

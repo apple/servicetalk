@@ -22,7 +22,6 @@ import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.netty.DefaultHttpClientBuilder;
 import io.servicetalk.transport.api.DefaultExecutionContext;
-import io.servicetalk.transport.api.DefaultHostAndPort;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
 
@@ -60,7 +59,7 @@ public final class HelloWorldClient {
                     new DefaultHttpClientBuilder<>(newRoundRobinFactory());
 
             // Build the client, and register for DNS discovery events.
-            HostAndPort address = new DefaultHostAndPort("localhost", 8080);
+            HostAndPort address = HostAndPort.of("localhost", 8080);
             HttpClient client = resources.prepend(clientBuilder
                     .addClientFilterFactory(c -> newHostHeaderFilter(address, c))
                     .build(executionContext, dnsDiscoverer.discover(address)));

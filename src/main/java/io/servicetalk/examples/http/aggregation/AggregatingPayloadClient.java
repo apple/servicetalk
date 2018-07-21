@@ -25,7 +25,6 @@ import io.servicetalk.http.api.AggregatedHttpRequest;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.netty.DefaultHttpClientBuilder;
 import io.servicetalk.transport.api.DefaultExecutionContext;
-import io.servicetalk.transport.api.DefaultHostAndPort;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
 
@@ -65,7 +64,7 @@ public final class AggregatingPayloadClient {
                     new DefaultHttpClientBuilder<>(newRoundRobinFactory());
 
             // Build the client, and register for DNS discovery events.
-            HostAndPort address = new DefaultHostAndPort("localhost", 8080);
+            HostAndPort address = HostAndPort.of("localhost", 8080);
             AggregatedHttpClient client = resources.prepend(clientBuilder
                     .addClientFilterFactory(c -> newHostHeaderFilter(address, c))
                     .buildAggregated(executionContext, dnsDiscoverer.discover(address)));
