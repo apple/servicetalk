@@ -66,6 +66,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.utils.HttpHostHeaderFilter.newHostHeaderFilter;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static io.servicetalk.transport.api.SslConfigBuilder.forClient;
+import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.UnaryOperator.identity;
 
@@ -328,6 +329,16 @@ public final class AddressParsingHttpRequesterBuilder {
     }
 
     /**
+     * Build a new {@link HttpRequester}, using a default {@link ExecutionContext}.
+     *
+     * @return A new {@link HttpRequester}.
+     * @see #build(ExecutionContext)
+     */
+    public HttpRequester build() {
+        return build(globalExecutionContext());
+    }
+
+    /**
      * Build a new {@link HttpRequester}.
      *
      * @param executionContext A {@link ExecutionContext} used for {@link HttpRequester#getExecutionContext()} and
@@ -374,14 +385,35 @@ public final class AddressParsingHttpRequesterBuilder {
     }
 
     /**
+     * Build a new {@link AggregatedHttpRequester}, using a default {@link ExecutionContext}.
+     *
+     * @return A new {@link AggregatedHttpRequester}.
+     * @see #buildAggregated(ExecutionContext)
+     */
+    public AggregatedHttpRequester buildAggregated() {
+        return build().asAggregatedRequester();
+    }
+
+    /**
      * Build a new {@link BlockingHttpRequester}.
      *
      * @param executionContext The {@link ExecutionContext} used for
-     * {@link BlockingHttpRequester#getExecutionContext()} and to build new {@link BlockingHttpRequester}s.
+     * {@link BlockingHttpRequester#getExecutionContext()} and to build new
+     * {@link BlockingHttpRequester}s.
      * @return A new {@link BlockingHttpRequester}.
      */
     public BlockingHttpRequester buildBlocking(final ExecutionContext executionContext) {
         return build(executionContext).asBlockingRequester();
+    }
+
+    /**
+     * Build a new {@link BlockingHttpRequester}, using a default {@link ExecutionContext}.
+     *
+     * @return A new {@link BlockingHttpRequester}.
+     * @see #buildBlocking(ExecutionContext)
+     */
+    public BlockingHttpRequester buildBlocking() {
+        return build().asBlockingRequester();
     }
 
     /**
@@ -394,6 +426,16 @@ public final class AddressParsingHttpRequesterBuilder {
      */
     public BlockingAggregatedHttpRequester buildBlockingAggregated(final ExecutionContext executionContext) {
         return build(executionContext).asBlockingAggregatedRequester();
+    }
+
+    /**
+     * Build a new {@link BlockingAggregatedHttpRequester}, using a default {@link ExecutionContext}.
+     *
+     * @return A new {@link BlockingAggregatedHttpRequester}.
+     * @see #buildBlockingAggregated(ExecutionContext)
+     */
+    public BlockingAggregatedHttpRequester buildBlockingAggregated() {
+        return build().asBlockingAggregatedRequester();
     }
 
     /**
