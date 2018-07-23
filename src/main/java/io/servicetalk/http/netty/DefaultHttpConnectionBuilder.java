@@ -39,6 +39,7 @@ import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
+import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.UnaryOperator.identity;
 
@@ -74,6 +75,11 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
                   buildForPipelined(executionContext, resolvedAddress, roConfig, connectionFilterFactory))
                         .map(filteredConnection -> new HttpConnectionConcurrentRequestsFilter(filteredConnection,
                                 roConfig.getMaxPipelinedRequests()));
+    }
+
+    @Override
+    public Single<HttpConnection> build(final ResolvedAddress resolvedAddress) {
+        return build(globalExecutionContext(), resolvedAddress);
     }
 
     static <ResolvedAddress> Single<HttpConnection> buildForPipelined(

@@ -32,6 +32,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.netty.NettyHttpServer.bind;
+import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 
 /**
  * Netty implementation of {@link HttpServerStarter}.
@@ -199,5 +200,11 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
     public Single<ServerContext> start(final ExecutionContext executionContext, final SocketAddress address,
                                        final ContextFilter contextFilter, final HttpService service) {
         return bind(executionContext, config.asReadOnly(), address, contextFilter, service);
+    }
+
+    @Override
+    public Single<ServerContext> start(final SocketAddress address, final ContextFilter contextFilter,
+                                       final HttpService service) {
+        return start(globalExecutionContext(), address, contextFilter, service);
     }
 }

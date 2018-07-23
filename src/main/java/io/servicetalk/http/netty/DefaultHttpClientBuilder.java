@@ -37,6 +37,7 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.UnaryOperator.identity;
 
@@ -74,6 +75,11 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
         lbFactory = from.lbFactory;
         clientFilterFactory = from.clientFilterFactory;
         connectionFilterFactory = from.connectionFilterFactory;
+    }
+
+    @Override
+    public HttpClient build(final Publisher<Event<ResolvedAddress>> addressEventStream) {
+        return build(globalExecutionContext(), addressEventStream);
     }
 
     @Override

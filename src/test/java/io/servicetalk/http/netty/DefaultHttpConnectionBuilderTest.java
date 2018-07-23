@@ -35,7 +35,6 @@ import javax.annotation.Nonnull;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpConnection.SettingKey.MAX_CONCURRENCY;
-import static java.util.function.Function.identity;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
@@ -54,7 +53,7 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
     @Test
     public void requestFromConnectionFactory() throws ExecutionException, InterruptedException {
         ConnectionFactory<SocketAddress, HttpConnection> cf =
-                prepareBuilder(1).asConnectionFactory(CTX, identity());
+                prepareBuilder(1).asConnectionFactory(CTX);
         Single<HttpConnection> connectionSingle =
                 cf.newConnection(serverContext.getListenAddress());
         makeRequestValidateResponseAndClose(awaitIndefinitelyNonNull(connectionSingle));
@@ -115,8 +114,9 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
     public void requestFromConnectionFactoryWithFilter() throws ExecutionException, InterruptedException {
 
         Single<DummyFanoutFilter> connectionSingle = prepareBuilder(10)
-                .asConnectionFactory(CTX, DummyFanoutFilter::new)
-                .newConnection(serverContext.getListenAddress());
+                .asConnectionFactory(CTX)
+                .newConnection(serverContext.getListenAddress())
+                .map(DummyFanoutFilter::new);
 
         DummyFanoutFilter connection = awaitIndefinitelyNonNull(connectionSingle);
 
