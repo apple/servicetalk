@@ -53,6 +53,24 @@ public interface HttpServerStarter {
      * terminates with an error if the server could not be started.
      * <p>
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * The server is using a default {@link ExecutionContext}.
+     *
+     * @param address Listen address for the server.
+     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
+     * the server could not be started.
+     * @see #start(ExecutionContext, SocketAddress, HttpService)
+     */
+    default Single<ServerContext> start(SocketAddress address, HttpService service) {
+        return start(address, ACCEPT_ALL, service);
+    }
+
+    /**
+     * Starts this server and returns a {@link Single} that completes when the server is successfully started or
+     * terminates with an error if the server could not be started.
+     * <p>
+     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
      * @param executionContext The {@link ExecutionContext} that is used for the IO and asynchronous source creation.
      * @param address Listen address for the server.
@@ -71,6 +89,24 @@ public interface HttpServerStarter {
      * terminates with an error if the server could not be started.
      * <p>
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * The server is using a default {@link ExecutionContext}.
+     *
+     * @param address Listen address for the server.
+     * @param contextFilter to use for filtering accepted connections. The returned {@link ServerContext} manages the
+     * lifecycle of the {@code contextFilter}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
+     * the server could not be started.
+     * @see #start(ExecutionContext, SocketAddress, ContextFilter, HttpService)
+     */
+    Single<ServerContext> start(SocketAddress address, ContextFilter contextFilter, HttpService service);
+
+    /**
+     * Starts this server and returns a {@link Single} that completes when the server is successfully started or
+     * terminates with an error if the server could not be started.
+     * <p>
+     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
      * @param executionContext The {@link ExecutionContext} that is used for the IO and asynchronous source creation.
      * @param port Listen port for the server.
@@ -81,6 +117,24 @@ public interface HttpServerStarter {
      */
     default Single<ServerContext> start(ExecutionContext executionContext, int port, HttpService service) {
         return start(executionContext, port, ACCEPT_ALL, service);
+    }
+
+    /**
+     * Starts this server and returns a {@link Single} that completes when the server is successfully started or
+     * terminates with an error if the server could not be started.
+     * <p>
+     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * The server is using a default {@link ExecutionContext}.
+     *
+     * @param port Listen port for the server.
+     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
+     * the server could not be started.
+     * @see #start(ExecutionContext, int, HttpService)
+     */
+    default Single<ServerContext> start(int port, HttpService service) {
+        return start(port, ACCEPT_ALL, service);
     }
 
     /**
@@ -108,6 +162,26 @@ public interface HttpServerStarter {
      * terminates with an error if the server could not be started.
      * <p>
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * The server is using a default {@link ExecutionContext}.
+     *
+     * @param port Listen port for the server.
+     * @param contextFilter to use for filtering accepted connections. The returned {@link ServerContext} manages the
+     * lifecycle of the {@code contextFilter}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
+     * the server could not be started.
+     * @see #start(ExecutionContext, int, ContextFilter, HttpService)
+     */
+    default Single<ServerContext> start(int port, ContextFilter contextFilter, HttpService service) {
+        return start(new InetSocketAddress(port), contextFilter, service);
+    }
+
+    /**
+     * Starts this server and returns a {@link Single} that completes when the server is successfully started or
+     * terminates with an error if the server could not be started.
+     * <p>
+     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
      * @param executionContext The {@link ExecutionContext} that is used for the IO and asynchronous source creation.
      * @param address Listen address for the server.
@@ -119,6 +193,24 @@ public interface HttpServerStarter {
     default Single<ServerContext> start(ExecutionContext executionContext, SocketAddress address,
                                         AggregatedHttpService service) {
         return start(executionContext, address, ACCEPT_ALL, service);
+    }
+
+    /**
+     * Starts this server and returns a {@link Single} that completes when the server is successfully started or
+     * terminates with an error if the server could not be started.
+     * <p>
+     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * The server is using a default {@link ExecutionContext}.
+     *
+     * @param address Listen address for the server.
+     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
+     * the server could not be started.
+     * @see #start(ExecutionContext, SocketAddress, AggregatedHttpService)
+     */
+    default Single<ServerContext> start(SocketAddress address, AggregatedHttpService service) {
+        return start(address, ACCEPT_ALL, service);
     }
 
     /**
@@ -146,6 +238,27 @@ public interface HttpServerStarter {
      * terminates with an error if the server could not be started.
      * <p>
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * The server is using a default {@link ExecutionContext}.
+     *
+     * @param address Listen address for the server.
+     * @param contextFilter to use for filtering accepted connections. The returned {@link ServerContext} manages the
+     * lifecycle of the {@code contextFilter}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
+     * the server could not be started.
+     * @see #start(ExecutionContext, SocketAddress, ContextFilter, AggregatedHttpService)
+     */
+    default Single<ServerContext> start(SocketAddress address,
+                                        ContextFilter contextFilter, AggregatedHttpService service) {
+        return start(address, contextFilter, service.asService());
+    }
+
+    /**
+     * Starts this server and returns a {@link Single} that completes when the server is successfully started or
+     * terminates with an error if the server could not be started.
+     * <p>
+     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
      * @param executionContext The {@link ExecutionContext} that is used for the IO and asynchronous source creation.
      * @param port Listen port for the server.
@@ -156,6 +269,24 @@ public interface HttpServerStarter {
      */
     default Single<ServerContext> start(ExecutionContext executionContext, int port, AggregatedHttpService service) {
         return start(executionContext, port, ACCEPT_ALL, service);
+    }
+
+    /**
+     * Starts this server and returns a {@link Single} that completes when the server is successfully started or
+     * terminates with an error if the server could not be started.
+     * <p>
+     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * The server is using a default {@link ExecutionContext}.
+     *
+     * @param port Listen port for the server.
+     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
+     * the server could not be started.
+     * @see #start(ExecutionContext, int, AggregatedHttpService)
+     */
+    default Single<ServerContext> start(int port, AggregatedHttpService service) {
+        return start(port, ACCEPT_ALL, service);
     }
 
     /**
@@ -179,6 +310,26 @@ public interface HttpServerStarter {
     }
 
     /**
+     * Starts this server and returns a {@link Single} that completes when the server is successfully started or
+     * terminates with an error if the server could not be started.
+     * <p>
+     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * The server is using a default {@link ExecutionContext}.
+     *
+     * @param port Listen port for the server.
+     * @param contextFilter to use for filtering accepted connections. The returned {@link ServerContext} manages the
+     * lifecycle of the {@code contextFilter}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
+     * the server could not be started.
+     * @see #start(ExecutionContext, int, ContextFilter, AggregatedHttpService)
+     */
+    default Single<ServerContext> start(int port, ContextFilter contextFilter, AggregatedHttpService service) {
+        return start(new InetSocketAddress(port), contextFilter, service);
+    }
+
+    /**
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
      * <p>
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
@@ -199,6 +350,23 @@ public interface HttpServerStarter {
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
      * <p>
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * The server is using a default {@link ExecutionContext}.
+     *
+     * @param address Listen address for the server.
+     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @return A {@link ServerContext} if the server starts successfully.
+     * @throws Exception If the server could not be started.
+     * @see #start(ExecutionContext, SocketAddress, BlockingHttpService)
+     */
+    default ServerContext start(SocketAddress address, BlockingHttpService service) throws Exception {
+        return start(address, ACCEPT_ALL, service);
+    }
+
+    /**
+     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * <p>
+     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
      * @param executionContext The {@link ExecutionContext} that is used for the IO and asynchronous source creation.
      * @param address Listen address for the server.
@@ -212,6 +380,26 @@ public interface HttpServerStarter {
     default ServerContext start(ExecutionContext executionContext, SocketAddress address, ContextFilter contextFilter,
                                 BlockingHttpService service) throws Exception {
         return blockingInvocation(start(executionContext, address, contextFilter, service.asService()));
+    }
+
+    /**
+     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * <p>
+     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * The server is using a default {@link ExecutionContext}.
+     *
+     * @param address Listen address for the server.
+     * @param contextFilter to use for filtering accepted connections. The returned {@link ServerContext} manages the
+     * lifecycle of the {@code contextFilter}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @return A {@link ServerContext} if the server starts successfully.
+     * @throws Exception If the server could not be started.
+     * @see #start(ExecutionContext, SocketAddress, ContextFilter, BlockingHttpService)
+     */
+    default ServerContext start(SocketAddress address, ContextFilter contextFilter,
+                                BlockingHttpService service) throws Exception {
+        return blockingInvocation(start(address, contextFilter, service.asService()));
     }
 
     /**
@@ -235,6 +423,23 @@ public interface HttpServerStarter {
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
      * <p>
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * The server is using a default {@link ExecutionContext}.
+     *
+     * @param port Listen port for the server.
+     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @return A {@link ServerContext} if the server starts successfully.
+     * @throws Exception If the server could not be started.
+     * @see #start(ExecutionContext, int, BlockingHttpService)
+     */
+    default ServerContext start(int port, BlockingHttpService service) throws Exception {
+        return start(port, ACCEPT_ALL, service);
+    }
+
+    /**
+     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * <p>
+     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
      * @param executionContext The {@link ExecutionContext} that is used for the IO and asynchronous source creation.
      * @param port Listen port for the server.
@@ -254,6 +459,25 @@ public interface HttpServerStarter {
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
      * <p>
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * The server is using a default {@link ExecutionContext}.
+     *
+     * @param port Listen port for the server.
+     * @param contextFilter to use for filtering accepted connections. The returned {@link ServerContext} manages the
+     * lifecycle of the {@code contextFilter}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @return A {@link ServerContext} if the server starts successfully.
+     * @throws Exception If the server could not be started.
+     * @see #start(ExecutionContext, int, ContextFilter, BlockingHttpService)
+     */
+    default ServerContext start(int port, ContextFilter contextFilter, BlockingHttpService service) throws Exception {
+        return start(new InetSocketAddress(port), contextFilter, service);
+    }
+
+    /**
+     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * <p>
+     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
      * @param executionContext The {@link ExecutionContext} that is used for the IO and asynchronous source creation.
      * @param address Listen address for the server.
@@ -265,6 +489,23 @@ public interface HttpServerStarter {
     default ServerContext start(ExecutionContext executionContext, SocketAddress address,
                                 BlockingAggregatedHttpService service) throws Exception {
         return start(executionContext, address, ACCEPT_ALL, service);
+    }
+
+    /**
+     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * <p>
+     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * The server is using a default {@link ExecutionContext}.
+     *
+     * @param address Listen address for the server.
+     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @return A {@link ServerContext} if the server starts successfully.
+     * @throws Exception If the server could not be started.
+     * @see #start(ExecutionContext, SocketAddress, BlockingAggregatedHttpService)
+     */
+    default ServerContext start(SocketAddress address, BlockingAggregatedHttpService service) throws Exception {
+        return start(address, ACCEPT_ALL, service);
     }
 
     /**
@@ -290,6 +531,26 @@ public interface HttpServerStarter {
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
      * <p>
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * The server is using a default {@link ExecutionContext}.
+     *
+     * @param address Listen address for the server.
+     * @param contextFilter to use for filtering accepted connections. The returned {@link ServerContext} manages the
+     * lifecycle of the {@code contextFilter}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @return A {@link ServerContext} if the server starts successfully.
+     * @throws Exception If the server could not be started.
+     * @see #start(ExecutionContext, SocketAddress, ContextFilter, BlockingAggregatedHttpService)
+     */
+    default ServerContext start(SocketAddress address, ContextFilter contextFilter,
+                                BlockingAggregatedHttpService service) throws Exception {
+        return blockingInvocation(start(address, contextFilter, service.asService()));
+    }
+
+    /**
+     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * <p>
+     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
      * @param executionContext The {@link ExecutionContext} that is used for the IO and asynchronous source creation.
      * @param port Listen port for the server.
@@ -301,6 +562,23 @@ public interface HttpServerStarter {
     default ServerContext start(ExecutionContext executionContext, int port, BlockingAggregatedHttpService service)
             throws Exception {
         return start(executionContext, port, ACCEPT_ALL, service);
+    }
+
+    /**
+     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * <p>
+     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * The server is using a default {@link ExecutionContext}.
+     *
+     * @param port Listen port for the server.
+     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @return A {@link ServerContext} if the server starts successfully.
+     * @throws Exception If the server could not be started.
+     * @see #start(ExecutionContext, int, BlockingAggregatedHttpService)
+     */
+    default ServerContext start(int port, BlockingAggregatedHttpService service) throws Exception {
+        return start(port, ACCEPT_ALL, service);
     }
 
     /**
@@ -320,5 +598,25 @@ public interface HttpServerStarter {
     default ServerContext start(ExecutionContext executionContext, int port, ContextFilter contextFilter,
                                 BlockingAggregatedHttpService service) throws Exception {
         return start(executionContext, new InetSocketAddress(port), contextFilter, service);
+    }
+
+    /**
+     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * <p>
+     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     * The server is using a default {@link ExecutionContext}.
+     *
+     * @param port Listen port for the server.
+     * @param contextFilter to use for filtering accepted connections. The returned {@link ServerContext} manages the
+     * lifecycle of the {@code contextFilter}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @return A {@link ServerContext} if the server starts successfully.
+     * @throws Exception If the server could not be started.
+     * @see #start(ExecutionContext, int, ContextFilter, BlockingAggregatedHttpService)
+     */
+    default ServerContext start(int port, ContextFilter contextFilter,
+                                BlockingAggregatedHttpService service) throws Exception {
+        return start(new InetSocketAddress(port), contextFilter, service);
     }
 }
