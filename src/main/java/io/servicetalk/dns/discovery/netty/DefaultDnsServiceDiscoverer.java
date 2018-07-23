@@ -21,11 +21,10 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
-import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
 import io.netty.channel.EventLoop;
@@ -90,20 +89,18 @@ final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<String, Ine
     private final CompletableProcessor closeCompletable = new CompletableProcessor();
     private final Map<String, List<DiscoverEntry>> registerMap = new HashMap<>(8);
     private final EventLoopAwareNettyIoExecutor nettyIoExecutor;
-    private final Executor executor;
     @Nullable
     private final BiIntFunction<Throwable, Completable> retryStrategy;
     private final DnsNameResolver resolver;
     private boolean closed;
 
-    DefaultDnsServiceDiscoverer(IoExecutor ioExecutor, Executor executor,
+    DefaultDnsServiceDiscoverer(ExecutionContext executionContext,
                                 @Nullable BiIntFunction<Throwable, Completable> retryStrategy, int minTTL,
                                 @Nullable Integer ndots, @Nullable Boolean optResourceEnabled,
                                 @Nullable DnsResolverAddressTypes dnsResolverAddressTypes,
                                 @Nullable DnsServerAddressStreamProvider dnsServerAddressStreamProvider) {
         // Implementation of this class expects to use only single EventLoop from IoExecutor
-        this.nettyIoExecutor = toEventLoopAwareNettyIoExecutor(ioExecutor).next();
-        this.executor = executor;
+        this.nettyIoExecutor = toEventLoopAwareNettyIoExecutor(executionContext.getIoExecutor()).next();
         this.retryStrategy = retryStrategy;
         EventLoop eventLoop = this.nettyIoExecutor.getEventLoopGroup().next();
         DnsNameResolverBuilder builder = new DnsNameResolverBuilder(eventLoop)

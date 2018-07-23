@@ -18,23 +18,21 @@ package io.servicetalk.dns.discovery.netty;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
-import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.util.Objects.requireNonNull;
 
 /**
  * Builder use to create objects of type {@link DefaultDnsServiceDiscoverer}.
  */
 public final class DefaultDnsServiceDiscovererBuilder {
-    private final IoExecutor ioExecutor;
-    private final Executor executor;
+    private final ExecutionContext executionContext;
     @Nullable
     private DnsServerAddressStreamProvider dnsServerAddressStreamProvider;
     @Nullable
@@ -48,24 +46,22 @@ public final class DefaultDnsServiceDiscovererBuilder {
     private int minTTLSeconds = 2;
 
     /**
+     * Create a new instance, using a default {@link ExecutionContext}.
+     *
+     * @see #DefaultDnsServiceDiscovererBuilder(ExecutionContext)
+     */
+    public DefaultDnsServiceDiscovererBuilder() {
+        this(globalExecutionContext());
+    }
+
+    /**
      * Create a new instance.
      *
      * @param executionContext The {@link ExecutionContext} which determines the threading model for I/O and calling
      * user code.
      */
     public DefaultDnsServiceDiscovererBuilder(ExecutionContext executionContext) {
-        this(executionContext.getIoExecutor(), executionContext.getExecutor());
-    }
-
-    /**
-     * Create a new instance.
-     *
-     * @param ioExecutor The {@link IoExecutor} which will be used for I/O.
-     * @param executor The {@link Executor} which will be used for calling user code.
-     */
-    public DefaultDnsServiceDiscovererBuilder(IoExecutor ioExecutor, Executor executor) {
-        this.ioExecutor = requireNonNull(ioExecutor);
-        this.executor = requireNonNull(executor);
+        this.executionContext = requireNonNull(executionContext);
     }
 
     /**
@@ -159,7 +155,7 @@ public final class DefaultDnsServiceDiscovererBuilder {
     }
 
     private DefaultDnsServiceDiscoverer newDefaultDnsServiceDiscoverer() {
-        return new DefaultDnsServiceDiscoverer(ioExecutor, executor, retryStrategy, minTTLSeconds, ndots,
+        return new DefaultDnsServiceDiscoverer(executionContext, retryStrategy, minTTLSeconds, ndots,
                 optResourceEnabled, dnsResolverAddressTypes, dnsServerAddressStreamProvider);
     }
 }

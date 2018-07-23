@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
 import org.junit.After;
@@ -43,6 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
@@ -228,12 +230,13 @@ public class DefaultDnsServiceDiscovererTest {
             @Nullable BiIntFunction<Throwable, Completable> retryStrategy) {
 
         DefaultDnsServiceDiscovererBuilder builder =
-                new DefaultDnsServiceDiscovererBuilder(nettyIoExecutor, immediate())
-                .setDnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_ONLY)
-                .setOptResourceEnabled(false)
-                .setDnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(
-                        new SingletonDnsServerAddresses(dnsServer.localAddress())))
-                .setNdots(1);
+                new DefaultDnsServiceDiscovererBuilder(
+                        new DefaultExecutionContext(DEFAULT_ALLOCATOR, nettyIoExecutor, immediate()))
+                        .setDnsResolverAddressTypes(DnsResolverAddressTypes.IPV4_ONLY)
+                        .setOptResourceEnabled(false)
+                        .setDnsServerAddressStreamProvider(new SingletonDnsServerAddressStreamProvider(
+                                new SingletonDnsServerAddresses(dnsServer.localAddress())))
+                        .setNdots(1);
 
         if (retryStrategy != null) {
             builder.retryDnsFailures(retryStrategy);
