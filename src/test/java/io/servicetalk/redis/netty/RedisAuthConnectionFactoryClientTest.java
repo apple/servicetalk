@@ -158,17 +158,18 @@ public class RedisAuthConnectionFactoryClientTest {
         redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
 
         ioExecutor = toEventLoopAwareNettyIoExecutor(createIoExecutor());
-        serviceDiscoverer = new DefaultDnsServiceDiscovererBuilder(ioExecutor.next(), immediate()).build();
+        DefaultExecutionContext executionContext =
+                new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate());
+        serviceDiscoverer = new DefaultDnsServiceDiscovererBuilder(executionContext).build();
         client = new RetryingRedisClient(
                 new DefaultRedisClientBuilder<InetSocketAddress>((eventPublisher, connectionFactory) ->
                         new RoundRobinLoadBalancer<>(eventPublisher, new RedisAuthConnectionFactory<>(connectionFactory,
                                 ctx -> ctx.getBufferAllocator().fromAscii(password)), comparingInt(Object::hashCode)))
                         .setMaxPipelinedRequests(10)
                         .setIdleConnectionTimeout(ofSeconds(2))
-                        .build(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()),
-                                serviceDiscoverer.discover(HostAndPort.of(redisHost, redisPort))),
+                        .build(executionContext, serviceDiscoverer.discover(HostAndPort.of(redisHost, redisPort))),
                 retryWithExponentialBackoff(10, cause -> cause instanceof RetryableException, ofMillis(10),
-                        ioExecutor.next().asExecutor()));
+                        executionContext.getExecutor()));
         clientConsumer.accept(client);
     }
 }

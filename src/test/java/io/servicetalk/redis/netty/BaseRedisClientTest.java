@@ -92,11 +92,11 @@ public abstract class BaseRedisClientTest {
         redisHost = System.getenv().getOrDefault("REDIS_HOST", "127.0.0.1");
 
         ioExecutor = toEventLoopAwareNettyIoExecutor(createIoExecutor());
-        serviceDiscoverer = new DefaultDnsServiceDiscovererBuilder(ioExecutor.next(), immediate()).build();
+        final DefaultExecutionContext executionContext =
+                new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate());
+        serviceDiscoverer = new DefaultDnsServiceDiscovererBuilder(executionContext).build();
         RedisClientConfig config = new RedisClientConfig(new TcpClientConfig(false))
                 .setDeferSubscribeTillConnect(true);
-        final DefaultExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor,
-                immediate());
         client = new RetryingRedisClient(new DefaultRedisClientBuilder<InetSocketAddress>(
                 (eventPublisher, connectionFactory) -> new RoundRobinLoadBalancer<>(eventPublisher, connectionFactory,
                         comparingInt(Object::hashCode)), config)
