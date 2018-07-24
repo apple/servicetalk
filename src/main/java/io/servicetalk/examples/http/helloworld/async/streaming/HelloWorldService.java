@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.helloworld;
+package io.servicetalk.examples.http.helloworld.async.streaming;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpPayloadChunk;
@@ -33,7 +33,7 @@ import static io.servicetalk.http.api.HttpResponses.newResponse;
  * Business logic for the Hello World application.
  * This is an asynchronous service, for blocking style see
  */
-final class HelloWorldService extends HttpService {
+public final class HelloWorldService extends HttpService {
     private static final Logger LOGGER = LoggerFactory.getLogger(HelloWorldService.class);
 
     @Override

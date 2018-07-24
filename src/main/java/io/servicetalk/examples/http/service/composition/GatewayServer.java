@@ -15,10 +15,8 @@
  */
 package io.servicetalk.examples.http.service.composition;
 
-import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
-import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
 import io.servicetalk.http.api.AggregatedHttpClient;
 import io.servicetalk.http.api.DefaultHttpSerializer;
 import io.servicetalk.http.api.HttpClient;
@@ -37,8 +35,6 @@ import io.servicetalk.transport.api.ServerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetSocketAddress;
-
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
@@ -48,7 +44,6 @@ import static io.servicetalk.examples.http.service.composition.backends.PortRegi
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.RATINGS_BACKEND_ADDRESS;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.RECOMMENDATIONS_BACKEND_ADDRESS;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.USER_BACKEND_ADDRESS;
-import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.time.Duration.ofMillis;
 
@@ -78,29 +73,20 @@ public final class GatewayServer {
             ExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR,
                     ioExecutor, resources.prepend(newCachedThreadExecutor()));
 
-            // In this example we will use DNS as our Service Discovery system.
-            ServiceDiscoverer<HostAndPort, InetSocketAddress> dnsDiscoverer =
-                    resources.prepend(new DefaultDnsServiceDiscovererBuilder(executionContext).build());
+            // Create clients for the different backends we are going to use in the gateway.
+            HttpClient recommendationsClient =
+                    newClient(ioExecutor, RECOMMENDATIONS_BACKEND_ADDRESS, resources);
+            AggregatedHttpClient metadataClient =
+                    newClient(ioExecutor, METADATA_BACKEND_ADDRESS, resources).asAggregatedClient();
+            AggregatedHttpClient userClient =
+                    newClient(ioExecutor, USER_BACKEND_ADDRESS, resources).asAggregatedClient();
+            AggregatedHttpClient ratingsClient =
+                    newClient(ioExecutor, RATINGS_BACKEND_ADDRESS, resources).asAggregatedClient();
 
             // Use Jackson for serialization and deserialization.
             // HttpSerializer validates HTTP metadata for serialization/deserialization and also provides higher level
             // HTTP focused serialization APIs.
             HttpSerializer httpSerializer = DefaultHttpSerializer.forJson(new JacksonSerializationProvider());
-            // Create a ClientBuilder and use round robin load balancing.
-            DefaultHttpClientBuilder<InetSocketAddress> clientBuilder = new DefaultHttpClientBuilder<>(newRoundRobinFactory());
-            // Set retry and timeout filters for all clients.
-            clientBuilder.setClientFilterFactory((client, lbEventStream) -> {
-                // Apply a timeout filter for the client to guard against extremely latent clients.
-                return new HttpClientFunctionFilter((requester, request) ->
-                       requester.request(request).timeout(ofMillis(100), requester.getExecutionContext().getExecutor()),
-                       client);
-            });
-
-            // Create clients for the different backends we are going to use in the gateway.
-            HttpClient recommendationsClient = newClient(dnsDiscoverer, clientBuilder, ioExecutor, RECOMMENDATIONS_BACKEND_ADDRESS);
-            AggregatedHttpClient metadataClient = newAggregatedClient(dnsDiscoverer, clientBuilder, ioExecutor, METADATA_BACKEND_ADDRESS);
-            AggregatedHttpClient userClient = newAggregatedClient(dnsDiscoverer, clientBuilder, ioExecutor, USER_BACKEND_ADDRESS);
-            AggregatedHttpClient ratingsClient = newAggregatedClient(dnsDiscoverer, clientBuilder, ioExecutor, RATINGS_BACKEND_ADDRESS);
 
             // Gateway supports different endpoints for blocking, streaming or aggregated implementations.
             // We create a router to express these endpoints.
@@ -132,21 +118,23 @@ public final class GatewayServer {
         }
     }
 
-    private static HttpClient newClient(ServiceDiscoverer<HostAndPort, InetSocketAddress> serviceDiscoverer,
-                                        DefaultHttpClientBuilder<InetSocketAddress> clientBuilder,
-                                        IoExecutor ioExecutor, final HostAndPort serviceAddress) {
-        // Setup the ExecutionContext to offload user code onto a cached Executor.
-        ExecutionContext executionContext =
-                new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, newCachedThreadExecutor());
-        return clientBuilder.build(executionContext, serviceDiscoverer.discover(serviceAddress));
-    }
+    private static HttpClient newClient(final IoExecutor ioExecutor,
+                                        final HostAndPort serviceAddress,
+                                        final CompositeCloseable resources) {
 
-    private static AggregatedHttpClient newAggregatedClient(ServiceDiscoverer<HostAndPort, InetSocketAddress> serviceDiscoverer,
-                                                            DefaultHttpClientBuilder<InetSocketAddress> clientBuilder,
-                                                            IoExecutor ioExecutor, final HostAndPort serviceAddress) {
         // Setup the ExecutionContext to offload user code onto a cached Executor.
-        ExecutionContext executionContext =
-                new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, newCachedThreadExecutor());
-        return clientBuilder.buildAggregated(executionContext, serviceDiscoverer.discover(serviceAddress));
+        DefaultExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor,
+                resources.prepend(newCachedThreadExecutor()));
+
+        return resources.prepend(
+                DefaultHttpClientBuilder.forSingleAddress(serviceAddress)
+                        // Set retry and timeout filters for all clients.
+                        .setClientFilterFactory((client, lbEventStream) -> {
+                            // Apply a timeout filter for the client to guard against extremely latent clients.
+                            return new HttpClientFunctionFilter((requester, request) ->
+                                    requester.request(request).timeout(ofMillis(100),
+                                            requester.getExecutionContext().getExecutor()), client);
+                        })
+                        .build(executionContext));
     }
 }

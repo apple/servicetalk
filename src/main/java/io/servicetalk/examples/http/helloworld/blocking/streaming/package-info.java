@@ -13,19 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.jaxrs.helloworld;
+@ElementsAreNonnullByDefault
+package io.servicetalk.examples.http.helloworld.blocking.streaming;
 
-import java.util.Set;
-import javax.ws.rs.core.Application;
-
-import static java.util.Collections.singleton;
-
-/**
- * JAX-RS Hello World {@link Application}.
- */
-public class HelloWorldJaxrsApplication extends Application {
-    @Override
-    public Set<Class<?>> getClasses() {
-        return singleton(HelloWorldJaxRsResource.class);
-    }
-}
+import io.servicetalk.annotations.ElementsAreNonnullByDefault;

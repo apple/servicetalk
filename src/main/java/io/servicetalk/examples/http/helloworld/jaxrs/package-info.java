@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 @ElementsAreNonnullByDefault
-package io.servicetalk.examples.http.jaxrs.helloworld;
+package io.servicetalk.examples.http.helloworld.jaxrs;
 
 import io.servicetalk.annotations.ElementsAreNonnullByDefault;

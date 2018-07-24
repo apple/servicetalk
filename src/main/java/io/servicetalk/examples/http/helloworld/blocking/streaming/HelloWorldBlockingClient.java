@@ -13,32 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.helloworld;
+package io.servicetalk.examples.http.helloworld.blocking.streaming;
 
-import io.servicetalk.client.api.ServiceDiscoverer;
-import io.servicetalk.concurrent.api.AsyncCloseables;
-import io.servicetalk.concurrent.api.CompositeCloseable;
-import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpResponse;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.netty.DefaultHttpClientBuilder;
-import io.servicetalk.transport.api.DefaultExecutionContext;
-import io.servicetalk.transport.api.ExecutionContext;
-import io.servicetalk.transport.api.HostAndPort;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetSocketAddress;
-
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.http.api.BlockingHttpRequests.newRequest;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
-import static io.servicetalk.http.utils.HttpHostHeaderFilter.newHostHeaderFilter;
-import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
-import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
 public final class HelloWorldBlockingClient {
@@ -46,23 +32,9 @@ public final class HelloWorldBlockingClient {
 
     public static void main(String[] args) throws Exception {
         // Collection of all resources in this test that can be closed together at the end.
-        try (CompositeCloseable resources = AsyncCloseables.newCompositeCloseable()) {
-            // Setup the ExecutionContext to offload user code onto a cached Executor.
-            ExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR,
-                    resources.prepend(createIoExecutor()), resources.prepend(newCachedThreadExecutor()));
-
-            // In this example we will use DNS as our Service Discovery system.
-            ServiceDiscoverer<HostAndPort, InetSocketAddress> dnsDiscoverer =
-                    resources.prepend(new DefaultDnsServiceDiscovererBuilder(executionContext).build());
-
-            // Create a ClientBuilder and use round robin load balancing.
-            DefaultHttpClientBuilder<InetSocketAddress> clientBuilder =
-                    new DefaultHttpClientBuilder<>(newRoundRobinFactory());
-
-            // Build the client, and register for DNS discovery events.
-            HostAndPort address = HostAndPort.of("localhost", 8080);
-            BlockingHttpClient client = clientBuilder.addClientFilterFactory(c -> newHostHeaderFilter(address, c))
-                    .buildBlocking(executionContext, dnsDiscoverer.discover(address));
+        try (BlockingHttpClient client = DefaultHttpClientBuilder
+                .forSingleAddress("localhost", 8080)
+                .build().asBlockingClient()) {
 
             // Create a request, send the request, and wait for the response.
             BlockingHttpResponse<HttpPayloadChunk> response = client.request(newRequest(GET, "/sayHello"));
@@ -76,9 +48,6 @@ public final class HelloWorldBlockingClient {
             for (HttpPayloadChunk responseChunk : response.getPayloadBody()) {
                 LOGGER.info("converted string chunk '{}'", responseChunk.getContent().toString(US_ASCII));
             }
-
-            // Close synchronous (blocking) client.
-            client.close();
         }
     }
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.aggregation;
+package io.servicetalk.examples.http.helloworld.async.aggregated;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.AggregatedHttpRequest;

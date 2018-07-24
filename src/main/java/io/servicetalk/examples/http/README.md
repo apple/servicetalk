@@ -10,25 +10,25 @@ An obligatory "Hello World" example for HTTP.
 
 This is the example using HTTP blocking APIs.
 
-- [Server](helloworld/HelloWorldBlockingServer.java) An hello world server that responds with "Hello World!" for every request.
-- [Service](helloworld/HelloWorldBlockingService.java) A `BlockingHttpService` used in the [Server](helloworld/HelloWorldBlockingServer.java) that processes all requests received by this server.
-- [Client](helloworld/HelloWorldBlockingClient.java) A client that sends a request to the [Server](helloworld/HelloWorldBlockingServer.java).
+- [Server](helloworld/blocking/streaming/HelloWorldBlockingServer.java) An hello world server that responds with "Hello World!" for every request.
+- [Service](helloworld/blocking/streaming/HelloWorldBlockingService.java) A `BlockingHttpService` used in the [Server](helloworld/blocking/streaming/HelloWorldBlockingServer.java) that processes all requests received by this server.
+- [Client](helloworld/blocking/streaming/HelloWorldBlockingClient.java) A client that sends a request to the [Server](helloworld/blocking/streaming/HelloWorldBlockingServer.java).
 
 #### Asynchronous 
 
 This is the example using HTTP asynchronous APIs.
 
-- [Server](helloworld/HelloWorldServer.java) An hello world server that responds with "Hello World!" for every request.
-- [Service](helloworld/HelloWorldService.java) An `HttpService` used in the [Server](helloworld/HelloWorldServer.java) that processes all requests received by this server.
-- [Client](helloworld/HelloWorldClient.java) A client that sends a request to the [Server](helloworld/HelloWorldServer.java).
+- [Server](helloworld/async/streaming/HelloWorldServer.java) An hello world server that responds with "Hello World!" for every request.
+- [Service](helloworld/async/streaming/HelloWorldService.java) An `HttpService` used in the [Server](helloworld/async/streaming/HelloWorldServer.java) that processes all requests received by this server.
+- [Client](helloworld/async/streaming/HelloWorldClient.java) A client that sends a request to the [Server](helloworld/async/streaming/HelloWorldServer.java).
 
 ### Aggregated payload
 
 This example demonstrates asynchronous request processing where the payload body is aggregated into a single object instead of a stream.
 
-- [Server](aggregation/AggregatingPayloadServer.java) A server that echoes the request from the client.
-- [Service](aggregation/RequestAggregationService.java) A `AggregatedHttpService` used in the [Server](aggregation/AggregatingPayloadServer.java) that processes all requests received by this server.
-- [Client](aggregation/AggregatingPayloadClient.java) A client that sends a large request to the [Server](aggregation/AggregatingPayloadServer.java) and receives the echoed response as a single content.
+- [Server](helloworld/async/aggregated/AggregatingPayloadServer.java) A server that echoes the request from the client.
+- [Service](helloworld/async/aggregated/RequestAggregationService.java) A `AggregatedHttpService` used in the [Server](helloworld/async/aggregated/AggregatingPayloadServer.java) that processes all requests received by this server.
+- [Client](helloworld/async/aggregated/AggregatingPayloadClient.java) A client that sends a large request to the [Server](helloworld/async/aggregated/AggregatingPayloadServer.java) and receives the echoed response as a single content.
 
 ### Streaming
 
@@ -61,11 +61,11 @@ This example demonstrates how to use these APIs.
 
 A simple "Hello World" example built using JAX-RS.
 
-- [Server](jaxrs/helloworld/HelloWorldJaxRsServer.java) A JAX-RS based hello world server that demonstrates how to write blocking as well as asynchronous resource methods. 
-- [Resource](jaxrs/helloworld/HelloWorldJaxRsResource.java) A JAX-RS resource having different methods for blocking and asynchronous interactions.
+- [Server](helloworld/jaxrs/HelloWorldJaxRsServer.java) A JAX-RS based hello world server that demonstrates how to write blocking as well as asynchronous resource methods. 
+- [Resource](helloworld/jaxrs/HelloWorldJaxRsResource.java) A JAX-RS resource having different methods for blocking and asynchronous interactions.
 
 This example does not have a client yet but one can use curl to send requests like:
 
 `curl http://localhost:8080/greetings/hello`
 
-More examples of how to use the resource can be found in the [Resource](jaxrs/helloworld/HelloWorldJaxRsResource.java) javadocs.
+More examples of how to use the resource can be found in the [Resource](helloworld/jaxrs/HelloWorldJaxRsResource.java) javadocs.

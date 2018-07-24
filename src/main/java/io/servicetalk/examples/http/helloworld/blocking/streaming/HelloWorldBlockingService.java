@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.helloworld;
+package io.servicetalk.examples.http.helloworld.blocking.streaming;
 
+import io.servicetalk.examples.http.helloworld.async.streaming.HelloWorldService;
 import io.servicetalk.http.api.BlockingHttpRequest;
 import io.servicetalk.http.api.BlockingHttpResponse;
 import io.servicetalk.http.api.BlockingHttpService;

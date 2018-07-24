@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 @ElementsAreNonnullByDefault
-package io.servicetalk.examples.http.streaming;
+package io.servicetalk.examples.http;
 
 import io.servicetalk.annotations.ElementsAreNonnullByDefault;
