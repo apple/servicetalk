@@ -33,6 +33,9 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Executors.newOffloader;
 import static io.servicetalk.concurrent.api.NeverSingle.neverSingle;
 import static io.servicetalk.concurrent.api.Publisher.empty;
+import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnErrorSupplier;
+import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSubscribeSupplier;
+import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSuccessSupplier;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -41,8 +44,8 @@ import static java.util.Objects.requireNonNull;
  * @param <T> Type of the result of the single.
  */
 public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
-    private static final AtomicReference<BiConsumer<? super Subscriber, Consumer<? super Subscriber>>> SUBSCRIBE_PLUGIN_REF = new AtomicReference<>();
-
+    private static final AtomicReference<BiConsumer<? super Subscriber, Consumer<? super Subscriber>>>
+            SUBSCRIBE_PLUGIN_REF = new AtomicReference<>();
     private final Executor executor;
 
     /**
@@ -61,111 +64,212 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
         this.executor = requireNonNull(executor);
     }
 
-    /**
-     * Add a plugin that will be invoked on each {@link #subscribe(Subscriber)} call. This can be used for visibility or to
-     * extend functionality to all {@link Subscriber}s which pass through {@link #subscribe(Subscriber)}.
-     * @param subscribePlugin the plugin that will be invoked on each {@link #subscribe(Subscriber)} call.
-     */
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public static void addSubscribePlugin(BiConsumer<? super Subscriber, Consumer<? super Subscriber>> subscribePlugin) {
-        requireNonNull(subscribePlugin);
-        SUBSCRIBE_PLUGIN_REF.updateAndGet(currentPlugin -> currentPlugin == null ? subscribePlugin :
-                (subscriber, handleSubscribe) -> subscribePlugin.accept(subscriber,
-                        subscriber2 -> subscribePlugin.accept(subscriber2, handleSubscribe))
-        );
-    }
+    //
+    // Operators Begin
+    //
 
-    @Override
-    public final void subscribe(Subscriber<? super T> subscriber) {
-        // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader
-        // to use.
-        final SignalOffloader signalOffloader = newOffloader(executor);
-        // Since this is a user-driven subscribe (end of the execution chain), offload Cancellable
-        subscribe(signalOffloader.offloadCancellable(subscriber), signalOffloader);
+    /**
+     * Maps the result of this single to a different type. Error, if any is forwarded to the returned {@link Single}.
+     * <p>
+     * This method provides a data transformation in sequential programming similar to:
+     * <pre>{@code
+     *     T tResult = resultOfThisSingle();
+     *     R rResult = mapper.apply(tResult);
+     * }</pre>
+     * @param mapper To convert this result to other.
+     * @param <R>    Type of the returned {@code Single}.
+     * @return A new {@link Single} that will now have the result of type {@link R}.
+     */
+    public final <R> Single<R> map(Function<T, R> mapper) {
+        return new MapSingle<>(this, mapper, executor);
     }
 
     /**
-     * Handles a subscriber to this {@link Single}.
-     *
-     * @param subscriber the subscriber.
+     * Ignores any error returned by this {@link Single} and resume to a new {@link Single}.
+     * <p>
+     * This method provides similar capabilities to a try/catch block in sequential programming:
+     * <pre>{@code
+     *     T result;
+     *     try {
+     *         result = resultOfThisSingle();
+     *     } catch (Throwable cause) {
+     *         // Note that nextFactory returning a error Single is like re-throwing (nextFactory shouldn't throw).
+     *         result = nextFactory.apply(cause);
+     *     }
+     *     return result;
+     * }</pre>
+     * @param nextFactory Returns the next {@link Single}, when this {@link Single} emits an error.
+     * @return A {@link Single} that ignores error from this {@code Single} and resume with the {@link Single} produced
+     * by {@code nextFactory}.
      */
-    protected abstract void handleSubscribe(Subscriber<? super T> subscriber);
-
-    /**
-     * A special subscribe mode that uses the passed {@link SignalOffloader} instead of creating a new
-     * {@link SignalOffloader} like {@link #subscribe(Subscriber)}. This will call
-     * {@link #handleSubscribe(Subscriber, SignalOffloader)} to handle this subscribe instead of
-     * {@link #handleSubscribe(Subscriber)}.<p>
-     *
-     *     This method is used by operator implementations to inherit a chosen {@link SignalOffloader} per
-     *     {@link Subscriber} where possible.
-     *     This method does not wrap the passed {@link Subscriber} or {@link Cancellable} to offload processing to
-     *     {@link SignalOffloader}.
-     *     That is done by {@link #handleSubscribe(Subscriber, SignalOffloader)} and hence can be overridden by
-     *     operators that do not require this wrapping.
-     *
-     * @param subscriber {@link Subscriber} to this {@link Single}.
-     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
-     */
-    final void subscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
-        requireNonNull(subscriber);
-        BiConsumer<? super Subscriber, Consumer<? super Subscriber>> plugin = SUBSCRIBE_PLUGIN_REF.get();
-        if (plugin != null) {
-            plugin.accept(subscriber, sub -> handleSubscribe(sub, signalOffloader));
-        } else {
-            handleSubscribe(subscriber, signalOffloader);
-        }
+    public final Single<T> onErrorResume(Function<Throwable, Single<T>> nextFactory) {
+        return new ResumeSingle<>(this, nextFactory, executor);
     }
 
     /**
-     * Override for {@link #handleSubscribe(Subscriber)} to offload the {@link #handleSubscribe(Subscriber)} call to the
-     * passed {@link SignalOffloader}. <p>
-     *
-     *     This method wraps the passed {@link Subscriber} using {@link SignalOffloader#offloadSubscriber(Subscriber)}
-     *     and then calls {@link #handleSubscribe(Subscriber)} using
-     *     {@link SignalOffloader#offloadSignal(Object, Consumer)}.
-     *     Operators that do not wish to wrap the passed {@link Subscriber} can override this method and omit the
-     *     wrapping.
-     *
-     * @param subscriber the subscriber.
-     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
+     * Returns a {@link Single} that mirrors emissions from the {@link Single} returned by {@code next}.
+     * Any error emitted by this {@link Single} is forwarded to the returned {@link Single}.
+     * <p>
+     * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
+     * transformation in sequential programming similar to:
+     * <pre>{@code
+     *     T tResult = resultOfThisSingle();
+     *     R rResult = mapper.apply(tResult); // Asynchronous result is flatten into a value by this operator.
+     * }</pre>
+     * @param next Function to give the next {@link Single}.
+     * @param <R>  Type of the result of the resulting {@link Single}.
+     * @return New {@link Single} that switches to the {@link Single} returned by {@code next} after this {@link Single}
+     * completes successfully.
      */
-    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
-        Subscriber<? super T> safeSubscriber = signalOffloader.offloadSubscriber(subscriber);
-        signalOffloader.offloadSignal(safeSubscriber, this::handleSubscribe);
+    public final <R> Single<R> flatMap(Function<T, Single<R>> next) {
+        return new SingleFlatMapSingle<>(this, next, executor);
     }
 
     /**
-     * Subscribe to this {@link Single}, emits the result to the passed {@link Consumer} and log any
-     * {@link Subscriber#onError(Throwable)}.
-     *
-     * @param resultConsumer {@link Consumer} to accept the result of this {@link Single}.
-     *
-     * @return {@link Cancellable} used to invoke {@link Cancellable#cancel()} on the parameter of
-     * {@link Subscriber#onSubscribe(Cancellable)} for this {@link Single}.
+     * Returns a {@link Completable} that mirrors emissions from the {@link Completable} returned by {@code next}.
+     * Any error emitted by this {@link Single} is forwarded to the returned {@link Completable}.
+     * <p>
+     * This method is similar to {@link #map(Function)} but the result is asynchronous with either complete/error status
+     * in sequential programming similar to:
+     * <pre>{@code
+     *     T tResult = resultOfThisSingle();
+     *     mapper.apply(tResult); // Asynchronous result is flatten into a error or completion by this operator.
+     * }</pre>
+     * @param next Function to give the next {@link Completable}.
+     * @return New {@link Completable} that switches to the {@link Completable} returned by {@code next} after this
+     * {@link Single} completes successfully.
      */
-    public final Cancellable subscribe(Consumer<T> resultConsumer) {
-        SimpleSingleSubscriber<T> subscriber = new SimpleSingleSubscriber<>(resultConsumer);
-        subscribe(subscriber);
-        return subscriber;
+    public final Completable flatMapCompletable(Function<T, Completable> next) {
+        return new SingleFlatMapCompletable<>(this, next, executor);
     }
 
     /**
-     * Converts this {@code Single} to a {@link Publisher}.
-     *
-     * @return A {@link Publisher} that emits at most a single item which is emitted by this {@code Single}.
+     * Returns a {@link Publisher} that mirrors emissions from the {@link Publisher} returned by {@code next}.
+     * Any error emitted by this {@link Single} is forwarded to the returned {@link Publisher}.
+     * <p>
+     * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
+     * transformation in sequential programming similar to:
+     * <pre>{@code
+     *     T tResult = resultOfThisSingle();
+     *     // Asynchronous result from mapper is flatten into collection of values.
+     *     for (R rResult : mapper.apply(tResult)) {
+     *          // process rResult
+     *     }
+     * }</pre>
+     * @param next Function to give the next {@link Publisher}.
+     * @param <R>  Type of objects emitted by the returned {@link Publisher}.
+     * @return New {@link Publisher} that switches to the {@link Publisher} returned by {@code next} after this
+     * {@link Single} completes successfully.
      */
-    public final Publisher<T> toPublisher() {
-        return new SingleToPublisher<>(this, executor);
+    public final <R> Publisher<R> flatMapPublisher(Function<T, Publisher<R>> next) {
+        return new SingleFlatMapPublisher<>(this, next, executor);
     }
 
     /**
-     * Ignores the result of this {@link Single} and forwards the termination signal to the returned {@link Completable}.
-     *
-     * @return A {@link Completable} that mirrors the terminal signal from this {@code Single}.
+     * Invokes the {@code onSuccess} {@link Consumer} argument when {@link Subscriber#onSuccess(Object)} is called for
+     * {@link Subscriber}s of the returned {@link Single}.
+     * <p>
+     * The order in which {@code onSuccess} will be invoked relative to {@link Subscriber#onSuccess(Object)} is
+     * undefined. If you need strict ordering see {@link #doBeforeSuccess(Consumer)} and
+     * {@link #doAfterSuccess(Consumer)}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  T result = resultOfThisSingle();
+     *  // NOTE: The order of operations here is not guaranteed by this method!
+     *  onSuccess.accept(result);
+     *  nextOperation(result);
+     * }</pre>
+     * @param onSuccess Invoked when {@link Subscriber#onSuccess(Object)} is called for
+     * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
+     * @return The new {@link Single}.
+     * @see #doBeforeSuccess(Consumer)
+     * @see #doAfterSuccess(Consumer)
      */
-    public final Completable ignoreResult() {
-        return new SingleToCompletable<>(this, executor);
+    public final Single<T> doOnSuccess(Consumer<T> onSuccess) {
+        return doBeforeSuccess(onSuccess);
+    }
+
+    /**
+     * Invokes the {@code onError} {@link Consumer} argument when {@link Subscriber#onError(Throwable)} is called for
+     * {@link Subscriber}s of the returned {@link Single}.
+     * <p>
+     * The order in which {@code onError} will be invoked relative to {@link Subscriber#onError(Throwable)} is
+     * undefined. If you need strict ordering see {@link #doBeforeError(Consumer)} and
+     * {@link #doAfterError(Consumer)}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  try {
+     *    T result = resultOfThisSingle();
+     *  } catch (Throwable cause) {
+     *      // NOTE: The order of operations here is not guaranteed by this method!
+     *      onError.accept(cause);
+     *      nextOperation(cause);
+     *  }
+     * }</pre>
+     * @param onError Invoked <strong>before</strong> {@link Subscriber#onError(Throwable)} is called for
+     * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
+     * @return The new {@link Single}.
+     * @see #doBeforeError(Consumer)
+     * @see #doAfterError(Consumer)
+     */
+    public final Single<T> doOnError(Consumer<Throwable> onError) {
+        return doBeforeError(onError);
+    }
+
+    /**
+     * Invokes the {@code doFinally} {@link Runnable} argument when any of the following terminal methods are called:
+     * <ul>
+     *     <li>{@link Subscriber#onSuccess(Object)}</li>
+     *     <li>{@link Subscriber#onError(Throwable)}</li>
+     *     <li>{@link Cancellable#cancel()}</li>
+     * </ul>
+     * for Subscriptions/{@link Subscriber}s of the returned {@link Single}.
+     * <p>
+     * The order in which {@code doFinally} will be invoked relative to the above methods is undefined. If you need
+     * strict ordering see {@link #doBeforeFinally(Runnable)} and {@link #doAfterFinally(Runnable)}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  try {
+     *      T result = resultOfThisSingle();
+     *  } finally {
+     *      // NOTE: The order of operations here is not guaranteed by this method!
+     *      doFinally.run();
+     *      nextOperation(); // Maybe notifying of cancellation, or termination
+     *  }
+     * }</pre>
+     * @param doFinally Invoked when any of the following terminal methods are called:
+     * <ul>
+     *     <li>{@link Subscriber#onSuccess(Object)}</li>
+     *     <li>{@link Subscriber#onError(Throwable)}</li>
+     *     <li>{@link Cancellable#cancel()}</li>
+     * </ul>
+     * for Subscriptions/{@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
+     * @return The new {@link Single}.
+     * @see #doAfterFinally(Runnable)
+     * @see #doBeforeFinally(Runnable)
+     */
+    public final Single<T> doFinally(Runnable doFinally) {
+        return doBeforeFinally(doFinally);
+    }
+
+    /**
+     * Invokes the {@code onCancel} {@link Runnable} argument when {@link Cancellable#cancel()} is called for
+     * Subscriptions of the returned {@link Single}.
+     * <p>
+     * The order in which {@code doFinally} will be invoked relative to {@link Cancellable#cancel()} is undefined. If
+     * you need strict ordering see {@link #doBeforeCancel(Runnable)} and {@link #doAfterCancel(Runnable)}.
+
+     * @param onCancel Invoked <strong>before</strong> {@link Cancellable#cancel()} is called for Subscriptions of the
+     * returned {@link Single}. <strong>MUST NOT</strong> throw.
+     * @return The new {@link Single}.
+     * @see #doBeforeCancel(Runnable)
+     * @see #doAfterCancel(Runnable)
+     */
+    public final Single<T> doOnCancel(Runnable onCancel) {
+        return doBeforeCancel(onCancel);
     }
 
     /**
@@ -246,181 +350,257 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     }
 
     /**
-     * Ignores any error returned by this {@link Single} and resume to a new {@link Single}.
-     *
-     * @param nextFactory Returns the next {@link Single}, when this {@link Single} emits an error.
-     * @return A {@link Single} that ignores error from this {@code Single} and resume with the {@link Single} produced by {@code nextFactory}.
-     */
-    public final Single<T> onErrorResume(Function<Throwable, Single<T>> nextFactory) {
-        return new ResumeSingle<>(this, nextFactory, executor);
-    }
-
-    /**
-     * Maps the result of this single to a different type. Error, if any is forwarded to the returned {@link Single}.
-     *
-     * @param mapper To convert this result to other.
-     * @param <R>    Type of the returned {@code Single}.
-     * @return A new {@link Single} that will now have the result of type {@link R}.
-     */
-    public final <R> Single<R> map(Function<T, R> mapper) {
-        return new MapSingle<>(this, mapper, executor);
-    }
-
-    /**
-     * Returns a {@link Single} that mirrors emissions from the {@link Single} returned by {@code next}.
-     * Any error emitted by this {@link Single} is forwarded to the returned {@link Single}.
-     *
-     * @param next Function to give the next {@link Single}.
-     * @param <R>  Type of the result of the resulting {@link Single}.
-     * @return New {@link Single} that switches to the {@link Single} returned by {@code next} after this {@link Single} completes successfully.
-     */
-    public final <R> Single<R> flatMap(Function<T, Single<R>> next) {
-        return new SingleFlatMapSingle<>(this, next, executor);
-    }
-
-    /**
-     * Returns a {@link Completable} that mirrors emissions from the {@link Completable} returned by {@code next}.
-     * Any error emitted by this {@link Single} is forwarded to the returned {@link Completable}.
-     *
-     * @param next Function to give the next {@link Completable}.
-     * @return New {@link Completable} that switches to the {@link Completable} returned by {@code next} after this {@link Single} completes successfully.
-     */
-    public final Completable flatMapCompletable(Function<T, Completable> next) {
-        return new SingleFlatMapCompletable<>(this, next, executor);
-    }
-
-    /**
-     * Returns a {@link Publisher} that mirrors emissions from the {@link Publisher} returned by {@code next}.
-     * Any error emitted by this {@link Single} is forwarded to the returned {@link Publisher}.
-     *
-     * @param next Function to give the next {@link Publisher}.
-     * @param <R>  Type of objects emitted by the returned {@link Publisher}.
-     * @return New {@link Publisher} that switches to the {@link Publisher} returned by {@code next} after this {@link Single} completes successfully.
-     */
-    public final <R> Publisher<R> flatMapPublisher(Function<T, Publisher<R>> next) {
-        return new SingleFlatMapPublisher<>(this, next, executor);
-    }
-
-    /**
-     * Returns a {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits result of {@code next} {@link Single}.
-     * Any error emitted by this {@link Single} or {@code next} {@link Single} is forwarded to the returned {@link Publisher}.
-     *
+     * Returns a {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits
+     * result of {@code next} {@link Single}. Any error emitted by this {@link Single} or {@code next} {@link Single} is
+     * forwarded to the returned {@link Publisher}.
+     * <p>
+     * This method provides a means to sequence the execution of two asynchronous sources and in sequential programming
+     * is similar to:
+     * <pre>{@code
+     *     Pair<T, T> p = new Pair<>();
+     *     p.first = resultOfThisSingle();
+     *     p.second = nextSingle();
+     *     return p;
+     * }</pre>
      * @param next {@link Single} to concat.
-     * @return New {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits result of {@code next} {@link Single}.
+     * @return New {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits
+     * result of {@code next} {@link Single}.
      */
     public final Publisher<T> concatWith(Single<T> next) {
         return toPublisher().concatWith(next.toPublisher());
     }
 
     /**
-     * Returns a {@link Single} that emits the result of this {@link Single} after {@code next} {@link Completable} terminates successfully.
+     * Returns a {@link Single} that emits the result of this {@link Single} after {@code next} {@link Completable}
+     * terminates successfully.
      * {@code next} {@link Completable} will only be subscribed to after this {@link Single} terminates successfully.
-     * Any error emitted by this {@link Single} or {@code next} {@link Completable} is forwarded to the returned {@link Single}.
-     *
+     * Any error emitted by this {@link Single} or {@code next} {@link Completable} is forwarded to the returned
+     * {@link Single}.
+     * <p>
+     * This method provides a means to sequence the execution of two asynchronous sources and in sequential programming
+     * is similar to:
+     * <pre>{@code
+     *     T result = resultOfThisSingle();
+     *     nextCompletable(); // Note this either completes successfully, or throws an error.
+     *     return result;
+     * }</pre>
      * @param next {@link Completable} to concat.
-     * @return New {@link Single} that emits the result of this {@link Single} after {@code next} {@link Completable} terminates successfully.
+     * @return New {@link Single} that emits the result of this {@link Single} after {@code next} {@link Completable}
+     * terminates successfully.
      */
     public final Single<T> concatWith(Completable next) {
-        // We can not use next.toPublisher() here as that returns Publisher<Void> which can not be concatenated with Single<T>
+        // We cannot use next.toPublisher() as that returns Publisher<Void> which can not be concatenated with Single<T>
         return concatWith(next.andThen(empty())).first();
     }
 
     /**
-     * Returns a {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits all elements from {@code next} {@link Publisher}.
-     * Any error emitted by this {@link Single} or {@code next} {@link Publisher} is forwarded to the returned {@link Publisher}.
-     *
+     * Returns a {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits all
+     * elements from {@code next} {@link Publisher}. Any error emitted by this {@link Single} or {@code next}
+     * {@link Publisher} is forwarded to the returned {@link Publisher}.
+     * <p>
+     * This method provides a means to sequence the execution of two asynchronous sources and in sequential programming
+     * is similar to:
+     * <pre>{@code
+     *     List<T> results = new ...;
+     *     results.add(resultOfThisSingle());
+     *     results.addAll(nextStream());
+     *     return results;
+     * }</pre>
      * @param next {@link Publisher} to concat.
-     * @return New {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits all elements from {@code next} {@link Publisher}.
+     * @return New {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits
+     * all elements from {@code next} {@link Publisher}.
      */
     public final Publisher<T> concatWith(Publisher<T> next) {
         return toPublisher().concatWith(next);
     }
 
     /**
-     * Invokes the {@code onSubscribe} {@link Consumer} argument <strong>before</strong> {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned {@link Single}.
+     * Re-subscribes to this {@link Single} if an error is emitted and the passed {@link BiIntPredicate} returns
+     * {@code true}.
+     * <p>
+     * This method provides a means to retry an operation under certain failure conditions and in sequential programming
+     * is similar to:
+     * <pre>{@code
+     *     public T execute() {
+     *         return execute(0);
+     *     }
      *
-     * @param onSubscribe Invoked <strong>before</strong> {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
+     *     private T execute(int attempts) {
+     *         try {
+     *             return resultOfThisSingle();
+     *         } catch (Throwable cause) {
+     *             if (shouldRetry.apply(attempts + 1, cause)) {
+     *                 return execute(attempts + 1);
+     *             } else {
+     *                 throw cause;
+     *             }
+     *         }
+     *     }
+     * }</pre>
+     * @param shouldRetry {@link BiIntPredicate} that given the retry count and the most recent {@link Throwable}
+     * emitted from this
+     * {@link Single} determines if the operation should be retried.
+     * @return A {@link Single} that emits the result from this {@link Single} or re-subscribes if an error is emitted
+     * and if the passed {@link BiIntPredicate} returned {@code true}.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
+     */
+    public final Single<T> retry(BiIntPredicate<Throwable> shouldRetry) {
+        return new RetrySingle<>(this, shouldRetry, executor);
+    }
+
+    /**
+     * Re-subscribes to this {@link Single} if an error is emitted and the {@link Completable} returned by the supplied
+     * {@link BiIntFunction} completes successfully. If the returned {@link Completable} emits an error, the returned
+     * {@link Single} terminates with that error.
+     * <p>
+     * This method provides a means to retry an operation under certain failure conditions in an asynchronous fashion
+     * and in sequential programming is similar to:
+     * <pre>{@code
+     *     public T execute() {
+     *         return execute(0);
+     *     }
+     *
+     *     private T execute(int attempts) {
+     *         try {
+     *             return resultOfThisSingle();
+     *         } catch (Throwable cause) {
+     *             try {
+     *                 shouldRetry.apply(attempts + 1, cause); // Either throws or completes normally
+     *                 execute(attempts + 1);
+     *             } catch (Throwable ignored) {
+     *                 throw cause;
+     *             }
+     *         }
+     *     }
+     * }</pre>
+     * @param retryWhen {@link BiIntFunction} that given the retry count and the most recent {@link Throwable} emitted
+     * from this {@link Single} returns a {@link Completable}. If this {@link Completable} emits an error, that error is
+     * emitted from the returned {@link Single}, otherwise, original {@link Single} is re-subscribed when this
+     * {@link Completable} completes.
+     *
+     * @return A {@link Single} that emits the result from this {@link Single} or re-subscribes if an error is emitted
+     * and {@link Completable} returned by {@link BiIntFunction} completes successfully.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
+     */
+    public final Single<T> retryWhen(BiIntFunction<Throwable, Completable> retryWhen) {
+        return new RetryWhenSingle<>(this, retryWhen, executor);
+    }
+
+    /**
+     * Re-subscribes to this {@link Single} when it completes and the passed {@link IntPredicate} returns {@code true}.
+     * <p>
+     * This method provides a means to repeat an operation multiple times and in sequential programming is similar to:
+     * <pre>{@code
+     *     List<T> results = new ...;
+     *     int i = 0;
+     *     do {
+     *         results.add(resultOfThisSingle());
+     *     } while (shouldRepeat.test(++i));
+     *     return results;
+     * }</pre>
+     * @param shouldRepeat {@link IntPredicate} that given the repeat count determines if the operation should be
+     * repeated.
+     * @return A {@link Single} that emits all items from this {@link Single} and from all re-subscriptions whenever the
+     * operation is repeated.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
+     */
+    public final Publisher<T> repeat(IntPredicate shouldRepeat) {
+        return toPublisher().repeat(shouldRepeat);
+    }
+
+    /**
+     * Re-subscribes to this {@link Single} when it completes and the {@link Completable} returned by the supplied
+     * {@link IntFunction} completes successfully. If the returned {@link Completable} emits an error, the returned
+     * {@link Single} emits an error.
+     * <p>
+     * This method provides a means to repeat an operation multiple times when in an asynchronous fashion and in
+     * sequential programming is similar to:
+     * <pre>{@code
+     *     List<T> results = new ...;
+     *     int i = 0;
+     *     while (true) {
+     *         results.add(resultOfThisSingle());
+     *         try {
+     *             repeatWhen.apply(++i); // Either throws or completes normally
+     *         } catch (Throwable cause) {
+     *             break;
+     *         }
+     *     }
+     *     return results;
+     * }</pre>
+     * @param repeatWhen {@link IntFunction} that given the repeat count returns a {@link Completable}.
+     * If this {@link Completable} emits an error repeat is terminated, otherwise, original {@link Single} is
+     * re-subscribed when this {@link Completable} completes.
+     *
+     * @return A {@link Publisher} that emits all items from this {@link Single} and from all re-subscriptions whenever
+     * the operation is repeated.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
+     */
+    public final Publisher<T> repeatWhen(IntFunction<Completable> repeatWhen) {
+        return toPublisher().repeatWhen(repeatWhen);
+    }
+
+    /**
+     * Invokes the {@code onSubscribe} {@link Consumer} argument <strong>before</strong>
+     * {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned {@link Single}.
+     *
+     * @param onSubscribe Invoked <strong>before</strong> {@link Subscriber#onSubscribe(Cancellable)} is called for
+     * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
     public final Single<T> doBeforeSubscribe(Consumer<Cancellable> onSubscribe) {
-        requireNonNull(onSubscribe);
-        Subscriber<T> subscriber = new Subscriber<T>() {
-            @Override
-            public void onSubscribe(Cancellable cancellable) {
-                onSubscribe.accept(cancellable);
-            }
-
-            @Override
-            public void onSuccess(@Nullable T result) {
-                // NOOP
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                // NOOP
-            }
-        };
-        return doBeforeSubscriber(() -> subscriber);
+        return doBeforeSubscriber(doOnSubscribeSupplier(onSubscribe));
     }
 
     /**
-     * Invokes the {@code onSuccess} {@link Consumer} argument <strong>before</strong> {@link Subscriber#onSuccess(Object)} is called for {@link Subscriber}s of the returned {@link Single}.
-     *
-     * @param onSuccess Invoked <strong>before</strong> {@link Subscriber#onSuccess(Object)} is called for {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
+     * Invokes the {@code onSuccess} {@link Consumer} argument <strong>before</strong>
+     * {@link Subscriber#onSuccess(Object)} is called for {@link Subscriber}s of the returned {@link Single}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  T result = resultOfThisSingle();
+     *  onSuccess.accept(result);
+     *  nextOperation(result);
+     * }</pre>
+     * @param onSuccess Invoked <strong>before</strong> {@link Subscriber#onSuccess(Object)} is called for
+     * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
     public final Single<T> doBeforeSuccess(Consumer<T> onSuccess) {
-        requireNonNull(onSuccess);
-        Subscriber<T> subscriber = new Subscriber<T>() {
-            @Override
-            public void onSubscribe(Cancellable cancellable) {
-                // NOOP
-            }
-
-            @Override
-            public void onSuccess(@Nullable T result) {
-                onSuccess.accept(result);
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                // NOOP
-            }
-        };
-        return doBeforeSubscriber(() -> subscriber);
+        return doBeforeSubscriber(doOnSuccessSupplier(onSuccess));
     }
 
     /**
-     * Invokes the {@code onError} {@link Consumer} argument <strong>before</strong> {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the returned {@link Single}.
-     *
-     * @param onError Invoked <strong>before</strong> {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
+     * Invokes the {@code onError} {@link Consumer} argument <strong>before</strong>
+     * {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the returned {@link Single}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  try {
+     *    T result = resultOfThisSingle();
+     *  } catch (Throwable cause) {
+     *      onError.accept(cause);
+     *      nextOperation(cause);
+     *  }
+     * }</pre>
+     * @param onError Invoked <strong>before</strong> {@link Subscriber#onError(Throwable)} is called for
+     * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
     public final Single<T> doBeforeError(Consumer<Throwable> onError) {
-        requireNonNull(onError);
-        Subscriber<T> subscriber = new Subscriber<T>() {
-            @Override
-            public void onSubscribe(Cancellable cancellable) {
-                // NOOP
-            }
-
-            @Override
-            public void onSuccess(@Nullable T result) {
-                // NOOP
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                onError.accept(t);
-            }
-        };
-        return doBeforeSubscriber(() -> subscriber);
+        return doBeforeSubscriber(doOnErrorSupplier(onError));
     }
 
     /**
-     * Invokes the {@code onCancel} {@link Runnable} argument <strong>before</strong> {@link Cancellable#cancel()} is called for Subscriptions of the returned {@link Single}.
+     * Invokes the {@code onCancel} {@link Runnable} argument <strong>before</strong> {@link Cancellable#cancel()} is
+     * called for Subscriptions of the returned {@link Single}.
      *
-     * @param onCancel Invoked <strong>before</strong> {@link Cancellable#cancel()} is called for Subscriptions of the returned {@link Single}. <strong>MUST NOT</strong> throw.
+     * @param onCancel Invoked <strong>before</strong> {@link Cancellable#cancel()} is called for Subscriptions of the
+     * returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
     public final Single<T> doBeforeCancel(Runnable onCancel) {
@@ -428,14 +608,24 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     }
 
     /**
-     * Invokes the {@code doFinally} {@link Runnable} argument <strong>before</strong> any of the following terminal methods are called:
+     * Invokes the {@code doFinally} {@link Runnable} argument <strong>before</strong> any of the following terminal
+     * methods are called:
      * <ul>
      *     <li>{@link Subscriber#onSuccess(Object)}</li>
      *     <li>{@link Subscriber#onError(Throwable)}</li>
      *     <li>{@link Cancellable#cancel()}</li>
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Single}.
-     *
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  try {
+     *      T result = resultOfThisSingle();
+     *  } finally {
+     *      doFinally.run();
+     *      nextOperation(); // Maybe notifying of cancellation, or termination
+     *  }
+     * }</pre>
      * @param doFinally Invoked <strong>before</strong> any of the following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onSuccess(Object)}</li>
@@ -450,11 +640,13 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     }
 
     /**
-     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to {@link #subscribe(Subscriber)} and invokes
-     * all the {@link Subscriber} methods <strong>before</strong> the {@link Subscriber}s of the returned {@link Single}.
+     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to
+     * {@link #subscribe(Subscriber)} and invokes all the {@link Subscriber} methods <strong>before</strong> the
+     * {@link Subscriber}s of the returned {@link Single}.
      *
-     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to {@link #subscribe(Subscriber)} and invokes
-     * all the {@link Subscriber} methods <strong>before</strong> the {@link Subscriber}s of the returned {@link Single}. {@link Subscriber} methods <strong>MUST NOT</strong> throw.
+     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to {@link #subscribe(Subscriber)} and
+     * invokes all the {@link Subscriber} methods <strong>before</strong> the {@link Subscriber}s of the returned
+     * {@link Single}. {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
     public final Single<T> doBeforeSubscriber(Supplier<Subscriber<? super T>> subscriberSupplier) {
@@ -462,90 +654,62 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     }
 
     /**
-     * Invokes the {@code onSubscribe} {@link Consumer} argument <strong>after</strong> {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned {@link Single}.
+     * Invokes the {@code onSubscribe} {@link Consumer} argument <strong>after</strong>
+     * {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned {@link Single}.
      *
-     * @param onSubscribe Invoked <strong>after</strong> {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
+     * @param onSubscribe Invoked <strong>after</strong> {@link Subscriber#onSubscribe(Cancellable)} is called for
+     * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
     public final Single<T> doAfterSubscribe(Consumer<Cancellable> onSubscribe) {
-        requireNonNull(onSubscribe);
-        Subscriber<T> subscriber = new Subscriber<T>() {
-            @Override
-            public void onSubscribe(Cancellable cancellable) {
-                onSubscribe.accept(cancellable);
-            }
-
-            @Override
-            public void onSuccess(@Nullable T result) {
-                // NOOP
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                // NOOP
-            }
-        };
-        return doAfterSubscriber(() -> subscriber);
+        return doAfterSubscriber(doOnSubscribeSupplier(onSubscribe));
     }
 
     /**
-     * Invokes the {@code onSuccess} {@link Consumer} argument <strong>after</strong> {@link Subscriber#onSuccess(Object)} is called for {@link Subscriber}s of the returned {@link Single}.
-     *
-     * @param onSuccess Invoked <strong>after</strong> {@link Subscriber#onSuccess(Object)} is called for {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
+     * Invokes the {@code onSuccess} {@link Consumer} argument <strong>after</strong>
+     * {@link Subscriber#onSuccess(Object)} is called for {@link Subscriber}s of the returned {@link Single}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  T result = resultOfThisSingle();
+     *  nextOperation(result);
+     *  onSuccess.accept(result);
+     * }</pre>
+     * @param onSuccess Invoked <strong>after</strong> {@link Subscriber#onSuccess(Object)} is called for
+     * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
     public final Single<T> doAfterSuccess(Consumer<T> onSuccess) {
-        requireNonNull(onSuccess);
-        Subscriber<T> subscriber = new Subscriber<T>() {
-            @Override
-            public void onSubscribe(Cancellable cancellable) {
-                // NOOP
-            }
-
-            @Override
-            public void onSuccess(@Nullable T result) {
-                onSuccess.accept(result);
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                // NOOP
-            }
-        };
-        return doAfterSubscriber(() -> subscriber);
+        return doAfterSubscriber(doOnSuccessSupplier(onSuccess));
     }
 
     /**
-     * Invokes the {@code onError} {@link Consumer} argument <strong>after</strong> {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the returned {@link Single}.
-     *
-     * @param onError Invoked <strong>after</strong> {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
+     * Invokes the {@code onError} {@link Consumer} argument <strong>after</strong>
+     * {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the returned {@link Single}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  try {
+     *    T result = resultOfThisSingle();
+     *  } catch (Throwable cause) {
+     *      nextOperation(cause);
+     *      onError.accept(cause);
+     *  }
+     * }</pre>
+     * @param onError Invoked <strong>after</strong> {@link Subscriber#onError(Throwable)} is called for
+     * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
     public final Single<T> doAfterError(Consumer<Throwable> onError) {
-        requireNonNull(onError);
-        Subscriber<T> subscriber = new Subscriber<T>() {
-            @Override
-            public void onSubscribe(Cancellable cancellable) {
-                // NOOP
-            }
-
-            @Override
-            public void onSuccess(@Nullable T result) {
-                // NOOP
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                onError.accept(t);
-            }
-        };
-        return doAfterSubscriber(() -> subscriber);
+        return doAfterSubscriber(doOnErrorSupplier(onError));
     }
 
     /**
-     * Invokes the {@code onCancel} {@link Runnable} argument <strong>after</strong> {@link Cancellable#cancel()} is called for Subscriptions of the returned {@link Single}.
+     * Invokes the {@code onCancel} {@link Runnable} argument <strong>after</strong> {@link Cancellable#cancel()} is
+     * called for Subscriptions of the returned {@link Single}.
      *
-     * @param onCancel Invoked <strong>after</strong> {@link Cancellable#cancel()} is called for Subscriptions of the returned {@link Single}. <strong>MUST NOT</strong> throw.
+     * @param onCancel Invoked <strong>after</strong> {@link Cancellable#cancel()} is called for Subscriptions of the
+     * returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
     public final Single<T> doAfterCancel(Runnable onCancel) {
@@ -553,14 +717,24 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     }
 
     /**
-     * Invokes the {@code doFinally} {@link Runnable} argument <strong>after</strong> any of the following terminal methods are called:
+     * Invokes the {@code doFinally} {@link Runnable} argument <strong>after</strong> any of the following terminal
+     * methods are called:
      * <ul>
      *     <li>{@link Subscriber#onSuccess(Object)}</li>
      *     <li>{@link Subscriber#onError(Throwable)}</li>
      *     <li>{@link Cancellable#cancel()}</li>
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Single}.
-     *
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  try {
+     *      T result = resultOfThisSingle();
+     *  } finally {
+     *      nextOperation(); // Maybe notifying of cancellation, or termination
+     *      doFinally.run();
+     *  }
+     * }</pre>
      * @param doFinally Invoked <strong>after</strong> any of the following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onSuccess(Object)}</li>
@@ -575,11 +749,13 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     }
 
     /**
-     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to {@link #subscribe(Subscriber)} and invokes
+     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to
+     * {@link #subscribe(Subscriber)} and invokes
      * all the {@link Subscriber} methods <strong>after</strong> the {@link Subscriber}s of the returned {@link Single}.
      *
-     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to {@link #subscribe(Subscriber)} and invokes
-     * all the {@link Subscriber} methods <strong>after</strong> the {@link Subscriber}s of the returned {@link Single}. {@link Subscriber} methods <strong>MUST NOT</strong> throw.
+     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to {@link #subscribe(Subscriber)} and
+     * invokes all the {@link Subscriber} methods <strong>after</strong> the {@link Subscriber}s of the returned
+     * {@link Single}. {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
     public final Single<T> doAfterSubscriber(Supplier<Subscriber<? super T>> subscriberSupplier) {
@@ -587,61 +763,42 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     }
 
     /**
-     * Re-subscribes to this {@link Single} if an error is emitted and the passed {@link BiIntPredicate} returns {@code true}.
+     * Creates a new {@link Single} that will use the passed {@link Executor} to invoke the following methods:
+     * <ul>
+     *     <li>All {@link Subscriber} methods.</li>
+     *     <li>All {@link Cancellable} methods.</li>
+     *     <li>The {@link #handleSubscribe(Single.Subscriber)} method.</li>
+     * </ul>
+     * This method does <em>not</em> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}. If such an override is required, {@link #publishAndSubscribeOnOverride(Executor)} can be used.
      *
-     * @param shouldRetry {@link BiIntPredicate} that given the retry count and the most recent {@link Throwable} emitted from this
-     * {@link Single} determines if the operation should be retried.
-     * @return A {@link Single} that emits the result from this {@link Single} or re-subscribes if an error is emitted and if the passed {@link BiIntPredicate} returned {@code true}.
-     *
-     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods
+     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(Single.Subscriber)}.
      */
-    public final Single<T> retry(BiIntPredicate<Throwable> shouldRetry) {
-        return new RetrySingle<>(this, shouldRetry, executor);
+    public final Single<T> publishAndSubscribeOn(Executor executor) {
+        return PublishAndSubscribeOnSingles.publishAndSubscribeOn(this, executor);
     }
 
     /**
-     * Re-subscribes to this {@link Single} if an error is emitted and the {@link Completable} returned by the supplied {@link BiIntFunction} completes successfully.
-     * If the returned {@link Completable} emits an error, the returned {@link Single} terminates with that error.
+     * Creates a new {@link Single} that will use the passed {@link Executor} to invoke the following methods:
+     * <ul>
+     *     <li>All {@link Subscriber} methods.</li>
+     *     <li>All {@link Cancellable} methods.</li>
+     *     <li>The {@link #handleSubscribe(Single.Subscriber)} method.</li>
+     * </ul>
+     * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Single}.
+     * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
+     * If such an override is not required, {@link #publishAndSubscribeOn(Executor)} can be used.
      *
-     * @param retryWhen {@link BiIntFunction} that given the retry count and the most recent {@link Throwable} emitted from this
-     * {@link Single} returns a {@link Completable}. If this {@link Completable} emits an error, that error is emitted from the returned {@link Single},
-     * otherwise, original {@link Single} is re-subscribed when this {@link Completable} completes.
-     *
-     * @return A {@link Single} that emits the result from this {@link Single} or re-subscribes if an error is emitted
-     * and {@link Completable} returned by {@link BiIntFunction} completes successfully.
-     *
-     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
+     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(Single.Subscriber)} both for the returned
+     * {@link Single} as well as {@code this} {@link Single}.
      */
-    public final Single<T> retryWhen(BiIntFunction<Throwable, Completable> retryWhen) {
-        return new RetryWhenSingle<>(this, retryWhen, executor);
-    }
-
-    /**
-     * Re-subscribes to this {@link Single} when it completes and the passed {@link IntPredicate} returns {@code true}.
-     *
-     * @param shouldRepeat {@link IntPredicate} that given the repeat count determines if the operation should be repeated.
-     * @return A {@link Single} that emits all items from this {@link Single} and from all re-subscriptions whenever the operation is repeated.
-     *
-     * @see <a href="http://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
-     */
-    public final Publisher<T> repeat(IntPredicate shouldRepeat) {
-        return toPublisher().repeat(shouldRepeat);
-    }
-
-    /**
-     * Re-subscribes to this {@link Single} when it completes and the {@link Completable} returned by the supplied {@link IntFunction} completes successfully.
-     * If the returned {@link Completable} emits an error, the returned {@link Single} emits an error.
-     *
-     * @param repeatWhen {@link IntFunction} that given the repeat count returns a {@link Completable}.
-     * If this {@link Completable} emits an error repeat is terminated, otherwise, original {@link Single} is re-subscribed
-     * when this {@link Completable} completes.
-     *
-     * @return A {@link Publisher} that emits all items from this {@link Single} and from all re-subscriptions whenever the operation is repeated.
-     *
-     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
-     */
-    public final Publisher<T> repeatWhen(IntFunction<Completable> repeatWhen) {
-        return toPublisher().repeatWhen(repeatWhen);
+    public final Single<T> publishAndSubscribeOnOverride(Executor executor) {
+        return PublishAndSubscribeOnSingles.publishAndSubscribeOnOverride(this, executor);
     }
 
     /**
@@ -708,44 +865,81 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
         return new LiftAsynchronousSingleOperator<>(this, operator, executor);
     }
 
+    //
+    // Operators End
+    //
+
+    //
+    // Conversion Operators Begin
+    //
+
     /**
-     * Creates a new {@link Single} that will use the passed {@link Executor} to invoke the following methods:
-     * <ul>
-     *     <li>All {@link Subscriber} methods.</li>
-     *     <li>All {@link Cancellable} methods.</li>
-     *     <li>The {@link #handleSubscribe(Single.Subscriber)} method.</li>
-     * </ul>
-     * This method does <em>not</em> override preceding {@link Executor}s, if any, specified for {@code this}
-     * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
-     * {@link Executor}. If such an override is required, {@link #publishAndSubscribeOnOverride(Executor)} can be used.
+     * Converts this {@code Single} to a {@link Publisher}.
      *
-     * @param executor {@link Executor} to use.
-     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods
-     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(Single.Subscriber)}.
+     * @return A {@link Publisher} that emits at most a single item which is emitted by this {@code Single}.
      */
-    public final Single<T> publishAndSubscribeOn(Executor executor) {
-        return PublishAndSubscribeOnSingles.publishAndSubscribeOn(this, executor);
+    public final Publisher<T> toPublisher() {
+        return new SingleToPublisher<>(this, executor);
     }
 
     /**
-     * Creates a new {@link Single} that will use the passed {@link Executor} to invoke the following methods:
-     * <ul>
-     *     <li>All {@link Subscriber} methods.</li>
-     *     <li>All {@link Cancellable} methods.</li>
-     *     <li>The {@link #handleSubscribe(Single.Subscriber)} method.</li>
-     * </ul>
-     * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Single}.
-     * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
-     * If such an override is not required, {@link #publishAndSubscribeOn(Executor)} can be used.
+     * Ignores the result of this {@link Single} and forwards the termination signal to the returned
+     * {@link Completable}.
      *
-     * @param executor {@link Executor} to use.
-     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(Single.Subscriber)} both for the returned
-     * {@link Single} as well as {@code this} {@link Single}.
+     * @return A {@link Completable} that mirrors the terminal signal from this {@code Single}.
      */
-    public final Single<T> publishAndSubscribeOnOverride(Executor executor) {
-        return PublishAndSubscribeOnSingles.publishAndSubscribeOnOverride(this, executor);
+    public final Completable toCompletable() {
+        return new SingleToCompletable<>(this, executor);
     }
+
+    /**
+     * Ignores the result of this {@link Single} and forwards the termination signal to the returned
+     * {@link Completable}.
+     *
+     * @return A {@link Completable} that mirrors the terminal signal from this {@code Single}.
+     */
+    public final Completable ignoreResult() {
+        return toCompletable();
+    }
+
+    //
+    // Conversion Operators End
+    //
+
+    @Override
+    public final void subscribe(Subscriber<? super T> subscriber) {
+        // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader
+        // to use.
+        final SignalOffloader signalOffloader = newOffloader(executor);
+        // Since this is a user-driven subscribe (end of the execution chain), offload Cancellable
+        subscribe(signalOffloader.offloadCancellable(subscriber), signalOffloader);
+    }
+
+    /**
+     * Subscribe to this {@link Single}, emits the result to the passed {@link Consumer} and log any
+     * {@link Subscriber#onError(Throwable)}.
+     *
+     * @param resultConsumer {@link Consumer} to accept the result of this {@link Single}.
+     *
+     * @return {@link Cancellable} used to invoke {@link Cancellable#cancel()} on the parameter of
+     * {@link Subscriber#onSubscribe(Cancellable)} for this {@link Single}.
+     */
+    public final Cancellable subscribe(Consumer<T> resultConsumer) {
+        SimpleSingleSubscriber<T> subscriber = new SimpleSingleSubscriber<>(resultConsumer);
+        subscribe(subscriber);
+        return subscriber;
+    }
+
+    /**
+     * Handles a subscriber to this {@link Single}.
+     *
+     * @param subscriber the subscriber.
+     */
+    protected abstract void handleSubscribe(Subscriber<? super T> subscriber);
+
+    //
+    // Static Utility Methods Begin
+    //
 
     /**
      * Creates a realized {@link Single} which always completes successfully with the provided {@code value}.
@@ -796,6 +990,29 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     }
 
     /**
+     * Add a plugin that will be invoked on each {@link #subscribe(Subscriber)} call. This can be used for visibility or
+     * to extend functionality to all {@link Subscriber}s which pass through {@link #subscribe(Subscriber)}.
+     * @param subscribePlugin the plugin that will be invoked on each {@link #subscribe(Subscriber)} call.
+     */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public static void addSubscribePlugin(
+            BiConsumer<? super Subscriber, Consumer<? super Subscriber>> subscribePlugin) {
+        requireNonNull(subscribePlugin);
+        SUBSCRIBE_PLUGIN_REF.updateAndGet(currentPlugin -> currentPlugin == null ? subscribePlugin :
+                (subscriber, handleSubscribe) -> subscribePlugin.accept(subscriber,
+                        subscriber2 -> subscribePlugin.accept(subscriber2, handleSubscribe))
+        );
+    }
+
+    //
+    // Static Utility Methods End
+    //
+
+    //
+    // Package Private Methods Begin
+    //
+
+    /**
      * Returns the {@link Executor} used for this {@link Single}.
      *
      * @return {@link Executor} used for this {@link Single} via {@link #Single(Executor)}.
@@ -803,4 +1020,52 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     final Executor getExecutor() {
         return executor;
     }
+
+    /**
+     * A special subscribe mode that uses the passed {@link SignalOffloader} instead of creating a new
+     * {@link SignalOffloader} like {@link #subscribe(Subscriber)}. This will call
+     * {@link #handleSubscribe(Subscriber, SignalOffloader)} to handle this subscribe instead of
+     * {@link #handleSubscribe(Subscriber)}.<p>
+     *
+     *     This method is used by operator implementations to inherit a chosen {@link SignalOffloader} per
+     *     {@link Subscriber} where possible.
+     *     This method does not wrap the passed {@link Subscriber} or {@link Cancellable} to offload processing to
+     *     {@link SignalOffloader}.
+     *     That is done by {@link #handleSubscribe(Subscriber, SignalOffloader)} and hence can be overridden by
+     *     operators that do not require this wrapping.
+     *
+     * @param subscriber {@link Subscriber} to this {@link Single}.
+     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
+     */
+    final void subscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
+        requireNonNull(subscriber);
+        BiConsumer<? super Subscriber, Consumer<? super Subscriber>> plugin = SUBSCRIBE_PLUGIN_REF.get();
+        if (plugin != null) {
+            plugin.accept(subscriber, sub -> handleSubscribe(sub, signalOffloader));
+        } else {
+            handleSubscribe(subscriber, signalOffloader);
+        }
+    }
+
+    /**
+     * Override for {@link #handleSubscribe(Subscriber)} to offload the {@link #handleSubscribe(Subscriber)} call to the
+     * passed {@link SignalOffloader}. <p>
+     *
+     *     This method wraps the passed {@link Subscriber} using {@link SignalOffloader#offloadSubscriber(Subscriber)}
+     *     and then calls {@link #handleSubscribe(Subscriber)} using
+     *     {@link SignalOffloader#offloadSignal(Object, Consumer)}.
+     *     Operators that do not wish to wrap the passed {@link Subscriber} can override this method and omit the
+     *     wrapping.
+     *
+     * @param subscriber the subscriber.
+     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
+     */
+    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
+        Subscriber<? super T> safeSubscriber = signalOffloader.offloadSubscriber(subscriber);
+        signalOffloader.offloadSignal(safeSubscriber, this::handleSubscribe);
+    }
+
+    //
+    // Package Private Methods End
+    //
 }
