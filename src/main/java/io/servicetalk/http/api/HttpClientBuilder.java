@@ -15,113 +15,88 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.client.api.ServiceDiscoverer;
-import io.servicetalk.client.api.ServiceDiscoverer.Event;
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ExecutionContext;
 
 /**
  * A builder of {@link HttpClient} objects.
- *
- * @param <ResolvedAddress> The type of resolved address that can be used to establish new {@link HttpConnection}s.
- * @param <EventType> The type of {@link Event} which communicates address changes.
  */
-public interface HttpClientBuilder<ResolvedAddress, EventType extends Event<ResolvedAddress>> {
+public interface HttpClientBuilder {
 
     /**
      * Build a new {@link HttpClient}.
      *
      * @param executionContext {@link ExecutionContext} used for {@link HttpClient#getExecutionContext()} and to build
      * new {@link HttpConnection}s.
-     * @param addressEventStream A stream of events (typically from a {@link ServiceDiscoverer#discover(Object)}) that
-     *                           provides the addresses used to create new {@link HttpConnection}s
      * @return A new {@link HttpClient}
      */
-    HttpClient build(ExecutionContext executionContext, Publisher<EventType> addressEventStream);
+    HttpClient build(ExecutionContext executionContext);
 
     /**
      * Build a new {@link HttpClient}, using a default {@link ExecutionContext}.
      *
-     * @param addressEventStream A stream of events (typically from a {@link ServiceDiscoverer#discover(Object)}) that
-     *                           provides the addresses used to create new {@link HttpConnection}s
      * @return A new {@link HttpClient}
-     * @see #build(ExecutionContext, Publisher)
+     * @see #build(ExecutionContext)
      */
-    HttpClient build(Publisher<EventType> addressEventStream);
+    HttpClient build();
 
     /**
      * Build a new {@link AggregatedHttpClient}.
      *
      * @param executionContext {@link ExecutionContext} used for {@link AggregatedHttpClient#getExecutionContext()} and
      * to build new {@link HttpConnection}s.
-     * @param addressEventStream A stream of events (typically from a {@link ServiceDiscoverer#discover(Object)}) that
-     *                           provides the addresses used to create new {@link HttpConnection}s
      * @return A new {@link AggregatedHttpClient}
      */
-    default AggregatedHttpClient buildAggregated(ExecutionContext executionContext,
-                                                 Publisher<EventType> addressEventStream) {
-        return build(executionContext, addressEventStream).asAggregatedClient();
+    default AggregatedHttpClient buildAggregated(ExecutionContext executionContext) {
+        return build(executionContext).asAggregatedClient();
     }
 
     /**
      * Build a new {@link AggregatedHttpClient}, using a default {@link ExecutionContext}.
      *
-     * @param addressEventStream A stream of events (typically from a {@link ServiceDiscoverer#discover(Object)}) that
-     *                           provides the addresses used to create new {@link HttpConnection}s
      * @return A new {@link AggregatedHttpClient}
-     * @see #buildAggregated(ExecutionContext, Publisher)
+     * @see #buildAggregated(ExecutionContext)
      */
-    default AggregatedHttpClient buildAggregated(Publisher<EventType> addressEventStream) {
-        return build(addressEventStream).asAggregatedClient();
+    default AggregatedHttpClient buildAggregated() {
+        return build().asAggregatedClient();
     }
 
     /**
      * Create a new {@link BlockingHttpClient}.
      *
      * @param executionContext {@link ExecutionContext} when building {@link BlockingHttpConnection}s.
-     * @param addressEventStream A stream of events (typically from a {@link ServiceDiscoverer#discover(Object)}) that
-     *                           provides the addresses used to create new {@link HttpConnection}s
      * @return {@link BlockingHttpClient}
      */
-    default BlockingHttpClient buildBlocking(ExecutionContext executionContext,
-                                             Publisher<EventType> addressEventStream) {
-        return build(executionContext, addressEventStream).asBlockingClient();
+    default BlockingHttpClient buildBlocking(ExecutionContext executionContext) {
+        return build(executionContext).asBlockingClient();
     }
 
     /**
      * Create a new {@link BlockingHttpClient}, using a default {@link ExecutionContext}.
      *
-     * @param addressEventStream A stream of events (typically from a {@link ServiceDiscoverer#discover(Object)}) that
-     *                           provides the addresses used to create new {@link HttpConnection}s
      * @return {@link BlockingHttpClient}
-     * @see #buildBlocking(ExecutionContext, Publisher)
+     * @see #buildBlocking(ExecutionContext)
      */
-    default BlockingHttpClient buildBlocking(Publisher<EventType> addressEventStream) {
-        return build(addressEventStream).asBlockingClient();
+    default BlockingHttpClient buildBlocking() {
+        return build().asBlockingClient();
     }
 
     /**
      * Create a new {@link BlockingAggregatedHttpClient}.
      *
      * @param executionContext {@link ExecutionContext} when building {@link BlockingAggregatedHttpConnection}s.
-     * @param addressEventStream A stream of events (typically from a {@link ServiceDiscoverer#discover(Object)}) that
-     *                           provides the addresses used to create new {@link HttpConnection}s
      * @return {@link BlockingAggregatedHttpClient}
      */
-    default BlockingAggregatedHttpClient buildBlockingAggregated(ExecutionContext executionContext,
-                                                                 Publisher<EventType> addressEventStream) {
-        return build(executionContext, addressEventStream).asBlockingAggregatedClient();
+    default BlockingAggregatedHttpClient buildBlockingAggregated(ExecutionContext executionContext) {
+        return build(executionContext).asBlockingAggregatedClient();
     }
 
     /**
      * Create a new {@link BlockingAggregatedHttpClient}, using a default {@link ExecutionContext}.
      *
-     * @param addressEventStream A stream of events (typically from a {@link ServiceDiscoverer#discover(Object)}) that
-     *                           provides the addresses used to create new {@link HttpConnection}s
      * @return {@link BlockingAggregatedHttpClient}
-     * @see #buildBlockingAggregated(ExecutionContext, Publisher)
+     * @see #buildBlockingAggregated(ExecutionContext)
      */
-    default BlockingAggregatedHttpClient buildBlockingAggregated(Publisher<EventType> addressEventStream) {
-        return build(addressEventStream).asBlockingAggregatedClient();
+    default BlockingAggregatedHttpClient buildBlockingAggregated() {
+        return build().asBlockingAggregatedClient();
     }
 }
