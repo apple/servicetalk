@@ -18,25 +18,40 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
+import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscoverer.Event;
+import io.servicetalk.concurrent.api.AsyncCloseable;
+import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpClientBuilder;
 import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
+import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.LoadBalancerReadyHttpClient;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.SslConfig;
 
 import java.io.InputStream;
+import java.net.InetSocketAddress;
 import java.net.SocketOption;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
+import static io.servicetalk.http.utils.HttpHostHeaderFilter.newHostHeaderFilter;
+import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.UnaryOperator.identity;
@@ -44,60 +59,317 @@ import static java.util.function.UnaryOperator.identity;
 /**
  * A builder for instances of {@link HttpClient}.
  *
- * @param <ResolvedAddress> the type of address after resolution
+ * @param <U> the type of address before resolution (unresolved address)
+ * @param <R> the type of address after resolution (resolved address)
  */
-public final class DefaultHttpClientBuilder<ResolvedAddress>
-        implements HttpClientBuilder<ResolvedAddress, Event<ResolvedAddress>> {
+public final class DefaultHttpClientBuilder<U, R> implements HttpClientBuilder {
+
+    // Allows creating builders with an unknown address until build time, eg. AddressParsingHttpRequesterBuilder
+    private static final HostAndPort DUMMY_HAP = HostAndPort.of("dummy.invalid", -1);
 
     private final HttpClientConfig config;
-    private final LoadBalancerFactory<ResolvedAddress, HttpConnection> lbFactory;
+    private final LoadBalancerFactory<R, HttpConnection> lbFactory;
+    @Nullable
+    private final ServiceDiscoverer<U, R> serviceDiscoverer;
+    @Nullable
+    private final Function<ExecutionContext,
+            ServiceDiscoverer<U, R>> serviceDiscovererFactory;
+    private final U address;
     private BiFunction<HttpClient, Publisher<Object>, HttpClient> clientFilterFactory = (client, lbEvents) ->
-                new LoadBalancerReadyHttpClient(4, lbEvents, client);
+            new LoadBalancerReadyHttpClient(4, lbEvents, client);
     private UnaryOperator<HttpConnection> connectionFilterFactory = identity();
 
-    /**
-     * Create a new instance.
-     *
-     * @param loadBalancerFactory factory of {@link LoadBalancer} objects for {@link HttpConnection}s.
-     */
-    public DefaultHttpClientBuilder(final LoadBalancerFactory<ResolvedAddress, HttpConnection> loadBalancerFactory) {
+    private final BiFunction<HttpClient, Publisher<Object>, HttpClient> hostHeaderFilter;
+
+    private DefaultHttpClientBuilder(final LoadBalancerFactory<R, HttpConnection> loadBalancerFactory,
+                                     final ServiceDiscoverer<U, R> serviceDiscoverer,
+                                     final U address,
+                                     final BiFunction<HttpClient, Publisher<Object>, HttpClient> hostHeaderFilter) {
         this.lbFactory = requireNonNull(loadBalancerFactory);
+        this.hostHeaderFilter = requireNonNull(hostHeaderFilter);
+        this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
+        this.serviceDiscovererFactory = null;
+        this.address = requireNonNull(address);
         this.config = new HttpClientConfig(new TcpClientConfig(false));
     }
 
-    /**
-     * Copy constructor.
-     *
-     * @param from The original {@link DefaultHttpClientBuilder} to copy from.
-     */
-    public DefaultHttpClientBuilder(final DefaultHttpClientBuilder<ResolvedAddress> from) {
-        config = new HttpClientConfig(from.config);
+    private DefaultHttpClientBuilder(final LoadBalancerFactory<R, HttpConnection> loadBalancerFactory,
+                                     final Function<ExecutionContext, ServiceDiscoverer<U, R>> serviceDiscovererFactory,
+                                     final U address,
+                                     final BiFunction<HttpClient, Publisher<Object>, HttpClient> hostHeaderFilter) {
+        this.lbFactory = requireNonNull(loadBalancerFactory);
+        this.hostHeaderFilter = requireNonNull(hostHeaderFilter);
+        this.serviceDiscoverer = null;
+        this.serviceDiscovererFactory = requireNonNull(serviceDiscovererFactory);
+        this.address = requireNonNull(address);
+        this.config = new HttpClientConfig(new TcpClientConfig(false));
+    }
+
+    private DefaultHttpClientBuilder(final U address,
+                                     final DefaultHttpClientBuilder<U, R> from) {
+        this.address = requireNonNull(address);
         lbFactory = from.lbFactory;
         clientFilterFactory = from.clientFilterFactory;
         connectionFilterFactory = from.connectionFilterFactory;
+        serviceDiscoverer = from.serviceDiscoverer;
+        serviceDiscovererFactory = from.serviceDiscovererFactory;
+        hostHeaderFilter = from.hostHeaderFilter;
+        config = new HttpClientConfig(from.config);
     }
 
     @Override
-    public HttpClient build(final Publisher<Event<ResolvedAddress>> addressEventStream) {
-        return build(globalExecutionContext(), addressEventStream);
+    public HttpClient build() {
+        return build(globalExecutionContext());
     }
 
     @Override
-    public HttpClient build(final ExecutionContext executionContext,
-                            final Publisher<Event<ResolvedAddress>> addressEventStream) {
+    public HttpClient build(final ExecutionContext executionContext) {
         ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
-        ConnectionFactory<ResolvedAddress, LoadBalancedHttpConnection> connectionFactory =
-                roConfig.getMaxPipelinedRequests() == 1 ?
+
+        assert !DUMMY_HAP.equals(address) : "Attempted to build with a dummy address";
+
+        ServiceDiscoverer<U, R> sd = null;
+        try {
+            sd = serviceDiscoverer == null ?
+                    requireNonNull(serviceDiscovererFactory).apply(executionContext) : serviceDiscoverer;
+
+            Publisher<Event<R>> addressEventStream = sd.discover(address);
+
+            ConnectionFactory<R, LoadBalancedHttpConnection> connectionFactory =
+                    roConfig.getMaxPipelinedRequests() == 1 ?
                         new NonPipelinedLBHttpConnectionFactory<>(roConfig, executionContext, connectionFilterFactory) :
                         new PipelinedLBHttpConnectionFactory<>(roConfig, executionContext, connectionFilterFactory);
 
-        // TODO we should revisit generics on LoadBalancerFactory to avoid casts
-        LoadBalancer<? extends HttpConnection> lbfUntypedForCast =
-                lbFactory.newLoadBalancer(addressEventStream, connectionFactory);
-        LoadBalancer<LoadBalancedHttpConnection> loadBalancer =
-                (LoadBalancer<LoadBalancedHttpConnection>) lbfUntypedForCast;
-        return clientFilterFactory.apply(new DefaultHttpClient(executionContext, loadBalancer),
-                                            loadBalancer.getEventStream());
+            // TODO we should revisit generics on LoadBalancerFactory to avoid casts
+            LoadBalancer<? extends HttpConnection> lbfUntypedForCast = lbFactory
+                    .newLoadBalancer(addressEventStream, connectionFactory);
+            LoadBalancer<LoadBalancedHttpConnection> loadBalancer =
+                    (LoadBalancer<LoadBalancedHttpConnection>) lbfUntypedForCast;
+            addClientFilterFactory(defaultHostClientFilterFactory(address));
+            HttpClient client = clientFilterFactory.apply(new DefaultHttpClient(executionContext, loadBalancer),
+                    loadBalancer.getEventStream());
+
+            if (sd != serviceDiscoverer) {
+                return new HttpClientWithDependencies(client, sd);
+            }
+            return client;
+        } catch (Exception e) {
+            if (sd != serviceDiscoverer) {
+                sd.closeAsync().subscribe();
+            }
+            throw e;
+        }
+    }
+
+    /**
+     * Creates a new {@link DefaultHttpClientBuilder} by copying from another instance.
+     *
+     * @param address the {@code UnresolvedAddress} to resolve and connect to using the service discover provided in the
+     * passed in {@link DefaultHttpClientBuilder}. This address is also converted to host header using the configured
+     * {@code hostHeaderFilter} on the passed in {@link DefaultHttpClientBuilder}.
+     * @param from builder to copy from
+     * @param <U> the type of address before resolution (unresolved address)
+     * @param <R> the type of address after resolution (resolved address)
+     * @return new builder with same settings as the passed in builder
+     * TODO make pkg-pvt when AddressParsingHttpRequesterBuilder is moved to http-netty
+     */
+    public static <U, R> DefaultHttpClientBuilder<U, R> from(final U address,
+                                                             final DefaultHttpClientBuilder<U, R> from) {
+        return new DefaultHttpClientBuilder<>(address, from);
+    }
+
+    /**
+     * Creates a {@link DefaultHttpClientBuilder} for an address with user provided load balancer and service discovery.
+     *
+     * @param loadBalancerFactory factory to create the {@link LoadBalancer}
+     * @param serviceDiscoverer {@link ServiceDiscoverer} used to resolve the {@code UnresolvedAddress} @param address
+     * @param address the {@code UnresolvedAddress} to connect to resolved using the {@code serviceDiscoverer}. This
+     * address will also be used for the host header using a best effort conversion. Use this method {@link
+     * #forSingleAddress(LoadBalancerFactory, ServiceDiscoverer, Object, Function)} if you have an custom {@code
+     * UnresolvedAddress} type.
+     * @param <U> the type of address before resolution (unresolved address)
+     * @param <R> the type of address after resolution (resolved address)
+     * @return new builder with provided configuration
+     */
+    public static <U, R> DefaultHttpClientBuilder<U, R> forSingleAddress(
+            final LoadBalancerFactory<R, HttpConnection> loadBalancerFactory,
+            final ServiceDiscoverer<U, R> serviceDiscoverer,
+            final U address) {
+        return new DefaultHttpClientBuilder<>(loadBalancerFactory, requireNonNull(serviceDiscoverer), address,
+                defaultHostClientFilterFactory(address));
+    }
+
+    private static <U> BiFunction<HttpClient, Publisher<Object>, HttpClient> defaultHostClientFilterFactory(
+            final U address) {
+        final BiFunction<HttpClient, Publisher<Object>, HttpClient> clientFilterFactory;
+        if (address instanceof CharSequence) {
+            clientFilterFactory = (c, p) -> newHostHeaderFilter((CharSequence) address, c);
+        } else if (address instanceof HostAndPort) {
+            clientFilterFactory = (c, p) -> newHostHeaderFilter((HostAndPort) address, c);
+        } else {
+            throw new IllegalArgumentException("Unsupported host address type, provide a transformer");
+        }
+        return clientFilterFactory;
+    }
+
+    /**
+     * Creates a {@link DefaultHttpClientBuilder} for an address with user provided load balancer and service discovery.
+     *
+     * @param loadBalancerFactory factory to create the {@link LoadBalancer}
+     * @param serviceDiscoverer {@link ServiceDiscoverer} used to resolve the {@code UnresolvedAddress}
+     * @param address the {@code UnresolvedAddress} to connect to resolved using the {@code serviceDiscoverer}. This
+     * address will also be used for the host header, converted to {@link CharSequence} using the provided {@code
+     * addressTransformer}.
+     * @param addressTransformer used to convert the {@code address} to a host header
+     * @param <U> the type of address before resolution (unresolved address)
+     * @param <R> the type of address after resolution (resolved address)
+     * @return new builder with provided configuration
+     */
+    public static <U, R> DefaultHttpClientBuilder<U, R> forSingleAddress(
+            final LoadBalancerFactory<R, HttpConnection> loadBalancerFactory,
+            final ServiceDiscoverer<U, R> serviceDiscoverer,
+            final U address,
+            final Function<U, CharSequence> addressTransformer) {
+        final CharSequence transformedAddress = addressTransformer.apply(address);
+        return new DefaultHttpClientBuilder<>(loadBalancerFactory, serviceDiscoverer, address,
+                (c, p) -> newHostHeaderFilter(transformedAddress, c));
+    }
+
+    /**
+     * Creates a {@link DefaultHttpClientBuilder} for an address with default load balancer and user provided service
+     * discovery.
+     *
+     * @param serviceDiscoverer {@link ServiceDiscoverer} used to resolve the {@code UnresolvedAddress} @param address
+     * @param address the {@code UnresolvedAddress} to connect to resolved using the {@code serviceDiscoverer}. This
+     * address will also be used for the host header using a best effort conversion. Use this method {@link
+     * #forSingleAddress(ServiceDiscoverer, Object, Function)} if you have an custom {@code
+     * UnresolvedAddress} type.
+     * @param <U> the type of address before resolution (unresolved address)
+     * @param <R> the type of address after resolution (resolved address)
+     * @return new builder with provided configuration
+     */
+    public static <U, R> DefaultHttpClientBuilder<U, R> forSingleAddress(
+            final ServiceDiscoverer<U, R> serviceDiscoverer,
+            final U address) {
+        return new DefaultHttpClientBuilder<>(newRoundRobinFactory(), serviceDiscoverer, address,
+                defaultHostClientFilterFactory(address));
+    }
+
+    /**
+     * Creates a {@link DefaultHttpClientBuilder} for an address with default load balancer and user provided service
+     * discovery.
+     *
+     * @param serviceDiscoverer {@link ServiceDiscoverer} used to resolve the {@code UnresolvedAddress}
+     * @param address the {@code UnresolvedAddress} to connect to resolved using the {@code serviceDiscoverer}. This
+     * address will also be used for the host header, converted to {@link CharSequence} using the provided {@code
+     * addressTransformer}.
+     * @param addressTransformer used to convert the {@code address} to a host header
+     * @param <U> the type of address before resolution (unresolved address)
+     * @param <R> the type of address after resolution (resolved address)
+     * @return new builder with provided configuration
+     */
+    public static <U, R> DefaultHttpClientBuilder<U, R> forSingleAddress(
+            final ServiceDiscoverer<U, R> serviceDiscoverer,
+            final U address,
+            final Function<U, CharSequence> addressTransformer) {
+        final CharSequence transformedAddress = addressTransformer.apply(address);
+        return new DefaultHttpClientBuilder<>(newRoundRobinFactory(), serviceDiscoverer, address,
+                (c, p) -> newHostHeaderFilter(transformedAddress, c));
+    }
+
+    /**
+     * Creates a {@link DefaultHttpClientBuilder} for an address with user provided load balancer and DNS service
+     * discovery.
+     *
+     * @param loadBalancerFactory factory to create the {@link LoadBalancer}
+     * @param address the {@code UnresolvedAddress} to connect to resolved using the {@code serviceDiscoverer}. This
+     * address will also be used for the host header, converted to {@link CharSequence} using the provided {@code
+     * addressTransformer}.
+     * @return new builder with provided configuration
+     */
+    public static DefaultHttpClientBuilder<HostAndPort, InetSocketAddress> forSingleAddress(
+            final LoadBalancerFactory<InetSocketAddress, HttpConnection> loadBalancerFactory,
+            final HostAndPort address) {
+        return new DefaultHttpClientBuilder<>(loadBalancerFactory,
+                DefaultHttpClientBuilder::dnsServiceDiscovererFactory, address,
+                (c, p) -> newHostHeaderFilter(address, c));
+    }
+
+    /**
+     * Creates a {@link DefaultHttpClientBuilder} for an address with default load balancer and DNS service discovery.
+     *
+     * @param host host to connect to, resolved using the service discoverer. This will also be used for the host
+     * header together with the {@code port}.
+     * @param port port to connect to
+     * @return new builder for the address
+     */
+    public static DefaultHttpClientBuilder<HostAndPort, InetSocketAddress> forSingleAddress(String host, int port) {
+        return forSingleAddress(HostAndPort.of(host, port));
+    }
+
+    /**
+     * Creates a {@link DefaultHttpClientBuilder} for an address with default load balancer and DNS service discovery.
+     *
+     * @param address the {@code UnresolvedAddress} to connect to, resolved using the service discoverer. This
+     * address will also be used for the host header.
+     * @return new builder for the address
+     */
+    public static DefaultHttpClientBuilder<HostAndPort, InetSocketAddress> forSingleAddress(HostAndPort address) {
+        return new DefaultHttpClientBuilder<>(newRoundRobinFactory(),
+                DefaultHttpClientBuilder::dnsServiceDiscovererFactory, address,
+                (c, p) -> newHostHeaderFilter(address, c));
+    }
+
+    private static ServiceDiscoverer<HostAndPort, InetSocketAddress> dnsServiceDiscovererFactory(ExecutionContext ec) {
+        return new DefaultDnsServiceDiscovererBuilder(ec).build();
+    }
+
+    private static final class HttpClientWithDependencies extends HttpClient {
+
+        private final HttpClient target;
+        private final ListenableAsyncCloseable compositeClosable;
+
+        private HttpClientWithDependencies(final HttpClient target,
+                                           final AsyncCloseable closeable) {
+            this.target = target;
+            compositeClosable = toListenableAsyncCloseable(newCompositeCloseable().appendAll(target, closeable));
+        }
+
+        @Override
+        public Single<? extends ReservedHttpConnection> reserveConnection(final HttpRequest<HttpPayloadChunk> request) {
+            return target.reserveConnection(request);
+        }
+
+        @Override
+        public Single<? extends UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
+                final HttpRequest<HttpPayloadChunk> request) {
+            return target.upgradeConnection(request);
+        }
+
+        @Override
+        public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
+            return target.request(request);
+        }
+
+        @Override
+        public ExecutionContext getExecutionContext() {
+            return target.getExecutionContext();
+        }
+
+        @Override
+        public Completable onClose() {
+            return compositeClosable.onClose();
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return compositeClosable.closeAsync();
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return compositeClosable.closeAsyncGracefully();
+        }
     }
 
     /**
@@ -109,7 +381,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()}
      * throws when {@link InputStream#close()} is called.
      */
-    public DefaultHttpClientBuilder<ResolvedAddress> setSslConfig(@Nullable final SslConfig sslConfig) {
+    public DefaultHttpClientBuilder<U, R> setSslConfig(@Nullable final SslConfig sslConfig) {
         config.getTcpClientConfig().setSslConfig(sslConfig);
         return this;
     }
@@ -122,7 +394,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * @param value the value.
      * @return this.
      */
-    public <T> DefaultHttpClientBuilder<ResolvedAddress> setSocketOption(SocketOption<T> option, T value) {
+    public <T> DefaultHttpClientBuilder<U, R> setSocketOption(SocketOption<T> option, T value) {
         config.getTcpClientConfig().setSocketOption(option, value);
         return this;
     }
@@ -133,7 +405,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * @param loggerName The name of the logger to log wire events.
      * @return {@code this}.
      */
-    public DefaultHttpClientBuilder<ResolvedAddress> enableWireLogging(final String loggerName) {
+    public DefaultHttpClientBuilder<U, R> enableWireLogging(final String loggerName) {
         config.getTcpClientConfig().enableWireLogging(loggerName);
         return this;
     }
@@ -145,7 +417,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * @return {@code this}.
      * @see #enableWireLogging(String)
      */
-    public DefaultHttpClientBuilder<ResolvedAddress> disableWireLogging() {
+    public DefaultHttpClientBuilder<U, R> disableWireLogging() {
         config.getTcpClientConfig().disableWireLogging();
         return this;
     }
@@ -156,7 +428,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * @param headersFactory the {@link HttpHeadersFactory} to use.
      * @return {@code this}.
      */
-    public DefaultHttpClientBuilder<ResolvedAddress> setHeadersFactory(final HttpHeadersFactory headersFactory) {
+    public DefaultHttpClientBuilder<U, R> setHeadersFactory(final HttpHeadersFactory headersFactory) {
         config.setHeadersFactory(headersFactory);
         return this;
     }
@@ -168,7 +440,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * line exceeds this length.
      * @return {@code this}.
      */
-    public DefaultHttpClientBuilder<ResolvedAddress> setMaxInitialLineLength(final int maxInitialLineLength) {
+    public DefaultHttpClientBuilder<U, R> setMaxInitialLineLength(final int maxInitialLineLength) {
         config.setMaxInitialLineLength(maxInitialLineLength);
         return this;
     }
@@ -180,7 +452,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * headers exceeds this length.
      * @return {@code this}.
      */
-    public DefaultHttpClientBuilder<ResolvedAddress> setMaxHeaderSize(final int maxHeaderSize) {
+    public DefaultHttpClientBuilder<U, R> setMaxHeaderSize(final int maxHeaderSize) {
         config.setMaxHeaderSize(maxHeaderSize);
         return this;
     }
@@ -192,8 +464,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * @param headersEncodedSizeEstimate An estimated size of encoded initial line and headers.
      * @return {@code this}.
      */
-    public DefaultHttpClientBuilder<ResolvedAddress> setHeadersEncodedSizeEstimate(
-            final int headersEncodedSizeEstimate) {
+    public DefaultHttpClientBuilder<U, R> setHeadersEncodedSizeEstimate(final int headersEncodedSizeEstimate) {
         config.setHeadersEncodedSizeEstimate(headersEncodedSizeEstimate);
         return this;
     }
@@ -205,8 +476,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * @param trailersEncodedSizeEstimate An estimated size of encoded trailers.
      * @return {@code this}.
      */
-    public DefaultHttpClientBuilder<ResolvedAddress> setTrailersEncodedSizeEstimate(
-            final int trailersEncodedSizeEstimate) {
+    public DefaultHttpClientBuilder<U, R> setTrailersEncodedSizeEstimate(final int trailersEncodedSizeEstimate) {
         config.setTrailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
         return this;
     }
@@ -220,7 +490,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * @param maxPipelinedRequests number of pipelined requests to queue up
      * @return {@code this}.
      */
-    public DefaultHttpClientBuilder<ResolvedAddress> setMaxPipelinedRequests(final int maxPipelinedRequests) {
+    public DefaultHttpClientBuilder<U, R> setMaxPipelinedRequests(final int maxPipelinedRequests) {
         config.setMaxPipelinedRequests(maxPipelinedRequests);
         return this;
     }
@@ -236,7 +506,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * filtering.
      * @return {@code this}
      */
-    public DefaultHttpClientBuilder<ResolvedAddress> setConnectionFilterFactory(
+    public DefaultHttpClientBuilder<U, R> setConnectionFilterFactory(
             final UnaryOperator<HttpConnection> connectionFilterFactory) {
         this.connectionFilterFactory = requireNonNull(connectionFilterFactory);
         return this;
@@ -245,7 +515,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
     /**
      * Set the filter factory that is used to decorate {@link HttpClient} created by this builder.
      * <p>
-     * Note this method will be used to decorate the result of {@link #build(ExecutionContext, Publisher)} before it is
+     * Note this method will be used to decorate the result of {@link #build(ExecutionContext)} before it is
      * returned to the user.
      *
      * @param clientFilterFactory {@link BiFunction} to decorate a {@link HttpClient} for the purpose of filtering.
@@ -255,7 +525,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * </pre>
      * @return {@code this}
      */
-    public DefaultHttpClientBuilder<ResolvedAddress> setClientFilterFactory(
+    public DefaultHttpClientBuilder<U, R> setClientFilterFactory(
             final BiFunction<HttpClient, Publisher<Object>, HttpClient> clientFilterFactory) {
         this.clientFilterFactory = requireNonNull(clientFilterFactory);
         return this;
@@ -280,7 +550,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * </pre>
      * @return {@code this}
      */
-    public DefaultHttpClientBuilder<ResolvedAddress> addClientFilterFactory(
+    public DefaultHttpClientBuilder<U, R> addClientFilterFactory(
             final BiFunction<HttpClient, Publisher<Object>, HttpClient> clientFilterFactory) {
         requireNonNull(clientFilterFactory);
         BiFunction<HttpClient, Publisher<Object>, HttpClient> oldFilterFactory = this.clientFilterFactory;
@@ -304,7 +574,7 @@ public final class DefaultHttpClientBuilder<ResolvedAddress>
      * @param clientFilterFactory {@link Function} to decorate a {@link HttpClient} for the purpose of filtering.
      * @return {@code this}
      */
-    public DefaultHttpClientBuilder<ResolvedAddress> addClientFilterFactory(
+    public DefaultHttpClientBuilder<U, R> addClientFilterFactory(
             final Function<HttpClient, HttpClient> clientFilterFactory) {
         requireNonNull(clientFilterFactory);
         BiFunction<HttpClient, Publisher<Object>, HttpClient> oldFilterFactory = this.clientFilterFactory;

@@ -26,6 +26,7 @@ import io.servicetalk.http.api.HttpRequestMethods;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.HostAndPort;
 
 import org.junit.After;
 import org.junit.Before;
@@ -39,12 +40,10 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponses.newResponse;
-import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -53,7 +52,7 @@ public class ClientFilterFactoryTest {
 
     private List<Integer> filterOrder;
     private ExecutionContext executionContext;
-    private DefaultHttpClientBuilder<InetSocketAddress> builder;
+    private DefaultHttpClientBuilder<HostAndPort, InetSocketAddress> builder;
     @Nullable
     private BlockingHttpClient client;
 
@@ -61,8 +60,9 @@ public class ClientFilterFactoryTest {
     public void setUp() {
         filterOrder = new ArrayList<>();
         executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR, createIoExecutor(), immediate());
-        builder = new DefaultHttpClientBuilder<>(newRoundRobinFactory());
-        builder.addClientFilterFactory(httpClient -> new DelegatingHttpClient(httpClient, request -> success(newResponse(OK))));
+        builder = DefaultHttpClientBuilder.forSingleAddress("localhost", 0)
+                .addClientFilterFactory(httpClient ->
+                        new DelegatingHttpClient(httpClient, request -> success(newResponse(OK))));
     }
 
     @After
@@ -113,7 +113,7 @@ public class ClientFilterFactoryTest {
     }
 
     private void buildClientAndSendRequest() throws Exception {
-        client = builder.buildBlocking(executionContext, empty());
+        client = builder.buildBlocking(executionContext);
         client.request(BlockingHttpRequests.newRequest(HttpRequestMethods.GET, "/"));
     }
 

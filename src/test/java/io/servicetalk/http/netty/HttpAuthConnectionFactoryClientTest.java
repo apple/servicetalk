@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactory;
-import io.servicetalk.client.api.ServiceDiscoverer.Event;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -25,7 +24,6 @@ import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.loadbalancer.RoundRobinLoadBalancer;
 import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
@@ -39,7 +37,6 @@ import org.junit.rules.Timeout;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutionException;
 
-import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
@@ -51,7 +48,6 @@ import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponses.newResponse;
 import static io.servicetalk.http.api.HttpService.fromAsync;
-import static java.util.Comparator.comparingInt;
 import static java.util.Objects.requireNonNull;
 import static org.junit.Assert.assertEquals;
 
@@ -80,20 +76,8 @@ public class HttpAuthConnectionFactoryClientTest {
         serverContext = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
                 .start(CTX, new InetSocketAddress(0), ContextFilter.ACCEPT_ALL,
                         fromAsync((ctx, req) -> success(newTestResponse()))));
-        client = new DefaultHttpClientBuilder<InetSocketAddress>(
-                (eventPublisher, connectionFactory) -> new RoundRobinLoadBalancer<>(eventPublisher,
-                        new TestHttpAuthConnectionFactory<>(connectionFactory), comparingInt(Object::hashCode)))
-                .build(CTX, just(new Event<InetSocketAddress>() {
-                    @Override
-                    public InetSocketAddress getAddress() {
-                        return (InetSocketAddress) serverContext.getListenAddress();
-                    }
-
-                    @Override
-                    public boolean isAvailable() {
-                        return true;
-                    }
-                }));
+        client = DefaultHttpClientBuilder.forSingleAddress(
+                "localhost", ((InetSocketAddress) serverContext.getListenAddress()).getPort()).build(CTX);
 
         HttpResponse<HttpPayloadChunk> response = awaitIndefinitely(client.request(newTestRequest("/foo")));
         assertEquals(OK, response.getStatus());
