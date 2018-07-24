@@ -15,12 +15,10 @@
  */
 package io.servicetalk.examples.http.helloworld.async.aggregated;
 
-import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.CompositeCloseable;
-import io.servicetalk.http.netty.AddressParsingHttpRequesterBuilder;
 import io.servicetalk.http.api.AggregatedHttpRequester;
+import io.servicetalk.http.netty.AddressParsingHttpRequesterBuilder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,15 +46,7 @@ public final class AggregatingPayloadAddressParsingRequester {
             // demonstration purposes.
             CountDownLatch responseProcessedLatch = new CountDownLatch(1);
 
-            // Create a big buffer so that we can leverage aggregation on the response which is the request payload
-            // echoed back.
-            BufferAllocator alloc = requester.getExecutionContext().getBufferAllocator();
-            final CompositeBuffer payload = alloc.newCompositeBuffer(10);
-            for (int i = 0; i < 10; i++) {
-                payload.addBuffer(alloc.fromAscii(i + " hello\n"));
-            }
-
-            requester.request(newRequest(GET,"http://localhost:8080/sayHello", payload))
+            requester.request(newRequest(GET, "http://localhost:8080/sayHello"))
                     .doAfterError(cause -> LOGGER.error("request failed!", cause))
                     .doAfterFinally(responseProcessedLatch::countDown)
                     .subscribe(response -> {

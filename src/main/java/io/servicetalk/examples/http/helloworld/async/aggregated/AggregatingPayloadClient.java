@@ -15,13 +15,9 @@
  */
 package io.servicetalk.examples.http.helloworld.async.aggregated;
 
-import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.http.api.AggregatedHttpClient;
-import io.servicetalk.http.api.AggregatedHttpRequest;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.netty.DefaultHttpClientBuilder;
 
 import org.slf4j.Logger;
@@ -48,16 +44,8 @@ public final class AggregatingPayloadClient {
             // demonstration purposes.
             CountDownLatch responseProcessedLatch = new CountDownLatch(1);
 
-            // Create a big buffer so that we can leverage aggregation on the response which is the request payload
-            // echoed back.
-            BufferAllocator alloc = client.getExecutionContext().getBufferAllocator();
-            CompositeBuffer payload = alloc.newCompositeBuffer(10);
-            for (int i = 0; i < 10; i++) {
-                payload.addBuffer(alloc.fromAscii(i + " hello\n"));
-            }
-            AggregatedHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/sayHello", payload);
-            // This is required at the moment since HttpClient does not add a transfer-encoding header.
-            client.request(request)
+            // Create a request, send the request, and wait for the response.
+            client.request(newRequest(GET, "/sayHello"))
                     .doAfterError(cause -> LOGGER.error("request failed!", cause))
                     .doAfterFinally(responseProcessedLatch::countDown)
                     .subscribe(response -> {
