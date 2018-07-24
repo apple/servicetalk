@@ -45,7 +45,6 @@ dependencies {
   implementation "io.servicetalk:servicetalk-tcp-netty-internal:0.1.0-SNAPSHOT"
   implementation "io.servicetalk:servicetalk-transport-netty:0.1.0-SNAPSHOT"
   implementation "io.servicetalk:servicetalk-transport-netty-internal:0.1.0-SNAPSHOT"
-
   implementation "org.slf4j:slf4j-api"
 
   testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:0.1.0-SNAPSHOT"
