@@ -38,7 +38,6 @@ dependencies {
   implementation "io.servicetalk:servicetalk-concurrent-internal" // hmm
   implementation "io.servicetalk:servicetalk-data-jackson"
   implementation "io.servicetalk:servicetalk-dns-discovery-netty"
-  implementation "io.servicetalk:servicetalk-http-all-netty"
   implementation "io.servicetalk:servicetalk-http-api"
   implementation "io.servicetalk:servicetalk-http-netty"
   implementation "io.servicetalk:servicetalk-http-router-jersey"

@@ -19,9 +19,8 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.CompositeCloseable;
-import io.servicetalk.http.all.netty.AddressParsingHttpRequesterBuilder;
+import io.servicetalk.http.netty.AddressParsingHttpRequesterBuilder;
 import io.servicetalk.http.api.AggregatedHttpRequester;
-import io.servicetalk.http.netty.DefaultHttpClientBuilder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
