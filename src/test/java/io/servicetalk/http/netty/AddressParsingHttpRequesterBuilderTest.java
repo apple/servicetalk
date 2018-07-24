@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.all.netty;
+package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
