@@ -82,10 +82,7 @@ public class AddressParsingHttpRequesterBuilderTest {
     @SuppressWarnings("unchecked")
     public void buildWithProvidedServiceDiscoverer() throws Exception {
         ServiceDiscoverer<HostAndPort, InetSocketAddress> mockedServiceDiscoverer = mock(ServiceDiscoverer.class);
-
-        HttpRequester newRequester = new AddressParsingHttpRequesterBuilder()
-                .setServiceDiscoverer(mockedServiceDiscoverer)
-                .build(CTX);
+        HttpRequester newRequester = new AddressParsingHttpRequesterBuilder(mockedServiceDiscoverer).build(CTX);
         awaitIndefinitely(newRequester.closeAsync());
         verify(mockedServiceDiscoverer, never()).closeAsync();
     }

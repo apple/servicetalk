@@ -26,7 +26,6 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
 import io.servicetalk.http.api.AggregatedHttpClient;
 import io.servicetalk.http.api.AggregatedHttpRequester;
 import io.servicetalk.http.api.BlockingAggregatedHttpRequester;
@@ -55,16 +54,13 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
-import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
+import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.http.all.netty.SslConfigProviders.plainByDefault;
 import static io.servicetalk.http.api.HttpClientGroups.newHttpClientGroup;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
-import static io.servicetalk.http.utils.HttpHostHeaderFilter.newHostHeaderFilter;
-import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static io.servicetalk.transport.api.SslConfigBuilder.forClient;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.util.Objects.requireNonNull;
@@ -84,44 +80,52 @@ public final class AddressParsingHttpRequesterBuilder {
     // since such redirections usually indicate an infinite loop.
     private static final int DEFAULT_MAX_REDIRECTS = 5;
 
-    private final DefaultHttpClientBuilder<InetSocketAddress> clientBuilder;
-    @Nullable
-    private ServiceDiscoverer<HostAndPort, InetSocketAddress> serviceDiscoverer;
+    private final DefaultHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
     private UnaryOperator<HttpRequester> requesterFilterFactory = identity();
     private UnaryOperator<HttpClientGroup<HostAndPort>> clientGroupFilterFactory = identity();
     private int maxRedirects = DEFAULT_MAX_REDIRECTS;
     private SslConfigProvider sslConfigProvider = plainByDefault();
 
+    // TODO incomplete build marker for DefaultHttpClientBuilder, to be removed when this class is moved to http-netty
+    private static final HostAndPort DUMMY_HAP = HostAndPort.of("dummy.invalid", -1);
+
     /**
-     * Create a new instance with a default {@link LoadBalancerFactory}.
+     * Create a new instance with a default {@link LoadBalancerFactory} and DNS {@link ServiceDiscoverer}.
      */
     public AddressParsingHttpRequesterBuilder() {
-        this(newRoundRobinFactory());
+        builderTemplate = DefaultHttpClientBuilder.forSingleAddress(DUMMY_HAP);
     }
 
     /**
      * Create a new instance.
      *
      * @param loadBalancerFactory A {@link LoadBalancerFactory} which generates {@link LoadBalancer} objects.
+     * @param serviceDiscoverer {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
      */
     public AddressParsingHttpRequesterBuilder(
-            final LoadBalancerFactory<InetSocketAddress, HttpConnection> loadBalancerFactory) {
-        clientBuilder = new DefaultHttpClientBuilder<>(loadBalancerFactory);
+            final LoadBalancerFactory<InetSocketAddress, HttpConnection> loadBalancerFactory,
+            final ServiceDiscoverer<HostAndPort, InetSocketAddress> serviceDiscoverer) {
+        builderTemplate = DefaultHttpClientBuilder.forSingleAddress(loadBalancerFactory, serviceDiscoverer, DUMMY_HAP);
     }
 
     /**
-     * Set a {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
+     * Create a new instance with a default {@link LoadBalancerFactory}.
      *
-     * @param serviceDiscoverer A {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
-     * Lifecycle of the provided {@link ServiceDiscoverer} is managed externally and it should be
-     * {@link ServiceDiscoverer#closeAsync() closed} after all built {@link HttpRequester}s will be closed and this
-     * {@link ServiceDiscoverer} is no longer needed.
-     * @return {@code this}.
+     * @param serviceDiscoverer {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
      */
-    public AddressParsingHttpRequesterBuilder setServiceDiscoverer(
+    public AddressParsingHttpRequesterBuilder(
             final ServiceDiscoverer<HostAndPort, InetSocketAddress> serviceDiscoverer) {
-        this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
-        return this;
+        builderTemplate = DefaultHttpClientBuilder.forSingleAddress(serviceDiscoverer, DUMMY_HAP);
+    }
+
+    /**
+     * Create a new instance with a DNS {@link ServiceDiscoverer}.
+     *
+     * @param loadBalancerFactory A {@link LoadBalancerFactory} which generates {@link LoadBalancer} objects.
+     */
+    public AddressParsingHttpRequesterBuilder(
+            final LoadBalancerFactory<InetSocketAddress, HttpConnection> loadBalancerFactory) {
+        builderTemplate = DefaultHttpClientBuilder.forSingleAddress(loadBalancerFactory, DUMMY_HAP);
     }
 
     /**
@@ -144,7 +148,7 @@ public final class AddressParsingHttpRequesterBuilder {
      * @return {@code this}.
      */
     public <T> AddressParsingHttpRequesterBuilder setSocketOption(final SocketOption<T> option, final T value) {
-        clientBuilder.setSocketOption(option, value);
+        builderTemplate.setSocketOption(option, value);
         return this;
     }
 
@@ -155,7 +159,7 @@ public final class AddressParsingHttpRequesterBuilder {
      * @return {@code this}.
      */
     public AddressParsingHttpRequesterBuilder enableWireLogging(final String loggerName) {
-        clientBuilder.enableWireLogging(loggerName);
+        builderTemplate.enableWireLogging(loggerName);
         return this;
     }
 
@@ -167,7 +171,7 @@ public final class AddressParsingHttpRequesterBuilder {
      * @see #enableWireLogging(String)
      */
     public AddressParsingHttpRequesterBuilder disableWireLogging() {
-        clientBuilder.disableWireLogging();
+        builderTemplate.disableWireLogging();
         return this;
     }
 
@@ -178,7 +182,7 @@ public final class AddressParsingHttpRequesterBuilder {
      * @return {@code this}.
      */
     public AddressParsingHttpRequesterBuilder setHeadersFactory(final HttpHeadersFactory headersFactory) {
-        clientBuilder.setHeadersFactory(headersFactory);
+        builderTemplate.setHeadersFactory(headersFactory);
         return this;
     }
 
@@ -190,7 +194,7 @@ public final class AddressParsingHttpRequesterBuilder {
      * @return {@code this}.
      */
     public AddressParsingHttpRequesterBuilder setMaxInitialLineLength(final int maxInitialLineLength) {
-        clientBuilder.setMaxInitialLineLength(maxInitialLineLength);
+        builderTemplate.setMaxInitialLineLength(maxInitialLineLength);
         return this;
     }
 
@@ -202,7 +206,7 @@ public final class AddressParsingHttpRequesterBuilder {
      * @return {@code this}.
      */
     public AddressParsingHttpRequesterBuilder setMaxHeaderSize(final int maxHeaderSize) {
-        clientBuilder.setMaxHeaderSize(maxHeaderSize);
+        builderTemplate.setMaxHeaderSize(maxHeaderSize);
         return this;
     }
 
@@ -215,7 +219,7 @@ public final class AddressParsingHttpRequesterBuilder {
      */
     public AddressParsingHttpRequesterBuilder setHeadersEncodedSizeEstimate(
             final int headersEncodedSizeEstimate) {
-        clientBuilder.setHeadersEncodedSizeEstimate(headersEncodedSizeEstimate);
+        builderTemplate.setHeadersEncodedSizeEstimate(headersEncodedSizeEstimate);
         return this;
     }
 
@@ -228,7 +232,7 @@ public final class AddressParsingHttpRequesterBuilder {
      */
     public AddressParsingHttpRequesterBuilder setTrailersEncodedSizeEstimate(
             final int trailersEncodedSizeEstimate) {
-        clientBuilder.setTrailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
+        builderTemplate.setTrailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
         return this;
     }
 
@@ -242,7 +246,7 @@ public final class AddressParsingHttpRequesterBuilder {
      * @return {@code this}.
      */
     public AddressParsingHttpRequesterBuilder setMaxPipelinedRequests(final int maxPipelinedRequests) {
-        clientBuilder.setMaxPipelinedRequests(maxPipelinedRequests);
+        builderTemplate.setMaxPipelinedRequests(maxPipelinedRequests);
         return this;
     }
 
@@ -275,7 +279,7 @@ public final class AddressParsingHttpRequesterBuilder {
      * @return {@code this}.
      */
     public AddressParsingHttpRequesterBuilder setClientGroupFilterFactory(final
-            UnaryOperator<HttpClientGroup<HostAndPort>> clientGroupFilterFactory) {
+                                                                          UnaryOperator<HttpClientGroup<HostAndPort>> clientGroupFilterFactory) {
         this.clientGroupFilterFactory = requireNonNull(clientGroupFilterFactory);
         return this;
     }
@@ -288,7 +292,7 @@ public final class AddressParsingHttpRequesterBuilder {
      * Some potential candidates for filtering include logging, metrics, and decorating responses.
      * <p>
      * Note this method will be used to decorate the result of
-     * {@link HttpClientBuilder#build(ExecutionContext, Publisher)} before it is returned to the
+     * {@link HttpClientBuilder#build(ExecutionContext)} before it is returned to the
      * {@link HttpClientGroup}.
      *
      * @param clientFilterFactory A {@link BiFunction} to decorate {@link HttpClient} for the purpose of filtering.
@@ -296,7 +300,7 @@ public final class AddressParsingHttpRequesterBuilder {
      */
     public AddressParsingHttpRequesterBuilder setClientFilterFactory(
             final BiFunction<HttpClient, Publisher<Object>, HttpClient> clientFilterFactory) {
-        clientBuilder.setClientFilterFactory(clientFilterFactory);
+        builderTemplate.setClientFilterFactory(clientFilterFactory);
         return this;
     }
 
@@ -313,7 +317,53 @@ public final class AddressParsingHttpRequesterBuilder {
      */
     public AddressParsingHttpRequesterBuilder setConnectionFilterFactory(
             final UnaryOperator<HttpConnection> connectionFilterFactory) {
-        clientBuilder.setConnectionFilterFactory(connectionFilterFactory);
+        builderTemplate.setConnectionFilterFactory(connectionFilterFactory);
+        return this;
+    }
+
+    /**
+     * Adds a client filter on to the existing {@link HttpClient} filter {@link BiFunction} from
+     * {@link #setClientFilterFactory(BiFunction)}.
+     * <p>
+     * The order of execution of these filters are in reverse order of addition. If 3 filters are added as follows:
+     * <pre>
+     *     builder.addClientFilterFactory(filter1).addClientFilterFactory(filter2).addClientFilterFactory(filter3)
+     * </pre>
+     * then while making a request to the client built by this builder the order of invocation of these filters will be:
+     * <pre>
+     *     filter3 =&gt; filter2 =&gt; filter1
+     * </pre>
+     * @param clientFilterFactory {@link BiFunction} to decorate a {@link HttpClient} for the purpose of filtering.
+     * The signature of the {@link BiFunction} is as follows:
+     * <pre>
+     *     PostFilteredHttpClient func(PreFilteredHttpClient, {@link LoadBalancer#getEventStream()})
+     * </pre>
+     * @return {@code this}
+     */
+    public AddressParsingHttpRequesterBuilder addClientFilterFactory(
+            final BiFunction<HttpClient, Publisher<Object>, HttpClient> clientFilterFactory) {
+        this.builderTemplate.addClientFilterFactory(clientFilterFactory);
+        return this;
+    }
+
+    /**
+     * Append a client filter on to the existing {@link HttpClient} filter {@link BiFunction} from
+     * {@link #setClientFilterFactory(BiFunction)}.
+     * <p>
+     * The order of execution of these filters are in reverse order of addition. If 3 filters are added as follows:
+     * <pre>
+     *     builder.addClientFilterFactory(filter1).addClientFilterFactory(filter2).addClientFilterFactory(filter3)
+     * </pre>
+     * then while making a request to the client built by this builder the order of invocation of these filters will be:
+     * <pre>
+     *     filter3 =&gt; filter2 =&gt; filter1
+     * </pre>
+     * @param clientFilterFactory {@link Function} to decorate a {@link HttpClient} for the purpose of filtering.
+     * @return {@code this}
+     */
+    public AddressParsingHttpRequesterBuilder addClientFilterFactory(
+            final Function<HttpClient, HttpClient> clientFilterFactory) {
+        builderTemplate.addClientFilterFactory(clientFilterFactory);
         return this;
     }
 
@@ -349,24 +399,20 @@ public final class AddressParsingHttpRequesterBuilder {
         requireNonNull(executionContext);
         final CompositeCloseable closeables = newCompositeCloseable();
         try {
-            final boolean serviceDiscovererProvided = serviceDiscoverer != null;
-            final ServiceDiscoverer<HostAndPort, InetSocketAddress> serviceDiscoverer = serviceDiscovererProvided ?
-                    this.serviceDiscoverer :
-                    closeables.prepend(new DefaultDnsServiceDiscovererBuilder(executionContext).build());
 
             final ClientBuilderFactory clientBuilderFactory =
-                    new ClientBuilderFactory(clientBuilder, sslConfigProvider);
+                    new ClientBuilderFactory(builderTemplate, sslConfigProvider);
             HttpClientGroup<HostAndPort> clientGroup = closeables.prepend(clientGroupFilterFactory.apply(
                     closeables.prepend(newHttpClientGroup((gk, md) -> clientBuilderFactory.apply(gk, md)
-                            .build(executionContext, serviceDiscoverer.discover(gk.getAddress()))))));
+                            .build(executionContext)))));
             final CacheableGroupKeyFactory groupKeyFactory =
                     closeables.prepend(new CacheableGroupKeyFactory(executionContext, sslConfigProvider));
             clientGroup = maxRedirects <= 0 ? clientGroup :
                     new RedirectingHttpClientGroup<>(clientGroup, groupKeyFactory, executionContext, maxRedirects);
             final HttpRequester requester = closeables.prepend(requesterFilterFactory.apply(
-                            closeables.prepend(clientGroup.asRequester(groupKeyFactory, executionContext))));
+                    closeables.prepend(clientGroup.asRequester(groupKeyFactory, executionContext))));
 
-            return new AddressParsingHttpRequester(requester, toAsyncCloseable(closeables::closeAsync));
+            return new AddressParsingHttpRequester(requester, toListenableAsyncCloseable(closeables));
         } catch (final Exception e) {
             closeables.closeAsync().subscribe();
             throw e;
@@ -459,8 +505,8 @@ public final class AddressParsingHttpRequesterBuilder {
             if (host == null) {
                 throw new IllegalArgumentException(
                         "HttpRequest does not contain information about target server address." +
-                        " Request-target: " + request.getRequestTarget() +
-                        ", HOST header: " + request.getHeaders().get(HOST));
+                                " Request-target: " + request.getRequestTarget() +
+                                ", HOST header: " + request.getHeaders().get(HOST));
             }
             final int effectivePort = request.getEffectivePort();
             final int port = effectivePort >= 0 ? effectivePort :
@@ -493,21 +539,21 @@ public final class AddressParsingHttpRequesterBuilder {
      * {@link HostAndPort}.
      */
     private static final class ClientBuilderFactory implements BiFunction<GroupKey<HostAndPort>, HttpRequestMetaData,
-            DefaultHttpClientBuilder<InetSocketAddress>> {
+            DefaultHttpClientBuilder<HostAndPort, InetSocketAddress>> {
 
-        private final DefaultHttpClientBuilder<InetSocketAddress> clientBuilder;
+        private final DefaultHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
         private final SslConfigProvider sslConfigProvider;
 
-        ClientBuilderFactory(final DefaultHttpClientBuilder<InetSocketAddress> clientBuilder,
-                             final SslConfigProvider sslConfigProvider) {
+        ClientBuilderFactory(final DefaultHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate,
+                                     final SslConfigProvider sslConfigProvider) {
             // Copy existing builder to prevent runtime changes after build() was invoked
-            this.clientBuilder = new DefaultHttpClientBuilder<>(clientBuilder);
+            this.builderTemplate = DefaultHttpClientBuilder.from(DUMMY_HAP, builderTemplate);
             this.sslConfigProvider = sslConfigProvider;
         }
 
         @Override
-        public DefaultHttpClientBuilder<InetSocketAddress> apply(final GroupKey<HostAndPort> groupKey,
-                                                                 final HttpRequestMetaData requestMetaData) {
+        public DefaultHttpClientBuilder<HostAndPort, InetSocketAddress> apply(final GroupKey<HostAndPort> groupKey,
+                                                                              final HttpRequestMetaData requestMetaData) {
             final HttpScheme scheme = HttpScheme.from(requestMetaData.getScheme());
             final HostAndPort hostAndPort = groupKey.getAddress();
             SslConfig sslConfig;
@@ -528,9 +574,7 @@ public final class AddressParsingHttpRequesterBuilder {
                     throw new IllegalArgumentException("Unknown scheme: " + scheme);
             }
 
-            return new DefaultHttpClientBuilder<>(clientBuilder)
-                    .setSslConfig(sslConfig)
-                    .addClientFilterFactory(c -> newHostHeaderFilter(hostAndPort, c));
+            return DefaultHttpClientBuilder.from(hostAndPort, builderTemplate).setSslConfig(sslConfig);
         }
     }
 
