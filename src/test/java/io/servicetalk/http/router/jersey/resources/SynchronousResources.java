@@ -15,7 +15,9 @@
  */
 package io.servicetalk.http.router.jersey.resources;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpPayloadChunks;
@@ -72,7 +74,10 @@ import static javax.ws.rs.core.Response.ok;
 import static javax.ws.rs.core.Response.status;
 
 /**
- * Synchronous (in JAX-RS lingo) resources.
+ * Synchronous (in JAX-RS lingo [1]) resources.
+ * <p>
+ * [1] These resources are synchronous because they return either a {@link Response} or a response body entity that
+ * will be wrapped with {@link Response#ok(Object)}, whether or not this entity body is complete or streaming.
  */
 @Path(PATH)
 public class SynchronousResources {
@@ -300,10 +305,49 @@ public class SynchronousResources {
                 .map(HttpPayloadChunks::newPayloadChunk);
     }
 
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Path("/json-buf-sglin-sglout-response")
+    @POST
+    public Response postJsonBufSingleInSingleOutResponse(final Single<Buffer> requestContent) {
+        final Single<Buffer> response = requestContent.map(buf -> {
+            final Map<String, Object> responseContent =
+                    new HashMap<>(SERIALIZER.deserializeAggregatedSingle(buf, STRING_OBJECT_MAP_TYPE));
+            responseContent.put("foo", "bar6");
+            return SERIALIZER.serialize(responseContent, ctx.getExecutionContext().getBufferAllocator());
+        });
+
+        final GenericEntity<Single<Buffer>> entity = new GenericEntity<Single<Buffer>>(response) {
+        };
+
+        return accepted(entity).build();
+    }
+
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Path("/json-buf-pubin-pubout")
+    @POST
+    public Publisher<Buffer> postJsonBufPubInPubOut(final Publisher<Buffer> requestContent) {
+        return requestContent
+                .map(buf -> ctx.getBufferAllocator().fromUtf8(buf.toString(UTF_8).toUpperCase()));
+    }
+
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    @Path("/json-buf-pubin-pubout-response")
+    @POST
+    public Response postJsonBufPubInPubOutResponse(final Publisher<Buffer> requestContent) {
+        final GenericEntity<Publisher<Buffer>> entity =
+                new GenericEntity<Publisher<Buffer>>(postJsonBufPubInPubOut(requestContent)) {
+                };
+
+        return accepted(entity).build();
+    }
+
     @Produces(APPLICATION_JSON)
     @Path("/security-context")
     @GET
-    public SecurityContext serviceTalkRequest(@Context final SecurityContext securityContext) {
+    public SecurityContext securityContext(@Context final SecurityContext securityContext) {
         return securityContext;
     }
 }

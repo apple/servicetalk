@@ -17,11 +17,16 @@
 <FindBugsFilter>
   <!-- Spotbugs doesn't know that these fields are initialized via DI. -->
   <Match>
-    <Class name="io.servicetalk.http.router.jersey.PublisherMessageBodyReaderWriter"/>
+    <Class name="io.servicetalk.http.router.jersey.AbstractMessageBodyReaderWriter"/>
     <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
     <Or>
       <Field name="ctx"/>
       <Field name="requestContextProvider"/>
     </Or>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.http.router.jersey.BufferMessageBodyWriter"/>
+    <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
+    <Field name="requestContextProvider"/>
   </Match>
 </FindBugsFilter>

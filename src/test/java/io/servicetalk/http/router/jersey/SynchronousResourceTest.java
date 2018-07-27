@@ -21,6 +21,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_0;
+import static io.servicetalk.http.api.HttpResponseStatuses.ACCEPTED;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponseStatuses.PARTIAL_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
@@ -113,6 +114,24 @@ public class SynchronousResourceTest extends AbstractResourceTest {
     public void postJsonPubInPubOut() {
         sendAndAssertResponse(post("/json-pubin-pubout", "{\"key\":\"val4\"}", APPLICATION_JSON),
                 OK, APPLICATION_JSON, jsonEquals("{\"key\":\"val4\",\"foo\":\"bar5\"}"), $ -> null);
+    }
+
+    @Test
+    public void postJsonBufSingleInSingleOutResponse() {
+        sendAndAssertResponse(post("/json-buf-sglin-sglout-response", "{\"key\":\"val6\"}", APPLICATION_JSON),
+                ACCEPTED, APPLICATION_JSON, jsonEquals("{\"key\":\"val6\",\"foo\":\"bar6\"}"), $ -> null);
+    }
+
+    @Test
+    public void postJsonBufPubInPubOut() {
+        sendAndAssertResponse(post("/json-buf-pubin-pubout", "{\"key\":\"val6\"}", APPLICATION_JSON),
+                OK, APPLICATION_JSON, jsonEquals("{\"KEY\":\"VAL6\"}"), $ -> null);
+    }
+
+    @Test
+    public void postJsonBufPubInPubOutResponse() {
+        sendAndAssertResponse(post("/json-buf-pubin-pubout-response", "{\"key\":\"val7\"}", APPLICATION_JSON),
+                ACCEPTED, APPLICATION_JSON, jsonEquals("{\"KEY\":\"VAL7\"}"), $ -> null);
     }
 
     @Test

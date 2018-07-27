@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpResponseStatuses.ACCEPTED;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
@@ -66,6 +67,12 @@ public abstract class AbstractFilterInterceptorTest extends AbstractJerseyHttpSe
 
         sendAndAssertResponse(post(AsynchronousResources.PATH + "/text-response", "baz2", TEXT_PLAIN),
                 ACCEPTED, TEXT_PLAIN, "GOT: BAZ2!");
+    }
+
+    @Test
+    public void singleResources() {
+        sendAndAssertResponse(get(AsynchronousResources.PATH + "/single-response"), ACCEPTED, TEXT_PLAIN, "DONE!");
+        sendAndAssertResponse(get(AsynchronousResources.PATH + "/single-map"), OK, APPLICATION_JSON, "{\"foo\":\"bar4\"}!");
     }
 
     protected static class UpperCaseInputStream extends FilterInputStream {

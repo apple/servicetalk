@@ -37,7 +37,11 @@ import static org.glassfish.jersey.internal.inject.ReferencingFactory.referenceF
 public final class ServiceTalkFeature implements Feature {
     @Override
     public boolean configure(final FeatureContext context) {
-        context.register(PublisherMessageBodyReaderWriter.class);
+        context.register(BufferMessageBodyWriter.class);
+        context.register(BufferPublisherMessageBodyReaderWriter.class);
+        context.register(BufferSingleMessageBodyReaderWriter.class);
+        context.register(HttpPayloadChunkPublisherMessageBodyReaderWriter.class);
+        context.register(SingleRequestFilterWriterInterceptor.class);
 
         context.register(new AbstractBinder() {
             @Override

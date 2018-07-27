@@ -229,9 +229,9 @@ public abstract class AbstractJerseyHttpServiceTest {
             assertThat(res.getVersion(), is(expectedHttpVersion));
             final HttpResponseStatus status = res.getStatus();
             assertThat(status.getCode(), is(expectedStatus.getCode()));
-            Buffer reasonPhrase = DEFAULT_ALLOCATOR.newBuffer();
+            final Buffer reasonPhrase = DEFAULT_ALLOCATOR.newBuffer();
             status.writeReasonPhraseTo(reasonPhrase);
-            Buffer expectedReasonPhrase = DEFAULT_ALLOCATOR.newBuffer();
+            final Buffer expectedReasonPhrase = DEFAULT_ALLOCATOR.newBuffer();
             expectedStatus.writeReasonPhraseTo(expectedReasonPhrase);
             assertThat(reasonPhrase, is(expectedReasonPhrase));
 
@@ -259,6 +259,8 @@ public abstract class AbstractJerseyHttpServiceTest {
             assertThat(contentAsString, contentMatcher);
 
             return res;
+        } catch (final AssertionError ae) {
+            throw ae;
         } catch (final Throwable t) {
             throw new RuntimeException(t);
         }
