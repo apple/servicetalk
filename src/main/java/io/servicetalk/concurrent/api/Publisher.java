@@ -433,8 +433,8 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *      List<T> results = resultOfThisPublisher();
      *  } finally {
      *      // NOTE: The order of operations here is not guaranteed by this method!
-     *      doFinally.run();
      *      nextOperation(); // Maybe notifying of cancellation, or termination
+     *      doFinally.run();
      *  }
      * }</pre>
      * @param doFinally Invoked when any of the following terminal methods are called:
@@ -449,7 +449,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see #doBeforeFinally(Runnable)
      */
     public final Publisher<T> doFinally(Runnable doFinally) {
-        return doBeforeFinally(doFinally);
+        return doAfterFinally(doFinally);
     }
 
     /**

@@ -156,8 +156,8 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *      resultOfThisCompletable();
      *  } finally {
      *      // NOTE: The order of operations here is not guaranteed by this method!
-     *      doFinally.run();
      *      nextOperation(); // Maybe notifying of cancellation, or termination
+     *      doFinally.run();
      *  }
      * }</pre>
      * @param doFinally Invoked when any of the following terminal methods are called:
@@ -172,7 +172,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @see #doBeforeFinally(Runnable)
      */
     public final Completable doFinally(Runnable doFinally) {
-        return doBeforeFinally(doFinally);
+        return doAfterFinally(doFinally);
     }
 
     /**

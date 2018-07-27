@@ -236,8 +236,8 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      *      T result = resultOfThisSingle();
      *  } finally {
      *      // NOTE: The order of operations here is not guaranteed by this method!
-     *      doFinally.run();
      *      nextOperation(); // Maybe notifying of cancellation, or termination
+     *      doFinally.run();
      *  }
      * }</pre>
      * @param doFinally Invoked when any of the following terminal methods are called:
@@ -252,7 +252,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @see #doBeforeFinally(Runnable)
      */
     public final Single<T> doFinally(Runnable doFinally) {
-        return doBeforeFinally(doFinally);
+        return doAfterFinally(doFinally);
     }
 
     /**
