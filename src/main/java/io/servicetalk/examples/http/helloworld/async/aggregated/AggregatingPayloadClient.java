@@ -46,8 +46,8 @@ public final class AggregatingPayloadClient {
 
             // Create a request, send the request, and wait for the response.
             client.request(newRequest(GET, "/sayHello"))
-                    .doAfterError(cause -> LOGGER.error("request failed!", cause))
-                    .doAfterFinally(responseProcessedLatch::countDown)
+                    .doOnError(cause -> LOGGER.error("request failed!", cause))
+                    .doFinally(responseProcessedLatch::countDown)
                     .subscribe(response -> {
                         LOGGER.info("got response\n{}", response.toString((name, value) -> value));
                         LOGGER.info("Response content:\n{}", response.getPayloadBody().getContent().toString(US_ASCII));

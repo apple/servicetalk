@@ -47,8 +47,8 @@ public final class AggregatingPayloadAddressParsingRequester {
             CountDownLatch responseProcessedLatch = new CountDownLatch(1);
 
             requester.request(newRequest(GET, "http://localhost:8080/sayHello"))
-                    .doAfterError(cause -> LOGGER.error("request failed!", cause))
-                    .doAfterFinally(responseProcessedLatch::countDown)
+                    .doOnError(cause -> LOGGER.error("request failed!", cause))
+                    .doFinally(responseProcessedLatch::countDown)
                     .subscribe(response -> {
                         LOGGER.info("Got response \n{}", response.toString((name, value) -> value));
                         LOGGER.info("Response content: \n{}",

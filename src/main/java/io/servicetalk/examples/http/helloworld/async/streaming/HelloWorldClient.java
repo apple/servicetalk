@@ -56,8 +56,8 @@ public final class HelloWorldClient {
                         return response.getPayloadBody()
                                 .map(chunk -> chunk.getContent().toString(US_ASCII));
                     })
-                    .doAfterError(cause -> LOGGER.error("request failed!", cause))
-                    .doAfterFinally(responseProcessedLatch::countDown)
+                    .doOnError(cause -> LOGGER.error("request failed!", cause))
+                    .doFinally(responseProcessedLatch::countDown)
                     .forEach(stringPayloadChunk -> LOGGER.info("converted string chunk '{}'", stringPayloadChunk));
 
             // Don't exit the main thread until after the response is completely processed.
