@@ -28,10 +28,12 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnCompleteSupplier;
+import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnErrorSupplier;
+import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Executors.newOffloader;
 import static java.util.Objects.requireNonNull;
@@ -61,183 +63,133 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
         this.executor = requireNonNull(executor);
     }
 
-    /**
-     * Add a plugin that will be invoked on each {@link #subscribe(Subscriber)} call. This can be used for visibility or to
-     * extend functionality to all {@link Subscriber}s which pass through {@link #subscribe(Subscriber)}.
-     * @param subscribePlugin the plugin that will be invoked on each {@link #subscribe(Subscriber)} call.
-     */
-    @SuppressWarnings("rawtypes")
-    public static void addSubscribePlugin(BiConsumer<? super Subscriber, Consumer<? super Subscriber>> subscribePlugin) {
-        requireNonNull(subscribePlugin);
-        SUBSCRIBE_PLUGIN_REF.updateAndGet(currentPlugin -> currentPlugin == null ? subscribePlugin :
-                (subscriber, handleSubscribe) -> subscribePlugin.accept(subscriber, subscriber2 -> subscribePlugin.accept(subscriber2, handleSubscribe))
-        );
-    }
-
-    @Override
-    public final void subscribe(Subscriber subscriber) {
-        // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader
-        // to use.
-        final SignalOffloader signalOffloader = newOffloader(executor);
-        // Since this is a user-driven subscribe (end of the execution chain), offload Cancellable
-        subscribe(signalOffloader.offloadCancellable(subscriber), signalOffloader);
-    }
+    //
+    // Operators Begin
+    //
 
     /**
-     * Handles a subscriber to this {@code Completable}.
+     * Ignores any error returned by this {@link Completable} and resume to a new {@link Completable}.
      * <p>
-     * This method is invoked internally by {@link Completable} for every call to the
-     * {@link Completable#subscribe(Subscriber)} method.
-     *
-     * @param subscriber the subscriber.
+     * This method provides similar capabilities to a try/catch block in sequential programming:
+     * <pre>{@code
+     *     try {
+     *         resultOfThisCompletable();
+     *     } catch (Throwable cause) {
+     *         // Note that nextFactory returning a error Completable is like re-throwing (nextFactory shouldn't throw).
+     *         nextFactory.apply(cause);
+     *     }
+     * }</pre>
+     * @param nextFactory Returns the next {@link Completable}, if this {@link Completable} emits an error.
+     * @return The new {@link Completable}.
      */
-    protected abstract void handleSubscribe(Subscriber subscriber);
-
-    /**
-     * A special subscribe mode that uses the passed {@link SignalOffloader} instead of creating a new
-     * {@link SignalOffloader} like {@link #subscribe(Subscriber)}. This will call
-     * {@link #handleSubscribe(Subscriber, SignalOffloader)} to handle this subscribe instead of
-     * {@link #handleSubscribe(Subscriber)}.<p>
-     *
-     *     This method is used by operator implementations to inherit a chosen {@link SignalOffloader} per
-     *     {@link Subscriber} where possible.
-     *     This method does not wrap the passed {@link Subscriber} or {@link Cancellable} to offload processing to
-     *     {@link SignalOffloader}.
-     *     That is done by {@link #handleSubscribe(Subscriber, SignalOffloader)} and hence can be overridden by
-     *     operators that do not require this wrapping.
-     *
-     * @param subscriber {@link Subscriber} to this {@link Completable}.
-     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
-     */
-    final void subscribe(Subscriber subscriber, SignalOffloader signalOffloader) {
-        requireNonNull(subscriber);
-        BiConsumer<? super Subscriber, Consumer<? super Subscriber>> plugin = SUBSCRIBE_PLUGIN_REF.get();
-        if (plugin != null) {
-            plugin.accept(subscriber, sub -> handleSubscribe(sub, signalOffloader));
-        } else {
-            handleSubscribe(subscriber, signalOffloader);
-        }
+    public final Completable onErrorResume(Function<Throwable, Completable> nextFactory) {
+        return new ResumeCompletable(this, nextFactory, executor);
     }
 
     /**
-     * Override for {@link #handleSubscribe(Subscriber)} to offload the {@link #handleSubscribe(Subscriber)} call to the
-     * passed {@link SignalOffloader}. <p>
-     *
-     *     This method wraps the passed {@link Subscriber} using {@link SignalOffloader#offloadSubscriber(Subscriber)}
-     *     and then calls {@link #handleSubscribe(Subscriber)} using
-     *     {@link SignalOffloader#offloadSignal(Object, Consumer)}.
-     *     Operators that do not wish to wrap the passed {@link Subscriber} can override this method and omit the
-     *     wrapping.
-     *
-     * @param subscriber the subscriber.
-     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
-     */
-    void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader) {
-        Subscriber safeSubscriber = signalOffloader.offloadSubscriber(subscriber);
-        signalOffloader.offloadSignal(safeSubscriber, this::handleSubscribe);
-    }
-
-    /**
-     * Subscribe to this {@link Completable} and log any {@link Subscriber#onError(Throwable)}.
-     *
-     * @return {@link Cancellable} used to invoke {@link Cancellable#cancel()} on the parameter of
-     * {@link Subscriber#onSubscribe(Cancellable)} for this {@link Completable}.
-     */
-    public final Cancellable subscribe() {
-        SimpleCompletableSubscriber subscriber = new SimpleCompletableSubscriber();
-        subscribe(subscriber);
-        return subscriber;
-    }
-
-    /**
-     * Merges this {@link Completable} with the {@code other} {@link Completable}s so that the resulting
-     * {@link Completable} terminates successfully when all of these complete or terminates with an error when any one terminates with an error.
-     *
-     * @param other {@link Completable}s to merge.
-     * @return {@link Completable} that terminates successfully when this and all {@code other} {@link Completable}s complete or terminates with an error when any one terminates with an error.
-     */
-    public final Completable merge(Completable... other) {
-        return new MergeCompletable(false, this, executor, other);
-    }
-
-    /**
-     * Merges this {@link Completable} with the {@code other} {@link Completable}s so that the resulting
-     * {@link Completable} terminates successfully when all of these complete or terminates with an error when any one terminates with an error.
-     *
-     * @param other {@link Completable}s to merge.
-     * @return {@link Completable} that terminates successfully when this and all {@code other} {@link Completable}s complete or terminates with an error when any one terminates with an error.
-     */
-    public final Completable merge(Iterable<? extends Completable> other) {
-        return new IterableMergeCompletable(false, this, other, executor);
-    }
-
-    /**
-     * Merges the passed {@link Publisher} with this {@link Completable}.
+     * Invokes the {@code onSuccess} {@link Consumer} argument when {@link Subscriber#onComplete()} is called for
+     * {@link Subscriber}s of the returned {@link Completable}.
      * <p>
-     * The resulting {@link Publisher} emits all items emitted by the passed {@link Publisher} and terminates
-     * successfully when both this {@link Completable} and the passed {@link Publisher} terminates successfully.
-     * It terminates with an error when any one of this {@link Completable} or passed {@link Publisher} terminates with
-     * an error.
-     *
-     * @param mergeWith the {@link Publisher} to merge in
-     * @param <T>       The value type of the resulting {@link Publisher}.
-     * @return {@link Publisher} that emits all items emitted by the passed {@link Publisher} and terminates
-     * successfully when both this {@link Completable} and the passed {@link Publisher} terminates successfully.
-     * It terminates with an error when any one of this {@link Completable} or passed {@link Publisher} terminates with
-     * an error.
-     *
-     * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
-     */
-    public final <T> Publisher<T> merge(Publisher<T> mergeWith) {
-        return new CompletableMergeWithPublisher<>(this, mergeWith, executor);
-    }
-
-    /**
-     * Merges this {@link Completable} with the {@code other} {@link Completable}s, and delays error notification until all involved {@link Completable}s terminate.
+     * The order in which {@code onSuccess} will be invoked relative to {@link Subscriber#onComplete()} is
+     * undefined. If you need strict ordering see {@link #doBeforeComplete(Runnable)} and
+     * {@link #doAfterComplete(Runnable)}.
      * <p>
-     * Use {@link #merge(Completable...)} if any error should immediately terminate the returned {@link Completable}.
-     * @param other {@link Completable}s to merge.
-     * @return {@link Completable} that terminates after {@code this} {@link Completable} and all {@code other} {@link Completable}s.
-     * If all involved {@link Completable}s terminate successfully then the return value will terminate successfully. If any {@link Completable}
-     * terminates in an error, then the return value will also terminate in an error.
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  // NOTE: The order of operations here is not guaranteed by this method!
+     *  onComplete.run();
+     *  nextOperation(result);
+     * }</pre>
+     * @param onComplete Invoked when {@link Subscriber#onComplete()} is called for {@link Subscriber}s of the returned
+     * {@link Completable}. <strong>MUST NOT</strong> throw.
+     * @return The new {@link Completable}.
+     * @see #doBeforeComplete(Runnable)
+     * @see #doAfterComplete(Runnable)
      */
-    public final Completable mergeDelayError(Completable... other) {
-        return new MergeCompletable(true, this, executor, other);
+    public final Completable doOnComplete(Runnable onComplete) {
+        return doBeforeComplete(onComplete);
     }
 
     /**
-     * Merges this {@link Completable} with the {@code other} {@link Completable}s, and delays error notification until all involved {@link Completable}s terminate.
+     * Invokes the {@code onError} {@link Consumer} argument when {@link Subscriber#onError(Throwable)} is called for
+     * {@link Subscriber}s of the returned {@link Completable}.
      * <p>
-     * Use {@link #merge(Iterable)} if any error should immediately terminate the returned {@link Completable}.
-     * @param other {@link Completable}s to merge.
-     * @return {@link Completable} that terminates after {@code this} {@link Completable} and all {@code other} {@link Completable}s.
-     * If all involved {@link Completable}s terminate successfully then the return value will terminate successfully. If any {@link Completable}
-     * terminates in an error, then the return value will also terminate in an error.
+     * The order in which {@code onError} will be invoked relative to {@link Subscriber#onError(Throwable)} is
+     * undefined. If you need strict ordering see {@link #doBeforeError(Consumer)} and
+     * {@link #doAfterError(Consumer)}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  try {
+     *    resultOfThisCompletable();
+     *  } catch (Throwable cause) {
+     *      // NOTE: The order of operations here is not guaranteed by this method!
+     *      onError.accept(cause);
+     *      nextOperation(cause);
+     *  }
+     * }</pre>
+     * @param onError Invoked when {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the
+     * returned {@link Completable}. <strong>MUST NOT</strong> throw.
+     * @return The new {@link Completable}.
+     * @see #doBeforeError(Consumer)
+     * @see #doAfterError(Consumer)
      */
-    public final Completable mergeDelayError(Iterable<? extends Completable> other) {
-        return new IterableMergeCompletable(true, this, other, executor);
+    public final Completable doOnError(Consumer<Throwable> onError) {
+        return doBeforeError(onError);
     }
 
     /**
-     * Converts this {@code Completable} to a {@link Publisher}.
-     * @param value The value to deliver to {@link org.reactivestreams.Subscriber#onNext(Object)} when this {@link Completable} completes.
-     *              {@code null} is not allowed.
-     * @param <T> The value type of the resulting {@link Publisher}.
-     * @return A {@link Publisher} that mirrors the terminal signal from this {@link Completable}.
+     * Invokes the {@code doFinally} {@link Runnable} argument when any of the following terminal methods are called:
+     * <ul>
+     *     <li>{@link Subscriber#onComplete()}</li>
+     *     <li>{@link Subscriber#onError(Throwable)}</li>
+     *     <li>{@link Cancellable#cancel()}</li>
+     * </ul>
+     * for Subscriptions/{@link Subscriber}s of the returned {@link Completable}.
+     * <p>
+     * The order in which {@code doFinally} will be invoked relative to the above methods is undefined. If you need
+     * strict ordering see {@link #doBeforeFinally(Runnable)} and {@link #doAfterFinally(Runnable)}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  try {
+     *      resultOfThisCompletable();
+     *  } finally {
+     *      // NOTE: The order of operations here is not guaranteed by this method!
+     *      doFinally.run();
+     *      nextOperation(); // Maybe notifying of cancellation, or termination
+     *  }
+     * }</pre>
+     * @param doFinally Invoked when any of the following terminal methods are called:
+     * <ul>
+     *     <li>{@link Subscriber#onComplete()}</li>
+     *     <li>{@link Subscriber#onError(Throwable)}</li>
+     *     <li>{@link Cancellable#cancel()}</li>
+     * </ul>
+     * for Subscriptions/{@link Subscriber}s of the returned {@link Completable} <strong>MUST NOT</strong> throw.
+     * @return The new {@link Completable}.
+     * @see #doAfterFinally(Runnable)
+     * @see #doBeforeFinally(Runnable)
      */
-    public final <T> Publisher<T> toPublisher(@Nullable T value) {
-        return toPublisher(() -> value);
+    public final Completable doFinally(Runnable doFinally) {
+        return doBeforeFinally(doFinally);
     }
 
     /**
-     * Converts this {@code Completable} to a {@link Publisher}.
-     * @param valueSupplier A {@link Supplier} that produces the value to deliver to
-     * {@link org.reactivestreams.Subscriber#onNext(Object)} when this {@link Completable} completes.
-     * @param <T> The value type of the resulting {@link Publisher}.
-     * @return A {@link Publisher} that mirrors the terminal signal from this {@link Completable}.
+     * Invokes the {@code onCancel} {@link Runnable} argument when {@link Cancellable#cancel()} is called for
+     * Subscriptions of the returned {@link Completable}.
+     * <p>
+     * The order in which {@code doFinally} will be invoked relative to {@link Cancellable#cancel()} is undefined. If
+     * you need strict ordering see {@link #doBeforeCancel(Runnable)} and {@link #doAfterCancel(Runnable)}.
+
+     * @param onCancel Invoked when {@link Cancellable#cancel()} is called for Subscriptions of the
+     * returned {@link Completable}. <strong>MUST NOT</strong> throw.
+     * @return The new {@link Completable}.
+     * @see #doBeforeCancel(Runnable)
+     * @see #doAfterCancel(Runnable)
      */
-    public final <T> Publisher<T> toPublisher(Supplier<T> valueSupplier) {
-        return new CompletableToPublisher<>(this, valueSupplier, executor);
+    public final Completable doOnCancel(Runnable onCancel) {
+        return doBeforeCancel(onCancel);
     }
 
     /**
@@ -318,11 +270,18 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
 
     /**
      * Once this {@link Completable} is terminated successfully, subscribe to {@code next} {@link Completable}
-     * and propagate its terminal signal to the returned {@link Completable}.<p>
-     *     Any error from this {@link Completable} and {@code next} {@link Completable} are propagated to the returned {@link Completable}.
-     *
+     * and propagate its terminal signal to the returned {@link Completable}. Any error from this {@link Completable}
+     * or {@code next} {@link Completable} are propagated to the returned {@link Completable}.
+     * <p>
+     * This method provides a means to sequence the execution of two asynchronous sources and in sequential programming
+     * is similar to:
+     * <pre>{@code
+     *     resultOfThisCompletable();
+     *     nextCompletable();
+     * }</pre>
      * @param next {@link Completable} to subscribe after this {@link Completable} terminates successfully.
-     * @return A {@link Completable} that emits the terminal signal of {@code next} {@link Completable}, after this {@link Completable} has terminated successfully.
+     * @return A {@link Completable} that emits the terminal signal of {@code next} {@link Completable}, after this
+     * {@link Completable} has terminated successfully.
      */
     public final Completable andThen(Completable next) {
         return new CompletableAndThenCompletable(this, next, executor);
@@ -330,12 +289,20 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
 
     /**
      * Once this {@link Completable} is terminated successfully, subscribe to {@code next} {@link Single}
-     * and propagate the result to the returned {@link Single}.<p>
-     *     Any error from this {@link Completable} and {@code next} {@link Single} are propagated to the returned {@link Single}.
-     *
+     * and propagate the result to the returned {@link Single}. Any error from this {@link Completable} or {@code next}
+     * {@link Single} are propagated to the returned {@link Single}.
+     * <p>
+     * This method provides a means to sequence the execution of two asynchronous sources and in sequential programming
+     * is similar to:
+     * <pre>{@code
+     *     resultOfThisCompletable();
+     *     T result = resultOfNextSingle();
+     *     return result;
+     * }</pre>
      * @param next {@link Single} to subscribe after this {@link Completable} terminates successfully.
      * @param <T> Type of result of the returned {@link Single}.
-     * @return A {@link Single} that emits the result of {@code next} {@link Single}, after this {@link Completable} has terminated successfully.
+     * @return A {@link Single} that emits the result of {@code next} {@link Single}, after this {@link Completable}
+     * has terminated successfully.
      */
     public final <T> Single<T> andThen(Single<T> next) {
         return new CompletableAndThenSingle<>(this, next, executor);
@@ -343,135 +310,379 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
 
     /**
      * Once this {@link Completable} is terminated successfully, subscribe to {@code next} {@link Publisher}
-     * and propagate all emissions to the returned {@link Publisher}.<p>
-     *     Any error from this {@link Completable} and {@code next} {@link Publisher} are propagated to the returned {@link Publisher}.
-     *
+     * and propagate all emissions to the returned {@link Publisher}. Any error from this {@link Completable} or
+     * {@code next} {@link Publisher} are propagated to the returned {@link Publisher}.
+     * <p>
+     * This method provides a means to sequence the execution of two asynchronous sources and in sequential programming
+     * is similar to:
+     * <pre>{@code
+     *     List<T> results = new ...;
+     *     resultOfThisCompletable();
+     *     results.addAll(nextStream());
+     *     return results;
+     * }</pre>
      * @param next {@link Publisher} to subscribe after this {@link Completable} terminates successfully.
      * @param <T> Type of objects emitted from the returned {@link Publisher}.
-     * @return A {@link Publisher} that emits all items emitted from {@code next} {@link Publisher}, after this {@link Completable} has terminated successfully.
+     * @return A {@link Publisher} that emits all items emitted from {@code next} {@link Publisher}, after this
+     * {@link Completable} has terminated successfully.
      */
     public final <T> Publisher<T> andThen(Publisher<T> next) {
         return toSingle().flatMapPublisher(aVoid -> next);
     }
 
     /**
-     * Converts this {@code Completable} to a {@link Single}.
+     * Merges this {@link Completable} with the {@code other} {@link Completable}s so that the resulting
+     * {@link Completable} terminates successfully when all of these complete or terminates with an error when any one
+     * terminates with an error.
      * <p>
-     * The return value's {@link Single.Subscriber#onSuccess(Object)} value is undefined, and if the value matters see {@link #toSingle(Object)}.
-     * @return A {@link Single} that mirrors the terminal signal from this {@link Completable}.
+     * This method provides a means to merge multiple asynchronous sources, fails-fast in the presence of any errors,
+     * and in sequential programming is similar to:
+     * <pre>{@code
+     *     // It is assumed that this executor has sufficient concurrency to process all Runnables simultaneously
+     *     Executor e = ...;
+     *     List<Future<?>> futures = ...;
+     *     futures.add(e.submit(() -> resultOfThisCompletable()));
+     *     for (Completable c : other) {
+     *         futures.add(e.submit(() -> resultOfCompletable(c));
+     *     }
+     *     // This is a simplification! There is no sequencing of waiting for results. In the event of failure on any
+     *     // operation, imagine the exception is immediately thrown.
+     *     for (Future<?> f : futures) {
+     *         f.get();
+     *     }
+     * }</pre>
+     * @param other {@link Completable}s to merge.
+     * @return {@link Completable} that terminates successfully when this and all {@code other} {@link Completable}s
+     * complete or terminates with an error when any one terminates with an error.
      */
-    private Single<Object> toSingle() {
-        return toSingle(CONVERSION_VALUE);
+    public final Completable merge(Completable... other) {
+        return new MergeCompletable(false, this, executor, other);
     }
 
     /**
-     * Converts this {@code Completable} to a {@link Single}.
-     * @param value The value to deliver to {@link Single.Subscriber#onSuccess(Object)} when this {@link Completable} completes.
-     *              {@code null} is not allowed.
-     * @param <T> The value type of the resulting {@link Single}.
-     * @return A {@link Single} that mirrors the terminal signal from this {@link Completable}.
+     * Merges this {@link Completable} with the {@code other} {@link Completable}s so that the resulting
+     * {@link Completable} terminates successfully when all of these complete or terminates with an error when any one
+     * terminates with an error.
+     * <p>
+     * This method provides a means to merge multiple asynchronous sources, fails-fast in the presence of any errors,
+     * and in sequential programming is similar to:
+     * <pre>{@code
+     *     // It is assumed that this executor has sufficient concurrency to process all Runnables simultaneously
+     *     Executor e = ...;
+     *     List<Future<?>> futures = ...;
+     *     futures.add(e.submit(() -> resultOfThisCompletable()));
+     *     for (Completable c : other) {
+     *         futures.add(e.submit(() -> resultOfCompletable(c));
+     *     }
+     *     // This is a simplification! There is no sequencing in waiting for results. In the event of failure on any
+     *     // operation, imagine the exception is immediately thrown.
+     *     for (Future<?> f : futures) {
+     *         f.get();
+     *     }
+     * }</pre>
+     * @param other {@link Completable}s to merge.
+     * @return {@link Completable} that terminates successfully when this and all {@code other} {@link Completable}s
+     * complete or terminates with an error when any one terminates with an error.
      */
-    public final <T> Single<T> toSingle(T value) {
-        requireNonNull(value);
-        return toSingle(() -> value);
+    public final Completable merge(Iterable<? extends Completable> other) {
+        return new IterableMergeCompletable(false, this, other, executor);
     }
 
     /**
-     * Converts this {@code Completable} to a {@link Single}.
-     * @param valueSupplier A {@link Supplier} that produces the value to deliver to {@link Single.Subscriber#onSuccess(Object)}
-     *                      when this {@link Completable} completes. {@code null} return values are not allowed.
-     * @param <T> The value type of the resulting {@link Single}.
-     * @return A {@link Single} that mirrors the terminal signal from this {@link Completable}.
-     */
-    public final <T> Single<T> toSingle(Supplier<T> valueSupplier) {
-        return new CompletableToSingle<>(this, valueSupplier, executor);
-    }
-
-    /**
-     * Invokes the {@code onSubscribe} {@link Consumer} argument <strong>before</strong> {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned {@link Completable}.
+     * Merges the passed {@link Publisher} with this {@link Completable}.
+     * <p>
+     * The resulting {@link Publisher} emits all items emitted by the passed {@link Publisher} and terminates
+     * successfully when both this {@link Completable} and the passed {@link Publisher} terminates successfully.
+     * It terminates with an error when any one of this {@link Completable} or passed {@link Publisher} terminates with
+     * an error.
+     * <pre>{@code
+     *     // It is assumed that this executor has sufficient concurrency to process all Runnables simultaneously
+     *     Executor e = ...;
+     *     Future<?> future1 = e.submit(() -> resultOfThisCompletable()));
+     *     Future<?> future2 = e.submit(() -> resultOfMergeWithStream());
+     *     // This is a simplification! There is no sequencing in waiting for results. In the event of failure on any
+     *     // operation, imagine the exception is immediately thrown.
+     *     future1.get();
+     *     future2.get();
+     * }</pre>
+     * @param mergeWith the {@link Publisher} to merge in
+     * @param <T> The value type of the resulting {@link Publisher}.
+     * @return {@link Publisher} that emits all items emitted by the passed {@link Publisher} and terminates
+     * successfully when both this {@link Completable} and the passed {@link Publisher} terminates successfully.
+     * It terminates with an error when any one of this {@link Completable} or passed {@link Publisher} terminates with
+     * an error.
      *
-     * @param onSubscribe Invoked <strong>before</strong> {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
+     * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
+     */
+    public final <T> Publisher<T> merge(Publisher<T> mergeWith) {
+        return new CompletableMergeWithPublisher<>(this, mergeWith, executor);
+    }
+
+    /**
+     * Merges this {@link Completable} with the {@code other} {@link Completable}s, and delays error notification until
+     * all involved {@link Completable}s terminate.
+     * <p>
+     * Use {@link #merge(Completable...)} if any error should immediately terminate the returned {@link Completable}.
+     * <p>
+     * This method provides a means to merge multiple asynchronous sources, delays throwing in the presence of any
+     * errors, and in sequential programming is similar to:
+     * <pre>{@code
+     *     // It is assumed that this executor has sufficient concurrency to process all Runnables simultaneously
+     *     Executor e = ...;
+     *     List<Future<?>> futures = ...;
+     *     futures.add(e.submit(() -> resultOfThisCompletable()));
+     *     for (Completable c : other) {
+     *         futures.add(e.submit(() -> resultOfCompletable(c));
+     *     }
+     *     // This is a simplification! There is no sequencing of waiting for results.
+     *     Throwable overallCause = null;
+     *     for (Future<?> f : futures) {
+     *         try {
+     *             f.get();
+     *         } catch (Throwable cause) {
+     *             if (overallCause != null) {
+     *                 overallCause = cause;
+     *             }
+     *         }
+     *     }
+     *     if (overallCause != null) {
+     *         throw overallCause;
+     *     }
+     * }</pre>
+     * @param other {@link Completable}s to merge.
+     * @return {@link Completable} that terminates after {@code this} {@link Completable} and all {@code other}
+     * {@link Completable}s. If all involved {@link Completable}s terminate successfully then the return value will
+     * terminate successfully. If any {@link Completable} terminates in an error, then the return value will also
+     * terminate in an error.
+     */
+    public final Completable mergeDelayError(Completable... other) {
+        return new MergeCompletable(true, this, executor, other);
+    }
+
+    /**
+     * Merges this {@link Completable} with the {@code other} {@link Completable}s, and delays error notification until
+     * all involved {@link Completable}s terminate.
+     * <p>
+     * Use {@link #merge(Iterable)} if any error should immediately terminate the returned {@link Completable}.
+     * <p>
+     * This method provides a means to merge multiple asynchronous sources, delays throwing in the presence of any
+     * errors, and in sequential programming is similar to:
+     * <pre>{@code
+     *     // It is assumed that this executor has sufficient concurrency to process all Runnables simultaneously
+     *     Executor e = ...;
+     *     List<Future<?>> futures = ...;
+     *     futures.add(e.submit(() -> resultOfThisCompletable()));
+     *     for (Completable c : other) {
+     *         futures.add(e.submit(() -> resultOfCompletable(c));
+     *     }
+     *     // This is a simplification! There is no sequencing of waiting for results.
+     *     Throwable overallCause = null;
+     *     for (Future<?> f : futures) {
+     *         try {
+     *             f.get();
+     *         } catch (Throwable cause) {
+     *             if (overallCause != null) {
+     *                 overallCause = cause;
+     *             }
+     *         }
+     *     }
+     *     if (overallCause != null) {
+     *         throw overallCause;
+     *     }
+     * }</pre>
+     * @param other {@link Completable}s to merge.
+     * @return {@link Completable} that terminates after {@code this} {@link Completable} and all {@code other}
+     * {@link Completable}s. If all involved {@link Completable}s terminate successfully then the return value will
+     * terminate successfully. If any {@link Completable} terminates in an error, then the return value will also
+     * terminate in an error.
+     */
+    public final Completable mergeDelayError(Iterable<? extends Completable> other) {
+        return new IterableMergeCompletable(true, this, other, executor);
+    }
+
+    /**
+     * Re-subscribes to this {@link Completable} if an error is emitted and the passed {@link BiIntPredicate} returns
+     * {@code true}.
+     * <p>
+     * This method provides a means to retry an operation under certain failure conditions and in sequential programming
+     * is similar to:
+     * <pre>{@code
+     *     public T execute() {
+     *         return execute(0);
+     *     }
+     *
+     *     private T execute(int attempts) {
+     *         try {
+     *             resultOfThisCompletable();
+     *         } catch (Throwable cause) {
+     *             if (shouldRetry.apply(attempts + 1, cause)) {
+     *                 return execute(attempts + 1);
+     *             } else {
+     *                 throw cause;
+     *             }
+     *         }
+     *     }
+     * }</pre>
+     * @param shouldRetry {@link BiIntPredicate} that given the retry count and the most recent {@link Throwable}
+     * emitted from this
+     * {@link Completable} determines if the operation should be retried.
+     * @return A {@link Completable} that completes with this {@link Completable} or re-subscribes if an error is
+     * emitted and if the passed {@link BiPredicate} returned {@code true}.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
+     */
+    public final Completable retry(BiIntPredicate<Throwable> shouldRetry) {
+        return toSingle().retry(shouldRetry).ignoreResult();
+    }
+
+    /**
+     * Re-subscribes to this {@link Completable} if an error is emitted and the {@link Completable} returned by the
+     * supplied {@link BiIntFunction} completes successfully. If the returned {@link Completable} emits an error, the
+     * returned {@link Completable} terminates with that error.
+     * <p>
+     * This method provides a means to retry an operation under certain failure conditions in an asynchronous fashion
+     * and in sequential programming is similar to:
+     * <pre>{@code
+     *     public T execute() {
+     *         return execute(0);
+     *     }
+     *
+     *     private T execute(int attempts) {
+     *         try {
+     *             resultOfThisCompletable();
+     *         } catch (Throwable cause) {
+     *             try {
+     *                 shouldRetry.apply(attempts + 1, cause); // Either throws or completes normally
+     *                 execute(attempts + 1);
+     *             } catch (Throwable ignored) {
+     *                 throw cause;
+     *             }
+     *         }
+     *     }
+     * }</pre>
+     * @param retryWhen {@link BiIntFunction} that given the retry count and the most recent {@link Throwable} emitted
+     * from this {@link Completable} returns a {@link Completable}. If this {@link Completable} emits an error, that
+     * error is emitted from the returned {@link Completable}, otherwise, original {@link Completable} is re-subscribed
+     * when this {@link Completable} completes.
+     *
+     * @return A {@link Completable} that completes with this {@link Completable} or re-subscribes if an error is
+     * emitted and {@link Completable} returned by {@link BiFunction} completes successfully.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
+     */
+    public final Completable retryWhen(BiIntFunction<Throwable, Completable> retryWhen) {
+        return toSingle().retryWhen(retryWhen).ignoreResult();
+    }
+
+    /**
+     * Re-subscribes to this {@link Completable} when it completes and the passed {@link IntPredicate} returns
+     * {@code true}.
+     * <p>
+     * This method provides a means to repeat an operation multiple times and in sequential programming is similar to:
+     * <pre>{@code
+     *     int i = 0;
+     *     do {
+     *         resultOfThisCompletable();
+     *     } while (shouldRepeat.test(++i));
+     * }</pre>
+     * @param shouldRepeat {@link IntPredicate} that given the repeat count determines if the operation should be
+     * repeated.
+     * @return A {@link Completable} that completes after all re-subscriptions completes.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
+     */
+    public final Completable repeat(IntPredicate shouldRepeat) {
+        return toPublisher(CONVERSION_VALUE).repeat(shouldRepeat).ignoreElements();
+    }
+
+    /**
+     * Re-subscribes to this {@link Completable} when it completes and the {@link Completable} returned by the supplied
+     * {@link IntFunction} completes successfully. If the returned {@link Completable} emits an error, the returned
+     * {@link Completable} emits an error.
+     * <p>
+     * This method provides a means to repeat an operation multiple times when in an asynchronous fashion and in
+     * sequential programming is similar to:
+     * <pre>{@code
+     *     int i = 0;
+     *     while (true) {
+     *         resultOfThisCompletable();
+     *         try {
+     *             repeatWhen.apply(++i); // Either throws or completes normally
+     *         } catch (Throwable cause) {
+     *             break;
+     *         }
+     *     }
+     * }</pre>
+     * @param repeatWhen {@link IntFunction} that given the repeat count returns a {@link Completable}.
+     * If this {@link Completable} emits an error repeat is terminated, otherwise, original {@link Completable} is
+     * re-subscribed when this {@link Completable} completes.
+     *
+     * @return A {@link Completable} that completes after all re-subscriptions completes.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
+     */
+    public final Completable repeatWhen(IntFunction<Completable> repeatWhen) {
+        return toPublisher(CONVERSION_VALUE).repeatWhen(repeatWhen).ignoreElements();
+    }
+
+    /**
+     * Invokes the {@code onSubscribe} {@link Consumer} argument <strong>before</strong>
+     * {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned
+     * {@link Completable}.
+     *
+     * @param onSubscribe Invoked <strong>before</strong> {@link Subscriber#onSubscribe(Cancellable)} is called for
+     * {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
     public final Completable doBeforeSubscribe(Consumer<Cancellable> onSubscribe) {
-        requireNonNull(onSubscribe);
-        Subscriber subscriber = new Subscriber() {
-            @Override
-            public void onSubscribe(Cancellable cancellable) {
-                onSubscribe.accept(cancellable);
-            }
-
-            @Override
-            public void onComplete() {
-                // NOOP
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                // NOOP
-            }
-        };
-        return doBeforeSubscriber(() -> subscriber);
+        return doBeforeSubscriber(doOnSubscribeSupplier(onSubscribe));
     }
 
     /**
-     * Invokes the {@code onComplete} {@link Runnable} argument <strong>before</strong> {@link Subscriber#onComplete()} is called for {@link Subscriber}s of the returned {@link Completable}.
-     *
-     * @param onComplete Invoked <strong>before</strong> {@link Subscriber#onComplete()} is called for {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
+     * Invokes the {@code onComplete} {@link Runnable} argument <strong>before</strong> {@link Subscriber#onComplete()}
+     * is called for {@link Subscriber}s of the returned {@link Completable}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  resultOfThisCompletable();
+     *  onComplete.run();
+     *  nextOperation();
+     * }</pre>
+     * @param onComplete Invoked <strong>before</strong> {@link Subscriber#onComplete()} is called for
+     * {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
     public final Completable doBeforeComplete(Runnable onComplete) {
-        requireNonNull(onComplete);
-        Subscriber subscriber = new Subscriber() {
-            @Override
-            public void onSubscribe(Cancellable cancellable) {
-                // NOOP
-            }
-
-            @Override
-            public void onComplete() {
-                onComplete.run();
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                // NOOP
-            }
-        };
-        return doBeforeSubscriber(() -> subscriber);
+        return doBeforeSubscriber(doOnCompleteSupplier(onComplete));
     }
 
     /**
-     * Invokes the {@code onError} {@link Consumer} argument <strong>before</strong> {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the returned {@link Completable}.
-     *
-     * @param onError Invoked <strong>before</strong> {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
+     * Invokes the {@code onError} {@link Consumer} argument <strong>before</strong>
+     * {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the returned {@link Completable}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  try {
+     *    resultOfThisCompletable();
+     *  } catch (Throwable cause) {
+     *      onError.accept(cause);
+     *      nextOperation(cause);
+     *  }
+     * }</pre>
+     * @param onError Invoked <strong>before</strong> {@link Subscriber#onError(Throwable)} is called for
+     * {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
     public final Completable doBeforeError(Consumer<Throwable> onError) {
-        requireNonNull(onError);
-        Subscriber subscriber = new Subscriber() {
-            @Override
-            public void onSubscribe(Cancellable cancellable) {
-                // NOOP
-            }
-
-            @Override
-            public void onComplete() {
-                // NOOP
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                onError.accept(t);
-            }
-        };
-        return doBeforeSubscriber(() -> subscriber);
+        return doBeforeSubscriber(doOnErrorSupplier(onError));
     }
 
     /**
-     * Invokes the {@code onCancel} {@link Runnable} argument <strong>before</strong> {@link Cancellable#cancel()} is called for Subscriptions of the returned {@link Completable}.
+     * Invokes the {@code onCancel} {@link Runnable} argument <strong>before</strong> {@link Cancellable#cancel()} is
+     * called for Subscriptions of the returned {@link Completable}.
      *
-     * @param onCancel Invoked <strong>before</strong> {@link Cancellable#cancel()} is called for Subscriptions of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
+     * @param onCancel Invoked <strong>before</strong> {@link Cancellable#cancel()} is called for Subscriptions of the
+     * returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
     public final Completable doBeforeCancel(Runnable onCancel) {
@@ -479,14 +690,22 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     }
 
     /**
-     * Invokes the {@code doFinally} {@link Runnable} argument <strong>before</strong> any of the following terminal methods are called:
+     * Invokes the {@code doFinally} {@link Runnable} argument <strong>before</strong> any of the following terminal
+     * methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)}</li>
      *     <li>{@link Cancellable#cancel()}</li>
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Completable}.
-     *
+     * <pre>{@code
+     *  try {
+     *      resultOfThisCompletable();
+     *  } finally {
+     *      doFinally.run();
+     *      nextOperation(); // Maybe notifying of cancellation, or termination
+     *  }
+     * }</pre>
      * @param doFinally Invoked <strong>before</strong> any of the following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()}</li>
@@ -501,11 +720,13 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     }
 
     /**
-     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to {@link #subscribe(Subscriber)} and invokes
-     * all the {@link Subscriber} methods <strong>before</strong> the {@link Subscriber}s of the returned {@link Completable}.
+     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to
+     * {@link #subscribe(Subscriber)} and invokes all the {@link Subscriber} methods <strong>before</strong> the
+     * {@link Subscriber}s of the returned {@link Completable}.
      *
-     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to {@link #subscribe(Subscriber)} and invokes
-     * all the {@link Subscriber} methods <strong>before</strong> the {@link Subscriber}s of the returned {@link Completable}. {@link Subscriber} methods <strong>MUST NOT</strong> throw.
+     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to {@link #subscribe(Subscriber)} and
+     * invokes all the {@link Subscriber} methods <strong>before</strong> the {@link Subscriber}s of the returned
+     * {@link Completable}. {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
     public final Completable doBeforeSubscriber(Supplier<Subscriber> subscriberSupplier) {
@@ -513,90 +734,63 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     }
 
     /**
-     * Invokes the {@code onSubscribe} {@link Consumer} argument <strong>after</strong> {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned {@link Completable}.
+     * Invokes the {@code onSubscribe} {@link Consumer} argument <strong>after</strong>
+     * {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned
+     * {@link Completable}.
      *
-     * @param onSubscribe Invoked <strong>after</strong> {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
+     * @param onSubscribe Invoked <strong>after</strong> {@link Subscriber#onSubscribe(Cancellable)} is called for
+     * {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
     public final Completable doAfterSubscribe(Consumer<Cancellable> onSubscribe) {
-        requireNonNull(onSubscribe);
-        Subscriber subscriber = new Subscriber() {
-            @Override
-            public void onSubscribe(Cancellable cancellable) {
-                onSubscribe.accept(cancellable);
-            }
-
-            @Override
-            public void onComplete() {
-                // NOOP
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                // NOOP
-            }
-        };
-        return doAfterSubscriber(() -> subscriber);
+        return doAfterSubscriber(doOnSubscribeSupplier(onSubscribe));
     }
 
     /**
-     * Invokes the {@code onComplete} {@link Runnable} argument <strong>after</strong> {@link Subscriber#onComplete()} is called for {@link Subscriber}s of the returned {@link Completable}.
-     *
-     * @param onComplete Invoked <strong>after</strong> {@link Subscriber#onComplete()} is called for {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
+     * Invokes the {@code onComplete} {@link Runnable} argument <strong>after</strong> {@link Subscriber#onComplete()}
+     * is called for {@link Subscriber}s of the returned {@link Completable}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  resultOfThisCompletable();
+     *  nextOperation();
+     *  onComplete.run();
+     * }</pre>
+     * @param onComplete Invoked <strong>after</strong> {@link Subscriber#onComplete()} is called for
+     * {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
     public final Completable doAfterComplete(Runnable onComplete) {
-        requireNonNull(onComplete);
-        Subscriber subscriber = new Subscriber() {
-            @Override
-            public void onSubscribe(Cancellable cancellable) {
-                // NOOP
-            }
-
-            @Override
-            public void onComplete() {
-                onComplete.run();
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                // NOOP
-            }
-        };
-        return doAfterSubscriber(() -> subscriber);
+        return doAfterSubscriber(doOnCompleteSupplier(onComplete));
     }
 
     /**
-     * Invokes the {@code onError} {@link Consumer} argument <strong>after</strong> {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the returned {@link Completable}.
-     *
-     * @param onError Invoked <strong>after</strong> {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
+     * Invokes the {@code onError} {@link Consumer} argument <strong>after</strong>
+     * {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the returned {@link Completable}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  try {
+     *    resultOfThisCompletable();
+     *  } catch (Throwable cause) {
+     *      nextOperation(cause);
+     *      onError.accept(cause);
+     *  }
+     * }</pre>
+     * @param onError Invoked <strong>after</strong> {@link Subscriber#onError(Throwable)} is called for
+     * {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
     public final Completable doAfterError(Consumer<Throwable> onError) {
-        requireNonNull(onError);
-        Subscriber subscriber = new Subscriber() {
-            @Override
-            public void onSubscribe(Cancellable cancellable) {
-                // NOOP
-            }
-
-            @Override
-            public void onComplete() {
-                // NOOP
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                onError.accept(t);
-            }
-        };
-        return doAfterSubscriber(() -> subscriber);
+        return doAfterSubscriber(doOnErrorSupplier(onError));
     }
 
     /**
-     * Invokes the {@code onCancel} {@link Runnable} argument <strong>after</strong> {@link Cancellable#cancel()} is called for Subscriptions of the returned {@link Completable}.
+     * Invokes the {@code onCancel} {@link Runnable} argument <strong>after</strong> {@link Cancellable#cancel()} is
+     * called for Subscriptions of the returned {@link Completable}.
      *
-     * @param onCancel Invoked <strong>after</strong> {@link Cancellable#cancel()} is called for Subscriptions of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
+     * @param onCancel Invoked <strong>after</strong> {@link Cancellable#cancel()} is called for Subscriptions of the
+     * returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
     public final Completable doAfterCancel(Runnable onCancel) {
@@ -604,14 +798,24 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     }
 
     /**
-     * Invokes the {@code doFinally} {@link Runnable} argument <strong>after</strong> any of the following terminal methods are called:
+     * Invokes the {@code doFinally} {@link Runnable} argument <strong>after</strong> any of the following terminal
+     * methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)}</li>
      *     <li>{@link Cancellable#cancel()}</li>
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Completable}.
-     *
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  try {
+     *      resultOfThisCompletable();
+     *  } finally {
+     *      nextOperation(); // Maybe notifying of cancellation, or termination
+     *      doFinally.run();
+     *  }
+     * }</pre>
      * @param doFinally Invoked <strong>after</strong> any of the following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()}</li>
@@ -626,84 +830,17 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     }
 
     /**
-     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to {@link #subscribe(Subscriber)} and invokes
-     * all the {@link Subscriber} methods <strong>after</strong> the {@link Subscriber}s of the returned {@link Completable}.
+     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to
+     * {@link #subscribe(Subscriber)} and invokes all the {@link Subscriber} methods <strong>after</strong> the
+     * {@link Subscriber}s of the returned {@link Completable}.
      *
-     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to {@link #subscribe(Subscriber)} and invokes
-     * all the {@link Subscriber} methods <strong>after</strong> the {@link Subscriber}s of the returned {@link Completable}. {@link Subscriber} methods <strong>MUST NOT</strong> throw.
+     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to {@link #subscribe(Subscriber)} and
+     * invokes all the {@link Subscriber} methods <strong>after</strong> the {@link Subscriber}s of the returned
+     * {@link Completable}. {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
     public final Completable doAfterSubscriber(Supplier<Subscriber> subscriberSupplier) {
         return new DoAfterSubscriberCompletable(this, subscriberSupplier, executor);
-    }
-
-    /**
-     * Ignores any error returned by this {@link Completable} and resume to a new {@link Completable}.
-     *
-     * @param nextFactory Returns the next {@link Completable}, if this {@link Completable} emits an error.
-     * @return The new {@link Completable}.
-     */
-    public final Completable onErrorResume(Function<Throwable, Completable> nextFactory) {
-        return new ResumeCompletable(this, nextFactory, executor);
-    }
-
-    /**
-     * Re-subscribes to this {@link Completable} if an error is emitted and the passed {@link BiIntPredicate} returns {@code true}.
-     *
-     * @param shouldRetry {@link BiIntPredicate} that given the retry count and the most recent {@link Throwable} emitted from this
-     * {@link Completable} determines if the operation should be retried.
-     * @return A {@link Completable} that completes with this {@link Completable} or re-subscribes if an error is emitted and if the passed {@link BiPredicate} returned {@code true}.
-     *
-     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
-     */
-    public final Completable retry(BiIntPredicate<Throwable> shouldRetry) {
-        return toSingle().retry(shouldRetry).ignoreResult();
-    }
-
-    /**
-     * Re-subscribes to this {@link Completable} if an error is emitted and the {@link Completable} returned by the supplied {@link BiIntFunction} completes successfully.
-     * If the returned {@link Completable} emits an error, the returned {@link Completable} terminates with that error.
-     *
-     * @param retryWhen {@link BiIntFunction} that given the retry count and the most recent {@link Throwable} emitted from this
-     * {@link Completable} returns a {@link Completable}. If this {@link Completable} emits an error, that error is emitted from the returned {@link Completable},
-     * otherwise, original {@link Completable} is re-subscribed when this {@link Completable} completes.
-     *
-     * @return A {@link Completable} that completes with this {@link Completable} or re-subscribes if an error is emitted
-     * and {@link Completable} returned by {@link BiFunction} completes successfully.
-     *
-     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
-     */
-    public final Completable retryWhen(BiIntFunction<Throwable, Completable> retryWhen) {
-        return toSingle().retryWhen(retryWhen).ignoreResult();
-    }
-
-    /**
-     * Re-subscribes to this {@link Completable} when it completes and the passed {@link Predicate} returns {@code true}.
-     *
-     * @param shouldRepeat {@link IntPredicate} that given the repeat count determines if the operation should be repeated.
-     * @return A {@link Completable} that completes after all re-subscriptions completes.
-     *
-     * @see <a href="http://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
-     */
-    public final Completable repeat(IntPredicate shouldRepeat) {
-        return toPublisher(CONVERSION_VALUE).repeat(shouldRepeat).ignoreElements();
-    }
-
-    /**
-     * Re-subscribes to this {@link Completable} when it completes and the {@link Completable} returned by the supplied
-     * {@link IntFunction} completes successfully.
-     * If the returned {@link Completable} emits an error, the returned {@link Completable} emits an error.
-     *
-     * @param repeatWhen {@link IntFunction} that given the repeat count returns a {@link Completable}.
-     * If this {@link Completable} emits an error repeat is terminated, otherwise, original {@link Completable} is
-     * re-subscribed when this {@link Completable} completes.
-     *
-     * @return A {@link Completable} that completes after all re-subscriptions completes.
-     *
-     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
-     */
-    public final Completable repeatWhen(IntFunction<Completable> repeatWhen) {
-        return toPublisher(CONVERSION_VALUE).repeatWhen(repeatWhen).ignoreElements();
     }
 
     /**
@@ -807,6 +944,110 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
         return PublishAndSubscribeOnCompletables.publishAndSubscribeOnOverride(this, executor);
     }
 
+    //
+    // Operators End
+    //
+
+    //
+    // Conversion Operators Begin
+    //
+
+    /**
+     * Converts this {@code Completable} to a {@link Publisher}.
+     * @param value The value to deliver to {@link org.reactivestreams.Subscriber#onNext(Object)} when this
+     * {@link Completable} completes. {@code null} is not allowed.
+     * @param <T> The value type of the resulting {@link Publisher}.
+     * @return A {@link Publisher} that mirrors the terminal signal from this {@link Completable}.
+     */
+    public final <T> Publisher<T> toPublisher(@Nullable T value) {
+        return toPublisher(() -> value);
+    }
+
+    /**
+     * Converts this {@code Completable} to a {@link Publisher}.
+     * @param valueSupplier A {@link Supplier} that produces the value to deliver to
+     * {@link org.reactivestreams.Subscriber#onNext(Object)} when this {@link Completable} completes.
+     * @param <T> The value type of the resulting {@link Publisher}.
+     * @return A {@link Publisher} that mirrors the terminal signal from this {@link Completable}.
+     */
+    public final <T> Publisher<T> toPublisher(Supplier<T> valueSupplier) {
+        return new CompletableToPublisher<>(this, valueSupplier, executor);
+    }
+
+    /**
+     * Converts this {@code Completable} to a {@link Single}.
+     * <p>
+     * The return value's {@link Single.Subscriber#onSuccess(Object)} value is undefined, and if the value matters see
+     * {@link #toSingle(Object)}.
+     * @return A {@link Single} that mirrors the terminal signal from this {@link Completable}.
+     */
+    private Single<Object> toSingle() {
+        return toSingle(CONVERSION_VALUE);
+    }
+
+    /**
+     * Converts this {@code Completable} to a {@link Single}.
+     * @param value The value to deliver to {@link Single.Subscriber#onSuccess(Object)} when this {@link Completable}
+     * completes. {@code null} is not allowed.
+     * @param <T> The value type of the resulting {@link Single}.
+     * @return A {@link Single} that mirrors the terminal signal from this {@link Completable}.
+     */
+    public final <T> Single<T> toSingle(T value) {
+        requireNonNull(value);
+        return toSingle(() -> value);
+    }
+
+    /**
+     * Converts this {@code Completable} to a {@link Single}.
+     * @param valueSupplier A {@link Supplier} that produces the value to deliver to
+     * {@link Single.Subscriber#onSuccess(Object)} when this {@link Completable} completes. {@code null} return values
+     * are not allowed.
+     * @param <T> The value type of the resulting {@link Single}.
+     * @return A {@link Single} that mirrors the terminal signal from this {@link Completable}.
+     */
+    public final <T> Single<T> toSingle(Supplier<T> valueSupplier) {
+        return new CompletableToSingle<>(this, valueSupplier, executor);
+    }
+
+    //
+    // Conversion Operators End
+    //
+
+    @Override
+    public final void subscribe(Subscriber subscriber) {
+        // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader
+        // to use.
+        final SignalOffloader signalOffloader = newOffloader(executor);
+        // Since this is a user-driven subscribe (end of the execution chain), offload Cancellable
+        subscribe(signalOffloader.offloadCancellable(subscriber), signalOffloader);
+    }
+
+    /**
+     * Subscribe to this {@link Completable} and log any {@link Subscriber#onError(Throwable)}.
+     *
+     * @return {@link Cancellable} used to invoke {@link Cancellable#cancel()} on the parameter of
+     * {@link Subscriber#onSubscribe(Cancellable)} for this {@link Completable}.
+     */
+    public final Cancellable subscribe() {
+        SimpleCompletableSubscriber subscriber = new SimpleCompletableSubscriber();
+        subscribe(subscriber);
+        return subscriber;
+    }
+
+    /**
+     * Handles a subscriber to this {@code Completable}.
+     * <p>
+     * This method is invoked internally by {@link Completable} for every call to the
+     * {@link Completable#subscribe(Subscriber)} method.
+     *
+     * @param subscriber the subscriber.
+     */
+    protected abstract void handleSubscribe(Subscriber subscriber);
+
+    //
+    // Static Utility Methods Begin
+    //
+
     /**
      * Creates a realized completed {@code Completable}.
      *
@@ -849,6 +1090,70 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     }
 
     /**
+     * Add a plugin that will be invoked on each {@link #subscribe(Subscriber)} call. This can be used for visibility or
+     * to extend functionality to all {@link Subscriber}s which pass through {@link #subscribe(Subscriber)}.
+     * @param subscribePlugin the plugin that will be invoked on each {@link #subscribe(Subscriber)} call.
+     */
+    @SuppressWarnings("rawtypes")
+    public static void addSubscribePlugin(
+            BiConsumer<? super Subscriber, Consumer<? super Subscriber>> subscribePlugin) {
+        requireNonNull(subscribePlugin);
+        SUBSCRIBE_PLUGIN_REF.updateAndGet(currentPlugin -> currentPlugin == null ? subscribePlugin :
+                (subscriber, handleSubscribe) -> subscribePlugin.accept(subscriber,
+                        subscriber2 -> subscribePlugin.accept(subscriber2, handleSubscribe))
+        );
+    }
+
+    //
+    // Static Utility Methods End
+    //
+
+    //
+    // Internal Methods Begin
+    //
+
+    /**
+     * A special subscribe mode that uses the passed {@link SignalOffloader} instead of creating a new
+     * {@link SignalOffloader} like {@link #subscribe(Subscriber)}. This will call
+     * {@link #handleSubscribe(Subscriber, SignalOffloader)} to handle this subscribe instead of
+     * {@link #handleSubscribe(Subscriber)}.
+     * <p>
+     * This method is used by operator implementations to inherit a chosen {@link SignalOffloader} per
+     * {@link Subscriber} where possible. This method does not wrap the passed {@link Subscriber} or {@link Cancellable}
+     * to offload processing to {@link SignalOffloader}. That is done by
+     * {@link #handleSubscribe(Subscriber, SignalOffloader)} and hence can be overridden by operators that do not
+     * require this wrapping.
+     *
+     * @param subscriber {@link Subscriber} to this {@link Completable}.
+     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
+     */
+    final void subscribe(Subscriber subscriber, SignalOffloader signalOffloader) {
+        requireNonNull(subscriber);
+        BiConsumer<? super Subscriber, Consumer<? super Subscriber>> plugin = SUBSCRIBE_PLUGIN_REF.get();
+        if (plugin != null) {
+            plugin.accept(subscriber, sub -> handleSubscribe(sub, signalOffloader));
+        } else {
+            handleSubscribe(subscriber, signalOffloader);
+        }
+    }
+
+    /**
+     * Override for {@link #handleSubscribe(Subscriber)} to offload the {@link #handleSubscribe(Subscriber)} call to the
+     * passed {@link SignalOffloader}.
+     * <p>
+     * This method wraps the passed {@link Subscriber} using {@link SignalOffloader#offloadSubscriber(Subscriber)} and
+     * then calls {@link #handleSubscribe(Subscriber)} using {@link SignalOffloader#offloadSignal(Object, Consumer)}.
+     * Operators that do not wish to wrap the passed {@link Subscriber} can override this method and omit the wrapping.
+     *
+     * @param subscriber the subscriber.
+     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
+     */
+    void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader) {
+        Subscriber safeSubscriber = signalOffloader.offloadSubscriber(subscriber);
+        signalOffloader.offloadSignal(safeSubscriber, this::handleSubscribe);
+    }
+
+    /**
      * Returns the {@link Executor} used for this {@link Completable}.
      *
      * @return {@link Executor} used for this {@link Completable} via {@link #Completable(Executor)}.
@@ -856,4 +1161,8 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     final Executor getExecutor() {
         return executor;
     }
+
+    //
+    // Internal Methods End
+    //
 }

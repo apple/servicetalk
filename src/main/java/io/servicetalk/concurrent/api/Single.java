@@ -208,8 +208,8 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      *      nextOperation(cause);
      *  }
      * }</pre>
-     * @param onError Invoked <strong>before</strong> {@link Subscriber#onError(Throwable)} is called for
-     * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
+     * @param onError Invoked when {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the
+     * returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      * @see #doBeforeError(Consumer)
      * @see #doAfterError(Consumer)
@@ -262,7 +262,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * The order in which {@code doFinally} will be invoked relative to {@link Cancellable#cancel()} is undefined. If
      * you need strict ordering see {@link #doBeforeCancel(Runnable)} and {@link #doAfterCancel(Runnable)}.
 
-     * @param onCancel Invoked <strong>before</strong> {@link Cancellable#cancel()} is called for Subscriptions of the
+     * @param onCancel Invoked when {@link Cancellable#cancel()} is called for Subscriptions of the
      * returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      * @see #doBeforeCancel(Runnable)
