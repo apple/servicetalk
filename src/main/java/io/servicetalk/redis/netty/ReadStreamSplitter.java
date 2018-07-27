@@ -18,6 +18,7 @@ package io.servicetalk.redis.netty;
 import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.GroupedPublisher;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.QueueFullException;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
@@ -92,7 +93,7 @@ final class ReadStreamSplitter {
     private static final AtomicIntegerFieldUpdater<ReadStreamSplitter> stateUpdater =
             newUpdater(ReadStreamSplitter.class, "state");
 
-    private final Publisher<Publisher.Group<Key, PubSubChannelMessage>> original;
+    private final Publisher<GroupedPublisher<Key, PubSubChannelMessage>> original;
     private final Queue<Subscriber<? super PubSubChannelMessage>> subscribers;
     private final LinkedPredicate predicate;
     private final Connection<RedisData, ByteBuf> connection;
@@ -182,7 +183,7 @@ final class ReadStreamSplitter {
     }
 
     private void subscribeToOriginal() {
-        original.subscribe(new Subscriber<Publisher.Group<Key, PubSubChannelMessage>>() {
+        original.subscribe(new Subscriber<GroupedPublisher<Key, PubSubChannelMessage>>() {
 
             @Override
             public void onSubscribe(Subscription s) {
@@ -193,10 +194,10 @@ final class ReadStreamSplitter {
             }
 
             @Override
-            public void onNext(Publisher.Group<Key, PubSubChannelMessage> group) {
+            public void onNext(GroupedPublisher<Key, PubSubChannelMessage> group) {
                 final Key key = group.getKey();
                 if (key == Key.IGNORE_GROUP) {
-                    group.getPublisher().ignoreElements().subscribe();
+                    group.ignoreElements().subscribe();
                     return;
                 }
                 Subscriber<? super PubSubChannelMessage> subscriber = subscribers.poll();
@@ -208,9 +209,8 @@ final class ReadStreamSplitter {
                     return;
                 }
 
-                group.getPublisher()
-                        .filter(msg -> msg.getMessageType() == MessageType.DATA)
-                        .subscribe(new GroupSubscriber(subscriber, key.getPChannel(), key.getKeyType() == Pattern));
+                group.filter(msg -> msg.getMessageType() == MessageType.DATA)
+                     .subscribe(new GroupSubscriber(subscriber, key.getPChannel(), key.getKeyType() == Pattern));
             }
 
             @Override

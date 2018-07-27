@@ -357,7 +357,8 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
                 .map(msg -> (PatternPubSubRedisMessage) msg)
                 .groupBy(ChannelPubSubRedisMessage::getChannel, 32)
                 .forEach(grp -> {
-                    AccumulatingSubscriber<PatternPubSubRedisMessage> sub = new AccumulatingSubscriber<PatternPubSubRedisMessage>().subscribe(grp.getPublisher());
+                    AccumulatingSubscriber<PatternPubSubRedisMessage> sub =
+                            new AccumulatingSubscriber<PatternPubSubRedisMessage>().subscribe(grp);
                     sub.request(Long.MAX_VALUE);
                     groupSubs.offer(sub);
                 });

@@ -27,8 +27,8 @@ import io.servicetalk.client.api.partition.UnknownPartitionException;
 import io.servicetalk.client.internal.partition.PowerSetPartitionMapFactory;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.GroupedPublisher;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Publisher.Group;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.redis.api.PartitionedRedisClient;
@@ -320,7 +320,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
                             partitionMap.addPartition(event.getPartitionAddress()).iterator() :
                             partitionMap.removePartition(event.getPartitionAddress()).iterator(),
                     serviceDiscoveryMaxQueueSize)
-                    .subscribe(new Subscriber<Group<Partition, PartitionedEvent<ResolvedAddress>>>() {
+                    .subscribe(new Subscriber<GroupedPublisher<Partition, PartitionedEvent<ResolvedAddress>>>() {
                         @Override
                         public void onSubscribe(Subscription s) {
                             // We request max value here to make sure we do not access Subscription concurrently
@@ -332,7 +332,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
                         }
 
                         @Override
-                        public void onNext(Group<Partition, PartitionedEvent<ResolvedAddress>> newGroup) {
+                        public void onNext(GroupedPublisher<Partition, PartitionedEvent<ResolvedAddress>> newGroup) {
                             final Partition partition = newGroup.getKey();
                             partition.setClient(newRedisClientFromGroup(executionContext, redisClientBuilder, newGroup,
                                     partition));
@@ -354,9 +354,9 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
 
         private static <ResolvedAddress> RedisClient newRedisClientFromGroup(ExecutionContext executionContext,
                 RedisClientBuilder<ResolvedAddress, PartitionedEvent<ResolvedAddress>> redisClientBuilder,
-                Group<Partition, PartitionedEvent<ResolvedAddress>> newGroup, Partition partition) {
+                GroupedPublisher<Partition, PartitionedEvent<ResolvedAddress>> newGroup, Partition partition) {
             return redisClientBuilder.build(executionContext,
-                    newGroup.getPublisher().filter(new Predicate<PartitionedEvent<ResolvedAddress>>() {
+                    newGroup.filter(new Predicate<PartitionedEvent<ResolvedAddress>>() {
                         // Use a mutable Count to avoid boxing-unboxing and put on each call.
                         private final Map<ResolvedAddress, MutableInteger> addressesToCount = new HashMap<>();
 
