@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.api.GroupedPublisher.QueueSizeProvider;
 import io.servicetalk.concurrent.api.MulticastUtils.IndividualMulticastSubscriber;
 import io.servicetalk.concurrent.api.MulticastUtils.SpscQueue;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
@@ -45,7 +46,8 @@ import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateS
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static java.util.Objects.requireNonNull;
 
-abstract class AbstractPublisherGroupBy<Key, T> extends AbstractSynchronousPublisherOperator<T, Publisher.Group<Key, T>> {
+abstract class AbstractPublisherGroupBy<Key, T>
+        extends AbstractSynchronousPublisherOperator<T, GroupedPublisher<Key, T>> {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractPublisherGroupBy.class);
 
     final int initialCapacityForGroups;
@@ -87,13 +89,13 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractSynchronousPubli
         private volatile Subscription subscription;
         @SuppressWarnings("unused")
         @Nullable
-        private volatile SpscQueue<Publisher.Group<Key, T>> groupQueue;
+        private volatile SpscQueue<GroupedPublisher<Key, T>> groupQueue;
         private final Executor executor;
-        private final Subscriber<? super Publisher.Group<Key, T>> target;
+        private final Subscriber<? super GroupedPublisher<Key, T>> target;
         private final Map<Key, GroupSink<Key, T>> groups;
 
         AbstractSourceSubscriber(Executor executor, int initialCapacityForGroups,
-                                 Subscriber<? super Publisher.Group<Key, T>> target) {
+                                 Subscriber<? super GroupedPublisher<Key, T>> target) {
             this.executor = executor;
             this.target = target;
             // loadFactor: 1 to have table size as expected groups.
@@ -126,9 +128,9 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractSynchronousPubli
             // No concurrent additions to groups map as we only put from onNext which can not be concurrent.
             if (groupSink == null) {
                 int groupSinkQueueSize = groupQueueSize();
-                if (key instanceof Publisher.Group.QueueSizeProvider) {
+                if (key instanceof QueueSizeProvider) {
                     try {
-                        groupSinkQueueSize = ((Publisher.Group.QueueSizeProvider) key).calculateMaxQueueSize(groupQueueSize());
+                        groupSinkQueueSize = ((QueueSizeProvider) key).calculateMaxQueueSize(groupQueueSize());
                         if (groupSinkQueueSize < 0) {
                             throw new IllegalStateException("groupSinkQueueSize: " + groupSinkQueueSize + " (expected >=0)");
                         }
@@ -138,13 +140,12 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractSynchronousPubli
                     }
                 }
                 groupSink = new GroupSink<>(executor, key, groupSinkQueueSize, this);
-                final Publisher.Group<Key, T> group = new Publisher.Group<>(key, groupSink.publisher);
                 final GroupSink<Key, T> oldVal = groups.put(key, groupSink);
                 assert oldVal == null;
-                SpscQueue<Publisher.Group<Key, T>> groupQueue = this.groupQueue;
+                SpscQueue<GroupedPublisher<Key, T>> groupQueue = this.groupQueue;
                 if (groupQueue != null && !groupQueue.isEmpty()) {
                     // The queue is not empty. We have to go through the queue to ensure ordering is preserved.
-                    if (!groupQueue.offerNext(group)) {
+                    if (!groupQueue.offerNext(groupSink.groupedPublisher)) {
                         cancelSourceFromSource(false, new QueueFullException("global", groupQueueSize()), groupQueue);
                     }
                     drainPendingGroupsFromSource(groupQueue);
@@ -159,14 +160,14 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractSynchronousPubli
                                     // without using atomic operations.
                                     this.groupQueue = groupQueue = new SpscQueue<>(groupQueueSize());
                                 }
-                                if (!groupQueue.offerNext(group)) {
+                                if (!groupQueue.offerNext(groupSink.groupedPublisher)) {
                                     cancelSourceFromSource(true, new QueueFullException("global", groupQueueSize()), groupQueue);
                                 }
                                 break;
                             }
                             if (groupRequestedUpdater.compareAndSet(this, groupRequested, groupRequested - 1)) {
                                 try {
-                                    target.onNext(group);
+                                    target.onNext(groupSink.groupedPublisher);
                                 } catch (Throwable cause) {
                                     cancelSourceFromSource(true, new IllegalStateException("Unexpected exception thrown from onNext", cause), groupQueue);
                                 }
@@ -204,7 +205,7 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractSynchronousPubli
                         // without using atomic operations.
                         this.groupQueue = groupQueue = new SpscQueue<>(groupQueueSize());
                     }
-                    if (!groupQueue.offerNext(group)) {
+                    if (!groupQueue.offerNext(groupSink.groupedPublisher)) {
                         cancelSourceFromSource(false, new QueueFullException("global", groupQueueSize()), groupQueue);
                     }
                     drainPendingGroupsFromSource(groupQueue);
@@ -228,7 +229,7 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractSynchronousPubli
             if (terminatedPrematurely) {
                 return;
             }
-            SpscQueue<Publisher.Group<Key, T>> q = groupQueue;
+            SpscQueue<GroupedPublisher<Key, T>> q = groupQueue;
             if (q == null || q.isEmpty() && subscriberStateUpdater.compareAndSet(this, SUBSCRIBER_STATE_IDLE, SUBSCRIBER_STATE_TERMINATED)) {
                 // If there is no queue, there is no concurrency for emission to Subscriber, so we can safely emit.
                 try {
@@ -245,7 +246,7 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractSynchronousPubli
 
         @Override
         public final void onComplete() {
-            SpscQueue<Publisher.Group<Key, T>> q = groupQueue;
+            SpscQueue<GroupedPublisher<Key, T>> q = groupQueue;
             if (q == null || q.isEmpty() && subscriberStateUpdater.compareAndSet(this, SUBSCRIBER_STATE_IDLE, SUBSCRIBER_STATE_TERMINATED)) {
                 // If there is no queue, there is no concurrency for emission to Subscriber, so we can safely emit.
                 try {
@@ -270,7 +271,7 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractSynchronousPubli
             }
 
             groupRequestedUpdater.accumulateAndGet(this, n, FlowControlUtil::addWithOverflowProtection);
-            SpscQueue<Publisher.Group<Key, T>> q = groupQueue;
+            SpscQueue<GroupedPublisher<Key, T>> q = groupQueue;
             if (q == null) {
                 s.request(n);
             } else {
@@ -301,7 +302,7 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractSynchronousPubli
                     subscriberStateUpdater.compareAndSet(this, SUBSCRIBER_STATE_IDLE, SUBSCRIBER_STATE_ON_NEXT)) {
                 sendErrorToAllGroups(cause);
                 this.subscriberState = SUBSCRIBER_STATE_IDLE;
-                SpscQueue<Publisher.Group<Key, T>> groupQueue = this.groupQueue;
+                SpscQueue<GroupedPublisher<Key, T>> groupQueue = this.groupQueue;
                 if (groupQueue != null) {
                     drainPendingGroupsFromSubscription(groupQueue);
                 }
@@ -309,7 +310,7 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractSynchronousPubli
         }
 
         final void removeGroup(GroupSink<Key, T> groupSink) {
-            groups.remove(groupSink.key, groupSink);
+            groups.remove(groupSink.groupedPublisher.getKey(), groupSink);
         }
 
         final void cancelSourceFromSource(Throwable throwable) {
@@ -320,7 +321,7 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractSynchronousPubli
             cancelSourceFromSource(subscriberLockAcquired, throwable, groupQueue);
         }
 
-        private void cancelSourceFromSource(boolean subscriberLockAcquired, Throwable throwable, @Nullable SpscQueue<Publisher.Group<Key, T>> pendingGroupsQ) {
+        private void cancelSourceFromSource(boolean subscriberLockAcquired, Throwable throwable, @Nullable SpscQueue<GroupedPublisher<Key, T>> pendingGroupsQ) {
             Subscription s = subscription;
             assert s != null : "Subscription can not be null in cancel()";
             terminatedPrematurely = true;
@@ -368,15 +369,15 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractSynchronousPubli
             LOGGER.error("Unexpected exception thrown from subscriber", cause);
         }
 
-        private void drainPendingGroupsFromSource(SpscQueue<Publisher.Group<Key, T>> q) {
+        private void drainPendingGroupsFromSource(SpscQueue<GroupedPublisher<Key, T>> q) {
             drainPendingGroups(q, this::cancelSourceFromSource);
         }
 
-        private long drainPendingGroupsFromSubscription(SpscQueue<Publisher.Group<Key, T>> q) {
+        private long drainPendingGroupsFromSubscription(SpscQueue<GroupedPublisher<Key, T>> q) {
             return drainPendingGroups(q, this::cancelSourceFromSubscription);
         }
 
-        private long drainPendingGroups(SpscQueue<Publisher.Group<Key, T>> q, Consumer<Throwable> nonTerminalErrorConsumer) {
+        private long drainPendingGroups(SpscQueue<GroupedPublisher<Key, T>> q, Consumer<Throwable> nonTerminalErrorConsumer) {
             return drainToSubscriber(q, target, subscriberStateUpdater, () -> groupRequestedUpdater.get(this), terminalNotification -> {
                         Throwable cause = terminalNotification.getCause();
                         if (cause == null) {
@@ -413,15 +414,13 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractSynchronousPubli
     }
 
     private static final class GroupSink<Key, T> extends IndividualMulticastSubscriber<T> {
-        final Key key;
-        final Publisher<T> publisher;
+        final GroupedPublisher<Key, T> groupedPublisher;
         private final AbstractSourceSubscriber<Key, T> sourceSubscriber;
 
         GroupSink(Executor executor, Key key, int maxQueueSize, AbstractSourceSubscriber<Key, T> sourceSubscriber) {
             super(maxQueueSize);
             this.sourceSubscriber = sourceSubscriber;
-            this.key = key;
-            publisher = new Publisher<T>(executor) {
+            groupedPublisher = new GroupedPublisher<Key, T>(executor, key) {
                 @Override
                 protected void handleSubscribe(Subscriber<? super T> subscriber) {
                     requireNonNull(subscriber);
@@ -444,7 +443,7 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractSynchronousPubli
 
         @Override
         String queueIdentifier() {
-            return key.toString();
+            return groupedPublisher.getKey().toString();
         }
 
         @Override
@@ -462,9 +461,10 @@ abstract class AbstractPublisherGroupBy<Key, T> extends AbstractSynchronousPubli
             sourceSubscriber.cancelSourceFromExternal(cause);
 
             // To simplify concurrency and state management in this case we just log an error instead of trying to
-            // synchronize state and deliver an error to the Subscriber. ReactiveStreams specification allows for this in [1].
+            // synchronize state and deliver an error to the Subscriber. ReactiveStreams specification allows for this
+            // in [1].
             // [1] https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.1/README.md#2.13
-            LOGGER.error("Unexpected exception thrown from group {} subscriber", key, cause);
+            LOGGER.error("Unexpected exception thrown from group {} subscriber", groupedPublisher.getKey(), cause);
         }
 
         @Override

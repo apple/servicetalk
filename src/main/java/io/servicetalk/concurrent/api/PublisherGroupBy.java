@@ -24,8 +24,8 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * {@link Publisher} as returned by {@link Publisher#groupBy(Function, int)} and its variants.
- * @param <Key> The type of key which identifies a {@link Group}.
- * @param <T> Type of elements emitted by the {@link Group}s emitted by this {@link Publisher}.
+ * @param <Key> The type of key which identifies a {@link GroupedPublisher}.
+ * @param <T> Type of elements emitted by the {@link GroupedPublisher}s emitted by this {@link Publisher}.
  */
 final class PublisherGroupBy<Key, T> extends AbstractPublisherGroupBy<Key, T> {
     private final Function<T, Key> keySelector;
@@ -45,14 +45,15 @@ final class PublisherGroupBy<Key, T> extends AbstractPublisherGroupBy<Key, T> {
     }
 
     @Override
-    public Subscriber<? super T> apply(Subscriber<? super Group<Key, T>> subscriber) {
+    public Subscriber<? super T> apply(Subscriber<? super GroupedPublisher<Key, T>> subscriber) {
         return new SourceSubscriber<>(executor, this, subscriber);
     }
 
     private static final class SourceSubscriber<Key, T> extends AbstractSourceSubscriber<Key, T> {
         private final PublisherGroupBy<Key, T> source;
 
-        SourceSubscriber(Executor executor, PublisherGroupBy<Key, T> source, Subscriber<? super Group<Key, T>> target) {
+        SourceSubscriber(Executor executor, PublisherGroupBy<Key, T> source,
+                         Subscriber<? super GroupedPublisher<Key, T>> target) {
             super(executor, source.initialCapacityForGroups, target);
             this.source = source;
         }

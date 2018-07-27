@@ -45,6 +45,12 @@ import static io.servicetalk.concurrent.api.EmptyPublisher.emptyPublisher;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Executors.newOffloader;
 import static io.servicetalk.concurrent.api.NeverPublisher.neverPublisher;
+import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnCancelSupplier;
+import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnCompleteSupplier;
+import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnErrorSupplier;
+import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnNextSupplier;
+import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnRequestSupplier;
+import static io.servicetalk.concurrent.api.PublisherDoOnUtils.doOnSubscribeSupplier;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -55,7 +61,8 @@ import static java.util.Objects.requireNonNull;
  * @see org.reactivestreams.Publisher
  */
 public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
-    private static final AtomicReference<BiConsumer<? super Subscriber, Consumer<? super Subscriber>>> SUBSCRIBE_PLUGIN_REF = new AtomicReference<>();
+    private static final AtomicReference<BiConsumer<? super Subscriber, Consumer<? super Subscriber>>>
+            SUBSCRIBE_PLUGIN_REF = new AtomicReference<>();
 
     private final Executor executor;
 
@@ -75,134 +82,403 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
         this.executor = requireNonNull(executor);
     }
 
-    /**
-     * Add a plugin that will be invoked on each {@link #subscribe(Subscriber)} call. This can be used for visibility or to
-     * extend functionality to all {@link Subscriber}s which pass through {@link #subscribe(Subscriber)}.
-     * @param subscribePlugin the plugin that will be invoked on each {@link #subscribe(Subscriber)} call.
-     */
-    @SuppressWarnings("rawtypes")
-    public static void addSubscribePlugin(BiConsumer<? super Subscriber, Consumer<? super Subscriber>> subscribePlugin) {
-        requireNonNull(subscribePlugin);
-        SUBSCRIBE_PLUGIN_REF.updateAndGet(currentPlugin -> currentPlugin == null ? subscribePlugin :
-                (subscriber, handleSubscribe) -> subscribePlugin.accept(subscriber, subscriber2 -> subscribePlugin.accept(subscriber2, handleSubscribe))
-        );
-    }
 
-    @Override
-    public final void subscribe(Subscriber<? super T> subscriber) {
-        requireNonNull(subscriber);
-        // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader to use.
-        final SignalOffloader signalOffloader = newOffloader(executor);
-        // Since this is a user-driven subscribe (end of the execution chain), offload subscription methods
-        subscribe(signalOffloader.offloadSubscription(subscriber), signalOffloader);
-    }
+    //
+    // Operators Begin
+    //
 
     /**
-     * Handles a subscriber to this {@code Publisher}.
-     *
-     * @param subscriber the subscriber.
-     */
-    protected abstract void handleSubscribe(Subscriber<? super T> subscriber);
-
-    /**
-     * A special subscribe mode that uses the passed {@link SignalOffloader} instead of creating a new
-     * {@link SignalOffloader} like {@link #subscribe(Subscriber)}. This will call
-     * {@link #handleSubscribe(Subscriber, SignalOffloader)} to handle this subscribe instead of {@link #handleSubscribe(Subscriber)}.<p>
-     *
-     *     This method is used by operator implementations to inherit a chosen {@link SignalOffloader} per {@link Subscriber} where possible.
-     *     This method does not wrap the passed {@link Subscriber} or {@link Subscription} to offload processing to {@link SignalOffloader}.
-     *     That is done by {@link #handleSubscribe(Subscriber, SignalOffloader)} and hence can be overridden by operators that do not require this wrapping.
-     *
-     * @param subscriber {@link Subscriber} to this {@link Publisher}.
-     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
-     */
-    final void subscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
-        requireNonNull(subscriber);
-        BiConsumer<? super Subscriber, Consumer<? super Subscriber>> plugin = SUBSCRIBE_PLUGIN_REF.get();
-        if (plugin != null) {
-            plugin.accept(subscriber, sub -> handleSubscribe(sub, signalOffloader));
-        } else {
-            handleSubscribe(subscriber, signalOffloader);
-        }
-    }
-
-    /**
-     * Override for {@link #handleSubscribe(Subscriber)} to offload the {@link #handleSubscribe(Subscriber)} call to the passed {@link SignalOffloader}. <p>
-     *
-     *     This method wraps the passed {@link Subscriber} using {@link SignalOffloader#offloadSubscriber(Subscriber)} and then calls {@link #handleSubscribe(Subscriber)}
-     *     using {@link SignalOffloader#offloadSignal(Object, Consumer)}.
-     *     Operators that do not wish to wrap the passed {@link Subscriber} can override this method and omit the wrapping.
-     *
-     * @param subscriber the subscriber.
-     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
-     */
-    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
-        Subscriber<? super T> safeSubscriber = signalOffloader.offloadSubscriber(subscriber);
-        signalOffloader.offloadSignal(safeSubscriber, this::handleSubscribe);
-    }
-
-    /**
-     * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
-     * to compose existing operator(s) to satisfy your use case.</strong>
+     * Transforms elements emitted by this {@link Publisher} into a different type.
      * <p>
-     * Returns a {@link Publisher} that when {@link Publisher#subscribe(Subscriber)} is called the {@code operator}
-     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Publisher}.
+     * This method provides a data transformation in sequential programming similar to:
      * <pre>{@code
-     *     Publisher<X> pub = ...;
-     *     pub.map(..) // A
-     *        .liftSynchronous(original -> modified)
-     *        .filter(..) // B
+     *     List<T> tResults = resultOfThisPublisher();
+     *     List<R> rResults = ...;
+     *     for (T tResult : tResults) {
+     *         rResults.add(mapper.apply(tResult));
+     *     }
+     *     return rResults;
      * }</pre>
-     * The {@code original -> modified} "operator" <strong>MUST</strong> be "synchronous" in that it does not interact
-     * with the original {@link Subscriber} from outside the modified {@link Subscriber} or {@link Subscription}
-     * threads. That is to say this operator will not impact the {@link Executor} constraints already in place between
-     * <i>A</i> and <i>B</i> above. If you need asynchronous behavior, or are unsure, see
-     * {@link #liftAsynchronous(PublisherOperator)}.
-     * @param operator The custom operator logic. The input is the "original" {@link Subscriber} to this
-     * {@link Publisher} and the return is the "modified" {@link Subscriber} that provides custom operator business
-     * logic.
+     * @param mapper Function to transform each item emitted by this {@link Publisher}.
      * @param <R> Type of the items emitted by the returned {@link Publisher}.
-     * @return a {@link Publisher} that when {@link Publisher#subscribe(Subscriber)} is called the {@code operator}
-     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Publisher}.
-     * @see #liftAsynchronous(PublisherOperator)
+     * @return A {@link Publisher} that transforms elements emitted by this {@link Publisher} into a different type.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/map.html">ReactiveX map operator.</a>
      */
-    public final <R> Publisher<R> liftSynchronous(PublisherOperator<T, R> operator) {
-        return new LiftSynchronousPublisherOperator<>(this, operator, executor);
+    public final <R> Publisher<R> map(Function<T, R> mapper) {
+        return new MapPublisher<>(this, mapper, executor);
     }
 
     /**
-     * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
-     * to compose existing operator(s) to satisfy your use case.</strong>
+     * Filters items emitted by this {@link Publisher}.
      * <p>
-     * Returns a {@link Publisher} that when {@link Publisher#subscribe(Subscriber)} is called the {@code operator}
-     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Publisher}.
+     * This method provides a data transformation in sequential programming similar to:
      * <pre>{@code
-     *     Publisher<X> pub = ...;
-     *     pub.map(..) // A
-     *        .liftAsynchronous(original -> modified)
-     *        .filter(..) // B
+     *     List<T> results = resultOfThisPublisher();
+     *     List<T> filteredResults = ...;
+     *     for (T result : results) {
+     *         if (predicate.test(result)) {
+     *             filteredResults.add(result);
+     *         }
+     *     }
+     *     return filteredResults;
      * }</pre>
-     * The {@code original -> modified} "operator" MAY be "asynchronous" in that it may interact with the original
-     * {@link Subscriber} from outside the modified {@link Subscriber} or {@link Subscription} threads. More
-     * specifically:
+     * @param predicate for the filter.
+     * @return A {@link Publisher} that only emits the items that pass the {@code predicate}.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/filter.html">ReactiveX filter operator.</a>
+     */
+    public final Publisher<T> filter(Predicate<T> predicate) {
+        return new FilterPublisher<>(this, predicate, executor);
+    }
+
+    /**
+     * Ignores any error returned by this {@link Publisher} and resume to a new {@link Publisher}.
+     * <p>
+     * This method provides similar capabilities to a try/catch block in sequential programming:
+     * <pre>{@code
+     *     List<T> results;
+     *     try {
+     *         results = resultOfThisPublisher();
+     *     } catch (Throwable cause) {
+     *         // Note that nextFactory returning a error Publisher is like re-throwing (nextFactory shouldn't throw).
+     *         results = nextFactory.apply(cause);
+     *     }
+     *     return results;
+     * }</pre>
+     * @param nextFactory Returns the next {@link Publisher}, when this {@link Publisher} emits an error.
+     * @return A {@link Publisher} that ignores error from this {@code Publisher} and resume with the {@link Publisher}
+     * produced by {@code nextFactory}.
+     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     */
+    public final Publisher<T> onErrorResume(Function<Throwable, Publisher<T>> nextFactory) {
+        return new ResumePublisher<>(this, nextFactory, executor);
+    }
+
+    /**
+     * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of
+     * those {@link Single}s.
+     * <p>
+     * To control the amount of concurrent processing done by this operator see {@link #flatMapSingle(Function, int)}.
+     * <p>
+     * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
+     * transformation in sequential programming similar to:
+     * <pre>{@code
+     *     List<T> tResults = resultOfThisPublisher();
+     *     List<R> rResults = ...;
+     *     for (T tResult : tResults) {
+     *         R rResult = mapper.apply(tResult); // Asynchronous result is flatten into a value by this operator.
+     *         rResults.add(rResult);
+     *     }
+     *     return rResults;
+     * }</pre>
+     * @param mapper Function to convert each item emitted by this {@link Publisher} into a {@link Single}.
+     * @param <R> Type of items emitted by the returned {@link Publisher}.
+     * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     * @see #flatMapSingle(Function, int)
+     */
+    public final <R> Publisher<R> flatMapSingle(Function<T, Single<R>> mapper) {
+        return new PublisherFlatMapSingle<>(this, mapper, false, executor);
+    }
+
+    /**
+     * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of
+     * those {@link Single}s.
+     * <p>
+     * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
+     * transformation in sequential programming similar to:
+     * <pre>{@code
+     *     List<T> tResults = resultOfThisPublisher();
+     *     List<R> rResults = ...;
+     *     for (T tResult : tResults) {
+     *         R rResult = mapper.apply(tResult); // Asynchronous result is flatten into a value by this operator.
+     *         rResults.add(rResult);
+     *     }
+     *     return rResults;
+     * }</pre>
+     * @param mapper Function to convert each item emitted by this {@link Publisher} into a {@link Single}.
+     * @param maxConcurrency Maximum active {@link Single}s at any time.
+     * Even if the number of items requested by a {@link Subscriber} is more than this number, this will never request
+     * more than this number at any point.
+     * @param <R> Type of items emitted by the returned {@link Publisher}.
+     * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
+     */
+    public final <R> Publisher<R> flatMapSingle(Function<T, Single<R>> mapper, int maxConcurrency) {
+        return new PublisherFlatMapSingle<>(this, mapper, maxConcurrency, false, executor);
+    }
+
+    /**
+     * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of
+     * those {@link Single}s. This is the same as {@link #flatMapSingle(Function, int)} just that if any {@link Single}
+     * returned by {@code mapper}, terminates with an error, the returned {@link Publisher} will not immediately
+     * terminate. Instead, it will wait for this {@link Publisher} and all {@link Single}s to terminate and then
+     * terminate the returned {@link Publisher} with all errors emitted by the {@link Single}s produced by the
+     * {@code mapper}.
+     * <p>
+     * To control the amount of concurrent processing done by this operator see
+     * {@link #flatMapSingleDelayError(Function, int)}.
+     * <p>
+     * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
+     * transformation in sequential programming similar to:
+     * <pre>{@code
+     *     List<T> tResults = resultOfThisPublisher();
+     *     List<R> rResults = ...;
+     *     Throwable overallCause = null;
+     *     for (T tResult : tResults) {
+     *         try {
+     *             R rResult = mapper.apply(tResult); // Asynchronous result is flatten into a value by this operator.
+     *             rResults.add(rResult);
+     *         } catch (Throwable cause) {
+     *             if (overallCause == null) [
+     *                 overallCause = cause;
+     *             }
+     *         }
+     *     }
+     *     if (overallCause != null) {
+     *         throw overallCause;
+     *     }
+     *     return rResults;
+     * }</pre>
+     * @param mapper Function to convert each item emitted by this {@link Publisher} into a {@link Single}.
+     * @param <R> Type of items emitted by the returned {@link Publisher}.
+     * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
+     * @see #flatMapSingleDelayError(Function, int)
+     */
+    public final <R> Publisher<R> flatMapSingleDelayError(Function<T, Single<R>> mapper) {
+        return new PublisherFlatMapSingle<>(this, mapper, true, executor);
+    }
+
+    /**
+     * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of
+     * those {@link Single}s. This is the same as {@link #flatMapSingle(Function, int)} just that if any {@link Single}
+     * returned by {@code mapper}, terminates with an error, the returned {@link Publisher} will not immediately
+     * terminate. Instead, it will wait for this {@link Publisher} and all {@link Single}s to terminate and then
+     * terminate the returned {@link Publisher} with all errors emitted by the {@link Single}s produced by the
+     * {@code mapper}.
+     * <p>
+     * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
+     * transformation in sequential programming similar to:
+     * <pre>{@code
+     *     List<T> tResults = resultOfThisPublisher();
+     *     List<R> rResults = ...;
+     *     Throwable overallCause = null;
+     *     for (T tResult : tResults) {
+     *         try {
+     *             R rResult = mapper.apply(tResult); // Asynchronous result is flatten into a value by this operator.
+     *             rResults.add(rResult);
+     *         } catch (Throwable cause) {
+     *             if (overallCause == null) [
+     *                 overallCause = cause;
+     *             }
+     *         }
+     *     }
+     *     if (overallCause != null) {
+     *         throw overallCause;
+     *     }
+     *     return rResults;
+     * }</pre>
+     * @param mapper Function to convert each item emitted by this {@link Publisher} into a {@link Single}.
+     * @param maxConcurrency Maximum active {@link Single}s at any time.
+     *                       Even if the number of items requested by a {@link Subscriber} is more than this number, this will never request more than this number at any point.
+     * @param <R> Type of items emitted by the returned {@link Publisher}.
+     * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
+     */
+    public final <R> Publisher<R> flatMapSingleDelayError(Function<T, Single<R>> mapper, int maxConcurrency) {
+        return new PublisherFlatMapSingle<>(this, mapper, maxConcurrency, true, executor);
+    }
+
+    /**
+     * Create a {@link Publisher} that flattens each element returned by the {@link Iterable#iterator()} from
+     * {@code mapper}.
+     * <p>
+     * Note that {@code flatMap} operators may process input in parallel, provide results as they become available, and
+     * may interleave results from multiple {@link Iterator}s. If ordering is required see
+     * {@link #concatMapIterable(Function)}.
+     * <p>
+     * This method provides similar capabilities as expanding each result into a collection and concatenating each
+     * collection concurrently in sequential programming:
+     * <pre>{@code
+     *     Executor e = ...;
+     *     List<T> tResults = resultOfThisPublisher();
+     *     List<R> rResults = ...; // assume this is thread safe
+     *     List<Future<?>> futures = ...;
+     *     for (T tResult : tResults) {
+     *         // Note that flatMap process results in parallel.
+     *         futures.add(e.submit(() -> {
+     *             Iterable<? extends R> itr = mapper.apply(tResult);
+     *             itr.forEachRemaining(rResults::add);
+     *         }));
+     *     }
+     *     // This is a simulation, there is no strict sequence in waiting for results.
+     *     for (Future<?> f : futures) {
+     *         f.get();
+     *     }
+     *     return rResults;
+     * }</pre>
+     * @param mapper A {@link Function} that returns an {@link Iterable} for each element.
+     * @param <R> The elements returned by the {@link Iterable}.
+     * @return a {@link Publisher} that flattens each element returned by the {@link Iterable#iterator()} from
+     * {@code mapper}. Data is processed concurrently, the results are not necessarily ordered, and will depend upon
+     * completion order of the {@link Iterator}s.
+     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX FlatMap operator.</a>
+     */
+    public final <R> Publisher<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
+        // TODO(scott): implement the flatMap variant.
+        return concatMapIterable(mapper);
+    }
+
+    /**
+     * Create a {@link Publisher} that flattens each element returned by the {@link Iterable#iterator()} from
+     * {@code mapper}.
+     * <p>
+     * The mapper {@link Function} will only be called when the previously returned {@link Iterator} has returned
+     * {@code false} from {@link Iterator#hasNext()}.
+     * <p>
+     * This method provides similar capabilities as expanding each result into a collection and concatenating each
+     * collection in sequential programming:
+     * <pre>{@code
+     *     List<T> tResults = resultOfThisPublisher();
+     *     List<R> rResults = ...;
+     *     for (T tResult : tResults) {
+     *         Iterable<? extends R> itr = mapper.apply(tResult);
+     *         itr.forEachRemaining(rResults::add);
+     *     }
+     *     return rResults;
+     * }</pre>
+     * @param mapper A {@link Function} that returns an {@link Iterable} for each element.
+     * @param <R> The elements returned by the {@link Iterable}.
+     * @return a {@link Publisher} that flattens each element returned by the {@link Iterable#iterator()} from
+     * {@code mapper}. The results will be sequential for each {@link Iterator}, and overall for all calls to
+     * {@link Iterable#iterator()}
+     */
+    public final <R> Publisher<R> concatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
+        return new PublisherConcatMapIterable<>(this, mapper, executor);
+    }
+
+    /**
+     * Invokes the {@code onSuccess} {@link Consumer} argument when {@link Subscriber#onComplete()} is called for
+     * {@link Subscriber}s of the returned {@link Publisher}.
+     * <p>
+     * The order in which {@code onSuccess} will be invoked relative to {@link Subscriber#onComplete()} is undefined. If
+     * you need strict ordering see {@link #doBeforeComplete(Runnable)} and {@link #doAfterComplete(Runnable)}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  List<T> results = resultOfThisPublisher();
+     *  // NOTE: The order of operations here is not guaranteed by this method!
+     *  onSuccess.accept(results);
+     *  nextOperation(results);
+     * }</pre>
+     * @param onComplete Invoked when {@link io.servicetalk.concurrent.Single.Subscriber#onSuccess(Object)} is called for
+     * {@link io.servicetalk.concurrent.Single.Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
+     * @return The new {@link Publisher}.
+     * @see #doBeforeComplete(Runnable)
+     * @see #doAfterComplete(Runnable)
+     */
+    public final Publisher<T> doOnComplete(Runnable onComplete) {
+        return doBeforeComplete(onComplete);
+    }
+
+    /**
+     * Invokes the {@code onError} {@link Consumer} argument when {@link Subscriber#onError(Throwable)} is called for
+     * {@link Subscriber}s of the returned {@link Publisher}.
+     * <p>
+     * The order in which {@code onError} will be invoked relative to {@link Subscriber#onError(Throwable)} is
+     * undefined. If you need strict ordering see {@link #doBeforeError(Consumer)} and
+     * {@link #doAfterError(Consumer)}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  try {
+     *    List<T> results = resultOfThisPublisher();
+     *  } catch (Throwable cause) {
+     *      // NOTE: The order of operations here is not guaranteed by this method!
+     *      onError.accept(cause);
+     *      nextOperation(cause);
+     *  }
+     * }</pre>
+     * @param onError Invoked <strong>before</strong> {@link Subscriber#onError(Throwable)} is called for
+     * {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
+     * @return The new {@link Publisher}.
+     * @see #doBeforeError(Consumer)
+     * @see #doAfterError(Consumer)
+     */
+    public final Publisher<T> doOnError(Consumer<Throwable> onError) {
+        return doBeforeError(onError);
+    }
+
+    /**
+     * Invokes the {@code doFinally} {@link Runnable} argument when any of the following terminal methods are called:
      * <ul>
-     *  <li>all of the {@link Subscriber} invocations going "downstream" (i.e. from <i>A</i> to <i>B</i> above) MAY be
-     *  offloaded via an {@link Executor}</li>
-     *  <li>all of the {@link Subscription} invocations going "upstream" (i.e. from <i>B</i> to <i>A</i> above) MAY be
-     *  offloaded via an {@link Executor}</li>
+     *     <li>{@link Subscriber#onComplete()}</li>
+     *     <li>{@link Subscriber#onError(Throwable)}</li>
+     *     <li>{@link Subscription#cancel()}</li>
      * </ul>
-     * This behavior exists to prevent blocking code negatively impacting the thread that powers the upstream source of
-     * data (e.g. an EventLoop).
-     * @param operator The custom operator logic. The input is the "original" {@link Subscriber} to this
-     * {@link Publisher} and the return is the "modified" {@link Subscriber} that provides custom operator business
-     * logic.
-     * @param <R> Type of the items emitted by the returned {@link Publisher}.
-     * @return a {@link Publisher} that when {@link Publisher#subscribe(Subscriber)} is called the {@code operator}
-     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Publisher}.
-     * @see #liftSynchronous(PublisherOperator)
+     * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}.
+     * <p>
+     * The order in which {@code doFinally} will be invoked relative to the above methods is undefined. If you need
+     * strict ordering see {@link #doBeforeFinally(Runnable)} and {@link #doAfterFinally(Runnable)}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  try {
+     *      List<T> results = resultOfThisPublisher();
+     *  } finally {
+     *      // NOTE: The order of operations here is not guaranteed by this method!
+     *      doFinally.run();
+     *      nextOperation(); // Maybe notifying of cancellation, or termination
+     *  }
+     * }</pre>
+     * @param doFinally Invoked when any of the following terminal methods are called:
+     * <ul>
+     *     <li>{@link Subscriber#onComplete()}</li>
+     *     <li>{@link Subscriber#onError(Throwable)}</li>
+     *     <li>{@link Cancellable#cancel()}</li>
+     * </ul>
+     * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
+     * @return The new {@link Publisher}.
+     * @see #doAfterFinally(Runnable)
+     * @see #doBeforeFinally(Runnable)
      */
-    public final <R> Publisher<R> liftAsynchronous(PublisherOperator<T, R> operator) {
-        return new LiftAsynchronousPublisherOperator<>(this, operator, executor);
+    public final Publisher<T> doFinally(Runnable doFinally) {
+        return doBeforeFinally(doFinally);
+    }
+
+    /**
+     * Invokes the {@code onRequest} {@link LongConsumer} argument when {@link Subscription#request(long)} is called for
+     * {@link Subscription}s of the returned {@link Publisher}.
+     * @param onRequest Invoked when {@link Subscription#request(long)} is called for {@link Subscription}s of the
+     * returned {@link Publisher}. <strong>MUST NOT</strong> throw.
+     * @return The new {@link Publisher}.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     */
+    public final Publisher<T> doOnRequest(LongConsumer onRequest) {
+        return doBeforeRequest(onRequest);
+    }
+
+    /**
+     * Invokes the {@code onCancel} {@link Runnable} argument when {@link Subscription#cancel()} is called for
+     * Subscriptions of the returned {@link Publisher}.
+     * <p>
+     * The order in which {@code doFinally} will be invoked relative to {@link Subscription#cancel()} is undefined. If
+     * you need strict ordering see {@link #doBeforeCancel(Runnable)} and {@link #doAfterCancel(Runnable)}.
+     * @param onCancel Invoked when {@link Subscription#cancel()} is called for Subscriptions of the returned
+     * {@link Publisher}. <strong>MUST NOT</strong> throw.
+     * @return The new {@link Publisher}.
+     * @see #doBeforeCancel(Runnable)
+     * @see #doAfterCancel(Runnable)
+     */
+    public final Publisher<T> doOnCancel(Runnable onCancel) {
+        return doBeforeCancel(onCancel);
     }
 
     /**
@@ -280,68 +556,243 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     }
 
     /**
-     * Converts this {@link Publisher} to a {@link Single}.
+     * Emits items emitted by {@code next} {@link Publisher} after {@code this} {@link Publisher} terminates
+     * successfully.
+     * <p>
+     * This method provides a means to sequence the execution of two asynchronous sources and in sequential programming
+     * is similar to:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     results.addAll(resultOfPublisher(next));
+     *     return results;
+     * }</pre>
+     * @param next {@link Publisher}'s items that are emitted after {@code this} {@link Publisher} terminates
+     * successfully.
+     * @return A {@link Publisher} that emits all items from this {@link Publisher} and {@code next} {@link Publisher}.
      *
-     * @return A {@link Single} that will contain the first item emitted from the this {@link Publisher}.
-     * If the source {@link Publisher} does not emit any item, then the returned {@link Single} will terminate with {@link NoSuchElementException}.
-     *
-     * @see <a href="http://reactivex.io/documentation/operators/first.html">ReactiveX first operator.</a>
+     * @see <a href="http://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
      */
-    public final Single<T> first() {
-        return new PubToSingle<>(this);
+    public final Publisher<T> concatWith(Publisher<T> next) {
+        return new ConcatPublisher<>(this, next, executor);
     }
 
     /**
-     * Ignores all elements emitted by this {@link Publisher} and forwards the termination signal to the returned {@link Completable}.
+     * Listens and emits the result of {@code next} {@link Single} after {@code this} {@link Publisher} terminates
+     * successfully.
+     * <p>
+     * This method provides a means to sequence the execution of two asynchronous sources and in sequential programming
+     * is similar to:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     results.add(resultOfSingle(next));
+     *     return results;
+     * }</pre>
+     * @param next {@link Single}'s result that is emitted after {@code this} {@link Publisher} terminates successfully.
+     * @return A {@link Publisher} that emits all items from this {@link Publisher} and the result of {@code next}
+     * {@link Single}.
      *
-     * @return A {@link Completable} that mirrors the terminal signal from this {@code Publisher}.
-     *
-     * @see <a href="http://reactivex.io/documentation/operators/ignoreelements.html">ReactiveX ignoreElements operator.</a>
+     * @see <a href="http://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
      */
-    public final Completable ignoreElements() {
-        return new PubToCompletable<>(this);
+    public final Publisher<T> concatWith(Single<T> next) {
+        return new ConcatPublisher<>(this, next.toPublisher(), executor);
     }
 
     /**
-     * Ignores any error returned by this {@link Publisher} and resume to a new {@link Publisher}.
+     * Listens for completion of {@code next} {@link Completable} after {@code this} {@link Publisher} terminates
+     * successfully. Any error from {@code this} {@link Publisher} and {@code next} {@link Completable} is forwarded to
+     * the returned {@link Publisher}.
+     * <p>
+     * This method provides a means to sequence the execution of two asynchronous sources and in sequential programming
+     * is similar to:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     resultOfCompletable(next);
+     *     return results;
+     * }</pre>
+     * @param next {@link Completable} to wait for completion after {@code this} {@link Publisher} terminates
+     * successfully.
+     * @return A {@link Publisher} that emits all items from this {@link Publisher} and then awaits successful
+     * completion of {@code next} {@link Completable}.
      *
-     * @param nextFactory Returns the next {@link Publisher}, when this {@link Publisher} emits an error.
-     * @return A {@link Publisher} that ignores error from this {@code Publisher} and resume with the {@link Publisher} produced by {@code nextFactory}.
-     * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
+     * @see <a href="http://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
      */
-    public final Publisher<T> onErrorResume(Function<Throwable, Publisher<T>> nextFactory) {
-        return new ResumePublisher<>(this, nextFactory, executor);
+    public final Publisher<T> concatWith(Completable next) {
+        // We can not use next.toPublisher() here as that returns Publisher<Void> which can not be concatenated with
+        // Publisher<T>
+        return new ConcatPublisher<>(this, next.andThen(empty()), executor);
     }
 
     /**
-     * Transforms elements emitted by this {@link Publisher} into a different type.
+     * Re-subscribes to this {@link Publisher} if an error is emitted and the passed {@link BiIntPredicate} returns
+     * {@code true}.
+     * <p>
+     * This method provides a means to retry an operation under certain failure conditions and in sequential programming
+     * is similar to:
+     * <pre>{@code
+     *     public List<T> execute() {
+     *         return execute(0);
+     *     }
      *
-     * @param mapper Function to transform each item emitted by this {@link Publisher}.
-     * @param <R> Type of the items emitted by the returned {@link Publisher}.
-     * @return A {@link Publisher} that transforms elements emitted by this {@link Publisher} into a different type.
+     *     private List<T> execute(int attempts) {
+     *         try {
+     *             // This is a simulation! In reality some results may be visible before an error occurs, because this
+     *             // operator doesn't use a List (which requires all data to be present), and instead provides results
+     *             // as they become available.
+     *             return resultOfThisPublisher();
+     *         } catch (Throwable cause) {
+     *             if (shouldRetry.apply(attempts + 1, cause)) {
+     *                 return execute(attempts + 1);
+     *             } else {
+     *                 throw cause;
+     *             }
+     *         }
+     *     }
+     * }</pre>
+     * @param shouldRetry {@link BiIntPredicate} that given the retry count and the most recent {@link Throwable}
+     * emitted from this
+     * {@link Publisher} determines if the operation should be retried.
+     * @return A {@link Publisher} that emits all items from this {@link Publisher} and re-subscribes if an error is
+     * emitted if the passed {@link BiIntPredicate} returned {@code true}.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/map.html">ReactiveX map operator.</a>
+     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
-    public final <R> Publisher<R> map(Function<T, R> mapper) {
-        return new MapPublisher<>(this, mapper, executor);
+    public final Publisher<T> retry(BiIntPredicate<Throwable> shouldRetry) {
+        return new RedoPublisher<>(this,
+                (retryCount, terminalNotification) -> terminalNotification.getCause() != null &&
+                        shouldRetry.test(retryCount, terminalNotification.getCause()),
+                executor);
     }
 
     /**
-     * Filters items emitted by this {@link Publisher}.
+     * Re-subscribes to this {@link Publisher} if an error is emitted and the {@link Completable} returned by the
+     * supplied {@link BiIntFunction} completes successfully. If the returned {@link Completable} emits an error, the
+     * returned {@link Publisher} terminates with that error.
+     * <p>
+     * This method provides a means to retry an operation under certain failure conditions in an asynchronous fashion
+     * and in sequential programming is similar to:
+     * <pre>{@code
+     *     public List<T> execute() {
+     *         return execute(0);
+     *     }
      *
-     * @param predicate for the filter.
-     * @return A {@link Publisher} that only emits the items that pass the {@code predicate}.
+     *     private List<T> execute(int attempts) {
+     *         try {
+     *             // This is a simulation! In reality some results may be visible before an error occurs, because this
+     *             // operator doesn't use a List (which requires all data to be present), and instead provides results
+     *             // as they become available.
+     *             return resultOfThisPublisher();
+     *         } catch (Throwable cause) {
+     *             try {
+     *                 shouldRetry.apply(attempts + 1, cause); // Either throws or completes normally
+     *                 execute(attempts + 1);
+     *             } catch (Throwable ignored) {
+     *                 throw cause;
+     *             }
+     *         }
+     *     }
+     * }</pre>
+     * @param retryWhen {@link BiIntFunction} that given the retry count and the most recent {@link Throwable} emitted
+     * from this {@link Publisher} returns a {@link Completable}. If this {@link Completable} emits an error, that error
+     * is emitted from the returned {@link Publisher}, otherwise, original {@link Publisher} is re-subscribed when this
+     * {@link Completable} completes.
+     * @return A {@link Publisher} that emits all items from this {@link Publisher} and re-subscribes if an error is
+     * emitted and {@link Completable} returned by {@link BiIntFunction} completes successfully.
      *
-     * @see <a href="http://reactivex.io/documentation/operators/filter.html">ReactiveX filter operator.</a>
+     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
-    public final Publisher<T> filter(Predicate<T> predicate) {
-        return new FilterPublisher<>(this, predicate, executor);
+    public final Publisher<T> retryWhen(BiIntFunction<Throwable, Completable> retryWhen) {
+        return new RedoWhenPublisher<>(this, (retryCount, notification) -> {
+            if (notification.getCause() == null) {
+                return Completable.completed();
+            }
+            return retryWhen.apply(retryCount, notification.getCause());
+        }, true, executor);
     }
 
     /**
-     * Takes at most {@code numElements} elements from {@code this} {@link Publisher}.<p>
-     *  If no terminal event is received before receiving {@code numElements} elements, {@link Subscription} for the {@link Subscriber} is cancelled.
+     * Re-subscribes to this {@link Publisher} when it completes and the passed {@link IntPredicate} returns
+     * {@code true}.
+     * <p>
+     * This method provides a means to repeat an operation multiple times and in sequential programming is similar to:
+     * <pre>{@code
+     *     List<T> results = new ...;
+     *     int i = 0;
+     *     do {
+     *         results.addAll(resultOfThisPublisher());
+     *     } while (shouldRepeat.test(++i));
+     *     return results;
+     * }</pre>
+     * @param shouldRepeat {@link IntPredicate} that given the repeat count determines if the operation should be
+     * repeated.
+     * @return A {@link Publisher} that emits all items from this {@link Publisher} and re-subscribes when it completes
+     * if the passed {@link IntPredicate} returns {@code true}.
      *
+     * @see <a href="http://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
+     */
+    public final Publisher<T> repeat(IntPredicate shouldRepeat) {
+        return new RedoPublisher<>(this,
+                (repeatCount, terminalNotification) -> terminalNotification.getCause() == null &&
+                        shouldRepeat.test(repeatCount),
+                executor);
+    }
+
+    /**
+     * Re-subscribes to this {@link Publisher} when it completes and the {@link Completable} returned by the supplied
+     * {@link IntFunction} completes successfully. If the returned {@link Completable} emits an error, the returned
+     * {@link Publisher} is completed.
+     * <p>
+     * This method provides a means to repeat an operation multiple times when in an asynchronous fashion and in
+     * sequential programming is similar to:
+     * <pre>{@code
+     *     List<T> results = new ...;
+     *     int i = 0;
+     *     while (true) {
+     *         results.addAll(resultOfThisPublisher());
+     *         try {
+     *             repeatWhen.apply(++i); // Either throws or completes normally
+     *         } catch (Throwable cause) {
+     *             break;
+     *         }
+     *     }
+     *     return results;
+     * }</pre>
+     * @param repeatWhen {@link IntFunction} that given the repeat count returns a {@link Completable}.
+     * If this {@link Completable} emits an error repeat is terminated, otherwise, original {@link Publisher} is
+     * re-subscribed when this {@link Completable} completes.
+     * @return A {@link Publisher} that emits all items from this {@link Publisher} and re-subscribes if an error is
+     * emitted and {@link Completable} returned by {@link IntFunction} completes successfully.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
+     */
+    public final Publisher<T> repeatWhen(IntFunction<Completable> repeatWhen) {
+        return new RedoWhenPublisher<>(this, (retryCount, notification) -> {
+            if (notification.getCause() != null) {
+                return Completable.completed();
+            }
+            return repeatWhen.apply(retryCount);
+        }, false, executor);
+    }
+
+    /**
+     * Takes at most {@code numElements} elements from {@code this} {@link Publisher}.
+     * <p>
+     * If no terminal event is received before receiving {@code numElements} elements, {@link Subscription} for the
+     * {@link Subscriber} is cancelled.
+     * <p>
+     * This method provides a means to take a limited number of results from this {@link Publisher} and in sequential
+     * programming is similar to:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     List<T> takeResults = ...;
+     *     int i = 0;
+     *     for (T result : results) {
+     *         if (++i > numElements) {
+     *             break;
+     *         }
+     *         takeResults.add(result);
+     *     }
+     *     return takeResults;
+     * }</pre>
      * @param numElements Number of elements to take.
      * @return A {@link Publisher} that emits at most {@code numElements} elements from {@code this} {@link Publisher}.
      *
@@ -354,11 +805,24 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     /**
      * Takes elements while {@link Predicate} is {@code true} and then cancel {@link Subscription} of this
      * {@link Publisher} once it returns {@code false}.
-     *
+     * <p>
+     * This method provides a means to take a limited number of results from this {@link Publisher} and in sequential
+     * programming is similar to:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     List<T> takeResults = ...;
+     *     for (T result : results) {
+     *         if (!predicate.test(result)) {
+     *             break;
+     *         }
+     *         takeResults.add(result);
+     *     }
+     *     return takeResults;
+     * }</pre>
      * @param predicate {@link Predicate} that is checked before emitting any item to a {@link Subscriber}.
-     *                  If this predicate returns {@code true}, that item is emitted, else {@link Subscription} is cancelled.
+     * If this predicate returns {@code true}, that item is emitted, else {@link Subscription} is cancelled.
      * @return A {@link Publisher} that only emits the items as long as the {@link Predicate#test(Object)} method
-     *         returns {@code true}.
+     * returns {@code true}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/takewhile.html">ReactiveX takeWhile operator.</a>
      */
@@ -368,7 +832,20 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
 
     /**
      * Takes elements until {@link Completable} is terminated successfully or with failure.
-     *
+     * <p>
+     * This method provides a means to take a limited number of results from this {@link Publisher} and in sequential
+     * programming is similar to:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     List<T> takeResults = ...;
+     *     for (T result : results) {
+     *         if (isCompleted(until)) {
+     *             break;
+     *         }
+     *         takeResults.add(result);
+     *     }
+     *     return takeResults;
+     * }</pre>
      * @param until {@link Completable}, termination of which, terminates the returned {@link Publisher}.
      * @return A {@link Publisher} that only emits the items till {@code until} {@link Completable} is completed.
      *
@@ -379,225 +856,188 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     }
 
     /**
-     * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of
-     * those {@link Single}s.
-     * <p>
-     * To control the amount of concurrent processing done by this operator see {@link #flatMapSingle(Function, int)}.
-     *
-     * @param mapper Function to convert each item emitted by this {@link Publisher} into a {@link Single}.
-     * @param <R> Type of items emitted by the returned {@link Publisher}.
-     * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
-     *
-     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
-     * @see #flatMapSingle(Function, int)
-     */
-    public final <R> Publisher<R> flatMapSingle(Function<T, Single<R>> mapper) {
-        return new PublisherFlatMapSingle<>(this, mapper, false, executor);
-    }
-
-    /**
-     * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of
-     * those {@link Single}s.
-     *
-     * @param mapper Function to convert each item emitted by this {@link Publisher} into a {@link Single}.
-     * @param maxConcurrency Maximum active {@link Single}s at any time.
-     * Even if the number of items requested by a {@link Subscriber} is more than this number, this will never request
-     * more than this number at any point.
-     * @param <R> Type of items emitted by the returned {@link Publisher}.
-     * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
-     *
-     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
-     */
-    public final <R> Publisher<R> flatMapSingle(Function<T, Single<R>> mapper, int maxConcurrency) {
-        return new PublisherFlatMapSingle<>(this, mapper, maxConcurrency, false, executor);
-    }
-
-    /**
-     * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of
-     * those {@link Single}s. This is the same as {@link #flatMapSingle(Function, int)} just that if any {@link Single}
-     * returned by {@code mapper}, terminates with an error, the returned {@link Publisher} will not immediately
-     * terminate. Instead, it will wait for this {@link Publisher} and all {@link Single}s to terminate and then
-     * terminate the returned {@link Publisher} with all errors emitted by the {@link Single}s produced by the
-     * {@code mapper}.
-     * <p>
-     * To control the amount of concurrent processing done by this operator see
-     * {@link #flatMapSingleDelayError(Function, int)}.
-     *
-     * @param mapper Function to convert each item emitted by this {@link Publisher} into a {@link Single}.
-     * @param <R> Type of items emitted by the returned {@link Publisher}.
-     * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
-     *
-     * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
-     * @see #flatMapSingleDelayError(Function, int)
-     */
-    public final <R> Publisher<R> flatMapSingleDelayError(Function<T, Single<R>> mapper) {
-        return new PublisherFlatMapSingle<>(this, mapper, true, executor);
-    }
-
-    /**
-     * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of
-     * those {@link Single}s. This is the same as {@link #flatMapSingle(Function, int)} just that if any {@link Single}
-     * returned by {@code mapper}, terminates with an error, the returned {@link Publisher} will not immediately
-     * terminate. Instead, it will wait for this {@link Publisher} and all {@link Single}s to terminate and then
-     * terminate the returned {@link Publisher} with all errors emitted by the {@link Single}s produced by the
-     * {@code mapper}.
-     *
-     * @param mapper Function to convert each item emitted by this {@link Publisher} into a {@link Single}.
-     * @param maxConcurrency Maximum active {@link Single}s at any time.
-     *                       Even if the number of items requested by a {@link Subscriber} is more than this number, this will never request more than this number at any point.
-     * @param <R> Type of items emitted by the returned {@link Publisher}.
-     * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
-     *
-     * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
-     */
-    public final <R> Publisher<R> flatMapSingleDelayError(Function<T, Single<R>> mapper, int maxConcurrency) {
-        return new PublisherFlatMapSingle<>(this, mapper, maxConcurrency, true, executor);
-    }
-
-    /**
-     * Create a {@link Publisher} that flattens each element returned by the {@link Iterable#iterator()} from
-     * {@code mapper}.
-     * <p>
-     * Note that {@code flatMap} operators may process input in parallel, provide results as they become available, and
-     * may interleave results from multiple {@link Iterator}s. If ordering is required see
-     * {@link #concatMapIterable(Function)}.
-     * @param mapper A {@link Function} that returns an {@link Iterable} for each element.
-     * @param <U> The elements returned by the {@link Iterable}.
-     * @return a {@link Publisher} that flattens each element returned by the {@link Iterable#iterator()} from
-     * {@code mapper}. Data is processed concurrently, the results are not necessarily ordered, and will depend upon
-     * completion order of the {@link Iterator}s.
-     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX FlatMap operator.</a>
-     */
-    public final <U> Publisher<U> flatMapIterable(Function<? super T, ? extends Iterable<? extends U>> mapper) {
-        // TODO(scott): implement the flatMap variant.
-        return concatMapIterable(mapper);
-    }
-
-    /**
-     * Create a {@link Publisher} that flattens each element returned by the {@link Iterable#iterator()} from
-     * {@code mapper}.
-     * <p>
-     * The mapper {@link Function} will only be called when the previously returned {@link Iterator} has returned
-     * {@code false} from {@link Iterator#hasNext()}.
-     * @param mapper A {@link Function} that returns an {@link Iterable} for each element.
-     * @param <U> The elements returned by the {@link Iterable}.
-     * @return a {@link Publisher} that flattens each element returned by the {@link Iterable#iterator()} from
-     * {@code mapper}. The results will be sequential for each {@link Iterator}, and overall for all calls to
-     * {@link Iterable#iterator()}
-     */
-    public final <U> Publisher<U> concatMapIterable(Function<? super T, ? extends Iterable<? extends U>> mapper) {
-        return new PublisherConcatMapIterable<>(this, mapper, executor);
-    }
-
-    /**
-     * Reduces the stream into a single item.
-     *
-     * @param resultFactory Factory for the result which collects all items emitted by this {@link Publisher}.
-     *                      This will be called every time the returned {@link Single} is subscribed.
-     * @param reducer Invoked for every item emitted by the source {@link Publisher} and returns the same or altered {@code result} object.
-     * @param <R> Type of the reduced item.
-     * @return A {@link Single} that completes with the single {@code result} or any error emitted by the source {@link Publisher}.
-     *
-     * @see <a href="http://reactivex.io/documentation/operators/reduce.html">ReactiveX reduce operator.</a>
-     */
-    public final <R> Single<R> reduce(Supplier<R> resultFactory, BiFunction<R, ? super T, R> reducer) {
-        return new ReduceSingle<>(this, resultFactory, reducer);
-    }
-
-    /**
-     * Splits items from this {@link Publisher} into dynamically generated {@link Group}s.
-     * Item to group association is done by {@code keySelector} {@link Function}. If the selector selects a key which is previously seen and its associated
-     * {@link Subscriber} has not yet cancelled its {@link Subscription}, this item is sent to that {@link Subscriber}.
-     * Otherwise a new {@link Group} is created and emitted from the returned {@link Publisher}.
+     * Splits items from this {@link Publisher} into dynamically generated {@link GroupedPublisher}s.
+     * Item to group association is done by {@code keySelector} {@link Function}. If the selector selects a key which is
+     * previously seen and its associated {@link Subscriber} has not yet cancelled its {@link Subscription}, this item
+     * is sent to that {@link Subscriber}. Otherwise a new {@link GroupedPublisher} is created and emitted from the
+     * returned {@link Publisher}.
      *
      * <h2>Flow control</h2>
-     * Multiple {@link Subscriber}s (for multiple {@link Group}s) request items individually from this {@link Publisher}.
-     * Since, there is no way for a {@link Subscriber} to only request elements for its group, elements requested by one group
-     * may end up producing items for a different group, which has not yet requested enough.
-     * This will cause items to be queued per group which can not be emitted due to lack of demand.
-     * This queue size can be controlled with the {@code maxQueuePerGroup} argument.
+     * Multiple {@link Subscriber}s (for multiple {@link GroupedPublisher}s) request items individually from this
+     * {@link Publisher}. Since, there is no way for a {@link Subscriber} to only request elements for its group,
+     * elements requested by one group may end up producing items for a different group, which has not yet requested
+     * enough. This will cause items to be queued per group which can not be emitted due to lack of demand. This queue
+     * size can be controlled with the {@code maxQueuePerGroup} argument.
      *
      * <h2>Cancellation</h2>
      *
-     * If the {@link Subscriber} of the returned {@link Publisher} cancels its {@link Subscription},
-     * then all active {@link Group}s will be terminated with an error and the {@link Subscription} to this {@link Publisher} will be cancelled.<p>
-     *     {@link Subscriber}s of individual {@link Group}s can cancel their {@link Subscription}s at any point.
-     *     If any new item is emitted for the cancelled {@link Group}, a new {@link Group} will be emitted from the returned {@link Publisher}.
-     *     Any queued items for a cancelled {@link Subscriber} for a {@link Group} will be discarded and hence will not be emitted if the same {@link Group} is emitted again.
-     *
-     * @param keySelector {@link Function} to assign an item emitted by this {@link Publisher} to a {@link Group}.
-     * @param groupMaxQueueSize Maximum number of new groups that will be queued due to the {@link Subscriber} of the {@link Publisher} returned from this
-     *                      method not requesting enough via {@link Subscription#request(long)}.
-     * @param <Key> Type of {@link Group} keys.
-     * @return A {@link Publisher} that emits {@link Group}s for new {@code key}s as emitted by {@code keySelector} {@link Function}.
+     * If the {@link Subscriber} of the returned {@link Publisher} cancels its {@link Subscription}, then all active
+     * {@link GroupedPublisher}s will be terminated with an error and the {@link Subscription} to this {@link Publisher}
+     * will be cancelled.
+     * <p>
+     * {@link Subscriber}s of individual {@link GroupedPublisher}s can cancel their {@link Subscription}s at any point.
+     * If any new item is emitted for the cancelled {@link GroupedPublisher}, a new {@link GroupedPublisher} will be
+     * emitted from the returned {@link Publisher}. Any queued items for a cancelled {@link Subscriber} for a
+     * {@link GroupedPublisher} will be discarded and hence will not be emitted if the same {@link GroupedPublisher} is
+     * emitted again.
+     * <p>
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     Map<Key, List<T>> groupedResults = ...;
+     *     for (T result : results) {
+     *         Key k = keySelector.apply(result);
+     *         List<T> v = map.get(k);
+     *         if (v == null) {
+     *             v = // new List
+     *             map.put(k, v);
+     *         }
+     *         v.add(result);
+     *     }
+     *     return groupedResults;
+     * }</pre>
+     * @param keySelector {@link Function} to assign an item emitted by this {@link Publisher} to a
+     * {@link GroupedPublisher}.
+     * @param groupMaxQueueSize Maximum number of new groups that will be queued due to the {@link Subscriber} of the
+     * {@link Publisher} returned from this method not requesting enough via {@link Subscription#request(long)}.
+     * @param <Key> Type of {@link GroupedPublisher} keys.
+     * @return A {@link Publisher} that emits {@link GroupedPublisher}s for new {@code key}s as emitted by
+     * {@code keySelector} {@link Function}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/groupby.html">ReactiveX groupBy operator.</a>
      */
-    public final <Key> Publisher<Group<Key, T>> groupBy(Function<T, Key> keySelector, int groupMaxQueueSize) {
+    public final <Key> Publisher<GroupedPublisher<Key, T>> groupBy(Function<T, Key> keySelector,
+                                                                   int groupMaxQueueSize) {
         return new PublisherGroupBy<>(this, keySelector, groupMaxQueueSize, executor);
     }
 
     /**
-     * Splits items from this {@link Publisher} into dynamically generated {@link Group}s.
-     * Item to group association is done by {@code keySelector} {@link Function}. If the selector selects a key which is previously seen and its associated
-     * {@link Subscriber} has not yet cancelled its {@link Subscription}, this item is sent to that {@link Subscriber}.
-     * Otherwise a new {@link Group} is created and emitted from the returned {@link Publisher}.
+     * Splits items from this {@link Publisher} into dynamically generated {@link GroupedPublisher}s. Item to group
+     * association is done by {@code keySelector} {@link Function}. If the selector selects a key which is previously
+     * seen and its associated {@link Subscriber} has not yet cancelled its {@link Subscription}, this item is sent to
+     * that {@link Subscriber}. Otherwise a new {@link GroupedPublisher} is created and emitted from the returned
+     * {@link Publisher}.
      *
      * <h2>Flow control</h2>
-     * Multiple {@link Subscriber}s (for multiple {@link Group}s) request items individually from this {@link Publisher}.
-     * Since, there is no way for a {@link Subscriber} to only request elements for its group, elements requested by one group
-     * may end up producing items for a different group, which has not yet requested enough.
-     * This will cause items to be queued per group which can not be emitted due to lack of demand.
-     * This queue size can be controlled with the {@code maxQueuePerGroup} argument.
+     * Multiple {@link Subscriber}s (for multiple {@link GroupedPublisher}s) request items individually from this
+     * {@link Publisher}. Since, there is no way for a {@link Subscriber} to only request elements for its group,
+     * elements requested by one group may end up producing items for a different group, which has not yet requested
+     * enough. This will cause items to be queued per group which can not be emitted due to lack of demand. This queue
+     * size can be controlled with the {@code maxQueuePerGroup} argument.
      *
      * <h2>Cancellation</h2>
      *
-     * If the {@link Subscriber} of the returned {@link Publisher} cancels its {@link Subscription},
-     * then all active {@link Group}s will be terminated with an error and the {@link Subscription} to this {@link Publisher} will be cancelled.<p>
-     *     {@link Subscriber}s of individual {@link Group}s can cancel their {@link Subscription}s at any point.
-     *     If any new item is emitted for the cancelled {@link Group}, a new {@link Group} will be emitted from the returned {@link Publisher}.
-     *     Any queued items for a cancelled {@link Subscriber} for a {@link Group} will be discarded and hence will not be emitted if the same {@link Group} is emitted again.
-     *
-     * @param keySelector {@link Function} to assign an item emitted by this {@link Publisher} to a {@link Group}.
-     * @param groupMaxQueueSize Maximum number of new groups that will be queued due to the {@link Subscriber} of the {@link Publisher} returned from this
-     *                      method not requesting enough via {@link Subscription#request(long)}.
+     * If the {@link Subscriber} of the returned {@link Publisher} cancels its {@link Subscription}, then all active
+     * {@link GroupedPublisher}s will be terminated with an error and the {@link Subscription} to this {@link Publisher}
+     * will be cancelled.
+     * <p>
+     * {@link Subscriber}s of individual {@link GroupedPublisher}s can cancel their {@link Subscription}s at any point.
+     * If any new item is emitted for the cancelled {@link GroupedPublisher}, a new {@link GroupedPublisher} will be
+     * emitted from the returned {@link Publisher}. Any queued items for a cancelled {@link Subscriber} for a
+     * {@link GroupedPublisher} will be discarded and hence will not be emitted if the same {@link GroupedPublisher} is
+     * emitted again.
+     * <p>
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     Map<Key, List<T>> groupedResults = ...;
+     *     for (T result : results) {
+     *         Key k = keySelector.apply(result);
+     *         List<T> v = map.get(k);
+     *         if (v == null) {
+     *             v = // new List
+     *             map.put(k, v);
+     *         }
+     *         v.add(result);
+     *     }
+     *     return groupedResults;
+     * }</pre>
+     * @param keySelector {@link Function} to assign an item emitted by this {@link Publisher} to a
+     * {@link GroupedPublisher}.
+     * @param groupMaxQueueSize Maximum number of new groups that will be queued due to the {@link Subscriber} of the
+     * {@link Publisher} returned from this method not requesting enough via {@link Subscription#request(long)}.
      * @param expectedGroupCountHint Expected number of groups that would be emitted by {@code this} {@link Publisher}.
-     *                               This is just a hint for internal data structures and does not have to be precise.
-     * @param <Key> Type of {@link Group} keys.
-     * @return A {@link Publisher} that emits {@link Group}s for new {@code key}s as emitted by {@code keySelector} {@link Function}.
+     * This is just a hint for internal data structures and does not have to be precise.
+     * @param <Key> Type of {@link GroupedPublisher} keys.
+     * @return A {@link Publisher} that emits {@link GroupedPublisher}s for new {@code key}s as emitted by
+     * {@code keySelector} {@link Function}.
      * @see <a href="http://reactivex.io/documentation/operators/groupby.html">ReactiveX groupBy operator.</a>
      */
-    public final <Key> Publisher<Group<Key, T>> groupBy(Function<T, Key> keySelector, int groupMaxQueueSize, int expectedGroupCountHint) {
+    public final <Key> Publisher<GroupedPublisher<Key, T>> groupBy(Function<T, Key> keySelector, int groupMaxQueueSize,
+                                                                   int expectedGroupCountHint) {
         return new PublisherGroupBy<>(this, keySelector, groupMaxQueueSize, expectedGroupCountHint, executor);
     }
 
     /**
-     * The semantics are identical to {@link #groupBy(Function, int)} except that the {@code keySelector} can map each data to multiple keys.
-     *
-     * @param keySelector {@link Function} to assign an item emitted by this {@link Publisher} to multiple {@link Group}s.
-     * @param groupMaxQueueSize Maximum number of new groups that will be queued due to the {@link Subscriber} of the {@link Publisher} returned from this
-     *                      method not requesting enough via {@link Subscription#request(long)}.
-     * @param <Key> Type of {@link Group} keys.
-     * @return A {@link Publisher} that emits {@link Group}s for new {@code key}s as emitted by {@code keySelector} {@link Function}.
+     * The semantics are identical to {@link #groupBy(Function, int)} except that the {@code keySelector} can map each
+     * data to multiple keys.
+     * <p>
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     Map<Key, List<T>> groupedResults = ...;
+     *     for (T result : results) {
+     *         Iterator<Key> kItr = keySelector.apply(result);
+     *         for (Key k : kItr) {
+     *             List<T> v = map.get(k);
+     *             if (v == null) {
+     *                 v = // new List
+     *                 map.put(k, v);
+     *             }
+     *             v.add(result);
+     *         }
+     *     }
+     *     return groupedResults;
+     * }</pre>
+     * @param keySelector {@link Function} to assign an item emitted by this {@link Publisher} to multiple
+     * {@link GroupedPublisher}s.
+     * @param groupMaxQueueSize Maximum number of new groups that will be queued due to the {@link Subscriber} of the
+     * {@link Publisher} returned from this method not requesting enough via {@link Subscription#request(long)}.
+     * @param <Key> Type of {@link GroupedPublisher} keys.
+     * @return A {@link Publisher} that emits {@link GroupedPublisher}s for new {@code key}s as emitted by
+     * {@code keySelector} {@link Function}.
      * @see #groupBy(Function, int)
      */
-    public final <Key> Publisher<Group<Key, T>> groupByMulti(Function<T, Iterator<Key>> keySelector, int groupMaxQueueSize) {
+    public final <Key> Publisher<GroupedPublisher<Key, T>> groupByMulti(Function<T, Iterator<Key>> keySelector,
+                                                                        int groupMaxQueueSize) {
         return new PublisherGroupByMulti<>(this, keySelector, groupMaxQueueSize, executor);
     }
 
     /**
-     * The semantics are identical to {@link #groupBy(Function, int)} except that the {@code keySelector} can map each data to multiple keys.
-     *
-     * @param keySelector {@link Function} to assign an item emitted by this {@link Publisher} to multiple {@link Group}s.
-     * @param groupMaxQueueSize Maximum number of new groups that will be queued due to the {@link Subscriber} of the {@link Publisher} returned from this
-     *                      method not requesting enough via {@link Subscription#request(long)}.
+     * The semantics are identical to {@link #groupBy(Function, int)} except that the {@code keySelector} can map each
+     * data to multiple keys.
+     * <p>
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     Map<Key, List<T>> groupedResults = ...;
+     *     for (T result : results) {
+     *         Iterator<Key> kItr = keySelector.apply(result);
+     *         for (Key k : kItr) {
+     *             List<T> v = map.get(k);
+     *             if (v == null) {
+     *                 v = // new List
+     *                 map.put(k, v);
+     *             }
+     *             v.add(result);
+     *         }
+     *     }
+     *     return groupedResults;
+     * }</pre>
+     * @param keySelector {@link Function} to assign an item emitted by this {@link Publisher} to multiple
+     * {@link GroupedPublisher}s.
+     * @param groupMaxQueueSize Maximum number of new groups that will be queued due to the {@link Subscriber} of the
+     * {@link Publisher} returned from this method not requesting enough via {@link Subscription#request(long)}.
      * @param expectedGroupCountHint Expected number of groups that would be emitted by {@code this} {@link Publisher}.
-     *                               This is just a hint for internal data structures and does not have to be precise.
-     * @param <Key> Type of {@link Group} keys.
-     * @return A {@link Publisher} that emits {@link Group}s for new {@code key}s as emitted by {@code keySelector} {@link Function}.
+     * This is just a hint for internal data structures and does not have to be precise.
+     * @param <Key> Type of {@link GroupedPublisher} keys.
+     * @return A {@link Publisher} that emits {@link GroupedPublisher}s for new {@code key}s as emitted by
+     * {@code keySelector} {@link Function}.
      * @see #groupBy(Function, int)
      */
-    public final <Key> Publisher<Group<Key, T>> groupByMulti(Function<T, Iterator<Key>> keySelector, int groupMaxQueueSize, int expectedGroupCountHint) {
+    public final <Key> Publisher<GroupedPublisher<Key, T>> groupByMulti(Function<T, Iterator<Key>> keySelector,
+                                                                        int groupMaxQueueSize,
+                                                                        int expectedGroupCountHint) {
         return new PublisherGroupByMulti<>(this, keySelector, groupMaxQueueSize, expectedGroupCountHint, executor);
     }
 
@@ -605,26 +1045,50 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * Create a {@link Publisher} that allows exactly {@code expectedSubscribers} calls to {@link #subscribe(Subscriber)}.
      * The events from this {@link Publisher} object will be delivered to each {@link Subscriber}.
      * <p>
-     * Depending on {@link Subscription#request(long)} demand it is possible that data maybe queued before being delivered
-     * to each {@link Subscriber}! For example if there are 2 {@link Subscriber}s and the first calls
-     * {@link Subscription#request(long) request(10)}, and the second only calls {@link Subscription#request(long) request(1)},
-     * then 9 elements will be queued to deliver to second when more {@link Subscription#request(long)} demand is made.
+     * Depending on {@link Subscription#request(long)} demand it is possible that data maybe queued before being
+     * delivered to each {@link Subscriber}! For example if there are 2 {@link Subscriber}s and the first calls
+     * {@link Subscription#request(long) request(10)}, and the second only calls
+     * {@link Subscription#request(long) request(1)}, then 9 elements will be queued to deliver to second when more
+     * {@link Subscription#request(long)} demand is made.
+     * <p>
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     List<List<T>> multiResults = ...;
+     *     for (int i = 0; i < expectedSubscribers; ++i) {
+     *         multiResults.add(results);
+     *     }
+     *     return multiResults;
+     * }</pre>
      * @param expectedSubscribers The number of expected {@link #subscribe(Subscriber)} calls required on the returned
-     *          {@link Publisher} before calling {@link #subscribe(Subscriber)} on this {@link Publisher}.
-     * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} calls to {@link #subscribe(Subscriber)}.
+     * {@link Publisher} before calling {@link #subscribe(Subscriber)} on this {@link Publisher}.
+     * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} calls to
+     * {@link #subscribe(Subscriber)}.
      */
     public final Publisher<T> multicast(int expectedSubscribers) {
         return new MulticastPublisher<>(this, expectedSubscribers, executor);
     }
 
     /**
-     * Create a {@link Publisher} that allows exactly {@code expectedSubscribers} calls to {@link #subscribe(Subscriber)}.
-     * The events from this {@link Publisher} object will be delivered to each {@link Subscriber}.
+     * Create a {@link Publisher} that allows exactly {@code expectedSubscribers} calls to
+     * {@link #subscribe(Subscriber)}. The events from this {@link Publisher} object will be delivered to each
+     * {@link Subscriber}.
      * <p>
-     * Depending on {@link Subscription#request(long)} demand it is possible that data maybe queued before being delivered
-     * to each {@link Subscriber}! For example if there are 2 {@link Subscriber}s and the first calls
-     * {@link Subscription#request(long) request(10)}, and the second only calls {@link Subscription#request(long) request(10)},
-     * then 9 elements will be queued to deliver to second when more {@link Subscription#request(long)} demand is made.
+     * Depending on {@link Subscription#request(long)} demand it is possible that data maybe queued before being
+     * delivered to each {@link Subscriber}! For example if there are 2 {@link Subscriber}s and the first calls
+     * {@link Subscription#request(long) request(10)}, and the second only calls
+     * {@link Subscription#request(long) request(10)}, then 9 elements will be queued to deliver to second when more
+     * {@link Subscription#request(long)} demand is made.
+     * <p>
+     * In sequential programming this is similar to the following:
+     * <pre>{@code
+     *     List<T> results = resultOfThisPublisher();
+     *     List<List<T>> multiResults = ...;
+     *     for (int i = 0; i < expectedSubscribers; ++i) {
+     *         multiResults.add(results);
+     *     }
+     *     return multiResults;
+     * }</pre>
      * @param expectedSubscribers The number of expected {@link #subscribe(Subscriber)} calls required on the returned
      *          {@link Publisher} before calling {@link #subscribe(Subscriber)} on this {@link Publisher}.
      * @param maxQueueSize The maximum number of {@link Subscriber#onNext(Object)} events that will be queued if there is no
@@ -636,198 +1100,131 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     }
 
     /**
-     * Invokes the {@code onSubscribe} {@link Consumer} argument <strong>before</strong> {@link Subscriber#onSubscribe(Subscription)} is called for {@link Subscriber}s of the returned {@link Publisher}.
+     * Invokes the {@code onSubscribe} {@link Consumer} argument <strong>before</strong>
+     * {@link Subscriber#onSubscribe(Subscription)} is called for {@link Subscriber}s of the returned {@link Publisher}.
      *
-     * @param onSubscribe Invoked <strong>before</strong> {@link Subscriber#onSubscribe(Subscription)} is called for {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
+     * @param onSubscribe Invoked <strong>before</strong> {@link Subscriber#onSubscribe(Subscription)} is called for
+     * {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> doBeforeSubscribe(Consumer<Subscription> onSubscribe) {
-        requireNonNull(onSubscribe);
-        Subscriber<T> subscriber = new Subscriber<T>() {
-            @Override
-            public void onSubscribe(Subscription s) {
-                onSubscribe.accept(s);
-            }
-
-            @Override
-            public void onNext(T t) {
-                // NOOP
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                // NOOP
-            }
-
-            @Override
-            public void onComplete() {
-                // NOOP
-            }
-        };
-        return doBeforeSubscriber(() -> subscriber);
+        return doBeforeSubscriber(doOnSubscribeSupplier(onSubscribe));
     }
 
     /**
-     * Invokes the {@code onNext} {@link Consumer} argument <strong>before</strong> {@link Subscriber#onNext(Object)} is called for {@link Subscriber}s of the returned {@link Publisher}.
-     *
-     * @param onNext Invoked <strong>before</strong> {@link Subscriber#onNext(Object)} is called for {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
+     * Invokes the {@code onNext} {@link Consumer} argument <strong>before</strong> {@link Subscriber#onNext(Object)} is
+     * called for {@link Subscriber}s of the returned {@link Publisher}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  List<T> results = resultOfThisPublisher();
+     *  for (T result : results) {
+     *      onNext.accept(result);
+     *  }
+     *  nextOperation(results);
+     * }</pre>
+     * @param onNext Invoked <strong>before</strong> {@link Subscriber#onNext(Object)} is called for {@link Subscriber}s
+     * of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> doBeforeNext(Consumer<T> onNext) {
-        requireNonNull(onNext);
-        Subscriber<T> subscriber = new Subscriber<T>() {
-            @Override
-            public void onSubscribe(Subscription s) {
-                // NOOP
-            }
-
-            @Override
-            public void onNext(T t) {
-                onNext.accept(t);
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                // NOOP
-            }
-
-            @Override
-            public void onComplete() {
-                // NOOP
-            }
-        };
-        return doBeforeSubscriber(() -> subscriber);
+        return doBeforeSubscriber(doOnNextSupplier(onNext));
     }
 
     /**
-     * Invokes the {@code onError} {@link Consumer} argument <strong>before</strong> {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the returned {@link Publisher}.
-     *
-     * @param onError Invoked <strong>before</strong> {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
+     * Invokes the {@code onError} {@link Consumer} argument <strong>before</strong>
+     * {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the returned {@link Publisher}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  try {
+     *    List<T> results = resultOfThisPublisher();
+     *  } catch (Throwable cause) {
+     *      onError.accept(cause);
+     *      nextOperation(cause);
+     *  }
+     * }</pre>
+     * @param onError Invoked <strong>before</strong> {@link Subscriber#onError(Throwable)} is called for
+     * {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> doBeforeError(Consumer<Throwable> onError) {
-        requireNonNull(onError);
-        Subscriber<T> subscriber = new Subscriber<T>() {
-            @Override
-            public void onSubscribe(Subscription s) {
-                // NOOP
-            }
-
-            @Override
-            public void onNext(T t) {
-                // NOOP
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                onError.accept(t);
-            }
-
-            @Override
-            public void onComplete() {
-                // NOOP
-            }
-        };
-        return doBeforeSubscriber(() -> subscriber);
+        return doBeforeSubscriber(doOnErrorSupplier(onError));
     }
 
     /**
-     * Invokes the {@code onComplete} {@link Runnable} argument <strong>before</strong> {@link Subscriber#onComplete()} is called for {@link Subscriber}s of the returned {@link Publisher}.
-     *
-     * @param onComplete Invoked <strong>before</strong> {@link Subscriber#onComplete()} is called for {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
+     * Invokes the {@code onComplete} {@link Runnable} argument <strong>before</strong> {@link Subscriber#onComplete()}
+     * is called for {@link Subscriber}s of the returned {@link Publisher}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *   List<T> results = resultOfThisPublisher();
+     *   onComplete.run();
+     *   nextOperation(results);
+     * }</pre>
+     * @param onComplete Invoked <strong>before</strong> {@link Subscriber#onComplete()} is called for
+     * {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> doBeforeComplete(Runnable onComplete) {
-        requireNonNull(onComplete);
-        Subscriber<T> subscriber = new Subscriber<T>() {
-            @Override
-            public void onSubscribe(Subscription s) {
-                // NOOP
-            }
-
-            @Override
-            public void onNext(T t) {
-                // NOOP
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                // NOOP
-            }
-
-            @Override
-            public void onComplete() {
-                onComplete.run();
-            }
-        };
-        return doBeforeSubscriber(() -> subscriber);
+        return doBeforeSubscriber(doOnCompleteSupplier(onComplete));
     }
 
     /**
-     * Invokes the {@code onRequest} {@link LongConsumer} argument <strong>before</strong> {@link Subscription#request(long)} is called for {@link Subscription}s of the returned {@link Publisher}.
+     * Invokes the {@code onRequest} {@link LongConsumer} argument <strong>before</strong>
+     * {@link Subscription#request(long)} is called for {@link Subscription}s of the returned {@link Publisher}.
      *
-     * @param onRequest Invoked <strong>before</strong> {@link Subscription#request(long)} is called for {@link Subscription}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
+     * @param onRequest Invoked <strong>before</strong> {@link Subscription#request(long)} is called for
+     * {@link Subscription}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> doBeforeRequest(LongConsumer onRequest) {
-        requireNonNull(onRequest);
-        Subscription subscription = new Subscription() {
-            @Override
-            public void request(long n) {
-                onRequest.accept(n);
-            }
-
-            @Override
-            public void cancel() {
-                // NOOP
-            }
-        };
-        return doBeforeSubscription(() -> subscription);
+        return doBeforeSubscription(doOnRequestSupplier(onRequest));
     }
 
     /**
-     * Invokes the {@code onCancel} {@link Runnable} argument <strong>before</strong> {@link Subscription#cancel()} is called for {@link Subscription}s of the returned {@link Publisher}.
+     * Invokes the {@code onCancel} {@link Runnable} argument <strong>before</strong> {@link Subscription#cancel()} is
+     * called for {@link Subscription}s of the returned {@link Publisher}.
      *
-     * @param onCancel Invoked <strong>before</strong> {@link Subscription#cancel()} is called for {@link Subscription}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
+     * @param onCancel Invoked <strong>before</strong> {@link Subscription#cancel()} is called for
+     * {@link Subscription}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> doBeforeCancel(Runnable onCancel) {
-        requireNonNull(onCancel);
-        Subscription subscription = new Subscription() {
-            @Override
-            public void request(long n) {
-                //  NOOP
-            }
-
-            @Override
-            public void cancel() {
-                onCancel.run();
-            }
-        };
-        return doBeforeSubscription(() -> subscription);
+        return doBeforeSubscription(doOnCancelSupplier(onCancel));
     }
 
     /**
-     * Invokes the {@code doFinally} {@link Runnable} argument <strong>before</strong> any of the following terminal methods are called:
+     * Invokes the {@code doFinally} {@link Runnable} argument <strong>before</strong> any of the following terminal
+     * methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)}</li>
      *     <li>{@link Subscription#cancel()}</li>
      * </ul>
      * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}.
-     *
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  try {
+     *      List<T> results = resultOfThisPublisher();
+     *  } finally {
+     *      doFinally.run();
+     *      nextOperation(); // Maybe notifying of cancellation, or termination
+     *  }
+     * }</pre>
      * @param doFinally Invoked <strong>before</strong> any of the following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()}</li>
@@ -844,11 +1241,13 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     }
 
     /**
-     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to {@link #subscribe(Subscriber)} and invokes
-     * all the {@link Subscriber} methods <strong>before</strong> the {@link Subscriber}s of the returned {@link Publisher}.
+     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to
+     * {@link #subscribe(Subscriber)} and invokes all the {@link Subscriber} methods <strong>before</strong> the
+     * {@link Subscriber}s of the returned {@link Publisher}.
      *
-     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to {@link #subscribe(Subscriber)} and invokes
-     * all the {@link Subscriber} methods <strong>before</strong> the {@link Subscriber}s of the returned {@link Publisher}. {@link Subscriber} methods <strong>MUST NOT</strong> throw.
+     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to {@link #subscribe(Subscriber)} and
+     * invokes all the {@link Subscriber} methods <strong>before</strong> the {@link Subscriber}s of the returned
+     * {@link Publisher}. {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
@@ -858,11 +1257,13 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     }
 
     /**
-     * Creates a new {@link Subscription} (via the {@code subscriberSupplier} argument) on each call to {@link #subscribe(Subscriber)} and invokes
-     * all the {@link Subscription} methods <strong>before</strong> the {@link Subscription}s of the returned {@link Publisher}.
+     * Creates a new {@link Subscription} (via the {@code subscriberSupplier} argument) on each call to
+     * {@link #subscribe(Subscriber)} and invokes all the {@link Subscription} methods <strong>before</strong> the
+     * {@link Subscription}s of the returned {@link Publisher}.
      *
-     * @param subscriptionSupplier Creates a new {@link Subscription} on each call to {@link #subscribe(Subscriber)} and invokes
-     * all the {@link Subscription} methods <strong>before</strong> the {@link Subscription}s of the returned {@link Publisher}. {@link Subscription} methods <strong>MUST NOT</strong> throw.
+     * @param subscriptionSupplier Creates a new {@link Subscription} on each call to {@link #subscribe(Subscriber)} and
+     * invokes all the {@link Subscription} methods <strong>before</strong> the {@link Subscription}s of the returned
+     * {@link Publisher}. {@link Subscription} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
@@ -872,198 +1273,131 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     }
 
     /**
-     * Invokes the {@code onSubscribe} {@link Consumer} argument <strong>after</strong> {@link Subscriber#onSubscribe(Subscription)} is called for {@link Subscriber}s of the returned {@link Publisher}.
+     * Invokes the {@code onSubscribe} {@link Consumer} argument <strong>after</strong>
+     * {@link Subscriber#onSubscribe(Subscription)} is called for {@link Subscriber}s of the returned {@link Publisher}.
      *
-     * @param onSubscribe Invoked <strong>after</strong> {@link Subscriber#onSubscribe(Subscription)} is called for {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
+     * @param onSubscribe Invoked <strong>after</strong> {@link Subscriber#onSubscribe(Subscription)} is called for
+     * {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> doAfterSubscribe(Consumer<Subscription> onSubscribe) {
-        requireNonNull(onSubscribe);
-        Subscriber<T> subscriber = new Subscriber<T>() {
-            @Override
-            public void onSubscribe(Subscription s) {
-                onSubscribe.accept(s);
-            }
-
-            @Override
-            public void onNext(T t) {
-                // NOOP
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                // NOOP
-            }
-
-            @Override
-            public void onComplete() {
-                // NOOP
-            }
-        };
-        return doAfterSubscriber(() -> subscriber);
+        return doAfterSubscriber(doOnSubscribeSupplier(onSubscribe));
     }
 
     /**
-     * Invokes the {@code onNext} {@link Consumer} argument <strong>after</strong> {@link Subscriber#onNext(Object)} is called for {@link Subscriber}s of the returned {@link Publisher}.
-     *
-     * @param onNext Invoked <strong>after</strong> {@link Subscriber#onNext(Object)} is called for {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
+     * Invokes the {@code onNext} {@link Consumer} argument <strong>after</strong> {@link Subscriber#onNext(Object)} is
+     * called for {@link Subscriber}s of the returned {@link Publisher}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  List<T> results = resultOfThisPublisher();
+     *  nextOperation(results);
+     *  for (T result : results) {
+     *      onNext.accept(result);
+     *  }
+     * }</pre>
+     * @param onNext Invoked <strong>after</strong> {@link Subscriber#onNext(Object)} is called for {@link Subscriber}s
+     * of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> doAfterNext(Consumer<T> onNext) {
-        requireNonNull(onNext);
-        Subscriber<T> subscriber = new Subscriber<T>() {
-            @Override
-            public void onSubscribe(Subscription s) {
-                // NOOP
-            }
-
-            @Override
-            public void onNext(T t) {
-                onNext.accept(t);
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                // NOOP
-            }
-
-            @Override
-            public void onComplete() {
-                // NOOP
-            }
-        };
-        return doAfterSubscriber(() -> subscriber);
+        return doAfterSubscriber(doOnNextSupplier(onNext));
     }
 
     /**
-     * Invokes the {@code onError} {@link Consumer} argument <strong>after</strong> {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the returned {@link Publisher}.
-     *
-     * @param onError Invoked <strong>after</strong> {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
+     * Invokes the {@code onError} {@link Consumer} argument <strong>after</strong>
+     * {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the returned {@link Publisher}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  try {
+     *    List<T> results = resultOfThisPublisher();
+     *  } catch (Throwable cause) {
+     *      nextOperation(cause);
+     *      onError.accept(cause);
+     *  }
+     * }</pre>
+     * @param onError Invoked <strong>after</strong> {@link Subscriber#onError(Throwable)} is called for
+     * {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> doAfterError(Consumer<Throwable> onError) {
-        requireNonNull(onError);
-        Subscriber<T> subscriber = new Subscriber<T>() {
-            @Override
-            public void onSubscribe(Subscription s) {
-                // NOOP
-            }
-
-            @Override
-            public void onNext(T t) {
-                // NOOP
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                onError.accept(t);
-            }
-
-            @Override
-            public void onComplete() {
-                // NOOP
-            }
-        };
-        return doAfterSubscriber(() -> subscriber);
+        return doAfterSubscriber(doOnErrorSupplier(onError));
     }
 
     /**
-     * Invokes the {@code onComplete} {@link Runnable} argument <strong>after</strong> {@link Subscriber#onComplete()} is called for {@link Subscriber}s of the returned {@link Publisher}.
-     *
-     * @param onComplete Invoked <strong>after</strong> {@link Subscriber#onComplete()} is called for {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
+     * Invokes the {@code onComplete} {@link Runnable} argument <strong>after</strong> {@link Subscriber#onComplete()}
+     * is called for {@link Subscriber}s of the returned {@link Publisher}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *   List<T> results = resultOfThisPublisher();
+     *   nextOperation(results);
+     *   onComplete.run();
+     * }</pre>
+     * @param onComplete Invoked <strong>after</strong> {@link Subscriber#onComplete()} is called for
+     * {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> doAfterComplete(Runnable onComplete) {
-        requireNonNull(onComplete);
-        Subscriber<T> subscriber = new Subscriber<T>() {
-            @Override
-            public void onSubscribe(Subscription s) {
-                // NOOP
-            }
-
-            @Override
-            public void onNext(T t) {
-                // NOOP
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                // NOOP
-            }
-
-            @Override
-            public void onComplete() {
-                onComplete.run();
-            }
-        };
-        return doAfterSubscriber(() -> subscriber);
+        return doAfterSubscriber(doOnCompleteSupplier(onComplete));
     }
 
     /**
-     * Invokes the {@code onRequest} {@link LongConsumer} argument <strong>after</strong> {@link Subscription#request(long)} is called for {@link Subscription}s of the returned {@link Publisher}.
+     * Invokes the {@code onRequest} {@link LongConsumer} argument <strong>after</strong>
+     * {@link Subscription#request(long)} is called for {@link Subscription}s of the returned {@link Publisher}.
      *
-     * @param onRequest Invoked <strong>after</strong> {@link Subscription#request(long)} is called for {@link Subscription}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
+     * @param onRequest Invoked <strong>after</strong> {@link Subscription#request(long)} is called for
+     * {@link Subscription}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> doAfterRequest(LongConsumer onRequest) {
-        requireNonNull(onRequest);
-        Subscription subscription = new Subscription() {
-            @Override
-            public void request(long n) {
-                onRequest.accept(n);
-            }
-
-            @Override
-            public void cancel() {
-                // NOOP
-            }
-        };
-        return doAfterSubscription(() -> subscription);
+        return doAfterSubscription(doOnRequestSupplier(onRequest));
     }
 
     /**
-     * Invokes the {@code onCancel} {@link Runnable} argument <strong>after</strong> {@link Subscription#cancel()} is called for {@link Subscription}s of the returned {@link Publisher}.
+     * Invokes the {@code onCancel} {@link Runnable} argument <strong>after</strong> {@link Subscription#cancel()} is
+     * called for {@link Subscription}s of the returned {@link Publisher}.
      *
-     * @param onCancel Invoked <strong>after</strong> {@link Subscription#cancel()} is called for {@link Subscription}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
+     * @param onCancel Invoked <strong>after</strong> {@link Subscription#cancel()} is called for {@link Subscription}s
+     * of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> doAfterCancel(Runnable onCancel) {
-        requireNonNull(onCancel);
-        Subscription subscription = new Subscription() {
-            @Override
-            public void request(long n) {
-                //  NOOP
-            }
-
-            @Override
-            public void cancel() {
-                onCancel.run();
-            }
-        };
-        return doAfterSubscription(() -> subscription);
+        return doAfterSubscription(doOnCancelSupplier(onCancel));
     }
 
     /**
-     * Invokes the {@code doFinally} {@link Runnable} argument <strong>after</strong> any of the following terminal methods are called:
+     * Invokes the {@code doFinally} {@link Runnable} argument <strong>after</strong> any of the following terminal
+     * methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)}</li>
      *     <li>{@link Subscription#cancel()}</li>
      * </ul>
      * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}.
-     *
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  try {
+     *      List<T> results = resultOfThisPublisher();
+     *  } finally {
+     *      nextOperation(); // Maybe notifying of cancellation, or termination
+     *      doFinally.run();
+     *  }
+     * }</pre>
      * @param doFinally Invoked <strong>after</strong> any of the following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()}</li>
@@ -1080,11 +1414,13 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     }
 
     /**
-     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to {@link #subscribe(Subscriber)} and invokes
-     * all the {@link Subscriber} methods <strong>after</strong> the {@link Subscriber}s of the returned {@link Publisher}.
+     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to
+     * {@link #subscribe(Subscriber)} and invokes all the {@link Subscriber} methods <strong>after</strong> the
+     * {@link Subscriber}s of the returned {@link Publisher}.
      *
-     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to {@link #subscribe(Subscriber)} and invokes
-     * all the {@link Subscriber} methods <strong>after</strong> the {@link Subscriber}s of the returned {@link Publisher}. {@link Subscriber} methods <strong>MUST NOT</strong> throw.
+     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to {@link #subscribe(Subscriber)} and
+     * invokes all the {@link Subscriber} methods <strong>after</strong> the {@link Subscriber}s of the returned
+     * {@link Publisher}. {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
@@ -1094,11 +1430,13 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     }
 
     /**
-     * Creates a new {@link Subscription} (via the {@code subscriberSupplier} argument) on each call to {@link #subscribe(Subscriber)} and invokes
-     * all the {@link Subscription} methods <strong>after</strong> the {@link Subscription}s of the returned {@link Publisher}.
+     * Creates a new {@link Subscription} (via the {@code subscriberSupplier} argument) on each call to
+     * {@link #subscribe(Subscriber)} and invokes all the {@link Subscription} methods <strong>after</strong> the
+     * {@link Subscription}s of the returned {@link Publisher}.
      *
-     * @param subscriptionSupplier Creates a new {@link Subscription} on each call to {@link #subscribe(Subscriber)} and invokes
-     * all the {@link Subscription} methods <strong>after</strong> the {@link Subscription}s of the returned {@link Publisher}. {@link Subscription} methods <strong>MUST NOT</strong> throw.
+     * @param subscriptionSupplier Creates a new {@link Subscription} on each call to {@link #subscribe(Subscriber)} and
+     * invokes all the {@link Subscription} methods <strong>after</strong> the {@link Subscription}s of the returned
+     * {@link Publisher}. {@link Subscription} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
@@ -1108,122 +1446,17 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     }
 
     /**
-     * Emits items emitted by {@code next} {@link Publisher} after {@code this} {@link Publisher} terminates successfully.
-     *
-     * @param next {@link Publisher}'s items that are emitted after {@code this} {@link Publisher} terminates successfully.
-     * @return A {@link Publisher} that emits all items from this {@link Publisher} and {@code next} {@link Publisher}.
-     *
-     * @see <a href="http://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
-     */
-    public final Publisher<T> concatWith(Publisher<T> next) {
-        return new ConcatPublisher<>(this, next, executor);
-    }
-
-    /**
-     * Listens and emits the result of {@code next} {@link Single} after {@code this} {@link Publisher} terminates successfully.
-     *
-     * @param next {@link Single}'s result that is emitted after {@code this} {@link Publisher} terminates successfully.
-     * @return A {@link Publisher} that emits all items from this {@link Publisher} and the result of {@code next} {@link Single}.
-     *
-     * @see <a href="http://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
-     */
-    public final Publisher<T> concatWith(Single<T> next) {
-        return new ConcatPublisher<>(this, next.toPublisher(), executor);
-    }
-
-    /**
-     * Listens for completion of {@code next} {@link Completable} after {@code this} {@link Publisher} terminates successfully.
-     * Any error from {@code this} {@link Publisher} and {@code next} {@link Completable} is forwarded to the returned {@link Publisher}.
-     *
-     * @param next {@link Completable} to wait for completion after {@code this} {@link Publisher} terminates successfully.
-     * @return A {@link Publisher} that emits all items from this {@link Publisher} and then awaits successful completion of {@code next} {@link Completable}.
-     *
-     * @see <a href="http://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
-     */
-    public final Publisher<T> concatWith(Completable next) {
-        // We can not use next.toPublisher() here as that returns Publisher<Void> which can not be concatenated with Publisher<T>
-        return new ConcatPublisher<>(this, next.andThen(empty()), executor);
-    }
-
-    /**
-     * Re-subscribes to this {@link Publisher} if an error is emitted and the passed {@link BiIntPredicate} returns {@code true}.
-     *
-     * @param shouldRetry {@link BiIntPredicate} that given the retry count and the most recent {@link Throwable} emitted from this
-     * {@link Publisher} determines if the operation should be retried.
-     * @return A {@link Publisher} that emits all items from this {@link Publisher} and re-subscribes if an error is emitted if the passed {@link BiIntPredicate} returned {@code true}.
-     *
-     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
-     */
-    public final Publisher<T> retry(BiIntPredicate<Throwable> shouldRetry) {
-        return new RedoPublisher<>(this,
-                (retryCount, terminalNotification) -> terminalNotification.getCause() != null && shouldRetry.test(retryCount, terminalNotification.getCause()),
-                executor);
-    }
-
-    /**
-     * Re-subscribes to this {@link Publisher} if an error is emitted and the {@link Completable} returned by the supplied {@link BiIntFunction} completes successfully.
-     * If the returned {@link Completable} emits an error, the returned {@link Publisher} terminates with that error.
-     *
-     * @param retryWhen {@link BiIntFunction} that given the retry count and the most recent {@link Throwable} emitted from this
-     * {@link Publisher} returns a {@link Completable}. If this {@link Completable} emits an error, that error is emitted from the returned {@link Publisher},
-     * otherwise, original {@link Publisher} is re-subscribed when this {@link Completable} completes.
-     *
-     * @return A {@link Publisher} that emits all items from this {@link Publisher} and re-subscribes if an error is emitted
-     * and {@link Completable} returned by {@link BiIntFunction} completes successfully.
-     *
-     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
-     */
-    public final Publisher<T> retryWhen(BiIntFunction<Throwable, Completable> retryWhen) {
-        return new RedoWhenPublisher<>(this, (retryCount, notification) -> {
-            if (notification.getCause() == null) {
-                return Completable.completed();
-            }
-            return retryWhen.apply(retryCount, notification.getCause());
-        }, true, executor);
-    }
-
-    /**
-     * Re-subscribes to this {@link Publisher} when it completes and the passed {@link IntPredicate} returns {@code true}.
-     *
-     * @param shouldRepeat {@link IntPredicate} that given the repeat count determines if the operation should be repeated.
-     * @return A {@link Publisher} that emits all items from this {@link Publisher} and re-subscribes when it completes if the passed {@link IntPredicate} returns {@code true}.
-     *
-     * @see <a href="http://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
-     */
-    public final Publisher<T> repeat(IntPredicate shouldRepeat) {
-        return new RedoPublisher<>(this,
-                (repeatCount, terminalNotification) -> terminalNotification.getCause() == null && shouldRepeat.test(repeatCount),
-                executor);
-    }
-
-    /**
-     * Re-subscribes to this {@link Publisher} when it completes and the {@link Completable} returned by the supplied {@link IntFunction} completes successfully.
-     * If the returned {@link Completable} emits an error, the returned {@link Publisher} is completed.
-     *
-     * @param repeatWhen {@link IntFunction} that given the repeat count returns a {@link Completable}.
-     * If this {@link Completable} emits an error repeat is terminated, otherwise, original {@link Publisher} is re-subscribed
-     * when this {@link Completable} completes.
-     *
-     * @return A {@link Publisher} that emits all items from this {@link Publisher} and re-subscribes if an error is emitted
-     * and {@link Completable} returned by {@link IntFunction} completes successfully.
-     *
-     * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
-     */
-    public final Publisher<T> repeatWhen(IntFunction<Completable> repeatWhen) {
-        return new RedoWhenPublisher<>(this, (retryCount, notification) -> {
-            if (notification.getCause() != null) {
-                return Completable.completed();
-            }
-            return repeatWhen.apply(retryCount);
-        }, false, executor);
-    }
-
-    /**
-     * Subscribes to this {@link Publisher} and invokes {@code forEach} {@link Consumer} for each item emitted by this {@link Publisher}. <p>
-     *     This will request {@link Long#MAX_VALUE} from the {@link Subscription}.
-     *
+     * Subscribes to this {@link Publisher} and invokes {@code forEach} {@link Consumer} for each item emitted by this
+     * {@link Publisher}.
+     * <p>
+     * This will request {@link Long#MAX_VALUE} from the {@link Subscription}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  List<T> results = resultOfThisPublisher();
+     *  results.iterator().forEachRemaining(forEach);
+     * }</pre>
      * @param forEach {@link Consumer} to invoke for each {@link Subscriber#onNext(Object)}.
-     *
      * @return {@link Cancellable} used to invoke {@link Subscription#cancel()} on the parameter of
      * {@link Subscriber#onSubscribe(Subscription)} for this {@link Publisher}.
      * */
@@ -1231,6 +1464,159 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
         ForEachSubscriber<T> subscriber = new ForEachSubscriber<>(forEach);
         subscribe(subscriber);
         return subscriber;
+    }
+
+    /**
+     * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
+     * <ul>
+     *     <li>All {@link Subscriber} methods.</li>
+     *     <li>All {@link Subscription} methods.</li>
+     *     <li>The {@link #handleSubscribe(Subscriber)} method.</li>
+     * </ul>
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}. If such an override is required, {@link #publishAndSubscribeOnOverride(Executor)} can be used.
+     *
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods
+     * {@link Subscriber}, {@link Subscription} and {@link #handleSubscribe(Subscriber)}.
+     */
+    public final Publisher<T> publishAndSubscribeOn(Executor executor) {
+        return PublishAndSubscribeOnPublishers.publishAndSubscribeOn(this, executor);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
+     * <ul>
+     *     <li>All {@link Subscriber} methods.</li>
+     *     <li>All {@link Subscription} methods.</li>
+     *     <li>The {@link #handleSubscribe(Subscriber)} method.</li>
+     * </ul>
+     * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Publisher}.
+     * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
+     * If such an override is not required, {@link #publishAndSubscribeOn(Executor)} can be used.
+     *
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
+     * {@link Subscriber}, {@link Subscription} and {@link #handleSubscribe(Subscriber)} both for the returned
+     * {@link Publisher} as well as {@code this} {@link Publisher}.
+     */
+    public final Publisher<T> publishAndSubscribeOnOverride(Executor executor) {
+        return PublishAndSubscribeOnPublishers.publishAndSubscribeOnOverride(this, executor);
+    }
+
+    /**
+     * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
+     * to compose existing operator(s) to satisfy your use case.</strong>
+     * <p>
+     * Returns a {@link Publisher} that when {@link Publisher#subscribe(Subscriber)} is called the {@code operator}
+     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Publisher}.
+     * <pre>{@code
+     *     Publisher<X> pub = ...;
+     *     pub.map(..) // A
+     *        .liftSynchronous(original -> modified)
+     *        .filter(..) // B
+     * }</pre>
+     * The {@code original -> modified} "operator" <strong>MUST</strong> be "synchronous" in that it does not interact
+     * with the original {@link Subscriber} from outside the modified {@link Subscriber} or {@link Subscription}
+     * threads. That is to say this operator will not impact the {@link Executor} constraints already in place between
+     * <i>A</i> and <i>B</i> above. If you need asynchronous behavior, or are unsure, see
+     * {@link #liftAsynchronous(PublisherOperator)}.
+     * @param operator The custom operator logic. The input is the "original" {@link Subscriber} to this
+     * {@link Publisher} and the return is the "modified" {@link Subscriber} that provides custom operator business
+     * logic.
+     * @param <R> Type of the items emitted by the returned {@link Publisher}.
+     * @return a {@link Publisher} that when {@link Publisher#subscribe(Subscriber)} is called the {@code operator}
+     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Publisher}.
+     * @see #liftAsynchronous(PublisherOperator)
+     */
+    public final <R> Publisher<R> liftSynchronous(PublisherOperator<T, R> operator) {
+        return new LiftSynchronousPublisherOperator<>(this, operator, executor);
+    }
+
+    /**
+     * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
+     * to compose existing operator(s) to satisfy your use case.</strong>
+     * <p>
+     * Returns a {@link Publisher} that when {@link Publisher#subscribe(Subscriber)} is called the {@code operator}
+     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Publisher}.
+     * <pre>{@code
+     *     Publisher<X> pub = ...;
+     *     pub.map(..) // A
+     *        .liftAsynchronous(original -> modified)
+     *        .filter(..) // B
+     * }</pre>
+     * The {@code original -> modified} "operator" MAY be "asynchronous" in that it may interact with the original
+     * {@link Subscriber} from outside the modified {@link Subscriber} or {@link Subscription} threads. More
+     * specifically:
+     * <ul>
+     *  <li>all of the {@link Subscriber} invocations going "downstream" (i.e. from <i>A</i> to <i>B</i> above) MAY be
+     *  offloaded via an {@link Executor}</li>
+     *  <li>all of the {@link Subscription} invocations going "upstream" (i.e. from <i>B</i> to <i>A</i> above) MAY be
+     *  offloaded via an {@link Executor}</li>
+     * </ul>
+     * This behavior exists to prevent blocking code negatively impacting the thread that powers the upstream source of
+     * data (e.g. an EventLoop).
+     * @param operator The custom operator logic. The input is the "original" {@link Subscriber} to this
+     * {@link Publisher} and the return is the "modified" {@link Subscriber} that provides custom operator business
+     * logic.
+     * @param <R> Type of the items emitted by the returned {@link Publisher}.
+     * @return a {@link Publisher} that when {@link Publisher#subscribe(Subscriber)} is called the {@code operator}
+     * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Publisher}.
+     * @see #liftSynchronous(PublisherOperator)
+     */
+    public final <R> Publisher<R> liftAsynchronous(PublisherOperator<T, R> operator) {
+        return new LiftAsynchronousPublisherOperator<>(this, operator, executor);
+    }
+
+    //
+    // Operators End
+    //
+
+    //
+    // Conversion Operators Begin
+    //
+
+    /**
+     * Converts this {@link Publisher} to a {@link Single}.
+     *
+     * @return A {@link Single} that will contain the first item emitted from the this {@link Publisher}.
+     * If the source {@link Publisher} does not emit any item, then the returned {@link Single} will terminate with
+     * {@link NoSuchElementException}.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/first.html">ReactiveX first operator.</a>
+     */
+    public final Single<T> first() {
+        return new PubToSingle<>(this);
+    }
+
+    /**
+     * Ignores all elements emitted by this {@link Publisher} and forwards the termination signal to the returned
+     * {@link Completable}.
+     *
+     * @return A {@link Completable} that mirrors the terminal signal from this {@code Publisher}.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/ignoreelements.html">ReactiveX ignoreElements operator.</a>
+     */
+    public final Completable ignoreElements() {
+        return new PubToCompletable<>(this);
+    }
+
+    /**
+     * Reduces the stream into a single item.
+     *
+     * @param resultFactory Factory for the result which collects all items emitted by this {@link Publisher}.
+     * This will be called every time the returned {@link Single} is subscribed.
+     * @param reducer Invoked for every item emitted by the source {@link Publisher} and returns the same or altered
+     * {@code result} object.
+     * @param <R> Type of the reduced item.
+     * @return A {@link Single} that completes with the single {@code result} or any error emitted by the source
+     * {@link Publisher}.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/reduce.html">ReactiveX reduce operator.</a>
+     */
+    public final <R> Single<R> reduce(Supplier<R> resultFactory, BiFunction<R, ? super T, R> reducer) {
+        return new ReduceSingle<>(this, resultFactory, reducer);
     }
 
     /**
@@ -1307,8 +1693,8 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *     <li>Any items received by {@link Subscriber#onNext(Object)} is returned from a call to
      *     {@link BlockingIterator#next()}.</li>
      *     <li>Any {@link Throwable} received by {@link Subscriber#onError(Throwable)} is thrown (wrapped in a
-     *     {@link RuntimeException} if required) when {@link BlockingIterator#next()} is called. This error will be thrown
-     *      only after draining all queued data, if any.</li>
+     *     {@link RuntimeException} if required) when {@link BlockingIterator#next()} is called. This error will be
+     *     thrown only after draining all queued data, if any.</li>
      *     <li>When {@link Subscriber#onComplete()} is called, returned {@link BlockingIterator}s
      *     {@link BlockingIterator#hasNext()} will return {@code false} {@link BlockingIterator#next()} will throw
      *     {@link NoSuchElementException}. This error will be thrown only after draining all queued data, if any.</li>
@@ -1374,52 +1760,59 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
         return new PublisherAsBlockingIterable<>(this, queueCapacityHint);
     }
 
-    /**
-     * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
-     * <ul>
-     *     <li>All {@link Subscriber} methods.</li>
-     *     <li>All {@link Subscription} methods.</li>
-     *     <li>The {@link #handleSubscribe(Subscriber)} method.</li>
-     * </ul>
-     * This method does <em>not</em> override preceding {@link Executor}s, if any, specified for {@code this}
-     * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
-     * {@link Executor}. If such an override is required, {@link #publishAndSubscribeOnOverride(Executor)} can be used.
-     *
-     * @param executor {@link Executor} to use.
-     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods
-     * {@link Subscriber}, {@link Subscription} and {@link #handleSubscribe(Subscriber)}.
-     */
-    public final Publisher<T> publishAndSubscribeOn(Executor executor) {
-        return PublishAndSubscribeOnPublishers.publishAndSubscribeOn(this, executor);
+    //
+    // Conversion Operators End
+    //
+
+    @Override
+    public final void subscribe(Subscriber<? super T> subscriber) {
+        requireNonNull(subscriber);
+        // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader to
+        // use.
+        final SignalOffloader signalOffloader = newOffloader(executor);
+        // Since this is a user-driven subscribe (end of the execution chain), offload subscription methods
+        subscribe(signalOffloader.offloadSubscription(subscriber), signalOffloader);
     }
 
     /**
-     * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
-     * <ul>
-     *     <li>All {@link Subscriber} methods.</li>
-     *     <li>All {@link Subscription} methods.</li>
-     *     <li>The {@link #handleSubscribe(Subscriber)} method.</li>
-     * </ul>
-     * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Publisher}.
-     * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
-     * If such an override is not required, {@link #publishAndSubscribeOn(Executor)} can be used.
+     * Handles a subscriber to this {@code Publisher}.
      *
-     * @param executor {@link Executor} to use.
-     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
-     * {@link Subscriber}, {@link Subscription} and {@link #handleSubscribe(Subscriber)} both for the returned
-     * {@link Publisher} as well as {@code this} {@link Publisher}.
+     * @param subscriber the subscriber.
      */
-    public final Publisher<T> publishAndSubscribeOnOverride(Executor executor) {
-        return PublishAndSubscribeOnPublishers.publishAndSubscribeOnOverride(this, executor);
-    }
+    protected abstract void handleSubscribe(Subscriber<? super T> subscriber);
+
+    //
+    // Static Utility Methods Begin
+    //
 
     /**
-     * Creates a new {@link Publisher} that emits {@code value} to its {@link Subscriber} and then {@link Subscriber#onComplete()}.
+     * Add a plugin that will be invoked on each {@link #subscribe(Subscriber)} call. This can be used for visibility or
+     * to extend functionality to all {@link Subscriber}s which pass through {@link #subscribe(Subscriber)}.
+     * @param subscribePlugin the plugin that will be invoked on each {@link #subscribe(Subscriber)} call.
+     */
+    @SuppressWarnings("rawtypes")
+    public static void addSubscribePlugin(
+            BiConsumer<? super Subscriber, Consumer<? super Subscriber>> subscribePlugin) {
+        requireNonNull(subscribePlugin);
+        SUBSCRIBE_PLUGIN_REF.updateAndGet(currentPlugin -> currentPlugin == null ? subscribePlugin :
+                (subscriber, handleSubscribe) -> subscribePlugin.accept(subscriber,
+                        subscriber2 -> subscribePlugin.accept(subscriber2, handleSubscribe))
+        );
+    }
+
+    //
+    // Static Utility Methods End
+    //
+
+    /**
+     * Creates a new {@link Publisher} that emits {@code value} to its {@link Subscriber} and then
+     * {@link Subscriber#onComplete()}.
      *
      * @param value Value that the returned {@link Publisher} will emit.
      * @param <T> Type of items emitted by the returned {@link Publisher}.
      *
-     * @return A new {@link Publisher} that emits {@code value} to its {@link Subscriber} and then {@link Subscriber#onComplete()}.
+     * @return A new {@link Publisher} that emits {@code value} to its {@link Subscriber} and then
+     * {@link Subscriber#onComplete()}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/just.html">ReactiveX just operator.</a>
      */
@@ -1428,12 +1821,14 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     }
 
     /**
-     * Creates a new {@link Publisher} that emits all {@code values} to its {@link Subscriber} and then {@link Subscriber#onComplete()}.
+     * Creates a new {@link Publisher} that emits all {@code values} to its {@link Subscriber} and then
+     * {@link Subscriber#onComplete()}.
      *
      * @param values Values that the returned {@link Publisher} will emit.
      * @param <T> Type of items emitted by the returned {@link Publisher}.
      *
-     * @return A new {@link Publisher} that emits all {@code values} to its {@link Subscriber} and then {@link Subscriber#onComplete()}.
+     * @return A new {@link Publisher} that emits all {@code values} to its {@link Subscriber} and then
+     * {@link Subscriber#onComplete()}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/from.html">ReactiveX from operator.</a>
      */
@@ -1493,10 +1888,12 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     }
 
     /**
-     * Creates a new {@link Publisher} that completes when subscribed without emitting any item to its {@link Subscriber}.
+     * Creates a new {@link Publisher} that completes when subscribed without emitting any item to its
+     * {@link Subscriber}.
      *
      * @param <T> Type of items emitted by the returned {@link Publisher}.
-     * @return A new {@link Publisher} that completes when subscribed without emitting any item to its {@link Subscriber}.
+     * @return A new {@link Publisher} that completes when subscribed without emitting any item to its
+     * {@link Subscriber}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/empty-never-throw.html">ReactiveX empty operator.</a>
      */
@@ -1505,10 +1902,12 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     }
 
     /**
-     * Creates a new {@link Publisher} that never emits any item to its {@link Subscriber} and never call any terminal methods on it.
+     * Creates a new {@link Publisher} that never emits any item to its {@link Subscriber} and never call any terminal
+     * methods on it.
      *
      * @param <T> Type of items emitted by the returned {@link Publisher}.
-     * @return A new {@link Publisher} that never emits any item to its {@link Subscriber} and never call any terminal methods on it.
+     * @return A new {@link Publisher} that never emits any item to its {@link Subscriber} and never call any terminal
+     * methods on it.
      *
      * @see <a href="http://reactivex.io/documentation/operators/empty-never-throw.html">ReactiveX never operator.</a>
      */
@@ -1517,11 +1916,13 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     }
 
     /**
-     * Creates a new {@link Publisher} that terminates its {@link Subscriber} with an error without emitting any item to it.
+     * Creates a new {@link Publisher} that terminates its {@link Subscriber} with an error without emitting any item to
+     * it.
      *
      * @param <T> Type of items emitted by the returned {@link Publisher}.
      * @param cause The {@link Throwable} that is used to terminate the {@link Subscriber}.
-     * @return A new {@link Publisher} that terminates its {@link Subscriber} with an error without emitting any item to it.
+     * @return A new {@link Publisher} that terminates its {@link Subscriber} with an error without emitting any item to
+     * it.
      *
      * @see <a href="http://reactivex.io/documentation/operators/empty-never-throw.html">ReactiveX error operator.</a>
      */
@@ -1560,6 +1961,51 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
         return new ReactiveStreamsPublisher<>(publisher);
     }
 
+    //
+    // Internal Methods Begin
+    //
+
+    /**
+     * A special subscribe mode that uses the passed {@link SignalOffloader} instead of creating a new
+     * {@link SignalOffloader} like {@link #subscribe(Subscriber)}. This will call
+     * {@link #handleSubscribe(Subscriber, SignalOffloader)} to handle this subscribe instead of
+     * {@link #handleSubscribe(Subscriber)}.
+     * <p>
+     * This method is used by operator implementations to inherit a chosen {@link SignalOffloader} per
+     * {@link Subscriber} where possible. This method does not wrap the passed {@link Subscriber} or
+     * {@link Subscription} to offload processing to {@link SignalOffloader}. That is done by
+     * {@link #handleSubscribe(Subscriber, SignalOffloader)} and hence can be overridden by operators that do not
+     * require this wrapping.
+     *
+     * @param subscriber {@link Subscriber} to this {@link Publisher}.
+     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
+     */
+    final void subscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
+        requireNonNull(subscriber);
+        BiConsumer<? super Subscriber, Consumer<? super Subscriber>> plugin = SUBSCRIBE_PLUGIN_REF.get();
+        if (plugin != null) {
+            plugin.accept(subscriber, sub -> handleSubscribe(sub, signalOffloader));
+        } else {
+            handleSubscribe(subscriber, signalOffloader);
+        }
+    }
+
+    /**
+     * Override for {@link #handleSubscribe(Subscriber)} to offload the {@link #handleSubscribe(Subscriber)} call to the
+     * passed {@link SignalOffloader}.
+     * <p>
+     * This method wraps the passed {@link Subscriber} using {@link SignalOffloader#offloadSubscriber(Subscriber)} and
+     * then calls {@link #handleSubscribe(Subscriber)} using {@link SignalOffloader#offloadSignal(Object, Consumer)}.
+     * Operators that do not wish to wrap the passed {@link Subscriber} can override this method and omit the wrapping.
+     *
+     * @param subscriber the subscriber.
+     * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
+     */
+    void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
+        Subscriber<? super T> safeSubscriber = signalOffloader.offloadSubscriber(subscriber);
+        signalOffloader.offloadSignal(safeSubscriber, this::handleSubscribe);
+    }
+
     /**
      * Returns the {@link Executor} used for this {@link Publisher}.
      *
@@ -1569,59 +2015,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
         return executor;
     }
 
-    /**
-     * A group as emitted by {@link #groupBy(Function, int)} or its variants.
-     *
-     * @param <Key> Key for the group. If this is of type {@link QueueSizeProvider} new keys will use the value
-     *             provided by {@link QueueSizeProvider#calculateMaxQueueSize(int)} to determine the maximum queue size
-     *             for this group.
-     * @param <T> Items emitted by this group.
-     */
-    public static final class Group<Key, T> {
-        private final Key key;
-        private final Publisher<T> value;
-
-        Group(Key key, Publisher<T> value) {
-            this.key = requireNonNull(key);
-            this.value = requireNonNull(value);
-        }
-
-        /**
-         * Returns the key for this group.
-         *
-         * @return Key for this group.
-         */
-        public Key getKey() {
-            return key;
-        }
-
-        /**
-         * Returns {@link Publisher} for this group. This {@link Publisher} will only allow a single {@link Subscriber}.
-         *
-         * @return {@link Publisher} for this group that only allows a single {@link Subscriber}.
-         */
-        public Publisher<T> getPublisher() {
-            return value;
-        }
-
-        /**
-         * Provide the maximum queue size to use for a particular {@link Group} key.
-         */
-        public interface QueueSizeProvider {
-            /**
-             * Calculate the maximum queue size for a particular {@link Group} key.
-             * @param groupMaxQueueSize The maximum queue size for {@link Group} objects.
-             * @return The maximum queue size for a particular {@link Group} key.
-             */
-            int calculateMaxQueueSize(int groupMaxQueueSize);
-        }
-
-        @Override
-        public String toString() {
-            return "Group{" +
-                    "key=" + key +
-                    ", value=" + value +
-                    '}';
-        }
-    }
+    //
+    // Internal Methods End
+    //
 }

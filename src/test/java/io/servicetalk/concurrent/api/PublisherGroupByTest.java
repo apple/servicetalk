@@ -53,52 +53,52 @@ public class PublisherGroupByTest {
     public final MockedSubscriberRule<Boolean> subscriber = new MockedSubscriberRule<>();
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         source = new TestPublisher<>(true);
         source.sendOnSubscribe();
     }
 
     @Test
-    public void testGroupOnNextAndCompleteWithGroupQueue() throws Exception {
+    public void testGroupOnNextAndCompleteWithGroupQueue() {
         List<MockedSubscriberRule<Integer>> groupSubs = subscribeToAllGroups(10);
         testGroupOnNextAndComplete(groupSubs);
     }
 
     @Test
-    public void testGroupOnNextAndErrorWithGroupQueue() throws Exception {
+    public void testGroupOnNextAndErrorWithGroupQueue() {
         List<MockedSubscriberRule<Integer>> groupSubs = subscribeToAllGroups(10);
         testGroupOnNextAndError(groupSubs);
     }
 
     @Test
-    public void testGroupOnNextAndCompleteNoQueue() throws Exception {
+    public void testGroupOnNextAndCompleteNoQueue() {
         List<MockedSubscriberRule<Integer>> groupSubs = subscribeToAllGroups(10, s -> s.request(1));
         testGroupOnNextAndComplete(groupSubs);
     }
 
     @Test
-    public void testGroupOnNextAndErrorNoQueue() throws Exception {
+    public void testGroupOnNextAndErrorNoQueue() {
         List<MockedSubscriberRule<Integer>> groupSubs = subscribeToAllGroups(10, s -> s.request(1));
         testGroupOnNextAndError(groupSubs);
     }
 
     @Test
-    public void testGroupOnNextThrowsNoQueue() throws Exception {
+    public void testGroupOnNextThrowsNoQueue() {
         testGroupOnNextThrows(1);
     }
 
     @Test
-    public void testGroupOnNextThrowsWithQueue() throws Exception {
+    public void testGroupOnNextThrowsWithQueue() {
         testGroupOnNextThrows(0);
     }
 
     @Test
-    public void testGroupSubscriberCancelNoQueue() throws Exception {
+    public void testGroupSubscriberCancelNoQueue() {
         testGroupSubscriberCancel(1);
     }
 
     @Test
-    public void testGroupSubscriberCancelWithQueue() throws Exception {
+    public void testGroupSubscriberCancelWithQueue() {
         testGroupSubscriberCancel(0);
     }
 
@@ -296,7 +296,7 @@ public class PublisherGroupByTest {
         }
     }
 
-    private void testGroupSubscriberCancel(int requestFromGroupOnSubscribe) throws Exception {
+    private void testGroupSubscriberCancel(int requestFromGroupOnSubscribe) {
         List<MockedSubscriberRule<Integer>> groupSubs = subscribeToAllGroups(10, s -> {
             if (requestFromGroupOnSubscribe > 0) {
                 s.request(requestFromGroupOnSubscribe);
@@ -314,7 +314,7 @@ public class PublisherGroupByTest {
     }
 
     @Test
-    public void testGroupsSubscriberCancelled() throws Exception {
+    public void testGroupsSubscriberCancelled() {
         List<MockedSubscriberRule<Integer>> groupSubs = subscribeToAllGroups(10);
         subscriber.request(5);
         source.sendItems(1, 3, 5, 7, 9);
@@ -325,20 +325,20 @@ public class PublisherGroupByTest {
     }
 
     @Test
-    public void testDelaySubscriptionToGroup() throws Exception {
-        List<Publisher.Group<Boolean, Integer>> groups = subscribe(8);
+    public void testDelaySubscriptionToGroup() {
+        List<GroupedPublisher<Boolean, Integer>> groups = subscribe(8);
         subscriber.request(1);
         source.sendItemsNoDemandCheck(1).onComplete();
         subscriber.verifySuccess(Boolean.TRUE);
         assertThat("Unexpected groups.", groups, hasSize(1));
-        Publisher.Group<Boolean, Integer> grp = groups.remove(0);
+        GroupedPublisher<Boolean, Integer> grp = groups.remove(0);
         MockedSubscriberRule<Integer> subscriber = new MockedSubscriberRule<>();
-        subscriber.subscribe(grp.getPublisher()).verifySuccess(1);
+        subscriber.subscribe(grp).verifySuccess(1);
     }
 
     @Test
-    public void testGroupLevelQueueBreachWhenNotSubscribed() throws Exception {
-        List<Publisher.Group<Boolean, Integer>> groups = subscribe(16);
+    public void testGroupLevelQueueBreachWhenNotSubscribed() {
+        List<GroupedPublisher<Boolean, Integer>> groups = subscribe(16);
         subscriber.request(1);
         for (int i = 0; i <= 16; i++) {
             source.sendItemsNoDemandCheck(i);
@@ -346,9 +346,9 @@ public class PublisherGroupByTest {
         source.verifyCancelled();
         subscriber.verifyItems(Boolean.TRUE).verifyFailure(QueueFullException.class);
         assertThat("Unexpected groups.", groups, hasSize(1));
-        Publisher.Group<Boolean, Integer> grp = groups.remove(0);
+        GroupedPublisher<Boolean, Integer> grp = groups.remove(0);
         MockedSubscriberRule<Integer> subscriber = new MockedSubscriberRule<>();
-        subscriber.subscribe(grp.getPublisher());
+        subscriber.subscribe(grp);
         subscriber.request(16);
         for (int i = 0; i < 16; i++) {
             subscriber.verifyItems(i);
@@ -357,7 +357,7 @@ public class PublisherGroupByTest {
     }
 
     @Test
-    public void testGroupLevelQueueBreachWhenNotRequested() throws Exception {
+    public void testGroupLevelQueueBreachWhenNotRequested() {
         List<MockedSubscriberRule<Integer>> groupSubs = subscribeToAllGroups(integer -> Boolean.TRUE, 16, s -> { });
         subscriber.request(1);
         for (int i = 0; i <= 16; i++) {
@@ -375,7 +375,7 @@ public class PublisherGroupByTest {
     }
 
     @Test
-    public void testKeySelectorThrowsWithQueue() throws Exception {
+    public void testKeySelectorThrowsWithQueue() {
         List<MockedSubscriberRule<Integer>> subs = subscribeToAllGroups(integer -> {
             if (integer % 2 == 0) {
                 throw DELIBERATE_EXCEPTION;
@@ -389,7 +389,7 @@ public class PublisherGroupByTest {
     }
 
     @Test
-    public void testKeySelectorThrowsNoQueue() throws Exception {
+    public void testKeySelectorThrowsNoQueue() {
         List<MockedSubscriberRule<Integer>> subs = subscribeToAllGroups(integer -> {
             if (integer % 2 == 0) {
                 throw DELIBERATE_EXCEPTION;
@@ -404,9 +404,9 @@ public class PublisherGroupByTest {
     }
 
     @Test
-    public void testPendingGroupsQueueBreach() throws Exception {
+    public void testPendingGroupsQueueBreach() {
         @SuppressWarnings("unchecked")
-        Subscriber<Publisher.Group<Integer, Integer>> subscriber = mock(Subscriber.class);
+        Subscriber<GroupedPublisher<Integer, Integer>> subscriber = mock(Subscriber.class);
         source.groupBy(integer -> integer, 16).subscribe(subscriber);
         ArgumentCaptor<Subscription> subscriptionCaptor = forClass(Subscription.class);
         verify(subscriber).onSubscribe(subscriptionCaptor.capture());
@@ -419,7 +419,7 @@ public class PublisherGroupByTest {
     }
 
     @Test
-    public void testMaxBufferRequestNAndThenRequestMore() throws Exception {
+    public void testMaxBufferRequestNAndThenRequestMore() {
         final List<MockedSubscriberRule<Integer>> groupSubs = subscribeToAllGroups(2);
         subscriber.request(1);
         source.verifyRequested(1).sendItems(1);
@@ -471,8 +471,8 @@ public class PublisherGroupByTest {
         groupSubs.remove(0).request(2).verifySuccess(1, 3);
     }
 
-    private List<Publisher.Group<Boolean, Integer>> subscribe(int maxBufferPerGroup) {
-        List<Publisher.Group<Boolean, Integer>> groups = new ArrayList<>();
+    private List<GroupedPublisher<Boolean, Integer>> subscribe(int maxBufferPerGroup) {
+        List<GroupedPublisher<Boolean, Integer>> groups = new ArrayList<>();
         subscriber.subscribe(source.groupBy(integer -> Boolean.TRUE, maxBufferPerGroup).map(grp -> {
             groups.add(grp);
             return grp.getKey();
@@ -489,7 +489,7 @@ public class PublisherGroupByTest {
         List<MockedSubscriberRule<Integer>> subscribers = new ArrayList<>();
         subscriber.subscribe(source.groupBy(keySelector, maxBufferPerGroup).map(grp -> {
             MockedSubscriberRule<Integer> subscriber = new MockedSubscriberRule<>();
-            subscriber.subscribe(grp.getPublisher());
+            subscriber.subscribe(grp);
             newSubscriberConsumer.accept(subscriber);
             subscribers.add(subscriber);
             return grp.getKey();

@@ -25,8 +25,8 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Operator that may map each {@link Subscriber#onNext(Object)} call to multiple {@link Key}s.
- * @param <Key> The type of key which identifies a {@link Group}.
- * @param <T> Type of elements emitted by the {@link Group}s emitted by this {@link Publisher}.
+ * @param <Key> The type of key which identifies a {@link GroupedPublisher}.
+ * @param <T> Type of elements emitted by the {@link GroupedPublisher}s emitted by this {@link Publisher}.
  */
 final class PublisherGroupByMulti<Key, T> extends AbstractPublisherGroupBy<Key, T> {
     private final Function<T, Iterator<Key>> keySelector;
@@ -47,7 +47,7 @@ final class PublisherGroupByMulti<Key, T> extends AbstractPublisherGroupBy<Key, 
     }
 
     @Override
-    public Subscriber<? super T> apply(Subscriber<? super Group<Key, T>> subscriber) {
+    public Subscriber<? super T> apply(Subscriber<? super GroupedPublisher<Key, T>> subscriber) {
         return new SourceSubscriber<>(executor, this, subscriber);
     }
 
@@ -55,7 +55,7 @@ final class PublisherGroupByMulti<Key, T> extends AbstractPublisherGroupBy<Key, 
         private final PublisherGroupByMulti<Key, T> source;
 
         SourceSubscriber(Executor executor, PublisherGroupByMulti<Key, T> source,
-                         Subscriber<? super Group<Key, T>> target) {
+                         Subscriber<? super GroupedPublisher<Key, T>> target) {
             super(executor, source.initialCapacityForGroups, target);
             this.source = source;
         }
