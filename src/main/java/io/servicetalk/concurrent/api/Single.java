@@ -18,6 +18,8 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 
 import java.time.Duration;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -36,6 +38,7 @@ import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSuccessSupplier;
+import static io.servicetalk.concurrent.api.SingleToCompletionStage.createAndSubscribe;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -902,6 +905,24 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
         return toCompletable();
     }
 
+    /**
+     * Convert this {@link Single} to a {@link CompletionStage}.
+     *
+     * @return A {@link CompletionStage} that mirrors the terminal signal from this {@link Single}.
+     */
+    public final CompletionStage<T> toCompletionStage() {
+        return createAndSubscribe(this, executor);
+    }
+
+    /**
+     * Convert this {@link Single} to a {@link Future}.
+     *
+     * @return A {@link Future} that mirrors the terminal signal from this {@link Single}.
+     */
+    public final Future<T> toFuture() {
+        return createAndSubscribe(this, executor);
+    }
+
     //
     // Conversion Operators End
     //
@@ -990,6 +1011,38 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     }
 
     /**
+     * Convert from a {@link Future} to a {@link Single} via {@link Future#get()}.
+     * <p>
+     * Note that because {@link Future} only presents blocking APIs to extract the result, so the process of getting the
+     * results will block. The caller of {@link #subscribe(Subscriber)} is responsible for offloading if necessary, and
+     * also offloading if {@link Cancellable#cancel()} will be called if this operation may block.
+     * <p>
+     * To apply a timeout see {@link #timeout(long, TimeUnit)} and related methods.
+     * @param future The {@link Future} to convert.
+     * @param <T> The data type the {@link Future} provides when complete.
+     * @return A {@link Single} that derives results from {@link Future}.
+     * @see #timeout(long, TimeUnit)
+     */
+    public static <T> Single<T> fromFuture(Future<T> future) {
+        return new FutureToSingle<>(future);
+    }
+
+    /**
+     * Convert from a {@link CompletionStage} to a {@link Single}.
+     * <p>
+     * A best effort is made to propagate {@link Cancellable#cancel()} to the {@link CompletionStage}. Cancellation for
+     * {@link CompletionStage} implementations will result in exceptional completion and invoke user
+     * callbacks. If there is any blocking code involved in the cancellation process (including invoking user callbacks)
+     * you should investigate if using an {@link Executor} is appropriate.
+     * @param stage The {@link CompletionStage} to convert.
+     * @param <T> The data type the {@link CompletionStage} provides when complete.
+     * @return A {@link Single} that derives results from {@link CompletionStage}.
+     */
+    public static <T> Single<T> fromStage(CompletionStage<T> stage) {
+        return new CompletionStageToSingle<>(stage);
+    }
+
+    /**
      * Add a plugin that will be invoked on each {@link #subscribe(Subscriber)} call. This can be used for visibility or
      * to extend functionality to all {@link Subscriber}s which pass through {@link #subscribe(Subscriber)}.
      * @param subscribePlugin the plugin that will be invoked on each {@link #subscribe(Subscriber)} call.
@@ -1009,7 +1062,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     //
 
     //
-    // Package Private Methods Begin
+    // Internal Methods Begin
     //
 
     /**
@@ -1066,6 +1119,6 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     }
 
     //
-    // Package Private Methods End
+    // Internal Methods End
     //
 }

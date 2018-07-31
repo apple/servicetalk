@@ -24,4 +24,21 @@
     </Or>
     <Bug pattern="NM_SAME_SIMPLE_NAME_AS_INTERFACE"/>
   </Match>
+
+  <!-- We set the value before the synchronized block which does a signal, but this should be visible
+       in the thread doing the await because of the JMM -->
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.ExecutorCompletionStage$GetListener"/>
+    <Or>
+      <Method name="onError"/>
+      <Method name="onSuccess"/>
+    </Or>
+  </Match>
+
+  <!-- Synchronized is used for blocking wait/notify code, and we are relying upon the JMM to provide visibility on
+       the result variable before/after the synchornized block. -->
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.ExecutorCompletionStage$GetListener"/>
+    <Bug pattern="IS2_INCONSISTENT_SYNC"/>
+  </Match>
 </FindBugsFilter>

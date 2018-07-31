@@ -21,15 +21,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class TestSingle<T> extends Single<T> implements Single.Subscriber<T> {
+    private static final Object NULL = new Object();
+    private final AtomicInteger subscribeCount = new AtomicInteger();
     private final Queue<Subscriber<? super T>> subscribers = new ConcurrentLinkedQueue<>();
     private final DynamicCompositeCancellable dynamicCancellable = new MapDynamicCompositeCancellable();
     private final boolean invokeListenerPostCancel;
@@ -50,8 +54,15 @@ public class TestSingle<T> extends Single<T> implements Single.Subscriber<T> {
         this.cacheResults = cacheResults;
     }
 
+    public TestSingle(Executor executor, boolean invokeListenerPostCancel, boolean cacheResults) {
+        super(executor);
+        this.invokeListenerPostCancel = invokeListenerPostCancel;
+        this.cacheResults = cacheResults;
+    }
+
     @Override
     public synchronized void handleSubscribe(Subscriber<? super T> subscriber) {
+        subscribeCount.incrementAndGet();
         subscribers.add(subscriber);
         subscriber.onSubscribe(() -> {
             if (!invokeListenerPostCancel) {
@@ -63,6 +74,8 @@ public class TestSingle<T> extends Single<T> implements Single.Subscriber<T> {
             subscribers.remove(subscriber);
             if (cachedResult instanceof Throwable) {
                 subscriber.onError((Throwable) cachedResult);
+            } else if (cachedResult == NULL) {
+                subscriber.onSuccess(null);
             } else {
                 @SuppressWarnings("unchecked")
                 T t = (T) this.cachedResult;
@@ -84,7 +97,7 @@ public class TestSingle<T> extends Single<T> implements Single.Subscriber<T> {
             sub.onSuccess(result);
         }
         if (cacheResults) {
-            cachedResult = result;
+            cachedResult = result == null ? NULL : result;
         }
     }
 
@@ -106,6 +119,12 @@ public class TestSingle<T> extends Single<T> implements Single.Subscriber<T> {
 
     public TestSingle<T> verifyListenCalled() {
         assertThat("Listen not called.", subscribers, hasSize(greaterThan(0)));
+        return this;
+    }
+
+    public TestSingle<T> verifyListenCalled(int times) {
+        int count = subscribeCount.get();
+        assertThat("Listen not called " + times + " but instead " + count, count, equalTo(times));
         return this;
     }
 
