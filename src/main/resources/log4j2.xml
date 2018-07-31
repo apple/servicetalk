@@ -16,7 +16,7 @@
   -->
 <Configuration status="info">
   <Properties>
-    <Property name="level">${sys:logger.level:-INFO}</Property>
+    <Property name="level">${sys:servicetalk.logger.level:-INFO}</Property>
   </Properties>
   <Appenders>
     <Console name="Console" target="SYSTEM_OUT">
