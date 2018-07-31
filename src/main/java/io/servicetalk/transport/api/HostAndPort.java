@@ -15,6 +15,8 @@
  */
 package io.servicetalk.transport.api;
 
+import java.net.InetSocketAddress;
+
 /**
  * A tuple of {@code <host name, port>}.
  */
@@ -40,5 +42,17 @@ public interface HostAndPort {
      */
     static HostAndPort of(String host, int port) {
         return new DefaultHostAndPort(host, port);
+    }
+
+    /**
+     * Create a new {@link HostAndPort} from a {@link InetSocketAddress}.
+     * <p>
+     * Note that creation of a {@link InetSocketAddress} may use the JDK's blocking DNS resolution. Take care to only
+     * create these objects if you intend to use the JDK's blocking DNS resolution, and you are safe to block.
+     * @param address The {@link InetSocketAddress} to convert.
+     * @return the {@link HostAndPort}.
+     */
+    static HostAndPort of(InetSocketAddress address) {
+        return new DefaultHostAndPort(address.getHostString(), address.getPort());
     }
 }
