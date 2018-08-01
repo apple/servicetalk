@@ -1467,6 +1467,73 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     }
 
     /**
+     * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke all {@link Subscriber}
+     * methods.
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}. If such an override is required, {@link #publishOnOverride(Executor)} can be used.
+     *
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
+     * {@link Subscriber}.
+     */
+    public final Publisher<T> publishOn(Executor executor) {
+        return PublishAndSubscribeOnPublishers.publishOn(this, executor);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke all {@link Subscriber}
+     * methods.
+     * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Publisher}.
+     * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
+     * If such an override is not required, {@link #publishOn(Executor)} can be used.
+     *
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
+     * {@link Subscriber} both for the returned {@link Publisher} as well as {@code this} {@link Publisher}.
+     */
+    public final Publisher<T> publishOnOverride(Executor executor) {
+        return PublishAndSubscribeOnPublishers.publishOnOverride(this, executor);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
+     * <ul>
+     *     <li>All {@link Subscription} methods.</li>
+     *     <li>The {@link #handleSubscribe(Subscriber)} method.</li>
+     * </ul>
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Publisher}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}. If such an override is required, {@link #subscribeOnOverride(Executor)} can be used.
+     *
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
+     * {@link Subscription} and {@link #handleSubscribe(Subscriber)}.
+     */
+    public final Publisher<T> subscribeOn(Executor executor) {
+        return PublishAndSubscribeOnPublishers.subscribeOn(this, executor);
+    }
+
+    /**
+     * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
+     * <ul>
+     *     <li>All {@link Subscription} methods.</li>
+     *     <li>The {@link #handleSubscribe(Subscriber)} method.</li>
+     * </ul>
+     * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Publisher}.
+     * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
+     * If such an override is not required, {@link #subscribeOn(Executor)} can be used.
+     *
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Publisher} that will use the passed {@link Executor} to invoke all methods of
+     * {@link Subscription} and {@link #handleSubscribe(Subscriber)} both for the returned {@link Publisher} as well as
+     * {@code this} {@link Publisher}.
+     */
+    public final Publisher<T> subscribeOnOverride(Executor executor) {
+        return PublishAndSubscribeOnPublishers.subscribeOnOverride(this, executor);
+    }
+
+    /**
      * Creates a new {@link Publisher} that will use the passed {@link Executor} to invoke the following methods:
      * <ul>
      *     <li>All {@link Subscriber} methods.</li>
@@ -1995,7 +2062,8 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * passed {@link SignalOffloader}.
      * <p>
      * This method wraps the passed {@link Subscriber} using {@link SignalOffloader#offloadSubscriber(Subscriber)} and
-     * then calls {@link #handleSubscribe(Subscriber)} using {@link SignalOffloader#offloadSignal(Object, Consumer)}.
+     * then calls {@link #handleSubscribe(Subscriber)} using
+     * {@link SignalOffloader#offloadSubscribe(Subscriber, Publisher)}.
      * Operators that do not wish to wrap the passed {@link Subscriber} can override this method and omit the wrapping.
      *
      * @param subscriber the subscriber.
@@ -2003,7 +2071,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      */
     void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
         Subscriber<? super T> safeSubscriber = signalOffloader.offloadSubscriber(subscriber);
-        signalOffloader.offloadSignal(safeSubscriber, this::handleSubscribe);
+        signalOffloader.offloadSubscribe(safeSubscriber, this);
     }
 
     /**

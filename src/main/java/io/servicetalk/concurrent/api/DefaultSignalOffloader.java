@@ -16,7 +16,6 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.Single;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
@@ -80,7 +79,8 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
         this(executor, 2, 2);
     }
 
-    DefaultSignalOffloader(Executor executor, int expectedOffloadingEntities, int publisherSignalQueueInitialCapacity) {
+    DefaultSignalOffloader(final Executor executor, final int expectedOffloadingEntities,
+                           final int publisherSignalQueueInitialCapacity) {
         this.executor = requireNonNull(executor);
         this.publisherSignalQueueInitialCapacity = publisherSignalQueueInitialCapacity;
         offloadedEntities = new OffloadedEntity[expectedOffloadingEntities];
@@ -117,12 +117,34 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
     }
 
     @Override
+    public <T> void offloadSubscribe(final Subscriber<? super T> subscriber, final Publisher<T> publisher) {
+        addOffloadedEntity(new OffloadedSignalEntity<>(publisher::handleSubscribe, subscriber));
+    }
+
+    @Override
+    public <T> void offloadSubscribe(final Single.Subscriber<? super T> subscriber, final Single<T> single) {
+        addOffloadedEntity(new OffloadedSignalEntity<>(single::handleSubscribe, subscriber));
+    }
+
+    @Override
+    public void offloadSubscribe(final Completable.Subscriber subscriber, final Completable completable) {
+        addOffloadedEntity(new OffloadedSignalEntity<>(completable::handleSubscribe, subscriber));
+    }
+
+    @Override
     public <T> void offloadSignal(T signal, Consumer<T> signalConsumer) {
+        // Since this is an independent offload, it lacks context of what it is trying to offload. We simply always
+        // offload here. If this offloading is also not required then one can use the immediate Executor.
         addOffloadedEntity(new OffloadedSignalEntity<>(signalConsumer, signal));
     }
 
     @Override
-    public boolean isInOffloadThread() {
+    public boolean isInOffloadThreadForPublish() {
+        return executorThread == currentThread();
+    }
+
+    @Override
+    public boolean isInOffloadThreadForSubscribe() {
         return executorThread == currentThread();
     }
 
@@ -169,7 +191,7 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
                     terminatedEntities++;
                 }
             }
-            if (terminatedEntities == lastIndex + 1) {
+            if (terminatedEntities == lastEntityIndex + 1) {
                 lastEntityIndex = INDEX_OFFLOADER_TERMINATED; // No more entities can be offloaded.
                 return;
             } else if (lastIndex == lastEntityIndex) {
@@ -291,16 +313,13 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
 
     private abstract static class AbstractOffloadedEntity implements OffloadedEntity {
 
-        private static final int STATE_SKIP_SEND_SIGNALS = 0;
-        private static final int STATE_SEND_SIGNALS = 1;
-        private static final int STATE_NOTIFY_AND_SEND_SIGNALS = 2;
-        private static final AtomicIntegerFieldUpdater<AbstractOffloadedEntity> stateUpdater =
-                newUpdater(AbstractOffloadedEntity.class, "state");
+        private static final AtomicIntegerFieldUpdater<AbstractOffloadedEntity> notifyUpdater =
+                newUpdater(AbstractOffloadedEntity.class, "notify");
         private boolean terminated; // only accessed from the drain thread.
         private final DefaultSignalOffloader offloader;
 
         @SuppressWarnings("unused")
-        private volatile int state;
+        private volatile int notify;
 
         AbstractOffloadedEntity(DefaultSignalOffloader offloader) {
             this.offloader = offloader;
@@ -318,9 +337,7 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
             //
             // The two CASes together provides a StoreLoad barrier which provides a full-fence between the writes
             // inside an entity and the reading of the same state inside sendSignals0()
-            //
-            // For cases when the entity does not offload a terminal signal
-            if (stateUpdater.getAndSet(this, STATE_SKIP_SEND_SIGNALS) != STATE_SKIP_SEND_SIGNALS) {
+            if (notifyUpdater.compareAndSet(this, 1, 0)) {
                 sendSignals0();
             }
         }
@@ -331,13 +348,6 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
         }
 
         abstract void sendSignals0();
-
-        final void allowSendSignals() {
-            // For cases where we need to update the state but do not necessarily have to wakeup the run-loop as we
-            // know someone else will. In order to make sure that sendSignals() does not skip sending signals, we set
-            // this state here.
-            stateUpdater.compareAndSet(this, STATE_SKIP_SEND_SIGNALS, STATE_SEND_SIGNALS);
-        }
 
         final void notifyExecutor() {
             // We CAS this volatile field in order to make sure that all changes made to the entity by the signals
@@ -350,7 +360,7 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
             // use of atomic conditional update operations CompareAndSwap (CAS) or LoadLinked/StoreConditional (LL/SC)
             // that have the semantics of performing a volatile load followed by a volatile store.
             // ========================================================================================================
-            if (stateUpdater.getAndSet(this, STATE_NOTIFY_AND_SEND_SIGNALS) != 2) {
+            if (notifyUpdater.compareAndSet(this, 0, 1)) {
                 offloader.notifyExecutor();
             }
         }
@@ -391,13 +401,7 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
                 public void cancel() {
                     // No concurrent writes, so not atomic. Also never flips back to false once true
                     cancelled = true;
-                    // The way we use this offloader, we are sure that Subscription will be the first offloaded entity.
-                    // In absence of any other offloading in the execution chain, cancel() from Subscription should
-                    // synchronously come here. Which means we are already in the run-loop as offloaded Subscription
-                    // will send cancel() from the run-loop. So, we do not notify the run-loop.
-                    // In cases when cancel() does not end here synchronously, we know there must be some other entity
-                    // which is offloading the signals and hence that should notify the executor.
-                    allowSendSignals();
+                    notifyExecutor();
                     s.cancel();
                 }
             };
@@ -545,13 +549,7 @@ final class DefaultSignalOffloader implements SignalOffloader, Runnable {
                 // Ignore cancel if we have already got the result.
                 if (resultUpdater.compareAndSet(AbstractOffloadedSingleValueSubscriber.this, INITIAL_VALUE,
                         CANCELLED)) {
-                    // The way we use this offloader, we are sure that Cancellable will be the first offloaded entity.
-                    // In absence of any other offloading in the execution chain, cancel() from Cancellable should
-                    // synchronously come here. Which means we are already in the run-loop as offloaded Cancellable
-                    // will send cancel() from the run-loop. So, we do not notify the run-loop.
-                    // In cases when cancel() does not end here synchronously, we know there must be some other entity
-                    // which is offloading the signals and hence that should notify the executor.
-                    allowSendSignals();
+                    notifyExecutor();
                 }
                 // Since this is an intermediary and not an operator, we do not swallow the signal but just forward it
                 // and let the original source/operator make the decision of swallowing cancel if required.

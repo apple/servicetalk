@@ -16,20 +16,17 @@
 package io.servicetalk.concurrent.api.tck;
 
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
 
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
 
 import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 
-@Test
-public class PublisherAndSubscribeOnOverrideTckTest extends AbstractPublisherOperatorTckTest<Integer> {
-
+abstract class SingleAbstractOffloaderTckTest extends AbstractSingleOperatorTckTest<Integer> {
     private Executor executor;
 
     @Override
@@ -45,7 +42,9 @@ public class PublisherAndSubscribeOnOverrideTckTest extends AbstractPublisherOpe
     }
 
     @Override
-    protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
-        return publisher.publishAndSubscribeOnOverride(newCachedThreadExecutor());
+    protected Single<Integer> composeSingle(final Single<Integer> single) {
+        return applyOffload(single, executor);
     }
+
+    abstract Single<Integer> applyOffload(Single<Integer> original, Executor executor);
 }

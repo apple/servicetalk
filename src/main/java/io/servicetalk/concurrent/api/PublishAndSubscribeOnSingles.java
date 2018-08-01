@@ -15,6 +15,10 @@
  */
 package io.servicetalk.concurrent.api;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.OffloaderAwareExecutors.mergeAndOffloadPublish;
+import static io.servicetalk.concurrent.api.OffloaderAwareExecutors.mergeAndOffloadSubscribe;
+
 /**
  * A set of factory methods that provides implementations for the various publish/subscribeOn methods on
  * {@link Single}.
@@ -26,21 +30,33 @@ final class PublishAndSubscribeOnSingles {
     }
 
     static <T> Single<T> publishAndSubscribeOn(Single<T> original, Executor executor) {
-        if (original.getExecutor() == executor) {
-            return original;
-        }
-        return new PublishAndSubscribeOn<>(executor, original);
+        return original.getExecutor() == executor || executor == immediate() ?
+                original : new PublishAndSubscribeOn<>(executor, original);
     }
 
     static <T> Single<T> publishAndSubscribeOnOverride(Single<T> original, Executor executor) {
-        if (original.getExecutor() == executor) {
-            return original;
-        }
-        // This operator is to make sure that we override the executor for the entire execution chain. This is the
-        // normal mode of operation if we create a Single with an executor, i.e. all operators behave the same way.
-        // Hence, we simply use AbstractSynchronousSingleOperator which does not do any extra offloading, it just
-        // overrides the Executor that will be used to do the offloading.
-        return new PublishAndSubscribeOnOverride<>(original, executor);
+        return original.getExecutor() == executor || executor == immediate() ?
+                original : new PublishAndSubscribeOnOverride<>(original, executor);
+    }
+
+    static <T> Single<T> publishOn(Single<T> original, Executor executor) {
+        return original.getExecutor() == executor || executor == immediate() ?
+                original : new PublishOn<>(executor, original);
+    }
+
+    static <T> Single<T> publishOnOverride(Single<T> original, Executor executor) {
+        return original.getExecutor() == executor || executor == immediate() ?
+                original : new PublishOnOverride<>(original, executor);
+    }
+
+    static <T> Single<T> subscribeOn(Single<T> original, Executor executor) {
+        return original.getExecutor() == executor || executor == immediate() ?
+                original : new SubscribeOn<>(executor, original);
+    }
+
+    static <T> Single<T> subscribeOnOverride(Single<T> original, Executor executor) {
+        return original.getExecutor() == executor || executor == immediate() ?
+                original : new SubscribeOnOverride<>(original, executor);
     }
 
     private static final class PublishAndSubscribeOn<T> extends AbstractNoHandleSubscribeSingle<T> {
@@ -67,9 +83,102 @@ final class PublishAndSubscribeOnSingles {
         }
     }
 
+    /**
+     * This operator is to make sure that we override the {@link Executor} for the entire execution chain. This is the
+     * normal mode of operation if we create a {@link Single} with an {@link Executor}, i.e. all operators behave the
+     * same way. Hence, we simply use {@link AbstractSynchronousSingleOperator} which does not do any extra offloading,
+     * it just overrides the {@link Executor} that will be used to do the offloading.
+     */
     private static final class PublishAndSubscribeOnOverride<T> extends AbstractSynchronousSingleOperator<T, T> {
         PublishAndSubscribeOnOverride(final Single<T> original, final Executor executor) {
             super(original, executor);
+        }
+
+        @Override
+        public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
+            // We are using AbstractSynchronousSingleOperator just to override the Executor. We do not intend to
+            // do any extra offloading that is done by a regular Single created with an Executor.
+            return subscriber;
+        }
+    }
+
+    private static class PublishOn<T> extends AbstractNoHandleSubscribeSingle<T> {
+        private final Single<T> original;
+
+        PublishOn(final Executor executor, final Single<T> original) {
+            super(mergeAndOffloadPublish(original.getExecutor(), executor));
+            this.original = original;
+        }
+
+        @Override
+        void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
+            // This operator is to make sure that we use the executor to subscribe to the Single that is returned
+            // by this operator.
+            //
+            // Here we offload signals from original to subscriber using signalOffloader.
+            //
+            // This operator acts as a boundary that changes the Executor from original to the rest of the execution
+            // chain. If there is already an Executor defined for original, it will be used to offload signals until
+            // they hit this operator.
+            original.subscribe(signalOffloader.offloadSubscriber(subscriber));
+        }
+    }
+
+    /**
+     * This operator is to make sure that we override the {@link Executor} for the entire execution chain. This is the
+     * normal mode of operation if we create a {@link Single} with an {@link Executor}, i.e. all operators behave the
+     * same way.
+     * Hence, we simply use {@link AbstractSynchronousSingleOperator} which does not do any extra offloading, it just
+     * overrides the {@link Executor} that will be used to do the offloading.
+     */
+    private static class PublishOnOverride<T> extends AbstractSynchronousSingleOperator<T, T> {
+
+        PublishOnOverride(final Single<T> original, final Executor executor) {
+            super(original, mergeAndOffloadPublish(original.getExecutor(), executor));
+        }
+
+        @Override
+        public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
+            // We are using AbstractSynchronousSingleOperator just to override the Executor. We do not intend to
+            // do any extra offloading that is done by a regular Single created with an Executor.
+            return subscriber;
+        }
+    }
+
+    private static class SubscribeOn<T> extends AbstractNoHandleSubscribeSingle<T> {
+        private final Single<T> original;
+
+        SubscribeOn(final Executor executor, final Single<T> original) {
+            super(mergeAndOffloadSubscribe(original.getExecutor(), executor));
+            this.original = original;
+        }
+
+        @Override
+        void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
+            // This operator is to make sure that we use the executor to subscribe to the Single that is returned
+            // by this operator.
+            //
+            // Subscription and handleSubscribe are offloaded at subscribe so we do not need to do anything specific
+            // here.
+            //
+            // This operator acts as a boundary that changes the Executor from original to the rest of the execution
+            // chain. If there is already an Executor defined for original, it will be used to offload signals until
+            // they hit this operator.
+            original.subscribe(subscriber);
+        }
+    }
+
+    /**
+     * This operator is to make sure that we override the {@link Executor} for the entire execution chain. This is the
+     * normal mode of operation if we create a {@link Single} with an {@link Executor}, i.e. all operators behave the
+     * same way.
+     * Hence, we simply use {@link AbstractSynchronousSingleOperator} which does not do any extra offloading, it just
+     * overrides the {@link Executor} that will be used to do the offloading.
+     */
+    private static class SubscribeOnOverride<T> extends AbstractSynchronousSingleOperator<T, T> {
+
+        SubscribeOnOverride(final Single<T> original, final Executor executor) {
+            super(original, mergeAndOffloadSubscribe(original.getExecutor(), executor));
         }
 
         @Override

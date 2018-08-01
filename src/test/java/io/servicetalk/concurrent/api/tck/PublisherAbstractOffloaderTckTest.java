@@ -20,16 +20,13 @@ import io.servicetalk.concurrent.api.Publisher;
 
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
 
 import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 
-@Test
-public class PublisherAndSubscribeOnTckTest extends AbstractPublisherOperatorTckTest<Integer> {
-
+abstract class PublisherAbstractOffloaderTckTest extends AbstractPublisherOperatorTckTest<Integer> {
     private Executor executor;
 
     @Override
@@ -45,7 +42,9 @@ public class PublisherAndSubscribeOnTckTest extends AbstractPublisherOperatorTck
     }
 
     @Override
-    protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
-        return publisher.publishAndSubscribeOn(newCachedThreadExecutor());
+    protected final Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
+        return applyOffload(publisher, executor);
     }
+
+    abstract Publisher<Integer> applyOffload(Publisher<Integer> original, Executor executor);
 }

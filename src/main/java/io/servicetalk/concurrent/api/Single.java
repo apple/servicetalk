@@ -766,13 +766,81 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
     }
 
     /**
+     * Creates a new {@link Single} that will use the passed {@link Executor} to invoke all {@link Subscriber} methods.
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}. If such an override is required, {@link #publishOnOverride(Executor)} can be used.
+     *
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods on the
+     * {@link Subscriber}.
+     */
+    public final Single<T> publishOn(Executor executor) {
+        return PublishAndSubscribeOnSingles.publishOn(this, executor);
+    }
+
+    /**
+     * Creates a new {@link Single} that will use the passed {@link Executor} to invoke all {@link Subscriber} methods.
+     * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Single}.
+     * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor} for
+     * invoking all {@link Subscriber} methods. If such an override is not required, {@link #publishOn(Executor)} can be
+     * used.
+     *
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
+     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(Single.Subscriber)} both for the returned
+     * {@link Single} as well as {@code this} {@link Single}.
+     */
+    public final Single<T> publishOnOverride(Executor executor) {
+        return PublishAndSubscribeOnSingles.publishOnOverride(this, executor);
+    }
+
+    /**
+     * Creates a new {@link Single} that will use the passed {@link Executor} to invoke the following methods:
+     * <ul>
+     *     <li>All {@link Cancellable} methods.</li>
+     *     <li>The {@link #handleSubscribe(Single.Subscriber)} method.</li>
+     * </ul>
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}. If such an override is required, {@link #subscribeOnOverride(Executor)} can be used.
+     *
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
+     * {@link Cancellable} and {@link #handleSubscribe(Single.Subscriber)}.
+     */
+    public final Single<T> subscribeOn(Executor executor) {
+        return PublishAndSubscribeOnSingles.subscribeOn(this, executor);
+    }
+
+    /**
+     * Creates a new {@link Single} that will use the passed {@link Executor} to invoke the following methods:
+     * <ul>
+     *     <li>All {@link Cancellable} methods.</li>
+     *     <li>The {@link #handleSubscribe(Single.Subscriber)} method.</li>
+     * </ul>
+     * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Single}.
+     * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor} for
+     * invoking the above specified methods.
+     * If such an override is not required, {@link #subscribeOn(Executor)} can be used.
+     *
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Single} that will use the passed {@link Executor} to invoke all methods of
+     * {@link Cancellable} and {@link #handleSubscribe(Single.Subscriber)} both for the returned
+     * {@link Single} as well as {@code this} {@link Single}.
+     */
+    public final Single<T> subscribeOnOverride(Executor executor) {
+        return PublishAndSubscribeOnSingles.subscribeOnOverride(this, executor);
+    }
+
+    /**
      * Creates a new {@link Single} that will use the passed {@link Executor} to invoke the following methods:
      * <ul>
      *     <li>All {@link Subscriber} methods.</li>
      *     <li>All {@link Cancellable} methods.</li>
      *     <li>The {@link #handleSubscribe(Single.Subscriber)} method.</li>
      * </ul>
-     * This method does <em>not</em> override preceding {@link Executor}s, if any, specified for {@code this}
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Single}. Only subsequent operations, if any, added in this execution chain will use this
      * {@link Executor}. If such an override is required, {@link #publishAndSubscribeOnOverride(Executor)} can be used.
      *
@@ -1106,7 +1174,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      *
      *     This method wraps the passed {@link Subscriber} using {@link SignalOffloader#offloadSubscriber(Subscriber)}
      *     and then calls {@link #handleSubscribe(Subscriber)} using
-     *     {@link SignalOffloader#offloadSignal(Object, Consumer)}.
+     *     {@link SignalOffloader#offloadSubscribe(Subscriber, Single)}.
      *     Operators that do not wish to wrap the passed {@link Subscriber} can override this method and omit the
      *     wrapping.
      *
@@ -1115,7 +1183,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      */
     void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
         Subscriber<? super T> safeSubscriber = signalOffloader.offloadSubscriber(subscriber);
-        signalOffloader.offloadSignal(safeSubscriber, this::handleSubscribe);
+        signalOffloader.offloadSubscribe(safeSubscriber, this);
     }
 
     //

@@ -277,7 +277,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         }
 
         private void tryOffloadTimeout(Throwable cause) {
-            if (signalOffloader.isInOffloadThread()) {
+            if (signalOffloader.isInOffloadThreadForPublish()) {
                 processTimeout(cause);
             } else {
                 signalOffloader.offloadSignal(cause, this::processTimeout);

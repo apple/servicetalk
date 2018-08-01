@@ -906,13 +906,81 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     }
 
     /**
+     * Creates a new {@link Completable} that will use the passed {@link Executor} to invoke all {@link Subscriber}
+     * methods.
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Completable}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}. If such an override is required, {@link #publishOnOverride(Executor)} can be used.
+     *
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods on the
+     * {@link Subscriber}.
+     */
+    public final Completable publishOn(Executor executor) {
+        return PublishAndSubscribeOnCompletables.publishOn(this, executor);
+    }
+
+    /**
+     * Creates a new {@link Completable} that will use the passed {@link Executor} to invoke all {@link Subscriber}
+     * methods.
+     * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Completable}.
+     * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
+     * If such an override is not required, {@link #publishOn(Executor)} can be used.
+     *
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods of
+     * {@link Subscriber}, {@link Cancellable} and {@link #handleSubscribe(Completable.Subscriber)} both for the
+     * returned {@link Completable} as well as {@code this} {@link Completable}.
+     */
+    public final Completable publishOnOverride(Executor executor) {
+        return PublishAndSubscribeOnCompletables.publishOnOverride(this, executor);
+    }
+
+    /**
+     * Creates a new {@link Completable} that will use the passed {@link Executor} to invoke the following methods:
+     * <ul>
+     *     <li>All {@link Cancellable} methods.</li>
+     *     <li>The {@link #handleSubscribe(Completable.Subscriber)} method.</li>
+     * </ul>
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
+     * {@link Completable}. Only subsequent operations, if any, added in this execution chain will use this
+     * {@link Executor}. If such an override is required, {@link #subscribeOnOverride(Executor)} can be used.
+     *
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods of
+     * {@link Cancellable} and {@link #handleSubscribe(Completable.Subscriber)}.
+     */
+    public final Completable subscribeOn(Executor executor) {
+        return PublishAndSubscribeOnCompletables.subscribeOn(this, executor);
+    }
+
+    /**
+     * Creates a new {@link Completable} that will use the passed {@link Executor} to invoke the following methods:
+     * <ul>
+     *     <li>All {@link Cancellable} methods.</li>
+     *     <li>The {@link #handleSubscribe(Completable.Subscriber)} method.</li>
+     * </ul>
+     * This method overrides preceding {@link Executor}s, if any, specified for {@code this} {@link Completable}.
+     * That is to say preceding and subsequent operations for this execution chain will use this {@link Executor}.
+     * If such an override is not required, {@link #subscribeOn(Executor)} can be used.
+     *
+     * @param executor {@link Executor} to use.
+     * @return A new {@link Completable} that will use the passed {@link Executor} to invoke all methods of
+     * {@link Cancellable} and {@link #handleSubscribe(Completable.Subscriber)} both for the returned
+     * {@link Completable} as well as {@code this} {@link Completable}.
+     */
+    public final Completable subscribeOnOverride(Executor executor) {
+        return PublishAndSubscribeOnCompletables.subscribeOnOverride(this, executor);
+    }
+
+    /**
      * Creates a new {@link Completable} that will use the passed {@link Executor} to invoke the following methods:
      * <ul>
      *     <li>All {@link Subscriber} methods.</li>
      *     <li>All {@link Cancellable} methods.</li>
      *     <li>The {@link #handleSubscribe(Completable.Subscriber)} method.</li>
      * </ul>
-     * This method does <em>not</em> override preceding {@link Executor}s, if any, specified for {@code this}
+     * This method does <strong>not</strong> override preceding {@link Executor}s, if any, specified for {@code this}
      * {@link Completable}. Only subsequent operations, if any, added in this execution chain will use this
      * {@link Executor}. If such an override is required, {@link #publishAndSubscribeOnOverride(Executor)} can be used.
      *
@@ -1142,7 +1210,8 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * passed {@link SignalOffloader}.
      * <p>
      * This method wraps the passed {@link Subscriber} using {@link SignalOffloader#offloadSubscriber(Subscriber)} and
-     * then calls {@link #handleSubscribe(Subscriber)} using {@link SignalOffloader#offloadSignal(Object, Consumer)}.
+     * then calls {@link #handleSubscribe(Subscriber)} using
+     * {@link SignalOffloader#offloadSubscribe(Subscriber, Completable)}.
      * Operators that do not wish to wrap the passed {@link Subscriber} can override this method and omit the wrapping.
      *
      * @param subscriber the subscriber.
@@ -1150,7 +1219,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      */
     void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader) {
         Subscriber safeSubscriber = signalOffloader.offloadSubscriber(subscriber);
-        signalOffloader.offloadSignal(safeSubscriber, this::handleSubscribe);
+        signalOffloader.offloadSubscribe(safeSubscriber, this);
     }
 
     /**

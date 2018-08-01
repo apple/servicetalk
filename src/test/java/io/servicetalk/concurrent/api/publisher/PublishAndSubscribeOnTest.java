@@ -24,10 +24,14 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.function.BiFunction;
 
 import static io.servicetalk.concurrent.api.Publisher.just;
+import static java.lang.Long.MAX_VALUE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItemInArray;
 import static org.hamcrest.Matchers.is;
@@ -35,6 +39,11 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 
 public class PublishAndSubscribeOnTest {
+
+    private static final int ORIGINAL_SUBSCRIBER_THREAD = 0;
+    private static final int ORIGINAL_SUBSCRIPTION_THREAD = 1;
+    private static final int OFFLOADED_SUBSCRIBER_THREAD = 2;
+    private static final int OFFLOADED_SUBSCRIPTION_THREAD = 3;
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
@@ -44,46 +53,116 @@ public class PublishAndSubscribeOnTest {
     public final ExecutorRule originalSourceExecutorRule = new ExecutorRule();
 
     @Test
-    public void testNoOverride() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(false);
+    public void testPublishOnNoOverride() throws InterruptedException {
+        Thread[] capturedThreads = setupAndSubscribe(Publisher::publishOn);
 
-        assertThat("Threads for subscription and subscriber do not match for original source.",
-                capturedThreads[0], is(capturedThreads[1]));
-        assertThat("Threads for subscription and subscriber do not match for offloaded source.",
-                capturedThreads[2], is(capturedThreads[3]));
-        assertThat("Threads for original and offloaded source did not match.",
-                capturedThreads[1], not(capturedThreads[2]));
+        assertThat("Unexpected threads for subscription and subscriber for original source.",
+                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], is(capturedThreads[ORIGINAL_SUBSCRIPTION_THREAD]));
+        assertThat("Unexpected threads for subscription and subscriber for offloaded source.",
+                capturedThreads[OFFLOADED_SUBSCRIBER_THREAD], not(capturedThreads[OFFLOADED_SUBSCRIPTION_THREAD]));
+        assertThat("Unexpected threads for original and offloaded source.",
+                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], not(capturedThreads[OFFLOADED_SUBSCRIBER_THREAD]));
+    }
+
+    @Test
+    public void testPublishOnOverride() throws InterruptedException {
+        Thread[] capturedThreads = setupAndSubscribe(Publisher::publishOnOverride);
+
+        assertThat("Unexpected threads for subscription and subscriber for original source.",
+                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], not(capturedThreads[ORIGINAL_SUBSCRIPTION_THREAD]));
+        assertThat("Unexpected threads for subscription and subscriber for offloaded source.",
+                capturedThreads[OFFLOADED_SUBSCRIBER_THREAD], not(capturedThreads[OFFLOADED_SUBSCRIPTION_THREAD]));
+        assertThat("Unexpected threads for original and offloaded source.",
+                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], is(capturedThreads[OFFLOADED_SUBSCRIBER_THREAD]));
+    }
+
+    @Test
+    public void testSubscribeOnNoOverride() throws InterruptedException {
+        Thread[] capturedThreads = setupAndSubscribe(Publisher::subscribeOn);
+
+        assertThat("Unexpected threads for subscription and subscriber for original source.",
+                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], is(capturedThreads[ORIGINAL_SUBSCRIPTION_THREAD]));
+        assertThat("Unexpected threads for subscription and subscriber for offloaded source.",
+                capturedThreads[OFFLOADED_SUBSCRIBER_THREAD], not(capturedThreads[OFFLOADED_SUBSCRIPTION_THREAD]));
+        assertThat("Unexpected threads for original and offloaded source.",
+                capturedThreads[ORIGINAL_SUBSCRIPTION_THREAD], not(capturedThreads[OFFLOADED_SUBSCRIPTION_THREAD]));
+    }
+
+    @Test
+    public void testSubscribeOnOverride() throws InterruptedException {
+        Thread[] capturedThreads = setupAndSubscribe(Publisher::subscribeOnOverride);
+
+        assertThat("Unexpected threads for subscription and subscriber for original source.",
+                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], not(capturedThreads[ORIGINAL_SUBSCRIPTION_THREAD]));
+        assertThat("Unexpected threads for subscription and subscriber for offloaded source.",
+                capturedThreads[OFFLOADED_SUBSCRIBER_THREAD], not(capturedThreads[OFFLOADED_SUBSCRIPTION_THREAD]));
+        assertThat("Unexpected threads for original and offloaded source.",
+                capturedThreads[ORIGINAL_SUBSCRIPTION_THREAD], is(capturedThreads[OFFLOADED_SUBSCRIPTION_THREAD]));
+    }
+
+    @Test
+    public void testNoOverride() throws InterruptedException {
+        Thread[] capturedThreads = setupAndSubscribe(Publisher::publishAndSubscribeOn);
+
+        assertThat("Unexpected threads for subscription and subscriber for original source.",
+                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], is(capturedThreads[ORIGINAL_SUBSCRIPTION_THREAD]));
+        assertThat("Unexpected threads for subscription and subscriber for offloaded source.",
+                capturedThreads[OFFLOADED_SUBSCRIBER_THREAD], is(capturedThreads[OFFLOADED_SUBSCRIPTION_THREAD]));
+        assertThat("Unexpected threads for original and offloaded source.",
+                capturedThreads[ORIGINAL_SUBSCRIPTION_THREAD], not(capturedThreads[OFFLOADED_SUBSCRIPTION_THREAD]));
     }
 
     @Test
     public void testOverride() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(true);
+        Thread[] capturedThreads = setupAndSubscribe(Publisher::publishAndSubscribeOnOverride);
 
-        assertThat("Threads for subscription and subscriber do not match for original source.",
-                capturedThreads[0], is(capturedThreads[1]));
-        assertThat("Threads for subscription and subscriber do not match for offloaded source.",
-                capturedThreads[2], is(capturedThreads[3]));
-        assertThat("Threads for original and offloaded source did not match.",
-                capturedThreads[1], is(capturedThreads[2]));
+        assertThat("Unexpected threads for subscription and subscriber for original source.",
+                capturedThreads[ORIGINAL_SUBSCRIBER_THREAD], is(capturedThreads[ORIGINAL_SUBSCRIPTION_THREAD]));
+        assertThat("Unexpected threads for subscription and subscriber for offloaded source.",
+                capturedThreads[OFFLOADED_SUBSCRIBER_THREAD], is(capturedThreads[OFFLOADED_SUBSCRIPTION_THREAD]));
+        assertThat("Unexpected threads for original and offloaded source.",
+                capturedThreads[ORIGINAL_SUBSCRIPTION_THREAD], is(capturedThreads[OFFLOADED_SUBSCRIPTION_THREAD]));
     }
 
-    private Thread[] setupAndSubscribe(boolean override) throws InterruptedException {
+    private Thread[] setupAndSubscribe(BiFunction<Publisher<String>, Executor, Publisher<String>> offloadingFunction)
+            throws InterruptedException {
         CountDownLatch allDone = new CountDownLatch(1);
         Thread[] capturedThreads = new Thread[4];
 
         Publisher<String> original = new PublisherWithExecutor<>(originalSourceExecutorRule.getExecutor(),
                 just("Hello"))
-                .doAfterNext($ -> capturedThreads[0] = Thread.currentThread())
-                .doAfterRequest($ -> capturedThreads[1] = Thread.currentThread());
+                .doBeforeNext($ -> capturedThreads[ORIGINAL_SUBSCRIBER_THREAD] = Thread.currentThread())
+                .doBeforeRequest($ -> capturedThreads[ORIGINAL_SUBSCRIPTION_THREAD] = Thread.currentThread());
 
         final Executor executor = executorRule.getExecutor();
-        Publisher<String> offloaded = override ? original.publishAndSubscribeOnOverride(executor)
-                : original.publishAndSubscribeOn(executor);
+        Publisher<String> offloaded = offloadingFunction.apply(original, executor);
 
-        offloaded.doBeforeNext($ -> capturedThreads[2] = Thread.currentThread())
-                .doBeforeRequest($ -> capturedThreads[3] = Thread.currentThread())
+        offloaded.doBeforeNext($ -> capturedThreads[OFFLOADED_SUBSCRIBER_THREAD] = Thread.currentThread())
+                .doBeforeRequest($ -> capturedThreads[OFFLOADED_SUBSCRIPTION_THREAD] = Thread.currentThread())
                 .doAfterFinally(allDone::countDown)
-                .forEach(val -> { });
+                .subscribe(new Subscriber<String>() {
+                    @Override
+                    public void onSubscribe(final Subscription s) {
+                        // Do not request from the caller thread to make sure synchronous request-onNext does not
+                        // pollute thread capturing of subscription.
+                        executorRule.getExecutor().execute(() -> s.request(MAX_VALUE));
+                    }
+
+                    @Override
+                    public void onNext(final String s) {
+                        // noop
+                    }
+
+                    @Override
+                    public void onError(final Throwable t) {
+                        // noop
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        // noop
+                    }
+                });
         allDone.await();
 
         assertThat("All threads were not captured.", capturedThreads, hasItemInArray(notNullValue()));

@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.function.BiFunction;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
@@ -44,47 +45,74 @@ public class PublishAndSubscribeOnTest {
     public final ExecutorRule originalSourceExecutorRule = new ExecutorRule();
 
     @Test
-    public void testNoOverride() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(false);
+    public void testPublishOnNoOverride() throws InterruptedException {
+        Thread[] capturedThreads = setupAndSubscribe(Completable::publishOn);
+        assertThat("Unexpected threads for original and offloaded source.",
+                capturedThreads[0], not(capturedThreads[1]));
+    }
 
-        assertThat("Threads for original and offloaded source did not match.",
+    @Test
+    public void testPublishOnOverride() throws InterruptedException {
+        Thread[] capturedThreads = setupAndSubscribe(Completable::publishOnOverride);
+        assertThat("Unexpected threads for original and offloaded source.",
+                capturedThreads[0], is(capturedThreads[1]));
+    }
+
+    @Test
+    public void testSubscribeOnNoOverride() throws InterruptedException {
+        Thread[] capturedThreads = setupForCancelAndSubscribe(Completable::subscribeOn);
+        assertThat("Unexpected threads for original and offloaded source.",
+                capturedThreads[0], not(capturedThreads[1]));
+    }
+
+    @Test
+    public void testSubscribeOnOverride() throws InterruptedException {
+        Thread[] capturedThreads = setupForCancelAndSubscribe(Completable::subscribeOnOverride);
+        assertThat("Unexpected threads for original and offloaded source.",
+                capturedThreads[0], is(capturedThreads[1]));
+    }
+
+    @Test
+    public void testNoOverride() throws InterruptedException {
+        Thread[] capturedThreads = setupAndSubscribe(Completable::publishAndSubscribeOn);
+
+        assertThat("Unexpected threads for original and offloaded source.",
                 capturedThreads[0], not(capturedThreads[1]));
     }
 
     @Test
     public void testOverride() throws InterruptedException {
-        Thread[] capturedThreads = setupAndSubscribe(true);
+        Thread[] capturedThreads = setupAndSubscribe(Completable::publishAndSubscribeOnOverride);
 
-        assertThat("Threads for original and offloaded source did not match.",
+        assertThat("Unexpected threads for original and offloaded source.",
                 capturedThreads[0], is(capturedThreads[1]));
     }
 
     @Test
     public void testNoOverrideWithCancel() throws InterruptedException {
-        Thread[] capturedThreads = setupForCancelAndSubscribe(false);
+        Thread[] capturedThreads = setupForCancelAndSubscribe(Completable::publishAndSubscribeOn);
 
-        assertThat("Threads for original and offloaded source did not match.",
+        assertThat("Unexpected threads for original and offloaded source.",
                 capturedThreads[0], not(capturedThreads[1]));
     }
 
     @Test
     public void testOverrideWithCancel() throws InterruptedException {
-        Thread[] capturedThreads = setupForCancelAndSubscribe(true);
+        Thread[] capturedThreads = setupForCancelAndSubscribe(Completable::publishAndSubscribeOnOverride);
 
-        assertThat("Threads for original and offloaded source did not match.",
+        assertThat("Unexpected threads for original and offloaded source.",
                 capturedThreads[0], is(capturedThreads[1]));
     }
 
-    private Thread[] setupAndSubscribe(boolean override) throws InterruptedException {
+    private Thread[] setupAndSubscribe(BiFunction<Completable, Executor, Completable> offloadingFunction)
+            throws InterruptedException {
         CountDownLatch allDone = new CountDownLatch(1);
         Thread[] capturedThreads = new Thread[2];
 
         Completable original = new CompletableWithExecutor(originalSourceExecutorRule.getExecutor(), completed())
                 .doAfterComplete(() -> capturedThreads[0] = Thread.currentThread());
 
-        final Executor executor = executorRule.getExecutor();
-        Completable offloaded = override ? original.publishAndSubscribeOnOverride(executor)
-                : original.publishAndSubscribeOn(executor);
+        Completable offloaded = offloadingFunction.apply(original, executorRule.getExecutor());
 
         offloaded.doAfterFinally(allDone::countDown)
                 .doBeforeComplete(() -> capturedThreads[1] = Thread.currentThread())
@@ -95,7 +123,8 @@ public class PublishAndSubscribeOnTest {
         return capturedThreads;
     }
 
-    private Thread[] setupForCancelAndSubscribe(boolean override) throws InterruptedException {
+    private Thread[] setupForCancelAndSubscribe(BiFunction<Completable, Executor, Completable> offloadingFunction)
+            throws InterruptedException {
         CountDownLatch allDone = new CountDownLatch(1);
         Thread[] capturedThreads = new Thread[2];
 
@@ -105,9 +134,7 @@ public class PublishAndSubscribeOnTest {
                     allDone.countDown();
                 });
 
-        final Executor executor = executorRule.getExecutor();
-        Completable offloaded = override ? original.publishAndSubscribeOnOverride(executor)
-                : original.publishAndSubscribeOn(executor);
+        Completable offloaded = offloadingFunction.apply(original, executorRule.getExecutor());
 
         offloaded.doBeforeCancel(() -> capturedThreads[1] = Thread.currentThread())
                 .subscribe().cancel();

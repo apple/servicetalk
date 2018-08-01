@@ -28,7 +28,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor.AbortPolicy;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -36,12 +35,11 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 /**
  * An implementation of {@link Executor} that uses an implementation of {@link java.util.concurrent.Executor} to execute tasks.
  */
-final class DefaultExecutor implements Executor {
+final class DefaultExecutor extends AbstractOffloaderAwareExecutor {
 
     private static final long DEFAULT_KEEP_ALIVE_TIME_SECONDS = 60;
     /**
@@ -69,15 +67,9 @@ final class DefaultExecutor implements Executor {
         }
     };
     private static final RejectedExecutionHandler DEFAULT_REJECTION_HANDLER = new AbortPolicy();
-    private static final AtomicReferenceFieldUpdater<DefaultExecutor, CompletableProcessor> onCloseUpdater =
-            newUpdater(DefaultExecutor.class, CompletableProcessor.class, "onClose");
 
     private final InternalExecutor executor;
     private final InternalScheduler scheduler;
-
-    @SuppressWarnings("unused")
-    @Nullable
-    private volatile CompletableProcessor onClose;
 
     DefaultExecutor(int coreSize, int maxSize, ThreadFactory threadFactory) {
         this(new ThreadPoolExecutor(coreSize, maxSize, DEFAULT_KEEP_ALIVE_TIME_SECONDS, SECONDS,
@@ -131,44 +123,17 @@ final class DefaultExecutor implements Executor {
     }
 
     @Override
-    public Completable onClose() {
-        return getOrCreateOnClose();
+    void doClose() {
+        try {
+            executor.run();
+        } finally {
+            scheduler.run();
+        }
     }
 
     @Override
-    public Completable closeAsync() {
-        return new Completable() {
-            @Override
-            protected void handleSubscribe(Subscriber subscriber) {
-                CompletableProcessor onClose = getOrCreateOnClose();
-                onClose.subscribe(subscriber);
-                try {
-                    try {
-                        executor.run();
-                    } finally {
-                        scheduler.run();
-                    }
-                } catch (Throwable cause) {
-                    onClose.onError(cause);
-                    return;
-                }
-                onClose.onComplete();
-            }
-        };
-    }
-
-    private CompletableProcessor getOrCreateOnClose() {
-        CompletableProcessor onClose = this.onClose;
-        if (onClose != null) {
-            return onClose;
-        }
-        final CompletableProcessor newOnClose = new CompletableProcessor();
-        if (onCloseUpdater.compareAndSet(this, null, newOnClose)) {
-            return newOnClose;
-        }
-        onClose = this.onClose;
-        assert onClose != null;
-        return onClose;
+    public SignalOffloader newOffloader() {
+        return new DefaultSignalOffloader(this);
     }
 
     /**

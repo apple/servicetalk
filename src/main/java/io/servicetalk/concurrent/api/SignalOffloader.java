@@ -84,7 +84,8 @@ interface SignalOffloader {
     <T> Subscriber<? super T> offloadSubscription(Subscriber<? super T> subscriber);
 
     /**
-     * Decorates the passed {@link Single.Subscriber} such that all method calls to its {@link Cancellable} will be offloaded.
+     * Decorates the passed {@link Single.Subscriber} such that all method calls to its {@link Cancellable} will be
+     * offloaded.
      * <em>None of the {@link Single.Subscriber} methods will be offloaded.</em>
      * <h2>Caution</h2>
      * This method MUST not be called concurrently with itself or other offload methods here on the same
@@ -97,7 +98,8 @@ interface SignalOffloader {
     <T> Single.Subscriber<? super T> offloadCancellable(Single.Subscriber<? super T> subscriber);
 
     /**
-     * Decorates the passed {@link Completable.Subscriber} such that all method calls to its {@link Cancellable} will be offloaded.
+     * Decorates the passed {@link Completable.Subscriber} such that all method calls to its {@link Cancellable} will
+     * be offloaded.
      * <em>None of the {@link Completable.Subscriber} methods will be offloaded.</em>
      * <h2>Caution</h2>LoadBalancerReadyHttpClientTest
      * This method MUST not be called concurrently with itself or other offload methods here on the same
@@ -107,6 +109,47 @@ interface SignalOffloader {
      * @return New {@link Completable.Subscriber} that will offload signals to the passed {@link Completable.Subscriber}.
      */
     Completable.Subscriber offloadCancellable(Completable.Subscriber subscriber);
+
+    /**
+     * Offloads the {@link Publisher#handleSubscribe(Subscriber)} for the passed {@link Subscriber}.
+     *
+     * <h2>Caution</h2>
+     * This method MUST not be called concurrently with itself or other offload methods here on the same
+     * {@link SignalOffloader} instance.
+     *
+     * @param subscriber {@link Subscriber} for which the {@link Publisher#handleSubscribe(Subscriber)} call has to be
+     * offloaded.
+     * @param publisher {@link Publisher} to which the passed {@link Subscriber} has subscribed.
+     * @param <T> Type of signal.
+     */
+    <T> void offloadSubscribe(Subscriber<? super T> subscriber, Publisher<T> publisher);
+
+    /**
+     * Offloads the {@link Single#handleSubscribe(Single.Subscriber)} for the passed {@link Subscriber}.
+     *
+     * <h2>Caution</h2>
+     * This method MUST not be called concurrently with itself or other offload methods here on the same
+     * {@link SignalOffloader} instance.
+     *
+     * @param subscriber {@link Single.Subscriber} for which the {@link Single#handleSubscribe(Single.Subscriber)} call
+     * has to be offloaded.
+     * @param single {@link Single} to which the passed {@link Single.Subscriber} has subscribed.
+     * @param <T> Type of signal.
+     */
+    <T> void offloadSubscribe(Single.Subscriber<? super T> subscriber, Single<T> single);
+
+    /**
+     * Offloads the {@link Completable#handleSubscribe(Completable.Subscriber)} for the passed {@link Subscriber}.
+     *
+     * <h2>Caution</h2>
+     * This method MUST not be called concurrently with itself or other offload methods here on the same
+     * {@link SignalOffloader} instance.
+     *
+     * @param subscriber {@link Subscriber} for which the {@link Completable#handleSubscribe(Completable.Subscriber)}
+     * call has to be offloaded.
+     * @param completable {@link Completable} to which the passed {@link Subscriber} has subscribed.
+     */
+    void offloadSubscribe(Completable.Subscriber subscriber, Completable completable);
 
     /**
      * Offloads the consumption of the passed {@code signal} by the passed {@link Consumer}.
@@ -122,11 +165,21 @@ interface SignalOffloader {
     <T> void offloadSignal(T signal, Consumer<T> signalConsumer);
 
     /**
-     * Determine if we are currently on the thread responsible for offloading signals.
+     * Determine if we are currently on the thread responsible for offloading publish signals. Publish signals are
+     * offloaded when using operators like {@link Publisher#publishOn(Executor)}.
      * <p>
      * If this method is used to conditionally avoid offloading it may impact ordering. If your events are sensitive to
      * ordering you should use an alternative mechanism.
-     * @return {@code true} if we are currently on the thread responsible for offloading signals.
+     * @return {@code true} if we are currently on the thread responsible for offloading signals for subscribers.
+     * @see #isInOffloadThreadForSubscribe()
      */
-    boolean isInOffloadThread();
+    boolean isInOffloadThreadForPublish();
+
+    /**
+     * Determine if we are currently on the thread responsible for offloading subscribe signals. Subscribe signals are
+     * offloaded when using operators like {@link Publisher#subscribeOn(Executor)}.
+     * @return {@code true} if we are currently on the thread responsible for offloading subscribe signals.
+     * @see #isInOffloadThreadForPublish()
+     */
+    boolean isInOffloadThreadForSubscribe();
 }

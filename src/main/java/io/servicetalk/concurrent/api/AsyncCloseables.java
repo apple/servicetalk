@@ -18,9 +18,11 @@ package io.servicetalk.concurrent.api;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
+import static java.util.function.Function.identity;
 
 /**
  * A utility class to create {@link AsyncCloseable}s.
@@ -84,9 +86,36 @@ public final class AsyncCloseables {
      * @return A new {@link ListenableAsyncCloseable}.
      */
     public static ListenableAsyncCloseable toListenableAsyncCloseable(AsyncCloseable asyncCloseable) {
+        return toListenableAsyncCloseable(asyncCloseable, identity());
+    }
+
+    /**
+     * Wraps the passed {@link AsyncCloseable} and creates a new {@link ListenableAsyncCloseable}.
+     * This method owns the passed {@link AsyncCloseable} after this method returns and hence it should not be used by
+     * the caller after this method returns.
+     *
+     * @param asyncCloseable {@link AsyncCloseable} to convert to {@link ListenableAsyncCloseable}.
+     * @param onCloseDecorator {@link Function} that can decorate the {@link Completable} returned from the returned
+     * {@link ListenableAsyncCloseable#onClose()}.
+     * @return A new {@link ListenableAsyncCloseable}.
+     */
+    public static ListenableAsyncCloseable toListenableAsyncCloseable(
+            AsyncCloseable asyncCloseable, Function<Completable, Completable> onCloseDecorator) {
         return new ListenableAsyncCloseable() {
 
-            private final CompletableProcessor onClose = new CompletableProcessor();
+            private final CompletableProcessor onCloseProcessor = new CompletableProcessor();
+            private final Completable onClose = onCloseDecorator.apply(onCloseProcessor);
+
+            @Override
+            public Completable closeAsyncGracefully() {
+                return new Completable() {
+                    @Override
+                    protected void handleSubscribe(final Subscriber subscriber) {
+                        asyncCloseable.closeAsyncGracefully().subscribe(onCloseProcessor);
+                        onClose.subscribe(subscriber);
+                    }
+                };
+            }
 
             @Override
             public Completable onClose() {
@@ -98,18 +127,7 @@ public final class AsyncCloseables {
                 return new Completable() {
                     @Override
                     protected void handleSubscribe(final Subscriber subscriber) {
-                        asyncCloseable.closeAsync().subscribe(onClose);
-                        onClose.subscribe(subscriber);
-                    }
-                };
-            }
-
-            @Override
-            public Completable closeAsyncGracefully() {
-                return new Completable() {
-                    @Override
-                    protected void handleSubscribe(final Subscriber subscriber) {
-                        asyncCloseable.closeAsyncGracefully().subscribe(onClose);
+                        asyncCloseable.closeAsync().subscribe(onCloseProcessor);
                         onClose.subscribe(subscriber);
                     }
                 };
