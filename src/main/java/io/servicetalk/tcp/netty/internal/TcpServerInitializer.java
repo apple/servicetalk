@@ -130,7 +130,7 @@ public final class TcpServerInitializer {
         ServerBootstrap bs = new ServerBootstrap();
         configure(bs, nettyIoExecutor.getEventLoopGroup(), listenAddress.getClass(), enableHalfClosure);
 
-        ChannelSet channelSet = new ChannelSet();
+        ChannelSet channelSet = new ChannelSet(executionContext.getExecutor());
         bs.handler(new ChannelInboundHandlerAdapter() {
             @Override
             public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
@@ -169,7 +169,8 @@ public final class TcpServerInitializer {
                     Channel channel = f.channel();
                     Throwable cause = f.cause();
                     if (cause == null) {
-                        subscriber.onSuccess(NettyServerContext.wrap(channel, channelSet, contextFilter));
+                        subscriber.onSuccess(NettyServerContext.wrap(channel, channelSet, contextFilter,
+                                executionContext.getExecutor()));
                     } else {
                         channel.close();
                         subscriber.onError(f.cause());
