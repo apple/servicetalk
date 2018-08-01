@@ -51,8 +51,8 @@ final class DefaultRedisRequest implements RedisRequest {
     }
 
     @Override
-    public RedisRequest composeContent(final Function<Publisher<RequestRedisData>, Publisher<RequestRedisData>> composer) {
-        return new DefaultRedisRequest(command, composer.apply(content), flushStrategy);
+    public RedisRequest transformContent(final Function<Publisher<RequestRedisData>, Publisher<RequestRedisData>> transformer) {
+        return new DefaultRedisRequest(command, transformer.apply(content), flushStrategy);
     }
 
     @Override

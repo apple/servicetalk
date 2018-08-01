@@ -50,9 +50,9 @@ public interface RedisRequest {
     /**
      * Modifies the content {@link Publisher} of this {@link RedisRequest} preserving other properties.
      *
-     * @param composer {@link Function} to modify the content {@link Publisher}.
+     * @param transformer {@link Function} to modify the content {@link Publisher}.
      * @return New {@link RedisRequest} modifying the content of {@code this} {@link RedisRequest} as provided by
-     * {@code composer} {@link Function}.
+     * {@code transformer} {@link Function}.
      */
-    RedisRequest composeContent(Function<Publisher<RequestRedisData>, Publisher<RequestRedisData>> composer);
+    RedisRequest transformContent(Function<Publisher<RequestRedisData>, Publisher<RequestRedisData>> transformer);
 }
