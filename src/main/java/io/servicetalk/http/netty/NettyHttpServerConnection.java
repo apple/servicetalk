@@ -71,8 +71,7 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
     Completable process() {
         final Publisher<Object> connRequestObjectPublisher = read();
         final Single<HttpRequest<HttpPayloadChunk>> requestSingle =
-                new SpliceFlatStreamToMetaSingle<>(connRequestObjectPublisher,
-                        NettyHttpServerConnection::spliceRequest);
+                new SpliceFlatStreamToMetaSingle<>(connRequestObjectPublisher, NettyHttpServerConnection::spliceRequest);
         return handleRequestAndWriteResponse(requestSingle);
     }
 
@@ -92,17 +91,31 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
             return handleRequest(request)
                     .map(response -> processResponse(requestMethod, keepAlive, drainRequestPayloadBody, response))
                     .flatMapPublisher(resp -> flatten(resp, HttpResponse::getPayloadBody));
-        });
+            // We are writing to the connection which may request more data from the EventLoop. So offload control
+            // signals which may have blocking code.
+        }).subscribeOn(context.getExecutor());
         return writeResponse(responseObjectPublisher.repeat(val -> true));
     }
 
     private Single<HttpResponse<HttpPayloadChunk>> handleRequest(final HttpRequest<HttpPayloadChunk> request) {
-        try {
-            return service.handle(context, request)
-                    .onErrorResume(cause -> newErrorResponse(cause, request));
-        } catch (final Throwable cause) {
-            return newErrorResponse(cause, request);
-        }
+        return new Single<HttpResponse<HttpPayloadChunk>>() {
+            @Override
+            protected void handleSubscribe(final Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber) {
+                // Since we do not offload data path for the request single, this method will be invoked from the
+                // EventLoop. So, we offload the call to HttpService.
+                context.getExecutor().execute(() -> {
+                    Single<HttpResponse<HttpPayloadChunk>> source;
+                    try {
+                        source = service.handle(context,
+                                request.transformPayloadBody(bdy -> bdy.publishOn(context.getExecutor())))
+                                .onErrorResume(cause -> newErrorResponse(cause, request));
+                    } catch (final Throwable cause) {
+                        source = newErrorResponse(cause, request);
+                    }
+                    source.subscribe(subscriber);
+                });
+            }
+        };
     }
 
     private static HttpResponse<HttpPayloadChunk> processResponse(final HttpRequestMethod requestMethod,

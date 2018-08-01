@@ -64,7 +64,7 @@ abstract class AbstractHttpConnection<CC extends ConnectionContext> extends Http
 
     @SuppressWarnings("unchecked")
     @Override
-    public <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
+    public final <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
         if (settingKey == SettingKey.MAX_CONCURRENCY) {
             return (Publisher<T>) maxConcurrencySetting;
         }
@@ -74,8 +74,13 @@ abstract class AbstractHttpConnection<CC extends ConnectionContext> extends Http
     @Override
     public Single<HttpResponse<HttpPayloadChunk>> request(HttpRequest<HttpPayloadChunk> request) {
         addRequestTransferEncodingIfNecessary(request); // See https://tools.ietf.org/html/rfc7230#section-3.3.3
-        return new SpliceFlatStreamToMetaSingle<HttpResponse<HttpPayloadChunk>, HttpResponseMetaData, HttpPayloadChunk>(
-                writeAndRead(flatten(request, AbstractHttpConnection::unpack)), AbstractHttpConnection::newResponse);
+        final Publisher<Object> requestAsPublisher = flatten(request, AbstractHttpConnection::unpack)
+                // We will write this stream to the connection, which will request more data from the EventLoop.
+                // Offload control path to avoid blocking the EventLoop
+                .subscribeOn(executionContext.getExecutor());
+        return new SpliceFlatStreamToMetaSingle<>(writeAndRead(requestAsPublisher), this::newResponse)
+                // Headers will be emitted from the EventLoop, so offload those signals to avoid blocking the EventLoop.
+                .publishOn(executionContext.getExecutor());
     }
 
     @Override
@@ -90,9 +95,10 @@ abstract class AbstractHttpConnection<CC extends ConnectionContext> extends Http
                 LAST_CHUNK_PREDICATE, LAST_CHUNK_SUPPLIER));
     }
 
-    private static HttpResponse<HttpPayloadChunk> newResponse(HttpResponseMetaData meta,
-                                                              Publisher<HttpPayloadChunk> pub) {
-        return HttpResponses.newResponse(meta.getVersion(), meta.getStatus(), pub, meta.getHeaders());
+    private HttpResponse<HttpPayloadChunk> newResponse(HttpResponseMetaData meta, Publisher<HttpPayloadChunk> pub) {
+        return HttpResponses.newResponse(meta.getVersion(), meta.getStatus(),
+                // Payload will be emitted from the EventLoop, so offload those signals to avoid blocking the EventLoop.
+                pub.publishOn(executionContext.getExecutor()), meta.getHeaders());
     }
 
     @Override
