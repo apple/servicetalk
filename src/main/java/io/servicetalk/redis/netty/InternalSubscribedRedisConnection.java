@@ -55,7 +55,6 @@ import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static io.servicetalk.redis.internal.RedisUtils.newRequestCompositeBuffer;
 import static io.servicetalk.redis.netty.RedisUtils.isSubscribeModeCommand;
 import static io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage.KeyType.SimpleString;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
@@ -74,8 +73,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
                                               ExecutionContext executionContext,
                                               ReadOnlyRedisClientConfig roConfig, int initialQueueCapacity,
                                               int maxBufferPerGroup) {
-        super(durationNanos -> connection.getIoExecutor().asExecutor().timer(durationNanos, NANOSECONDS),
-                executionContext, roConfig);
+        super(connection.getIoExecutor().asExecutor(), connection.onClosing(), executionContext, roConfig);
         this.connection = connection;
         this.deferSubscribeTillConnect = roConfig.isDeferSubscribeTillConnect();
         writeQueue = new WriteQueue(maxPendingRequests, initialQueueCapacity);
@@ -89,7 +87,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
     }
 
     @Override
-    public Publisher<RedisData> request(RedisRequest request) {
+    Publisher<RedisData> handleRequest(RedisRequest request) {
         final RedisProtocolSupport.Command command = request.getCommand();
         if (!isSubscribeModeCommand(command) && command != PING && command != QUIT && command != AUTH) {
             return Publisher.error(new IllegalArgumentException("Invalid command: " + command

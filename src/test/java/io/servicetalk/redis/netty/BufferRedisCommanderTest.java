@@ -88,7 +88,7 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
 
     @Before
     public void createCommandClient() {
-        commandClient = client.asBufferCommander();
+        commandClient = getEnv().client.asBufferCommander();
     }
 
     @Test
@@ -109,10 +109,10 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         assertThat(awaitIndefinitely(commandClient.zadd(key("a-zset"), null, null, 1, buf("one"))), is(either(equalTo(0L)).or(equalTo(1L))));
         assertThat(awaitIndefinitely(commandClient.zrank(key("a-zset"), buf("one"))), is(0L));
         assertThat(awaitIndefinitely(commandClient.zrank(key("missing"), buf("missing-member"))), is(nullValue()));
-        if (serverVersion[0] >= 3) {
+        if (getEnv().serverVersion[0] >= 3) {
             assertThat(awaitIndefinitely(commandClient.zaddIncr(key("a-zset"), null, null, 1, buf("one"))), is(2.0));
         }
-        if (serverVersion[0] >= 5) {
+        if (getEnv().serverVersion[0] >= 5) {
             assertThat(awaitIndefinitely(commandClient.zpopmax(key("a-zset"))), contains(buf("2"), buf("one")));
         }
 
@@ -152,7 +152,7 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
     @Test
     public void bitfieldOperations() throws Exception {
         // Disable these tests for Redis 2 and below
-        assumeThat(serverVersion[0], is(greaterThanOrEqualTo(3)));
+        assumeThat(getEnv().serverVersion[0], is(greaterThanOrEqualTo(3)));
 
         awaitIndefinitely(commandClient.del(key("bf")));
 
@@ -190,7 +190,7 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         assertThat(awaitIndefinitely(commandClient.commandInfo(buf("GET"))), hasSize(1));
         assertThat(awaitIndefinitely(commandClient.objectRefcount(buf("missing-key"))), is(nullValue()));
         assertThat(awaitIndefinitely(commandClient.objectEncoding(buf("missing-key"))), is(nullValue()));
-        if (serverVersion[0] >= 4) {
+        if (getEnv().serverVersion[0] >= 4) {
             assertThat(awaitIndefinitely(commandClient.objectHelp()), hasSize(greaterThanOrEqualTo(5)));
         }
     }
@@ -204,7 +204,7 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
     @Test
     public void variableResponseTypes() throws Exception {
         // Disable these tests for Redis 2 and below
-        assumeThat(serverVersion[0], is(greaterThanOrEqualTo(3)));
+        assumeThat(getEnv().serverVersion[0], is(greaterThanOrEqualTo(3)));
 
         assertThat(awaitIndefinitely(commandClient.zrem(key("Sicily"), asList(buf("Palermo"), buf("Catania")))), is(lessThanOrEqualTo(2L)));
 

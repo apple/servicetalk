@@ -19,7 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
+import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisCommander;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
@@ -28,7 +28,6 @@ import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.api.RedisException;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Test;
@@ -41,8 +40,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
@@ -80,25 +77,25 @@ public class RedisConnectionTest extends BaseRedisClientTest {
     public void recoverableError() throws Exception {
         final RedisRequest evalRequest = newRequest(EVAL);
 
-        assertThat(awaitIndefinitely(client.reserveConnection(evalRequest)
+        assertThat(awaitIndefinitely(getEnv().client.reserveConnection(evalRequest)
                         .flatMapPublisher(cnx -> cnx.request(evalRequest).concatWith(cnx.request(newRequest(PING))))),
                 contains(redisError(startsWith("ERR")), is(PONG)));
     }
 
     @Test
     public void unrecoverableError() throws Exception {
-        final Buffer reqBuf = client.getExecutionContext().getBufferAllocator().fromAscii("*1\r\n+PING\r\n");
+        final Buffer reqBuf = getEnv().client.getExecutionContext().getBufferAllocator().fromAscii("*1\r\n+PING\r\n");
 
         thrown.expect(ExecutionException.class);
         thrown.expectCause(is(instanceOf(RedisException.class)));
-        awaitIndefinitely(client.reserveConnection(newRequest(PING)).flatMap(cnx -> cnx.request(newRequest(PING, reqBuf), Buffer.class)));
+        awaitIndefinitely(getEnv().client.reserveConnection(newRequest(PING)).flatMap(cnx -> cnx.request(newRequest(PING, reqBuf), Buffer.class)));
     }
 
     @Test
     public void singleCancel() throws Exception {
         final RedisRequest pingRequest = newRequest(PING);
 
-        assertThat(awaitIndefinitely(client.reserveConnection(pingRequest)
+        assertThat(awaitIndefinitely(getEnv().client.reserveConnection(pingRequest)
                         .flatMap(cnx -> cnx.request(newRequest(PING)).first())),
                 is(PONG));
     }
@@ -107,7 +104,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
     public void internalCancel() throws Exception {
         final RedisRequest pingRequest = newRequest(PING);
 
-        assertThat(awaitIndefinitely(client.reserveConnection(pingRequest)
+        assertThat(awaitIndefinitely(getEnv().client.reserveConnection(pingRequest)
                         .flatMapPublisher(cnx -> cnx.request(pingRequest)
                                 // concatWith triggers an internal cancel when switching publishers
                                 .concatWith(cnx.request(newRequest(PING, new CompleteBulkString(buf("my-pong"))))))),
@@ -121,7 +118,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
         final CountDownLatch cnxClosedLatch = new CountDownLatch(1);
         final AtomicReference<Throwable> cnxCloseError = new AtomicReference<>();
 
-        client.reserveConnection(pingRequest)
+        getEnv().client.reserveConnection(pingRequest)
                 .flatMapPublisher(cnx -> {
                     cnx.getConnectionContext().onClose().subscribe(new Completable.Subscriber() {
                         @Override
@@ -174,7 +171,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
     public void transactionEmpty() throws Exception {
         final RedisRequest multiRequest = newRequest(MULTI);
 
-        final List<RedisData> results = awaitIndefinitely(client.reserveConnection(multiRequest)
+        final List<RedisData> results = awaitIndefinitely(getEnv().client.reserveConnection(multiRequest)
                 .flatMapPublisher(cnx -> cnx.request(multiRequest)
                         .concatWith(cnx.request(newRequest(EXEC)))));
 
@@ -185,7 +182,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
     public void transactionExec() throws Exception {
         final RedisRequest multiRequest = newRequest(MULTI);
 
-        final List<RedisData> results = awaitIndefinitely(client.reserveConnection(multiRequest)
+        final List<RedisData> results = awaitIndefinitely(getEnv().client.reserveConnection(multiRequest)
                 .flatMapPublisher(cnx -> cnx.request(multiRequest)
                         .concatWith(cnx.request(newRequest(ECHO, new CompleteBulkString(buf("foo")))))
                         .concatWith(Publisher.defer(() -> {
@@ -207,7 +204,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
     public void transactionDiscard() throws Exception {
         final RedisRequest multiRequest = newRequest(MULTI);
 
-        final List<RedisData> results = awaitIndefinitely(client.reserveConnection(multiRequest)
+        final List<RedisData> results = awaitIndefinitely(getEnv().client.reserveConnection(multiRequest)
                 .flatMapPublisher(cnx -> cnx.request(multiRequest)
                         .concatWith(cnx.request(newRequest(PING)))
                         .concatWith(cnx.request(newRequest(DISCARD)))));
@@ -219,7 +216,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
     public void transactionCompleteFailure() throws Exception {
         final RedisRequest multiRequest = newRequest(MULTI);
 
-        final List<RedisData> results = awaitIndefinitely(client.reserveConnection(multiRequest)
+        final List<RedisData> results = awaitIndefinitely(getEnv().client.reserveConnection(multiRequest)
                 .flatMapPublisher(cnx -> cnx.request(multiRequest)
                         .concatWith(cnx.request(newRequest(EVAL)))
                         .concatWith(cnx.request(newRequest(PING)))
@@ -232,7 +229,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
     public void transactionPartialFailure() throws Exception {
         final RedisRequest multiRequest = newRequest(MULTI);
 
-        final List<RedisData> results = awaitIndefinitely(client.reserveConnection(multiRequest)
+        final List<RedisData> results = awaitIndefinitely(getEnv().client.reserveConnection(multiRequest)
                 .flatMapPublisher(cnx -> cnx.request(multiRequest)
                         .concatWith(cnx.request(newRequest(SET,
                                 Publisher.from(
@@ -250,16 +247,15 @@ public class RedisConnectionTest extends BaseRedisClientTest {
     @Test
     public void reserveAndRelease() throws Exception {
         final RedisRequest pingRequest = newRequest(PING);
-        assert client != null;
-        awaitIndefinitely(client.reserveConnection(pingRequest)
-                .flatMapCompletable(ReservedRedisConnection::releaseAsync));
-        awaitIndefinitely(client.reserveConnection(pingRequest));
+        awaitIndefinitely(getEnv().client.reserveConnection(pingRequest)
+                .flatMapCompletable(RedisClient.ReservedRedisConnection::releaseAsync));
+        awaitIndefinitely(getEnv().client.reserveConnection(pingRequest));
     }
 
     @Test
     public void redisCommanderUsesFilters() throws ExecutionException, InterruptedException {
         final RedisRequest pingRequest = newRequest(PING);
-        final RedisConnection delegate = awaitIndefinitely(client.reserveConnection(pingRequest));
+        final RedisConnection delegate = awaitIndefinitely(getEnv().client.reserveConnection(pingRequest));
         final AtomicBoolean requestCalled = new AtomicBoolean();
         final AtomicBoolean closeCalled = new AtomicBoolean();
         RedisConnection filteredConnection = new TestFilterRedisConnection(delegate, requestCalled, closeCalled);
@@ -285,10 +281,10 @@ public class RedisConnectionTest extends BaseRedisClientTest {
     }
 
     private static void rawConnectionToCommanderWithFilterDoesNotThrowClassCast(boolean monitor) throws ExecutionException, InterruptedException {
+        final RedisTestEnvironment env = getEnv();
         RedisConnection rawConnection =
                 awaitIndefinitely(DefaultRedisConnectionBuilder.<InetSocketAddress>forPipeline()
-                        .build(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()),
-                                new InetSocketAddress(redisHost, redisPort)));
+                        .build(env.executionContext, new InetSocketAddress(env.redisHost, env.redisPort)));
         try {
             final AtomicBoolean requestCalled = new AtomicBoolean();
             final AtomicBoolean closeCalled = new AtomicBoolean();

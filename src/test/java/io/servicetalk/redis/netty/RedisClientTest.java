@@ -78,23 +78,22 @@ import static org.junit.Assert.fail;
 public class RedisClientTest extends BaseRedisClientTest {
     @Test
     public void gracefulTerminationOnQuit() throws Exception {
-        assert client != null;
         RedisRequest quit = newRequest(QUIT);
-        assertThat(awaitIndefinitely(client.reserveConnection(quit).flatMapPublisher(conn ->
+        assertThat(awaitIndefinitely(getEnv().client.reserveConnection(quit).flatMapPublisher(conn ->
                 conn.request(newRequest(QUIT)).doAfterFinally(() -> conn.releaseAsync()))), contains(redisSimpleString("OK")));
     }
 
     @Test
     public void requestResponse() throws Exception {
-        assertThat(awaitIndefinitely(client.request(newRequest(PING))), contains(redisSimpleString("PONG")));
-        assertThat(awaitIndefinitely(client.request(newRequest(PING, new CompleteBulkString(buf("my-pong"))))),
+        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(PING))), contains(redisSimpleString("PONG")));
+        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(PING, new CompleteBulkString(buf("my-pong"))))),
                 contains(redisBulkStringSize(7), redisLastBulkStringChunk(buf("my-pong"))));
-        assertThat(awaitIndefinitely(client.request(newRequest(PING, new CompleteBulkString(buf(""))))),
+        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(PING, new CompleteBulkString(buf(""))))),
                 contains(redisCompleteBulkString(buf(""))));
-        assertThat(awaitIndefinitely(client.request(newRequest(GET, new CompleteBulkString(buf("missing-key"))))),
+        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(GET, new CompleteBulkString(buf("missing-key"))))),
                 contains(redisNull()));
 
-        assertThat(awaitIndefinitely(client.request(newRequest(SET,
+        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(SET,
                 Publisher.from(
                         new ArraySize(6L),
                         SET,
@@ -105,13 +104,13 @@ public class RedisClientTest extends BaseRedisClientTest {
                 batchFlush(7, empty())))),
                 contains(anyOf(redisNull(), redisSimpleString("OK"))));
 
-        assertThat(awaitIndefinitely(client.request(newRequest(new RedisData.Array<>(PING, new CompleteBulkString(buf("my-pong")))))),
+        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(new RedisData.Array<>(PING, new CompleteBulkString(buf("my-pong")))))),
                 contains(redisBulkStringSize(7), redisLastBulkStringChunk(buf("my-pong"))));
     }
 
     @Test
     public void unicodeNotMangled() throws Exception {
-        assertThat(awaitIndefinitely(client.request(newRequest(SET,
+        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(SET,
                 Publisher.from(
                         new ArraySize(3L),
                         SET,
@@ -119,7 +118,7 @@ public class RedisClientTest extends BaseRedisClientTest {
                         new CompleteBulkString(buf("\u263A-foo"))),
                 defaultFlushStrategy()))), contains(redisSimpleString("OK")));
 
-        assertThat(awaitIndefinitely(client.request(newRequest(GET, new CompleteBulkString(buf("\u263A-rc"))))),
+        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(GET, new CompleteBulkString(buf("\u263A-rc"))))),
                 contains(redisBulkStringSize(7), redisLastBulkStringChunk(buf("\u263A-foo"))));
     }
 
@@ -139,7 +138,7 @@ public class RedisClientTest extends BaseRedisClientTest {
 
         final RedisRequest request = newRequest(PING, Publisher.from(args));
 
-        final String responseData = awaitIndefinitely(client.request(request).reduce(StringBuilder::new, (r, d) -> {
+        final String responseData = awaitIndefinitely(getEnv().client.request(request).reduce(StringBuilder::new, (r, d) -> {
             if (d instanceof BulkStringSize) {
                 assertThat(d.getIntValue(), is(1000));
             } else {
@@ -153,48 +152,48 @@ public class RedisClientTest extends BaseRedisClientTest {
 
     @Test
     public void commandWithSubCommand() throws Exception {
-        assertThat(awaitIndefinitely(client.request(newRequest(CLIENT, LIST)).first()), is(redisBulkStringSize(greaterThan(0))));
-        assertThat(awaitIndefinitely(client.request(newRequest(COMMAND, INFO, new CompleteBulkString(buf("GET"))), List.class)).size(), is(1));
-        assertThat(awaitIndefinitely(client.request(newRequest(COMMAND, INFO, new CompleteBulkString(buf("GET")), new CompleteBulkString(buf("SET"))), List.class)).size(), is(2));
-        assertThat(awaitIndefinitely(client.request(newRequest(OBJECT, ENCODING, new CompleteBulkString(buf("missing-key")))).first()), is(redisNull()));
+        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(CLIENT, LIST)).first()), is(redisBulkStringSize(greaterThan(0))));
+        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(COMMAND, INFO, new CompleteBulkString(buf("GET"))), List.class)).size(), is(1));
+        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(COMMAND, INFO, new CompleteBulkString(buf("GET")), new CompleteBulkString(buf("SET"))), List.class)).size(), is(2));
+        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(OBJECT, ENCODING, new CompleteBulkString(buf("missing-key")))).first()), is(redisNull()));
     }
 
     @Test
     public void bufferRequest() throws Exception {
-        Buffer reqBuf = client.getExecutionContext().getBufferAllocator().newBuffer(33);
+        Buffer reqBuf = getEnv().client.getExecutionContext().getBufferAllocator().newBuffer(33);
         reqBuf.writeAscii("*2\r\n")
-                .writeBytes(PING.toRESPArgument(client.getExecutionContext().getBufferAllocator()))
+                .writeBytes(PING.toRESPArgument(getEnv().client.getExecutionContext().getBufferAllocator()))
                 .writeAscii("$12\r\nbufreq-pong1\r\n");
 
-        assertThat(awaitIndefinitely(client.request(newRequest(PING, reqBuf), Buffer.class)), is(buf("bufreq-pong1")));
+        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(PING, reqBuf), Buffer.class)), is(buf("bufreq-pong1")));
 
-        reqBuf = client.getExecutionContext().getBufferAllocator().newBuffer(33);
+        reqBuf = getEnv().client.getExecutionContext().getBufferAllocator().newBuffer(33);
         reqBuf.writeAscii("*2\r\n")
-                .writeBytes(PING.toRESPArgument(client.getExecutionContext().getBufferAllocator()))
+                .writeBytes(PING.toRESPArgument(getEnv().client.getExecutionContext().getBufferAllocator()))
                 .writeAscii("$12\r\nbufreq-pong2\r\n");
 
-        assertThat(awaitIndefinitely(client.request(newRequest(PING, reqBuf), CharSequence.class)), is("bufreq-pong2"));
+        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(PING, reqBuf), CharSequence.class)), is("bufreq-pong2"));
     }
 
     @Test
     public void unknownCommandNoCoercion() throws Exception {
-        Buffer reqBuf = client.getExecutionContext().getBufferAllocator().newBuffer(33);
+        Buffer reqBuf = getEnv().client.getExecutionContext().getBufferAllocator().newBuffer(33);
         reqBuf.writeAscii("*2\r\n$6\r\nFOOBAR\r\n$12\r\nbufreq-pong1\r\n");
 
         // We use PING to build the request object, which doesn't matter here: FOOBAR is the actual command sent on the wire
-        assertThat(awaitIndefinitely(client.request(newRequest(PING, reqBuf)).first()), is(RedisDataMatcher.redisError(startsWith("ERR"))));
+        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(PING, reqBuf)).first()), is(RedisDataMatcher.redisError(startsWith("ERR"))));
     }
 
     @Test
     public void unknownCommandAnyCoercion() throws Exception {
-        Buffer reqBuf = client.getExecutionContext().getBufferAllocator().newBuffer(33);
+        Buffer reqBuf = getEnv().client.getExecutionContext().getBufferAllocator().newBuffer(33);
         reqBuf.writeAscii("*2\r\n$6\r\nFOOBAR\r\n$12\r\nbufreq-pong1\r\n");
 
         Class<?>[] coercionTypes = {CharSequence.class, Buffer.class, Long.class, ListWithBuffersCoercedToCharSequences.class, List.class};
 
         for (Class<?> coercionType : coercionTypes) {
             try {
-                awaitIndefinitely(client.request(newRequest(PING, reqBuf), coercionType));
+                awaitIndefinitely(getEnv().client.request(newRequest(PING, reqBuf), coercionType));
                 fail();
             } catch (ExecutionException e) {
                 assertThat(e.getCause(), is(instanceOf(RedisException.class)));
@@ -204,7 +203,7 @@ public class RedisClientTest extends BaseRedisClientTest {
 
     @Test
     public void redisCommanderUsesFilters() throws ExecutionException, InterruptedException {
-        final RedisClient delegate = client;
+        final RedisClient delegate = getEnv().client;
         final AtomicBoolean requestCalled = new AtomicBoolean();
         final AtomicBoolean closeCalled = new AtomicBoolean();
         RedisClient filteredClient = new RedisClient() {
@@ -254,7 +253,7 @@ public class RedisClientTest extends BaseRedisClientTest {
 
     @Test
     public void requestSingleLongIsRepeatable() throws ExecutionException, InterruptedException {
-        RedisCommander commander = client.asCommander();
+        RedisCommander commander = getEnv().client.asCommander();
         final String key = "foo";
         awaitIndefinitely(commander.del(key));
         assertThat(awaitIndefinitely(commander.append(key, "bar").repeat(times -> times < 2)
@@ -267,7 +266,7 @@ public class RedisClientTest extends BaseRedisClientTest {
 
     @Test
     public void requestSingleStringIsRepeatable() throws ExecutionException, InterruptedException {
-        RedisCommander commander = client.asCommander();
+        RedisCommander commander = getEnv().client.asCommander();
         assertThat(awaitIndefinitely(commander.set("foo", "value").repeat(times -> times < 2)
                         .reduce(() -> new ArrayList<>(2), (list, value) -> {
                             list.add(value);
@@ -278,10 +277,10 @@ public class RedisClientTest extends BaseRedisClientTest {
 
     @Test
     public void requestSingleBufferIsRepeatable() throws ExecutionException, InterruptedException {
-        BufferRedisCommander commander = client.asBufferCommander();
-        final Buffer key = client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(Integer.MAX_VALUE);
-        final Buffer v1 = client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(Integer.MIN_VALUE);
-        final Buffer v2 = client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(12345678);
+        BufferRedisCommander commander = getEnv().client.asBufferCommander();
+        final Buffer key = getEnv().client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(Integer.MAX_VALUE);
+        final Buffer v1 = getEnv().client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(Integer.MIN_VALUE);
+        final Buffer v2 = getEnv().client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(12345678);
         awaitIndefinitely(commander.del(key.slice()));
         assertThat(awaitIndefinitely(commander.sadd(key.slice(), v1.slice())), is(1L));
         assertThat(awaitIndefinitely(commander.sadd(key.slice(), v2.slice())), is(1L));
@@ -295,13 +294,13 @@ public class RedisClientTest extends BaseRedisClientTest {
 
     @Test
     public void requestSingleListIsRepeatable() throws ExecutionException, InterruptedException {
-        BufferRedisCommander commander = client.asBufferCommander();
-        final Buffer key1 = client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(Integer.MAX_VALUE);
-        final Buffer v1 = client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(Integer.MIN_VALUE);
-        final Buffer v2 = client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(12345678);
-        final Buffer key2 = client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(77777);
-        final Buffer v3 = client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(123);
-        final Buffer v4 = client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(55667);
+        BufferRedisCommander commander = getEnv().client.asBufferCommander();
+        final Buffer key1 = getEnv().client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(Integer.MAX_VALUE);
+        final Buffer v1 = getEnv().client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(Integer.MIN_VALUE);
+        final Buffer v2 = getEnv().client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(12345678);
+        final Buffer key2 = getEnv().client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(77777);
+        final Buffer v3 = getEnv().client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(123);
+        final Buffer v4 = getEnv().client.getExecutionContext().getBufferAllocator().newBuffer(4).writeInt(55667);
         awaitIndefinitely(commander.del(key1.slice()));
         awaitIndefinitely(commander.del(key2.slice()));
         assertThat(awaitIndefinitely(commander.sadd(key1.slice(), v1.slice())), is(1L));

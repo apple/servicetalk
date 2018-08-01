@@ -51,7 +51,6 @@ import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static io.servicetalk.redis.internal.RedisUtils.newRequestCompositeBuffer;
 import static io.servicetalk.redis.netty.RedisUtils.encodeRequestContent;
 import static io.servicetalk.redis.netty.TerminalMessagePredicates.forCommand;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 final class PipelinedRedisConnection extends AbstractRedisConnection {
@@ -83,8 +82,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
     private PipelinedRedisConnection(Connection<RedisData, ByteBuf> connection,
                                      ExecutionContext executionContext,
                                      ReadOnlyRedisClientConfig roConfig) {
-        super(durationNanos -> connection.getIoExecutor().asExecutor().timer(durationNanos, NANOSECONDS),
-                executionContext, roConfig);
+        super(connection.getIoExecutor().asExecutor(), connection.onClosing(), executionContext, roConfig);
         this.connection = new DefaultPipelinedConnection<>(connection, maxPendingRequests);
         rawConnection = connection;
     }
@@ -121,7 +119,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
     }
 
     @Override
-    public Publisher<RedisData> request(final RedisRequest request) {
+    Publisher<RedisData> handleRequest(final RedisRequest request) {
         return request0(request, false, false);
     }
 

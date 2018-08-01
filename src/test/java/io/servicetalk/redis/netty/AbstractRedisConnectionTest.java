@@ -16,6 +16,7 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.redis.api.RedisData;
@@ -27,21 +28,24 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentMatchers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.LongFunction;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Publisher.error;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.Is.is;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -57,11 +61,13 @@ public final class AbstractRedisConnectionTest {
         timers = new ConcurrentLinkedQueue<>();
         RedisClientConfig config = new RedisClientConfig(new TcpClientConfig(true));
         config.setMaxPipelinedRequests(10);
-        connection = new Connection(aLong -> {
+        Executor pingTimerProvider = mock(Executor.class);
+        when(pingTimerProvider.timer(anyLong(), ArgumentMatchers.any(TimeUnit.class))).thenAnswer(inv -> {
             TestCompletable timer = new TestCompletable();
             timers.add(timer);
             return timer;
-        }, executionContext, config.asReadOnly());
+        });
+        connection = new Connection(pingTimerProvider, executionContext, config.asReadOnly());
         connection.startPings();
         assertThat("Unexpected ping timers found.", timers, hasSize(1));
     }
@@ -122,10 +128,10 @@ public final class AbstractRedisConnectionTest {
         private final AtomicBoolean closed = new AtomicBoolean();
         private final ConcurrentLinkedQueue<TestCompletable> pings = new ConcurrentLinkedQueue<>();
 
-        protected Connection(LongFunction<Completable> timer,
+        protected Connection(Executor pingTimerProvider,
                              ExecutionContext executionContext,
                              ReadOnlyRedisClientConfig roConfig) {
-            super(timer, executionContext, roConfig);
+            super(pingTimerProvider, never(), executionContext, roConfig);
         }
 
         @Override
@@ -151,7 +157,7 @@ public final class AbstractRedisConnectionTest {
         }
 
         @Override
-        public Publisher<RedisData> request(RedisRequest request) {
+        public Publisher<RedisData> handleRequest(RedisRequest request) {
             return error(new UnsupportedOperationException("Not implemented."));
         }
 
