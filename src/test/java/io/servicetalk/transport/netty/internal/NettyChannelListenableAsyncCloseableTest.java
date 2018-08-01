@@ -26,6 +26,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -44,7 +45,7 @@ public class NettyChannelListenableAsyncCloseableTest {
 
     @Before
     public void setUp() {
-        fixture = new NettyChannelListenableAsyncCloseable(channel);
+        fixture = new NettyChannelListenableAsyncCloseable(channel, immediate());
         when(channel.closeFuture()).thenReturn(channelCloseFuture);
     }
 

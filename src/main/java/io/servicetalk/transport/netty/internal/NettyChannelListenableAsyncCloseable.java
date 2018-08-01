@@ -16,6 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 import io.netty.channel.Channel;
@@ -44,8 +45,10 @@ final class NettyChannelListenableAsyncCloseable implements ListenableAsyncClose
      * New instance.
      *
      * @param channel to use.
+     * @param offloadingExecutor {@link Executor} used to offload any signals to any asynchronous created by this
+     * {@link NettyChannelListenableAsyncCloseable} which could interact with the EventLoop.
      */
-    NettyChannelListenableAsyncCloseable(Channel channel) {
+    NettyChannelListenableAsyncCloseable(Channel channel, Executor offloadingExecutor) {
         this.channel = requireNonNull(channel);
         onClose = new Completable() {
             @Override
@@ -53,7 +56,9 @@ final class NettyChannelListenableAsyncCloseable implements ListenableAsyncClose
                 subscriber.onSubscribe(IGNORE_CANCEL);
                 NettyFutureCompletable.connectToSubscriber(subscriber, channel.closeFuture());
             }
-        };
+        }
+        // Since onClose termination will come from EventLoop, offload those signals to avoid blocking EventLoop
+        .publishOn(offloadingExecutor);
     }
 
     @Override

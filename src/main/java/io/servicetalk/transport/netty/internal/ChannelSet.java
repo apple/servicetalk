@@ -15,9 +15,11 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.CompositeCloseable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 import io.netty.channel.Channel;
@@ -30,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.transport.netty.internal.CloseStates.CLOSING;
 import static io.servicetalk.transport.netty.internal.CloseStates.GRACEFULLY_CLOSING;
 import static io.servicetalk.transport.netty.internal.CloseStates.OPEN;
@@ -48,15 +51,25 @@ public final class ChannelSet implements ListenableAsyncCloseable {
         public void operationComplete(final ChannelFuture future) {
             final boolean wasRemoved = channelMap.remove(future.channel().id()) != null;
             if (wasRemoved && state != OPEN && channelMap.isEmpty()) {
-                onClose.onComplete();
+                onCloseProcessor.onComplete();
             }
         }
     };
 
     private final Map<ChannelId, Channel> channelMap = new ConcurrentHashMap<>();
-    private final CompletableProcessor onClose = new CompletableProcessor();
+    private final CompletableProcessor onCloseProcessor = new CompletableProcessor();
+    private final Completable onClose;
     @SuppressWarnings("unused")
     private volatile int state;
+
+    /**
+     * New instance.
+     *
+     * @param offloadingExecutor {@link Executor} to use for offloading close signals.
+     */
+    public ChannelSet(Executor offloadingExecutor) {
+        onClose = onCloseProcessor.publishOn(offloadingExecutor);
+    }
 
     /**
      * Add a {@link Channel} to this {@link ChannelSet}, if it is not already present. {@link Channel#id()} is used to
@@ -91,7 +104,7 @@ public final class ChannelSet implements ListenableAsyncCloseable {
                 }
 
                 if (channelMap.isEmpty()) {
-                    onClose.onComplete();
+                    onCloseProcessor.onComplete();
                     return;
                 }
 
@@ -116,7 +129,7 @@ public final class ChannelSet implements ListenableAsyncCloseable {
 
                 if (channelMap.isEmpty()) {
                     onClose.subscribe(subscriber);
-                    onClose.onComplete();
+                    onCloseProcessor.onComplete();
                     return;
                 }
 
@@ -127,7 +140,23 @@ public final class ChannelSet implements ListenableAsyncCloseable {
                             channel.pipeline().get(ConnectionHolderChannelHandler.class);
                     Connection<?, ?> connection = holder == null ? null : holder.getConnection();
                     if (connection != null) {
-                        closeable.merge(connection);
+                        // Upon shutdown of the set, we will close all live channels. If close of individual channels
+                        // are offloaded, then this would trigger a surge in threads required to offload these closures.
+                        // Here we assume that if there is any offloading required, it is done by offloading the
+                        // Completable returned by closeAsyncGracefully() hence offloading each channel is not required.
+                        // Hence, we override the offloading on each channel for this particular subscribe to use
+                        // immediate and effectively disable offloading on each channel.
+                        closeable.merge(new AsyncCloseable() {
+                            @Override
+                            public Completable closeAsync() {
+                                return connection.closeAsync().publishOnOverride(immediate());
+                            }
+
+                            @Override
+                            public Completable closeAsyncGracefully() {
+                                return connection.closeAsyncGracefully().publishOnOverride(immediate());
+                            }
+                        });
                     } else {
                         channel.close();
                     }

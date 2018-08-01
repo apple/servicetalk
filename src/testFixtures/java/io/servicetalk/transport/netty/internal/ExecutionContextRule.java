@@ -27,6 +27,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.ExternalResource;
 
+import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
@@ -55,24 +56,40 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
     }
 
     public static ExecutionContextRule immediate() {
-        return new ExecutionContextRule(() -> DEFAULT_ALLOCATOR, newIoExecutor(), Executors::immediate
+        return immediate(new DefaultThreadFactory());
+    }
+
+    public static ExecutionContextRule immediate(ThreadFactory ioThreadFactory) {
+        return new ExecutionContextRule(() -> DEFAULT_ALLOCATOR, newIoExecutor(ioThreadFactory), Executors::immediate
         );
     }
 
     public static ExecutionContextRule cached() {
-        return new ExecutionContextRule(() -> DEFAULT_ALLOCATOR, newIoExecutor(),
+        return cached(new DefaultThreadFactory());
+    }
+
+    public static ExecutionContextRule cached(ThreadFactory ioThreadFactory) {
+        return new ExecutionContextRule(() -> DEFAULT_ALLOCATOR, newIoExecutor(ioThreadFactory),
                 Executors::newCachedThreadExecutor
         );
     }
 
     public static ExecutionContextRule fixed(int size) {
-        return new ExecutionContextRule(() -> DEFAULT_ALLOCATOR, newIoExecutor(),
+        return fixed(size, new DefaultThreadFactory());
+    }
+
+    public static ExecutionContextRule fixed(int size, ThreadFactory ioThreadFactory) {
+        return new ExecutionContextRule(() -> DEFAULT_ALLOCATOR, newIoExecutor(ioThreadFactory),
                 () -> Executors.newFixedSizeExecutor(size)
         );
     }
 
     public static ExecutionContextRule single() {
         return fixed(1);
+    }
+
+    public static ExecutionContextRule single(ThreadFactory ioThreadFactory) {
+        return fixed(1, ioThreadFactory);
     }
 
     @Override
@@ -105,7 +122,7 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
         return ctx.getExecutor();
     }
 
-    private static Supplier<IoExecutor> newIoExecutor() {
-        return () -> createIoExecutor(0, new DefaultThreadFactory());
+    private static Supplier<IoExecutor> newIoExecutor(ThreadFactory threadFactory) {
+        return () -> createIoExecutor(0, threadFactory);
     }
 }

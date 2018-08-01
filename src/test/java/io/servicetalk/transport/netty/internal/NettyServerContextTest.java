@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.closeAsyncGracefully;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -126,7 +127,7 @@ public class NettyServerContextTest {
         when(channel.pipeline()).thenReturn(channelPipeline);
         when(channelPipeline.get(ConnectionHolderChannelHandler.class)).thenReturn(connectionHolderChannelHandler);
 
-        fixture = NettyServerContext.wrap(channel, channelSetCloseable, closeBefore);
+        fixture = NettyServerContext.wrap(channel, channelSetCloseable, closeBefore, immediate());
     }
 
     @Test

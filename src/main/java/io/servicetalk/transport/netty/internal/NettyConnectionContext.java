@@ -51,7 +51,7 @@ public final class NettyConnectionContext implements ConnectionContext {
     private NettyConnectionContext(ExecutionContext executionContext, Channel channel) {
         this.executionContext = requireNonNull(executionContext);
         this.channel = requireNonNull(channel);
-        close = new NettyChannelListenableAsyncCloseable(channel);
+        close = new NettyChannelListenableAsyncCloseable(channel, executionContext.getExecutor());
     }
 
     @Override

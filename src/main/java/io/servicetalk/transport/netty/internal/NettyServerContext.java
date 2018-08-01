@@ -18,6 +18,7 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -59,12 +60,16 @@ public final class NettyServerContext implements ServerContext {
      * @param listenChannel {@link Channel} to wrap.
      * @param channelSetCloseable {@link ChannelSet} to wrap.
      * @param closeBefore {@link Completable} which needs to closed first before {@code listenChannel} will be closed.
+     * @param offloadingExecutor {@link Executor} used to offload any signals to any asynchronous created by the
+     * returned {@link ServerContext} which could interact with the EventLoop.
      * @return A new {@link NettyServerContext} instance.
      */
     public static ServerContext wrap(Channel listenChannel, ListenableAsyncCloseable channelSetCloseable,
-                                     AsyncCloseable closeBefore) {
+                                     AsyncCloseable closeBefore, Executor offloadingExecutor) {
+        final NettyChannelListenableAsyncCloseable channelCloseable =
+                new NettyChannelListenableAsyncCloseable(listenChannel, offloadingExecutor);
         final CompositeCloseable closeAsync = newCompositeCloseable().appendAll(
-                closeBefore, new NettyChannelListenableAsyncCloseable(listenChannel), channelSetCloseable);
+                closeBefore, channelCloseable, channelSetCloseable);
         return new NettyServerContext(listenChannel, toListenableAsyncCloseable(closeAsync));
     }
 

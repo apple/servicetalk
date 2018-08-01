@@ -36,6 +36,7 @@ import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.closeAsyncGracefully;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -72,7 +73,7 @@ public class ChannelSetTest {
     private NettyConnection nettyConnection;
 
     private final ChannelId channelId = DefaultChannelId.newInstance();
-    private final ChannelSet fixture = new ChannelSet();
+    private final ChannelSet fixture = new ChannelSet(immediate());
     private final CompletableProcessor closeAsyncGracefullyCompletable = new CompletableProcessor();
     private final CompletableProcessor closeAsyncCompletable = new CompletableProcessor();
     private GenericFutureListener<ChannelFuture> listener;
