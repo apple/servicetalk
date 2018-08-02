@@ -76,7 +76,7 @@ public class BlockingHttpClientGroupTest {
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
-        when(mockCtx.getExecutor()).thenReturn(immediate());
+        when(mockCtx.getExecutionContext()).thenReturn(mockExecutionContext);
         when(mockIterable.iterator()).thenReturn(mockIterator);
         when(mockExecutionContext.getExecutor()).thenReturn(immediate());
         when(mockKey.getExecutionContext()).thenReturn(mockExecutionContext);
