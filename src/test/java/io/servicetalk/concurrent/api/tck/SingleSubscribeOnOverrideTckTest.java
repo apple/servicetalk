@@ -26,4 +26,11 @@ public class SingleSubscribeOnOverrideTckTest extends SingleAbstractOffloaderTck
     Single<Integer> applyOffload(final Single<Integer> original, final Executor executor) {
         return original.subscribeOnOverride(executor);
     }
+
+    @Override
+    @Test(enabled = false,
+            description = "when requested from onSubscribe, synchronous sources MAY emit data in a different thread than onSubscribe.")
+    public void stochastic_spec103_mustSignalOnMethodsSequentially() throws Throwable {
+        super.stochastic_spec103_mustSignalOnMethodsSequentially();
+    }
 }
