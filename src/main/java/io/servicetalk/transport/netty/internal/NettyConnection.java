@@ -48,7 +48,6 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
 import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.Flush.composeFlushes;
-import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
@@ -340,18 +339,13 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
         return context.getExecutionContext();
     }
 
-    @Override
-    public NettyIoExecutor getIoExecutor() {
-        return toNettyIoExecutor(context.getIoExecutor());
-    }
-
     private void invokeUserCloseHandler() {
         closeHandler.userClosing(channel);
     }
 
     @Override
     public Completable onClosing() {
-        return onClosing == null ? onClose() : onClosing.publishOn(getExecutor());
+        return onClosing == null ? onClose() : onClosing.publishOn(getExecutionContext().getExecutor());
     }
 
     @Override

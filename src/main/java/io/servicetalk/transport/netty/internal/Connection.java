@@ -39,10 +39,6 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
  * @param <Write> Type of objects written to this connection.
  */
 public interface Connection<Read, Write> extends ConnectionContext {
-
-    @Override
-    NettyIoExecutor getIoExecutor();
-
     /**
      * Returns a {@link Completable} that notifies when the connection has begun its closing sequence.
      *
