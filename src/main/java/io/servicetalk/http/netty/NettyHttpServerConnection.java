@@ -93,7 +93,7 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
                     .flatMapPublisher(resp -> flatten(resp, HttpResponse::getPayloadBody));
             // We are writing to the connection which may request more data from the EventLoop. So offload control
             // signals which may have blocking code.
-        }).subscribeOn(context.getExecutor());
+        }).subscribeOn(context.getExecutionContext().getExecutor());
         return writeResponse(responseObjectPublisher.repeat(val -> true));
     }
 
@@ -103,11 +103,12 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
             protected void handleSubscribe(final Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber) {
                 // Since we do not offload data path for the request single, this method will be invoked from the
                 // EventLoop. So, we offload the call to HttpService.
-                context.getExecutor().execute(() -> {
+                context.getExecutionContext().getExecutor().execute(() -> {
                     Single<HttpResponse<HttpPayloadChunk>> source;
                     try {
                         source = service.handle(context,
-                                request.transformPayloadBody(bdy -> bdy.publishOn(context.getExecutor())))
+                                request.transformPayloadBody(bdy ->
+                                        bdy.publishOn(context.getExecutionContext().getExecutor())))
                                 .onErrorResume(cause -> newErrorResponse(cause, request));
                     } catch (final Throwable cause) {
                         source = newErrorResponse(cause, request);

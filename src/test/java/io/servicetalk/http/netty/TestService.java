@@ -121,7 +121,7 @@ final class TestService extends HttpService {
 
     private HttpResponse<HttpPayloadChunk> newTestCounterResponse(final ConnectionContext context,
                                                                   final HttpRequest<HttpPayloadChunk> req) {
-        final Buffer responseContent = context.getBufferAllocator().fromUtf8(
+        final Buffer responseContent = context.getExecutionContext().getBufferAllocator().fromUtf8(
                 "Testing" + ++counter + "\n");
         final HttpPayloadChunk responseBody = newPayloadChunk(responseContent);
         return newResponse(req.getVersion(), OK, responseBody);
@@ -129,7 +129,7 @@ final class TestService extends HttpService {
 
     private HttpResponse<HttpPayloadChunk> newTestCounterResponseWithLastPayloadChunk(
             final ConnectionContext context, final HttpRequest<HttpPayloadChunk> req) {
-        final Buffer responseContent = context.getBufferAllocator().fromUtf8(
+        final Buffer responseContent = context.getExecutionContext().getBufferAllocator().fromUtf8(
                 "Testing" + ++counter + "\n");
         final HttpPayloadChunk responseBody = newLastPayloadChunk(responseContent,
                 INSTANCE.newEmptyTrailers());
@@ -141,12 +141,12 @@ final class TestService extends HttpService {
         final byte[] content = new byte[1024];
         ThreadLocalRandom.current().nextBytes(content);
         final HttpPayloadChunk chunk = newPayloadChunk(
-                context.getBufferAllocator().wrap(content));
+                context.getExecutionContext().getBufferAllocator().wrap(content));
 
         final byte[] lastContent = new byte[6144];
         ThreadLocalRandom.current().nextBytes(lastContent);
         final HttpPayloadChunk lastChunk = newLastPayloadChunk(
-                context.getBufferAllocator().wrap(lastContent),
+                context.getExecutionContext().getBufferAllocator().wrap(lastContent),
                 INSTANCE.newEmptyTrailers());
 
         final Publisher<HttpPayloadChunk> responseBody = from(chunk, lastChunk);

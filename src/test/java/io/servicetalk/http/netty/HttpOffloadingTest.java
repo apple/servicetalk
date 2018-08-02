@@ -119,7 +119,8 @@ public class HttpOffloadingTest {
     @Test
     public void requestResponseIsOffloaded() throws Exception {
         final Publisher<HttpPayloadChunk> reqPayload =
-                just(newPayloadChunk(httpConnection.getConnectionContext().getBufferAllocator().fromAscii("Hello")))
+                just(newPayloadChunk(httpConnection.getConnectionContext().getExecutionContext().getBufferAllocator()
+                        .fromAscii("Hello")))
                         .doBeforeRequest(n -> {
                             if (inEventLoopOrTestThread().test(currentThread())) {
                                 errors.add(new AssertionError("Server response: request-n was not offloaded. Thread: "
@@ -356,7 +357,7 @@ public class HttpOffloadingTest {
                 errors.add(e);
             }
             Publisher<HttpPayloadChunk> responsePayload =
-                    just(newPayloadChunk(ctx.getBufferAllocator().fromAscii("Hello")))
+                    just(newPayloadChunk(ctx.getExecutionContext().getBufferAllocator().fromAscii("Hello")))
                             .doBeforeRequest(n -> {
                                 if (inEventLoopOrTestThread().test(currentThread())) {
                                     errors.add(new AssertionError("Server response: request-n was not offloaded. Thread: "
