@@ -329,7 +329,7 @@ public class SynchronousResources {
     @POST
     public Publisher<Buffer> postJsonBufPubInPubOut(final Publisher<Buffer> requestContent) {
         return requestContent
-                .map(buf -> ctx.getBufferAllocator().fromUtf8(buf.toString(UTF_8).toUpperCase()));
+                .map(buf -> ctx.getExecutionContext().getBufferAllocator().fromUtf8(buf.toString(UTF_8).toUpperCase()));
     }
 
     @Consumes(APPLICATION_JSON)

@@ -112,7 +112,7 @@ public class AsynchronousResources {
         };
 
         if (defer) {
-            ctx.getExecutor().execute(task);
+            ctx.getExecutionContext().getExecutor().execute(task);
         } else {
             task.run();
         }
@@ -153,7 +153,8 @@ public class AsynchronousResources {
     public CompletionStage<String> getDelayedText(@Nonnull @QueryParam("delay") final long delay,
                                                   @Nonnull @QueryParam("unit") final TimeUnit unit) {
         final CompletableFuture<String> cf = new CompletableFuture<>();
-        final Cancellable cancellable = ctx.getExecutor().schedule(() -> cf.complete("DONE"), delay, unit);
+        final Cancellable cancellable = ctx.getExecutionContext().getExecutor().schedule(() ->
+                cf.complete("DONE"), delay, unit);
 
         return cf.whenComplete((r, t) -> {
             if (t instanceof CancellationException) {
@@ -175,7 +176,8 @@ public class AsynchronousResources {
     public Response getDelayedResponseCompletionStage(@Nonnull @QueryParam("delay") final long delay,
                                                       @Nonnull @QueryParam("unit") final TimeUnit unit) {
         final CompletableFuture<String> cf = new CompletableFuture<>();
-        final Cancellable cancellable = ctx.getExecutor().schedule(() -> cf.complete("DONE"), delay, unit);
+        final Cancellable cancellable = ctx.getExecutionContext().getExecutor().schedule(() ->
+                cf.complete("DONE"), delay, unit);
 
         return ok(cf.whenComplete((r, t) -> {
             if (t instanceof CancellationException) {
@@ -204,7 +206,7 @@ public class AsynchronousResources {
     @POST
     public CompletionStage<Response> postTextResponse(final String requestContent) {
         final CompletableFuture<Response> cf = new CompletableFuture<>();
-        final Cancellable cancellable = ctx.getExecutor()
+        final Cancellable cancellable = ctx.getExecutionContext().getExecutor()
                 .schedule(() -> cf.complete(accepted("GOT: " + requestContent).build()), 10, MILLISECONDS);
         return cf.whenComplete((r, t) -> {
             if (t instanceof CancellationException) {
@@ -275,7 +277,7 @@ public class AsynchronousResources {
     @GET
     public void getAsyncResponseTimeoutResume(@Suspended final AsyncResponse ar) {
         ar.setTimeout(1, MINUTES);
-        ctx.getExecutor().timer(10, MILLISECONDS)
+        ctx.getExecutionContext().getExecutor().timer(10, MILLISECONDS)
                 .doAfterComplete(() -> ar.resume("DONE"))
                 .subscribe();
     }
@@ -316,7 +318,8 @@ public class AsynchronousResources {
     @Path("/suspended/json")
     @GET
     public void getJsonAsyncResponse(@Suspended final AsyncResponse ar) {
-        ctx.getExecutor().schedule(() -> ar.resume(singletonMap("foo", "bar3")), 10, MILLISECONDS);
+        ctx.getExecutionContext().getExecutor().schedule(() ->
+                ar.resume(singletonMap("foo", "bar3")), 10, MILLISECONDS);
     }
 
     @Produces(SERVER_SENT_EVENTS)
@@ -387,7 +390,7 @@ public class AsynchronousResources {
     @Path("/single-response")
     @GET
     public Single<Response> getResponseSingle(final @QueryParam("fail") boolean fail) {
-        return ctx.getExecutor().timer(10, MILLISECONDS)
+        return ctx.getExecutionContext().getExecutor().timer(10, MILLISECONDS)
                 .andThen(fail ? error(DELIBERATE_EXCEPTION) : success(accepted("DONE").build()));
     }
 
@@ -395,7 +398,7 @@ public class AsynchronousResources {
     @Path("/single-map")
     @GET
     public Single<Map<String, Object>> getMapSingle(final @QueryParam("fail") boolean fail) {
-        return ctx.getExecutor().timer(10, MILLISECONDS)
+        return ctx.getExecutionContext().getExecutor().timer(10, MILLISECONDS)
                 .andThen(fail ? error(DELIBERATE_EXCEPTION) : success(singletonMap("foo", "bar4")));
     }
 
@@ -406,7 +409,7 @@ public class AsynchronousResources {
     }
 
     private void scheduleSseEventSend(final SseEmitter emmitter, final Sse sse, final Ref<Integer> iRef) {
-        ctx.getExecutor().schedule(() -> {
+        ctx.getExecutionContext().getExecutor().schedule(() -> {
             final int i = iRef.get();
             emmitter.emit(sse.newEvent("foo" + i)).whenComplete((r, t) -> {
                 if (t == null && i < 9) {

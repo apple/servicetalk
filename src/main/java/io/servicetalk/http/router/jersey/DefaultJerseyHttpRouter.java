@@ -166,7 +166,8 @@ final class DefaultJerseyHttpRouter extends HttpService {
         final Ref<Publisher<HttpPayloadChunk>> responseChunkPublisherRef = initResponseChunkPublisherRef(containerRequest);
 
         final DefaultContainerResponseWriter responseWriter = new DefaultContainerResponseWriter(containerRequest,
-                req.getVersion(), ctx.getBufferAllocator(), ctx.getExecutor(), responseChunkPublisherRef, subscriber);
+                req.getVersion(), ctx.getExecutionContext().getBufferAllocator(),
+                ctx.getExecutionContext().getExecutor(), responseChunkPublisherRef, subscriber);
 
         containerRequest.setWriter(responseWriter);
 
