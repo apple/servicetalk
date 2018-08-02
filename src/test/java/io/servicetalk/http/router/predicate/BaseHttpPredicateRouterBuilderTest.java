@@ -24,6 +24,7 @@ import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -56,6 +57,8 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
     @Mock
     ConnectionContext ctx;
     @Mock
+    ExecutionContext executionCtx;
+    @Mock
     HttpRequest<HttpPayloadChunk> request;
     @Mock
     HttpHeaders headers;
@@ -66,7 +69,8 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
 
     @Before
     public void setUp() {
-        when(ctx.getExecutor()).thenReturn(immediate());
+        when(ctx.getExecutionContext()).thenReturn(executionCtx);
+        when(executionCtx.getExecutor()).thenReturn(immediate());
         when(request.getVersion()).thenReturn(HTTP_1_1);
         when(request.getHeaders()).thenReturn(headers);
         when(request.parseQuery()).thenReturn(query);

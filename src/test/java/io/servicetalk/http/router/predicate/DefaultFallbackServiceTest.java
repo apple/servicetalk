@@ -21,6 +21,7 @@ import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -47,12 +48,15 @@ public class DefaultFallbackServiceTest {
     @Mock
     private ConnectionContext ctx;
     @Mock
+    private ExecutionContext executionCtx;
+    @Mock
     private HttpRequest<HttpPayloadChunk> request;
 
     @Before
     public void setUp() {
         when(request.getVersion()).thenReturn(HTTP_1_1);
-        when(ctx.getExecutor()).thenReturn(immediate());
+        when(ctx.getExecutionContext()).thenReturn(executionCtx);
+        when(executionCtx.getExecutor()).thenReturn(immediate());
     }
 
     @Test
