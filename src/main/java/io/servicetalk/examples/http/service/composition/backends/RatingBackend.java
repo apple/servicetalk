@@ -54,7 +54,7 @@ final class RatingBackend extends AggregatedHttpService {
 
         // Create a random rating
         Rating rating = new Rating(entityId, ThreadLocalRandom.current().nextInt(1, 6));
-        return success(serializer.serialize(newResponse(OK, rating), ctx.getBufferAllocator()));
+        return success(serializer.serialize(newResponse(OK, rating), ctx.getExecutionContext().getBufferAllocator()));
     }
 
     static AggregatedHttpService newRatingService(HttpSerializer serializer) {

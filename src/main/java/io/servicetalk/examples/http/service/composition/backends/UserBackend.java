@@ -55,7 +55,7 @@ final class UserBackend extends AggregatedHttpService {
 
         // Create a random rating
         User user = new User(userId, createRandomString(5), createRandomString(3));
-        return success(serializer.serialize(newResponse(OK, user), ctx.getBufferAllocator()));
+        return success(serializer.serialize(newResponse(OK, user), ctx.getExecutionContext().getBufferAllocator()));
     }
 
     static AggregatedHttpService newUserService(HttpSerializer serializer) {

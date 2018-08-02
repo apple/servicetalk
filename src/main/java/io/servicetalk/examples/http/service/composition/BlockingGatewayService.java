@@ -109,6 +109,7 @@ final class BlockingGatewayService extends BlockingAggregatedHttpService {
             fullRecommendations.add(new FullRecommendation(metadata, user, rating));
         }
 
-        return serializer.serialize(newResponse(OK, fullRecommendations), ctx.getBufferAllocator());
+        return serializer.serialize(newResponse(OK, fullRecommendations),
+                ctx.getExecutionContext().getBufferAllocator());
     }
 }

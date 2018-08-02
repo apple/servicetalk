@@ -113,6 +113,7 @@ final class AggregatedGatewayService extends AggregatedHttpService {
                     return list;
                 })
                 // Convert the payload to a FullHttpResponse.
-                .map(allRecosJson -> serializer.serialize(newResponse(OK, allRecosJson), ctx.getBufferAllocator()));
+                .map(allRecosJson -> serializer.serialize(newResponse(OK, allRecosJson),
+                        ctx.getExecutionContext().getBufferAllocator()));
     }
 }

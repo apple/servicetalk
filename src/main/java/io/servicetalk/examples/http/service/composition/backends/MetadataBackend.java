@@ -55,7 +55,7 @@ final class MetadataBackend extends AggregatedHttpService {
 
         // Create random names and author for the metadata
         Metadata metadata = new Metadata(entityId, createRandomString(15), createRandomString(5));
-        return success(serializer.serialize(newResponse(OK, metadata), ctx.getBufferAllocator()));
+        return success(serializer.serialize(newResponse(OK, metadata), ctx.getExecutionContext().getBufferAllocator()));
     }
 
     static AggregatedHttpService newMetadataService(HttpSerializer serializer) {

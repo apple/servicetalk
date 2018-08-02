@@ -86,7 +86,7 @@ final class RecommendationBackend {
             }
 
             // Create a new random recommendation every 1 SECOND.
-            Publisher<Recommendation> recommendations = ctx.getExecutor().timer(1, SECONDS)
+            Publisher<Recommendation> recommendations = ctx.getExecutionContext().getExecutor().timer(1, SECONDS)
                     // We use defer() here so that we do not eagerly create a Recommendation which will get emitted for
                     // every schedule. defer() helps us lazily create a new Recommendation object every time we the
                     // scheduler emits a tick.
@@ -96,7 +96,8 @@ final class RecommendationBackend {
                     // they are available.
                     .repeat(count -> true);
 
-            return success(serializer.serialize(HttpResponses.newResponse(OK, recommendations), ctx.getBufferAllocator(), Recommendation.class));
+            return success(serializer.serialize(HttpResponses.newResponse(OK, recommendations),
+                    ctx.getExecutionContext().getBufferAllocator(), Recommendation.class));
         }
     }
 
@@ -127,7 +128,8 @@ final class RecommendationBackend {
             }
 
             // Serialize the Recommendation list to a single Buffer containing JSON and use it as the response payload.
-            return success(serializer.serialize(newResponse(OK, recommendations), ctx.getBufferAllocator()));
+            return success(serializer.serialize(newResponse(OK, recommendations),
+                    ctx.getExecutionContext().getBufferAllocator()));
         }
     }
 }

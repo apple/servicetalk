@@ -106,6 +106,7 @@ final class GatewayService extends HttpService {
                         return zip(metadata, user, rating, FullRecommendation::new);
                     })))
                     // Serialize each FullRecommendation in a JSON object.
-                    .map(fullRecommendationResponse -> serializer.serialize(fullRecommendationResponse, ctx.getBufferAllocator(), FullRecommendation.class));
+                    .map(fullRecommendationResponse -> serializer.serialize(fullRecommendationResponse,
+                            ctx.getExecutionContext().getBufferAllocator(), FullRecommendation.class));
     }
 }

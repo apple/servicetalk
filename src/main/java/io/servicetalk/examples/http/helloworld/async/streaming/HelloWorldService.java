@@ -43,6 +43,6 @@ public final class HelloWorldService extends HttpService {
         // security reasons, however here we override the filter and print every value.
         LOGGER.info("got request {}", request.toString((name, value) -> value));
 
-        return success(newResponse(OK, ctx.getBufferAllocator().fromAscii("Hello World!")));
+        return success(newResponse(OK, ctx.getExecutionContext().getBufferAllocator().fromAscii("Hello World!")));
     }
 }
