@@ -15,9 +15,6 @@
  */
 package io.servicetalk.transport.api;
 
-import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 import java.net.SocketAddress;
@@ -57,28 +54,4 @@ public interface ConnectionContext extends ListenableAsyncCloseable {
      * @return the {@link ExecutionContext} for this {@link ConnectionContext}.
      */
     ExecutionContext getExecutionContext();
-
-    /**
-     * Return the {@link BufferAllocator} used by this {@link ConnectionContext} to allocate {@link Buffer}s.
-     * @return the {@link BufferAllocator} used by this {@link ConnectionContext}.
-     */
-    default BufferAllocator getBufferAllocator() {
-        return getExecutionContext().getBufferAllocator();
-    }
-
-    /**
-     * Get the {@link IoExecutor} that is used to handle the IO for this {@link ConnectionContext}.
-     * @return The {@link IoExecutor} that is used to handle the IO for this {@link ConnectionContext}.
-     */
-    default IoExecutor getIoExecutor() {
-        return getExecutionContext().getIoExecutor();
-    }
-
-    /**
-     * Get the {@link Executor} that is used to create any asynchronous sources by this {@link ConnectionContext}.
-     * @return The {@link Executor} that is used to create any asynchronous sources by this {@link ConnectionContext}.
-     */
-    default Executor getExecutor() {
-        return getExecutionContext().getExecutor();
-    }
 }
