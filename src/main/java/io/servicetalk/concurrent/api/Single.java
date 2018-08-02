@@ -180,8 +180,8 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * <pre>{@code
      *  T result = resultOfThisSingle();
      *  // NOTE: The order of operations here is not guaranteed by this method!
-     *  onSuccess.accept(result);
      *  nextOperation(result);
+     *  onSuccess.accept(result);
      * }</pre>
      * @param onSuccess Invoked when {@link Subscriber#onSuccess(Object)} is called for
      * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
@@ -190,7 +190,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @see #doAfterSuccess(Consumer)
      */
     public final Single<T> doOnSuccess(Consumer<T> onSuccess) {
-        return doBeforeSuccess(onSuccess);
+        return doAfterSuccess(onSuccess);
     }
 
     /**
@@ -207,8 +207,8 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      *    T result = resultOfThisSingle();
      *  } catch (Throwable cause) {
      *      // NOTE: The order of operations here is not guaranteed by this method!
-     *      onError.accept(cause);
      *      nextOperation(cause);
+     *      onError.accept(cause);
      *  }
      * }</pre>
      * @param onError Invoked when {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the
@@ -218,11 +218,12 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @see #doAfterError(Consumer)
      */
     public final Single<T> doOnError(Consumer<Throwable> onError) {
-        return doBeforeError(onError);
+        return doAfterError(onError);
     }
 
     /**
-     * Invokes the {@code doFinally} {@link Runnable} argument when any of the following terminal methods are called:
+     * Invokes the {@code doFinally} {@link Runnable} argument exactly once, when any of the following terminal methods
+     * are called:
      * <ul>
      *     <li>{@link Subscriber#onSuccess(Object)}</li>
      *     <li>{@link Subscriber#onError(Throwable)}</li>
@@ -243,7 +244,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      *      doFinally.run();
      *  }
      * }</pre>
-     * @param doFinally Invoked when any of the following terminal methods are called:
+     * @param doFinally Invoked exactly once, when any of the following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onSuccess(Object)}</li>
      *     <li>{@link Subscriber#onError(Throwable)}</li>
@@ -272,7 +273,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @see #doAfterCancel(Runnable)
      */
     public final Single<T> doOnCancel(Runnable onCancel) {
-        return doBeforeCancel(onCancel);
+        return doAfterCancel(onCancel);
     }
 
     /**

@@ -92,13 +92,13 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * <p>
      * This method provides a data transformation in sequential programming similar to:
      * <pre>{@code
-     *     List<T> tResults = resultOfThisPublisher();
-     *     List<R> rResults = ...;
-     *     for (T tResult : tResults) {
-     *         rResults.add(mapper.apply(tResult));
+     *     List<R> results = ...;
+     *     for (T t : resultOfThisPublisher()) {
+     *         results.add(mapper.apply(t));
      *     }
-     *     return rResults;
+     *     return results;
      * }</pre>
+     *
      * @param mapper Function to transform each item emitted by this {@link Publisher}.
      * @param <R> Type of the items emitted by the returned {@link Publisher}.
      * @return A {@link Publisher} that transforms elements emitted by this {@link Publisher} into a different type.
@@ -114,15 +114,15 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * <p>
      * This method provides a data transformation in sequential programming similar to:
      * <pre>{@code
-     *     List<T> results = resultOfThisPublisher();
-     *     List<T> filteredResults = ...;
-     *     for (T result : results) {
-     *         if (predicate.test(result)) {
-     *             filteredResults.add(result);
+     *     List<T> results = ...;
+     *     for (T t : resultOfThisPublisher()) {
+     *         if (predicate.test(t)) {
+     *             results.add(t);
      *         }
      *     }
-     *     return filteredResults;
+     *     return results;
      * }</pre>
+     *
      * @param predicate for the filter.
      * @return A {@link Publisher} that only emits the items that pass the {@code predicate}.
      *
@@ -146,6 +146,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *     }
      *     return results;
      * }</pre>
+     *
      * @param nextFactory Returns the next {@link Publisher}, when this {@link Publisher} emits an error.
      * @return A {@link Publisher} that ignores error from this {@code Publisher} and resume with the {@link Publisher}
      * produced by {@code nextFactory}.
@@ -164,14 +165,23 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
      * transformation in sequential programming similar to:
      * <pre>{@code
-     *     List<T> tResults = resultOfThisPublisher();
-     *     List<R> rResults = ...;
-     *     for (T tResult : tResults) {
-     *         R rResult = mapper.apply(tResult); // Asynchronous result is flatten into a value by this operator.
-     *         rResults.add(rResult);
+     *     ExecutorService e = ...;
+     *     List<Future<R>> futures = ...; // assume this is thread safe
+     *     for (T t : resultOfThisPublisher()) {
+     *         // Note that flatMap process results in parallel.
+     *         futures.add(e.submit(() -> {
+     *             return mapper.apply(t); // Asynchronous result is flatten into a value by this operator.
+     *         }));
      *     }
-     *     return rResults;
+     *     List<R> results = new ArrayList<>(futures.size());
+     *     // This is an approximation, this operator does not provide any ordering guarantees for the results.
+     *     for (Future<R> future : futures) {
+     *         R r = future.get(); // Throws if the processing for this item failed.
+     *         results.add(r);
+     *     }
+     *     return results;
      * }</pre>
+     *
      * @param mapper Function to convert each item emitted by this {@link Publisher} into a {@link Single}.
      * @param <R> Type of items emitted by the returned {@link Publisher}.
      * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
@@ -190,14 +200,23 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
      * transformation in sequential programming similar to:
      * <pre>{@code
-     *     List<T> tResults = resultOfThisPublisher();
-     *     List<R> rResults = ...;
-     *     for (T tResult : tResults) {
-     *         R rResult = mapper.apply(tResult); // Asynchronous result is flatten into a value by this operator.
-     *         rResults.add(rResult);
+     *     ExecutorService e = ...;
+     *     List<Future<R>> futures = ...; // assume this is thread safe
+     *     for (T t : resultOfThisPublisher()) {
+     *         // Note that flatMap process results in parallel.
+     *         futures.add(e.submit(() -> {
+     *             return mapper.apply(t); // Asynchronous result is flatten into a value by this operator.
+     *         }));
      *     }
-     *     return rResults;
+     *     List<R> results = new ArrayList<>(futures.size());
+     *     // This is an approximation, this operator does not provide any ordering guarantees for the results.
+     *     for (Future<R> future : futures) {
+     *         R r = future.get(); // Throws if the processing for this item failed.
+     *         results.add(r);
+     *     }
+     *     return results;
      * }</pre>
+     *
      * @param mapper Function to convert each item emitted by this {@link Publisher} into a {@link Single}.
      * @param maxConcurrency Maximum active {@link Single}s at any time.
      * Even if the number of items requested by a {@link Subscriber} is more than this number, this will never request
@@ -225,24 +244,31 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
      * transformation in sequential programming similar to:
      * <pre>{@code
+     *     Executor e = ...;
      *     List<T> tResults = resultOfThisPublisher();
-     *     List<R> rResults = ...;
-     *     Throwable overallCause = null;
-     *     for (T tResult : tResults) {
-     *         try {
-     *             R rResult = mapper.apply(tResult); // Asynchronous result is flatten into a value by this operator.
-     *             rResults.add(rResult);
-     *         } catch (Throwable cause) {
-     *             if (overallCause == null) [
-     *                 overallCause = cause;
+     *     List<R> rResults = ...; // assume this is thread safe
+     *     List<Throwable> errors = ...;  // assume this is thread safe
+     *     CountDownLatch latch =  new CountDownLatch(tResults.size());
+     *     for (T t : tResults) {
+     *         // Note that flatMap process results in parallel.
+     *         e.execute(() -> {
+     *             try {
+     *                 R r = mapper.apply(t); // Asynchronous result is flatten into a value by this operator.
+     *                 rResults.add(r);
+     *             } catch (Throwable cause) {
+     *                 errors.add(cause);  // Asynchronous error is flatten into an error by this operator.
+     *             } finally {
+     *                 latch.countdown();
      *             }
-     *         }
+     *         });
      *     }
-     *     if (overallCause != null) {
-     *         throw overallCause;
+     *     latch.await();
+     *     if (errors.isEmpty()) {
+     *         return rResults;
      *     }
-     *     return rResults;
-     * }</pre>
+     *     createAndThrowACompositeException(errors);
+    * }</pre>
+     *
      * @param mapper Function to convert each item emitted by this {@link Publisher} into a {@link Single}.
      * @param <R> Type of items emitted by the returned {@link Publisher}.
      * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
@@ -265,27 +291,35 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
      * transformation in sequential programming similar to:
      * <pre>{@code
+     *     Executor e = ...;
      *     List<T> tResults = resultOfThisPublisher();
-     *     List<R> rResults = ...;
-     *     Throwable overallCause = null;
-     *     for (T tResult : tResults) {
-     *         try {
-     *             R rResult = mapper.apply(tResult); // Asynchronous result is flatten into a value by this operator.
-     *             rResults.add(rResult);
-     *         } catch (Throwable cause) {
-     *             if (overallCause == null) [
-     *                 overallCause = cause;
+     *     List<R> rResults = ...; // assume this is thread safe
+     *     List<Throwable> errors = ...;  // assume this is thread safe
+     *     CountDownLatch latch =  new CountDownLatch(tResults.size());
+     *     for (T t : tResults) {
+     *         // Note that flatMap process results in parallel.
+     *         e.execute(() -> {
+     *             try {
+     *                 R r = mapper.apply(t); // Asynchronous result is flatten into a value by this operator.
+     *                 rResults.add(r);
+     *             } catch (Throwable cause) {
+     *                 errors.add(cause);  // Asynchronous error is flatten into an error by this operator.
+     *             } finally {
+     *                 latch.countdown();
      *             }
-     *         }
+     *         });
      *     }
-     *     if (overallCause != null) {
-     *         throw overallCause;
+     *     latch.await();
+     *     if (errors.isEmpty()) {
+     *         return rResults;
      *     }
-     *     return rResults;
+     *     createAndThrowACompositeException(errors);
      * }</pre>
+     *
      * @param mapper Function to convert each item emitted by this {@link Publisher} into a {@link Single}.
      * @param maxConcurrency Maximum active {@link Single}s at any time.
-     *                       Even if the number of items requested by a {@link Subscriber} is more than this number, this will never request more than this number at any point.
+     *                       Even if the number of items requested by a {@link Subscriber} is more than this number,
+     *                       this will never request more than this number at any point.
      * @param <R> Type of items emitted by the returned {@link Publisher}.
      * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
      *
@@ -306,23 +340,26 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * This method provides similar capabilities as expanding each result into a collection and concatenating each
      * collection concurrently in sequential programming:
      * <pre>{@code
-     *     Executor e = ...;
-     *     List<T> tResults = resultOfThisPublisher();
-     *     List<R> rResults = ...; // assume this is thread safe
-     *     List<Future<?>> futures = ...;
-     *     for (T tResult : tResults) {
+     *     ExecutorService e = ...;
+     *     List<Future<List<R>> futures = ...; // assume this is thread safe
+     *     for (T t : resultOfThisPublisher()) {
      *         // Note that flatMap process results in parallel.
      *         futures.add(e.submit(() -> {
-     *             Iterable<? extends R> itr = mapper.apply(tResult);
-     *             itr.forEachRemaining(rResults::add);
+     *             List<R> results = new ArrayList<>();
+     *             Iterable<? extends R> itr = mapper.apply(t);
+     *             itr.forEach(results::add);
+     *             return results;
      *         }));
      *     }
-     *     // This is a simulation, there is no strict sequence in waiting for results.
-     *     for (Future<?> f : futures) {
-     *         f.get();
+     *     List<R> results = new ArrayList<>(futures.size());
+     *     // This is an approximation, this operator does not provide any ordering guarantees for the results.
+     *     for (Future<R> future : futures) {
+     *         R r = future.get(); // Throws if the processing for this item failed.
+     *         results.add(r);
      *     }
-     *     return rResults;
+     *     return results;
      * }</pre>
+     *
      * @param mapper A {@link Function} that returns an {@link Iterable} for each element.
      * @param <R> The elements returned by the {@link Iterable}.
      * @return a {@link Publisher} that flattens each element returned by the {@link Iterable#iterator()} from
@@ -345,14 +382,14 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * This method provides similar capabilities as expanding each result into a collection and concatenating each
      * collection in sequential programming:
      * <pre>{@code
-     *     List<T> tResults = resultOfThisPublisher();
-     *     List<R> rResults = ...;
-     *     for (T tResult : tResults) {
-     *         Iterable<? extends R> itr = mapper.apply(tResult);
-     *         itr.forEachRemaining(rResults::add);
+     *     List<R> results = ...;
+     *     for (T t : resultOfThisPublisher()) {
+     *         Iterable<? extends R> itr = mapper.apply(t);
+     *         itr.forEach(results::add);
      *     }
-     *     return rResults;
+     *     return results;
      * }</pre>
+     *
      * @param mapper A {@link Function} that returns an {@link Iterable} for each element.
      * @param <R> The elements returned by the {@link Iterable}.
      * @return a {@link Publisher} that flattens each element returned by the {@link Iterable#iterator()} from
@@ -364,11 +401,37 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     }
 
     /**
-     * Invokes the {@code onSuccess} {@link Consumer} argument when {@link Subscriber#onComplete()} is called for
+     * Invokes the {@code onNext} {@link Consumer} argument when {@link Subscriber#onNext(Object)} is called for
      * {@link Subscriber}s of the returned {@link Publisher}.
      * <p>
-     * The order in which {@code onSuccess} will be invoked relative to {@link Subscriber#onComplete()} is undefined. If
-     * you need strict ordering see {@link #doBeforeComplete(Runnable)} and {@link #doAfterComplete(Runnable)}.
+     * The order in which {@code onNext} will be invoked relative to {@link Subscriber#onNext(Object)} is undefined. If
+     * you need strict ordering see {@link #doBeforeNext(Consumer)} and {@link #doAfterNext(Consumer)}.
+     * <p>
+     * From a sequential programming point of view this method is roughly equivalent to the following:
+     * <pre>{@code
+     *  for (T t: resultOfThisPublisher()) {
+     *      // NOTE: The order of operations here is not guaranteed by this method!
+     *      processNext(t);
+     *      onNext.accept(t);
+     *  }
+     * }</pre>
+     *
+     * @param onNext Invoked when {@link Subscriber#onNext(Object)} is called for {@link Subscriber}s of the returned
+     * {@link Publisher}. <strong>MUST NOT</strong> throw.
+     * @return The new {@link Publisher}.
+     * @see #doBeforeNext(Consumer)
+     * @see #doAfterNext(Consumer)
+     */
+    public final Publisher<T> doOnNext(Consumer<T> onNext) {
+        return doAfterNext(onNext);
+    }
+
+    /**
+     * Invokes the {@code onComplete} {@link Runnable} argument when {@link Subscriber#onComplete()} is called for
+     * {@link Subscriber}s of the returned {@link Publisher}.
+     * <p>
+     * The order in which {@code onComplete} will be invoked relative to {@link Subscriber#onComplete()} is undefined.
+     * If you need strict ordering see {@link #doBeforeComplete(Runnable)} and {@link #doAfterComplete(Runnable)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -377,14 +440,15 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *  onSuccess.accept(results);
      *  nextOperation(results);
      * }</pre>
-     * @param onComplete Invoked when {@link io.servicetalk.concurrent.Single.Subscriber#onSuccess(Object)} is called for
-     * {@link io.servicetalk.concurrent.Single.Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
+     *
+     * @param onComplete Invoked when {@link Subscriber#onComplete()} is called for {@link Subscriber}s of the
+     * returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      * @see #doBeforeComplete(Runnable)
      * @see #doAfterComplete(Runnable)
      */
     public final Publisher<T> doOnComplete(Runnable onComplete) {
-        return doBeforeComplete(onComplete);
+        return doAfterComplete(onComplete);
     }
 
     /**
@@ -401,10 +465,11 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *    List<T> results = resultOfThisPublisher();
      *  } catch (Throwable cause) {
      *      // NOTE: The order of operations here is not guaranteed by this method!
-     *      onError.accept(cause);
      *      nextOperation(cause);
+     *      onError.accept(cause);
      *  }
      * }</pre>
+     *
      * @param onError Invoked <strong>before</strong> {@link Subscriber#onError(Throwable)} is called for
      * {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
@@ -412,11 +477,12 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see #doAfterError(Consumer)
      */
     public final Publisher<T> doOnError(Consumer<Throwable> onError) {
-        return doBeforeError(onError);
+        return doAfterError(onError);
     }
 
     /**
-     * Invokes the {@code doFinally} {@link Runnable} argument when any of the following terminal methods are called:
+     * Invokes the {@code doFinally} {@link Runnable} argument exactly once, when any of the following terminal methods
+     * are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)}</li>
@@ -437,7 +503,8 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *      doFinally.run();
      *  }
      * }</pre>
-     * @param doFinally Invoked when any of the following terminal methods are called:
+     *
+     * @param doFinally Invoked exactly once, when any of the following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)}</li>
@@ -462,7 +529,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> doOnRequest(LongConsumer onRequest) {
-        return doBeforeRequest(onRequest);
+        return doAfterRequest(onRequest);
     }
 
     /**
@@ -478,7 +545,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see #doAfterCancel(Runnable)
      */
     public final Publisher<T> doOnCancel(Runnable onCancel) {
-        return doBeforeCancel(onCancel);
+        return doAfterCancel(onCancel);
     }
 
     /**
@@ -566,6 +633,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *     results.addAll(resultOfPublisher(next));
      *     return results;
      * }</pre>
+     *
      * @param next {@link Publisher}'s items that are emitted after {@code this} {@link Publisher} terminates
      * successfully.
      * @return A {@link Publisher} that emits all items from this {@link Publisher} and {@code next} {@link Publisher}.
@@ -587,6 +655,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *     results.add(resultOfSingle(next));
      *     return results;
      * }</pre>
+     *
      * @param next {@link Single}'s result that is emitted after {@code this} {@link Publisher} terminates successfully.
      * @return A {@link Publisher} that emits all items from this {@link Publisher} and the result of {@code next}
      * {@link Single}.
@@ -609,6 +678,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *     resultOfCompletable(next);
      *     return results;
      * }</pre>
+     *
      * @param next {@link Completable} to wait for completion after {@code this} {@link Publisher} terminates
      * successfully.
      * @return A {@link Publisher} that emits all items from this {@link Publisher} and then awaits successful
@@ -630,24 +700,28 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * is similar to:
      * <pre>{@code
      *     public List<T> execute() {
-     *         return execute(0);
+     *         List<T> results = ...;
+     *         return execute(0, results);
      *     }
      *
-     *     private List<T> execute(int attempts) {
+     *     private List<T> execute(int attempts, List<T> results) {
      *         try {
-     *             // This is a simulation! In reality some results may be visible before an error occurs, because this
-     *             // operator doesn't use a List (which requires all data to be present), and instead provides results
-     *             // as they become available.
-     *             return resultOfThisPublisher();
+     *             Iterator<T> itr = resultOfThisPublisher();
+     *             while (itr.hasNext()) {
+     *                 T t = itr.next(); // Any iteration with the Iterator may throw
+     *                 results.add(t);
+     *             }
+     *             return results;
      *         } catch (Throwable cause) {
      *             if (shouldRetry.apply(attempts + 1, cause)) {
-     *                 return execute(attempts + 1);
+     *                 return execute(attempts + 1, results);
      *             } else {
      *                 throw cause;
      *             }
      *         }
      *     }
      * }</pre>
+     *
      * @param shouldRetry {@link BiIntPredicate} that given the retry count and the most recent {@link Throwable}
      * emitted from this
      * {@link Publisher} determines if the operation should be retried.
@@ -672,25 +746,29 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * and in sequential programming is similar to:
      * <pre>{@code
      *     public List<T> execute() {
-     *         return execute(0);
+     *         List<T> results = ...;
+     *         return execute(0, results);
      *     }
      *
-     *     private List<T> execute(int attempts) {
+     *     private List<T> execute(int attempts, List<T> results) {
      *         try {
-     *             // This is a simulation! In reality some results may be visible before an error occurs, because this
-     *             // operator doesn't use a List (which requires all data to be present), and instead provides results
-     *             // as they become available.
-     *             return resultOfThisPublisher();
+     *             Iterator<T> itr = resultOfThisPublisher();
+     *             while (itr.hasNext()) {
+     *                 T t = itr.next(); // Any iteration with the Iterator may throw
+     *                 results.add(t);
+     *             }
+     *             return results;
      *         } catch (Throwable cause) {
      *             try {
      *                 shouldRetry.apply(attempts + 1, cause); // Either throws or completes normally
-     *                 execute(attempts + 1);
+     *                 execute(attempts + 1, results);
      *             } catch (Throwable ignored) {
      *                 throw cause;
      *             }
      *         }
      *     }
      * }</pre>
+     *
      * @param retryWhen {@link BiIntFunction} that given the retry count and the most recent {@link Throwable} emitted
      * from this {@link Publisher} returns a {@link Completable}. If this {@link Completable} emits an error, that error
      * is emitted from the returned {@link Publisher}, otherwise, original {@link Publisher} is re-subscribed when this
@@ -722,6 +800,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *     } while (shouldRepeat.test(++i));
      *     return results;
      * }</pre>
+     *
      * @param shouldRepeat {@link IntPredicate} that given the repeat count determines if the operation should be
      * repeated.
      * @return A {@link Publisher} that emits all items from this {@link Publisher} and re-subscribes when it completes
@@ -756,6 +835,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *     }
      *     return results;
      * }</pre>
+     *
      * @param repeatWhen {@link IntFunction} that given the repeat count returns a {@link Completable}.
      * If this {@link Completable} emits an error repeat is terminated, otherwise, original {@link Publisher} is
      * re-subscribed when this {@link Completable} completes.
@@ -782,17 +862,17 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * This method provides a means to take a limited number of results from this {@link Publisher} and in sequential
      * programming is similar to:
      * <pre>{@code
-     *     List<T> results = resultOfThisPublisher();
-     *     List<T> takeResults = ...;
+     *     List<T> results = ...;
      *     int i = 0;
-     *     for (T result : results) {
+     *     for (T t : resultOfThisPublisher()) {
      *         if (++i > numElements) {
      *             break;
      *         }
-     *         takeResults.add(result);
+     *         results.add(t);
      *     }
-     *     return takeResults;
+     *     return results;
      * }</pre>
+     *
      * @param numElements Number of elements to take.
      * @return A {@link Publisher} that emits at most {@code numElements} elements from {@code this} {@link Publisher}.
      *
@@ -809,16 +889,16 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * This method provides a means to take a limited number of results from this {@link Publisher} and in sequential
      * programming is similar to:
      * <pre>{@code
-     *     List<T> results = resultOfThisPublisher();
-     *     List<T> takeResults = ...;
-     *     for (T result : results) {
+     *     List<T> results = ...;
+     *     for (T t : resultOfThisPublisher()) {
      *         if (!predicate.test(result)) {
      *             break;
      *         }
-     *         takeResults.add(result);
+     *         results.add(t);
      *     }
-     *     return takeResults;
+     *     return results;
      * }</pre>
+     *
      * @param predicate {@link Predicate} that is checked before emitting any item to a {@link Subscriber}.
      * If this predicate returns {@code true}, that item is emitted, else {@link Subscription} is cancelled.
      * @return A {@link Publisher} that only emits the items as long as the {@link Predicate#test(Object)} method
@@ -836,16 +916,16 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * This method provides a means to take a limited number of results from this {@link Publisher} and in sequential
      * programming is similar to:
      * <pre>{@code
-     *     List<T> results = resultOfThisPublisher();
-     *     List<T> takeResults = ...;
-     *     for (T result : results) {
+     *     List<T> results = ...;
+     *     for (T t : resultOfThisPublisher()) {
      *         if (isCompleted(until)) {
      *             break;
      *         }
-     *         takeResults.add(result);
+     *         takeResults.add(t);
      *     }
-     *     return takeResults;
+     *     return results;
      * }</pre>
+     *
      * @param until {@link Completable}, termination of which, terminates the returned {@link Publisher}.
      * @return A {@link Publisher} that only emits the items till {@code until} {@link Completable} is completed.
      *
@@ -883,19 +963,19 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * <p>
      * In sequential programming this is similar to the following:
      * <pre>{@code
-     *     List<T> results = resultOfThisPublisher();
-     *     Map<Key, List<T>> groupedResults = ...;
-     *     for (T result : results) {
+     *     Map<Key, List<T>> results = ...;
+     *     for (T t : resultOfThisPublisher()) {
      *         Key k = keySelector.apply(result);
-     *         List<T> v = map.get(k);
+     *         List<T> v = results.get(k);
      *         if (v == null) {
      *             v = // new List
-     *             map.put(k, v);
+     *             results.put(k, v);
      *         }
      *         v.add(result);
      *     }
-     *     return groupedResults;
+     *     return results;
      * }</pre>
+     *
      * @param keySelector {@link Function} to assign an item emitted by this {@link Publisher} to a
      * {@link GroupedPublisher}.
      * @param groupMaxQueueSize Maximum number of new groups that will be queued due to the {@link Subscriber} of the
@@ -939,19 +1019,19 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * <p>
      * In sequential programming this is similar to the following:
      * <pre>{@code
-     *     List<T> results = resultOfThisPublisher();
-     *     Map<Key, List<T>> groupedResults = ...;
-     *     for (T result : results) {
+     *     Map<Key, List<T>> results = ...;
+     *     for (T t : resultOfThisPublisher()) {
      *         Key k = keySelector.apply(result);
-     *         List<T> v = map.get(k);
+     *         List<T> v = results.get(k);
      *         if (v == null) {
      *             v = // new List
-     *             map.put(k, v);
+     *             results.put(k, v);
      *         }
      *         v.add(result);
      *     }
-     *     return groupedResults;
+     *     return results;
      * }</pre>
+     *
      * @param keySelector {@link Function} to assign an item emitted by this {@link Publisher} to a
      * {@link GroupedPublisher}.
      * @param groupMaxQueueSize Maximum number of new groups that will be queued due to the {@link Subscriber} of the
@@ -974,21 +1054,21 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * <p>
      * In sequential programming this is similar to the following:
      * <pre>{@code
-     *     List<T> results = resultOfThisPublisher();
-     *     Map<Key, List<T>> groupedResults = ...;
-     *     for (T result : results) {
-     *         Iterator<Key> kItr = keySelector.apply(result);
-     *         for (Key k : kItr) {
-     *             List<T> v = map.get(k);
+     *     Map<Key, List<T>> results = ...;
+     *     for (T t : resultOfThisPublisher()) {
+     *         Iterator<Key> keys = keySelector.apply(result);
+     *         for (Key key : keys) {
+     *             List<T> v = results.get(key);
      *             if (v == null) {
      *                 v = // new List
-     *                 map.put(k, v);
+     *                 results.put(key, v);
      *             }
      *             v.add(result);
      *         }
      *     }
-     *     return groupedResults;
+     *     return results;
      * }</pre>
+     *
      * @param keySelector {@link Function} to assign an item emitted by this {@link Publisher} to multiple
      * {@link GroupedPublisher}s.
      * @param groupMaxQueueSize Maximum number of new groups that will be queued due to the {@link Subscriber} of the
@@ -1009,21 +1089,21 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * <p>
      * In sequential programming this is similar to the following:
      * <pre>{@code
-     *     List<T> results = resultOfThisPublisher();
-     *     Map<Key, List<T>> groupedResults = ...;
-     *     for (T result : results) {
-     *         Iterator<Key> kItr = keySelector.apply(result);
-     *         for (Key k : kItr) {
-     *             List<T> v = map.get(k);
+     *     Map<Key, List<T>> results = ...;
+     *     for (T t : resultOfThisPublisher()) {
+     *         Iterator<Key> keys = keySelector.apply(result);
+     *         for (Key key : keys) {
+     *             List<T> v = results.get(key);
      *             if (v == null) {
      *                 v = // new List
-     *                 map.put(k, v);
+     *                 results.put(key, v);
      *             }
      *             v.add(result);
      *         }
      *     }
-     *     return groupedResults;
+     *     return results;
      * }</pre>
+     *
      * @param keySelector {@link Function} to assign an item emitted by this {@link Publisher} to multiple
      * {@link GroupedPublisher}s.
      * @param groupMaxQueueSize Maximum number of new groups that will be queued due to the {@link Subscriber} of the
@@ -1060,6 +1140,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *     }
      *     return multiResults;
      * }</pre>
+     *
      * @param expectedSubscribers The number of expected {@link #subscribe(Subscriber)} calls required on the returned
      * {@link Publisher} before calling {@link #subscribe(Subscriber)} on this {@link Publisher}.
      * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} calls to
@@ -1089,6 +1170,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *     }
      *     return multiResults;
      * }</pre>
+     *
      * @param expectedSubscribers The number of expected {@link #subscribe(Subscriber)} calls required on the returned
      *          {@link Publisher} before calling {@link #subscribe(Subscriber)} on this {@link Publisher}.
      * @param maxQueueSize The maximum number of {@link Subscriber#onNext(Object)} events that will be queued if there is no
@@ -1125,6 +1207,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *  }
      *  nextOperation(results);
      * }</pre>
+     *
      * @param onNext Invoked <strong>before</strong> {@link Subscriber#onNext(Object)} is called for {@link Subscriber}s
      * of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
@@ -1148,6 +1231,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *      nextOperation(cause);
      *  }
      * }</pre>
+     *
      * @param onError Invoked <strong>before</strong> {@link Subscriber#onError(Throwable)} is called for
      * {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
@@ -1168,6 +1252,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *   onComplete.run();
      *   nextOperation(results);
      * }</pre>
+     *
      * @param onComplete Invoked <strong>before</strong> {@link Subscriber#onComplete()} is called for
      * {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
@@ -1225,6 +1310,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *      nextOperation(); // Maybe notifying of cancellation, or termination
      *  }
      * }</pre>
+     *
      * @param doFinally Invoked <strong>before</strong> any of the following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()}</li>
@@ -1298,6 +1384,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *      onNext.accept(result);
      *  }
      * }</pre>
+     *
      * @param onNext Invoked <strong>after</strong> {@link Subscriber#onNext(Object)} is called for {@link Subscriber}s
      * of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
@@ -1321,6 +1408,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *      onError.accept(cause);
      *  }
      * }</pre>
+     *
      * @param onError Invoked <strong>after</strong> {@link Subscriber#onError(Throwable)} is called for
      * {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
@@ -1341,6 +1429,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *   nextOperation(results);
      *   onComplete.run();
      * }</pre>
+     *
      * @param onComplete Invoked <strong>after</strong> {@link Subscriber#onComplete()} is called for
      * {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
@@ -1398,6 +1487,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *      doFinally.run();
      *  }
      * }</pre>
+     *
      * @param doFinally Invoked <strong>after</strong> any of the following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()}</li>
@@ -1456,6 +1546,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *  List<T> results = resultOfThisPublisher();
      *  results.iterator().forEachRemaining(forEach);
      * }</pre>
+     *
      * @param forEach {@link Consumer} to invoke for each {@link Subscriber#onNext(Object)}.
      * @return {@link Cancellable} used to invoke {@link Subscription#cancel()} on the parameter of
      * {@link Subscriber#onSubscribe(Subscription)} for this {@link Publisher}.
@@ -1584,6 +1675,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *        .liftSynchronous(original -> modified)
      *        .filter(..) // B
      * }</pre>
+     *
      * The {@code original -> modified} "operator" <strong>MUST</strong> be "synchronous" in that it does not interact
      * with the original {@link Subscriber} from outside the modified {@link Subscriber} or {@link Subscription}
      * threads. That is to say this operator will not impact the {@link Executor} constraints already in place between
@@ -1624,6 +1716,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * </ul>
      * This behavior exists to prevent blocking code negatively impacting the thread that powers the upstream source of
      * data (e.g. an EventLoop).
+     *
      * @param operator The custom operator logic. The input is the "original" {@link Subscriber} to this
      * {@link Publisher} and the return is the "modified" {@link Subscriber} that provides custom operator business
      * logic.

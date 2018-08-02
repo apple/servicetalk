@@ -79,6 +79,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *         nextFactory.apply(cause);
      *     }
      * }</pre>
+     *
      * @param nextFactory Returns the next {@link Completable}, if this {@link Completable} emits an error.
      * @return The new {@link Completable}.
      */
@@ -87,19 +88,20 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     }
 
     /**
-     * Invokes the {@code onSuccess} {@link Consumer} argument when {@link Subscriber#onComplete()} is called for
+     * Invokes the {@code onComplete} {@link Runnable} argument when {@link Subscriber#onComplete()} is called for
      * {@link Subscriber}s of the returned {@link Completable}.
      * <p>
-     * The order in which {@code onSuccess} will be invoked relative to {@link Subscriber#onComplete()} is
+     * The order in which {@code onComplete} will be invoked relative to {@link Subscriber#onComplete()} is
      * undefined. If you need strict ordering see {@link #doBeforeComplete(Runnable)} and
      * {@link #doAfterComplete(Runnable)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
      *  // NOTE: The order of operations here is not guaranteed by this method!
-     *  onComplete.run();
      *  nextOperation(result);
+     *  onComplete.run();
      * }</pre>
+     *
      * @param onComplete Invoked when {@link Subscriber#onComplete()} is called for {@link Subscriber}s of the returned
      * {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
@@ -107,7 +109,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @see #doAfterComplete(Runnable)
      */
     public final Completable doOnComplete(Runnable onComplete) {
-        return doBeforeComplete(onComplete);
+        return doAfterComplete(onComplete);
     }
 
     /**
@@ -124,10 +126,11 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *    resultOfThisCompletable();
      *  } catch (Throwable cause) {
      *      // NOTE: The order of operations here is not guaranteed by this method!
-     *      onError.accept(cause);
      *      nextOperation(cause);
+     *      onError.accept(cause);
      *  }
      * }</pre>
+     *
      * @param onError Invoked when {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the
      * returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
@@ -135,11 +138,12 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @see #doAfterError(Consumer)
      */
     public final Completable doOnError(Consumer<Throwable> onError) {
-        return doBeforeError(onError);
+        return doAfterError(onError);
     }
 
     /**
-     * Invokes the {@code doFinally} {@link Runnable} argument when any of the following terminal methods are called:
+     * Invokes the {@code doFinally} {@link Runnable} argument exactly once, when any of the following terminal methods
+     * are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)}</li>
@@ -160,7 +164,8 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *      doFinally.run();
      *  }
      * }</pre>
-     * @param doFinally Invoked when any of the following terminal methods are called:
+     *
+     * @param doFinally Invoked exactly once, when any of the following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)}</li>
@@ -189,7 +194,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @see #doAfterCancel(Runnable)
      */
     public final Completable doOnCancel(Runnable onCancel) {
-        return doBeforeCancel(onCancel);
+        return doAfterCancel(onCancel);
     }
 
     /**
@@ -279,6 +284,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *     resultOfThisCompletable();
      *     nextCompletable();
      * }</pre>
+     *
      * @param next {@link Completable} to subscribe after this {@link Completable} terminates successfully.
      * @return A {@link Completable} that emits the terminal signal of {@code next} {@link Completable}, after this
      * {@link Completable} has terminated successfully.
@@ -299,6 +305,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *     T result = resultOfNextSingle();
      *     return result;
      * }</pre>
+     *
      * @param next {@link Single} to subscribe after this {@link Completable} terminates successfully.
      * @param <T> Type of result of the returned {@link Single}.
      * @return A {@link Single} that emits the result of {@code next} {@link Single}, after this {@link Completable}
@@ -321,6 +328,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *     results.addAll(nextStream());
      *     return results;
      * }</pre>
+     *
      * @param next {@link Publisher} to subscribe after this {@link Completable} terminates successfully.
      * @param <T> Type of objects emitted from the returned {@link Publisher}.
      * @return A {@link Publisher} that emits all items emitted from {@code next} {@link Publisher}, after this
@@ -338,19 +346,18 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * This method provides a means to merge multiple asynchronous sources, fails-fast in the presence of any errors,
      * and in sequential programming is similar to:
      * <pre>{@code
-     *     // It is assumed that this executor has sufficient concurrency to process all Runnables simultaneously
-     *     Executor e = ...;
-     *     List<Future<?>> futures = ...;
+     *     ExecutorService e = ...;
+     *     List<Future<Void>> futures = ...;
      *     futures.add(e.submit(() -> resultOfThisCompletable()));
      *     for (Completable c : other) {
      *         futures.add(e.submit(() -> resultOfCompletable(c));
      *     }
-     *     // This is a simplification! There is no sequencing of waiting for results. In the event of failure on any
-     *     // operation, imagine the exception is immediately thrown.
-     *     for (Future<?> f : futures) {
-     *         f.get();
+     *     // This is an approximation, this operator does not provide any ordering guarantees for the results.
+     *     for (Future<Void> future : futures) {
+     *         future.get(); // Throws if the processing for this item failed.
      *     }
      * }</pre>
+     *
      * @param other {@link Completable}s to merge.
      * @return {@link Completable} that terminates successfully when this and all {@code other} {@link Completable}s
      * complete or terminates with an error when any one terminates with an error.
@@ -367,19 +374,18 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * This method provides a means to merge multiple asynchronous sources, fails-fast in the presence of any errors,
      * and in sequential programming is similar to:
      * <pre>{@code
-     *     // It is assumed that this executor has sufficient concurrency to process all Runnables simultaneously
-     *     Executor e = ...;
-     *     List<Future<?>> futures = ...;
+     *     ExecutorService e = ...;
+     *     List<Future<Void>> futures = ...;
      *     futures.add(e.submit(() -> resultOfThisCompletable()));
      *     for (Completable c : other) {
      *         futures.add(e.submit(() -> resultOfCompletable(c));
      *     }
-     *     // This is a simplification! There is no sequencing in waiting for results. In the event of failure on any
-     *     // operation, imagine the exception is immediately thrown.
-     *     for (Future<?> f : futures) {
-     *         f.get();
+     *     // This is an approximation, this operator does not provide any ordering guarantees for the results.
+     *     for (Future<Void> future : futures) {
+     *         future.get(); // Throws if the processing for this item failed.
      *     }
      * }</pre>
+     *
      * @param other {@link Completable}s to merge.
      * @return {@link Completable} that terminates successfully when this and all {@code other} {@link Completable}s
      * complete or terminates with an error when any one terminates with an error.
@@ -396,15 +402,14 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * It terminates with an error when any one of this {@link Completable} or passed {@link Publisher} terminates with
      * an error.
      * <pre>{@code
-     *     // It is assumed that this executor has sufficient concurrency to process all Runnables simultaneously
-     *     Executor e = ...;
+     *     ExecutorService e = ...;
      *     Future<?> future1 = e.submit(() -> resultOfThisCompletable()));
      *     Future<?> future2 = e.submit(() -> resultOfMergeWithStream());
-     *     // This is a simplification! There is no sequencing in waiting for results. In the event of failure on any
-     *     // operation, imagine the exception is immediately thrown.
-     *     future1.get();
-     *     future2.get();
+     *     // This is an approximation, this operator does not provide any ordering guarantees for the results.
+     *     future1.get(); // Throws if this Completable failed.
+     *     future2.get(); // Throws if mergeWith Publisher failed.
      * }</pre>
+     *
      * @param mergeWith the {@link Publisher} to merge in
      * @param <T> The value type of the resulting {@link Publisher}.
      * @return {@link Publisher} that emits all items emitted by the passed {@link Publisher} and terminates
@@ -427,16 +432,15 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * This method provides a means to merge multiple asynchronous sources, delays throwing in the presence of any
      * errors, and in sequential programming is similar to:
      * <pre>{@code
-     *     // It is assumed that this executor has sufficient concurrency to process all Runnables simultaneously
-     *     Executor e = ...;
-     *     List<Future<?>> futures = ...;
+     *     ExecutorService e = ...;
+     *     List<Future<Void>> futures = ...;
      *     futures.add(e.submit(() -> resultOfThisCompletable()));
      *     for (Completable c : other) {
      *         futures.add(e.submit(() -> resultOfCompletable(c));
      *     }
-     *     // This is a simplification! There is no sequencing of waiting for results.
      *     Throwable overallCause = null;
-     *     for (Future<?> f : futures) {
+     *     // This is an approximation, this operator does not provide any ordering guarantees for the results.
+     *     for (Future<Void> future : futures) {
      *         try {
      *             f.get();
      *         } catch (Throwable cause) {
@@ -449,6 +453,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *         throw overallCause;
      *     }
      * }</pre>
+     *
      * @param other {@link Completable}s to merge.
      * @return {@link Completable} that terminates after {@code this} {@link Completable} and all {@code other}
      * {@link Completable}s. If all involved {@link Completable}s terminate successfully then the return value will
@@ -468,16 +473,15 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * This method provides a means to merge multiple asynchronous sources, delays throwing in the presence of any
      * errors, and in sequential programming is similar to:
      * <pre>{@code
-     *     // It is assumed that this executor has sufficient concurrency to process all Runnables simultaneously
-     *     Executor e = ...;
-     *     List<Future<?>> futures = ...;
+     *     ExecutorService e = ...;
+     *     List<Future<Void>> futures = ...;
      *     futures.add(e.submit(() -> resultOfThisCompletable()));
      *     for (Completable c : other) {
      *         futures.add(e.submit(() -> resultOfCompletable(c));
      *     }
-     *     // This is a simplification! There is no sequencing of waiting for results.
      *     Throwable overallCause = null;
-     *     for (Future<?> f : futures) {
+     *     // This is an approximation, this operator does not provide any ordering guarantees for the results.
+     *     for (Future<Void> future : futures) {
      *         try {
      *             f.get();
      *         } catch (Throwable cause) {
@@ -490,6 +494,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *         throw overallCause;
      *     }
      * }</pre>
+     *
      * @param other {@link Completable}s to merge.
      * @return {@link Completable} that terminates after {@code this} {@link Completable} and all {@code other}
      * {@link Completable}s. If all involved {@link Completable}s terminate successfully then the return value will
@@ -523,6 +528,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *         }
      *     }
      * }</pre>
+     *
      * @param shouldRetry {@link BiIntPredicate} that given the retry count and the most recent {@link Throwable}
      * emitted from this
      * {@link Completable} determines if the operation should be retried.
@@ -560,6 +566,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *         }
      *     }
      * }</pre>
+     *
      * @param retryWhen {@link BiIntFunction} that given the retry count and the most recent {@link Throwable} emitted
      * from this {@link Completable} returns a {@link Completable}. If this {@link Completable} emits an error, that
      * error is emitted from the returned {@link Completable}, otherwise, original {@link Completable} is re-subscribed
@@ -585,6 +592,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *         resultOfThisCompletable();
      *     } while (shouldRepeat.test(++i));
      * }</pre>
+     *
      * @param shouldRepeat {@link IntPredicate} that given the repeat count determines if the operation should be
      * repeated.
      * @return A {@link Completable} that completes after all re-subscriptions completes.
@@ -613,6 +621,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *         }
      *     }
      * }</pre>
+     *
      * @param repeatWhen {@link IntFunction} that given the repeat count returns a {@link Completable}.
      * If this {@link Completable} emits an error repeat is terminated, otherwise, original {@link Completable} is
      * re-subscribed when this {@link Completable} completes.
@@ -648,6 +657,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *  onComplete.run();
      *  nextOperation();
      * }</pre>
+     *
      * @param onComplete Invoked <strong>before</strong> {@link Subscriber#onComplete()} is called for
      * {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
@@ -669,6 +679,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *      nextOperation(cause);
      *  }
      * }</pre>
+     *
      * @param onError Invoked <strong>before</strong> {@link Subscriber#onError(Throwable)} is called for
      * {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
@@ -706,6 +717,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *      nextOperation(); // Maybe notifying of cancellation, or termination
      *  }
      * }</pre>
+     *
      * @param doFinally Invoked <strong>before</strong> any of the following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()}</li>
@@ -756,6 +768,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *  nextOperation();
      *  onComplete.run();
      * }</pre>
+     *
      * @param onComplete Invoked <strong>after</strong> {@link Subscriber#onComplete()} is called for
      * {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
@@ -777,6 +790,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *      onError.accept(cause);
      *  }
      * }</pre>
+     *
      * @param onError Invoked <strong>after</strong> {@link Subscriber#onError(Throwable)} is called for
      * {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
@@ -816,6 +830,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *      doFinally.run();
      *  }
      * }</pre>
+     *
      * @param doFinally Invoked <strong>after</strong> any of the following terminal methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()}</li>
@@ -860,6 +875,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * threads. That is to say this operator will not impact the {@link Executor} constraints already in place between
      * <i>A</i> and <i>B</i> above. If you need asynchronous behavior, or are unsure, see
      * {@link #liftAsynchronous(CompletableOperator)}.
+     *
      * @param operator The custom operator logic. The input is the "original" {@link Subscriber} to this
      * {@link Completable} and the return is the "modified" {@link Subscriber} that provides custom operator business
      * logic.
@@ -883,6 +899,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      *        .liftAsynchronous(original -> modified)
      *        .doAfterFinally(..) // B
      * }</pre>
+     *
      * The {@code original -> modified} "operator" MAY be "asynchronous" in that it may interact with the original
      * {@link Subscriber} from outside the modified {@link Subscriber} or {@link Cancellable} threads. More
      * specifically:
