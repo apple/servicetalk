@@ -20,29 +20,38 @@ import org.junit.Test;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class WriteSingleSubscriberTest extends AbstractWriteTest {
 
+    CloseHandler closeHandler = mock(CloseHandler.class);
+
     @Test
     public void testSuccess() {
-        WriteSingleSubscriber listener = new WriteSingleSubscriber(channel, completableSubscriber);
+        WriteSingleSubscriber listener = new WriteSingleSubscriber(channel, completableSubscriber, closeHandler);
         listener.onSuccess("Hello");
         channel.flushOutbound();
         verify(completableSubscriber).onComplete();
+        verifyZeroInteractions(closeHandler);
         assertThat("Message not written.", channel.readOutbound(), is("Hello"));
     }
 
     @Test(expected = NullPointerException.class)
     public void testNullResult() {
-        WriteSingleSubscriber listener = new WriteSingleSubscriber(channel, completableSubscriber);
+        WriteSingleSubscriber listener = new WriteSingleSubscriber(channel, completableSubscriber, closeHandler);
         listener.onSuccess(null);
+        verifyZeroInteractions(closeHandler);
     }
 
     @Test
     public void testError() {
-        WriteSingleSubscriber listener = new WriteSingleSubscriber(channel, completableSubscriber);
+
+        WriteSingleSubscriber listener = new WriteSingleSubscriber(channel, completableSubscriber, closeHandler);
         listener.onError(DELIBERATE_EXCEPTION);
         verify(completableSubscriber).onError(DELIBERATE_EXCEPTION);
+        verify(closeHandler).closeChannelOutbound(any());
     }
 }

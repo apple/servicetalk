@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 
-import io.netty.channel.ChannelOutboundInvoker;
+import io.netty.channel.Channel;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
@@ -28,15 +28,18 @@ import javax.annotation.Nullable;
 final class WriteSingleSubscriber implements Single.Subscriber<Object>, NettyConnection.WritableListener {
     private static final AtomicIntegerFieldUpdater<WriteSingleSubscriber> terminatedUpdater =
             AtomicIntegerFieldUpdater.newUpdater(WriteSingleSubscriber.class, "terminated");
-    private final ChannelOutboundInvoker channel;
+    private final Channel channel;
     private final Completable.Subscriber subscriber;
+    private final CloseHandler closeHandler;
     private final SequentialCancellable sequentialCancellable;
     @SuppressWarnings("unused")
     private volatile int terminated;
 
-    WriteSingleSubscriber(ChannelOutboundInvoker channel, Completable.Subscriber subscriber) {
+    WriteSingleSubscriber(Channel channel, Completable.Subscriber subscriber,
+                          CloseHandler closeHandler) {
         this.channel = channel;
         this.subscriber = subscriber;
+        this.closeHandler = closeHandler;
         sequentialCancellable = new SequentialCancellable();
     }
 
@@ -86,6 +89,7 @@ final class WriteSingleSubscriber implements Single.Subscriber<Object>, NettyCon
 
     private void notifyError(Throwable t) {
         if (terminatedUpdater.compareAndSet(this, 0, 1)) {
+            closeHandler.closeChannelOutbound(channel);
             subscriber.onError(t);
         }
     }

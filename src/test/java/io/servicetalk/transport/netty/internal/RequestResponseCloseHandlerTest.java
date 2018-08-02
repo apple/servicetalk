@@ -23,11 +23,13 @@ import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelException;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoop;
+import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.socket.ChannelInputShutdownEvent;
 import io.netty.channel.socket.ChannelInputShutdownReadComplete;
 import io.netty.channel.socket.ChannelOutputShutdownEvent;
@@ -54,6 +56,7 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nullable;
@@ -97,17 +100,24 @@ import static io.servicetalk.transport.netty.internal.RequestResponseCloseHandle
 import static java.lang.Integer.toHexString;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.Arrays.asList;
+import static java.util.Objects.hash;
+import static java.util.stream.Collectors.toSet;
+import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(Enclosed.class)
@@ -187,19 +197,21 @@ public class RequestResponseCloseHandlerTest {
                     {C, e(OB, OE, OB, OC, OE, OH, IB, IE, IB, IE, FC), PCO, "pipelined, closing outbound"},
                     {C, e(OB, OE, OB, OC, IB, OE, OH, IE, IB, IE, FC), PCO, "pipelined, full dup, closing outbound"},
                     {C, e(OB, IB, IC, OE, OH, IE, FC), PCI, "full dup, closing inbound"},
-                    {C, e(OB, OE, IB, OB, IC, OH, IE, FC), PCI, "server closes 1st request, 2nd request discarded"},
+                    {C, e(OB, OE, IB, OB, IC, SR, OH, IE, FC), PCI, "server closes 1st request, 2nd request discarded"},
                     {C, e(OB, IB, OE, IC, OH, IE, FC), PCI, "pipelined, closing inbound"},
                     {C, e(OB, IB, IC, IE, OE, FC), PCI, "pipelined, full dup, closing inbound"},
                     {C, e(OB, OE, IB, IC, OH, IE, FC), PCI, "sequential, closing inbound"},
                     {C, e(OB, UC, OE, OH, IB, IE, FC), UCO, "sequential, user close"},
+                    {C, e(OB, IB, OE, OB, UC, OE, OH, IE, IB, IE, FC), UCO, "pipelined req graceful close"},
                     {C, e(OB, IB, UC, OE, OH, IE, FC), UCO, "interleaved, user close"},
                     {C, e(OB, OE, IB, IE, UC, FC), UCO, "sequential, idle, user close"},
                     {C, e(OB, IB, OE, IE, UC, FC), UCO, "interleaved, idle, user close"},
                     {C, e(OB, IB, IE, OE, UC, FC), UCO, "interleaved full dup, idle, user close"},
                     {C, e(OB, IB, UC, IE, OE, FC), UCO, "interleaved full dup, user close"},
+                    {C, e(OB, OE, IS, FC), CCI, "abrupt input close after complete write, resp abort"},
                     {C, e(IS, FC), CCI, "idle, inbound closed"},
                     {C, e(OB, IS, SR, FC), CCI, "req abort, inbound closed"},
-                    {C, e(OB, IB, IS, SR, FC), CCI, "req abort, inbound closed"},
+                    {C, e(OB, IB, OE, OB, IC, SR, OH, IE, FC), PCI, "pipelined req abort after inbound close "},
                     {C, e(OB, IB, OE, IS, FC), CCI, "req complete, resp abort, inbound closed"},
                     {C, e(OB, IB, IE, IS, OE, FC), CCI, "continue write read completed, inbound closed"},
                     {C, e(OS, FC), CCO, "idle, outbound closed"},
@@ -209,7 +221,6 @@ public class RequestResponseCloseHandlerTest {
                     {C, e(OB, IB, IE, OS, SR, FC), CCO, "outbound closed while not reading"},
                     {C, e(OB, IB, OS, SR, IE, FC), CCO, "outbound closed while reading"},
                     {C, e(OB, OE, OB, OS, SR, IB, IE, FC), CCO, "outbound closed while not reading, 2 pending"},
-                    {C, e(OB, OE, OB, IB, OS, SR, IE, FC), CCO, "outbound closed while reading, 1 pending"},
                     {C, e(OB, OE, OB, OE, OB, OS, SR, IB, IE, IB, IE, FC), CCO, "outbound closed while not reading, >2 pending"},
                     {C, e(OB, OE, OB, OE, OB, IB, OS, SR, IE, IB, IE, FC), CCO, "outbound closed while reading, >2 pending"},
                     {S, e(IS, FC), CCI, "idle, inbound closed"},
@@ -253,6 +264,8 @@ public class RequestResponseCloseHandlerTest {
                 Object[] o = params.get(i);
                 params.set(i, new Object[]{o[0], o[1], o[2], o[3], fileName + ":" + (offset + i)});
             }
+            Set<Integer> uniques = params.stream().map(objs -> hash(objs[0], objs[1], objs[2])).collect(toSet());
+            assertEquals("Duplicate test scenario?", uniques.size(), params.size());
             return params;
         }
 
@@ -309,6 +322,9 @@ public class RequestResponseCloseHandlerTest {
             });
             when(scc.setSoLinger(0)).then($ -> {
                 LOGGER.debug("channel.config().setSoLinger(0)");
+                if (inputShutdown.get() && outputShutdown.get()) {
+                    fail("mock => setsockopt() failed - output already shutdown!");
+                }
                 return scc;
             });
             h = (RequestResponseCloseHandler) spy(mode == Mode.C ?
@@ -334,6 +350,7 @@ public class RequestResponseCloseHandlerTest {
             LOGGER.debug("Test.Params: ({})", location); // Intellij jump to parameter format, don't change!
             LOGGER.debug("[{}] {} - {} = {}", desc, mode, events, expectEvent);
             InOrder order = inOrder(h, channel, scc);
+            verify(h).registerEventHandler(eq(channel), any());
             for (Events event : events) {
                 LOGGER.debug("{}", event);
                 switch (event) {
@@ -400,41 +417,41 @@ public class RequestResponseCloseHandlerTest {
                 if (!events.contains(c)) {
                     switch (c) {
                         case IB:
-                           order.verify(h, never()).protocolPayloadBeginInbound(ctx);
+                           verify(h, never()).protocolPayloadBeginInbound(ctx);
                             break;
                         case IE:
-                            order.verify(h, never()).protocolPayloadEndInbound(ctx);
+                            verify(h, never()).protocolPayloadEndInbound(ctx);
                             break;
                         case IC:
-                            order.verify(h, never()).protocolClosingInbound(ctx);
+                            verify(h, never()).protocolClosingInbound(ctx);
                             break;
                         case OB:
-                            order.verify(h, never()).protocolPayloadBeginOutbound(ctx);
+                            verify(h, never()).protocolPayloadBeginOutbound(ctx);
                             break;
                         case OE:
-                            order.verify(h, never()).protocolPayloadEndOutbound(ctx);
+                            verify(h, never()).protocolPayloadEndOutbound(ctx);
                             break;
                         case OC:
-                            order.verify(h, never()).protocolClosingOutbound(ctx);
+                            verify(h, never()).protocolClosingOutbound(ctx);
                             break;
                         case IS:
                         case OS:
                             // These may be called implicitly, skip verify
                             break;
                         case SR:
-                            order.verify(scc, never()).setSoLinger(0);
+                            verify(scc, never()).setSoLinger(0);
                             break;
                         case UC:
-                            order.verify(h, never()).userClosing(channel);
+                            verify(h, never()).userClosing(channel);
                             break;
                         case FC:
-                            order.verify(channel, never()).close();
+                            verify(channel, never()).close();
                             break;
                         case IH:
-                            order.verify(channel, never()).shutdownInput();
+                            verify(channel, never()).shutdownInput();
                             break;
                         case OH:
-                            order.verify(channel, never()).shutdownOutput();
+                            verify(channel, never()).shutdownOutput();
                             break;
                         default:
                             throw new IllegalArgumentException("Unknown: " + c);
@@ -654,6 +671,80 @@ public class RequestResponseCloseHandlerTest {
                 // send multiple RSTs before the write attempt fails locally. So we back off a bit to wait for failure.
                 Thread.sleep(100);
             }
+        }
+
+        // When making the posix setsockopt call, there's no difference in the way netty handles Darwin vs Linux return
+        // values, but Darwin tracks the socket state and returns EINVAL (accurate according to posix).
+        // In the case of Linux we'll assume it's more lenient and ignore the missing error.
+        // http://pubs.opengroup.org/onlinepubs/9699919799/functions/setsockopt.html
+        private void expectToFailIfNotOnLinux(Runnable call) {
+            if (cChannel instanceof EpollSocketChannel) {
+                call.run();
+            } else {
+                try {
+                    call.run();
+                    fail("Should fail");
+                } catch (ChannelException e) {
+                    // Expected
+                }
+            }
+        }
+
+        @Test
+        public void socketOptionsSucceedWhenInputShutdown() throws InterruptedException {
+            sChannel.shutdownOutput();
+            clientInputShutdownLatch.await();
+            cChannel.config().setSoLinger(0);
+        }
+
+        @Test
+        public void socketOptionsSucceedWhenOutputShutdown() throws InterruptedException {
+            cChannel.shutdownOutput();
+            clientOutputShutdownLatch.await();
+            cChannel.config().setSoLinger(0);
+        }
+
+        @Test
+        public void socketOptionsFailWhenInAndOutputShutdown() throws InterruptedException {
+            sChannel.shutdownOutput();
+            cChannel.shutdownOutput();
+            clientInputShutdownLatch.await();
+            clientOutputShutdownLatch.await();
+            expectToFailIfNotOnLinux(() -> cChannel.config().setSoLinger(0));
+        }
+
+        @Test
+        public void socketOptionsSucceedWhenServerCloses() throws InterruptedException {
+            sChannel.close();
+            clientInputShutdownLatch.await();
+            cChannel.config().setSoLinger(0);
+        }
+
+        @Test
+        public void socketOptionsFailWhenServerClosesAndOutputShutdown() throws InterruptedException {
+            cChannel.shutdownOutput();
+            sChannel.close();
+            clientInputShutdownLatch.await();
+            clientOutputShutdownLatch.await();
+            expectToFailIfNotOnLinux(() -> cChannel.config().setSoLinger(0));
+        }
+
+        @Test
+        public void socketOptionsFailWhenServerRstCloses() throws InterruptedException {
+            sChannel.config().setSoLinger(0);
+            sChannel.close();
+            clientInputShutdownLatch.await();
+            expectToFailIfNotOnLinux(() -> cChannel.config().setSoLinger(0));
+        }
+
+        @Test
+        public void socketOptionsFailWhenServerRstClosesAndOutputShutdown() throws InterruptedException {
+            cChannel.shutdownOutput();
+            sChannel.config().setSoLinger(0);
+            sChannel.close();
+            clientInputShutdownLatch.await();
+            clientOutputShutdownLatch.await();
+            expectToFailIfNotOnLinux(() -> cChannel.config().setSoLinger(0));
         }
     }
 }

@@ -20,25 +20,30 @@ import org.junit.Test;
 import org.reactivestreams.Subscription;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 public class WriteStreamSubscriberTest extends AbstractWriteTest {
 
     private WriteStreamSubscriber subscriber;
     private Subscription subscription;
+    private CloseHandler closeHandler;
 
     @Before
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        subscriber = new WriteStreamSubscriber(channel, requestNSupplier, completableSubscriber);
+        closeHandler = mock(CloseHandler.class);
+        subscriber = new WriteStreamSubscriber(channel, requestNSupplier, completableSubscriber, closeHandler);
         subscription = mock(Subscription.class);
         when(requestNSupplier.getRequestNFor(anyLong())).thenReturn(1L);
         subscriber.onSubscribe(subscription);
@@ -51,6 +56,7 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
         verifyListenerSuccessful();
         verifyWriteSuccessful("Hello");
         verifyWrite(info);
+        verifyZeroInteractions(closeHandler);
     }
 
     @Test
@@ -62,18 +68,21 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
         verifyListenerSuccessful();
         verifyWriteSuccessful("Hello1", "Hello2", "Hello3");
         verifyWrite(info1, info2, info3);
+        verifyZeroInteractions(closeHandler);
     }
 
     @Test
     public void testOnErrorNoWrite() {
         subscriber.onError(DELIBERATE_EXCEPTION);
         verify(this.completableSubscriber).onError(DELIBERATE_EXCEPTION);
+        verify(closeHandler).closeChannelOutbound(any());
     }
 
     @Test
     public void testOnCompleteNoWrite() {
         subscriber.onComplete();
         verify(this.completableSubscriber).onComplete();
+        verifyZeroInteractions(closeHandler);
     }
 
     @Test
@@ -83,27 +92,30 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
         subscriber.onError(DELIBERATE_EXCEPTION);
         verify(this.completableSubscriber).onError(DELIBERATE_EXCEPTION);
         assertThat("Message not written.", channel.outboundMessages(), contains("Hello"));
+        verify(closeHandler).closeChannelOutbound(any());
     }
 
     @Test
     public void testCancelBeforeOnSubscribe() {
-        subscriber = new WriteStreamSubscriber(channel, requestNSupplier, completableSubscriber);
+        subscriber = new WriteStreamSubscriber(channel, requestNSupplier, completableSubscriber, NOOP_CLOSE_HANDLER);
         subscription = mock(Subscription.class);
         subscriber.cancel();
         subscriber.onSubscribe(subscription);
         verify(subscription).cancel();
+        verifyZeroInteractions(closeHandler);
     }
 
     @Test
     public void testCancelAfterOnSubscribe() {
         subscriber.cancel();
         verify(subscription).cancel();
+        verifyZeroInteractions(closeHandler);
     }
 
     @Test
     public void testRequestMoreBeforeOnSubscribe() {
         reset(completableSubscriber);
-        subscriber = new WriteStreamSubscriber(channel, requestNSupplier, completableSubscriber);
+        subscriber = new WriteStreamSubscriber(channel, requestNSupplier, completableSubscriber, NOOP_CLOSE_HANDLER);
         subscriber.channelWritable();
         subscription = mock(Subscription.class);
         subscriber.onSubscribe(subscription);
@@ -112,6 +124,7 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
         verifyListenerSuccessful();
         verifyWriteSuccessful("Hello");
         verifyWrite(info);
+        verifyZeroInteractions(closeHandler);
     }
 
     private void verifyWrite(WriteInfo... infos) {

@@ -16,15 +16,17 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.Completable.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.EmptySubscription;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
+import io.servicetalk.transport.netty.internal.Connection.RequestNSupplier;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.EventExecutor;
+import io.netty.util.concurrent.Future;
 import org.reactivestreams.Subscription;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -51,7 +53,7 @@ import static java.util.Objects.requireNonNull;
  * If previous request for more items has been fulfilled i.e. if {@code n} items were requested then {@link #onNext(Object)} has been invoked {@code n} times. Then capacity equals {@link Channel#bytesBeforeUnwritable()}. <p>
  * If previous request for more items has not been fulfilled then the capacity is the difference between the last seen value of {@link Channel#bytesBeforeUnwritable()} and now.<p>
  *
- * If the capacity determined above is positive then invoke {@link Connection.RequestNSupplier} to determine number of items required to fill that capacity.
+ * If the capacity determined above is positive then invoke {@link RequestNSupplier} to determine number of items required to fill that capacity.
  */
 final class WriteStreamSubscriber implements org.reactivestreams.Subscriber<Object>, NettyConnection.WritableListener, Cancellable {
     private static final Subscription CANCELLED = new EmptySubscription();
@@ -59,14 +61,14 @@ final class WriteStreamSubscriber implements org.reactivestreams.Subscriber<Obje
             AtomicLongFieldUpdater.newUpdater(WriteStreamSubscriber.class, "requested");
     private static final AtomicReferenceFieldUpdater<WriteStreamSubscriber, Subscription> subscriptionUpdater =
             AtomicReferenceFieldUpdater.newUpdater(WriteStreamSubscriber.class, Subscription.class, "subscription");
-    private final Completable.Subscriber subscriber;
+    private final Subscriber subscriber;
     private final Channel channel;
     /**
      * We rely upon a single event loop for ordering. Even if the channel's EventLoop changes, we need to stick to the
      * original EventLoop or else we may get re-ordering of events.
      */
     private final EventExecutor eventLoop;
-    private final Connection.RequestNSupplier requestNSupplier;
+    private final RequestNSupplier requestNSupplier;
     /**
      * It is assumed the underlying transport is ordered and reliable such that if a single write fails then the remaining
      * writes will also fail. This allows us to only subscribe to the status of the last write operation as a summary of the
@@ -86,12 +88,15 @@ final class WriteStreamSubscriber implements org.reactivestreams.Subscriber<Obje
      */
     private boolean enqueueWrites;
     private boolean terminated;
+    private final CloseHandler closeHandler;
 
-    WriteStreamSubscriber(Channel channel, Connection.RequestNSupplier requestNSupplier, Completable.Subscriber subscriber) {
+    WriteStreamSubscriber(Channel channel, RequestNSupplier requestNSupplier, Subscriber subscriber,
+                          CloseHandler closeHandler) {
         this.eventLoop = requireNonNull(channel.eventLoop());
         this.subscriber = subscriber;
         this.channel = channel;
         this.requestNSupplier = requestNSupplier;
+        this.closeHandler = closeHandler;
     }
 
     @Override
@@ -149,34 +154,34 @@ final class WriteStreamSubscriber implements org.reactivestreams.Subscriber<Obje
     @Override
     public void onError(Throwable cause) {
         if (lastWritePromise != null) {
-            lastWritePromise.addListener(future -> terminateListener(cause));
+            lastWritePromise.addListener(future -> terminateListenerAndCloseChannel(cause));
         } else if (eventLoop.inEventLoop()) {
             // If lastWritePromise is null that means there are no writes, enqueueWrites should only be set to true if
             // there are writes.
             assert !enqueueWrites;
-            terminateListener(cause);
+            terminateListenerAndCloseChannel(cause);
         } else {
             // If lastWritePromise is null that means there are no writes, enqueueWrites should only be set to true if
             // there are writes.
             assert !enqueueWrites;
-            eventLoop.execute(() -> terminateListener(cause));
+            eventLoop.execute(() -> terminateListenerAndCloseChannel(cause));
         }
     }
 
     @Override
     public void onComplete() {
         if (lastWritePromise != null) {
-            lastWritePromise.addListener(future -> terminateListener(null));
+            lastWritePromise.addListener(this::terminateAndCloseIfLastWriteFailed);
         } else if (eventLoop.inEventLoop()) {
             // If lastWritePromise is null that means there are no writes, enqueueWrites should only be set to true if
             // there are writes.
             assert !enqueueWrites;
-            terminateListener(null);
+            terminateListener();
         } else {
             // If lastWritePromise is null that means there are no writes, enqueueWrites should only be set to true if
             // there are writes.
             assert !enqueueWrites;
-            eventLoop.execute(() -> terminateListener(null));
+            eventLoop.execute(this::terminateListener);
         }
     }
 
@@ -184,6 +189,22 @@ final class WriteStreamSubscriber implements org.reactivestreams.Subscriber<Obje
     public void channelWritable() {
         assert eventLoop.inEventLoop();
         requestMoreIfRequired(subscription);
+    }
+
+    @Override
+    public void channelClosedOutbound() {
+        if (!terminated && lastWritePromise != null) {
+            lastWritePromise.addListener(this::terminateAndCloseIfLastWriteFailed);
+        }
+    }
+
+    private void terminateAndCloseIfLastWriteFailed(Future<?> future) {
+        Throwable cause = future.cause();
+        if (cause == null) {
+            terminateListener();
+        } else {
+            terminateListenerAndCloseChannel(cause);
+        }
     }
 
     @Override
@@ -239,28 +260,24 @@ final class WriteStreamSubscriber implements org.reactivestreams.Subscriber<Obje
         }
     }
 
-    private void terminateListener(@Nullable Throwable cause) {
+    private void terminateListenerAndCloseChannel(Throwable cause) {
         terminateListener(cause, true);
     }
 
-    private void terminateListener(@Nullable Throwable cause, boolean executeRunnableIfFail) {
+    private void terminateListener() {
+        terminateListener(null, false);
+    }
+
+    private void terminateListener(@Nullable Throwable cause, boolean closeChannelIfFailed) {
         if (terminated) {
             return;
         }
         terminated = true;
         if (cause != null) {
-            if (executeRunnableIfFail) {
-                final Throwable finalCause = cause;
-                channel.close().addListener(f -> {
-                    Throwable closeCause = f.cause();
-                    if (closeCause != null) {
-                        finalCause.addSuppressed(closeCause);
-                    }
-                    subscriber.onError(finalCause);
-                });
-            } else {
-                subscriber.onError(cause);
+            if (closeChannelIfFailed) {
+                closeHandler.closeChannelOutbound(channel);
             }
+            subscriber.onError(cause);
         } else {
             subscriber.onComplete();
         }

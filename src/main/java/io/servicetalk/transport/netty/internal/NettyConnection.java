@@ -26,6 +26,7 @@ import io.servicetalk.transport.api.FlushStrategy;
 import io.servicetalk.transport.api.FlushStrategyHolder;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 
+import io.netty.channel.AbstractChannel;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
@@ -89,6 +90,8 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
 
     /**
      * Potentially contains more information when a protocol or channel level close event was observed.
+     * <p>
+     * Always accessed from the event loop, doesn't require synchronization.
      */
     @Nullable
     private CloseEvent closeReason;
@@ -120,6 +123,7 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
 
     /**
      * Create a new instance.
+     *
      * @param channel Netty channel which represents the connection.
      * @param context The ServiceTalk entity which represents the connection.
      * @param read {@link Publisher} which emits all data read from the underlying channel.
@@ -131,7 +135,7 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
                            CloseHandler closeHandler) {
         this.channel = requireNonNull(channel);
         this.context = requireNonNull(context);
-        this.read = read;
+        this.read = read.onErrorResume(this::enrichErrorPublisher);
         this.terminalMsgPredicate = requireNonNull(terminalMsgPredicate);
         this.closeHandler = requireNonNull(closeHandler);
         if (closeHandler != NOOP_CLOSE_HANDLER) {
@@ -193,6 +197,7 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
                     closeHandler.channelClosedInbound(ctx);
                 } else if (evt == ChannelOutputShutdownEvent.INSTANCE) {
                     closeHandler.channelClosedOutbound(ctx);
+                    writableListener.channelClosedOutbound();
                 }
                 release(evt);
             }
@@ -214,6 +219,18 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
                 writableListener.channelClosed(CLOSED_CHANNEL_INACTIVE);
             }
         });
+    }
+
+    private Publisher<Read> enrichErrorPublisher(final Throwable t) {
+        return Publisher.error(enrichError(t));
+    }
+
+    private Completable enrichErrorCompletable(final Throwable t) {
+        return Completable.error(enrichError(t));
+    }
+
+    private Throwable enrichError(final Throwable t) {
+        return closeReason != null ? closeReason.wrapError(t) : t;
     }
 
     private void cleanupOnWriteTerminated() {
@@ -245,7 +262,8 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
         return cleanupStateWhenDone(new Completable() {
             @Override
             protected void handleSubscribe(Subscriber completableSubscriber) {
-                WriteStreamSubscriber subscriber = new WriteStreamSubscriber(channel, requestNSupplierFactory.get(), completableSubscriber);
+                WriteStreamSubscriber subscriber = new WriteStreamSubscriber(channel, requestNSupplierFactory.get(),
+                        completableSubscriber, closeHandler);
                 if (failIfWriteActive(subscriber, completableSubscriber)) {
                     if (writeWithFlush instanceof ReadAwareFlushStrategyHolder) {
                         ReadAwareFlushStrategyHolder<Write> holder = (ReadAwareFlushStrategyHolder<Write>) writeWithFlush;
@@ -256,7 +274,7 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
                             .subscribe(subscriber);
                 }
             }
-        });
+        }).onErrorResume(this::enrichErrorCompletable);
     }
 
     @Override
@@ -265,12 +283,13 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
         return cleanupStateWhenDone(new Completable() {
             @Override
             protected void handleSubscribe(Subscriber completableSubscriber) {
-                WriteSingleSubscriber subscriber = new WriteSingleSubscriber(channel, requireNonNull(completableSubscriber));
+                WriteSingleSubscriber subscriber = new WriteSingleSubscriber(
+                        channel, requireNonNull(completableSubscriber), closeHandler);
                 if (failIfWriteActive(subscriber, completableSubscriber)) {
                     write.subscribe(subscriber);
                 }
             }
-        });
+        }).onErrorResume(this::enrichErrorCompletable);
     }
 
     @Override
@@ -281,7 +300,7 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
                 return channel.writeAndFlush(write);
             }
             return channel.newFailedFuture(new IllegalStateException("A write is already active on this connection."));
-        }));
+        })).onErrorResume(this::enrichErrorCompletable);
     }
 
     /**
@@ -391,6 +410,16 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
          * @param closedException the exception which describes the close rational.
          */
         void channelClosed(Throwable closedException);
+
+        /**
+         * Notification that the channel outbound path has been closed.
+         * <p>
+         * This may indicate a write failed and was implicitly closed by the {@link AbstractChannel} or a {@link
+         * CloseHandler} performing a graceful or forced close. This methods will always be called from the event loop.
+         */
+        default void channelClosedOutbound() {
+            // Do nothing
+        }
     }
 
     private static final class NoopWritableListener implements WritableListener {

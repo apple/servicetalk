@@ -20,6 +20,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoop;
 import io.netty.channel.socket.SocketChannel;
 
+import java.nio.channels.ClosedChannelException;
 import java.util.function.Consumer;
 
 /**
@@ -102,6 +103,24 @@ public abstract class CloseHandler {
     abstract void channelClosedOutbound(ChannelHandlerContext ctx);
 
     /**
+     * Request {@link Channel} inbound close, to be emitted from the {@link EventLoop} for the channel.
+     * <p>
+     * This method will not ensure graceful closure of the channel inbound and may abort reads.
+     *
+     * @param channel {@link Channel}
+     */
+    abstract void closeChannelInbound(Channel channel);
+
+    /**
+     * Request {@link Channel} outbound close, to be emitted from the {@link EventLoop} for the channel.
+     * <p>
+     * This method will not ensure graceful closure of the channel outbound and may abort reads.
+     *
+     * @param channel {@link Channel}
+     */
+    abstract void closeChannelOutbound(Channel channel);
+
+    /**
      * Signal a user requested close of the {@link Channel}, to be emitted from the {@link EventLoop} for the channel.
      * <p>
      * This translates to a protocol level close command, but is initiated by the user.
@@ -134,7 +153,33 @@ public abstract class CloseHandler {
         /**
          * Inbound {@link SocketChannel} shutdown observed.
          */
-        CHANNEL_CLOSED_INBOUND,
+        CHANNEL_CLOSED_INBOUND;
+
+        Throwable wrapError(Throwable cause) {
+            return new CloseEventObservedException(cause, this.name());
+        }
+    }
+
+    private static final class CloseEventObservedException extends ClosedChannelException {
+
+        private final String closeEventName;
+
+        private CloseEventObservedException(Throwable cause, final String closeEventName) {
+            this.closeEventName = closeEventName;
+            initCause(cause);
+        }
+
+        @Override
+        public String getMessage() {
+            return closeEventName;
+        }
+
+        @Override
+        public synchronized Throwable fillInStackTrace() {
+            // we have the option to not provide an additional stack trace if it is too expensive.
+            // return super.fillInStackTrace();
+            return this;
+        }
     }
 
     private static final class NoopHandler extends CloseHandler {
@@ -149,6 +194,16 @@ public abstract class CloseHandler {
 
         @Override
         void channelClosedOutbound(final ChannelHandlerContext ctx) {
+        }
+
+        @Override
+        void closeChannelInbound(final Channel channel) {
+            channel.close();
+        }
+
+        @Override
+        void closeChannelOutbound(final Channel channel) {
+            channel.close();
         }
 
         @Override
