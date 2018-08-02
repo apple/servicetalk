@@ -15,19 +15,13 @@
  */
 package io.servicetalk.concurrent.api;
 
-import static io.servicetalk.concurrent.api.ImmediateExecutor.IMMEDIATE_EXECUTOR;
-
 /**
- * Set of utilities to create {@link OffloaderAwareExecutor}.
+ * Set of utilities to create {@link Executor}s that are merged with other {@link Executor}s.
  */
-final class OffloaderAwareExecutors {
+final class MergedExecutors {
 
-    private OffloaderAwareExecutors() {
+    private MergedExecutors() {
         // No instances.
-    }
-
-    static OffloaderAwareExecutor immediate() {
-        return IMMEDIATE_EXECUTOR;
     }
 
     /**

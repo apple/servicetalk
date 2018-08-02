@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
+import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -28,10 +29,12 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor.AbortPolicy;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -39,7 +42,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 /**
  * An implementation of {@link Executor} that uses an implementation of {@link java.util.concurrent.Executor} to execute tasks.
  */
-final class DefaultExecutor extends AbstractOffloaderAwareExecutor {
+final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Consumer<Runnable> {
 
     private static final long DEFAULT_KEEP_ALIVE_TIME_SECONDS = 60;
     /**
@@ -132,8 +135,13 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor {
     }
 
     @Override
-    public SignalOffloader newOffloader() {
-        return new DefaultSignalOffloader(this);
+    public SignalOffloader newSignalOffloader() {
+        return newOffloaderFor(this);
+    }
+
+    @Override
+    public void accept(final Runnable runnable) {
+        execute(runnable);
     }
 
     /**

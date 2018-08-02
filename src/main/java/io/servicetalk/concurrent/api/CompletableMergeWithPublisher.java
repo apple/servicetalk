@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
+import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;

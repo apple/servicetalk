@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.internal.SignalOffloader;
+
 /**
  * Base class for all {@link Completable}s that are created with already realized result and does not generate result
  * asynchronously.

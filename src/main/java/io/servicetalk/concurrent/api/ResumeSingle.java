@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
+import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.util.function.Function;
 import javax.annotation.Nullable;

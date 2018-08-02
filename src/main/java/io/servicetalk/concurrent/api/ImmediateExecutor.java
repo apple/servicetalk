@@ -16,29 +16,27 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-
-import org.reactivestreams.Subscriber;
+import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.from;
-import static io.servicetalk.concurrent.api.ImmediateExecutor.NoopSignalOffloader.NOOP_SIGNAL_OFFLOADER;
+import static io.servicetalk.concurrent.api.NoopOffloader.NOOP_OFFLOADER;
 
 final class ImmediateExecutor extends AbstractOffloaderAwareExecutor {
 
     private static final Executor IMMEDIATE = from(Runnable::run);
-    static final OffloaderAwareExecutor IMMEDIATE_EXECUTOR = new ImmediateExecutor();
+    static final Executor IMMEDIATE_EXECUTOR = new ImmediateExecutor();
 
     private ImmediateExecutor() {
         // No instances
     }
 
     @Override
-    public SignalOffloader newOffloader() {
-        return NOOP_SIGNAL_OFFLOADER;
+    public SignalOffloader newSignalOffloader() {
+        return NOOP_OFFLOADER;
     }
 
     @Override
@@ -56,74 +54,5 @@ final class ImmediateExecutor extends AbstractOffloaderAwareExecutor {
     @Override
     void doClose() {
         // Noop
-    }
-
-    static final class NoopSignalOffloader implements SignalOffloader {
-
-        static final NoopSignalOffloader NOOP_SIGNAL_OFFLOADER = new NoopSignalOffloader();
-
-        private NoopSignalOffloader() {
-            // Singleton
-        }
-
-        @Override
-        public <T> Subscriber<? super T> offloadSubscriber(Subscriber<? super T> subscriber) {
-            return subscriber;
-        }
-
-        @Override
-        public <T> Single.Subscriber<? super T> offloadSubscriber(Single.Subscriber<? super T> subscriber) {
-            return subscriber;
-        }
-
-        @Override
-        public Completable.Subscriber offloadSubscriber(Completable.Subscriber subscriber) {
-            return subscriber;
-        }
-
-        @Override
-        public <T> Subscriber<? super T> offloadSubscription(Subscriber<? super T> subscriber) {
-            return subscriber;
-        }
-
-        @Override
-        public <T> Single.Subscriber<? super T> offloadCancellable(Single.Subscriber<? super T> subscriber) {
-            return subscriber;
-        }
-
-        @Override
-        public Completable.Subscriber offloadCancellable(Completable.Subscriber subscriber) {
-            return subscriber;
-        }
-
-        @Override
-        public <T> void offloadSubscribe(final Subscriber<? super T> subscriber, final Publisher<T> publisher) {
-            publisher.handleSubscribe(subscriber);
-        }
-
-        @Override
-        public <T> void offloadSubscribe(final Single.Subscriber<? super T> subscriber, final Single<T> single) {
-            single.handleSubscribe(subscriber);
-        }
-
-        @Override
-        public void offloadSubscribe(final Completable.Subscriber subscriber, final Completable completable) {
-            completable.handleSubscribe(subscriber);
-        }
-
-        @Override
-        public <T> void offloadSignal(T signal, Consumer<T> signalConsumer) {
-            signalConsumer.accept(signal);
-        }
-
-        @Override
-        public boolean isInOffloadThreadForPublish() {
-            return true;
-        }
-
-        @Override
-        public boolean isInOffloadThreadForSubscribe() {
-            return true;
-        }
     }
 }

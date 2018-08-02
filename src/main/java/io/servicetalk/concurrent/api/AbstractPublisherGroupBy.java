@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.MulticastUtils.IndividualMulticastSubscribe
 import io.servicetalk.concurrent.api.MulticastUtils.SpscQueue;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
+import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import org.reactivestreams.Subscriber;

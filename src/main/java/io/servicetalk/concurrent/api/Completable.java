@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -35,7 +36,7 @@ import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnCompleteSup
 import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.api.Executors.newOffloader;
+import static io.servicetalk.concurrent.api.Executors.newOffloaderFor;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -1102,7 +1103,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     public final void subscribe(Subscriber subscriber) {
         // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new SignalOffloader
         // to use.
-        final SignalOffloader signalOffloader = newOffloader(executor);
+        final SignalOffloader signalOffloader = newOffloaderFor(executor);
         // Since this is a user-driven subscribe (end of the execution chain), offload Cancellable
         subscribe(signalOffloader.offloadCancellable(subscriber), signalOffloader);
     }
@@ -1228,7 +1229,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * <p>
      * This method wraps the passed {@link Subscriber} using {@link SignalOffloader#offloadSubscriber(Subscriber)} and
      * then calls {@link #handleSubscribe(Subscriber)} using
-     * {@link SignalOffloader#offloadSubscribe(Subscriber, Completable)}.
+     * {@link SignalOffloader#offloadSubscribe(Subscriber, Consumer)}.
      * Operators that do not wish to wrap the passed {@link Subscriber} can override this method and omit the wrapping.
      *
      * @param subscriber the subscriber.
@@ -1236,7 +1237,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      */
     void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader) {
         Subscriber safeSubscriber = signalOffloader.offloadSubscriber(subscriber);
-        signalOffloader.offloadSubscribe(safeSubscriber, this);
+        signalOffloader.offloadSubscribe(safeSubscriber, this::handleSubscribe);
     }
 
     /**

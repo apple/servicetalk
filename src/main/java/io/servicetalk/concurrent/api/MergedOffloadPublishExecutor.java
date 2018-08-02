@@ -15,34 +15,39 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.internal.SignalOffloader;
+import io.servicetalk.concurrent.internal.SignalOffloaderFactory;
+
 import org.reactivestreams.Subscriber;
 
 import java.util.function.Consumer;
 
-final class MergedOffloadPublishExecutor extends DelegatingExecutor implements OffloaderAwareExecutor {
+import static io.servicetalk.concurrent.api.Executors.newOffloaderFor;
+
+final class MergedOffloadPublishExecutor extends DelegatingExecutor implements SignalOffloaderFactory {
 
     private final Executor fallbackExecutor;
 
-    MergedOffloadPublishExecutor(final Executor executor, final Executor fallbackExecutor) {
-        super(executor);
+    MergedOffloadPublishExecutor(final Executor publishOnExecutor, final Executor fallbackExecutor) {
+        super(publishOnExecutor);
         this.fallbackExecutor = fallbackExecutor;
     }
 
     @Override
-    public SignalOffloader newOffloader() {
-        return new MergedSignalOffloader();
+    public SignalOffloader newSignalOffloader() {
+        return new PublishOnlySignalOffloader(delegate, fallbackExecutor);
     }
 
-    private final class MergedSignalOffloader implements SignalOffloader {
+    private static final class PublishOnlySignalOffloader implements SignalOffloader {
 
         private final SignalOffloader offloader;
         private final SignalOffloader fallback;
 
-        MergedSignalOffloader() {
-            offloader = new DefaultSignalOffloader(delegate);
-            fallback = fallbackExecutor instanceof OffloaderAwareExecutor ?
-                    ((OffloaderAwareExecutor) fallbackExecutor).newOffloader() :
-                    new DefaultSignalOffloader(fallbackExecutor);
+        PublishOnlySignalOffloader(final Executor publishOnExecutor, final Executor fallbackExecutor) {
+            offloader = newOffloaderFor(publishOnExecutor);
+            fallback = fallbackExecutor instanceof SignalOffloaderFactory ?
+                    ((SignalOffloaderFactory) fallbackExecutor).newSignalOffloader() :
+                    newOffloaderFor(fallbackExecutor);
         }
 
         @Override
@@ -76,18 +81,20 @@ final class MergedOffloadPublishExecutor extends DelegatingExecutor implements O
         }
 
         @Override
-        public <T> void offloadSubscribe(final Subscriber<? super T> subscriber, final Publisher<T> publisher) {
-            fallback.offloadSubscribe(subscriber, publisher);
+        public <T> void offloadSubscribe(final Subscriber<T> subscriber, final Consumer<Subscriber<T>> handleSubscribe) {
+            fallback.offloadSubscribe(subscriber, handleSubscribe);
         }
 
         @Override
-        public <T> void offloadSubscribe(final Single.Subscriber<? super T> subscriber, final Single<T> single) {
-            fallback.offloadSubscribe(subscriber, single);
+        public <T> void offloadSubscribe(final Single.Subscriber<T> subscriber,
+                                         final Consumer<Single.Subscriber<T>> handleSubscribe) {
+            fallback.offloadSubscribe(subscriber, handleSubscribe);
         }
 
         @Override
-        public void offloadSubscribe(final Completable.Subscriber subscriber, final Completable completable) {
-            fallback.offloadSubscribe(subscriber, completable);
+        public void offloadSubscribe(final Completable.Subscriber subscriber,
+                                     final Consumer<Completable.Subscriber> handleSubscribe) {
+            fallback.offloadSubscribe(subscriber, handleSubscribe);
         }
 
         @Override

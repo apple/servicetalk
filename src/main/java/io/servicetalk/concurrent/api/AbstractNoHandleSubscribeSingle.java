@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.internal.SignalOffloader;
+
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 
 /**

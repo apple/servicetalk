@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api;
+package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Single.Subscriber;
-import io.servicetalk.concurrent.internal.TerminalNotification;
+import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -82,7 +83,7 @@ public class DefaultSignalOffloaderConcurrentSingleTest {
         protected void before() {
             emitters = java.util.concurrent.Executors.newCachedThreadPool();
             executor = newFixedSizeExecutor(1);
-            offloader = new DefaultSignalOffloader(executor);
+            offloader = new DefaultSignalOffloader(executor::execute);
         }
 
         @Override

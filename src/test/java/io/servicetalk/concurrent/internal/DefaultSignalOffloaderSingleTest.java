@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api;
+package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Single.Subscriber;
-import io.servicetalk.concurrent.internal.Await;
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.api.Executor;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,8 +35,8 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor;
-import static io.servicetalk.concurrent.api.NoopRunnable.NOOP_RUNNABLE;
-import static io.servicetalk.concurrent.api.ThrowingRunnable.THROWING_RUNNABLE;
+import static io.servicetalk.concurrent.internal.NoopRunnable.NOOP_RUNNABLE;
+import static io.servicetalk.concurrent.internal.ThrowingRunnable.THROWING_RUNNABLE;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -169,7 +168,7 @@ public class DefaultSignalOffloaderSingleTest {
                 @Override
                 public void evaluate() throws Throwable {
                     executor = newFixedSizeExecutor(1);
-                    offloader = new DefaultSignalOffloader(executor);
+                    offloader = new DefaultSignalOffloader(executor::execute);
                     cancellable = mock(Cancellable.class);
                     subscriber = mockSubscriber();
                     base.evaluate();

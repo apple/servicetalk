@@ -13,19 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api;
+package io.servicetalk.concurrent.internal;
 
-final class ThrowingRunnable implements Runnable {
+final class NoopRunnable implements Runnable {
 
-    static final Runnable THROWING_RUNNABLE = new ThrowingRunnable();
-    private static final DeliberateException de = new DeliberateException();
+    static final Runnable NOOP_RUNNABLE = new NoopRunnable();
 
-    private ThrowingRunnable() {
+    private NoopRunnable() {
         // singleton
     }
 
     @Override
     public void run() {
-        throw de;
+        // Noop
     }
 }

@@ -15,34 +15,41 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.Completable;
+import io.servicetalk.concurrent.Single;
+import io.servicetalk.concurrent.internal.SignalOffloader;
+import io.servicetalk.concurrent.internal.SignalOffloaderFactory;
+
 import org.reactivestreams.Subscriber;
 
 import java.util.function.Consumer;
 
-final class MergedOffloadSubscribeExecutor extends DelegatingExecutor implements OffloaderAwareExecutor {
+import static io.servicetalk.concurrent.api.Executors.newOffloaderFor;
+
+final class MergedOffloadSubscribeExecutor extends DelegatingExecutor implements SignalOffloaderFactory {
 
     private final Executor fallbackExecutor;
 
-    MergedOffloadSubscribeExecutor(final Executor executor, final Executor fallback) {
-        super(executor);
-        this.fallbackExecutor = fallback;
+    MergedOffloadSubscribeExecutor(final Executor subscribeOnExecutor, final Executor fallbackExecutor) {
+        super(subscribeOnExecutor);
+        this.fallbackExecutor = fallbackExecutor;
     }
 
     @Override
-    public SignalOffloader newOffloader() {
-        return new MergedSignalOffloader();
+    public SignalOffloader newSignalOffloader() {
+        return new SubscribeOnlySignalOffloader(delegate, fallbackExecutor);
     }
 
-    private final class MergedSignalOffloader implements SignalOffloader {
+    private static final class SubscribeOnlySignalOffloader implements SignalOffloader {
 
         private final SignalOffloader offloader;
         private final SignalOffloader fallback;
 
-        MergedSignalOffloader() {
-            offloader = new DefaultSignalOffloader(delegate);
-            fallback = fallbackExecutor instanceof OffloaderAwareExecutor ?
-                    ((OffloaderAwareExecutor) fallbackExecutor).newOffloader() :
-                    new DefaultSignalOffloader(fallbackExecutor);
+        SubscribeOnlySignalOffloader(final Executor executor, final Executor fallbackExecutor) {
+            offloader = newOffloaderFor(executor);
+            fallback = fallbackExecutor instanceof SignalOffloaderFactory ?
+                    ((SignalOffloaderFactory) fallbackExecutor).newSignalOffloader() :
+                    newOffloaderFor(fallbackExecutor);
         }
 
         @Override
@@ -51,12 +58,12 @@ final class MergedOffloadSubscribeExecutor extends DelegatingExecutor implements
         }
 
         @Override
-        public <T> Single.Subscriber<? super T> offloadSubscriber(final Single.Subscriber<? super T> subscriber) {
+        public <T> io.servicetalk.concurrent.Single.Subscriber<? super T> offloadSubscriber(final io.servicetalk.concurrent.Single.Subscriber<? super T> subscriber) {
             return fallback.offloadSubscriber(subscriber);
         }
 
         @Override
-        public Completable.Subscriber offloadSubscriber(final Completable.Subscriber subscriber) {
+        public io.servicetalk.concurrent.Completable.Subscriber offloadSubscriber(final io.servicetalk.concurrent.Completable.Subscriber subscriber) {
             return fallback.offloadSubscriber(subscriber);
         }
 
@@ -66,28 +73,28 @@ final class MergedOffloadSubscribeExecutor extends DelegatingExecutor implements
         }
 
         @Override
-        public <T> Single.Subscriber<? super T> offloadCancellable(final Single.Subscriber<? super T> subscriber) {
+        public <T> io.servicetalk.concurrent.Single.Subscriber<? super T> offloadCancellable(final io.servicetalk.concurrent.Single.Subscriber<? super T> subscriber) {
             return offloader.offloadCancellable(subscriber);
         }
 
         @Override
-        public Completable.Subscriber offloadCancellable(final Completable.Subscriber subscriber) {
+        public io.servicetalk.concurrent.Completable.Subscriber offloadCancellable(final io.servicetalk.concurrent.Completable.Subscriber subscriber) {
             return offloader.offloadCancellable(subscriber);
         }
 
         @Override
-        public <T> void offloadSubscribe(final Subscriber<? super T> subscriber, final Publisher<T> publisher) {
-            offloader.offloadSubscribe(subscriber, publisher);
+        public <T> void offloadSubscribe(final Subscriber<T> subscriber, final Consumer<Subscriber<T>> handleSubscribe) {
+            offloader.offloadSubscribe(subscriber, handleSubscribe);
         }
 
         @Override
-        public <T> void offloadSubscribe(final Single.Subscriber<? super T> subscriber, final Single<T> single) {
-            offloader.offloadSubscribe(subscriber, single);
+        public <T> void offloadSubscribe(final io.servicetalk.concurrent.Single.Subscriber<T> subscriber, final Consumer<Single.Subscriber<T>> handleSubscribe) {
+            offloader.offloadSubscribe(subscriber, handleSubscribe);
         }
 
         @Override
-        public void offloadSubscribe(final Completable.Subscriber subscriber, final Completable completable) {
-            offloader.offloadSubscribe(subscriber, completable);
+        public void offloadSubscribe(final io.servicetalk.concurrent.Completable.Subscriber subscriber, final Consumer<Completable.Subscriber> handleSubscribe) {
+            offloader.offloadSubscribe(subscriber, handleSubscribe);
         }
 
         @Override

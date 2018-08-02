@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.internal.SignalOffloader;
+
 import org.reactivestreams.Subscriber;
 
 import static java.util.Objects.requireNonNull;

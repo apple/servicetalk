@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.internal.QueueFullException;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

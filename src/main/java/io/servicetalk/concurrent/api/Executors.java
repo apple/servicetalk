@@ -16,11 +16,16 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
+import io.servicetalk.concurrent.internal.SignalOffloader;
+import io.servicetalk.concurrent.internal.SignalOffloaderFactory;
+import io.servicetalk.concurrent.internal.SignalOffloaders;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+
+import static io.servicetalk.concurrent.api.ImmediateExecutor.IMMEDIATE_EXECUTOR;
 
 /**
  * Utility methods to create various {@link Executor}s.
@@ -40,7 +45,7 @@ public final class Executors {
      * immediately on the calling thread.
      */
     public static Executor immediate() {
-        return OffloaderAwareExecutors.immediate();
+        return IMMEDIATE_EXECUTOR;
     }
 
     /**
@@ -49,13 +54,12 @@ public final class Executors {
      * @param executor {@link Executor} to use for offloading signals.
      * @return Newly created {@link SignalOffloader}.
      */
-    static SignalOffloader newOffloader(Executor executor) {
+    static SignalOffloader newOffloaderFor(Executor executor) {
         // In the future OffloaderAwareExecutor MAY get merged into Executor. If so, then this conditional can be
         // removed.
-        if (executor instanceof OffloaderAwareExecutor) {
-            return ((OffloaderAwareExecutor) executor).newOffloader();
-        }
-        return new DefaultSignalOffloader(executor);
+        return executor instanceof SignalOffloaderFactory ?
+                ((SignalOffloaderFactory) executor).newSignalOffloader() :
+                SignalOffloaders.newOffloaderFor(executor::execute);
     }
 
     /**

@@ -15,11 +15,13 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.internal.SignalOffloader;
+
 import org.reactivestreams.Subscriber;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.api.OffloaderAwareExecutors.mergeAndOffloadPublish;
-import static io.servicetalk.concurrent.api.OffloaderAwareExecutors.mergeAndOffloadSubscribe;
+import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadPublish;
+import static io.servicetalk.concurrent.api.MergedExecutors.mergeAndOffloadSubscribe;
 
 /**
  * A set of factory methods that provides implementations for the various publish/subscribeOn methods on

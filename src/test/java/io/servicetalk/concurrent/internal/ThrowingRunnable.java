@@ -13,17 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api;
+package io.servicetalk.concurrent.internal;
 
-/**
- * A special {@link Executor} that additionally can create new {@link SignalOffloader} instances.
- */
-interface OffloaderAwareExecutor extends Executor {
+import io.servicetalk.concurrent.api.DeliberateException;
 
-    /**
-     * Creates a new {@link SignalOffloader} using {@code this} {@link Executor}.
-     *
-     * @return Newly created {@link SignalOffloader}.
-     */
-    SignalOffloader newOffloader();
+final class ThrowingRunnable implements Runnable {
+
+    static final Runnable THROWING_RUNNABLE = new ThrowingRunnable();
+    private static final DeliberateException de = new DeliberateException();
+
+    private ThrowingRunnable() {
+        // singleton
+    }
+
+    @Override
+    public void run() {
+        throw de;
+    }
 }
