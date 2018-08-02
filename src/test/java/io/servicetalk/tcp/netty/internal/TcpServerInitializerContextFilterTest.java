@@ -119,7 +119,7 @@ public class TcpServerInitializerContextFilterTest extends AbstractTcpServerTest
     @Test
     public void testAcceptConnection() throws Exception {
         Connection<Buffer, Buffer> connection = client.connectBlocking(CLIENT_CTX, serverPort);
-        final Buffer buffer = connection.getBufferAllocator().fromAscii("Hello");
+        final Buffer buffer = connection.getExecutionContext().getBufferAllocator().fromAscii("Hello");
 
         // Write something, then try to read something and wait for a result.
         // We do this to ensure that the server has had a chance to execute code if the connection was accepted.
