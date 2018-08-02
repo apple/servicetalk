@@ -160,6 +160,12 @@ public final class HttpHeaderValues {
      */
     public static final CharSequence WEBSOCKET = newAsciiString("websocket");
     /**
+     * {@code "XMLHttpRequest"} is a value for {@link HttpHeaderNames#X_REQUESTED_WITH "x-requested-with"} header, which
+     * is used by most JavaScript frameworks to identify
+     * <a href="https://developer.mozilla.org/en-US/docs/Web/Guide/AJAX">Ajax</a> requests.
+     */
+    public static final CharSequence XML_HTTP_REQUEST = newAsciiString("XMLHttpRequest");
+    /**
      * {@code "0"}
      */
     public static final CharSequence ZERO = newAsciiString("0");

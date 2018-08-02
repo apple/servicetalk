@@ -170,6 +170,15 @@ public final class HttpHeaderNames {
      */
     public static final CharSequence EXPIRES = newAsciiString("expires");
     /**
+     * <a href="https://tools.ietf.org/html/rfc7239#section-4">forwarded</a> is a header field that contains a list of
+     * parameter-identifier pairs that disclose information that is altered or lost when a proxy is involved in the path
+     * of the request.
+     * <p>
+     * The alternative and de-facto standard versions of this header are the {@link #X_FORWARDED_FOR "x-forwarded-for"},
+     * {@link #X_FORWARDED_HOST "x-forwarded-host"} and {@link #X_FORWARDED_PROTO "x-forwarded-proto"} headers.
+     */
+    public static final CharSequence FORWARDED = newAsciiString("forwarded");
+    /**
      * {@code "from"}
      */
     public static final CharSequence FROM = newAsciiString("from");
@@ -333,6 +342,36 @@ public final class HttpHeaderNames {
      * {@code "www-authenticate"}
      */
     public static final CharSequence WWW_AUTHENTICATE = newAsciiString("www-authenticate");
+    /**
+     * <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-For">x-forwarded-for</a> (XFF)
+     * header is a de-facto standard header for identifying the originating IP address of a client connecting to a web
+     * server through an HTTP proxy or a load balancer.
+     * <p>
+     * A standardized version of this header is the HTTP {@link #FORWARDED "forwarded"} header.
+     */
+    public static final CharSequence X_FORWARDED_FOR = newAsciiString("x-forwarded-for");
+    /**
+     * <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-Host">x-forwarded-host</a> (XFH)
+     * header is a de-facto standard header for identifying the original host requested by the client in the
+     * {@link #HOST host} HTTP request header.
+     * <p>
+     * A standardized version of this header is the HTTP {@link #FORWARDED "forwarded"} header.
+     */
+    public static final CharSequence X_FORWARDED_HOST = newAsciiString("x-forwarded-host");
+    /**
+     * <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-Proto">x-forwarded-proto</a> (XFP)
+     * header is a de-facto standard header for identifying the protocol (HTTP or HTTPS) that a client used to connect
+     * to your proxy or load balancer.
+     * <p>
+     * A standardized version of this header is the HTTP {@link #FORWARDED "forwarded"} header.
+     */
+    public static final CharSequence X_FORWARDED_PROTO = newAsciiString("x-forwarded-proto");
+    /**
+     * {@code "x-requested-with"} is not a standard, but wildly used by most JavaScript frameworks header to identify
+     * <a href="https://developer.mozilla.org/en-US/docs/Web/Guide/AJAX">Ajax</a> requests. Usually frameworks send this
+     * header with value of {@link HttpHeaderValues#XML_HTTP_REQUEST XMLHttpRequest}.
+     */
+    public static final CharSequence X_REQUESTED_WITH = newAsciiString("x-requested-with");
 
     private HttpHeaderNames() {
         // No instances
