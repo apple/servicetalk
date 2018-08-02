@@ -94,7 +94,8 @@ public class RedisClientOffloadingTest {
 
     @Test
     public void requestResponseIsOffloaded() throws Exception {
-        final RequestRedisData ping = new CompleteBulkString(connectionContext.getBufferAllocator().fromUtf8("Hello"));
+        final RequestRedisData ping = new CompleteBulkString(
+                connectionContext.getExecutionContext().getBufferAllocator().fromUtf8("Hello"));
         final Publisher<RequestRedisData> reqContent = just(ping).doBeforeRequest(n -> {
             if (inClientEventLoopOrTestThread().test(currentThread())) {
                 errors.add(new AssertionError("Request content: request-n not offloaded"));

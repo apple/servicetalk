@@ -51,6 +51,7 @@ import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static io.servicetalk.redis.internal.RedisUtils.newRequestCompositeBuffer;
 import static io.servicetalk.redis.netty.RedisUtils.encodeRequestContent;
 import static io.servicetalk.redis.netty.TerminalMessagePredicates.forCommand;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 final class PipelinedRedisConnection extends AbstractRedisConnection {
@@ -82,16 +83,20 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
     private PipelinedRedisConnection(Connection<RedisData, ByteBuf> connection,
                                      ExecutionContext executionContext,
                                      ReadOnlyRedisClientConfig roConfig) {
-        super(connection.getIoExecutor().asExecutor(), connection.onClosing(), executionContext, roConfig);
+        super(toNettyIoExecutor(connection.getExecutionContext().getIoExecutor()).asExecutor(), connection.onClosing(),
+                executionContext, roConfig);
         this.connection = new DefaultPipelinedConnection<>(connection, maxPendingRequests);
         rawConnection = connection;
     }
 
     @SuppressWarnings("unchecked")
     public Completable doClose() {
-        return request0(newRequest(QUIT, newRequestCompositeBuffer(1, QUIT.toRESPArgument(connection.getBufferAllocator()), connection.getBufferAllocator())), true, false)
+        return request0(newRequest(QUIT, newRequestCompositeBuffer(1, QUIT.toRESPArgument(
+                connection.getExecutionContext().getBufferAllocator()),
+                connection.getExecutionContext().getBufferAllocator())), true, false)
                 .ignoreElements()
-                .onErrorResume(th -> matches(th, ClosedChannelException.class) ? completed() : connection.closeAsync().andThen(error(th)))
+                .onErrorResume(th -> matches(th, ClosedChannelException.class) ? completed() :
+                        connection.closeAsync().andThen(error(th)))
                 .andThen(connection.closeAsync());
     }
 
@@ -158,7 +163,8 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
                     if (internalPing && potentiallyConflictingCommand != null) {
                         return Completable.error(new PingRejectedException(potentiallyConflictingCommand));
                     }
-                    return rawConnection.write(encodeRequestContent(request, connection.getBufferAllocator()), request.getFlushStrategy());
+                    return rawConnection.write(encodeRequestContent(request,
+                            connection.getExecutionContext().getBufferAllocator()), request.getFlushStrategy());
                 }, () -> predicate)
                         .doBeforeNext(predicate::trackMessage)
                         .doBeforeFinally(() -> {

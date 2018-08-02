@@ -109,7 +109,8 @@ final class ReadStreamSplitter {
     ReadStreamSplitter(Connection<RedisData, ByteBuf> connection, int maxConcurrentRequests, int maxBufferPerGroup, Function<RedisRequest, Completable> unsubscribeWriter) {
         this.connection = requireNonNull(connection);
         this.unsubscribeWriter = requireNonNull(unsubscribeWriter);
-        this.original = new SubscribedChannelReadStream(connection.read(), connection.getBufferAllocator())
+        this.original = new SubscribedChannelReadStream(connection.read(),
+                connection.getExecutionContext().getBufferAllocator())
                 .groupBy(new GroupSelector(), maxBufferPerGroup, maxConcurrentRequests);
         Connection.TerminalPredicate<RedisData> terminalMsgPredicate = connection.getTerminalMsgPredicate();
         // Max pending is enforced by the upstream connection for writes, so this can be unbounded.
@@ -275,8 +276,10 @@ final class ReadStreamSplitter {
                 @Override
                 public void cancel() {
                     final Command command = isPatternSubscribe ? PUNSUBSCRIBE : UNSUBSCRIBE;
-                    final CompositeBuffer buf = newRequestCompositeBuffer(2, command.toRESPArgument(connection.getBufferAllocator()), connection.getBufferAllocator());
-                    addRequestArgument(channel, buf, connection.getBufferAllocator());
+                    final CompositeBuffer buf = newRequestCompositeBuffer(2, command.toRESPArgument(
+                            connection.getExecutionContext().getBufferAllocator()),
+                            connection.getExecutionContext().getBufferAllocator());
+                    addRequestArgument(channel, buf, connection.getExecutionContext().getBufferAllocator());
                     final RedisRequest request = newRequest(command, buf);
                     unsubscribeWriter.apply(request).subscribe(new Completable.Subscriber() {
                         @Override

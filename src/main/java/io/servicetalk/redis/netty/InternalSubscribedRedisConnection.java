@@ -55,6 +55,7 @@ import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static io.servicetalk.redis.internal.RedisUtils.newRequestCompositeBuffer;
 import static io.servicetalk.redis.netty.RedisUtils.isSubscribeModeCommand;
 import static io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage.KeyType.SimpleString;
+import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
@@ -73,7 +74,8 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
                                               ExecutionContext executionContext,
                                               ReadOnlyRedisClientConfig roConfig, int initialQueueCapacity,
                                               int maxBufferPerGroup) {
-        super(connection.getIoExecutor().asExecutor(), connection.onClosing(), executionContext, roConfig);
+        super(toNettyIoExecutor(connection.getExecutionContext().getIoExecutor()).asExecutor(), connection.onClosing(),
+                executionContext, roConfig);
         this.connection = connection;
         this.deferSubscribeTillConnect = roConfig.isDeferSubscribeTillConnect();
         writeQueue = new WriteQueue(maxPendingRequests, initialQueueCapacity);
@@ -99,7 +101,8 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
 
     private Publisher<RedisData> request0(RedisRequest request) {
         final RedisProtocolSupport.Command command = request.getCommand();
-        final Publisher<ByteBuf> reqContent = RedisUtils.encodeRequestContent(request, connection.getBufferAllocator());
+        final Publisher<ByteBuf> reqContent = RedisUtils.encodeRequestContent(request,
+                connection.getExecutionContext().getBufferAllocator());
         return new Publisher<RedisData>() {
             @SuppressWarnings("unchecked")
             @Override
@@ -135,7 +138,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
                 final Publisher<PubSubChannelMessage> response;
                 if (deferSubscribeTillConnect) {
                     response = concatDeferOnSubscribe(write, readStreamSplitter.registerNewCommand(command),
-                            connection.getExecutor());
+                            connection.getExecutionContext().getExecutor());
                 } else {
                     response = write.andThen(readStreamSplitter.registerNewCommand(command));
                 }
@@ -152,8 +155,11 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
 
     @Override
     Completable doClose() {
-        return writeQueue.quit(request(newRequest(QUIT, newRequestCompositeBuffer(1, QUIT.toRESPArgument(connection.getBufferAllocator()), connection.getBufferAllocator()))).ignoreElements())
-                .onErrorResume(th -> matches(th, ClosedChannelException.class) ? completed() : connection.closeAsync().andThen(error(th)))
+        return writeQueue.quit(request(newRequest(QUIT, newRequestCompositeBuffer(1, QUIT.toRESPArgument(
+                connection.getExecutionContext().getBufferAllocator()),
+                connection.getExecutionContext().getBufferAllocator()))).ignoreElements())
+                .onErrorResume(th -> matches(th, ClosedChannelException.class) ? completed() :
+                        connection.closeAsync().andThen(error(th)))
                 .andThen(connection.closeAsync());
     }
 

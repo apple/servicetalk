@@ -73,8 +73,9 @@ final class RedisIdleConnectionReaper implements UnaryOperator<RedisConnection> 
 
     @Override
     public RedisConnection apply(final RedisConnection redisConnection) {
-        Completable timer = toNettyIoExecutor(redisConnection.getConnectionContext().getIoExecutor()).asExecutor()
-                .timer(idleTimeoutNanos, NANOSECONDS);
+        Completable timer = toNettyIoExecutor(
+                redisConnection.getConnectionContext().getExecutionContext().getIoExecutor())
+                        .asExecutor().timer(idleTimeoutNanos, NANOSECONDS);
         return new IdleAwareRedisConnection(redisConnection, timer::subscribe);
     }
 
