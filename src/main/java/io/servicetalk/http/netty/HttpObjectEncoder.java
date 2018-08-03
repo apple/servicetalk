@@ -220,7 +220,14 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
 
             if (msg instanceof LastHttpPayloadChunk) {
                 state = ST_INIT;
-                promise.addListener(f -> closeHandler.protocolPayloadEndOutbound(ctx));
+                promise.addListener(f -> {
+                    if (f.isSuccess()) {
+                        // Only writes of the last payload that have been successfully written and flushed should emit
+                        // events. A CloseHandler should not get into a completed state on a failed write so that it can
+                        // abort and close the Channel when appropriate.
+                        closeHandler.protocolPayloadEndOutbound(ctx);
+                    }
+                });
             }
         } else if (byteBuf != null) {
             ctx.write(byteBuf, promise);

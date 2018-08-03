@@ -38,6 +38,7 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
@@ -132,7 +133,7 @@ public class AddressParsingHttpRequesterSslTest {
         clearInvocations(httpService, secureHttpService);
     }
 
-    @Test(expected = TimeoutException.class)
+    @Test(expected = ExecutionException.class)
     public void nonSecureClientToSecureServer() throws Exception {
         AggregatedHttpRequester requester = new AddressParsingHttpRequesterBuilder()
                 .buildAggregated(CTX);
@@ -216,7 +217,7 @@ public class AddressParsingHttpRequesterSslTest {
         verify(secureHttpService, times(2)).handle(any(), any());
     }
 
-    private static void requestAndValidate(final BlockingAggregatedHttpRequester requester,
+        private static void requestAndValidate(final BlockingAggregatedHttpRequester requester,
                                            final String requestTarget, final String hostHeader) throws Exception {
         AggregatedHttpRequest<HttpPayloadChunk> request = newRequest(GET, requestTarget);
         request.getHeaders().add(HOST, hostHeader);
