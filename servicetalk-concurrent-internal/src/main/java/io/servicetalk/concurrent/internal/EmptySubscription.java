@@ -13,14 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-enableFeaturePreview("IMPROVED_POM_SUPPORT")
-rootProject.name = "servicetalk"
+package io.servicetalk.concurrent.internal;
 
-includeBuild "servicetalk-bom-internal"
-includeBuild "servicetalk-annotations"
-includeBuild "servicetalk-buffer-api"
-includeBuild "servicetalk-buffer-netty"
-includeBuild "servicetalk-concurrent"
-includeBuild "servicetalk-concurrent-internal"
-includeBuild "servicetalk-gradle-plugin-internal"
-includeBuild "servicetalk-test-resources"
+import org.reactivestreams.Subscription;
+
+/**
+ * A {@link Subscription} implementation, which does not do anything.
+ */
+public final class EmptySubscription implements Subscription {
+    public static final EmptySubscription EMPTY_SUBSCRIPTION = new EmptySubscription();
+
+    @Override
+    public void request(long n) {
+        // No op
+    }
+
+    @Override
+    public void cancel() {
+        // No op
+    }
+}

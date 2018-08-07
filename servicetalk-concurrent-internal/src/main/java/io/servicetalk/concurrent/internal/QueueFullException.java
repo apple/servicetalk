@@ -13,14 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-enableFeaturePreview("IMPROVED_POM_SUPPORT")
-rootProject.name = "servicetalk"
+package io.servicetalk.concurrent.internal;
 
-includeBuild "servicetalk-bom-internal"
-includeBuild "servicetalk-annotations"
-includeBuild "servicetalk-buffer-api"
-includeBuild "servicetalk-buffer-netty"
-includeBuild "servicetalk-concurrent"
-includeBuild "servicetalk-concurrent-internal"
-includeBuild "servicetalk-gradle-plugin-internal"
-includeBuild "servicetalk-test-resources"
+/**
+ * Exception indicating a bounded queue is full.
+ */
+public final class QueueFullException extends RuntimeException {
+    private static final long serialVersionUID = 7206036429195573500L;
+
+    /**
+     * New instance.
+     *
+     * @param queueIdentifier Identifier for the queue that is full.
+     * @param capacity Capacity for queue.
+     */
+    public QueueFullException(String queueIdentifier, int capacity) {
+        super("Queue " + queueIdentifier + " exceeded maximum capacity " + capacity);
+    }
+}
