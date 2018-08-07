@@ -35,3 +35,45 @@ project.configure(project) {
   io.servicetalk.gradle.plugin.internal.ServiceTalkLibraryPlugin.applyEclipsePlugin(gradle.rootProject)
   io.servicetalk.gradle.plugin.internal.ServiceTalkCorePlugin.applyLicensePlugin(gradle.rootProject)
 }
+
+// Add tasks for composite:
+
+task clean {
+  dependsOn gradle.includedBuilds*.task(':clean')
+}
+
+task javadoc {
+  dependsOn gradle.includedBuilds*.task(':javadoc')
+}
+
+task 'package' {
+  dependsOn gradle.includedBuilds*.task(':package')
+}
+
+task test {
+  dependsOn gradle.includedBuilds*.task(':test')
+}
+
+task check {
+  dependsOn gradle.includedBuilds*.task(':check')
+}
+
+task build {
+  dependsOn gradle.includedBuilds*.task(':build')
+}
+
+// Override behavior for existing tasks:
+
+task publish(overwrite: true) {
+  dependsOn gradle.includedBuilds*.task(':publish')
+}
+
+task license(overwrite: true) {
+  dependsOn licenseRoot
+  dependsOn gradle.includedBuilds*.task(':license')
+}
+
+task licenseFormat(overwrite: true) {
+  dependsOn licenseFormatRoot
+  dependsOn gradle.includedBuilds*.task(':licenseFormat')
+}
