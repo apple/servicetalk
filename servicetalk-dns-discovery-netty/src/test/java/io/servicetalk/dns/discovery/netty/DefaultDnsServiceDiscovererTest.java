@@ -29,6 +29,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -96,6 +97,7 @@ public class DefaultDnsServiceDiscovererTest {
     }
 
     @Test
+    @Ignore
     public void testRetry() throws Exception {
         AtomicInteger retryStrategyCalledCount = new AtomicInteger();
         ServiceDiscoverer<String, InetAddress> retryingDiscoverer = buildServiceDiscoverer((retryCount, cause) -> {
@@ -116,6 +118,7 @@ public class DefaultDnsServiceDiscovererTest {
     }
 
     @Test
+    @Ignore
     public void unknownHostDiscover() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
