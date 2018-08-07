@@ -13,15 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-enableFeaturePreview("IMPROVED_POM_SUPPORT")
-rootProject.name = "servicetalk"
+package io.servicetalk.concurrent.api.completable;
 
-includeBuild "servicetalk-bom-internal"
-includeBuild "servicetalk-annotations"
-includeBuild "servicetalk-buffer-api"
-includeBuild "servicetalk-buffer-netty"
-includeBuild "servicetalk-concurrent"
-includeBuild "servicetalk-concurrent-api"
-includeBuild "servicetalk-concurrent-internal"
-includeBuild "servicetalk-gradle-plugin-internal"
-includeBuild "servicetalk-test-resources"
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.api.TestCompletable;
+
+import org.junit.Before;
+import org.junit.Test;
+
+public final class SubscribeTest {
+
+    private TestCompletable source;
+    private Cancellable cancellable;
+
+    @Before
+    public void setUp() {
+        source = new TestCompletable();
+        cancellable = source.subscribe();
+    }
+
+    @Test
+    public void testCancel() {
+        source.verifyNotCancelled();
+        cancellable.cancel();
+        source.verifyCancelled();
+    }
+}

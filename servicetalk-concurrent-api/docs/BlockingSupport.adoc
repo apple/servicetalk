@@ -1,0 +1,198 @@
+= Blocking support
+
+== Motivation
+
+We want ServiceTalk to be easy to approach but the pitfall of inadvertently blocking the event loop is subtle and hard
+to understand. This pitfall reduces the target audience because users have to know about the internal threading model in
+order to avoid increasing latency/throughput for what may seem like unrelated operations that happen to share the same
+event loop. Users also have to know what constitutes "blocking", and even if they are aware of the implications of
+blocking, it is not necessarily a straightforward task to determine if third party libraries will block. For these
+reasons we want ServiceTalk to be "safe by default" and ServiceTalk shouldn't prevent imperative blocking code from
+working as expected nor inadvertently introduce latency.
+
+== What is blocking?
+
+Before understanding what it takes to supporting blocking operations in ServiceTalk, it is important to determine what
+constitutes as a *safe* blocking operation. Our intent is *not* to guarantee forward progress for arbitrary of user
+code. Instead we guarantee forward progress for user code that would otherwise guarantee forward progress in a strictly
+sequential program.
+
+=== Execution chain
+
+Any ServiceTalk asynchronous source (`Publisher`, `Single` and `Completable`) offers multiple operators that can be
+applied to the source. Any instance of such a source and all the operators applied to it before it is subscribed, is
+called an execution chain.
+
+=== Data and control flow in an execution chain
+
+The image below details the flow of data (`Subscriber` methods) and control (`Publisher` and `Subscription` methods)
+messages. Invocations in either direction may be executed on an event loop thread and hence needs to be protected. In
+case new asynchronous sources are generated/received inside operators, they follow the same model and hence are removed
+for brevity.
+
+image::BlockingScenarios.jpg[Data and control flow in an execution chain]
+
+As shown in the above picture, there are inherently two directions (data and control) of information flow for an
+execution chain and these
+link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#glossary[signals] can be triggered
+in parallel.
+
+*By default, in ServiceTalk, signals are not executed on an event loop thread, but instead executed using a thread
+provided by the application in the order they are received*. In most scenarios the same application thread is used for
+the data and control path, but some operators may not always exhibit this behavior. This means by default there is
+typically no concurrency between the data and control path. It is possible to <<Opt Out>> and have user code executed on
+the event loop thread, and in this case data and control signals may be concurrent.
+
+==== Implications
+
+The implication of the above approach is the following:
+
+**Users can execute blocking code inside an execution chain, provided they are not waiting for another data or control
+message in the same execution chain.**
+
+Look at <<Pitfalls>> section for examples elaborating this implication.
+
+== Goals
+
+=== Blocking work
+
+Out of the box, anyone using any ServiceTalk API should be allowed to execute blocking code without inadvertently
+blocking an event loop thread. Points at which such code could be written are the following:
+
+* Inside any function provided to the operators on an asynchronous source (`Publisher`, `Single`, `Completable`).
+* Inside a server handler (accepting new connections or requests, based on the protocol).
+* Inside the `handleSubscribe` method of a user created asynchronous source.
+* Inside user `Subscriber` methods.
+* Inside user `Subscription` methods.
+
+=== Thread Affinity
+
+In ServiceTalk different protocols will provide request processing by means of an asynchronous source, eg: `Single`.
+In such cases, this processing will be expressed as a chain of operators on the asynchronous source. Configuring limits
+on resources such as a thread pool can be challenging if **each** operator in the chain may run on different threads.
+This would mean applying limits to such a thread pool would be sensitive to program's execution flow and may change over
+time. In order to make thread pool configuration easier, ServiceTalk provides thread affinity for each subscription to
+all asynchronous sources.
+
+==== Affinity for an asynchronous source
+
+Let us assume that following expresses request processing:
+
+[source, java]
+----
+ client.request() # <1>
+       .map(resp -> {
+            return doSomeBlockingWorkAndConvertToString(resp); # <2>
+       })
+       .filter(stringResp -> {
+            doMoreBlockingWorkToFilterString(stringResp); # <3>
+       });
+----
+<1> A hypothetical client which provides a `request()` method that returns a `Single<Response>`.
+<2> Some blocking work done inside `map()` operator by this function, which provides a String as a response.
+<3> Some more blocking work inside `filter()` operator.
+
+In the above example user provided functions inside both `map()` and `filter()` will be invoked in the **same thread per
+each subscription**. Threads may be re-used by different subscriptions, but not used concurrently.
+
+==== Affinity across asynchronous sources
+
+Thread affinity across asynchronous sources is not guaranteed **even if they are part of the same processing chain**.
+
+Let us assume that following expresses request processing:
+
+[source, java]
+----
+ client.request() # <1>
+       .map(resp -> {
+            return doSomeBlockingWorkAndConvertToString(resp); # <2>
+       })
+       .flatmap(stringResp -> {
+            return client2.request(stringResp) # <3>
+                          .map(resp -> {
+                            doSomeBlockingWorkAgain(); # <4>
+                          });
+       })
+       .filter(stringResp -> {
+            doMoreBlockingWorkToFilterString(stringResp); # <5>
+       });
+----
+<1> A hypothetical client which provides a `request()` method that returns a `Single<Response>`.
+<2> Some blocking work done inside `map()` operator by this function, which provides a String as a response.
+<3> Call another `client2` that provides a new `Single` which is returned from `flatmap`.
+<4> Do some blocking work inside `map()` operator for the nested `Single` returned by Step (3).
+<5> Some more blocking work inside `filter()` operator.
+
+In the above example (2), (3) and (5) will run on one thread whereas (4) will run on a different thread.
+
+=== Blocking primitives
+
+JDK provides well understood constructs for blocking operations, eg: `Iterator`s, `InputStream`, etc. and ServiceTalk
+will provide a rich set of adapters from our asynchronous primitives to these constructs and vice-versa. The goal is to
+provide a familiar API and a strong interoperability story for java blocking libraries.
+
+== Pitfalls
+
+As defined in <<What is blocking?>>, ServiceTalk sequences events in data and control path of processing as if they were
+done on the same thread. Since, data and control events may happen in parallel, there is always a chance for user code
+to deadlock if they are executed in sequence.
+
+[source, java]
+----
+    CountDownLatch latch = new CountDownLatch(1); # <1>
+    Publisher.from(1, 2, 3, 4)
+            .doAfterNext(integer -> {
+                latch.countDown();  # <2>
+            })
+            .doBeforeRequest(requestN -> {
+                latch.await(); # <3>
+            });
+----
+<1> Hypothetical synchronization point. In real life it may be due to the code waiting for an event to happen externally.
+<2> Trigger the external event (hypothetical synchronization point of `CountDownLatch`) **after** receiving the item.
+<3> Wait for the external event to happen (hypothetical synchronization point of `CountDownLatch`) **before** sending
+`requestN` to the `Publisher`.
+
+As per ReactiveStreams link:https://github.com/reactive-streams/reactive-streams-jvm#1.1[rule 1.1], request for items
+**MUST** happen before the items are delivered. In the above code, we are waiting for an item to be emitted before
+sending a request to the `Publisher`. This results in a deadlock as an item can not be emitted by the source without a
+request being received and user code making sure that the request is not sent before an item is emitted.
+
+In order to avoid such scenarios, it is handy to follow certain best practices while writing blocking code in operators:
+
+- Avoid co-ordination between two operators on the same source.
+- If such co-ordination is required, try limiting such coordination in either data or control path but not
+inter-dependent on each other.
+- If co-ordination is required between data and control path, be aware of ReactiveStreams semantics and how the two
+paths interact with each other.
+
+If these rules are followed the above example can be modified to:
+
+[source, java]
+----
+    CountDownLatch latch = new CountDownLatch(1);
+    Publisher.from(1, 2, 3, 4)
+            .doAfterNext(integer -> {
+                latch.countDown();
+            })
+            .doAfterRequest(requestN -> { # <1>
+                latch.await();
+            });
+----
+<1> Use `doAfterRequest` which happens **after** `requestN` is delivered to the source.
+
+In this modified example, since we now use `doAfterRequest`, instead of `doBeforeRequest`, we do not block `requestN` to
+go to the source and this code is safe.
+
+== Opt Out
+
+In some cases, advanced users who wish to opt-out of the default blocking support, can do so per asynchronous source.
+Note that opting out should be done at the user's own risk. If you opt out it is assumed you are aware of the event loop
+threading model used for I/O processing, the implications of blocking an event loop thread, and be sure you do not
+execute any "blocking" code on an event loop thread.
+
+== Implementation
+
+In order to use ServiceTalk's blocking support feature, one does not need to know about implementation details and the
+above information is sufficient. However, if you are developing some operators in ServiceTalk or are just curious,
+link:BlockingImplementation.adoc[BlockingImplementation.adoc] describes the design.

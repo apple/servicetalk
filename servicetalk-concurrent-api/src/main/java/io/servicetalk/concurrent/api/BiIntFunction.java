@@ -13,15 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-enableFeaturePreview("IMPROVED_POM_SUPPORT")
-rootProject.name = "servicetalk"
+package io.servicetalk.concurrent.api;
 
-includeBuild "servicetalk-bom-internal"
-includeBuild "servicetalk-annotations"
-includeBuild "servicetalk-buffer-api"
-includeBuild "servicetalk-buffer-netty"
-includeBuild "servicetalk-concurrent"
-includeBuild "servicetalk-concurrent-api"
-includeBuild "servicetalk-concurrent-internal"
-includeBuild "servicetalk-gradle-plugin-internal"
-includeBuild "servicetalk-test-resources"
+/**
+ * A special function that takes an {@code int} and a custom argument and returns the result.
+ *
+ * @param <T> The other argument to this function.
+ * @param <R> Result of this function.
+ */
+@FunctionalInterface
+public interface BiIntFunction<T, R> {
+
+    /**
+     * Evaluates this function on the given arguments.
+     *
+     * @param i The {@code int} argument.
+     * @param t The {@link T} argument.
+     * @return Result {@link R} of this function.
+     */
+    R apply(int i, T t);
+}

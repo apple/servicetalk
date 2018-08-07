@@ -13,15 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-enableFeaturePreview("IMPROVED_POM_SUPPORT")
-rootProject.name = "servicetalk"
+package io.servicetalk.concurrent.api;
 
-includeBuild "servicetalk-bom-internal"
-includeBuild "servicetalk-annotations"
-includeBuild "servicetalk-buffer-api"
-includeBuild "servicetalk-buffer-netty"
-includeBuild "servicetalk-concurrent"
-includeBuild "servicetalk-concurrent-api"
-includeBuild "servicetalk-concurrent-internal"
-includeBuild "servicetalk-gradle-plugin-internal"
-includeBuild "servicetalk-test-resources"
+import java.util.concurrent.Callable;
+
+import static java.util.Objects.requireNonNull;
+
+final class SubmitSingle<T> extends AbstractSubmitSingle<T> {
+    private final Callable<? extends T> callable;
+
+    SubmitSingle(final Callable<? extends T> callable,
+                 final Executor runExecutor) {
+        super(runExecutor);
+        this.callable = requireNonNull(callable);
+    }
+
+    @Override
+    Callable<? extends T> getCallable() {
+        return callable;
+    }
+}

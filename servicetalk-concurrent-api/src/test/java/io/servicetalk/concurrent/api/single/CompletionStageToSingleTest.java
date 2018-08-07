@@ -13,15 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-enableFeaturePreview("IMPROVED_POM_SUPPORT")
-rootProject.name = "servicetalk"
+package io.servicetalk.concurrent.api.single;
 
-includeBuild "servicetalk-bom-internal"
-includeBuild "servicetalk-annotations"
-includeBuild "servicetalk-buffer-api"
-includeBuild "servicetalk-buffer-netty"
-includeBuild "servicetalk-concurrent"
-includeBuild "servicetalk-concurrent-api"
-includeBuild "servicetalk-concurrent-internal"
-includeBuild "servicetalk-gradle-plugin-internal"
-includeBuild "servicetalk-test-resources"
+import io.servicetalk.concurrent.api.Single;
+
+import java.util.concurrent.CompletableFuture;
+
+import static io.servicetalk.concurrent.api.Single.fromStage;
+
+public class CompletionStageToSingleTest extends AbstractFutureToSingleTest {
+    @Override
+    Single<String> from(final CompletableFuture<String> future) {
+        return fromStage(future);
+    }
+}

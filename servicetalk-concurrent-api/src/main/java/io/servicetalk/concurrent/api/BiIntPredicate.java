@@ -13,15 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-enableFeaturePreview("IMPROVED_POM_SUPPORT")
-rootProject.name = "servicetalk"
+package io.servicetalk.concurrent.api;
 
-includeBuild "servicetalk-bom-internal"
-includeBuild "servicetalk-annotations"
-includeBuild "servicetalk-buffer-api"
-includeBuild "servicetalk-buffer-netty"
-includeBuild "servicetalk-concurrent"
-includeBuild "servicetalk-concurrent-api"
-includeBuild "servicetalk-concurrent-internal"
-includeBuild "servicetalk-gradle-plugin-internal"
-includeBuild "servicetalk-test-resources"
+/**
+ * A special predicate that takes an {@code int} and a custom argument to evaluate.
+ *
+ * @param <T> The other argument to this predicate.
+ */
+@FunctionalInterface
+public interface BiIntPredicate<T> {
+
+    /**
+     * Evaluates this predicate on the given arguments.
+     *
+     * @param i The {@code int} argument.
+     * @param t The {@link T} argument.
+     * @return {@code true} if the input arguments matches the predicate, otherwise {@code false}.
+     */
+    boolean test(int i, T t);
+}

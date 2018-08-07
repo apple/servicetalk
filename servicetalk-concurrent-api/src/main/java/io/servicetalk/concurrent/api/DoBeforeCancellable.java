@@ -13,15 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-enableFeaturePreview("IMPROVED_POM_SUPPORT")
-rootProject.name = "servicetalk"
+package io.servicetalk.concurrent.api;
 
-includeBuild "servicetalk-bom-internal"
-includeBuild "servicetalk-annotations"
-includeBuild "servicetalk-buffer-api"
-includeBuild "servicetalk-buffer-netty"
-includeBuild "servicetalk-concurrent"
-includeBuild "servicetalk-concurrent-api"
-includeBuild "servicetalk-concurrent-internal"
-includeBuild "servicetalk-gradle-plugin-internal"
-includeBuild "servicetalk-test-resources"
+import io.servicetalk.concurrent.Cancellable;
+
+final class DoBeforeCancellable implements Cancellable {
+
+    private final Cancellable first;
+    private final Cancellable second;
+
+    DoBeforeCancellable(Cancellable first, Cancellable second) {
+        this.first = first;
+        this.second = second;
+    }
+
+    @Override
+    public void cancel() {
+        try {
+            first.cancel();
+        } finally {
+            second.cancel();
+        }
+    }
+}

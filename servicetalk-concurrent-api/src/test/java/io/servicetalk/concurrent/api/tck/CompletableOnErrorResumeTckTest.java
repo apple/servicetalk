@@ -13,15 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-enableFeaturePreview("IMPROVED_POM_SUPPORT")
-rootProject.name = "servicetalk"
+package io.servicetalk.concurrent.api.tck;
 
-includeBuild "servicetalk-bom-internal"
-includeBuild "servicetalk-annotations"
-includeBuild "servicetalk-buffer-api"
-includeBuild "servicetalk-buffer-netty"
-includeBuild "servicetalk-concurrent"
-includeBuild "servicetalk-concurrent-api"
-includeBuild "servicetalk-concurrent-internal"
-includeBuild "servicetalk-gradle-plugin-internal"
-includeBuild "servicetalk-test-resources"
+import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.DeliberateException;
+
+import org.reactivestreams.Publisher;
+import org.testng.annotations.Test;
+
+@Test
+public class CompletableOnErrorResumeTckTest extends AbstractCompletableTckTest {
+    @Override
+    public Publisher<Object> createPublisher(long elements) {
+        return Completable.error(DeliberateException.DELIBERATE_EXCEPTION).onErrorResume(cause -> Completable.completed()).toPublisher(Object::new);
+    }
+}

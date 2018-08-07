@@ -13,15 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-enableFeaturePreview("IMPROVED_POM_SUPPORT")
-rootProject.name = "servicetalk"
+package io.servicetalk.concurrent.api;
 
-includeBuild "servicetalk-bom-internal"
-includeBuild "servicetalk-annotations"
-includeBuild "servicetalk-buffer-api"
-includeBuild "servicetalk-buffer-netty"
-includeBuild "servicetalk-concurrent"
-includeBuild "servicetalk-concurrent-api"
-includeBuild "servicetalk-concurrent-internal"
-includeBuild "servicetalk-gradle-plugin-internal"
-includeBuild "servicetalk-test-resources"
+/**
+ * Provides a way to subscribe when {@link #closeAsync()} is completed.
+ */
+public interface ListenableAsyncCloseable extends AsyncCloseable {
+
+    /**
+     * Returns a {@link Completable} that is notified once the {@link ListenableAsyncCloseable} was closed.
+     * @return the {@code Completable} that is notified on close.
+     */
+    Completable onClose();
+}

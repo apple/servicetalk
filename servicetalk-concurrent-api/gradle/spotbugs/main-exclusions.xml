@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<FindBugsFilter>
+  <!-- Intentional name of Publisher same as reactivestreams Publisher -->
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.concurrent.api.Publisher"/>
+      <Class name="io.servicetalk.concurrent.api.Single"/>
+      <Class name="io.servicetalk.concurrent.api.Completable"/>
+    </Or>
+    <Bug pattern="NM_SAME_SIMPLE_NAME_AS_INTERFACE"/>
+  </Match>
+
+  <!-- We set the value before the synchronized block which does a signal, but this should be visible
+       in the thread doing the await because of the JMM -->
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.ExecutorCompletionStage$GetListener"/>
+    <Or>
+      <Method name="onError"/>
+      <Method name="onSuccess"/>
+    </Or>
+  </Match>
+
+  <!-- Synchronized is used for blocking wait/notify code, and we are relying upon the JMM to provide visibility on
+       the result variable before/after the synchornized block. -->
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.ExecutorCompletionStage$GetListener"/>
+    <Bug pattern="IS2_INCONSISTENT_SYNC"/>
+  </Match>
+</FindBugsFilter>

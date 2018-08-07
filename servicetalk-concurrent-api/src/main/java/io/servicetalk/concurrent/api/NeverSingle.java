@@ -13,15 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-enableFeaturePreview("IMPROVED_POM_SUPPORT")
-rootProject.name = "servicetalk"
+package io.servicetalk.concurrent.api;
 
-includeBuild "servicetalk-bom-internal"
-includeBuild "servicetalk-annotations"
-includeBuild "servicetalk-buffer-api"
-includeBuild "servicetalk-buffer-netty"
-includeBuild "servicetalk-concurrent"
-includeBuild "servicetalk-concurrent-api"
-includeBuild "servicetalk-concurrent-internal"
-includeBuild "servicetalk-gradle-plugin-internal"
-includeBuild "servicetalk-test-resources"
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+
+final class NeverSingle<T> extends AbstractSynchronousSingle<T> {
+
+    private static final NeverSingle<Object> INSTANCE = new NeverSingle<>();
+
+    private NeverSingle() {
+        // Singleton.
+    }
+
+    @Override
+    void doSubscribe(final Subscriber<? super T> subscriber) {
+        subscriber.onSubscribe(IGNORE_CANCEL);
+    }
+
+    @SuppressWarnings("unchecked")
+    static <T> Single<T> neverSingle() {
+        return (Single<T>) INSTANCE;
+    }
+}

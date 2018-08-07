@@ -1,0 +1,58 @@
+/*
+ * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+buildscript {
+  if (!repositories) {
+    repositories {
+      jcenter()
+      maven { url "https://plugins.gradle.org/m2/" }
+    }
+  }
+
+  dependencies {
+    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.1.0-SNAPSHOT"
+  }
+}
+
+apply plugin: "servicetalk-library"
+
+dependencies {
+  implementation "io.servicetalk:servicetalk-bom-internal:0.1.0-SNAPSHOT"
+
+  api "io.servicetalk:servicetalk-concurrent:0.1.0-SNAPSHOT"
+  api "org.reactivestreams:reactive-streams"
+  
+  implementation "com.google.code.findbugs:jsr305"
+  implementation "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-concurrent-internal:0.1.0-SNAPSHOT"
+  implementation "org.slf4j:slf4j-api"
+
+  testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:0.1.0-SNAPSHOT"
+  testImplementation "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
+  testImplementation "org.mockito:mockito-core"
+  testImplementation "org.reactivestreams:reactive-streams-tck"
+  testImplementation "org.testng:testng"
+
+  testFixturesImplementation "junit:junit"
+  testFixturesImplementation "org.hamcrest:hamcrest-library"
+  testFixturesImplementation "org.mockito:mockito-core"
+}
+
+// We need testng for the reactive-streams-tck
+task tck(type: Test) {
+  useTestNG()
+}
+
+test.dependsOn tck

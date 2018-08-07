@@ -13,15 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-enableFeaturePreview("IMPROVED_POM_SUPPORT")
-rootProject.name = "servicetalk"
+package io.servicetalk.concurrent.api;
 
-includeBuild "servicetalk-bom-internal"
-includeBuild "servicetalk-annotations"
-includeBuild "servicetalk-buffer-api"
-includeBuild "servicetalk-buffer-netty"
-includeBuild "servicetalk-concurrent"
-includeBuild "servicetalk-concurrent-api"
-includeBuild "servicetalk-concurrent-internal"
-includeBuild "servicetalk-gradle-plugin-internal"
-includeBuild "servicetalk-test-resources"
+import org.reactivestreams.Subscriber;
+
+import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
+
+final class NeverPublisher<T> extends AbstractSynchronousPublisher<T> {
+
+    private static final NeverPublisher NEVER_PUBLISHER = new NeverPublisher();
+
+    @Override
+    void doSubscribe(Subscriber<? super T> subscriber) {
+        subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+    }
+
+    @SuppressWarnings("unchecked")
+    static <T> Publisher<T> neverPublisher() {
+        return (Publisher<T>) NEVER_PUBLISHER;
+    }
+}

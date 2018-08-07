@@ -13,15 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-enableFeaturePreview("IMPROVED_POM_SUPPORT")
-rootProject.name = "servicetalk"
+package io.servicetalk.concurrent.api;
 
-includeBuild "servicetalk-bom-internal"
-includeBuild "servicetalk-annotations"
-includeBuild "servicetalk-buffer-api"
-includeBuild "servicetalk-buffer-netty"
-includeBuild "servicetalk-concurrent"
-includeBuild "servicetalk-concurrent-api"
-includeBuild "servicetalk-concurrent-internal"
-includeBuild "servicetalk-gradle-plugin-internal"
-includeBuild "servicetalk-test-resources"
+import java.util.function.Supplier;
+
+import static java.util.Objects.requireNonNull;
+
+final class SubmitSupplierCompletable extends AbstractSubmitCompletable {
+    private final Supplier<Runnable> runnableSupplier;
+
+    SubmitSupplierCompletable(final Supplier<Runnable> runnableSupplier,
+                              final Executor runExecutor) {
+        super(runExecutor);
+        this.runnableSupplier = requireNonNull(runnableSupplier);
+    }
+
+    @Override
+    Runnable getRunnable() {
+        return runnableSupplier.get();
+    }
+}

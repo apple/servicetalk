@@ -13,15 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-enableFeaturePreview("IMPROVED_POM_SUPPORT")
-rootProject.name = "servicetalk"
+package io.servicetalk.concurrent.api.tck;
 
-includeBuild "servicetalk-bom-internal"
-includeBuild "servicetalk-annotations"
-includeBuild "servicetalk-buffer-api"
-includeBuild "servicetalk-buffer-netty"
-includeBuild "servicetalk-concurrent"
-includeBuild "servicetalk-concurrent-api"
-includeBuild "servicetalk-concurrent-internal"
-includeBuild "servicetalk-gradle-plugin-internal"
-includeBuild "servicetalk-test-resources"
+import io.servicetalk.concurrent.api.Single;
+
+import org.reactivestreams.Publisher;
+import org.testng.annotations.Test;
+
+@Test
+public class SingleConcatWithSingleTckTest extends AbstractSingleTckTest<Integer> {
+
+    @Override
+    public Publisher<Integer> createPublisher(long elements) {
+        if (elements == 2) {
+            return Single.success(1).concatWith(Single.success(2));
+        }
+        return Single.success(1).toPublisher();
+    }
+
+    @Override
+    public long maxElementsFromPublisher() {
+        return 2;
+    }
+}
