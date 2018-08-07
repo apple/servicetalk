@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~   http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<FindBugsFilter>
+  <!-- Implementing Map.Entry allows us to avoid object allocation on each iteration. Also this class is internal at the moment. -->
+  <Match>
+    <Class name="io.servicetalk.http.api.ReadOnlyHttpHeaders$ReadOnlyIterator"/>
+    <Bug pattern="PZ_DONT_REUSE_ENTRY_OBJECTS_IN_ITERATORS"/>
+  </Match>
+  
+  <!-- False positive. Everything involved has a default @NonNull from the package-info.java -->
+  <Match>
+    <Class name="io.servicetalk.http.api.DefaultHttpCookies"/>
+    <Method name="equals"/>
+    <LocalVariable name="key1"/>
+    <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE"/>
+  </Match>
+
+  <!-- Heisenbug false positive. Sometimes spotbugs complains, sometimes it doesn't.
+  Everything involved has a default @NonNull from the package-info.java -->
+  <Match>
+    <Class name="io.servicetalk.http.api.DefaultHttpHeaders"/>
+    <Method name="equals"/>
+    <LocalVariable name="name1"/>
+    <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE"/>
+  </Match>
+
+  <!-- Return type is designed such that each type must override the method specifically to override the return type -->
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.http.api.BlockingHttpClientToHttpClient$BlockingToUpgradableHttpResponse"/>
+      <Class name="io.servicetalk.http.api.BlockingHttpClientToHttpClient$BlockingToUpgradableHttpResponse"/>
+      <Class name="io.servicetalk.http.api.BlockingHttpClientToHttpClient$BlockingUpgradableHttpResponseConverter"/>
+      <Class name="io.servicetalk.http.api.BlockingHttpClientToHttpClient$BlockingUpgradableHttpResponseConverter"/>
+      <Class name="io.servicetalk.http.api.HttpClientToBlockingHttpClient$UpgradableHttpResponseToBlocking"/>
+      <Class name="io.servicetalk.http.api.HttpClientToBlockingHttpClient$UpgradableHttpResponseToBlocking"/>
+      <Class name="io.servicetalk.http.api.HttpClientToBlockingHttpClient$UpgradableHttpResponseToBlockingConverter"/>
+      <Class name="io.servicetalk.http.api.HttpClientToBlockingHttpClient$UpgradableHttpResponseToBlockingConverter"/>
+      <Class name="io.servicetalk.http.api.AggregatedHttpClientToHttpClient$AggregatedToUpgradableHttpResponse"/>
+      <Class name="io.servicetalk.http.api.AggregatedHttpClientToHttpClient$AggregatedToUpgradableHttpResponse"/>
+      <Class name="io.servicetalk.http.api.AggregatedHttpClientToHttpClient$AggregatedToUpgradableHttpResponseConverter"/>
+      <Class name="io.servicetalk.http.api.AggregatedHttpClientToHttpClient$AggregatedToUpgradableHttpResponseConverter"/>
+      <Class name="io.servicetalk.http.api.HttpClientToAggregatedHttpClient$UpgradableHttpResponseToAggregated"/>
+      <Class name="io.servicetalk.http.api.HttpClientToAggregatedHttpClient$UpgradableHttpResponseToAggregated"/>
+      <Class name="io.servicetalk.http.api.HttpClientToAggregatedHttpClient$UpgradablePayloadResponse"/>
+      <Class name="io.servicetalk.http.api.HttpClientToAggregatedHttpClient$UpgradablePayloadResponse"/>
+    </Or>
+    <Or>
+      <Method name="setStatus"/>
+      <Method name="setVersion"/>
+    </Or>
+    <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
+  </Match>
+</FindBugsFilter>
