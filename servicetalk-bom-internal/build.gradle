@@ -1,0 +1,78 @@
+/*
+ * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+buildscript {
+  if (!repositories) {
+    repositories {
+      jcenter()
+      maven { url "https://plugins.gradle.org/m2/" }
+    }
+  }
+
+  dependencies {
+    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.1.0-SNAPSHOT"
+  }
+}
+
+plugins {
+  id "io.spring.dependency-management" version "1.0.5.RELEASE"
+}
+
+apply plugin: "servicetalk-core"
+
+dependencyManagement {
+  imports {
+    mavenBom "io.netty:netty-bom:$nettyVersion"
+  }
+  dependencies {
+    // Transitive Dependencies
+    dependency "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    dependency "com.google.code.findbugs:jsr305:$jsr305Version"
+    dependency "io.reactivex.rxjava2:rxjava:$rxJavaVersion"
+    dependency "org.jctools:jctools-core:$jcToolsVersion"
+    dependency "org.reactivestreams:reactive-streams:$reactiveStreamsVersion"
+    dependency "org.slf4j:slf4j-api:$slf4jVersion"
+
+    // Testing
+    dependency "junit:junit:$junitVersion"
+    dependency "org.hamcrest:hamcrest-library:$hamcrestVersion"
+    dependency "org.mockito:mockito-core:$mockitoCoreVersion"
+    dependency "org.reactivestreams:reactive-streams-tck:$reactiveStreamsVersion"
+    dependency "org.testng:testng:$testngVersion"
+
+    // Testing Support
+    dependency "commons-lang:commons-lang:$commonsLangVersion"
+    dependency ("org.apache.directory.server:apacheds-protocol-dns:$apacheDirectoryServerVersion") {
+      // We need to use commons-lang 2.6 to be able to run tests with java9
+      // See https://github.com/apache/bookkeeper/issues/385
+      exclude "commons-logging:commons-logging"
+    }
+    dependency "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+    dependency "org.apache.logging.log4j:log4j-core:$log4jVersion"
+  }
+}
+
+dependencies {
+  constraints {
+    dependencyManagement.managedVersions.each { dependency ->
+      add("compile", dependency.key) {
+        version {
+          prefer dependency.value
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,38 @@
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+
+# intellij
+/.idea
+/*.iml
+/*.ipr
+/*.iws
+/out/
+/fileTemplates/
+
+# gradle
+/.gradle/
+/.out/
+/buildSrc/build
+/.dist/
+
+# Eclipse
+/bin/
+/.settings/
+/.project
+/.classpath
+/build/
+
+# Mac
+.DS_Store
+
+# Generated Code
+generated/
+
+# Java Hotspot
+.attach_pid*
+
+# Node
+npm-debug.log
+
+# Generic
+.ignore

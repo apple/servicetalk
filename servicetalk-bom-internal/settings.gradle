@@ -13,8 +13,5 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-enableFeaturePreview("IMPROVED_POM_SUPPORT")
-rootProject.name = "servicetalk"
 
-includeBuild "servicetalk-bom-internal"
-includeBuild "servicetalk-gradle-plugin-internal"
+rootProject.name = "servicetalk-bom-internal"
