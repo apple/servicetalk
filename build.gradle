@@ -24,4 +24,14 @@ buildscript {
       maven { url "https://plugins.gradle.org/m2/" }
     }
   }
+
+  dependencies {
+    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.1.0-SNAPSHOT"
+  }
+}
+
+project.configure(project) {
+  io.servicetalk.gradle.plugin.internal.ServiceTalkLibraryPlugin.applyIdeaPlugin(gradle.rootProject)
+  io.servicetalk.gradle.plugin.internal.ServiceTalkLibraryPlugin.applyEclipsePlugin(gradle.rootProject)
+  io.servicetalk.gradle.plugin.internal.ServiceTalkCorePlugin.applyLicensePlugin(gradle.rootProject)
 }
