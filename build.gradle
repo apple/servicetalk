@@ -58,6 +58,10 @@ project.configure(project) {
   io.servicetalk.gradle.plugin.internal.ServiceTalkCorePlugin.applyLicensePlugin(gradle.rootProject)
 }
 
+ext.findTasks = { taskName, excludedBuilds = [] ->
+  gradle.includedBuilds.findAll { !excludedBuilds.contains(it.name) }.collect { it.task(taskName) }
+}
+
 // Add tasks for composite:
 
 task clean {
@@ -69,7 +73,7 @@ task javadoc {
 }
 
 task 'package' {
-  dependsOn gradle.includedBuilds*.task(':package')
+  dependsOn findTasks(':package', ['servicetalk-examples'])
 }
 
 task test {
@@ -82,6 +86,26 @@ task check {
 
 task build {
   dependsOn gradle.includedBuilds*.task(':build')
+}
+
+task checkstyle {
+  dependsOn findTasks(':checkstyle',
+    ['servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
+}
+
+task pmd {
+  dependsOn findTasks(':pmd',
+    ['servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
+}
+
+task spotbugs {
+  dependsOn findTasks(':spotbugs',
+    ['servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
+}
+
+task quality {
+  dependsOn findTasks(':quality',
+    ['servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
 }
 
 // Override behavior for existing tasks:
