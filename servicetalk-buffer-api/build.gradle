@@ -13,11 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-enableFeaturePreview("IMPROVED_POM_SUPPORT")
-rootProject.name = "servicetalk"
+buildscript {
+  if (!repositories) {
+    repositories {
+      jcenter()
+      maven { url "https://plugins.gradle.org/m2/" }
+    }
+  }
 
-includeBuild "servicetalk-bom-internal"
-includeBuild "servicetalk-annotations"
-includeBuild "servicetalk-buffer-api"
-includeBuild "servicetalk-gradle-plugin-internal"
-includeBuild "servicetalk-test-resources"
+  dependencies {
+    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.1.0-SNAPSHOT"
+  }
+}
+
+apply plugin: "servicetalk-library"
+
+dependencies {
+  implementation "io.servicetalk:servicetalk-bom-internal:0.1.0-SNAPSHOT"
+
+  implementation "com.google.code.findbugs:jsr305"
+  implementation "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
+
+  testImplementation "junit:junit"
+  testImplementation "org.hamcrest:hamcrest-library"
+  testImplementation "org.mockito:mockito-core"
+}

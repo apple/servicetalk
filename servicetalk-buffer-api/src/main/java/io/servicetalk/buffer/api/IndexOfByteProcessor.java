@@ -13,11 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-enableFeaturePreview("IMPROVED_POM_SUPPORT")
-rootProject.name = "servicetalk"
+package io.servicetalk.buffer.api;
 
-includeBuild "servicetalk-bom-internal"
-includeBuild "servicetalk-annotations"
-includeBuild "servicetalk-buffer-api"
-includeBuild "servicetalk-gradle-plugin-internal"
-includeBuild "servicetalk-test-resources"
+final class IndexOfByteProcessor implements ByteProcessor {
+    private final byte byteToFind;
+
+    IndexOfByteProcessor(byte byteToFind) {
+        this.byteToFind = byteToFind;
+    }
+
+    @Override
+    public boolean process(byte value) {
+        return value != byteToFind;
+    }
+}

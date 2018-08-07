@@ -13,11 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-enableFeaturePreview("IMPROVED_POM_SUPPORT")
-rootProject.name = "servicetalk"
+package io.servicetalk.buffer.api;
 
-includeBuild "servicetalk-bom-internal"
-includeBuild "servicetalk-annotations"
-includeBuild "servicetalk-buffer-api"
-includeBuild "servicetalk-gradle-plugin-internal"
-includeBuild "servicetalk-test-resources"
+/**
+ * Provides a mechanism to iterate over a collection of bytes.
+ */
+@FunctionalInterface
+public interface ByteProcessor {
+    /**
+     * Process bytes until returns {@code false}.
+     *
+     * @param value the {@code byte} to process.
+     * @return {@code true} if the consumer wants to continue the loop and handle the next byte in the buffer.
+     *         {@code false} if the consumer wants to stop handling bytes and abort the loop.
+     */
+    boolean process(byte value);
+}

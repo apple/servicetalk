@@ -13,11 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-enableFeaturePreview("IMPROVED_POM_SUPPORT")
-rootProject.name = "servicetalk"
+package io.servicetalk.buffer.api;
 
-includeBuild "servicetalk-bom-internal"
-includeBuild "servicetalk-annotations"
-includeBuild "servicetalk-buffer-api"
-includeBuild "servicetalk-gradle-plugin-internal"
-includeBuild "servicetalk-test-resources"
+import java.io.OutputStream;
+
+import static java.util.Objects.requireNonNull;
+
+final class BufferOutputStream extends OutputStream {
+    private final Buffer buffer;
+
+    BufferOutputStream(Buffer buffer) {
+        this.buffer = requireNonNull(buffer);
+    }
+
+    @Override
+    public void write(final int b) {
+        buffer.writeInt(b);
+    }
+
+    @Override
+    public void write(byte[] b) {
+        buffer.writeBytes(b);
+    }
+
+    @Override
+    public void write(byte[] b, int off, int len) {
+        buffer.writeBytes(b, off, len);
+    }
+}
