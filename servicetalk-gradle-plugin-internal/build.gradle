@@ -1,0 +1,143 @@
+/*
+ * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+plugins {
+  id "com.github.hierynomus.license" version "0.14.0"
+  id "com.jfrog.bintray" version "1.7.3"
+}
+
+apply plugin: "groovy"
+apply plugin: "idea"
+apply plugin: "maven-publish"
+
+repositories {
+  jcenter()
+  maven { url "https://plugins.gradle.org/m2/" }
+}
+
+dependencies {
+  compile gradleApi()
+  compile localGroovy()
+  // these are plugins that are applied by the plugin
+  compile "org.asciidoctor:asciidoctor-gradle-plugin:1.5.7"
+  compile "gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.14.0"
+  compile "gradle.plugin.com.github.spotbugs:spotbugs-gradle-plugin:1.6.2"
+  compile "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3"
+}
+
+license {
+  header = file("$rootDir/src/main/resources/io/servicetalk/gradle/plugin/internal/license/HEADER.txt")
+  strictCheck = true
+  mapping {
+    java = 'SLASHSTAR_STYLE'
+    gradle = 'SLASHSTAR_STYLE'
+  }
+  headerDefinitions {
+    xml_style {
+      firstLine = '<!--'
+      beforeEachLine = '  ~ '
+      endLine = '  -->'
+      skipLinePattern = '^<\\?xml.*>$'
+      firstLineDetectionPattern = '(\\\\s|\\\\t)*<!--.*$'
+      lastLineDetectionPattern = '.*-->(\\\\s|\\\\t)*$'
+      allowBlankLines = true
+      isMultiline = true
+    }
+  }
+}
+
+def rootFileTree = fileTree("$rootDir") {
+  includes = ["*.gradle", "*.properties", "gradle/**"]
+  excludes = ["gradle/wrapper/**"]
+}
+
+task licenseRoot(type: com.hierynomus.gradle.license.tasks.LicenseCheck) {
+  source = rootFileTree
+}
+tasks.license.dependsOn tasks.licenseRoot
+
+task licenseFormatRoot(type: com.hierynomus.gradle.license.tasks.LicenseFormat) {
+  source = rootFileTree
+}
+tasks.licenseFormat.dependsOn tasks.licenseFormatRoot
+
+jar {
+  manifest {
+    attributes "Built-JDK": System.getProperty("java.version"),
+        "Specification-Title": project.name,
+        "Specification-Version": "${-> project.version}",
+        "Specification-Vendor": "Apple Inc.",
+        "Implementation-Title": project.name,
+        "Implementation-Version": "${-> project.version}",
+        "Implementation-Vendor": "Apple Inc.",
+        "Automatic-Module-Name": "io.${project.name.replace("-", ".")}"
+  }
+}
+
+publishing {
+  publications {
+    mavenJava(MavenPublication) {
+      // publish jars, sources and docs
+      from components.java
+    }
+  }
+}
+
+if (System.getenv("BINTRAY_USER") && System.getenv("BINTRAY_KEY")) {
+  bintray {
+      user = System.getenv("BINTRAY_USER")
+      key = System.getenv("BINTRAY_KEY")
+      publications = ["mavenJava"]
+      pkg {
+          userOrg = "servicetalk"
+          repo = "servicetalk"
+          name = project.name
+          licenses = ["Apache-2.0"]
+          vcsUrl = "https://github.com/servicetalk/${project.name}.git"
+      }
+      override = true
+      publish = true
+  }
+}
+
+idea {
+  module {
+    iml {
+      withXml {
+        // Without this, gradle/intellij sees .java files and makes it a source directory instead of a resource
+        // directory. This then causes building in intellijto fail when it tries to compile the template .java files.
+        for (def sourceFolder : it.asNode().component.content.sourceFolder) {
+          if (sourceFolder.@url.endsWith("/resources")) {
+            sourceFolder.@type = "java-resource"
+          }
+        }
+      }
+    }
+  }
+}
+
+def versionString = version.toString()
+
+if (System.getenv("apple")) {
+  if (!versionString.endsWith("-apple")) {
+    version += "-apple"
+  }
+}
+
+if (!hasProperty('releaseBuild') && !versionString.endsWith("-SNAPSHOT")) {
+  version += "-SNAPSHOT"
+}
+
+task('package', dependsOn: assemble)
