@@ -30,6 +30,28 @@ buildscript {
   }
 }
 
+// Composite builds do not correctly substitute test fixtures dependencies
+// because they target a custom configuration (namely: testFixturesRuntime).
+// We work around this problem by replacing test fixtures artifact dependencies
+// by module dependencies using the appropriate configuration.
+// Note that this workaround may not be required in the future, as the composite
+// build feature evolves and improves in Gradle.
+gradle.includedBuilds.each {
+  def config = it.configuredBuild.rootProject.configurations.findByName('testImplementation')
+  if (config) {
+    config.dependencies.findAll { it.name.endsWith TEST_FIXTURES_DEPENDENCY_SUFFIX }.each {
+      def projectDependency =
+          new DefaultExternalModuleDependency(
+              it.group,
+              it.name.substring(0, it.name.length() - TEST_FIXTURES_DEPENDENCY_SUFFIX.length()),
+              it.version,
+              'testFixturesRuntime')
+      config.dependencies.add(projectDependency)
+      config.dependencies.remove(it)
+    }
+  }
+}
+
 project.configure(project) {
   io.servicetalk.gradle.plugin.internal.ServiceTalkLibraryPlugin.applyIdeaPlugin(gradle.rootProject)
   io.servicetalk.gradle.plugin.internal.ServiceTalkLibraryPlugin.applyEclipsePlugin(gradle.rootProject)
