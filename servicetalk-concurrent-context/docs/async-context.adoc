@@ -1,0 +1,227 @@
+# Async Context
+
+## Introduction
+
+ServiceTalk is a fully asynchronous framework and therefore multiple requests
+may be multiplexed on the same thread. Also depending on the application's
+threading model a single request may be processed on different threads. This
+means that `ThreadLocal` and derivatives such as https://www.slf4j.org/manual.html#mdc[`MDC`]
+would not work as expected. To overcome this limitation, we provide an
+`AsyncContext` which hooks into the internal async machinery to make sure
+thread local context data is propagated along with the request.
+
+Although `AsyncContext` may be convenient to use it shouldn't be over used
+when traditional argument passing is an option. The intended use case of
+`AsyncContext` is to propagate context across method boundaries which do not
+accommodate for additional parameters. This is typically applicable for
+infrastructure like tasks (e.g. tracing, logging, etc...).
+
+## Basics
+
+`AsyncContext` provides a map-like storage scoped to each request. The first
+step to storing something in the `AsyncContext` is to create a global `Key`
+(note that it is `AsyncContextMap.Key` instead of `AsyncContext.Key`):
+
+```java
+public static final AsyncContextMap.Key<String> TRACE_ID_KEY = new AsyncContextMap.Key<>("traceId");
+```
+
+Now the key can be used to read or write values from the current context:
+
+```java
+AsyncContext.put(TRACE_ID_KEY, "12345");
+assert "12345".equals(AsyncContext.get(TRACE_ID_KEY));
+```
+
+When a request is received ServiceTalk sets up a new empty context. A typical
+use case is to extract debugging information from the request and put them in
+the current `AsyncContext` where they can be referenced later in logs or traces:
+
+```java
+HttpService service = (ctx, in) -> {
+  AsyncContext.put(TRACE_ID_KEY, in.headers().get("X-TraceId"));
+  return handleRequest(in);
+};
+
+Single<HttpResponse> handleRequest(HttpRequest req) {
+  logger.info("Handling request {}", AsyncContext.get(TRACE_ID_KEY));
+  return fetchFromDatabase()
+    .map(v -> {
+      logger.info("Decoding result {}", AsyncContext.get(TRACE_ID_KEY));
+      return decode(v);
+    })
+    .doFinally(() -> {
+      logger.info("Finalizing request {}", AsyncContext.get(TRACE_ID_KEY));
+    });
+}
+```
+
+In the example above, `handleRequest`, `fetchFromDatabase` and the `map`
+/ `doFinally` operators may run in different threads, but they will all see
+the same `AsyncContext`. The `AsyncContext` is automatically propagated into
+`Single`, `Completable` and `Publisher` sources and operator methods.
+
+## Interop with third party APIs
+
+Sometimes you may need to interact with an asynchronous third party API which
+doesn't use the ServiceTalk async primitives (`Single`, `Completable`,
+`Publisher`). `AsyncContext` provides some wrapping methods which
+can be used to wrap `Runnable`, `Consumer`, etc.
+
+```java
+class ThirdPartyClient {
+  CompletionStage doStuffAsync();
+}
+
+ThirdPartyClient client = ...;
+
+void myCode() {
+  AsyncContext.put(key, value);
+
+  client.doStuffAsync()
+    .thenAccept(AsyncContext.wrap(value -> {
+      // here AsyncContext.get(key) == value
+    });
+}
+```
+
+## Extensions
+
+We provide a number of extensions to simplify integration with other libraries.
+
+### servicetalk-rxjava-context
+
+`servicetalk-rxjava-context` hooks into RxJava to ensure `AsyncContext` is
+also propagated into RxJava operator methods.
+
+Usage:
+
+```java
+RxJavaContextHooks.install(); // this must be called once at startup
+```
+
+```java
+AsyncContext.put(key, value);
+
+Observable.create(e -> ...)
+  .map(v -> {
+    // here AsyncContext.get(key) == value
+  });
+```
+
+### servicetalk-log4j2-mdc
+
+`servicetalk-log4j2-mdc` sets up the Log4j 2 `MDC` / `ThreadContext` so
+that it is propagated together with `AsyncContext`. This allows you to add
+diagnostic information to logs without having to call `AsyncContext.get()`
+repeatedly. Using `servicetalk-log4j2-mdc`, the tracing example above
+can be simplified as:
+
+```java
+HttpService service = (ctx, in) -> {
+  MDC.put("traceId", in.headers().get("X-TraceId"));
+  return handleRequest(in);
+};
+
+Single<HttpResponse> handleRequest(HttpRequest req) {
+  logger.info("Handling request");
+  return fetchFromDatabase()
+    .map(v -> {
+      logger.info("Decoding result");
+      return decode(v);
+    })
+    .doFinally(() -> {
+      logger.info("Finalizing request");
+    });
+}
+```
+
+The MDC adapter is discovered automatically by Log4j 2, but you may need to
+configure Log4j 2 to include MDC values in logs.
+
+## How it works
+
+It is useful to understand the mechanism of `AsyncContext` propagation at a
+high level. Note that the exact implementation is subject to change so you
+should not depend on implementation details. This section is mainly for helping
+you build up a mental model.
+
+Internally the `AsyncContext` is implemented as a copy-on-write `ThreadLocal`
+map. When a `Single`, `Completable`, or `Publisher` is subscribed,
+the current `AsyncContext` is saved and used to wrap the subscriber. The saved
+`AsyncContext` will be temporarily restored when methods on the subscriber are
+invoked. Here is a simplified example of the wrapping process:
+
+```java
+Single single = new Single() {
+  @Override
+  protected void onSubscribe(Subscriber subscriber) {
+    AsyncContext saved = AsyncContext.current();
+    Subscriber wrappedSubscriber = new Subscriber() {
+      @Override
+      public void onSubscribe(Cancellable cancellale) {
+        AsyncContext.replace(saved);
+        subscriber.onSubscribe(value);
+      }
+
+      @Override
+      public void onSuccess(Object value) {
+        AsyncContext.replace(saved);
+        subscriber.onSuccess(value);
+      }
+
+      @Override
+      public void onError(Throwable t) {
+        AsyncContext.replace(saved);
+        subscriber.onError(t);
+      }
+    };
+    // we will call wrappedListener for now on
+    // ...
+  }
+}
+```
+
+There are two important implications of this design. First of all the wrapping
+is done once per subscribe instead of when the async source (`Single`/
+`Completable`/`Publisher`) is created. This allows `AsyncContext` to work with
+cold async sources:
+
+```java
+Single resultRecipe = new Single...
+  .doFinally(v -> {
+    logger.info("This is for request {}", AsyncContext.get(key));
+  });
+
+HttpService service = (ctx, in) -> {
+  AsyncContext.put(key, in.headers().get("X-TraceId"));
+  return resultRecipe;
+}
+```
+
+This would print out one line for each request:
+
+```
+This is for request df0c5b75f73f3867
+This is for request 90e1b9b7fc074164
+...
+```
+
+Secondly, since operators on async sources are implemented as chained listeners/
+subscribers, when a source is subscribed it will subscribe all the way
+to the ultimate source and capture the context in all operators. As an example
+consider this code:
+
+```java
+AsyncContext.put(key, value);
+
+new Publisher...
+  .map(v -> ...)
+  .doFinally(() -> ...);
+  .subscribe(sub);
+```
+
+When `subscribe` is called on the `Publisher` returned by `doFinally`, it will
+trigger a subscribe on `map`, which in turns trigger a subscribe on the ultimate
+source defined by `new Publisher`. The `AsyncContext` containg `key=value`
+will be captured and used to wrap all layers of operators.
