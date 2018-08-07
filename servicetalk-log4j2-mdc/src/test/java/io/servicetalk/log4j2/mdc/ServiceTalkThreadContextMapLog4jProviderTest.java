@@ -13,19 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-enableFeaturePreview("IMPROVED_POM_SUPPORT")
-rootProject.name = "servicetalk"
+package io.servicetalk.log4j2.mdc;
 
-includeBuild "servicetalk-bom-internal"
-includeBuild "servicetalk-annotations"
-includeBuild "servicetalk-buffer-api"
-includeBuild "servicetalk-buffer-netty"
-includeBuild "servicetalk-concurrent"
-includeBuild "servicetalk-concurrent-api"
-includeBuild "servicetalk-concurrent-context"
-includeBuild "servicetalk-concurrent-internal"
-includeBuild "servicetalk-gradle-plugin-internal"
-includeBuild "servicetalk-log4j2-mdc"
-includeBuild "servicetalk-log4j2-mdc-internal"
-includeBuild "servicetalk-rxjava-context"
-includeBuild "servicetalk-test-resources"
+import io.servicetalk.log4j2.mdc.internal.ServiceTalkThreadContextMap;
+
+import org.apache.logging.log4j.ThreadContext;
+import org.junit.Test;
+
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
+public class ServiceTalkThreadContextMapLog4jProviderTest {
+    @Test
+    public void testProviderLoadsClass() {
+        assertThat(ThreadContext.getThreadContextMap(), is(instanceOf(ServiceTalkThreadContextMap.class)));
+    }
+}
