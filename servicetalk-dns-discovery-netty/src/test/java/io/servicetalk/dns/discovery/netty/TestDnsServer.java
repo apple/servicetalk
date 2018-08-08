@@ -15,7 +15,6 @@
  */
 package io.servicetalk.dns.discovery.netty;
 
-import io.netty.util.NetUtil;
 import io.netty.util.internal.PlatformDependent;
 import org.apache.directory.server.dns.DnsServer;
 import org.apache.directory.server.dns.io.encoder.DnsMessageEncoder;
@@ -49,6 +48,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import static java.net.InetAddress.getLoopbackAddress;
+
 class TestDnsServer extends DnsServer {
     private static final Map<String, byte[]> BYTES = new HashMap<>();
     private static final String[] IPV6_ADDRESSES = initializeIPs();
@@ -79,8 +80,8 @@ class TestDnsServer extends DnsServer {
 
     @Override
     public void start() throws IOException {
-        InetSocketAddress address = new InetSocketAddress(NetUtil.LOCALHOST4, 9999);
-        UdpTransport transport = new UdpTransport(address.getHostName(), address.getPort());
+        InetSocketAddress address = new InetSocketAddress(getLoopbackAddress(), 0);
+        UdpTransport transport = new UdpTransport(address.getHostString(), address.getPort());
         setTransports(transport);
 
         DatagramAcceptor acceptor = transport.getAcceptor();
