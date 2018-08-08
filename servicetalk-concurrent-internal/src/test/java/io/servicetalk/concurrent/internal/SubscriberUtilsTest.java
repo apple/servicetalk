@@ -33,13 +33,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.calculateSourceRequested;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class SubscriberUtilsTest {
     @Rule
-    public final Timeout timeout = new ServiceTalkTestTimeout(30, SECONDS);
+    public final Timeout timeout = new ServiceTalkTestTimeout(2, MINUTES);
 
     private static final AtomicLongFieldUpdater<SubscriberUtilsTest> requestNUpdater =
             AtomicLongFieldUpdater.newUpdater(SubscriberUtilsTest.class, "requestN");
