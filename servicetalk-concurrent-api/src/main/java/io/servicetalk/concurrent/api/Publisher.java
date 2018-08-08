@@ -26,8 +26,12 @@ import org.reactivestreams.Subscription;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -1778,6 +1782,67 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      */
     public final <R> Single<R> reduce(Supplier<R> resultFactory, BiFunction<R, ? super T, R> reducer) {
         return new ReduceSingle<>(this, resultFactory, reducer);
+    }
+
+    /**
+     * Convert this {@link Publisher} into a {@link Future} with a {@link Collection} containing the elements of this
+     * {@link Publisher} upon successful termination. If this {@link Publisher} terminates in an error, then the
+     * intermediate {@link Collection} will be discarded and the {@link Future} will complete exceptionally.
+     * @return a {@link Future} with a {@link Collection} containing the elements of this {@link Publisher} upon
+     * successful termination.
+     * @see #toFuture(Supplier, BiFunction)
+     */
+    public final Future<? extends Collection<T>> toFuture() {
+        return toFuture(ArrayList::new, (list, next) -> {
+            list.add(next);
+            return list;
+        });
+    }
+
+    /**
+     * Convert this {@link Publisher} into a {@link Future} of type {@link R} which represents all elements of this
+     * {@link Publisher} upon successful termination. If this {@link Publisher} terminates in an error, then the
+     * intermediate {@link R} will be discarded and the {@link Future} will complete exceptionally.
+     * @param resultFactory Factory for the result which collects all items emitted by this {@link Publisher}.
+     * @param reducer Invoked for every item emitted by the source {@link Publisher} and returns the same or altered
+     * {@code result} object.
+     * @param <R> Type of the reduced item.
+     * @return a {@link Future} of type {@link R} which represents all elements of this {@link Publisher} upon
+     * successful termination.
+     */
+    public final <R> Future<R> toFuture(Supplier<R> resultFactory, BiFunction<R, ? super T, R> reducer) {
+        return reduce(resultFactory, reducer).toFuture();
+    }
+
+    /**
+     * Convert this {@link Publisher} into a {@link CompletionStage} with a {@link Collection} containing the elements
+     * of this {@link Publisher} upon successful termination. If this {@link Publisher} terminates in an error, then the
+     * intermediate {@link Collection} will be discarded and the {@link CompletionStage} will complete exceptionally.
+     * @return a {@link CompletionStage} with a {@link Collection} containing the elements of this {@link Publisher}
+     * upon successful termination.
+     * @see #toCompletionStage(Supplier, BiFunction)
+     */
+    public final CompletionStage<? extends Collection<T>> toCompletionStage() {
+        return toCompletionStage(ArrayList::new, (list, next) -> {
+            list.add(next);
+            return list;
+        });
+    }
+
+    /**
+     * Convert this {@link Publisher} into a {@link CompletionStage} of type {@link R} which represents all elements of
+     * this {@link Publisher} upon successful termination. If this {@link Publisher} terminates in an error, then the
+     * intermediate {@link R} will be discarded and the {@link CompletionStage} will complete exceptionally.
+     * @param resultFactory Factory for the result which collects all items emitted by this {@link Publisher}.
+     * @param reducer Invoked for every item emitted by the source {@link Publisher} and returns the same or altered
+     * {@code result} object.
+     * @param <R> Type of the reduced item.
+     * @return a {@link CompletionStage} of type {@link R} which represents all elements of this {@link Publisher} upon
+     * successful termination.
+     */
+    public final <R> CompletionStage<R> toCompletionStage(Supplier<R> resultFactory,
+                                                          BiFunction<R, ? super T, R> reducer) {
+        return reduce(resultFactory, reducer).toCompletionStage();
     }
 
     /**
