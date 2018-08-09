@@ -103,8 +103,20 @@ public class CompletableToSingleTest {
     }
 
     @Test
-    public void nullInTerminalSucceeds() {
+    public void nullSupplierInTerminalSucceeds() {
         subscriberRule.subscribe(Completable.completed().toSingle(() -> null))
+                .request(1).verifySuccess();
+    }
+
+    @Test
+    public void nullInTerminalSucceeds() {
+        subscriberRule.subscribe(Completable.completed().toSingle((String) null))
+                .request(1).verifySuccess();
+    }
+
+    @Test
+    public void noTerminalSucceeds() {
+        subscriberRule.subscribe(Completable.completed().toSingle())
                 .request(1).verifySuccess();
     }
 }

@@ -35,8 +35,20 @@ public class CompletableToPublisherTest {
     }
 
     @Test
-    public void nullInTerminalSucceeds() {
+    public void nullSupplierInTerminalSucceeds() {
         subscriberRule.subscribe(Completable.completed().toPublisher(() -> null))
+                .request(1).verifySuccess();
+    }
+
+    @Test
+    public void nullInTerminalSucceeds() {
+        subscriberRule.subscribe(Completable.completed().toPublisher((String) null))
+                .request(1).verifySuccess();
+    }
+
+    @Test
+    public void noTerminalSucceeds() {
+        subscriberRule.subscribe(Completable.completed().toPublisher())
                 .request(1).verifySuccess();
     }
 }

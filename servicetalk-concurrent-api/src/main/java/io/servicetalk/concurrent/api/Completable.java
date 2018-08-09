@@ -19,6 +19,8 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.time.Duration;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -43,8 +45,8 @@ import static java.util.Objects.requireNonNull;
  * An asynchronous computation that does not emit any data. It just completes or emits an error.
  */
 public abstract class Completable implements io.servicetalk.concurrent.Completable {
-    private static final AtomicReference<BiConsumer<? super Subscriber, Consumer<? super Subscriber>>> SUBSCRIBE_PLUGIN_REF = new AtomicReference<>();
-    private static final Object CONVERSION_VALUE = new Object();
+    private static final AtomicReference<BiConsumer<? super Subscriber, Consumer<? super Subscriber>>>
+            SUBSCRIBE_PLUGIN_REF = new AtomicReference<>();
 
     private final Executor executor;
 
@@ -601,7 +603,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @see <a href="http://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
      */
     public final Completable repeat(IntPredicate shouldRepeat) {
-        return toPublisher(CONVERSION_VALUE).repeat(shouldRepeat).ignoreElements();
+        return toPublisher().repeat(shouldRepeat).ignoreElements();
     }
 
     /**
@@ -632,7 +634,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
     public final Completable repeatWhen(IntFunction<Completable> repeatWhen) {
-        return toPublisher(CONVERSION_VALUE).repeatWhen(repeatWhen).ignoreElements();
+        return toPublisher().repeatWhen(repeatWhen).ignoreElements();
     }
 
     /**
@@ -1040,8 +1042,17 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
 
     /**
      * Converts this {@code Completable} to a {@link Publisher}.
+     * @param <T> The value type of the resulting {@link Publisher}.
+     * @return A {@link Publisher} that mirrors the terminal signal from this {@link Completable}.
+     */
+    public final <T> Publisher<T> toPublisher() {
+        return new CompletableToPublisher<>(this, null, executor);
+    }
+
+    /**
+     * Converts this {@code Completable} to a {@link Publisher}.
      * @param value The value to deliver to {@link org.reactivestreams.Subscriber#onNext(Object)} when this
-     * {@link Completable} completes. {@code null} is not allowed.
+     * {@link Completable} completes.
      * @param <T> The value type of the resulting {@link Publisher}.
      * @return A {@link Publisher} that mirrors the terminal signal from this {@link Completable}.
      */
@@ -1057,7 +1068,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @return A {@link Publisher} that mirrors the terminal signal from this {@link Completable}.
      */
     public final <T> Publisher<T> toPublisher(Supplier<T> valueSupplier) {
-        return new CompletableToPublisher<>(this, valueSupplier, executor);
+        return new CompletableToPublisher<>(this, requireNonNull(valueSupplier), executor);
     }
 
     /**
@@ -1065,10 +1076,11 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * <p>
      * The return value's {@link Single.Subscriber#onSuccess(Object)} value is undefined, and if the value matters see
      * {@link #toSingle(Object)}.
+     * @param <T> The value type of the resulting {@link Single}.
      * @return A {@link Single} that mirrors the terminal signal from this {@link Completable}.
      */
-    private Single<Object> toSingle() {
-        return toSingle(CONVERSION_VALUE);
+    public final <T> Single<T> toSingle() {
+        return new CompletableToSingle<>(this, null, executor);
     }
 
     /**
@@ -1078,8 +1090,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @param <T> The value type of the resulting {@link Single}.
      * @return A {@link Single} that mirrors the terminal signal from this {@link Completable}.
      */
-    public final <T> Single<T> toSingle(T value) {
-        requireNonNull(value);
+    public final <T> Single<T> toSingle(@Nullable T value) {
         return toSingle(() -> value);
     }
 
@@ -1092,7 +1103,29 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @return A {@link Single} that mirrors the terminal signal from this {@link Completable}.
      */
     public final <T> Single<T> toSingle(Supplier<T> valueSupplier) {
-        return new CompletableToSingle<>(this, valueSupplier, executor);
+        return new CompletableToSingle<>(this, requireNonNull(valueSupplier), executor);
+    }
+
+    /**
+     * Converts this {@code Completable} to a {@link CompletionStage}.
+     * <p>
+     * The {@link CompletionStage}'s value is undefined.
+     * @param <T> The value type of the resulting {@link Single}.
+     * @return A {@link CompletionStage} that mirrors the terminal signal from this {@link Completable}.
+     */
+    public final <T> CompletionStage<T> toCompletionStage() {
+        return this.<T>toSingle().toCompletionStage();
+    }
+
+    /**
+     * Converts this {@code Completable} to a {@link Future}.
+     * <p>
+     * The {@link Future}'s value is undefined.
+     * @param <T> The value type of the resulting {@link Single}.
+     * @return A {@link Future} that mirrors the terminal signal from this {@link Completable}.
+     */
+    public final <T> Future<T> toFuture() {
+        return this.<T>toSingle().toFuture();
     }
 
     //

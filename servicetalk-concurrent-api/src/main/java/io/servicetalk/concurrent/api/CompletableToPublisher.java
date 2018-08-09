@@ -23,22 +23,23 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
-import static java.util.Objects.requireNonNull;
 
 /**
  * {@link Publisher} created from a {@link Completable}.
  * @param <T> Type of item emitted by the {@link Publisher}.
  */
 final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
+    @Nullable
     private final Supplier<T> valueSupplier;
     private final Completable original;
 
-    CompletableToPublisher(Completable original, Supplier<T> valueSupplier, Executor executor) {
+    CompletableToPublisher(Completable original, @Nullable Supplier<T> valueSupplier, Executor executor) {
         super(executor);
-        this.valueSupplier = requireNonNull(valueSupplier);
+        this.valueSupplier = valueSupplier;
         this.original = original;
     }
 
@@ -69,11 +70,13 @@ final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher
 
         @Override
         public void onComplete() {
-            try {
-                subscriber.onNext(parent.valueSupplier.get());
-            } catch (Throwable cause) {
-                subscriber.onError(cause);
-                return;
+            if (parent.valueSupplier != null) {
+                try {
+                    subscriber.onNext(parent.valueSupplier.get());
+                } catch (Throwable cause) {
+                    subscriber.onError(cause);
+                    return;
+                }
             }
             subscriber.onComplete();
         }
