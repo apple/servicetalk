@@ -28,7 +28,6 @@ servicetalk-concurrent-context \
 servicetalk-concurrent-internal \
 servicetalk-data-jackson \
 servicetalk-dns-discovery-netty \
-servicetalk-gradle-composite \
 servicetalk-gradle-plugin-internal \
 servicetalk-http-api \
 servicetalk-http-netty \
