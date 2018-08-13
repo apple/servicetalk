@@ -28,7 +28,7 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.internal.AbstractChannelReadHandler;
+import io.servicetalk.transport.netty.internal.AbstractContextFilterAwareChannelReadHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.Connection;
@@ -61,8 +61,8 @@ final class NettyHttpServer {
                                       final HttpService service) {
         final TcpServerInitializer initializer = new TcpServerInitializer(executionContext, config.getTcpConfig());
 
-        final ChannelInitializer channelInitializer = new TcpServerChannelInitializer(config.getTcpConfig())
-                .andThen(getChannelInitializer(config, service));
+        final ChannelInitializer channelInitializer = new TcpServerChannelInitializer(config.getTcpConfig(),
+                contextFilter).andThen(getChannelInitializer(config, service));
 
         // The ServerContext returned by TcpServerInitializer takes care of closing the contextFilter.
         return initializer.start(address, contextFilter, channelInitializer, false, true)
@@ -114,7 +114,7 @@ final class NettyHttpServer {
         }
     }
 
-    private static final class HttpChannelReadHandler extends AbstractChannelReadHandler<Object>
+    private static final class HttpChannelReadHandler extends AbstractContextFilterAwareChannelReadHandler<Object>
             implements ConnectionHolderChannelHandler<Object, Object> {
         private final CloseHandler closeHandler;
         private final ConnectionContext context;
@@ -136,6 +136,11 @@ final class NettyHttpServer {
             connection = new NettyHttpServerConnection(
                     channelHandlerContext.channel(), requestObjectPublisher,
                     new TerminalPredicate<>(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE), closeHandler, context, service);
+        }
+
+        @Override
+        protected void onContextFilterSuccess(final ChannelHandlerContext ctx) {
+            assert connection != null;
             connection.process().subscribe();
         }
 

@@ -15,64 +15,38 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.Single.Subscriber;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 
 import io.netty.channel.Channel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
+import static io.servicetalk.tcp.netty.internal.AcceptAllContextFilterChannelHandler.ACCEPT_ALL_HANDLER;
+import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
 
-final class ContextFilterChannelInitializer implements ChannelInitializer {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ContextFilterChannelInitializer.class);
+class ContextFilterChannelInitializer implements ChannelInitializer {
 
     private final ContextFilter contextFilter;
-    private final ChannelInitializer channelInitializer;
+    private final boolean sslEnabled;
 
-    ContextFilterChannelInitializer(final ContextFilter contextFilter, final ChannelInitializer channelInitializer) {
+    ContextFilterChannelInitializer(final ContextFilter contextFilter, final boolean sslEnabled) {
         this.contextFilter = contextFilter;
-        this.channelInitializer = channelInitializer;
+        this.sslEnabled = sslEnabled;
     }
 
     @Override
     public ConnectionContext init(final Channel channel, final ConnectionContext context) {
-        contextFilter.filter(context).subscribe(new Subscriber<Boolean>() {
-            @Override
-            public void onSubscribe(final Cancellable cancellable) {
-                // Don't need to do anything.
+        if (contextFilter == ACCEPT_ALL) {
+            channel.pipeline().addLast(ACCEPT_ALL_HANDLER);
+        } else {
+            if (sslEnabled) {
+                channel.pipeline().addLast(new SslContextFilterChannelHandler(context, contextFilter,
+                        context.getExecutionContext().getExecutor()));
+            } else {
+                channel.pipeline().addLast(new NonSslContextFilterChannelHandler(context, contextFilter,
+                        context.getExecutionContext().getExecutor()));
             }
-
-            @Override
-            public void onSuccess(@Nullable final Boolean result) {
-                if (result != null && result) {
-                    // Getting the remote-address may involve volatile reads and potentially a syscall, so guard it.
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("Accepted connection from {}", context.getRemoteAddress());
-                    }
-                    try {
-                        channelInitializer.init(channel, context);
-                    } catch (Throwable t) {
-                        LOGGER.error("Channel initializer for context {} threw exception", context, t);
-                        context.closeAsync().subscribe();
-                    }
-                } else {
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("Rejected connection from {}", context.getRemoteAddress());
-                    }
-                    context.closeAsync().subscribe();
-                }
-            }
-
-            @Override
-            public void onError(final Throwable t) {
-                LOGGER.warn("Exception from context filter {} for context {}.", contextFilter, context, t);
-                context.closeAsync().subscribe();
-            }
-        });
+        }
         return context;
     }
 }

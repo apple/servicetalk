@@ -19,8 +19,11 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.SslConfig;
+import io.servicetalk.transport.api.SslConfigBuilder;
 import io.servicetalk.transport.netty.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
@@ -56,17 +59,26 @@ public abstract class AbstractTcpServerTest {
     private ContextFilter contextFilter = ACCEPT_ALL;
     private Function<Connection<Buffer, Buffer>, Completable> service =
             conn -> conn.write(conn.read(), defaultFlushStrategy());
-    protected ServerContext serverContext;
-    protected int serverPort;
-    protected TcpClient client;
-    protected TcpServer server;
+    ServerContext serverContext;
+    int serverPort;
+    TcpClient client;
+    TcpServer server;
+    private boolean sslEnabled;
 
-    public void setContextFilter(final ContextFilter contextFilter) {
+    void setContextFilter(final ContextFilter contextFilter) {
         this.contextFilter = contextFilter;
     }
 
-    public void setService(final Function<Connection<Buffer, Buffer>, Completable> service) {
+    void setService(final Function<Connection<Buffer, Buffer>, Completable> service) {
         this.service = service;
+    }
+
+    void setSslEnabled(final boolean sslEnabled) {
+        this.sslEnabled = sslEnabled;
+    }
+
+    boolean getSslEnabled() {
+        return sslEnabled;
     }
 
     @Before
@@ -74,12 +86,41 @@ public abstract class AbstractTcpServerTest {
         server = createServer();
         serverContext = server.start(SERVER_CTX, 0, contextFilter, service);
         serverPort = TcpServer.getServerPort(serverContext);
-        client = new TcpClient();
+        client = createClient();
+    }
+
+    // Visible for overriding.
+    TcpClient createClient() {
+        return new TcpClient(getTcpClientConfig());
+    }
+
+    // Visible for overriding.
+    TcpClientConfig getTcpClientConfig() {
+        TcpClientConfig tcpClientConfig = new TcpClientConfig(false);
+        if (sslEnabled) {
+            final SslConfig sslConfig = SslConfigBuilder.forClientWithoutServerIdentity()
+                    .trustManager(DefaultTestCerts::loadMutualAuthCaPem).build();
+            tcpClientConfig = tcpClientConfig.setSslConfig(sslConfig);
+        }
+        return tcpClientConfig;
     }
 
     // Visible for overriding.
     TcpServer createServer() {
-        return new TcpServer();
+        return new TcpServer(getTcpServerConfig());
+    }
+
+    // Visible for overriding.
+    TcpServerConfig getTcpServerConfig() {
+        TcpServerConfig tcpServerConfig = new TcpServerConfig(false);
+        if (sslEnabled) {
+            final SslConfig sslConfig = SslConfigBuilder.forServer(
+                    DefaultTestCerts::loadServerPem,
+                    DefaultTestCerts::loadServerKey)
+                    .build();
+            tcpServerConfig = tcpServerConfig.setSslConfig(sslConfig);
+        }
+        return tcpServerConfig;
     }
 
     @After

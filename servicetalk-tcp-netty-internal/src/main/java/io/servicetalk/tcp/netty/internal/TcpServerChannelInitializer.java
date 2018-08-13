@@ -16,6 +16,7 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
 import io.servicetalk.transport.netty.internal.SslServerChannelInitializer;
@@ -33,8 +34,9 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
      * Creates a {@link ChannelInitializer} for the {@code config}.
      *
      * @param config to use for initialization.
+     * @param contextFilter the {@link ContextFilter} to use for filtering connections.
      */
-    public TcpServerChannelInitializer(ReadOnlyTcpServerConfig config) {
+    public TcpServerChannelInitializer(ReadOnlyTcpServerConfig config, ContextFilter contextFilter) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
         if (config.getWireLoggingInitializer() != null) {
             delegate = delegate.andThen(config.getWireLoggingInitializer());
@@ -42,12 +44,15 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
         if (config.getIdleTimeoutMs() > 0) {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.getIdleTimeoutMs()));
         }
+        boolean enableSsl = true;
         if (config.getSslContext() != null) {
             delegate = delegate.andThen(new SslServerChannelInitializer(config.getSslContext()));
         } else if (config.getDomainNameMapping() != null) {
             delegate = delegate.andThen(new SslServerChannelInitializer(config.getDomainNameMapping()));
+        } else {
+            enableSsl = false;
         }
-        this.delegate = delegate;
+        this.delegate = delegate.andThen(new ContextFilterChannelInitializer(contextFilter, enableSsl));
     }
 
     @Override

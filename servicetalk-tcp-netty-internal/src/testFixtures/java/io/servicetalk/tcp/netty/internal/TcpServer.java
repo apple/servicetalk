@@ -18,10 +18,11 @@ package io.servicetalk.tcp.netty.internal;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.internal.AbstractChannelReadHandler;
+import io.servicetalk.transport.netty.internal.AbstractContextFilterAwareChannelReadHandler;
 import io.servicetalk.transport.netty.internal.BufferHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.Connection;
@@ -35,6 +36,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
@@ -90,7 +92,7 @@ public class TcpServer {
      * lifecycle of the {@code contextFilter}, ensuring it is closed when the {@link ServerContext} is closed.
      * @param service {@link Function} that is invoked for each accepted connection.
      * @return {@link ServerContext} for the started server.
-     * @throws ExecutionException   If the server start failed.
+     * @throws ExecutionException If the server start failed.
      * @throws InterruptedException If the calling thread was interrupted waiting for the server to start.
      */
     public ServerContext start(ExecutionContext executionContext, int port, ContextFilter contextFilter,
@@ -98,7 +100,7 @@ public class TcpServer {
             throws ExecutionException, InterruptedException {
         TcpServerInitializer initializer = new TcpServerInitializer(executionContext, config);
         return awaitIndefinitelyNonNull(initializer.start(new InetSocketAddress(port), contextFilter,
-                new TcpServerChannelInitializer(config)
+                new TcpServerChannelInitializer(config, contextFilter)
                         .andThen(getChannelInitializer(service, executionContext)), false, false)
                 .doBeforeSuccess(ctx -> LOGGER.info("Server started on port {}.", getServerPort(ctx)))
                 .doBeforeError(throwable -> LOGGER.error("Failed starting server on port {}.", port)));
@@ -109,18 +111,7 @@ public class TcpServer {
                                              final ExecutionContext executionContext) {
         return (channel, context) -> {
             channel.pipeline().addLast(new BufferHandler(executionContext.getBufferAllocator()));
-            channel.pipeline()
-                    .addLast(new AbstractChannelReadHandler<Buffer>(buffer -> false) {
-                        @Override
-                        protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Buffer> newPublisher) {
-                            Connection<Buffer, Buffer> conn = new NettyConnection<>(ctx.channel(), context,
-                                    newPublisher);
-                            service.apply(conn)
-                                    .doBeforeError(throwable -> LOGGER.error("Error handling a connection.", throwable))
-                                    .doBeforeFinally(() -> ctx.channel().close())
-                                    .subscribe();
-                        }
-                    });
+            channel.pipeline().addLast(new TcpServerChannelReadHandler(context, service));
             return context;
         };
     }
@@ -135,5 +126,34 @@ public class TcpServer {
      */
     public static int getServerPort(ServerContext context) {
         return ((InetSocketAddress) context.getListenAddress()).getPort();
+    }
+
+    private static class TcpServerChannelReadHandler extends AbstractContextFilterAwareChannelReadHandler<Buffer> {
+
+        private final ConnectionContext context;
+        private final Function<Connection<Buffer, Buffer>, Completable> service;
+        @Nullable
+        private Connection<Buffer, Buffer> conn;
+
+        TcpServerChannelReadHandler(final ConnectionContext context,
+                                    final Function<Connection<Buffer, Buffer>, Completable> service) {
+            super(buffer -> false);
+            this.context = context;
+            this.service = service;
+        }
+
+        @Override
+        protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Buffer> newPublisher) {
+            conn = new NettyConnection<>(ctx.channel(), context,
+                    newPublisher);
+        }
+
+        @Override
+        protected void onContextFilterSuccess(final ChannelHandlerContext ctx) {
+            service.apply(conn)
+                    .doBeforeError(throwable -> LOGGER.error("Error handling a connection.", throwable))
+                    .doBeforeFinally(() -> ctx.channel().close())
+                    .subscribe();
+        }
     }
 }

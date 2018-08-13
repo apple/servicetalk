@@ -112,32 +112,32 @@ public class AbstractChannelReadHandlerTest {
                         throw DELIBERATE_EXCEPTION;
                     }
                 },
-        new AbstractChannelReadHandler<Object>(v -> true) {
-            @Override
-            protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Object> newPublisher) {
-                newPublisher.subscribe(new Subscriber<Object>() {
+                new AbstractChannelReadHandler<Object>(v -> true) {
                     @Override
-                    public void onSubscribe(Subscription s) {
-                    }
+                    protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Object> newPublisher) {
+                        newPublisher.subscribe(new Subscriber<Object>() {
+                            @Override
+                            public void onSubscribe(Subscription s) {
+                            }
 
-                    @Override
-                    public void onNext(Object o) {
-                        errorRef.set(new AssertionError("Should not be called"));
-                    }
+                            @Override
+                            public void onNext(Object o) {
+                                errorRef.set(new AssertionError("Should not be called"));
+                            }
 
-                    @Override
-                    public void onError(Throwable t) {
-                        // Only update if not set previously
-                        assertTrue(errorRef.compareAndSet(null, t));
-                    }
+                            @Override
+                            public void onError(Throwable t) {
+                                // Only update if not set previously
+                                assertTrue(errorRef.compareAndSet(null, t));
+                            }
 
-                    @Override
-                    public void onComplete() {
-                        errorRef.set(new AssertionError("Should not be called"));
+                            @Override
+                            public void onComplete() {
+                                errorRef.set(new AssertionError("Should not be called"));
+                            }
+                        });
                     }
-                });
-            }
-        }) {
+                }) {
             @Override
             public boolean isOpen() {
                 return channelActive.get() && super.isOpen();

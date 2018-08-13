@@ -93,7 +93,7 @@ public final class TcpServerInitializer {
      * @return Single which completes when the server is started.
      */
     public Single<ServerContext> startWithDefaults(SocketAddress listenAddress, ContextFilter contextFilter) {
-        return start(listenAddress, contextFilter, new TcpServerChannelInitializer(config));
+        return start(listenAddress, contextFilter, new TcpServerChannelInitializer(config, contextFilter));
     }
 
     /**
@@ -143,20 +143,13 @@ public final class TcpServerInitializer {
         bs.childHandler(new io.netty.channel.ChannelInitializer<Channel>() {
             @Override
             protected void initChannel(Channel channel) {
-                executionContext.getExecutor().execute(() -> {
-                    try {
-                        // The ConnectionContext should be given an IoExecutor which correlates to the specific thread
-                        // used for IO.
-                        newContext(new DefaultExecutionContext(executionContext.getBufferAllocator(),
-                                        fromNettyEventLoop(channel.eventLoop()), executionContext.getExecutor()),
-                                channel,
-                                new ContextFilterChannelInitializer(contextFilter, channelInitializer),
-                                checkForRefCountedTrapper);
-                    } catch (Throwable t) {
-                        LOGGER.warn("Failed to initialize a channel. Closing {}", channel, t);
-                        channel.close();
-                    }
-                });
+                // The ConnectionContext should be given an IoExecutor which correlates to the specific thread
+                // used for IO.
+                newContext(new DefaultExecutionContext(executionContext.getBufferAllocator(),
+                                fromNettyEventLoop(channel.eventLoop()), executionContext.getExecutor()),
+                        channel,
+                        channelInitializer,
+                        checkForRefCountedTrapper);
             }
         });
 

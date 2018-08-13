@@ -34,6 +34,8 @@ import org.junit.runners.Parameterized.Parameters;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import javax.annotation.Nullable;
+import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Single.error;
@@ -44,7 +46,7 @@ import static io.servicetalk.transport.api.FlushStrategy.flushOnEach;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 
 @RunWith(Parameterized.class)
 public class TcpServerInitializerContextFilterTest extends AbstractTcpServerTest {
@@ -58,12 +60,18 @@ public class TcpServerInitializerContextFilterTest extends AbstractTcpServerTest
         THROW_EXCEPTION(false, false, (executor, context) -> {
             throw DELIBERATE_EXCEPTION;
         }),
-        SINGLE_ERROR(false, false, (executor, context) ->
+        DELAY_SINGLE_ERROR(false, false, (executor, context) ->
                 executor.timer(100, MILLISECONDS).andThen(error(DELIBERATE_EXCEPTION))),
-        DELAY_SINGLE_ERROR(false, false, (executor, context) -> error(new DeliberateException())),
+        SINGLE_ERROR(false, false, (executor, context) -> error(new DeliberateException())),
         INITIALIZER_THROW(false, true, (executor, context) -> success(true)),
         DELAY_INITIALIZER_THROW(false, true, (executor, context) ->
-                executor.timer(100, MILLISECONDS).andThen(success(true)));
+                executor.timer(100, MILLISECONDS).andThen(success(true))),
+        ACCEPT_ALL_CONSTANT(true, false, (executor, context) -> success(true)) {
+            @Override
+            ContextFilter getContextFilter(final Executor executor) {
+                return ContextFilter.ACCEPT_ALL;
+            }
+        };
 
         private final boolean expectAccept;
         private final boolean initializerThrow;
@@ -84,19 +92,30 @@ public class TcpServerInitializerContextFilterTest extends AbstractTcpServerTest
 
     private final FilterMode filterMode;
     private volatile boolean acceptedConnection;
+    @Nullable
+    private volatile SSLSession sslSession;
 
-    public TcpServerInitializerContextFilterTest(final FilterMode filterMode) {
+    public TcpServerInitializerContextFilterTest(final boolean enableSsl, final FilterMode filterMode) {
         this.filterMode = filterMode;
-    }
-
-    @Override
-    TcpServer createServer() {
-        setContextFilter(filterMode.getContextFilter(SERVER_CTX.getExecutor()));
+        setSslEnabled(enableSsl);
         setService(conn -> {
             acceptedConnection = true;
             return conn.write(conn.read(), flushOnEach());
         });
+        if (enableSsl) {
+            setContextFilter(ctx -> {
+                // Asserting that the SSL Session has been set by the time the filter is called must be done from the
+                // test thread, in order to fail the test with a useful message.
+                sslSession = ctx.getSslSession();
+                return filterMode.getContextFilter(SERVER_CTX.getExecutor()).filter(ctx);
+            });
+        } else {
+            setContextFilter(filterMode.getContextFilter(SERVER_CTX.getExecutor()));
+        }
+    }
 
+    @Override
+    TcpServer createServer() {
         if (filterMode.initializerThrow) {
             return new TcpServer() {
                 @Override
@@ -111,9 +130,15 @@ public class TcpServerInitializerContextFilterTest extends AbstractTcpServerTest
         return super.createServer();
     }
 
-    @Parameters(name = "{0}")
-    public static FilterMode[] getContextFilters() {
-        return FilterMode.values();
+    @Parameters(name = "ssl={0} {1}")
+    public static Object[] getContextFilters() {
+        int filterModes = FilterMode.values().length;
+        Object[] parameters = new Object[filterModes * 2];
+        for (int i = 0; i < filterModes; ++i) {
+            parameters[i] = new Object[]{false, FilterMode.values()[i]};
+            parameters[i + filterModes] = new Object[]{true, FilterMode.values()[i]};
+        }
+        return parameters;
     }
 
     @Test
@@ -133,11 +158,17 @@ public class TcpServerInitializerContextFilterTest extends AbstractTcpServerTest
         } catch (ExecutionException | InterruptedException e) {
             // If we expect the connection to be rejected, then an exception here is ok.
             // We want to continue after the exception, to assert that the server did not accept the connection.
-            assertFalse("Unexpected exception while reading/writing request/response",
-                    filterMode.expectAccept);
+            if (filterMode.expectAccept) {
+                throw new RuntimeException("Unexpected exception while reading/writing request/response", e);
+            }
         }
 
         assertEquals("Filter did not " + (filterMode.expectAccept ? "accept" : "reject") + " connection",
                 filterMode.expectAccept, acceptedConnection);
+
+        // If the initializer throws, the filter will not execute, so we can't check the SSL Session.
+        if (getSslEnabled() && !filterMode.initializerThrow) {
+            assertNotNull("SslSession was not set by the time filter executed", sslSession);
+        }
     }
 }

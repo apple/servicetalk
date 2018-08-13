@@ -78,6 +78,7 @@ import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaD
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.http.api.HttpRequests.newRequest;
+import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
 import static io.servicetalk.transport.api.FlushStrategy.batchFlush;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.lang.Boolean.TRUE;
@@ -382,7 +383,7 @@ public class HttpRequestEncoderTest {
                     new TcpServerInitializer(SEC, sConfig)
                             .start(new InetSocketAddress(0),
                                     context -> Single.success(TRUE),
-                                    new TcpServerChannelInitializer(sConfig).andThen(
+                                    new TcpServerChannelInitializer(sConfig, ACCEPT_ALL).andThen(
                                             (c, cc) -> {
                                                 ((SocketChannel) c).config().setSoLinger(0);
                                                 c.close(); // Close and send RST concurrently with client write
