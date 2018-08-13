@@ -26,6 +26,6 @@ public class CompletableDeferTckTest extends AbstractCompletableTckTest {
 
     @Override
     public Publisher<Object> createPublisher(long elements) {
-        return Completable.defer(Completable::completed).toPublisher(VALUE);
+        return Completable.defer(Completable::completed).toPublisher();
     }
 }

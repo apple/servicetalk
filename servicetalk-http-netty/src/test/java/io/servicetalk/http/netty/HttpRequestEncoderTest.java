@@ -62,6 +62,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
@@ -406,7 +407,7 @@ public class HttpRequestEncoderTest {
                     INSTANCE.newEmptyTrailers());
 
             Completable write = conn.write(from(request, lastChunk),
-                    batchFlush(MAX_VALUE, serverCloseTrigger.toPublisher(1L)));
+                    batchFlush(MAX_VALUE, serverCloseTrigger.andThen(just(1L))));
 
             try {
                 awaitIndefinitely(write);

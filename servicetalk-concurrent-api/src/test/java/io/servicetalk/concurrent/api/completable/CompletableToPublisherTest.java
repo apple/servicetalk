@@ -21,30 +21,9 @@ import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
-
 public class CompletableToPublisherTest {
     @Rule
     public MockedSubscriberRule<String> subscriberRule = new MockedSubscriberRule<>();
-
-    @Test
-    public void exceptionInTerminalCallsOnError() {
-        subscriberRule.subscribe(Completable.completed().toPublisher(() -> {
-            throw DELIBERATE_EXCEPTION;
-        })).request(1).verifyFailure(DELIBERATE_EXCEPTION);
-    }
-
-    @Test
-    public void nullSupplierInTerminalSucceeds() {
-        subscriberRule.subscribe(Completable.completed().toPublisher(() -> null))
-                .request(1).verifySuccess();
-    }
-
-    @Test
-    public void nullInTerminalSucceeds() {
-        subscriberRule.subscribe(Completable.completed().toPublisher((String) null))
-                .request(1).verifySuccess();
-    }
 
     @Test
     public void noTerminalSucceeds() {

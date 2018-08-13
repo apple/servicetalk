@@ -38,6 +38,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
@@ -65,7 +66,8 @@ public class RedisAuthConnectionFactoryConnectionTest {
         if (connectionSingle != null) {
             assert ioExecutor != null;
             awaitIndefinitely(connectionSingle
-                    .flatMap(connection -> connection.closeAsync().onErrorResume(cause -> completed()).toSingle(connection))
+                    .flatMap(connection ->
+                            connection.closeAsync().onErrorResume(cause -> completed()).andThen(success(connection)))
                     .ignoreResult()
                     .onErrorResume(cause -> completed())
                     .andThen(ioExecutor.closeAsync()));

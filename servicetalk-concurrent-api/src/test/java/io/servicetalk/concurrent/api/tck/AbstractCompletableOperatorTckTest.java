@@ -29,7 +29,7 @@ public abstract class AbstractCompletableOperatorTckTest extends AbstractComplet
 
     @Override
     public Publisher<Object> createPublisher(long elements) {
-        return composeCompletable(Completable.completed()).toPublisher(Object::new);
+        return composeCompletable(Completable.completed()).toPublisher();
     }
 
     protected abstract Completable composeCompletable(Completable completable);

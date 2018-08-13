@@ -25,7 +25,7 @@ public class CompletableToPublisherTckTest extends AbstractPublisherTckTest<Obje
 
     @Override
     public Publisher<Object> createPublisher(long elements) {
-        return Completable.completed().toPublisher(Object::new);
+        return Completable.completed().toPublisher();
     }
 
     @Override

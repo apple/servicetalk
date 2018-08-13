@@ -32,7 +32,6 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnCompleteSupplier;
 import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnErrorSupplier;
@@ -1042,68 +1041,27 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
 
     /**
      * Converts this {@code Completable} to a {@link Publisher}.
+     * <p>
+     * No {@link org.reactivestreams.Subscriber#onNext(Object)} signals will be delivered to the returned
+     * {@link Publisher}. Only terminal signals will be delivered. If you need more control you should consider using
+     * {@link #andThen(Publisher)}.
      * @param <T> The value type of the resulting {@link Publisher}.
      * @return A {@link Publisher} that mirrors the terminal signal from this {@link Completable}.
      */
     public final <T> Publisher<T> toPublisher() {
-        return new CompletableToPublisher<>(this, null, executor);
-    }
-
-    /**
-     * Converts this {@code Completable} to a {@link Publisher}.
-     * @param value The value to deliver to {@link org.reactivestreams.Subscriber#onNext(Object)} when this
-     * {@link Completable} completes.
-     * @param <T> The value type of the resulting {@link Publisher}.
-     * @return A {@link Publisher} that mirrors the terminal signal from this {@link Completable}.
-     */
-    public final <T> Publisher<T> toPublisher(@Nullable T value) {
-        return toPublisher(() -> value);
-    }
-
-    /**
-     * Converts this {@code Completable} to a {@link Publisher}.
-     * @param valueSupplier A {@link Supplier} that produces the value to deliver to
-     * {@link org.reactivestreams.Subscriber#onNext(Object)} when this {@link Completable} completes.
-     * @param <T> The value type of the resulting {@link Publisher}.
-     * @return A {@link Publisher} that mirrors the terminal signal from this {@link Completable}.
-     */
-    public final <T> Publisher<T> toPublisher(Supplier<T> valueSupplier) {
-        return new CompletableToPublisher<>(this, requireNonNull(valueSupplier), executor);
+        return new CompletableToPublisher<>(this, executor);
     }
 
     /**
      * Converts this {@code Completable} to a {@link Single}.
      * <p>
-     * The return value's {@link Single.Subscriber#onSuccess(Object)} value is undefined, and if the value matters see
-     * {@link #toSingle(Object)}.
+     * The return value's {@link Single.Subscriber#onSuccess(Object)} value is undefined. If you need a specific value
+     * you can also use {@link #andThen(Single)} with a {@link Single#success(Object)}.
      * @param <T> The value type of the resulting {@link Single}.
      * @return A {@link Single} that mirrors the terminal signal from this {@link Completable}.
      */
     public final <T> Single<T> toSingle() {
-        return new CompletableToSingle<>(this, null, executor);
-    }
-
-    /**
-     * Converts this {@code Completable} to a {@link Single}.
-     * @param value The value to deliver to {@link Single.Subscriber#onSuccess(Object)} when this {@link Completable}
-     * completes. {@code null} is not allowed.
-     * @param <T> The value type of the resulting {@link Single}.
-     * @return A {@link Single} that mirrors the terminal signal from this {@link Completable}.
-     */
-    public final <T> Single<T> toSingle(@Nullable T value) {
-        return toSingle(() -> value);
-    }
-
-    /**
-     * Converts this {@code Completable} to a {@link Single}.
-     * @param valueSupplier A {@link Supplier} that produces the value to deliver to
-     * {@link Single.Subscriber#onSuccess(Object)} when this {@link Completable} completes. {@code null} return values
-     * are not allowed.
-     * @param <T> The value type of the resulting {@link Single}.
-     * @return A {@link Single} that mirrors the terminal signal from this {@link Completable}.
-     */
-    public final <T> Single<T> toSingle(Supplier<T> valueSupplier) {
-        return new CompletableToSingle<>(this, requireNonNull(valueSupplier), executor);
+        return new CompletableToSingle<>(this, executor);
     }
 
     /**

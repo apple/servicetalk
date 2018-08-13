@@ -25,6 +25,7 @@ import org.testng.annotations.Test;
 public class CompletableOnErrorResumeTckTest extends AbstractCompletableTckTest {
     @Override
     public Publisher<Object> createPublisher(long elements) {
-        return Completable.error(DeliberateException.DELIBERATE_EXCEPTION).onErrorResume(cause -> Completable.completed()).toPublisher(Object::new);
+        return Completable.error(DeliberateException.DELIBERATE_EXCEPTION)
+                .onErrorResume(cause -> Completable.completed()).toPublisher();
     }
 }

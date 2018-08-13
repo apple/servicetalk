@@ -24,6 +24,6 @@ import org.testng.annotations.Test;
 public class CompletableNeverTckTest extends AbstractCompletableTckTest {
     @Override
     public Publisher<Object> createPublisher(long elements) {
-        return Completable.never().toPublisher(Object::new);
+        return Completable.never().toPublisher();
     }
 }

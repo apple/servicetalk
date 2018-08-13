@@ -18,17 +18,11 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
-import java.util.function.Supplier;
-import javax.annotation.Nullable;
-
 final class CompletableToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
-    @Nullable
-    private final Supplier<T> valueSupplier;
     private final Completable parent;
 
-    CompletableToSingle(Completable parent, @Nullable Supplier<T> valueSupplier, Executor executor) {
+    CompletableToSingle(Completable parent, Executor executor) {
         super(executor);
-        this.valueSupplier = valueSupplier;
         this.parent = parent;
     }
 
@@ -45,18 +39,7 @@ final class CompletableToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
 
             @Override
             public void onComplete() {
-                if (valueSupplier != null) {
-                    final T next;
-                    try {
-                        next = valueSupplier.get();
-                    } catch (Throwable cause) {
-                        subscriber.onError(cause);
-                        return;
-                    }
-                    subscriber.onSuccess(next);
-                } else {
-                    subscriber.onSuccess(null);
-                }
+                subscriber.onSuccess(null);
             }
 
             @Override
