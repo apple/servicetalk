@@ -35,6 +35,7 @@ final class TimeoutSingle<T> extends Single<T> {
     TimeoutSingle(final Single<T> original,
                   final Duration duration,
                   final Executor timeoutExecutor) {
+        super(original.getExecutor());
         this.original = original;
         this.durationNs = duration.toNanos();
         this.timeoutExecutor = requireNonNull(timeoutExecutor);
@@ -44,6 +45,7 @@ final class TimeoutSingle<T> extends Single<T> {
                   final long duration,
                   final TimeUnit unit,
                   final Executor timeoutExecutor) {
+        super(original.getExecutor());
         this.original = original;
         this.durationNs = unit.toNanos(duration);
         this.timeoutExecutor = requireNonNull(timeoutExecutor);

@@ -41,6 +41,7 @@ final class PubToSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
      * @param source {@link Publisher} for this {@link Single}.
      */
     PubToSingle(Publisher<T> source) {
+        super(source.getExecutor());
         this.source = source;
     }
 

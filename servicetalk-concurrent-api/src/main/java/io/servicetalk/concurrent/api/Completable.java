@@ -730,7 +730,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @return The new {@link Completable}.
      */
     public final Completable doBeforeFinally(Runnable doFinally) {
-        return new DoBeforeFinallyCompletable(this, doFinally);
+        return new DoBeforeFinallyCompletable(this, doFinally, executor);
     }
 
     /**

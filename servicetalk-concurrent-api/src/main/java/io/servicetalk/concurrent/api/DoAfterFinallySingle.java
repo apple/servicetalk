@@ -21,19 +21,18 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static java.util.Objects.requireNonNull;
 
-final class DoAfterFinallySingle<T> extends Single<T> {
+final class DoAfterFinallySingle<T> extends AbstractSynchronousSingleOperator<T, T> {
 
-    private final Single<T> original;
     private final Runnable runnable;
 
-    DoAfterFinallySingle(Single<T> original, Runnable runnable) {
-        this.original = requireNonNull(original);
+    DoAfterFinallySingle(Single<T> original, Runnable runnable, Executor executor) {
+        super(original, executor);
         this.runnable = requireNonNull(runnable);
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber) {
-        original.subscribe(new DoAfterFinallySingleSubscriber<>(subscriber, runnable));
+    public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
+        return new DoAfterFinallySingleSubscriber<>(subscriber, runnable);
     }
 
     private static final class DoAfterFinallySingleSubscriber<T> implements Subscriber<T> {

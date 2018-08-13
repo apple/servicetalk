@@ -750,7 +750,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return The new {@link Single}.
      */
     public final Single<T> doAfterFinally(Runnable doFinally) {
-        return new DoAfterFinallySingle<>(this, doFinally);
+        return new DoAfterFinallySingle<>(this, doFinally, executor);
     }
 
     /**

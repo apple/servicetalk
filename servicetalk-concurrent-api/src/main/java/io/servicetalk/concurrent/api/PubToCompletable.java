@@ -36,6 +36,7 @@ final class PubToCompletable<T> extends AbstractNoHandleSubscribeCompletable {
      * @param source {@link Publisher} from which this {@link Completable} is created.
      */
     PubToCompletable(Publisher<T> source) {
+        super(source.getExecutor());
         this.source = source;
     }
 

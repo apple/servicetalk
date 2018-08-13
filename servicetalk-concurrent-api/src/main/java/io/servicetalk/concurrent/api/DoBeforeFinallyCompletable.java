@@ -21,19 +21,18 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static java.util.Objects.requireNonNull;
 
-final class DoBeforeFinallyCompletable extends Completable {
+final class DoBeforeFinallyCompletable extends AbstractSynchronousCompletableOperator {
 
-    private final Completable original;
     private final Runnable runnable;
 
-    DoBeforeFinallyCompletable(Completable original, Runnable runnable) {
-        this.original = requireNonNull(original);
+    DoBeforeFinallyCompletable(Completable original, Runnable runnable, Executor executor) {
+        super(original, executor);
         this.runnable = requireNonNull(runnable);
     }
 
     @Override
-    protected void handleSubscribe(Subscriber subscriber) {
-        original.subscribe(new DoBeforeFinallyCompletableSubscriber(subscriber, runnable));
+    public Subscriber apply(Subscriber subscriber) {
+        return new DoBeforeFinallyCompletableSubscriber(subscriber, runnable);
     }
 
     private static final class DoBeforeFinallyCompletableSubscriber implements Subscriber {
