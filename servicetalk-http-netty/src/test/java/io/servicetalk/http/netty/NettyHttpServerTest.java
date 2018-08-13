@@ -17,13 +17,13 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -81,6 +81,8 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     public final ExpectedException thrown = ExpectedException.none();
     @Rule
     public final PublisherRule<HttpPayloadChunk> publisherRule = new PublisherRule<>();
+    @Rule
+    public final MockedCompletableListenerRule completableListenerRule = new MockedCompletableListenerRule();
 
     public NettyHttpServerTest(final ExecutorSupplier clientExecutorSupplier,
                                final ExecutorSupplier serverExecutorSupplier) {
@@ -312,16 +314,42 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         assertConnectionClosed();
     }
 
-    @Ignore("The graceful close seems like it's not forcefully closing after the timeout")
     @Test
-    public void testCancelGracefulShutdownWhileReadingPayload() throws Exception {
+    public void testCancelGracefulShutdownWhileReadingPayloadAndThenGracefulShutdownAgain() throws Exception {
         when(publisherSupplier.apply(any())).thenReturn(publisherRule.getPublisher());
+        MockedCompletableListenerRule onCloseListener = completableListenerRule.listen(getServerContext().onClose());
 
         final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_PUBLISHER_RULE);
         makeRequest(request1);
 
-        // cancelling the Completable does not cancel the shutdown.
+        // cancelling the Completable while in the timeout cancels the forceful shutdown.
         closeAsyncGracefully(getServerContext(), 1000, SECONDS).doAfterSubscribe(Cancellable::cancel).subscribe();
+
+        onCloseListener.verifyNoEmissions();
+
+        awaitIndefinitely(closeAsyncGracefully(getServerContext(), 10, MILLISECONDS));
+
+        onCloseListener.verifyCompletion();
+
+        assertConnectionClosed();
+    }
+
+    @Test
+    public void testCancelGracefulShutdownWhileReadingPayloadAndThenShutdown() throws Exception {
+        when(publisherSupplier.apply(any())).thenReturn(publisherRule.getPublisher());
+        MockedCompletableListenerRule onCloseListener = completableListenerRule.listen(getServerContext().onClose());
+
+        final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_PUBLISHER_RULE);
+        makeRequest(request1);
+
+        // cancelling the Completable while in the timeout cancels the forceful shutdown.
+        closeAsyncGracefully(getServerContext(), 1000, SECONDS).doAfterSubscribe(Cancellable::cancel).subscribe();
+
+        onCloseListener.verifyNoEmissions();
+
+        awaitIndefinitely(getServerContext().closeAsync());
+
+        onCloseListener.verifyCompletion();
 
         assertConnectionClosed();
     }
