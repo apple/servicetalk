@@ -18,6 +18,10 @@ package io.servicetalk.concurrent.api;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static java.util.Arrays.asList;
@@ -54,17 +58,20 @@ public class IterableMergeCompletableDelayErrorTest {
 
     @Test
     public void testCollectionFailFirstEvent() {
-        collectionHolder.init(2).listen().fail(1).verifyNoEmissions().complete(0, 2).verifyFailure(DELIBERATE_EXCEPTION);
+        collectionHolder.init(2).listen().fail(1).verifyNoEmissions().complete(0, 2)
+                .verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
     public void testCollectionFailLastEvent() {
-        collectionHolder.init(2).listen().complete(0, 2).verifyNoEmissions().fail(1).verifyFailure(DELIBERATE_EXCEPTION);
+        collectionHolder.init(2).listen().complete(0, 2).verifyNoEmissions().fail(1)
+                .verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
     public void testCollectionFailMiddleEvent() {
-        collectionHolder.init(2).listen().complete(0).verifyNoEmissions().fail(1).verifyNoEmissions().complete(2).verifyFailure(DELIBERATE_EXCEPTION);
+        collectionHolder.init(2).listen().complete(0).verifyNoEmissions().fail(1).verifyNoEmissions().complete(2)
+                .verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
@@ -94,11 +101,29 @@ public class IterableMergeCompletableDelayErrorTest {
 
     @Test
     public void testIterableFailMiddleEvent() {
-        iterableHolder.init(2).listen().complete(0).verifyNoEmissions().fail(1).verifyNoEmissions().complete(2).verifyFailure(DELIBERATE_EXCEPTION);
+        iterableHolder.init(2).listen().complete(0).verifyNoEmissions().fail(1).verifyNoEmissions().complete(2)
+                .verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
     public void testIterableMergeWithOne() {
         iterableHolder.init(1).listen().completeAll().verifyCompletion();
+    }
+
+    @Test
+    public void mergedCompletablesTerminateSynchronouslyWithDelayErrorDoesNotTerminateTwice()
+            throws InterruptedException, ExecutionException {
+        ExecutorService executorService = java.util.concurrent.Executors.newCachedThreadPool();
+        executorService.submit(() -> { }).get();
+        try {
+            CountDownLatch latch = new CountDownLatch(1);
+            // The lower the count the more likely we will concurrently complete the subscribe() call while the
+            // Subscriber also is completed.
+            iterableHolder.init(1, executorService, latch).listen();
+            latch.await();
+            iterableHolder.verifyCompletion();
+        } finally {
+            executorService.shutdown();
+        }
     }
 }

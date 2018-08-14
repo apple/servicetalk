@@ -20,6 +20,9 @@ import io.servicetalk.concurrent.Cancellable;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.CountDownLatch;
+import javax.annotation.Nullable;
+
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static java.util.Arrays.copyOfRange;
@@ -76,6 +79,11 @@ public class MergeCompletableTest {
         protected abstract Completable createCompletable(Completable[] completables);
 
         CompletableHolder init(int count) {
+            return init(count, null, null);
+        }
+
+        CompletableHolder init(int count, @Nullable java.util.concurrent.Executor executor,
+                               @Nullable CountDownLatch doneLatch) {
             completables = new Completable[count + 1];
             cancellables = new Cancellable[count + 1];
             subscribers = new Completable.Subscriber[count + 1];
@@ -87,6 +95,31 @@ public class MergeCompletableTest {
                     protected void handleSubscribe(final Subscriber subscriber) {
                         subscribers[finalI] = subscriber;
                         subscriber.onSubscribe(cancellables[finalI]);
+                         if (executor != null) {
+                             if (finalI != cancellables.length - 1) {
+                                 subscriber.onComplete();
+                             } else {
+                                 try {
+                                     executor.execute(() -> {
+                                         try {
+                                             subscriber.onComplete();
+                                         } finally {
+                                             if (doneLatch != null) {
+                                                 doneLatch.countDown();
+                                             }
+                                         }
+                                     });
+                                 } catch (Throwable cause) {
+                                     try {
+                                         subscriber.onError(cause);
+                                     } finally {
+                                         if (doneLatch != null) {
+                                             doneLatch.countDown();
+                                         }
+                                     }
+                                 }
+                             }
+                        }
                     }
                 };
             }

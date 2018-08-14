@@ -66,6 +66,7 @@ abstract class AbstractMergeCompletableOperator extends AbstractNoHandleSubscrib
         private static final AtomicReferenceFieldUpdater<MergeSubscriber, Object> terminalNotificationUpdater =
                 AtomicReferenceFieldUpdater.newUpdater(MergeSubscriber.class, Object.class, "terminalNotification");
         private static final Object ON_COMPLETE = new Object();
+        private static final Object DELIVERED_DELAYED_ERROR = new Object();
 
         @SuppressWarnings("unused")
         volatile int completedCount;
@@ -111,8 +112,9 @@ abstract class AbstractMergeCompletableOperator extends AbstractNoHandleSubscrib
                     if (terminalNotificationUpdater.compareAndSet(this, null, t)) {
                         break;
                     } else if (!delayError) {
-                        // If we are not delaying error notification, and we fail to set the terminal event then that means we
-                        // have already notified the subscriber and should return to avoid duplicate terminal notifications.
+                        // If we are not delaying error notification, and we fail to set the terminal event then that
+                        // means we have already notified the subscriber and should return to avoid duplicate terminal
+                        // notifications.
                         return;
                     }
                 } else {
@@ -122,7 +124,13 @@ abstract class AbstractMergeCompletableOperator extends AbstractNoHandleSubscrib
                     break;
                 }
             }
-            if (!delayError || onTerminate()) {
+
+            // If we are delaying the error then we need to prevent concurrent termination with the subscribe() thread,
+            // and we do this with a two phase atomic set to DELIVERED_DELAYED_ERROR.
+            // If we don't delay the error then we never increase the total completion count, so we don't have to worry
+            // about concurrent invocation.
+            if (!delayError || (onTerminate() &&
+                    t == terminalNotificationUpdater.getAndSet(this, DELIVERED_DELAYED_ERROR))) {
                 onError0(t);
             }
         }
@@ -131,15 +139,19 @@ abstract class AbstractMergeCompletableOperator extends AbstractNoHandleSubscrib
             if (terminalNotificationUpdater.compareAndSet(this, null, ON_COMPLETE)) {
                 subscriber.onComplete();
             } else if (delayError) {
-                Throwable t = (Throwable) terminalNotification;
-                assert t != null;
-                onError0(t);
+                // This maybe called from the subscribe() thread and also the Subscriber thread. It is possible the
+                // merge operation already completed successfully in the Subscriber thread, and then the subscribe()
+                // thread observed all merged Completables have completed and so also calls this method.
+                Object maybeThrowable = terminalNotificationUpdater.getAndSet(this, DELIVERED_DELAYED_ERROR);
+                if (maybeThrowable instanceof Throwable) {
+                    onError0((Throwable) maybeThrowable);
+                }
             }
         }
 
         private void onError0(Throwable t) {
-            // If we are delaying error, then everything must have terminated by now, and there is no need to cancel anything.
-            // However if we are not delaying error then we should cancel all outstanding work.
+            // If we are delaying error, then everything must have terminated by now, and there is no need to cancel
+            // anything. However if we are not delaying error then we should cancel all outstanding work.
             if (!delayError) {
                 dynamicCancellable.cancel();
             }
