@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.router.jersey;
 
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
@@ -25,6 +26,7 @@ import org.glassfish.jersey.server.ApplicationHandler;
 
 import java.io.InputStream;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import javax.ws.rs.core.Application;
 
 import static io.servicetalk.http.utils.HttpRequestUriUtils.getBaseRequestUri;
@@ -43,6 +45,7 @@ public final class HttpJerseyRouterBuilder {
     private int publisherInputStreamQueueCapacity = 16;
     private BiFunction<ConnectionContext, HttpRequest<HttpPayloadChunk>, String> baseUriFunction =
             (ctx, req) -> getBaseRequestUri(ctx, req, false);
+    private Function<String, Executor> executorFactory = $ -> null;
 
     /**
      * Set the hint for the capacity of the intermediary queue that stores items when adapting {@link Publisher}s
@@ -77,6 +80,20 @@ public final class HttpJerseyRouterBuilder {
     }
 
     /**
+     * Set a {@link Function Function&lt;String, Executor&gt;} used as a factory for creating {@link Executor} instances
+     * that can be used for offloading the handling of request to resource methods, as specified
+     * via {@link ExecutionStrategy} annotations.
+     *
+     * @param executorFactory a {@link Function Function&lt;String, Executor&gt;}
+     * @return this
+     * @see ExecutionStrategy
+     */
+    public HttpJerseyRouterBuilder setExecutorFactory(final Function<String, Executor> executorFactory) {
+        this.executorFactory = requireNonNull(executorFactory);
+        return this;
+    }
+
+    /**
      * Build the {@link HttpService} for the specified JAX-RS {@link Application}.
      *
      * @param application the {@link Application} to route requests to.
@@ -96,13 +113,10 @@ public final class HttpJerseyRouterBuilder {
         return build(new ApplicationHandler(applicationClass));
     }
 
-    /**
-     * Build the {@link HttpService} for the specified Jersey {@link ApplicationHandler}.
-     *
-     * @param applicationHandler the {@link ApplicationHandler} to route requests to.
-     * @return the {@link HttpService}.
-     */
-    public HttpService build(final ApplicationHandler applicationHandler) {
-        return new DefaultJerseyHttpRouter(applicationHandler, publisherInputStreamQueueCapacity, baseUriFunction);
+    private HttpService build(final ApplicationHandler applicationHandler) {
+        return new DefaultJerseyHttpRouter(applicationHandler,
+                publisherInputStreamQueueCapacity,
+                baseUriFunction,
+                executorFactory);
     }
 }

@@ -35,6 +35,7 @@ import javax.ws.rs.ext.MessageBodyWriter;
  * A combined {@link MessageBodyReader} / {@link MessageBodyWriter} that allows bypassing Java IO streams
  * when request/response entities need to be converted to/from {@code Publisher<Buffer>}.
  */
+@SuppressWarnings("rawtypes")
 final class BufferPublisherMessageBodyReaderWriter
         extends AbstractMessageBodyReaderWriter<Publisher, Buffer, Publisher<Buffer>, PublisherSource<Buffer>> {
 

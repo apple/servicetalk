@@ -24,7 +24,6 @@ import org.glassfish.jersey.message.internal.EntityInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
@@ -44,7 +43,7 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
 import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
-import static io.servicetalk.http.router.jersey.Context.getResponseChunkPublisherRef;
+import static io.servicetalk.http.router.jersey.Context.setResponseChunkPublisher;
 import static javax.ws.rs.core.MediaType.WILDCARD;
 import static org.glassfish.jersey.message.internal.ReaderInterceptorExecutor.closeableInputStream;
 
@@ -93,15 +92,7 @@ abstract class AbstractMessageBodyReaderWriter<Source, T, SourceOfT, WrappedSour
         return bodyFunction
                 .andThen(sourceFunction)
                 .apply(Publisher.from(() -> new InputStreamIterator(wrappedStream))
-                                .map(bytes -> newPayloadChunk(allocator.wrap(bytes)))
-                                .doAfterFinally(() -> {
-                                    try {
-                                        wrappedStream.close();
-                                    } catch (final IOException e) {
-                                        logger.debug("Failed to close wrapped input stream", e);
-                                    }
-                                }),
-                        allocator);
+                        .map(bytes -> newPayloadChunk(allocator.wrap(bytes))), allocator);
     }
 
     @Override
@@ -115,7 +106,7 @@ abstract class AbstractMessageBodyReaderWriter<Source, T, SourceOfT, WrappedSour
     final void writeTo(final Publisher<HttpPayloadChunk> publisher) throws WebApplicationException {
         // The response entity being a Publisher, we do not need to write it to the entity stream
         // but instead store it in request context to bypass the stream writing infrastructure.
-        getResponseChunkPublisherRef(requestContextProvider.get()).set(publisher);
+        setResponseChunkPublisher(publisher, requestContextProvider.get());
     }
 
     private boolean isSupported(final Type entityType, final boolean unwrapCompletionStage) {

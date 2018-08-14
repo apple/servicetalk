@@ -16,6 +16,7 @@
 package io.servicetalk.http.router.jersey.resources;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
@@ -28,7 +29,6 @@ import io.servicetalk.serialization.api.Serializer;
 import io.servicetalk.serialization.api.TypeHolder;
 import io.servicetalk.transport.api.ConnectionContext;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
@@ -260,8 +260,7 @@ public class SynchronousResources {
     @Produces(APPLICATION_JSON)
     @Path("/json-mapin-pubout")
     @POST
-    public Publisher<HttpPayloadChunk> postJsonMapInPubOut(final Map<String, Object> requestContent)
-            throws IOException {
+    public Publisher<HttpPayloadChunk> postJsonMapInPubOut(final Map<String, Object> requestContent) {
         // Jersey's JacksonJsonProvider (thus blocking IO) is used for request deserialization
         // and ServiceTalk streaming serialization is used for the response
         final Map<String, Object> responseContent = new HashMap<>(requestContent);
@@ -274,8 +273,7 @@ public class SynchronousResources {
     @Produces(APPLICATION_JSON)
     @Path("/json-pubin-mapout")
     @POST
-    public Map<String, Object> postJsonPubInMapOut(final Publisher<HttpPayloadChunk> requestContent)
-            throws IOException {
+    public Map<String, Object> postJsonPubInMapOut(final Publisher<HttpPayloadChunk> requestContent) {
         // ServiceTalk streaming deserialization is used for the request
         // and Jersey's JacksonJsonProvider (thus blocking IO) is used for response serialization
         final Map<String, Object> requestData =
@@ -290,8 +288,7 @@ public class SynchronousResources {
     @Produces(APPLICATION_JSON)
     @Path("/json-pubin-pubout")
     @POST
-    public Publisher<HttpPayloadChunk> postJsonPubInPubOut(final Publisher<HttpPayloadChunk> requestContent)
-            throws IOException {
+    public Publisher<HttpPayloadChunk> postJsonPubInPubOut(final Publisher<HttpPayloadChunk> requestContent) {
         // ServiceTalk streaming is used for both request deserialization and response serialization
         final Publisher<Map<String, Object>> response =
                 SERIALIZER.deserialize(requestContent.map(HttpPayloadChunk::getContent), STRING_OBJECT_MAP_TYPE)
@@ -310,11 +307,12 @@ public class SynchronousResources {
     @Path("/json-buf-sglin-sglout-response")
     @POST
     public Response postJsonBufSingleInSingleOutResponse(final Single<Buffer> requestContent) {
+        final BufferAllocator allocator = ctx.getExecutionContext().getBufferAllocator();
         final Single<Buffer> response = requestContent.map(buf -> {
             final Map<String, Object> responseContent =
                     new HashMap<>(SERIALIZER.deserializeAggregatedSingle(buf, STRING_OBJECT_MAP_TYPE));
             responseContent.put("foo", "bar6");
-            return SERIALIZER.serialize(responseContent, ctx.getExecutionContext().getBufferAllocator());
+            return SERIALIZER.serialize(responseContent, allocator);
         });
 
         final GenericEntity<Single<Buffer>> entity = new GenericEntity<Single<Buffer>>(response) {
@@ -328,8 +326,8 @@ public class SynchronousResources {
     @Path("/json-buf-pubin-pubout")
     @POST
     public Publisher<Buffer> postJsonBufPubInPubOut(final Publisher<Buffer> requestContent) {
-        return requestContent
-                .map(buf -> ctx.getExecutionContext().getBufferAllocator().fromUtf8(buf.toString(UTF_8).toUpperCase()));
+        final BufferAllocator allocator = ctx.getExecutionContext().getBufferAllocator();
+        return requestContent.map(buf -> allocator.fromUtf8(buf.toString(UTF_8).toUpperCase()));
     }
 
     @Consumes(APPLICATION_JSON)

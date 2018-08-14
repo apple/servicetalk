@@ -16,8 +16,12 @@
 package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -28,6 +32,7 @@ import javax.annotation.Nullable;
 // publisher. Not threadsafe and intended to be used only in this module, where no concurrency occurs between read and
 // getChunkPublisher.
 class ChunkPublisherInputStream extends FilterInputStream {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ChunkPublisherInputStream.class);
     private static final InputStream EMPTY_INPUT_STREAM = new InputStream() {
         @Override
         public int read() {
@@ -35,7 +40,7 @@ class ChunkPublisherInputStream extends FilterInputStream {
         }
     };
 
-    private final Publisher<HttpPayloadChunk> publisher;
+    private Publisher<HttpPayloadChunk> publisher;
     private final int queueCapacity;
 
     ChunkPublisherInputStream(final Publisher<HttpPayloadChunk> publisher, final int queueCapacity) {
@@ -49,6 +54,14 @@ class ChunkPublisherInputStream extends FilterInputStream {
             throw new IllegalStateException("Publisher is being consumed via InputStream");
         }
         return publisher;
+    }
+
+    public void offloadSourcePublisher(final Executor executor) {
+        if (in == EMPTY_INPUT_STREAM) {
+            publisher = publisher.publishOn(executor).subscribeOn(executor);
+        } else {
+            LOGGER.warn("Can't offload source publisher because it has already been converted to input stream");
+        }
     }
 
     @Override

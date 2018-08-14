@@ -15,18 +15,11 @@
  */
 package io.servicetalk.http.router.jersey.resources;
 
-import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.router.jersey.AbstractResourceTest.TestFiltered;
-import io.servicetalk.serialization.api.DefaultSerializer;
-import io.servicetalk.serialization.api.Serializer;
-import io.servicetalk.serialization.api.TypeHolder;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import org.glassfish.jersey.internal.util.collection.Ref;
 import org.glassfish.jersey.internal.util.collection.Refs;
@@ -59,11 +52,7 @@ import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseBroadcaster;
 import javax.ws.rs.sse.SseEventSink;
 
-import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.concurrent.api.Single.defer;
-import static io.servicetalk.concurrent.api.Single.error;
-import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.router.jersey.TestUtils.asChunkPublisher;
 import static io.servicetalk.http.router.jersey.resources.AsynchronousResources.PATH;
 import static java.util.Collections.singletonMap;
@@ -82,28 +71,15 @@ import static javax.ws.rs.core.Response.noContent;
 import static javax.ws.rs.core.Response.ok;
 import static javax.ws.rs.core.Response.status;
 
-/**
- * Asynchronous (in JAX-RS lingo) resources.
- */
 @Path(PATH)
-public class AsynchronousResources {
-    public static final String PATH = "/async";
-
-    private static final Serializer SERIALIZER = new DefaultSerializer(new JacksonSerializationProvider());
-    private static final TypeHolder<Map<String, Object>> STRING_OBJECT_MAP_TYPE =
-            new TypeHolder<Map<String, Object>>() {
-            };
-
-    @Context
-    private ConnectionContext ctx;
-
+public class AsynchronousResources extends AbstractAsynchronousResources {
     @Path("/void-completion")
     @GET
     public CompletionStage<Void> getVoidCompletion(@QueryParam("fail") final boolean fail,
-                                                   @QueryParam("defer") boolean defer) {
+                                                   @QueryParam("defer") final boolean defer) {
         final CompletableFuture<Void> cf = new CompletableFuture<>();
 
-        Runnable task = () -> {
+        final Runnable task = () -> {
             if (fail) {
                 cf.completeExceptionally(DELIBERATE_EXCEPTION);
             } else {
@@ -163,29 +139,6 @@ public class AsynchronousResources {
         });
     }
 
-    @Produces(TEXT_PLAIN)
-    @Path("/response-comsta")
-    @GET
-    public Response getResponseCompletionStage(@Context final HttpHeaders headers) {
-        return ok(completedFuture("DONE")).build();
-    }
-
-    @Produces(TEXT_PLAIN)
-    @Path("/delayed-response-comsta")
-    @GET
-    public Response getDelayedResponseCompletionStage(@Nonnull @QueryParam("delay") final long delay,
-                                                      @Nonnull @QueryParam("unit") final TimeUnit unit) {
-        final CompletableFuture<String> cf = new CompletableFuture<>();
-        final Cancellable cancellable = ctx.getExecutionContext().getExecutor().schedule(() ->
-                cf.complete("DONE"), delay, unit);
-
-        return ok(cf.whenComplete((r, t) -> {
-            if (t instanceof CancellationException) {
-                cancellable.cancel();
-            }
-        })).build();
-    }
-
     @Consumes(TEXT_PLAIN)
     @Produces(TEXT_PLAIN)
     @Path("/text")
@@ -231,6 +184,29 @@ public class AsynchronousResources {
                 .header(CONTENT_LENGTH, contentString.length())
                 .entity(entity)
                 .build());
+    }
+
+    @Produces(TEXT_PLAIN)
+    @Path("/response-comsta")
+    @GET
+    public Response getResponseCompletionStage(@Context final HttpHeaders headers) {
+        return ok(completedFuture("DONE")).build();
+    }
+
+    @Produces(TEXT_PLAIN)
+    @Path("/delayed-response-comsta")
+    @GET
+    public Response getDelayedResponseCompletionStage(@Nonnull @QueryParam("delay") final long delay,
+                                                      @Nonnull @QueryParam("unit") final TimeUnit unit) {
+        final CompletableFuture<String> cf = new CompletableFuture<>();
+        final Cancellable cancellable =
+                ctx.getExecutionContext().getExecutor().schedule(() -> cf.complete("DONE"), delay, unit);
+
+        return ok(cf.whenComplete((r, t) -> {
+            if (t instanceof CancellationException) {
+                cancellable.cancel();
+            }
+        })).build();
     }
 
     @TestFiltered
@@ -337,7 +313,7 @@ public class AsynchronousResources {
             public void close() {
                 eventSink.close();
             }
-        }, sse, Refs.of(0));
+        }, sse, Refs.of(0), ctx.getExecutionContext().getExecutor());
     }
 
     @Produces(SERVER_SENT_EVENTS)
@@ -361,45 +337,7 @@ public class AsynchronousResources {
             public void close() {
                 sseBroadcaster.close();
             }
-        }, sse, Refs.of(0));
-    }
-
-    @TestFiltered
-    @Path("/completable")
-    @GET
-    public Completable getCompletableOut(@QueryParam("fail") final boolean fail) {
-        return Completable.defer(() -> fail ? Completable.error(DELIBERATE_EXCEPTION) : completed());
-    }
-
-    @Consumes(APPLICATION_JSON)
-    @Produces(APPLICATION_JSON)
-    @Path("/json-buf-sglin-sglout")
-    @POST
-    public Single<Buffer> postJsonBufSingleInSingleOut(@QueryParam("fail") final boolean fail,
-                                                       final Single<Buffer> requestContent) {
-        return fail ? defer(() -> error(DELIBERATE_EXCEPTION)) :
-                requestContent.map(buf -> {
-                    final Map<String, Object> responseContent =
-                            new HashMap<>(SERIALIZER.deserializeAggregatedSingle(buf, STRING_OBJECT_MAP_TYPE));
-                    responseContent.put("foo", "bar6");
-                    return SERIALIZER.serialize(responseContent, ctx.getExecutionContext().getBufferAllocator());
-                });
-    }
-
-    @Produces(TEXT_PLAIN)
-    @Path("/single-response")
-    @GET
-    public Single<Response> getResponseSingle(final @QueryParam("fail") boolean fail) {
-        return ctx.getExecutionContext().getExecutor().timer(10, MILLISECONDS)
-                .andThen(fail ? error(DELIBERATE_EXCEPTION) : success(accepted("DONE").build()));
-    }
-
-    @Produces(APPLICATION_JSON)
-    @Path("/single-map")
-    @GET
-    public Single<Map<String, Object>> getMapSingle(final @QueryParam("fail") boolean fail) {
-        return ctx.getExecutionContext().getExecutor().timer(10, MILLISECONDS)
-                .andThen(fail ? error(DELIBERATE_EXCEPTION) : success(singletonMap("foo", "bar4")));
+        }, sse, Refs.of(0), ctx.getExecutionContext().getExecutor());
     }
 
     private interface SseEmitter {
@@ -408,13 +346,14 @@ public class AsynchronousResources {
         void close();
     }
 
-    private void scheduleSseEventSend(final SseEmitter emmitter, final Sse sse, final Ref<Integer> iRef) {
-        ctx.getExecutionContext().getExecutor().schedule(() -> {
+    private void scheduleSseEventSend(final SseEmitter emmitter, final Sse sse, final Ref<Integer> iRef,
+                                      final Executor executor) {
+        executor.schedule(() -> {
             final int i = iRef.get();
             emmitter.emit(sse.newEvent("foo" + i)).whenComplete((r, t) -> {
                 if (t == null && i < 9) {
                     iRef.set(i + 1);
-                    scheduleSseEventSend(emmitter, sse, iRef);
+                    scheduleSseEventSend(emmitter, sse, iRef, executor);
                 } else {
                     emmitter.close();
                 }

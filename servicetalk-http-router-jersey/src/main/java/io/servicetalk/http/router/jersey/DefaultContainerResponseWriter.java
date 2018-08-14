@@ -26,7 +26,6 @@ import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatus;
 
-import org.glassfish.jersey.internal.util.collection.Ref;
 import org.glassfish.jersey.server.ContainerException;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.ContainerResponse;
@@ -47,6 +46,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
 import static io.servicetalk.http.api.HttpResponses.newResponse;
 import static io.servicetalk.http.router.jersey.CharSequenceUtils.asCharSequence;
+import static io.servicetalk.http.router.jersey.Context.getResponseChunkPublisher;
 import static java.util.Arrays.stream;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
@@ -68,7 +68,6 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     private final HttpProtocolVersion protocolVersion;
     private final BufferAllocator allocator;
     private final Executor executor;
-    private final Ref<Publisher<HttpPayloadChunk>> chunkPublisherRef;
     private final Subscriber<? super HttpResponse<HttpPayloadChunk>> responseSubscriber;
 
     @Nullable
@@ -81,13 +80,11 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
                                    final HttpProtocolVersion protocolVersion,
                                    final BufferAllocator allocator,
                                    final Executor executor,
-                                   final Ref<Publisher<HttpPayloadChunk>> chunkPublisherRef,
                                    final Subscriber<? super HttpResponse<HttpPayloadChunk>> responseSubscriber) {
         this.request = requireNonNull(request);
         this.protocolVersion = requireNonNull(protocolVersion);
         this.allocator = requireNonNull(allocator);
         this.executor = requireNonNull(executor);
-        this.chunkPublisherRef = requireNonNull(chunkPublisherRef);
         this.responseSubscriber = requireNonNull(responseSubscriber);
     }
 
@@ -97,7 +94,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
             throws ContainerException {
 
         @Nullable
-        final Publisher<HttpPayloadChunk> chunkPublisher = chunkPublisherRef.get();
+        final Publisher<HttpPayloadChunk> chunkPublisher = getResponseChunkPublisher(request);
         // contentLength is >= 0 if the entity content length in bytes is known to Jersey, otherwise -1
         if (chunkPublisher != null) {
             sendResponse(UNKNOWN_RESPONSE_LENGTH, chunkPublisher, responseContext);

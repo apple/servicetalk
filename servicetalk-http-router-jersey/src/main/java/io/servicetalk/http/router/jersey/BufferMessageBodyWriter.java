@@ -30,7 +30,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyWriter;
 
 import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
-import static io.servicetalk.http.router.jersey.Context.getResponseChunkPublisherRef;
+import static io.servicetalk.http.router.jersey.Context.setResponseChunkPublisher;
 import static javax.ws.rs.core.MediaType.WILDCARD;
 
 /**
@@ -58,6 +58,6 @@ final class BufferMessageBodyWriter implements MessageBodyWriter<Buffer> {
                         final MediaType mediaType,
                         final MultivaluedMap<String, Object> httpHeaders,
                         final OutputStream entityStream) {
-        getResponseChunkPublisherRef(requestContextProvider.get()).set(Publisher.from(newPayloadChunk(buffer)));
+        setResponseChunkPublisher(Publisher.from(newPayloadChunk(buffer)), requestContextProvider.get());
     }
 }

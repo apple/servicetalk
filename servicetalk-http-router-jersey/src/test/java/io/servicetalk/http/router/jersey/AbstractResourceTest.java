@@ -20,13 +20,14 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.router.jersey.resources.AsynchronousResources;
 import io.servicetalk.http.router.jersey.resources.SynchronousResources;
 
-import org.glassfish.jersey.server.ResourceConfig;
 import org.junit.Test;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.HashSet;
+import java.util.Set;
 import javax.ws.rs.NameBinding;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
@@ -47,6 +48,7 @@ import static io.servicetalk.http.api.HttpResponseStatuses.NOT_FOUND;
 import static io.servicetalk.http.api.HttpResponseStatuses.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
+import static java.util.Arrays.asList;
 import static javax.ws.rs.core.HttpHeaders.ALLOW;
 import static javax.ws.rs.core.Response.status;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonStringEquals;
@@ -85,13 +87,14 @@ public abstract class AbstractResourceTest extends AbstractJerseyHttpServiceTest
         }
     }
 
-    public static class TestApplication extends ResourceConfig {
-        TestApplication() {
-            super(
+    public static class TestApplication extends Application {
+        @Override
+        public Set<Class<?>> getClasses() {
+            return new HashSet<>(asList(
                     TestFilter.class,
                     SynchronousResources.class,
                     AsynchronousResources.class
-            );
+            ));
         }
     }
 

@@ -37,6 +37,7 @@ import static io.servicetalk.http.api.HttpPayloadChunks.aggregateChunks;
  * A combined {@link MessageBodyReader} / {@link MessageBodyWriter} that allows bypassing Java IO streams
  * when request/response entities need to be converted to/from {@code Single<Buffer>}.
  */
+@SuppressWarnings("rawtypes")
 final class BufferSingleMessageBodyReaderWriter
         extends AbstractMessageBodyReaderWriter<Single, Buffer, Single<Buffer>, SingleSource<Buffer>> {
 

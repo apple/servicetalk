@@ -93,19 +93,23 @@ public abstract class AbstractJerseyHttpServiceTest {
             () -> createIoExecutor(new IoThreadFactory("st-client-io")),
             () -> newCachedThreadExecutor(new DefaultThreadFactory("st-client-", true, NORM_PRIORITY)));
 
-    private ServerContext serverContext;
-    private HttpConnection clientConnection;
+    protected ServerContext serverContext;
+    protected HttpConnection clientConnection;
 
     @Before
     public void initServerAndClient() throws Exception {
         serverContext = awaitIndefinitelyNonNull(
                 new DefaultHttpServerStarter()
                         .start(SERVER_CTX, new InetSocketAddress(0),
-                                new HttpJerseyRouterBuilder().build(getApplication())));
+                                configureBuilder(new HttpJerseyRouterBuilder()).build(getApplication())));
 
         clientConnection = awaitIndefinitelyNonNull(
                 new DefaultHttpConnectionBuilder<InetSocketAddress>()
                         .build(CLIENT_CTX, (InetSocketAddress) serverContext.getListenAddress()));
+    }
+
+    protected HttpJerseyRouterBuilder configureBuilder(final HttpJerseyRouterBuilder builder) {
+        return builder;
     }
 
     @After

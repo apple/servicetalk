@@ -15,8 +15,11 @@
  */
 package io.servicetalk.http.router.jersey;
 
+import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.router.jersey.resources.AsynchronousResources;
 import io.servicetalk.http.router.jersey.resources.SynchronousResources;
+import io.servicetalk.transport.api.ConnectionContext;
 
 import org.junit.Test;
 
@@ -25,15 +28,102 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import javax.annotation.Priority;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.container.ContainerResponseContext;
+import javax.ws.rs.container.ContainerResponseFilter;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.GenericEntity;
+import javax.ws.rs.ext.Provider;
+import javax.ws.rs.ext.ReaderInterceptor;
+import javax.ws.rs.ext.ReaderInterceptorContext;
+import javax.ws.rs.ext.WriterInterceptor;
+import javax.ws.rs.ext.WriterInterceptorContext;
 
+import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
+import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static io.servicetalk.http.api.HttpResponseStatuses.ACCEPTED;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static io.servicetalk.http.router.jersey.TestUtils.asChunkPublisher;
 import static java.lang.Character.toUpperCase;
+import static javax.ws.rs.Priorities.ENTITY_CODER;
 import static org.hamcrest.Matchers.is;
 
 public abstract class AbstractFilterInterceptorTest extends AbstractJerseyHttpServiceTest {
+    @Provider
+    public static class TestGlobalFilter implements ContainerRequestFilter, ContainerResponseFilter {
+        @Context
+        private ConnectionContext ctx;
+
+        @Override
+        public void filter(final ContainerRequestContext requestCtx) {
+            requestCtx.setEntityStream(new UpperCaseInputStream(requestCtx.getEntityStream()));
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public void filter(final ContainerRequestContext requestCtx,
+                           final ContainerResponseContext responseCtx) {
+
+            // ContainerResponseFilter allows replacing the entity altogether so we can optimize
+            // for cases when the resource has returned a Publisher, while making sure we correctly carry the
+            // generic type of the entity so the correct response body writer will be used
+            if (responseCtx.getEntity() instanceof Publisher) {
+                final Publisher<HttpPayloadChunk> contentWithBang =
+                        ((Publisher<HttpPayloadChunk>) responseCtx.getEntity()).concatWith(success(
+                                newPayloadChunk(ctx.getExecutionContext().getBufferAllocator().fromAscii("!"))));
+                responseCtx.setEntity(new GenericEntity<Publisher<HttpPayloadChunk>>(contentWithBang) {
+                });
+            } else {
+                responseCtx.setEntityStream(new ExclamatoryOutputStream(responseCtx.getEntityStream()));
+            }
+        }
+    }
+
+    @Priority(ENTITY_CODER)
+    @Provider
+    public static class TestInterceptor implements ReaderInterceptor, WriterInterceptor {
+        @Context
+        private ConnectionContext ctx;
+
+        @Override
+        public Object aroundReadFrom(final ReaderInterceptorContext readerInterceptorCtx) throws IOException {
+            final InputStream old = readerInterceptorCtx.getInputStream();
+            readerInterceptorCtx.setInputStream(new UpperCaseInputStream(old));
+            try {
+                return readerInterceptorCtx.proceed();
+            } finally {
+                readerInterceptorCtx.setInputStream(old);
+            }
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public void aroundWriteTo(final WriterInterceptorContext writerInterceptorCtx) throws IOException {
+            // WriterInterceptor allows replacing the entity altogether so we can optimize
+            // for cases when the resource has returned a Publisher
+            if (writerInterceptorCtx.getEntity() instanceof Publisher) {
+                writerInterceptorCtx.setEntity(((Publisher<HttpPayloadChunk>) writerInterceptorCtx.getEntity())
+                        .concatWith(asChunkPublisher("!", ctx.getExecutionContext().getBufferAllocator())));
+                writerInterceptorCtx.proceed();
+                return;
+            }
+
+            final OutputStream old = writerInterceptorCtx.getOutputStream();
+            final ExclamatoryOutputStream eos = new ExclamatoryOutputStream(old);
+            writerInterceptorCtx.setOutputStream(eos);
+            try {
+                writerInterceptorCtx.proceed();
+            } finally {
+                eos.finish();
+                writerInterceptorCtx.setOutputStream(old);
+            }
+        }
+    }
+
     @Test
     public void synchronousResource() {
         sendAndAssertResponse(post(SynchronousResources.PATH + "/text", "foo1", TEXT_PLAIN),

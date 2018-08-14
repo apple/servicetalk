@@ -33,14 +33,12 @@ dependencies {
   implementation "io.servicetalk:servicetalk-bom-internal:0.1.0-SNAPSHOT"
 
   api "io.servicetalk:servicetalk-http-api:0.1.0-SNAPSHOT"
-  api "io.servicetalk:servicetalk-http-utils:0.1.0-SNAPSHOT"
   api "org.glassfish.jersey.core:jersey-server:$jerseyVersion"
 
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
-  implementation "io.servicetalk:servicetalk-buffer-netty:0.1.0-SNAPSHOT"
   implementation "io.servicetalk:servicetalk-concurrent-internal:0.1.0-SNAPSHOT"
-  implementation "io.servicetalk:servicetalk-transport-netty:0.1.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-http-utils:0.1.0-SNAPSHOT"
   implementation "org.slf4j:slf4j-api"
 
   testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:0.1.0-SNAPSHOT"
@@ -48,6 +46,7 @@ dependencies {
   testImplementation "io.servicetalk:servicetalk-data-jackson:0.1.0-SNAPSHOT"
   testImplementation "io.servicetalk:servicetalk-http-netty:0.1.0-SNAPSHOT"
   testImplementation "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
+  testImplementation "io.servicetalk:servicetalk-transport-netty:0.1.0-SNAPSHOT"
   testImplementation "io.servicetalk:servicetalk-transport-netty-internal:0.1.0-SNAPSHOT"
   testImplementation "io.servicetalk:servicetalk-transport-netty-internal-testFixtures:0.1.0-SNAPSHOT"
   testImplementation "junit:junit"

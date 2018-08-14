@@ -40,14 +40,15 @@ public final class ServiceTalkFeature implements Feature {
         context.register(BufferMessageBodyWriter.class);
         context.register(BufferPublisherMessageBodyReaderWriter.class);
         context.register(BufferSingleMessageBodyReaderWriter.class);
+        context.register(SingleWriterInterceptor.class);
+        context.register(EndpointEnhancingRequestFilter.class);
         context.register(HttpPayloadChunkPublisherMessageBodyReaderWriter.class);
-        context.register(SingleRequestFilterWriterInterceptor.class);
 
         context.register(new AbstractBinder() {
             @Override
             protected void configure() {
                 bindFactory(ConnectionContextReferencingFactory.class).to(ConnectionContext.class)
-                        .proxy(true).proxyForSameScope(false).in(RequestScoped.class);
+                        .proxy(true).proxyForSameScope(true).in(RequestScoped.class);
                 bindFactory(referenceFactory()).to(CONNECTION_CONTEXT_REF_GENERIC_TYPE).in(RequestScoped.class);
 
                 bindFactory(HttpRequestReferencingFactory.class).to(HTTP_REQUEST_GENERIC_TYPE)

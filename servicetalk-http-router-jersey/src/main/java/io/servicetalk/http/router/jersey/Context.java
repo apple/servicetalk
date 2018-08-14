@@ -24,17 +24,20 @@ import org.glassfish.jersey.internal.inject.ReferencingFactory;
 import org.glassfish.jersey.internal.util.collection.Ref;
 
 import java.lang.reflect.Type;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.GenericType;
 
-import static org.glassfish.jersey.internal.util.collection.Refs.emptyRef;
-
 final class Context {
-    private static final String RESPONSE_CHUNK_PUBLISHER_REF = new GenericType<Ref<Publisher<HttpPayloadChunk>>>() {
+    private static final String REQUEST_CHUNK_PUBLISHER_IS = new GenericType<ChunkPublisherInputStream>() {
         // NOOP
-    }.getType().toString();
+    }.getType().getTypeName();
+
+    private static final String RESPONSE_CHUNK_PUBLISHER = new GenericType<Publisher<HttpPayloadChunk>>() {
+        // NOOP
+    }.getType().getTypeName();
 
     static final GenericType<Ref<ConnectionContext>> CONNECTION_CONTEXT_REF_GENERIC_TYPE =
             new GenericType<Ref<ConnectionContext>>() {
@@ -70,14 +73,24 @@ final class Context {
         // no instances
     }
 
-    static Ref<Publisher<HttpPayloadChunk>> initResponseChunkPublisherRef(final ContainerRequestContext requestContext) {
-        final Ref<Publisher<HttpPayloadChunk>> responseChunkPublisherRef = emptyRef();
-        requestContext.setProperty(RESPONSE_CHUNK_PUBLISHER_REF, responseChunkPublisherRef);
-        return responseChunkPublisherRef;
+    static void initRequestProperties(final ContainerRequestContext requestContext,
+                                      final ChunkPublisherInputStream entityStream) {
+        requestContext.setProperty(REQUEST_CHUNK_PUBLISHER_IS, entityStream);
+        requestContext.setProperty(RESPONSE_CHUNK_PUBLISHER, null);
     }
 
+    static ChunkPublisherInputStream getRequestChunkPublisherInputStream(final ContainerRequestContext requestContext) {
+        return (ChunkPublisherInputStream) requestContext.getProperty(REQUEST_CHUNK_PUBLISHER_IS);
+    }
+
+    @Nullable
     @SuppressWarnings("unchecked")
-    static Ref<Publisher<HttpPayloadChunk>> getResponseChunkPublisherRef(final ContainerRequestContext requestContext) {
-        return (Ref<Publisher<HttpPayloadChunk>>) requestContext.getProperty(RESPONSE_CHUNK_PUBLISHER_REF);
+    static Publisher<HttpPayloadChunk> getResponseChunkPublisher(final ContainerRequestContext requestContext) {
+        return (Publisher<HttpPayloadChunk>) requestContext.getProperty(RESPONSE_CHUNK_PUBLISHER);
+    }
+
+    static void setResponseChunkPublisher(final Publisher<HttpPayloadChunk> chunkPublisher,
+                                          final ContainerRequestContext requestContext) {
+        requestContext.setProperty(RESPONSE_CHUNK_PUBLISHER, chunkPublisher);
     }
 }

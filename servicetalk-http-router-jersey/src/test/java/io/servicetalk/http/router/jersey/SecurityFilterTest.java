@@ -17,10 +17,11 @@ package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.http.router.jersey.resources.SynchronousResources;
 
-import org.glassfish.jersey.server.ResourceConfig;
 import org.junit.Test;
 
 import java.security.Principal;
+import java.util.HashSet;
+import java.util.Set;
 import javax.annotation.Priority;
 import javax.management.remote.JMXPrincipal;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -31,6 +32,7 @@ import javax.ws.rs.ext.Provider;
 
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static java.util.Arrays.asList;
 import static javax.ws.rs.Priorities.AUTHENTICATION;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 
@@ -64,12 +66,13 @@ public class SecurityFilterTest extends AbstractJerseyHttpServiceTest {
         }
     }
 
-    public static class TestApplication extends ResourceConfig {
-        TestApplication() {
-            super(
+    public static class TestApplication extends Application {
+        @Override
+        public Set<Class<?>> getClasses() {
+            return new HashSet<>(asList(
                     TestSecurityFilter.class,
                     SynchronousResources.class
-            );
+            ));
         }
     }
 
