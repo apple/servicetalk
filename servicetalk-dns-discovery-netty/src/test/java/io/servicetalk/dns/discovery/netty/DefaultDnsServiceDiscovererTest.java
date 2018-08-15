@@ -29,7 +29,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -53,13 +52,17 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.parseBoolean;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -97,8 +100,8 @@ public class DefaultDnsServiceDiscovererTest {
     }
 
     @Test
-    @Ignore
     public void testRetry() throws Exception {
+        assumeThat("Ignored flaky test", parseBoolean(System.getenv("CI")), is(FALSE));
         AtomicInteger retryStrategyCalledCount = new AtomicInteger();
         ServiceDiscoverer<String, InetAddress> retryingDiscoverer = buildServiceDiscoverer((retryCount, cause) -> {
             retryStrategyCalledCount.incrementAndGet();
@@ -118,8 +121,8 @@ public class DefaultDnsServiceDiscovererTest {
     }
 
     @Test
-    @Ignore
     public void unknownHostDiscover() throws InterruptedException {
+        assumeThat("Ignored flaky test", parseBoolean(System.getenv("CI")), is(FALSE));
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
         Publisher<Event<InetAddress>> publisher = discoverer.discover("unknown.com");
@@ -183,6 +186,7 @@ public class DefaultDnsServiceDiscovererTest {
 
     @Test
     public void repeatDiscoverMultipleHosts() throws InterruptedException {
+        assumeThat("Ignored flaky test", parseBoolean(System.getenv("CI")), is(FALSE));
         ServiceDiscoverer<String, InetAddress> discoverer = buildServiceDiscoverer(null);
 
         CountDownLatch appleLatch = new CountDownLatch(2);
