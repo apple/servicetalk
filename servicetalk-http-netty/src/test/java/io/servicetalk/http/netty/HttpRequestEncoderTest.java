@@ -44,7 +44,11 @@ import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.channel.socket.ChannelInputShutdownReadComplete;
 import io.netty.channel.socket.SocketChannel;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -53,8 +57,10 @@ import org.junit.rules.Timeout;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayDeque;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
@@ -62,7 +68,6 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
@@ -79,16 +84,16 @@ import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
-import static io.servicetalk.transport.api.FlushStrategy.batchFlush;
+import static io.servicetalk.transport.api.FlushStrategy.defaultFlushStrategy;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.lang.Boolean.TRUE;
-import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Integer.toHexString;
 import static java.lang.String.valueOf;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -376,6 +381,8 @@ public class HttpRequestEncoderTest {
         try (CompositeCloseable resources = newCompositeCloseable()) {
 
             CompletableProcessor serverCloseTrigger = new CompletableProcessor();
+            CountDownLatch serverChannelLatch = new CountDownLatch(1);
+            AtomicReference<Channel> serverChannelRef = new AtomicReference<>();
 
             ReadOnlyTcpServerConfig sConfig = new TcpServerConfig(true)
                     .enableWireLogging("servicetalk-tests-server-wire-logger").asReadOnly();
@@ -385,9 +392,8 @@ public class HttpRequestEncoderTest {
                                     context -> Single.success(TRUE),
                                     new TcpServerChannelInitializer(sConfig, ACCEPT_ALL).andThen(
                                             (c, cc) -> {
-                                                ((SocketChannel) c).config().setSoLinger(0);
-                                                c.close(); // Close and send RST concurrently with client write
-                                                serverCloseTrigger.onComplete();
+                                                serverChannelRef.compareAndSet(null, c);
+                                                serverChannelLatch.countDown();
                                                 return cc;
                                             }), false, true)));
 
@@ -395,20 +401,40 @@ public class HttpRequestEncoderTest {
                     .enableWireLogging("servicetalk-tests-client-wire-logger"));
 
             final ChannelInitializer initializer = new TcpClientChannelInitializer(cConfig.getTcpClientConfig())
-                    .andThen(new HttpClientChannelInitializer(cConfig.asReadOnly(), closeHandler));
+                    .andThen(new HttpClientChannelInitializer(cConfig.asReadOnly(), closeHandler))
+                    .andThen((channel, context) -> {
+                        channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                            @Override
+                            public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+                                // Propagate the user event in the pipeline before triggering the test condition.
+                                ctx.fireUserEventTriggered(evt);
+                                if (evt instanceof ChannelInputShutdownReadComplete) {
+                                    serverCloseTrigger.onComplete();
+                                }
+                            }
+                        });
+                        return context;
+                    });
 
             Predicate<Object> predicate = (Object h) -> h instanceof LastHttpPayloadChunk;
 
             Connection<Object, Object> conn = resources.prepend(awaitIndefinitelyNonNull(
-                    new TcpConnector<>(cConfig.getTcpClientConfig().asReadOnly(), initializer,
-                            () -> predicate, null, closeHandler).connect(CEC, serverContext.getListenAddress())));
+                    new TcpConnector<>(cConfig.getTcpClientConfig().asReadOnly(), initializer, () -> predicate, null,
+                            closeHandler).connect(CEC, serverContext.getListenAddress(), false)));
+
+            // The server needs to wait to close the conneciton until after the client has established the connection.
+            serverChannelLatch.await();
+            Channel serverChannel = serverChannelRef.get();
+            assertNotNull(serverChannel);
+            ((SocketChannel) serverChannel).config().setSoLinger(0);
+            serverChannel.close(); // Close and send RST concurrently with client write
 
             HttpRequest<?> request = newRequest(POST, "/closeme", empty());
             HttpPayloadChunk lastChunk = newLastPayloadChunk(DEFAULT_ALLOCATOR.fromAscii("Bye"),
                     INSTANCE.newEmptyTrailers());
 
-            Completable write = conn.write(from(request, lastChunk),
-                    batchFlush(MAX_VALUE, serverCloseTrigger.andThen(just(1L))));
+            awaitIndefinitely(serverCloseTrigger);
+            Completable write = conn.write(from(request, lastChunk), defaultFlushStrategy());
 
             try {
                 awaitIndefinitely(write);
