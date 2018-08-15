@@ -64,11 +64,15 @@ import static io.servicetalk.concurrent.internal.Await.await;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.parseBoolean;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeThat;
 
 public abstract class AbstractNettyHttpServerTest {
 
@@ -99,6 +103,8 @@ public abstract class AbstractNettyHttpServerTest {
 
     private final Executor clientExecutor;
     private final Executor serverExecutor;
+    private final ExecutorSupplier clientExecutorSupplier;
+    private final ExecutorSupplier serverExecutorSupplier;
     private ContextFilter contextFilter = ACCEPT_ALL;
     private boolean sslEnabled;
     private ServerContext serverContext;
@@ -106,6 +112,8 @@ public abstract class AbstractNettyHttpServerTest {
     private HttpService service;
 
     AbstractNettyHttpServerTest(ExecutorSupplier clientExecutorSupplier, ExecutorSupplier serverExecutorSupplier) {
+        this.clientExecutorSupplier = clientExecutorSupplier;
+        this.serverExecutorSupplier = serverExecutorSupplier;
         this.clientExecutor = clientExecutorSupplier.executorSupplier.get();
         this.serverExecutor = serverExecutorSupplier.executorSupplier.get();
     }
@@ -149,9 +157,15 @@ public abstract class AbstractNettyHttpServerTest {
                     .trustManager(DefaultTestCerts::loadMutualAuthCaPem).build();
             httpConnectionBuilder.setSslConfig(sslConfig);
         }
-        httpConnection = awaitIndefinitelyNonNull(httpConnectionBuilder
-                .build(new DefaultExecutionContext(DEFAULT_ALLOCATOR, clientIoExecutor, clientExecutor),
-                        socketAddress));
+        httpConnection = awaitIndefinitelyNonNull(httpConnectionBuilder.build(
+                new DefaultExecutionContext(DEFAULT_ALLOCATOR, clientIoExecutor, clientExecutor), socketAddress));
+    }
+
+    protected void ignoreTestWhen(ExecutorSupplier clientExecutorSupplier, ExecutorSupplier serverExecutorSupplier) {
+        assumeThat("Ignored flaky test",
+                parseBoolean(System.getenv("CI")) &&
+                this.clientExecutorSupplier == clientExecutorSupplier &&
+                this.serverExecutorSupplier == serverExecutorSupplier, is(FALSE));
     }
 
     void setService(final HttpService service) {

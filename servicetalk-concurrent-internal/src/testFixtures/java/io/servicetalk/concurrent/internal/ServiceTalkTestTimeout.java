@@ -42,13 +42,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
+import static java.lang.Boolean.parseBoolean;
 import static java.util.Objects.requireNonNull;
 
 /**
  * Standard timeout shared by test classes. The {@link #lookForStuckThread} setting is ignored.
  */
 public final class ServiceTalkTestTimeout extends Timeout {
-    public static final int DEFAULT_TIMEOUT_SECONDS = 10;
+    public static final int DEFAULT_TIMEOUT_SECONDS = parseBoolean(System.getenv("CI")) ? 90 : 10;
     private final Runnable onTimeout;
 
     public ServiceTalkTestTimeout() {

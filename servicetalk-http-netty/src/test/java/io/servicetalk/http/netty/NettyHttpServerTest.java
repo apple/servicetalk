@@ -287,6 +287,8 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void testGracefulShutdownWhileReadingPayload() throws Exception {
+        ignoreTestWhen(IMMEDIATE, IMMEDIATE);
+
         when(publisherSupplier.apply(any())).thenReturn(publisherRule.getPublisher());
 
         final HttpRequest<HttpPayloadChunk> request1 = newRequest(GET, SVC_PUBLISHER_RULE);
@@ -416,6 +418,8 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void testErrorBeforeRead() throws Exception {
+        ignoreTestWhen(CACHED, IMMEDIATE);
+
         final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_ERROR_BEFORE_READ,
                 getChunkPublisherFromStrings("Goodbye", "cruel", "world!"));
         request.getHeaders().set(TRANSFER_ENCODING, CHUNKED); // TODO: Eventually, this won't be necessary.
@@ -441,6 +445,8 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void testErrorDuringRead() throws Exception {
+        ignoreTestWhen(CACHED, IMMEDIATE);
+
         final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_ERROR_DURING_READ,
                 getChunkPublisherFromStrings("Goodbye", "cruel", "world!"));
         request.getHeaders().set(TRANSFER_ENCODING, CHUNKED); // TODO: Eventually, this won't be necessary.
