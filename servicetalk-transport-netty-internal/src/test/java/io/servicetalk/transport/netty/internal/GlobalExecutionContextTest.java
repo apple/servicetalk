@@ -41,9 +41,4 @@ public class GlobalExecutionContextTest {
         toNettyIoExecutor(gec.getIoExecutor()).asExecutor().schedule(scheduleLatch::countDown, 1, SECONDS);
         scheduleLatch.await();
     }
-
-    @Test
-    public void testDisableShutdown() {
-        GlobalExecutionContext.disableShutdownHook();
-    }
 }

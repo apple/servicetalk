@@ -20,20 +20,12 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscoverer.Event;
-import io.servicetalk.concurrent.api.AsyncCloseable;
-import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpClientBuilder;
 import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
-import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
-import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.LoadBalancerReadyHttpClient;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -48,8 +40,7 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
-import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
+import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.http.utils.HttpHostHeaderFilter.newHostHeaderFilter;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
@@ -69,11 +60,7 @@ public final class DefaultHttpClientBuilder<U, R> implements HttpClientBuilder {
 
     private final HttpClientConfig config;
     private final LoadBalancerFactory<R, HttpConnection> lbFactory;
-    @Nullable
     private final ServiceDiscoverer<U, R> serviceDiscoverer;
-    @Nullable
-    private final Function<ExecutionContext,
-            ServiceDiscoverer<U, R>> serviceDiscovererFactory;
     private final U address;
     private BiFunction<HttpClient, Publisher<Object>, HttpClient> clientFilterFactory = (client, lbEvents) ->
             new LoadBalancerReadyHttpClient(4, lbEvents, client);
@@ -88,19 +75,6 @@ public final class DefaultHttpClientBuilder<U, R> implements HttpClientBuilder {
         this.lbFactory = requireNonNull(loadBalancerFactory);
         this.hostHeaderFilter = requireNonNull(hostHeaderFilter);
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
-        this.serviceDiscovererFactory = null;
-        this.address = requireNonNull(address);
-        this.config = new HttpClientConfig(new TcpClientConfig(false));
-    }
-
-    private DefaultHttpClientBuilder(final LoadBalancerFactory<R, HttpConnection> loadBalancerFactory,
-                                     final Function<ExecutionContext, ServiceDiscoverer<U, R>> serviceDiscovererFactory,
-                                     final U address,
-                                     final BiFunction<HttpClient, Publisher<Object>, HttpClient> hostHeaderFilter) {
-        this.lbFactory = requireNonNull(loadBalancerFactory);
-        this.hostHeaderFilter = requireNonNull(hostHeaderFilter);
-        this.serviceDiscoverer = null;
-        this.serviceDiscovererFactory = requireNonNull(serviceDiscovererFactory);
         this.address = requireNonNull(address);
         this.config = new HttpClientConfig(new TcpClientConfig(false));
     }
@@ -112,7 +86,6 @@ public final class DefaultHttpClientBuilder<U, R> implements HttpClientBuilder {
         clientFilterFactory = from.clientFilterFactory;
         connectionFilterFactory = from.connectionFilterFactory;
         serviceDiscoverer = from.serviceDiscoverer;
-        serviceDiscovererFactory = from.serviceDiscovererFactory;
         hostHeaderFilter = from.hostHeaderFilter;
         config = new HttpClientConfig(from.config);
     }
@@ -128,37 +101,21 @@ public final class DefaultHttpClientBuilder<U, R> implements HttpClientBuilder {
 
         assert !DUMMY_HAP.equals(address) : "Attempted to build with a dummy address";
 
-        ServiceDiscoverer<U, R> sd = null;
-        try {
-            sd = serviceDiscoverer == null ?
-                    requireNonNull(serviceDiscovererFactory).apply(executionContext) : serviceDiscoverer;
+        Publisher<Event<R>> addressEventStream = serviceDiscoverer.discover(address);
 
-            Publisher<Event<R>> addressEventStream = sd.discover(address);
+        ConnectionFactory<R, LoadBalancedHttpConnection> connectionFactory =
+                roConfig.getMaxPipelinedRequests() == 1 ?
+                    new NonPipelinedLBHttpConnectionFactory<>(roConfig, executionContext, connectionFilterFactory) :
+                    new PipelinedLBHttpConnectionFactory<>(roConfig, executionContext, connectionFilterFactory);
 
-            ConnectionFactory<R, LoadBalancedHttpConnection> connectionFactory =
-                    roConfig.getMaxPipelinedRequests() == 1 ?
-                        new NonPipelinedLBHttpConnectionFactory<>(roConfig, executionContext, connectionFilterFactory) :
-                        new PipelinedLBHttpConnectionFactory<>(roConfig, executionContext, connectionFilterFactory);
-
-            // TODO we should revisit generics on LoadBalancerFactory to avoid casts
-            LoadBalancer<? extends HttpConnection> lbfUntypedForCast = lbFactory
-                    .newLoadBalancer(addressEventStream, connectionFactory);
-            LoadBalancer<LoadBalancedHttpConnection> loadBalancer =
-                    (LoadBalancer<LoadBalancedHttpConnection>) lbfUntypedForCast;
-            addClientFilterFactory(defaultHostClientFilterFactory(address));
-            HttpClient client = clientFilterFactory.apply(new DefaultHttpClient(executionContext, loadBalancer),
-                    loadBalancer.getEventStream());
-
-            if (sd != serviceDiscoverer) {
-                return new HttpClientWithDependencies(client, sd);
-            }
-            return client;
-        } catch (Exception e) {
-            if (sd != serviceDiscoverer) {
-                sd.closeAsync().subscribe();
-            }
-            throw e;
-        }
+        // TODO we should revisit generics on LoadBalancerFactory to avoid casts
+        LoadBalancer<? extends HttpConnection> lbfUntypedForCast = lbFactory
+                .newLoadBalancer(addressEventStream, connectionFactory);
+        LoadBalancer<LoadBalancedHttpConnection> loadBalancer =
+                (LoadBalancer<LoadBalancedHttpConnection>) lbfUntypedForCast;
+        addClientFilterFactory(defaultHostClientFilterFactory(address));
+        return clientFilterFactory.apply(new DefaultHttpClient(executionContext, loadBalancer),
+                loadBalancer.getEventStream());
     }
 
     /**
@@ -290,8 +247,7 @@ public final class DefaultHttpClientBuilder<U, R> implements HttpClientBuilder {
     public static DefaultHttpClientBuilder<HostAndPort, InetSocketAddress> forSingleAddress(
             final LoadBalancerFactory<InetSocketAddress, HttpConnection> loadBalancerFactory,
             final HostAndPort address) {
-        return new DefaultHttpClientBuilder<>(loadBalancerFactory,
-                DefaultHttpClientBuilder::dnsServiceDiscovererFactory, address,
+        return new DefaultHttpClientBuilder<>(loadBalancerFactory, globalDnsServiceDiscoverer(), address,
                 (c, p) -> newHostHeaderFilter(address, c));
     }
 
@@ -316,60 +272,8 @@ public final class DefaultHttpClientBuilder<U, R> implements HttpClientBuilder {
      */
     public static DefaultHttpClientBuilder<HostAndPort, InetSocketAddress> forSingleAddress(HostAndPort address) {
         return new DefaultHttpClientBuilder<>(newRoundRobinFactory(),
-                DefaultHttpClientBuilder::dnsServiceDiscovererFactory, address,
+                globalDnsServiceDiscoverer(), address,
                 (c, p) -> newHostHeaderFilter(address, c));
-    }
-
-    private static ServiceDiscoverer<HostAndPort, InetSocketAddress> dnsServiceDiscovererFactory(ExecutionContext ec) {
-        return new DefaultDnsServiceDiscovererBuilder(ec).build();
-    }
-
-    private static final class HttpClientWithDependencies extends HttpClient {
-
-        private final HttpClient target;
-        private final ListenableAsyncCloseable compositeClosable;
-
-        private HttpClientWithDependencies(final HttpClient target,
-                                           final AsyncCloseable closeable) {
-            this.target = target;
-            compositeClosable = toListenableAsyncCloseable(newCompositeCloseable().appendAll(target, closeable));
-        }
-
-        @Override
-        public Single<? extends ReservedHttpConnection> reserveConnection(final HttpRequest<HttpPayloadChunk> request) {
-            return target.reserveConnection(request);
-        }
-
-        @Override
-        public Single<? extends UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
-                final HttpRequest<HttpPayloadChunk> request) {
-            return target.upgradeConnection(request);
-        }
-
-        @Override
-        public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
-            return target.request(request);
-        }
-
-        @Override
-        public ExecutionContext getExecutionContext() {
-            return target.getExecutionContext();
-        }
-
-        @Override
-        public Completable onClose() {
-            return compositeClosable.onClose();
-        }
-
-        @Override
-        public Completable closeAsync() {
-            return compositeClosable.closeAsync();
-        }
-
-        @Override
-        public Completable closeAsyncGracefully() {
-            return compositeClosable.closeAsyncGracefully();
-        }
     }
 
     /**

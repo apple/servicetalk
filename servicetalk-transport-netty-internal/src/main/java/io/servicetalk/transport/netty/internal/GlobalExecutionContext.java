@@ -26,18 +26,14 @@ import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
-import static io.servicetalk.concurrent.internal.Await.await;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
-import static java.lang.Runtime.getRuntime;
 import static java.lang.Thread.NORM_PRIORITY;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * ServiceTalk's shared {@link ExecutionContext} with reasonable defaults for APIs when a user doesn't provide one.
  * <p>
- * A lazily initialized singleton {@link ExecutionContext}, the lifecycle of this instance is tied to the JVM and
- * shouldn't need to be managed by the user. Don't attempt to close the executors unless you have disabled the {@code
- * ShutdownHook} via {@link GlobalExecutionContext#disableShutdownHook()}.
+ * A lazily initialized singleton {@link ExecutionContext}, the lifecycle of this instance shouldn't need to be managed
+ * by the user. Don't attempt to close the executors.
  */
 public final class GlobalExecutionContext {
 
@@ -56,47 +52,18 @@ public final class GlobalExecutionContext {
         return GlobalExecutionContextInitializer.INSTANCE;
     }
 
-    /**
-     * Skips closing the {@link GlobalExecutionContext}'s executors using a JVM ShutdownHook.
-     * <p>
-     * If a close from a {@code ShutdownHook} is not satisfactory use this method to disable it. The executors use
-     * daemon threads, so closing is not essential but a good practice.
-     */
-    public static void disableShutdownHook() {
-        if (getRuntime().removeShutdownHook(GlobalExecutionContextInitializer.SHUTDOWN_THREAD)) {
-            LOGGER.warn("Disabled GlobalExecutionContext ShutdownHook per user request");
-        }
-    }
-
     private static final class GlobalExecutionContextInitializer {
 
-        private static final ExecutionContext INSTANCE;
-        private static final Thread SHUTDOWN_THREAD;
+        static final ExecutionContext INSTANCE;
 
         static {
-            GlobalExecutionContextInitializer ec = new GlobalExecutionContextInitializer();
+            final IoExecutor ioExecutor = createIoExecutor(0, new io.netty.util.concurrent.DefaultThreadFactory(
+                    "servicetalk-global-io-executor", true, NORM_PRIORITY));
+            final Executor executor = newCachedThreadExecutor(
+                    new DefaultThreadFactory("servicetalk-global-executor", true, NORM_PRIORITY));
+            INSTANCE = new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, executor);
             LOGGER.debug("Initialized GlobalExecutionContext");
-            final Thread t = new Thread(() -> {
-                try {
-                    // 10 seconds was chosen as a reasonable default given most common process managers send SIGKILL
-                    // after a specified timeout, with these default values:
-                    // kubernetes 30s, mesos 5s, docker 10s, systemd 90s, supervisord 10s
-                    await(ec.ioExecutor.closeAsyncGracefully()
-                            .mergeDelayError(ec.executor.closeAsyncGracefully()), 10, SECONDS);
-                } catch (Exception e) {
-                    LOGGER.error("Failed to close the executor(s)", e);
-                }
-            }, "servicetalk-global-execution-context-shutdown");
-            getRuntime().addShutdownHook(t);
-            SHUTDOWN_THREAD = t;
-            INSTANCE = new DefaultExecutionContext(DEFAULT_ALLOCATOR, ec.ioExecutor, ec.executor);
         }
-
-        private final IoExecutor ioExecutor = createIoExecutor(0, new io.netty.util.concurrent.DefaultThreadFactory(
-                "servicetalk-global-io-executor", true, NORM_PRIORITY));
-
-        private final Executor executor = newCachedThreadExecutor(
-                new DefaultThreadFactory("servicetalk-global-executor", true, NORM_PRIORITY));
 
         private GlobalExecutionContextInitializer() {
             // No instances
