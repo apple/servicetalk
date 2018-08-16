@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.GroupKey;
+import io.servicetalk.http.api.AggregatedHttpClient.AggregatedUpgradableHttpResponse;
 import io.servicetalk.http.api.BlockingAggregatedHttpClient.BlockingAggregatedReservedHttpConnection;
 
 /**
@@ -54,6 +55,23 @@ public abstract class BlockingAggregatedHttpClientGroup<UnresolvedAddress> imple
     public abstract BlockingAggregatedReservedHttpConnection reserveConnection(GroupKey<UnresolvedAddress> key,
                                                                        AggregatedHttpRequest<HttpPayloadChunk> request)
         throws Exception;
+
+    /**
+     * Locate or create a client and delegate to
+     * {@link BlockingAggregatedHttpClient#upgradeConnection(AggregatedHttpRequest)}.
+     *
+     * @param key Identifies the {@link BlockingAggregatedHttpClient} to use, or provides enough information to create
+     * a {@link BlockingAggregatedHttpClient} if non exist.
+     * @param request The {@link AggregatedHttpRequest} which may provide more information about which
+     * {@link BlockingAggregatedHttpConnection} to upgrade.
+     * @return An object that provides the {@link HttpResponse} for the upgrade attempt and also contains the
+     * {@link HttpConnection} used for the upgrade.
+     * @throws Exception if a exception occurs during the reservation process.
+     * @see BlockingAggregatedHttpClient#upgradeConnection(AggregatedHttpRequest)
+     */
+    public abstract AggregatedUpgradableHttpResponse<HttpPayloadChunk> upgradeConnection(
+            GroupKey<UnresolvedAddress> key,
+            AggregatedHttpRequest<HttpPayloadChunk> request) throws Exception;
 
     /**
      * Convert this {@link BlockingAggregatedHttpClientGroup} to the {@link HttpClientGroup} API.

@@ -57,8 +57,7 @@ final class BlockingHttpClientToHttpClient extends HttpClient {
         return blockingToSingle(() -> {
             BlockingUpgradableHttpResponse<HttpPayloadChunk> upgradeResponse =
                     blockingClient.upgradeConnection(new DefaultBlockingHttpRequest<>(request));
-            return new BlockingToUpgradableHttpResponse<>(upgradeResponse,
-                    from(upgradeResponse.getPayloadBody()));
+            return new BlockingToUpgradableHttpResponse<>(upgradeResponse, from(upgradeResponse.getPayloadBody()));
         });
     }
 

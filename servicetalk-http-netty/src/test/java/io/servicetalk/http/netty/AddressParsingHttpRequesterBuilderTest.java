@@ -48,7 +48,7 @@ public class AddressParsingHttpRequesterBuilderTest {
 
     @Test
     public void buildWithDefaults() throws Exception {
-        HttpRequester newRequester = new AddressParsingHttpRequesterBuilder()
+        HttpRequester newRequester = new AddressParsingHttpClientBuilder()
                 .build(CTX);
         assertNotNull(newRequester);
         awaitIndefinitely(newRequester.closeAsync());
@@ -56,7 +56,7 @@ public class AddressParsingHttpRequesterBuilderTest {
 
     @Test
     public void buildAggregatedWithDefaults() throws Exception {
-        AggregatedHttpRequester newAggregatedRequester = new AddressParsingHttpRequesterBuilder()
+        AggregatedHttpRequester newAggregatedRequester = new AddressParsingHttpClientBuilder()
                 .buildAggregated(CTX);
         assertNotNull(newAggregatedRequester);
         awaitIndefinitely(newAggregatedRequester.closeAsync());
@@ -64,7 +64,7 @@ public class AddressParsingHttpRequesterBuilderTest {
 
     @Test
     public void buildBlockingWithDefaults() throws Exception {
-        BlockingHttpRequester newBlockingRequester = new AddressParsingHttpRequesterBuilder()
+        BlockingHttpRequester newBlockingRequester = new AddressParsingHttpClientBuilder()
                 .buildBlocking(CTX);
         assertNotNull(newBlockingRequester);
         newBlockingRequester.close();
@@ -72,7 +72,7 @@ public class AddressParsingHttpRequesterBuilderTest {
 
     @Test
     public void buildBlockingAggregatedWithDefaults() throws Exception {
-        BlockingAggregatedHttpRequester newBlockingAggregatedRequester = new AddressParsingHttpRequesterBuilder()
+        BlockingAggregatedHttpRequester newBlockingAggregatedRequester = new AddressParsingHttpClientBuilder()
                 .buildBlockingAggregated(CTX);
         assertNotNull(newBlockingAggregatedRequester);
         newBlockingAggregatedRequester.close();
@@ -82,7 +82,7 @@ public class AddressParsingHttpRequesterBuilderTest {
     @SuppressWarnings("unchecked")
     public void buildWithProvidedServiceDiscoverer() throws Exception {
         ServiceDiscoverer<HostAndPort, InetSocketAddress> mockedServiceDiscoverer = mock(ServiceDiscoverer.class);
-        HttpRequester newRequester = new AddressParsingHttpRequesterBuilder(mockedServiceDiscoverer).build(CTX);
+        HttpRequester newRequester = new AddressParsingHttpClientBuilder(mockedServiceDiscoverer).build(CTX);
         awaitIndefinitely(newRequester.closeAsync());
         verify(mockedServiceDiscoverer, never()).closeAsync();
     }

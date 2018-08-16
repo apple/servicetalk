@@ -142,7 +142,7 @@ final class HttpClientToAggregatedHttpClient extends AggregatedHttpClient {
         }
     }
 
-    private static final class UpgradableHttpResponseToAggregated<T> implements AggregatedUpgradableHttpResponse<T> {
+    static final class UpgradableHttpResponseToAggregated<T> implements AggregatedUpgradableHttpResponse<T> {
         private final UpgradableHttpResponse<?> upgradableResponse;
         private final T payloadBody;
         private final HttpHeaders trailers;

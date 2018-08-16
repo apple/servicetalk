@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.http.api.BlockingHttpClient.BlockingReservedHttpConnection;
+import io.servicetalk.http.api.BlockingHttpClient.BlockingUpgradableHttpResponse;
 
 /**
  * The equivalent of {@link HttpClientGroup} but with synchronous/blocking APIs instead of asynchronous APIs.
@@ -52,6 +53,21 @@ public abstract class BlockingHttpClientGroup<UnresolvedAddress> implements Auto
     public abstract BlockingReservedHttpConnection reserveConnection(GroupKey<UnresolvedAddress> key,
                                                                      BlockingHttpRequest<HttpPayloadChunk> request)
             throws Exception;
+
+    /**
+     * Locate or create a client and delegate to {@link BlockingHttpClient#upgradeConnection(BlockingHttpRequest)}.
+     *
+     * @param key Identifies the {@link BlockingHttpClient} to use, or provides enough information to create
+     * a {@link BlockingHttpClient} if non exist.
+     * @param request The {@link HttpRequest} which may provide more information about which
+     * {@link BlockingHttpConnection} to upgrade.
+     * @return An object that provides the {@link HttpResponse} for the upgrade attempt and also contains the
+     * {@link HttpConnection} used for the upgrade.
+     * @throws Exception if a exception occurs during the reservation process.
+     * @see BlockingHttpClient#upgradeConnection(BlockingHttpRequest)
+     */
+    public abstract BlockingUpgradableHttpResponse<HttpPayloadChunk> upgradeConnection(GroupKey<UnresolvedAddress> key,
+                                                        BlockingHttpRequest<HttpPayloadChunk> request) throws Exception;
 
     /**
      * Convert this {@link BlockingHttpClientGroup} to the {@link HttpClientGroup} API.

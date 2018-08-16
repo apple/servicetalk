@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
+import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import org.slf4j.Logger;
@@ -51,7 +52,8 @@ final class DefaultHttpClientGroup<UnresolvedAddress> extends HttpClientGroup<Un
         }
 
         @Override
-        public Single<UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(final HttpRequest<HttpPayloadChunk> request) {
+        public Single<UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
+                final HttpRequest<HttpPayloadChunk> request) {
             return Single.error(new UnsupportedOperationException(PLACEHOLDER_EXCEPTION_MSG));
         }
 
@@ -132,6 +134,28 @@ final class DefaultHttpClientGroup<UnresolvedAddress> extends HttpClientGroup<Un
                     return;
                 }
                 reservedHttpConnection.subscribe(subscriber);
+            }
+        };
+    }
+
+    @Override
+    public Single<? extends UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
+            final GroupKey<UnresolvedAddress> key, final HttpRequest<HttpPayloadChunk> request) {
+        requireNonNull(key);
+        requireNonNull(request);
+        return new Single<UpgradableHttpResponse<HttpPayloadChunk>>() {
+            @Override
+            protected void handleSubscribe(
+                    final Subscriber<? super UpgradableHttpResponse<HttpPayloadChunk>> subscriber) {
+                final Single<? extends UpgradableHttpResponse<HttpPayloadChunk>> upgradedHttpConnection;
+                try {
+                    upgradedHttpConnection = selectClient(key, request).upgradeConnection(request);
+                } catch (final Throwable t) {
+                    subscriber.onSubscribe(IGNORE_CANCEL);
+                    subscriber.onError(t);
+                    return;
+                }
+                upgradedHttpConnection.subscribe(subscriber);
             }
         };
     }

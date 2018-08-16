@@ -210,7 +210,7 @@ public class RedirectingHttpClientGroupTest {
 
         HttpRequester redirectingRequester = new RedirectingHttpClientGroup<>(clientGroup,
                 RedirectingHttpClientGroupTest::createGroupKey, executionContext, maxRedirects)
-                .asRequester(RedirectingHttpClientGroupTest::createGroupKey, executionContext);
+                .asClient(RedirectingHttpClientGroupTest::createGroupKey, executionContext);
 
         HttpRequest<HttpPayloadChunk> request = newRequest(method, "/path");
         request.getHeaders().set(HOST, "servicetalk.io");
@@ -233,7 +233,7 @@ public class RedirectingHttpClientGroupTest {
         final int maxRedirects = MAX_REDIRECTS;
         HttpRequester redirectingRequester = new RedirectingHttpClientGroup<>(clientGroup,
                 RedirectingHttpClientGroupTest::createGroupKey, executionContext, maxRedirects)
-                .asRequester(RedirectingHttpClientGroupTest::createGroupKey, executionContext);
+                .asClient(RedirectingHttpClientGroupTest::createGroupKey, executionContext);
 
         HttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
         request.getHeaders().set(HOST, "servicetalk.io");
@@ -251,7 +251,7 @@ public class RedirectingHttpClientGroupTest {
 
         HttpRequester redirectingRequester = new RedirectingHttpClientGroup<>(clientGroup,
                 RedirectingHttpClientGroupTest::createGroupKey, executionContext)
-                .asRequester(RedirectingHttpClientGroupTest::createGroupKey, executionContext);
+                .asClient(RedirectingHttpClientGroupTest::createGroupKey, executionContext);
 
         HttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
         request.getHeaders().set(HOST, "servicetalk.io");
@@ -303,7 +303,7 @@ public class RedirectingHttpClientGroupTest {
 
         HttpRequester redirectingRequester = new RedirectingHttpClientGroup<>(clientGroup,
                 RedirectingHttpClientGroupTest::createGroupKey, executionContext)
-                .asRequester(RedirectingHttpClientGroupTest::createGroupKey, executionContext);
+                .asClient(RedirectingHttpClientGroupTest::createGroupKey, executionContext);
 
         HttpRequest<HttpPayloadChunk> request = newRequest(method, "/path");
         request.getHeaders().set(HOST, "servicetalk.io");
@@ -328,7 +328,7 @@ public class RedirectingHttpClientGroupTest {
 
         HttpRequester redirectingRequester = new RedirectingHttpClientGroup<>(clientGroup,
                 RedirectingHttpClientGroupTest::createGroupKey, executionContext)
-                .asRequester(RedirectingHttpClientGroupTest::createGroupKey, executionContext);
+                .asClient(RedirectingHttpClientGroupTest::createGroupKey, executionContext);
 
         HttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
         request.getHeaders().set(HOST, "servicetalk.io");
@@ -350,7 +350,7 @@ public class RedirectingHttpClientGroupTest {
     public void getRequestForRedirectWithAbsoluteFormRequestTarget() throws Exception {
         HttpRequester redirectingRequester = new RedirectingHttpClientGroup<>(clientGroup,
                 RedirectingHttpClientGroupTest::createGroupKey, executionContext)
-                .asRequester(RedirectingHttpClientGroupTest::createGroupKey, executionContext);
+                .asClient(RedirectingHttpClientGroupTest::createGroupKey, executionContext);
 
         HttpRequest<HttpPayloadChunk> request = newRequest(GET, "http://servicetalk.io/path");
         request.getHeaders().set(REQUESTED_STATUS, String.valueOf(SEE_OTHER.getCode()));

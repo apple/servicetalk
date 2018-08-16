@@ -216,6 +216,12 @@ public class BlockingHttpClientGroupTest {
                     final GroupKey<UnresolvedAddress> key, final HttpRequest<HttpPayloadChunk> request) {
                 return error(new UnsupportedOperationException());
             }
+
+            @Override
+            public Single<? extends HttpClient.UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
+                    final GroupKey<UnresolvedAddress> key, final HttpRequest<HttpPayloadChunk> request) {
+                return error(new UnsupportedOperationException());
+            }
         };
     }
 
@@ -232,6 +238,13 @@ public class BlockingHttpClientGroupTest {
             @Override
             public BlockingHttpClient.BlockingReservedHttpConnection reserveConnection(
                     final GroupKey<UnresolvedAddress> key, final BlockingHttpRequest<HttpPayloadChunk> request) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public BlockingHttpClient.BlockingUpgradableHttpResponse<HttpPayloadChunk> upgradeConnection(
+                    final GroupKey<UnresolvedAddress> key,
+                    final BlockingHttpRequest<HttpPayloadChunk> request) throws Exception {
                 throw new UnsupportedOperationException();
             }
         };

@@ -128,7 +128,7 @@ final class HttpClientToBlockingHttpClient extends BlockingHttpClient {
         }
     }
 
-    private static final class UpgradableHttpResponseToBlocking<T> implements BlockingUpgradableHttpResponse<T> {
+    static final class UpgradableHttpResponseToBlocking<T> implements BlockingUpgradableHttpResponse<T> {
         private final UpgradableHttpResponse<?> upgradeResponse;
         private final BlockingIterable<T> payloadBody;
 

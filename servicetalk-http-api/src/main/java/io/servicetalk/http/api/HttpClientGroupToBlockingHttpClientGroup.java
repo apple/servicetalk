@@ -18,6 +18,9 @@ package io.servicetalk.http.api;
 import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.http.api.BlockingHttpClient.BlockingReservedHttpConnection;
+import io.servicetalk.http.api.BlockingHttpClient.BlockingUpgradableHttpResponse;
+import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
+import io.servicetalk.http.api.HttpClientToBlockingHttpClient.UpgradableHttpResponseToBlocking;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.HttpRequests.fromBlockingRequest;
@@ -49,6 +52,16 @@ final class HttpClientGroupToBlockingHttpClientGroup<UnresolvedAddress> extends
         // apply any explicit timeout here and just wait forever.
         return blockingInvocation(clientGroup.reserveConnection(key, fromBlockingRequest(request)))
                 .asBlockingReservedConnection();
+    }
+
+    @Override
+    public BlockingUpgradableHttpResponse<HttpPayloadChunk> upgradeConnection(final GroupKey<UnresolvedAddress> key,
+                                              final BlockingHttpRequest<HttpPayloadChunk> request) throws Exception {
+        // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
+        // apply any explicit timeout here and just wait forever.
+        UpgradableHttpResponse<HttpPayloadChunk> upgradeResponse = blockingInvocation(
+                clientGroup.upgradeConnection(key, fromBlockingRequest(request)));
+        return new UpgradableHttpResponseToBlocking<>(upgradeResponse, upgradeResponse.getPayloadBody().toIterable());
     }
 
     @Override

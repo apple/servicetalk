@@ -100,7 +100,7 @@ public class AddressParsingHttpRequesterTest {
     public static void beforeClass() throws Exception {
         afterClassCloseables = newCompositeCloseable();
 
-        requester = afterClassCloseables.append(new AddressParsingHttpRequesterBuilder().build(CTX));
+        requester = afterClassCloseables.append(new AddressParsingHttpClientBuilder().build(CTX));
 
         final HttpHeaders httpHeaders = DefaultHttpHeadersFactory.INSTANCE.newHeaders().set(CONTENT_LENGTH, ZERO);
         httpService = fromAsync((ctx, request) -> {

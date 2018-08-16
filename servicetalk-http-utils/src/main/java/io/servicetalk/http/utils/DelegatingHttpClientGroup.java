@@ -58,6 +58,12 @@ public abstract class DelegatingHttpClientGroup<UnresolvedAddress> extends HttpC
     }
 
     @Override
+    public Single<? extends HttpClient.UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
+            final GroupKey<UnresolvedAddress> key, final HttpRequest<HttpPayloadChunk> request) {
+        return delegate.upgradeConnection(key, request);
+    }
+
+    @Override
     public Completable onClose() {
         return delegate.onClose();
     }

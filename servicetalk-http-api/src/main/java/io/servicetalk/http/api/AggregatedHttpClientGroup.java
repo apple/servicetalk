@@ -19,6 +19,7 @@ import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.AggregatedHttpClient.AggregatedReservedHttpConnection;
+import io.servicetalk.http.api.AggregatedHttpClient.AggregatedUpgradableHttpResponse;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.Function;
@@ -55,6 +56,21 @@ public abstract class AggregatedHttpClientGroup<UnresolvedAddress> implements Li
     public abstract Single<? extends AggregatedReservedHttpConnection> reserveConnection(
                                                                              GroupKey<UnresolvedAddress> key,
                                                                              AggregatedHttpRequest<HttpPayloadChunk> request);
+
+    /**
+     * Locate or create a client and delegate to {@link AggregatedHttpClient#upgradeConnection(AggregatedHttpRequest)}.
+     *
+     * @param key Identifies the {@link AggregatedHttpClient} to use, or provides enough information to create
+     * an {@link AggregatedHttpClient} if non exist.
+     * @param request The {@link AggregatedHttpRequest} which may provide more information about which
+     * {@link AggregatedHttpConnection} to upgrade.
+     * @return An object that provides the {@link HttpResponse} for the upgrade attempt and also contains the
+     * {@link HttpConnection} used for the upgrade.
+     * @see AggregatedHttpClient#upgradeConnection(AggregatedHttpRequest)
+     */
+    public abstract Single<? extends AggregatedUpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
+            GroupKey<UnresolvedAddress> key,
+            AggregatedHttpRequest<HttpPayloadChunk> request);
 
     /**
      * Convert this {@link AggregatedHttpClientGroup} to the {@link AggregatedHttpRequester} API. This can simplify the

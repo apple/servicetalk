@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.http.api.AggregatedHttpRequests.newRequest;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
-import static io.servicetalk.http.netty.DefaultHttpClientBuilder.forSingleAddress;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
 public final class HelloWorldBlockingAggregatedClient {

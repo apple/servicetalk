@@ -52,7 +52,7 @@ public final class RedirectingHttpClientGroup<UnresolvedAddress> extends Delegat
     // since such redirections usually indicate an infinite loop.
     private static final int DEFAULT_MAX_REDIRECTS = 5;
 
-    private final HttpRequester requester;
+    private final HttpClient client;
     private final int maxRedirects;
 
     /**
@@ -87,7 +87,7 @@ public final class RedirectingHttpClientGroup<UnresolvedAddress> extends Delegat
                                       final ExecutionContext executionContext,
                                       final int maxRedirects) {
         super(delegate);
-        requester = delegate.asRequester(requestToGroupKey, executionContext);
+        client = delegate.asClient(requestToGroupKey, executionContext);
         this.maxRedirects = maxRedirects;
     }
 
@@ -98,6 +98,6 @@ public final class RedirectingHttpClientGroup<UnresolvedAddress> extends Delegat
         if (maxRedirects <= 0) {
             return response;
         }
-        return new RedirectSingle(response, request, maxRedirects, requester);
+        return new RedirectSingle(response, request, maxRedirects, client);
     }
 }

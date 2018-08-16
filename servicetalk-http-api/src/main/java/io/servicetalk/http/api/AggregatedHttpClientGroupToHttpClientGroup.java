@@ -19,7 +19,9 @@ import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.AggregatedHttpClientToHttpClient.AggregatedToReservedHttpConnection;
+import io.servicetalk.http.api.AggregatedHttpClientToHttpClient.AggregatedToUpgradableHttpResponse;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
+import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
 
 import static io.servicetalk.http.api.DefaultAggregatedHttpRequest.from;
 import static java.util.Objects.requireNonNull;
@@ -44,6 +46,14 @@ final class AggregatedHttpClientGroupToHttpClientGroup<UnresolvedAddress> extend
                                                                       final HttpRequest<HttpPayloadChunk> request) {
         return from(request, key.getExecutionContext().getBufferAllocator()).flatMap(aggregatedRequest ->
                 aggregatedGroup.reserveConnection(key, aggregatedRequest)).map(AggregatedToReservedHttpConnection::new);
+    }
+
+    @Override
+    public Single<? extends UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
+            final GroupKey<UnresolvedAddress> key, final HttpRequest<HttpPayloadChunk> request) {
+        return from(request, key.getExecutionContext().getBufferAllocator())
+                .flatMap(aggregatedRequest -> aggregatedGroup.upgradeConnection(key, aggregatedRequest))
+                .map(AggregatedToUpgradableHttpResponse::newUpgradeResponse);
     }
 
     @Override

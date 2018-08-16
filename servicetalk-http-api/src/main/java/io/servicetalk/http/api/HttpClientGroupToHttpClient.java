@@ -25,15 +25,15 @@ import java.util.function.Function;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static java.util.Objects.requireNonNull;
 
-final class HttpClientGroupToHttpRequester<UnresolvedAddress> extends HttpRequester {
+final class HttpClientGroupToHttpClient<UnresolvedAddress> extends HttpClient {
     private final HttpClientGroup<UnresolvedAddress> clientGroup;
     private final Function<HttpRequest<HttpPayloadChunk>, GroupKey<UnresolvedAddress>> requestToGroupKeyFunc;
     private final ExecutionContext executionContext;
 
-    HttpClientGroupToHttpRequester(final HttpClientGroup<UnresolvedAddress> clientGroup,
-                                   final Function<HttpRequest<HttpPayloadChunk>,
-                                           GroupKey<UnresolvedAddress>> requestToGroupKeyFunc,
-                                   final ExecutionContext executionContext) {
+    HttpClientGroupToHttpClient(final HttpClientGroup<UnresolvedAddress> clientGroup,
+                                final Function<HttpRequest<HttpPayloadChunk>,
+                                        GroupKey<UnresolvedAddress>> requestToGroupKeyFunc,
+                                final ExecutionContext executionContext) {
         this.clientGroup = requireNonNull(clientGroup);
         this.requestToGroupKeyFunc = requireNonNull(requestToGroupKeyFunc);
         this.executionContext = requireNonNull(executionContext);
@@ -53,6 +53,43 @@ final class HttpClientGroupToHttpRequester<UnresolvedAddress> extends HttpReques
                     return;
                 }
                 response.subscribe(subscriber);
+            }
+        };
+    }
+
+    @Override
+    public Single<? extends ReservedHttpConnection> reserveConnection(final HttpRequest<HttpPayloadChunk> request) {
+        return new Single<ReservedHttpConnection>() {
+            @Override
+            protected void handleSubscribe(final Subscriber<? super ReservedHttpConnection> subscriber) {
+                final Single<? extends ReservedHttpConnection> reservedConnection;
+                try {
+                    reservedConnection = clientGroup.reserveConnection(requestToGroupKeyFunc.apply(request), request);
+                } catch (final Throwable t) {
+                    subscriber.onSubscribe(IGNORE_CANCEL);
+                    subscriber.onError(t);
+                    return;
+                }
+                reservedConnection.subscribe(subscriber);
+            }
+        };
+    }
+
+    @Override
+    public Single<? extends UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
+            final HttpRequest<HttpPayloadChunk> request) {
+        return new Single<UpgradableHttpResponse<HttpPayloadChunk>>() {
+            @Override
+            protected void handleSubscribe(final Subscriber<? super UpgradableHttpResponse<HttpPayloadChunk>> subscriber) {
+                final Single<? extends UpgradableHttpResponse<HttpPayloadChunk>> upgradedConnection;
+                try {
+                    upgradedConnection = clientGroup.upgradeConnection(requestToGroupKeyFunc.apply(request), request);
+                } catch (Throwable t) {
+                    subscriber.onSubscribe(IGNORE_CANCEL);
+                    subscriber.onError(t);
+                    return;
+                }
+                upgradedConnection.subscribe(subscriber);
             }
         };
     }

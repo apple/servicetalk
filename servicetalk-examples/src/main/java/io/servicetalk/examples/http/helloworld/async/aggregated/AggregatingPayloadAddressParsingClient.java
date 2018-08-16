@@ -18,7 +18,7 @@ package io.servicetalk.examples.http.helloworld.async.aggregated;
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.http.api.AggregatedHttpRequester;
-import io.servicetalk.http.netty.AddressParsingHttpRequesterBuilder;
+import io.servicetalk.http.netty.AddressParsingHttpClientBuilder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,8 +29,8 @@ import static io.servicetalk.http.api.AggregatedHttpRequests.newRequest;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
-public final class AggregatingPayloadAddressParsingRequester {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AggregatingPayloadAddressParsingRequester.class);
+public final class AggregatingPayloadAddressParsingClient {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AggregatingPayloadAddressParsingClient.class);
 
     public static void main(String[] args) throws Exception {
         // Collection of all resources in this test that can be closed together at the end.
@@ -39,7 +39,7 @@ public final class AggregatingPayloadAddressParsingRequester {
             // Build the requester.
             // This builder sets appropriate defaults for Service Discovery and load balancing.
             final AggregatedHttpRequester requester = resources.prepend(
-                    new AddressParsingHttpRequesterBuilder().buildAggregated());
+                    new AddressParsingHttpClientBuilder().buildAggregated());
 
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
             // before the response has been processed. This isn't typical usage for a streaming API but is useful for

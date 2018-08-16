@@ -26,10 +26,6 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.AggregatedHttpClient;
-import io.servicetalk.http.api.AggregatedHttpRequester;
-import io.servicetalk.http.api.BlockingAggregatedHttpRequester;
-import io.servicetalk.http.api.BlockingHttpRequester;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpClientBuilder;
 import io.servicetalk.http.api.HttpClientGroup;
@@ -39,7 +35,6 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMetaData;
-import io.servicetalk.http.api.HttpRequester;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.utils.RedirectingHttpClientGroup;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -66,13 +61,13 @@ import static java.util.Objects.requireNonNull;
 import static java.util.function.UnaryOperator.identity;
 
 /**
- * A builder of {@link HttpRequester} instances which have a capacity to call any server based on the parsed address
+ * A builder of {@link HttpClient} instances which have a capacity to call any server based on the parsed address
  * information from each {@link HttpRequest}.
  * <p>
  * It also provides a good set of default settings and configurations, which could be used by most users as-is or
  * could be overridden to address specific use cases.
  */
-public final class AddressParsingHttpRequesterBuilder {
+public final class AddressParsingHttpClientBuilder implements HttpClientBuilder {
 
     // https://tools.ietf.org/html/rfc2068#section-10.3 says:
     // A user agent SHOULD NOT automatically redirect a request more than 5 times,
@@ -80,7 +75,6 @@ public final class AddressParsingHttpRequesterBuilder {
     private static final int DEFAULT_MAX_REDIRECTS = 5;
 
     private final DefaultHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
-    private UnaryOperator<HttpRequester> requesterFilterFactory = identity();
     private UnaryOperator<HttpClientGroup<HostAndPort>> clientGroupFilterFactory = identity();
     private int maxRedirects = DEFAULT_MAX_REDIRECTS;
     private SslConfigProvider sslConfigProvider = plainByDefault();
@@ -91,7 +85,7 @@ public final class AddressParsingHttpRequesterBuilder {
     /**
      * Create a new instance with a default {@link LoadBalancerFactory} and DNS {@link ServiceDiscoverer}.
      */
-    public AddressParsingHttpRequesterBuilder() {
+    public AddressParsingHttpClientBuilder() {
         builderTemplate = DefaultHttpClientBuilder.forSingleAddress(DUMMY_HAP);
     }
 
@@ -101,7 +95,7 @@ public final class AddressParsingHttpRequesterBuilder {
      * @param loadBalancerFactory A {@link LoadBalancerFactory} which generates {@link LoadBalancer} objects.
      * @param serviceDiscoverer {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
      */
-    public AddressParsingHttpRequesterBuilder(
+    public AddressParsingHttpClientBuilder(
             final LoadBalancerFactory<InetSocketAddress, HttpConnection> loadBalancerFactory,
             final ServiceDiscoverer<HostAndPort, InetSocketAddress> serviceDiscoverer) {
         builderTemplate = DefaultHttpClientBuilder.forSingleAddress(loadBalancerFactory, serviceDiscoverer, DUMMY_HAP);
@@ -112,7 +106,7 @@ public final class AddressParsingHttpRequesterBuilder {
      *
      * @param serviceDiscoverer {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
      */
-    public AddressParsingHttpRequesterBuilder(
+    public AddressParsingHttpClientBuilder(
             final ServiceDiscoverer<HostAndPort, InetSocketAddress> serviceDiscoverer) {
         builderTemplate = DefaultHttpClientBuilder.forSingleAddress(serviceDiscoverer, DUMMY_HAP);
     }
@@ -122,7 +116,7 @@ public final class AddressParsingHttpRequesterBuilder {
      *
      * @param loadBalancerFactory A {@link LoadBalancerFactory} which generates {@link LoadBalancer} objects.
      */
-    public AddressParsingHttpRequesterBuilder(
+    public AddressParsingHttpClientBuilder(
             final LoadBalancerFactory<InetSocketAddress, HttpConnection> loadBalancerFactory) {
         builderTemplate = DefaultHttpClientBuilder.forSingleAddress(loadBalancerFactory, DUMMY_HAP);
     }
@@ -133,7 +127,7 @@ public final class AddressParsingHttpRequesterBuilder {
      * @param sslConfigProvider A {@link SslConfigProvider} to use.
      * @return {@code this}.
      */
-    public AddressParsingHttpRequesterBuilder setSslConfigProvider(final SslConfigProvider sslConfigProvider) {
+    public AddressParsingHttpClientBuilder setSslConfigProvider(final SslConfigProvider sslConfigProvider) {
         this.sslConfigProvider = requireNonNull(sslConfigProvider);
         return this;
     }
@@ -146,7 +140,7 @@ public final class AddressParsingHttpRequesterBuilder {
      * @param value A value of the option.
      * @return {@code this}.
      */
-    public <T> AddressParsingHttpRequesterBuilder setSocketOption(final SocketOption<T> option, final T value) {
+    public <T> AddressParsingHttpClientBuilder setSocketOption(final SocketOption<T> option, final T value) {
         builderTemplate.setSocketOption(option, value);
         return this;
     }
@@ -157,7 +151,7 @@ public final class AddressParsingHttpRequesterBuilder {
      * @param loggerName A name of the logger to log wire events.
      * @return {@code this}.
      */
-    public AddressParsingHttpRequesterBuilder enableWireLogging(final String loggerName) {
+    public AddressParsingHttpClientBuilder enableWireLogging(final String loggerName) {
         builderTemplate.enableWireLogging(loggerName);
         return this;
     }
@@ -169,7 +163,7 @@ public final class AddressParsingHttpRequesterBuilder {
      * @return {@code this}.
      * @see #enableWireLogging(String)
      */
-    public AddressParsingHttpRequesterBuilder disableWireLogging() {
+    public AddressParsingHttpClientBuilder disableWireLogging() {
         builderTemplate.disableWireLogging();
         return this;
     }
@@ -180,31 +174,31 @@ public final class AddressParsingHttpRequesterBuilder {
      * @param headersFactory A {@link HttpHeadersFactory} to use.
      * @return {@code this}.
      */
-    public AddressParsingHttpRequesterBuilder setHeadersFactory(final HttpHeadersFactory headersFactory) {
+    public AddressParsingHttpClientBuilder setHeadersFactory(final HttpHeadersFactory headersFactory) {
         builderTemplate.setHeadersFactory(headersFactory);
         return this;
     }
 
     /**
-     * Set the maximum size of the initial HTTP line for created {@link HttpRequester}.
+     * Set the maximum size of the initial HTTP line for created {@link HttpClient}.
      *
-     * @param maxInitialLineLength A {@link HttpRequester} will throw TooLongFrameException if the initial
+     * @param maxInitialLineLength A {@link HttpClient} will throw TooLongFrameException if the initial
      * HTTP line exceeds this length.
      * @return {@code this}.
      */
-    public AddressParsingHttpRequesterBuilder setMaxInitialLineLength(final int maxInitialLineLength) {
+    public AddressParsingHttpClientBuilder setMaxInitialLineLength(final int maxInitialLineLength) {
         builderTemplate.setMaxInitialLineLength(maxInitialLineLength);
         return this;
     }
 
     /**
-     * Set the maximum total size of HTTP headers, which could be send be created {@link HttpRequester}.
+     * Set the maximum total size of HTTP headers, which could be send be created {@link HttpClient}.
      *
-     * @param maxHeaderSize A {@link HttpRequester} will throw TooLongFrameException if the total size of all
+     * @param maxHeaderSize A {@link HttpClient} will throw TooLongFrameException if the total size of all
      * HTTP headers exceeds this length.
      * @return {@code this}.
      */
-    public AddressParsingHttpRequesterBuilder setMaxHeaderSize(final int maxHeaderSize) {
+    public AddressParsingHttpClientBuilder setMaxHeaderSize(final int maxHeaderSize) {
         builderTemplate.setMaxHeaderSize(maxHeaderSize);
         return this;
     }
@@ -216,7 +210,7 @@ public final class AddressParsingHttpRequesterBuilder {
      * @param headersEncodedSizeEstimate An estimated size of encoded initial line and headers.
      * @return {@code this}.
      */
-    public AddressParsingHttpRequesterBuilder setHeadersEncodedSizeEstimate(
+    public AddressParsingHttpClientBuilder setHeadersEncodedSizeEstimate(
             final int headersEncodedSizeEstimate) {
         builderTemplate.setHeadersEncodedSizeEstimate(headersEncodedSizeEstimate);
         return this;
@@ -229,7 +223,7 @@ public final class AddressParsingHttpRequesterBuilder {
      * @param trailersEncodedSizeEstimate An estimated size of encoded trailers.
      * @return {@code this}.
      */
-    public AddressParsingHttpRequesterBuilder setTrailersEncodedSizeEstimate(
+    public AddressParsingHttpClientBuilder setTrailersEncodedSizeEstimate(
             final int trailersEncodedSizeEstimate) {
         builderTemplate.setTrailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
         return this;
@@ -244,31 +238,14 @@ public final class AddressParsingHttpRequesterBuilder {
      * @param maxPipelinedRequests A maximum number of pipelined requests to queue up.
      * @return {@code this}.
      */
-    public AddressParsingHttpRequesterBuilder setMaxPipelinedRequests(final int maxPipelinedRequests) {
+    public AddressParsingHttpClientBuilder setMaxPipelinedRequests(final int maxPipelinedRequests) {
         builderTemplate.setMaxPipelinedRequests(maxPipelinedRequests);
         return this;
     }
 
     /**
-     * Set a {@link Function} which is used as a factory to filter/decorate {@link HttpRequester} created by this
-     * builder.
-     * <p>
-     * Filtering allows you to wrap {@link HttpRequester} and modify behavior during request/response processing.
-     * Some potential candidates for filtering include logging, metrics, and decorating responses.
-     *
-     * @param requesterFilterFactory A {@link UnaryOperator} to decorate {@link HttpRequester} for the purpose of
-     * filtering.
-     * @return {@code this}.
-     */
-    public AddressParsingHttpRequesterBuilder setRequesterFilterFactory(
-            final UnaryOperator<HttpRequester> requesterFilterFactory) {
-        this.requesterFilterFactory = requireNonNull(requesterFilterFactory);
-        return this;
-    }
-
-    /**
      * Set a {@link Function} which is used as a factory to filter/decorate {@link HttpClientGroup} used by created
-     * {@link HttpRequester}.
+     * {@link HttpClient}.
      * <p>
      * Filtering allows you to wrap {@link HttpClientGroup} and modify behavior during request/response processing.
      * Some potential candidates for filtering include logging, metrics, and decorating responses.
@@ -277,15 +254,15 @@ public final class AddressParsingHttpRequesterBuilder {
      * filtering.
      * @return {@code this}.
      */
-    public AddressParsingHttpRequesterBuilder setClientGroupFilterFactory(final
-                                                                          UnaryOperator<HttpClientGroup<HostAndPort>> clientGroupFilterFactory) {
+    public AddressParsingHttpClientBuilder setClientGroupFilterFactory(
+            final UnaryOperator<HttpClientGroup<HostAndPort>> clientGroupFilterFactory) {
         this.clientGroupFilterFactory = requireNonNull(clientGroupFilterFactory);
         return this;
     }
 
     /**
      * Set a {@link Function} which is used as a factory to filter/decorate {@link HttpClient} used by created
-     * {@link HttpRequester}.
+     * {@link HttpClient}.
      * <p>
      * Filtering allows you to wrap {@link HttpClient} and modify behavior during request/response processing.
      * Some potential candidates for filtering include logging, metrics, and decorating responses.
@@ -297,7 +274,7 @@ public final class AddressParsingHttpRequesterBuilder {
      * @param clientFilterFactory A {@link BiFunction} to decorate {@link HttpClient} for the purpose of filtering.
      * @return {@code this}.
      */
-    public AddressParsingHttpRequesterBuilder setClientFilterFactory(
+    public AddressParsingHttpClientBuilder setClientFilterFactory(
             final BiFunction<HttpClient, Publisher<Object>, HttpClient> clientFilterFactory) {
         builderTemplate.setClientFilterFactory(clientFilterFactory);
         return this;
@@ -305,7 +282,7 @@ public final class AddressParsingHttpRequesterBuilder {
 
     /**
      * Set a {@link Function} which is used as a factory to filter/decorate {@link HttpConnection} used by created
-     * {@link HttpRequester}.
+     * {@link HttpClient}.
      * <p>
      * Filtering allows you to wrap {@link HttpConnection} and modify behavior during request/response processing.
      * Some potential candidates for filtering include logging, metrics, and decorating responses.
@@ -314,7 +291,7 @@ public final class AddressParsingHttpRequesterBuilder {
      * filtering.
      * @return {@code this}.
      */
-    public AddressParsingHttpRequesterBuilder setConnectionFilterFactory(
+    public AddressParsingHttpClientBuilder setConnectionFilterFactory(
             final UnaryOperator<HttpConnection> connectionFilterFactory) {
         builderTemplate.setConnectionFilterFactory(connectionFilterFactory);
         return this;
@@ -339,7 +316,7 @@ public final class AddressParsingHttpRequesterBuilder {
      * </pre>
      * @return {@code this}
      */
-    public AddressParsingHttpRequesterBuilder addClientFilterFactory(
+    public AddressParsingHttpClientBuilder addClientFilterFactory(
             final BiFunction<HttpClient, Publisher<Object>, HttpClient> clientFilterFactory) {
         this.builderTemplate.addClientFilterFactory(clientFilterFactory);
         return this;
@@ -360,7 +337,7 @@ public final class AddressParsingHttpRequesterBuilder {
      * @param clientFilterFactory {@link Function} to decorate a {@link HttpClient} for the purpose of filtering.
      * @return {@code this}
      */
-    public AddressParsingHttpRequesterBuilder addClientFilterFactory(
+    public AddressParsingHttpClientBuilder addClientFilterFactory(
             final Function<HttpClient, HttpClient> clientFilterFactory) {
         builderTemplate.addClientFilterFactory(clientFilterFactory);
         return this;
@@ -372,29 +349,31 @@ public final class AddressParsingHttpRequesterBuilder {
      * @param maxRedirects A maximum number of redirects to follow. Use a nonpositive number to disable redirects.
      * @return {@code this}.
      */
-    public AddressParsingHttpRequesterBuilder setMaxRedirects(final int maxRedirects) {
+    public AddressParsingHttpClientBuilder setMaxRedirects(final int maxRedirects) {
         this.maxRedirects = maxRedirects;
         return this;
     }
 
     /**
-     * Build a new {@link HttpRequester}, using a default {@link ExecutionContext}.
+     * Build a new {@link HttpClient}, using a default {@link ExecutionContext}.
      *
-     * @return A new {@link HttpRequester}.
+     * @return A new {@link HttpClient}.
      * @see #build(ExecutionContext)
      */
-    public HttpRequester build() {
+    @Override
+    public HttpClient build() {
         return build(globalExecutionContext());
     }
 
     /**
-     * Build a new {@link HttpRequester}.
+     * Build a new {@link HttpClient}.
      *
-     * @param executionContext A {@link ExecutionContext} used for {@link HttpRequester#getExecutionContext()} and
+     * @param executionContext A {@link ExecutionContext} used for {@link HttpClient#getExecutionContext()} and
      * to build new {@link HttpClient}s.
-     * @return A new {@link HttpRequester}.
+     * @return A new {@link HttpClient}.
      */
-    public HttpRequester build(final ExecutionContext executionContext) {
+    @Override
+    public HttpClient build(final ExecutionContext executionContext) {
         requireNonNull(executionContext);
         final CompositeCloseable closeables = newCompositeCloseable();
         try {
@@ -408,79 +387,13 @@ public final class AddressParsingHttpRequesterBuilder {
                     closeables.prepend(new CacheableGroupKeyFactory(executionContext, sslConfigProvider));
             clientGroup = maxRedirects <= 0 ? clientGroup :
                     new RedirectingHttpClientGroup<>(clientGroup, groupKeyFactory, executionContext, maxRedirects);
-            final HttpRequester requester = closeables.prepend(requesterFilterFactory.apply(
-                    closeables.prepend(clientGroup.asRequester(groupKeyFactory, executionContext))));
+            final HttpClient client = closeables.prepend(clientGroup.asClient(groupKeyFactory, executionContext));
 
-            return new AddressParsingHttpRequester(requester, toListenableAsyncCloseable(closeables));
+            return new AddressParsingHttpClient(client, toListenableAsyncCloseable(closeables));
         } catch (final Exception e) {
             closeables.closeAsync().subscribe();
             throw e;
         }
-    }
-
-    /**
-     * Build a new {@link AggregatedHttpRequester}.
-     *
-     * @param executionContext The {@link ExecutionContext} used for
-     * {@link AggregatedHttpRequester#getExecutionContext()} and to build new {@link AggregatedHttpClient}s.
-     * @return A new {@link AggregatedHttpRequester}.
-     */
-    public AggregatedHttpRequester buildAggregated(final ExecutionContext executionContext) {
-        return build(executionContext).asAggregatedRequester();
-    }
-
-    /**
-     * Build a new {@link AggregatedHttpRequester}, using a default {@link ExecutionContext}.
-     *
-     * @return A new {@link AggregatedHttpRequester}.
-     * @see #buildAggregated(ExecutionContext)
-     */
-    public AggregatedHttpRequester buildAggregated() {
-        return build().asAggregatedRequester();
-    }
-
-    /**
-     * Build a new {@link BlockingHttpRequester}.
-     *
-     * @param executionContext The {@link ExecutionContext} used for
-     * {@link BlockingHttpRequester#getExecutionContext()} and to build new
-     * {@link BlockingHttpRequester}s.
-     * @return A new {@link BlockingHttpRequester}.
-     */
-    public BlockingHttpRequester buildBlocking(final ExecutionContext executionContext) {
-        return build(executionContext).asBlockingRequester();
-    }
-
-    /**
-     * Build a new {@link BlockingHttpRequester}, using a default {@link ExecutionContext}.
-     *
-     * @return A new {@link BlockingHttpRequester}.
-     * @see #buildBlocking(ExecutionContext)
-     */
-    public BlockingHttpRequester buildBlocking() {
-        return build().asBlockingRequester();
-    }
-
-    /**
-     * Build a new {@link BlockingAggregatedHttpRequester}.
-     *
-     * @param executionContext The {@link ExecutionContext} used for
-     * {@link BlockingAggregatedHttpRequester#getExecutionContext()} and to build new
-     * {@link BlockingAggregatedHttpRequester}s.
-     * @return A new {@link BlockingHttpRequester}.
-     */
-    public BlockingAggregatedHttpRequester buildBlockingAggregated(final ExecutionContext executionContext) {
-        return build(executionContext).asBlockingAggregatedRequester();
-    }
-
-    /**
-     * Build a new {@link BlockingAggregatedHttpRequester}, using a default {@link ExecutionContext}.
-     *
-     * @return A new {@link BlockingAggregatedHttpRequester}.
-     * @see #buildBlockingAggregated(ExecutionContext)
-     */
-    public BlockingAggregatedHttpRequester buildBlockingAggregated() {
-        return build().asBlockingAggregatedRequester();
     }
 
     /**
@@ -520,8 +433,8 @@ public final class AddressParsingHttpRequesterBuilder {
         @Override
         public Completable closeAsync() {
             // Make a best effort to clear the map. Note that we don't attempt to resolve race conditions between
-            // closing the Requester and in flight requests adding Keys to the map. We also don't attempt to remove
-            // from the map if a request fails, or a request is made after the Requester is closed.
+            // closing the Client and in flight requests adding Keys to the map. We also don't attempt to remove
+            // from the map if a request fails, or a request is made after the Client is closed.
             return new Completable() {
                 @Override
                 protected void handleSubscribe(final Subscriber subscriber) {
@@ -544,7 +457,7 @@ public final class AddressParsingHttpRequesterBuilder {
         private final SslConfigProvider sslConfigProvider;
 
         ClientBuilderFactory(final DefaultHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate,
-                                     final SslConfigProvider sslConfigProvider) {
+                             final SslConfigProvider sslConfigProvider) {
             // Copy existing builder to prevent runtime changes after build() was invoked
             this.builderTemplate = DefaultHttpClientBuilder.from(DUMMY_HAP, builderTemplate);
             this.sslConfigProvider = sslConfigProvider;
@@ -577,25 +490,35 @@ public final class AddressParsingHttpRequesterBuilder {
         }
     }
 
-    private static final class AddressParsingHttpRequester extends HttpRequester {
+    private static final class AddressParsingHttpClient extends HttpClient {
 
-        private final HttpRequester requester;
+        private final HttpClient client;
         private final ListenableAsyncCloseable closeable;
 
-        AddressParsingHttpRequester(final HttpRequester requester,
-                                    final ListenableAsyncCloseable closeable) {
-            this.requester = requireNonNull(requester);
+        AddressParsingHttpClient(final HttpClient client,
+                                 final ListenableAsyncCloseable closeable) {
+            this.client = requireNonNull(client);
             this.closeable = requireNonNull(closeable);
         }
 
         @Override
         public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
-            return requester.request(request);
+            return client.request(request);
+        }
+
+        @Override
+        public Single<? extends ReservedHttpConnection> reserveConnection(final HttpRequest<HttpPayloadChunk> request) {
+            return client.reserveConnection(request);
+        }
+
+        @Override
+        public Single<? extends UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(final HttpRequest<HttpPayloadChunk> request) {
+            return client.upgradeConnection(request);
         }
 
         @Override
         public ExecutionContext getExecutionContext() {
-            return requester.getExecutionContext();
+            return client.getExecutionContext();
         }
 
         @Override

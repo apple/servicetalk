@@ -253,7 +253,7 @@ public class DefaultHttpClientGroupTest {
 
     @Test
     public void asRequester() {
-        final HttpRequester requester = clientGroup.asRequester(r ->
+        final HttpRequester requester = clientGroup.asClient(r ->
                 new DefaultGroupKey<>("address", executionContext), executionContext);
         assertNotNull(requester);
         assertEquals(executionContext, requester.getExecutionContext());
@@ -262,24 +262,24 @@ public class DefaultHttpClientGroupTest {
     @Test
     public void asRequesterOnClosedClientGroup() {
         clientGroup.closeAsync().subscribe();
-        assertNotNull(clientGroup.asRequester(r ->
+        assertNotNull(clientGroup.asClient(r ->
                 new DefaultGroupKey<>("address", executionContext), executionContext));
     }
 
     @Test(expected = NullPointerException.class)
     public void asRequesterWithNullKeyFactory() {
-        clientGroup.asRequester(null, executionContext);
+        clientGroup.asClient(null, executionContext);
     }
 
     @Test(expected = NullPointerException.class)
     public void asRequesterWithNullExecutionContext() {
-        clientGroup.asRequester(r ->
+        clientGroup.asClient(r ->
                 new DefaultGroupKey<>("address", executionContext), null);
     }
 
     @Test
     public void successfulRequestViaRequester() {
-        final HttpRequester requester = clientGroup.asRequester(r ->
+        final HttpRequester requester = clientGroup.asClient(r ->
                 new DefaultGroupKey<>("address", executionContext), executionContext);
         httpResponseListener.listen(requester.request(request))
                 .verifySuccess(expectedResponse);
@@ -287,7 +287,7 @@ public class DefaultHttpClientGroupTest {
 
     @Test
     public void failedRequestViaRequester() {
-        final HttpRequester requester = clientGroup.asRequester(r -> {
+        final HttpRequester requester = clientGroup.asClient(r -> {
             throw DELIBERATE_EXCEPTION;
         }, executionContext);
         httpResponseListener.listen(requester.request(request))

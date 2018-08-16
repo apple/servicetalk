@@ -18,17 +18,20 @@ package io.servicetalk.http.api;
 import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.BlockingHttpClient.BlockingUpgradableHttpResponse;
 import io.servicetalk.http.api.BlockingHttpClientToHttpClient.BlockingToReservedHttpConnection;
+import io.servicetalk.http.api.BlockingHttpClientToHttpClient.BlockingToUpgradableHttpResponse;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
+import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
 
 import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
 import static io.servicetalk.http.api.HttpResponses.fromBlockingResponse;
 import static java.util.Objects.requireNonNull;
 
-final class BlockingHttpClientGroupToHttpClientGroup<UnresolvedAddress> extends
-                                                                              HttpClientGroup<UnresolvedAddress> {
+final class BlockingHttpClientGroupToHttpClientGroup<UnresolvedAddress> extends HttpClientGroup<UnresolvedAddress> {
     private final BlockingHttpClientGroup<UnresolvedAddress> blockingClientGroup;
 
     BlockingHttpClientGroupToHttpClientGroup(BlockingHttpClientGroup<UnresolvedAddress> blockingClientGroup) {
@@ -39,7 +42,7 @@ final class BlockingHttpClientGroupToHttpClientGroup<UnresolvedAddress> extends
     public Single<HttpResponse<HttpPayloadChunk>> request(final GroupKey<UnresolvedAddress> key,
                                                           final HttpRequest<HttpPayloadChunk> request) {
         return blockingToSingle(() -> fromBlockingResponse(blockingClientGroup.request(key,
-                        new DefaultBlockingHttpRequest<>(request))));
+                new DefaultBlockingHttpRequest<>(request))));
     }
 
     @Override
@@ -47,6 +50,16 @@ final class BlockingHttpClientGroupToHttpClientGroup<UnresolvedAddress> extends
             final GroupKey<UnresolvedAddress> key, final HttpRequest<HttpPayloadChunk> request) {
         return blockingToSingle(() -> new BlockingToReservedHttpConnection(blockingClientGroup.reserveConnection(
                 key, new DefaultBlockingHttpRequest<>(request))));
+    }
+
+    @Override
+    public Single<? extends UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
+            final GroupKey<UnresolvedAddress> key, final HttpRequest<HttpPayloadChunk> request) {
+        return blockingToSingle(() -> {
+            BlockingUpgradableHttpResponse<HttpPayloadChunk> upgradeResponse =
+                    blockingClientGroup.upgradeConnection(key, new DefaultBlockingHttpRequest<>(request));
+            return new BlockingToUpgradableHttpResponse<>(upgradeResponse, from(upgradeResponse.getPayloadBody()));
+        });
     }
 
     @Override

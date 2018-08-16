@@ -135,7 +135,7 @@ public class AddressParsingHttpRequesterSslTest {
 
     @Test(expected = ExecutionException.class)
     public void nonSecureClientToSecureServer() throws Exception {
-        AggregatedHttpRequester requester = new AddressParsingHttpRequesterBuilder()
+        AggregatedHttpRequester requester = new AddressParsingHttpClientBuilder()
                 .buildAggregated(CTX);
 
         AggregatedHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/");
@@ -146,7 +146,7 @@ public class AddressParsingHttpRequesterSslTest {
 
     @Test(expected = TimeoutException.class)
     public void secureClientToNonSecureServer() throws Exception {
-        AggregatedHttpRequester requester = new AddressParsingHttpRequesterBuilder()
+        AggregatedHttpRequester requester = new AddressParsingHttpClientBuilder()
                 .setSslConfigProvider(secureByDefault())
                 .buildAggregated(CTX);
 
@@ -158,7 +158,7 @@ public class AddressParsingHttpRequesterSslTest {
 
     @Test
     public void requesterWithDefaultSslConfigProvider() throws Exception {
-        try (BlockingAggregatedHttpRequester requester = new AddressParsingHttpRequesterBuilder()
+        try (BlockingAggregatedHttpRequester requester = new AddressParsingHttpClientBuilder()
                 .buildBlockingAggregated(CTX)) {
             testOnlyNonSecureRequestTargets(requester);
         }
@@ -166,7 +166,7 @@ public class AddressParsingHttpRequesterSslTest {
 
     @Test
     public void requesterWithPlainSslConfigProvider() throws Exception {
-        try (BlockingAggregatedHttpRequester requester = new AddressParsingHttpRequesterBuilder()
+        try (BlockingAggregatedHttpRequester requester = new AddressParsingHttpClientBuilder()
                 .setSslConfigProvider(plainByDefault())
                 .buildBlockingAggregated(CTX)) {
             testOnlyNonSecureRequestTargets(requester);
@@ -175,7 +175,7 @@ public class AddressParsingHttpRequesterSslTest {
 
     @Test
     public void requesterWithSecureSslConfigProvider() throws Exception {
-        try (BlockingAggregatedHttpRequester requester = new AddressParsingHttpRequesterBuilder()
+        try (BlockingAggregatedHttpRequester requester = new AddressParsingHttpClientBuilder()
                 .setSslConfigProvider(new SslConfigProvider() {
                     @Override
                     public int defaultPort(final HttpScheme scheme, @Nullable final String effectiveHost) {

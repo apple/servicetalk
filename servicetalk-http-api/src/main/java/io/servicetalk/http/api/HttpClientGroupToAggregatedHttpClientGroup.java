@@ -19,7 +19,9 @@ import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.AggregatedHttpClient.AggregatedReservedHttpConnection;
+import io.servicetalk.http.api.AggregatedHttpClient.AggregatedUpgradableHttpResponse;
 import io.servicetalk.http.api.HttpClientToAggregatedHttpClient.ReservedHttpConnectionToAggregated;
+import io.servicetalk.http.api.HttpClientToAggregatedHttpClient.UpgradableHttpResponseToAggregated;
 
 import static io.servicetalk.http.api.DefaultAggregatedHttpRequest.toHttpRequest;
 import static io.servicetalk.http.api.DefaultAggregatedHttpResponse.from;
@@ -34,8 +36,8 @@ final class HttpClientGroupToAggregatedHttpClientGroup<UnresolvedAddress> extend
     }
 
     @Override
-    public Single<AggregatedHttpResponse<HttpPayloadChunk>> request(final GroupKey<UnresolvedAddress> key,
-                                                                    final AggregatedHttpRequest<HttpPayloadChunk> request) {
+    public Single<AggregatedHttpResponse<HttpPayloadChunk>> request(
+            final GroupKey<UnresolvedAddress> key, final AggregatedHttpRequest<HttpPayloadChunk> request) {
         return clientGroup.request(key, toHttpRequest(request)).flatMap(response ->
                 from(response, key.getExecutionContext().getBufferAllocator()));
     }
@@ -44,6 +46,15 @@ final class HttpClientGroupToAggregatedHttpClientGroup<UnresolvedAddress> extend
     public Single<? extends AggregatedReservedHttpConnection> reserveConnection(
             final GroupKey<UnresolvedAddress> key, final AggregatedHttpRequest<HttpPayloadChunk> request) {
         return clientGroup.reserveConnection(key, toHttpRequest(request)).map(ReservedHttpConnectionToAggregated::new);
+    }
+
+    @Override
+    public Single<? extends AggregatedUpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
+            final GroupKey<UnresolvedAddress> key, final AggregatedHttpRequest<HttpPayloadChunk> request) {
+        return clientGroup.upgradeConnection(key, toHttpRequest(request))
+                .flatMap(response -> from(response, key.getExecutionContext().getBufferAllocator())
+                        .map(fullResponse -> new UpgradableHttpResponseToAggregated<>(response,
+                                fullResponse.getPayloadBody(), fullResponse.getTrailers())));
     }
 
     @Override

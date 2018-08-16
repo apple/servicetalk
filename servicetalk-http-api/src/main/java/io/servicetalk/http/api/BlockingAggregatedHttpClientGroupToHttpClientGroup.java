@@ -19,8 +19,10 @@ import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
+import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
 
 import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.http.api.AggregatedHttpClientToHttpClient.AggregatedToUpgradableHttpResponse.newUpgradeResponse;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
 import static io.servicetalk.http.api.DefaultAggregatedHttpRequest.from;
@@ -47,10 +49,18 @@ final class BlockingAggregatedHttpClientGroupToHttpClientGroup<UnresolvedAddress
 
     @Override
     public Single<? extends ReservedHttpConnection> reserveConnection(final GroupKey<UnresolvedAddress> key,
-                                                                         final HttpRequest<HttpPayloadChunk> request) {
+                                                                      final HttpRequest<HttpPayloadChunk> request) {
         return from(request, key.getExecutionContext().getBufferAllocator())
                 .flatMap(aggregatedRequest -> blockingToSingle(() ->
                         clientGroup.reserveConnection(key, aggregatedRequest).asReservedConnection()));
+    }
+
+    @Override
+    public Single<? extends UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
+            final GroupKey<UnresolvedAddress> key, final HttpRequest<HttpPayloadChunk> request) {
+        return from(request, key.getExecutionContext().getBufferAllocator())
+                .flatMap(aggregatedRequest -> blockingToSingle(() ->
+                        newUpgradeResponse(clientGroup.upgradeConnection(key, aggregatedRequest))));
     }
 
     @Override
