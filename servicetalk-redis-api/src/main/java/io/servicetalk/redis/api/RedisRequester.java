@@ -40,6 +40,10 @@ public abstract class RedisRequester implements ListenableAsyncCloseable {
             AtomicReferenceFieldUpdater.newUpdater(RedisRequester.class, RedisCommander.class, "redisCommander");
     private static final AtomicReferenceFieldUpdater<RedisRequester, BufferRedisCommander> redisBufferCommanderUpdater =
             AtomicReferenceFieldUpdater.newUpdater(RedisRequester.class, BufferRedisCommander.class, "redisBufferCommander");
+    private static final AtomicReferenceFieldUpdater<RedisRequester, BlockingRedisCommander> blockingRedisCommanderUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(RedisRequester.class, BlockingRedisCommander.class, "blockingRedisCommander");
+    private static final AtomicReferenceFieldUpdater<RedisRequester, BlockingBufferRedisCommander> blockingRedisBufferCommanderUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(RedisRequester.class, BlockingBufferRedisCommander.class, "blockingRedisBufferCommander");
 
     @SuppressWarnings("unused")
     @Nullable
@@ -47,6 +51,12 @@ public abstract class RedisRequester implements ListenableAsyncCloseable {
     @SuppressWarnings("unused")
     @Nullable
     private volatile BufferRedisCommander redisBufferCommander;
+    @SuppressWarnings("unused")
+    @Nullable
+    private volatile BlockingRedisCommander blockingRedisCommander;
+    @SuppressWarnings("unused")
+    @Nullable
+    private volatile BlockingBufferRedisCommander blockingRedisBufferCommander;
 
     /**
      * Send a {@code request}.
@@ -133,5 +143,49 @@ public abstract class RedisRequester implements ListenableAsyncCloseable {
             }
         }
         return redisBufferCommander;
+    }
+
+    /**
+     * Provides an alternative java API to this {@link RedisRequester}. The {@link BlockingRedisCommander} API is
+     * provided for convenience for a more familiar sequential programming model. The return value has equivalent
+     * networking semantics and lifetime as this {@link RedisRequester}, and exists primarily to provide a more
+     * expressive java API targeted at the Redis protocol which favors {@link CharSequence} and {@link String}.
+     * <p>
+     * Calling {@link BlockingRedisCommander#close()} will also close this {@link RedisRequester}!
+     *
+     * @return an alternative java API to this {@link RedisRequester}.
+     */
+    public final BlockingRedisCommander asBlockingCommander() {
+        BlockingRedisCommander blockingRedisCommander = this.blockingRedisCommander;
+        if (blockingRedisCommander == null) {
+            blockingRedisCommander = asCommander().asBlockingCommander();
+            if (!blockingRedisCommanderUpdater.compareAndSet(this, null, blockingRedisCommander)) {
+                blockingRedisCommander = this.blockingRedisCommander;
+                assert blockingRedisCommander != null : "BlockingRedisCommander can not be null.";
+            }
+        }
+        return blockingRedisCommander;
+    }
+
+    /**
+     * Provides an alternative java API to this {@link RedisRequester}. The {@link BlockingBufferRedisCommander} API is
+     * provided for convenience for a more familiar sequential programming model. The return value has equivalent
+     * networking semantics and lifetime as this {@link RedisRequester}, and exists primarily to provide a more
+     * expressive java API targeted at the Redis protocol which favors {@link Buffer}.
+     * <p>
+     * Calling {@link BlockingBufferRedisCommander#close()} will also close this {@link RedisRequester}!
+     *
+     * @return an alternative java API to this {@link RedisRequester}.
+     */
+    public final BlockingBufferRedisCommander asBlockingBufferCommander() {
+        BlockingBufferRedisCommander blockingRedisBufferCommander = this.blockingRedisBufferCommander;
+        if (blockingRedisBufferCommander == null) {
+            blockingRedisBufferCommander = asBufferCommander().asBlockingBufferCommander();
+            if (!blockingRedisBufferCommanderUpdater.compareAndSet(this, null, blockingRedisBufferCommander)) {
+                blockingRedisBufferCommander = this.blockingRedisBufferCommander;
+                assert blockingRedisBufferCommander != null : "BlockingBufferRedisCommander can not be null.";
+            }
+        }
+        return blockingRedisBufferCommander;
     }
 }

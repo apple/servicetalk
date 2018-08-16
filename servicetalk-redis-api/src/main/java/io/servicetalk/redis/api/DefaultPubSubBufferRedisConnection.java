@@ -33,7 +33,7 @@ import static java.util.Objects.requireNonNull;
 
 @Generated({})
 @SuppressWarnings("unchecked")
-final class DefaultPubSubBufferRedisConnection implements PubSubBufferRedisConnection {
+final class DefaultPubSubBufferRedisConnection extends PubSubBufferRedisConnection {
 
     protected final RedisClient.ReservedRedisConnection reservedCnx;
 
@@ -61,32 +61,6 @@ final class DefaultPubSubBufferRedisConnection implements PubSubBufferRedisConne
     }
 
     @Override
-    public Single<PubSubBufferRedisConnection> psubscribe(final Buffer pattern) {
-        requireNonNull(pattern);
-        final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PSUBSCRIBE, allocator);
-        addRequestArgument(pattern, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PSUBSCRIBE, cb);
-        return newConnectedClient(reservedCnx, request,
-                    (rcnx, pub) -> new DefaultPubSubBufferRedisConnection(rcnx, pub.map(msg -> (PubSubRedisMessage) msg)));
-    }
-
-    @Override
-    public Single<PubSubBufferRedisConnection> subscribe(final Buffer channel) {
-        requireNonNull(channel);
-        final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUBSCRIBE, allocator);
-        addRequestArgument(channel, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUBSCRIBE, cb);
-        return newConnectedClient(reservedCnx, request,
-                    (rcnx, pub) -> new DefaultPubSubBufferRedisConnection(rcnx, pub.map(msg -> (PubSubRedisMessage) msg)));
-    }
-
-    @Override
     public Single<PubSubRedisMessage.Pong<Buffer>> ping() {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -106,5 +80,31 @@ final class DefaultPubSubBufferRedisConnection implements PubSubBufferRedisConne
         addRequestArgument(message, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PING, cb);
         return toPubSubPongMessages(reservedCnx.request(request), Buffer.class).first();
+    }
+
+    @Override
+    public Single<PubSubBufferRedisConnection> psubscribe(final Buffer pattern) {
+        requireNonNull(pattern);
+        final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 2;
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PSUBSCRIBE, allocator);
+        addRequestArgument(pattern, cb, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PSUBSCRIBE, cb);
+        return newConnectedClient(reservedCnx, request, (rcnx, pub) -> new DefaultPubSubBufferRedisConnection(rcnx,
+                    pub.map(msg -> (PubSubRedisMessage) msg)));
+    }
+
+    @Override
+    public Single<PubSubBufferRedisConnection> subscribe(final Buffer channel) {
+        requireNonNull(channel);
+        final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 2;
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUBSCRIBE, allocator);
+        addRequestArgument(channel, cb, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUBSCRIBE, cb);
+        return newConnectedClient(reservedCnx, request, (rcnx, pub) -> new DefaultPubSubBufferRedisConnection(rcnx,
+                    pub.map(msg -> (PubSubRedisMessage) msg)));
     }
 }

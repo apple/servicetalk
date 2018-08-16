@@ -39,7 +39,7 @@ import static java.util.function.Function.identity;
 
 @Generated({})
 @SuppressWarnings("unchecked")
-final class DefaultBufferRedisCommander implements BufferRedisCommander {
+final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     private final RedisRequester requester;
 
@@ -182,7 +182,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
 
     @Override
     public Single<Long> bitop(final Buffer operation, @RedisProtocolSupport.Key final Buffer destkey,
-                              @RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
+                              @RedisProtocolSupport.Key final Buffer key1,
+                              @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(operation);
         requireNonNull(destkey);
         requireNonNull(key1);
@@ -787,7 +788,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<String> clusterSetslot(final long slot, final RedisProtocolSupport.ClusterSetslotSubcommand subcommand) {
+    public Single<String> clusterSetslot(final long slot,
+                                         final RedisProtocolSupport.ClusterSetslotSubcommand subcommand) {
         requireNonNull(subcommand);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -802,7 +804,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<String> clusterSetslot(final long slot, final RedisProtocolSupport.ClusterSetslotSubcommand subcommand,
+    public Single<String> clusterSetslot(final long slot,
+                                         final RedisProtocolSupport.ClusterSetslotSubcommand subcommand,
                                          @Nullable final Buffer nodeId) {
         requireNonNull(subcommand);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
@@ -915,7 +918,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> commandInfo(final Buffer commandName1, final Buffer commandName2, final Buffer commandName3) {
+    public <T> Single<List<T>> commandInfo(final Buffer commandName1, final Buffer commandName2,
+                                           final Buffer commandName3) {
         requireNonNull(commandName1);
         requireNonNull(commandName2);
         requireNonNull(commandName3);
@@ -1152,8 +1156,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<Buffer> eval(final Buffer script, final long numkeys, @RedisProtocolSupport.Key final Collection<Buffer> keys,
-                               final Collection<Buffer> args) {
+    public Single<Buffer> eval(final Buffer script, final long numkeys,
+                               @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Buffer> args) {
         requireNonNull(script);
         requireNonNull(keys);
         requireNonNull(args);
@@ -1174,7 +1178,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
 
     @Override
     public <T> Single<List<T>> evalList(final Buffer script, final long numkeys,
-                                        @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Buffer> args) {
+                                        @RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                        final Collection<Buffer> args) {
         requireNonNull(script);
         requireNonNull(keys);
         requireNonNull(args);
@@ -1194,7 +1199,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<Long> evalLong(final Buffer script, final long numkeys, @RedisProtocolSupport.Key final Collection<Buffer> keys,
+    public Single<Long> evalLong(final Buffer script, final long numkeys,
+                                 @RedisProtocolSupport.Key final Collection<Buffer> keys,
                                  final Collection<Buffer> args) {
         requireNonNull(script);
         requireNonNull(keys);
@@ -1215,7 +1221,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<Buffer> evalsha(final Buffer sha1, final long numkeys, @RedisProtocolSupport.Key final Collection<Buffer> keys,
+    public Single<Buffer> evalsha(final Buffer sha1, final long numkeys,
+                                  @RedisProtocolSupport.Key final Collection<Buffer> keys,
                                   final Collection<Buffer> args) {
         requireNonNull(sha1);
         requireNonNull(keys);
@@ -1259,7 +1266,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
 
     @Override
     public Single<Long> evalshaLong(final Buffer sha1, final long numkeys,
-                                    @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Buffer> args) {
+                                    @RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                    final Collection<Buffer> args) {
         requireNonNull(sha1);
         requireNonNull(keys);
         requireNonNull(args);
@@ -1292,7 +1300,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<Long> exists(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
+    public Single<Long> exists(@RedisProtocolSupport.Key final Buffer key1,
+                               @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
@@ -1423,8 +1432,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<Long> geoadd(@RedisProtocolSupport.Key final Buffer key, final double longitude, final double latitude,
-                               final Buffer member) {
+    public Single<Long> geoadd(@RedisProtocolSupport.Key final Buffer key, final double longitude,
+                               final double latitude, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
@@ -1441,8 +1450,9 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<Long> geoadd(@RedisProtocolSupport.Key final Buffer key, final double longitude1, final double latitude1,
-                               final Buffer member1, final double longitude2, final double latitude2, final Buffer member2) {
+    public Single<Long> geoadd(@RedisProtocolSupport.Key final Buffer key, final double longitude1,
+                               final double latitude1, final Buffer member1, final double longitude2,
+                               final double latitude2, final Buffer member2) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -1463,9 +1473,10 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<Long> geoadd(@RedisProtocolSupport.Key final Buffer key, final double longitude1, final double latitude1,
-                               final Buffer member1, final double longitude2, final double latitude2, final Buffer member2,
-                               final double longitude3, final double latitude3, final Buffer member3) {
+    public Single<Long> geoadd(@RedisProtocolSupport.Key final Buffer key, final double longitude1,
+                               final double latitude1, final Buffer member1, final double longitude2,
+                               final double latitude2, final Buffer member2, final double longitude3,
+                               final double latitude3, final Buffer member3) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -1507,7 +1518,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<Double> geodist(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2) {
+    public Single<Double> geodist(@RedisProtocolSupport.Key final Buffer key, final Buffer member1,
+                                  final Buffer member2) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -1519,13 +1531,14 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
         addRequestArgument(member1, cb, allocator);
         addRequestArgument(member2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEODIST, cb);
-        final Single<Double> result = requester.request(request, String.class).map(s -> s != null ? Double.valueOf(s) : null);
+        final Single<Double> result = requester.request(request, String.class)
+                    .map(s -> s != null ? Double.valueOf(s) : null);
         return result;
     }
 
     @Override
-    public Single<Double> geodist(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2,
-                                  @Nullable final Buffer unit) {
+    public Single<Double> geodist(@RedisProtocolSupport.Key final Buffer key, final Buffer member1,
+                                  final Buffer member2, @Nullable final Buffer unit) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -1543,7 +1556,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
             addRequestArgument(unit, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEODIST, cb);
-        final Single<Double> result = requester.request(request, String.class).map(s -> s != null ? Double.valueOf(s) : null);
+        final Single<Double> result = requester.request(request, String.class)
+                    .map(s -> s != null ? Double.valueOf(s) : null);
         return result;
     }
 
@@ -1563,7 +1577,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> geohash(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2) {
+    public <T> Single<List<T>> geohash(@RedisProtocolSupport.Key final Buffer key, final Buffer member1,
+                                       final Buffer member2) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -1580,8 +1595,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> geohash(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2,
-                                       final Buffer member3) {
+    public <T> Single<List<T>> geohash(@RedisProtocolSupport.Key final Buffer key, final Buffer member1,
+                                       final Buffer member2, final Buffer member3) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -1631,7 +1646,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> geopos(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2) {
+    public <T> Single<List<T>> geopos(@RedisProtocolSupport.Key final Buffer key, final Buffer member1,
+                                      final Buffer member2) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -1648,8 +1664,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> geopos(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2,
-                                      final Buffer member3) {
+    public <T> Single<List<T>> geopos(@RedisProtocolSupport.Key final Buffer key, final Buffer member1,
+                                      final Buffer member2, final Buffer member3) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -1710,7 +1726,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
                                          @Nullable final RedisProtocolSupport.GeoradiusWithcoord withcoord,
                                          @Nullable final RedisProtocolSupport.GeoradiusWithdist withdist,
                                          @Nullable final RedisProtocolSupport.GeoradiusWithhash withhash,
-                                         @Nullable final Long count, @Nullable final RedisProtocolSupport.GeoradiusOrder order,
+                                         @Nullable final Long count,
+                                         @Nullable final RedisProtocolSupport.GeoradiusOrder order,
                                          @Nullable @RedisProtocolSupport.Key final Buffer storeKey,
                                          @Nullable @RedisProtocolSupport.Key final Buffer storedistKey) {
         requireNonNull(key);
@@ -1776,14 +1793,16 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
 
     @Override
     public <T> Single<List<T>> georadiusbymember(@RedisProtocolSupport.Key final Buffer key, final Buffer member,
-                                                 final double radius, final RedisProtocolSupport.GeoradiusbymemberUnit unit) {
+                                                 final double radius,
+                                                 final RedisProtocolSupport.GeoradiusbymemberUnit unit) {
         requireNonNull(key);
         requireNonNull(member);
         requireNonNull(unit);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEORADIUSBYMEMBER, allocator);
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEORADIUSBYMEMBER,
+                    allocator);
         addRequestArgument(key, cb, allocator);
         addRequestArgument(member, cb, allocator);
         addRequestArgument(radius, cb, allocator);
@@ -1795,7 +1814,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
 
     @Override
     public <T> Single<List<T>> georadiusbymember(@RedisProtocolSupport.Key final Buffer key, final Buffer member,
-                                                 final double radius, final RedisProtocolSupport.GeoradiusbymemberUnit unit,
+                                                 final double radius,
+                                                 final RedisProtocolSupport.GeoradiusbymemberUnit unit,
                                                  @Nullable final RedisProtocolSupport.GeoradiusbymemberWithcoord withcoord,
                                                  @Nullable final RedisProtocolSupport.GeoradiusbymemberWithdist withdist,
                                                  @Nullable final RedisProtocolSupport.GeoradiusbymemberWithhash withhash,
@@ -1830,7 +1850,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
         if (storedistKey != null) {
             len += 2;
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEORADIUSBYMEMBER, allocator);
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEORADIUSBYMEMBER,
+                    allocator);
         addRequestArgument(key, cb, allocator);
         addRequestArgument(member, cb, allocator);
         addRequestArgument(radius, cb, allocator);
@@ -2049,7 +2070,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<Double> hincrbyfloat(@RedisProtocolSupport.Key final Buffer key, final Buffer field, final double increment) {
+    public Single<Double> hincrbyfloat(@RedisProtocolSupport.Key final Buffer key, final Buffer field,
+                                       final double increment) {
         requireNonNull(key);
         requireNonNull(field);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
@@ -2060,7 +2082,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
         addRequestArgument(field, cb, allocator);
         addRequestArgument(increment, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HINCRBYFLOAT, cb);
-        final Single<Double> result = requester.request(request, String.class).map(s -> s != null ? Double.valueOf(s) : null);
+        final Single<Double> result = requester.request(request, String.class)
+                    .map(s -> s != null ? Double.valueOf(s) : null);
         return result;
     }
 
@@ -2106,7 +2129,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1, final Buffer field2) {
+    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1,
+                                     final Buffer field2) {
         requireNonNull(key);
         requireNonNull(field1);
         requireNonNull(field2);
@@ -2123,8 +2147,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1, final Buffer field2,
-                                     final Buffer field3) {
+    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1,
+                                     final Buffer field2, final Buffer field3) {
         requireNonNull(key);
         requireNonNull(field1);
         requireNonNull(field2);
@@ -2382,7 +2406,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
         addRequestArgument(key, cb, allocator);
         addRequestArgument(increment, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.INCRBYFLOAT, cb);
-        final Single<Double> result = requester.request(request, String.class).map(s -> s != null ? Double.valueOf(s) : null);
+        final Single<Double> result = requester.request(request, String.class)
+                    .map(s -> s != null ? Double.valueOf(s) : null);
         return result;
     }
 
@@ -2453,8 +2478,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<Long> linsert(@RedisProtocolSupport.Key final Buffer key, final RedisProtocolSupport.LinsertWhere where,
-                                final Buffer pivot, final Buffer value) {
+    public Single<Long> linsert(@RedisProtocolSupport.Key final Buffer key,
+                                final RedisProtocolSupport.LinsertWhere where, final Buffer pivot, final Buffer value) {
         requireNonNull(key);
         requireNonNull(where);
         requireNonNull(pivot);
@@ -2752,7 +2777,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
+    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Buffer key1,
+                                    @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
@@ -2767,7 +2793,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2,
+    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Buffer key1,
+                                    @RedisProtocolSupport.Key final Buffer key2,
                                     @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(key1);
         requireNonNull(key2);
@@ -3106,7 +3133,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<Long> pfadd(@RedisProtocolSupport.Key final Buffer key, final Buffer element1, final Buffer element2) {
+    public Single<Long> pfadd(@RedisProtocolSupport.Key final Buffer key, final Buffer element1,
+                              final Buffer element2) {
         requireNonNull(key);
         requireNonNull(element1);
         requireNonNull(element2);
@@ -3172,7 +3200,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<Long> pfcount(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
+    public Single<Long> pfcount(@RedisProtocolSupport.Key final Buffer key1,
+                                @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
@@ -3187,7 +3216,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<Long> pfcount(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2,
+    public Single<Long> pfcount(@RedisProtocolSupport.Key final Buffer key1,
+                                @RedisProtocolSupport.Key final Buffer key2,
                                 @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(key1);
         requireNonNull(key2);
@@ -3317,7 +3347,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<String> psetex(@RedisProtocolSupport.Key final Buffer key, final long milliseconds, final Buffer value) {
+    public Single<String> psetex(@RedisProtocolSupport.Key final Buffer key, final long milliseconds,
+                                 final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
@@ -3341,8 +3372,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PSUBSCRIBE, allocator);
         addRequestArgument(pattern, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PSUBSCRIBE, cb);
-        return newConnectedClient(requester, request,
-                    (rcnx, pub) -> new DefaultPubSubBufferRedisConnection(rcnx, pub.map(msg -> (PubSubRedisMessage) msg)));
+        return newConnectedClient(requester, request, (rcnx, pub) -> new DefaultPubSubBufferRedisConnection(rcnx,
+                    pub.map(msg -> (PubSubRedisMessage) msg)));
     }
 
     @Override
@@ -3619,7 +3650,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<String> rename(@RedisProtocolSupport.Key final Buffer key, @RedisProtocolSupport.Key final Buffer newkey) {
+    public Single<String> rename(@RedisProtocolSupport.Key final Buffer key,
+                                 @RedisProtocolSupport.Key final Buffer newkey) {
         requireNonNull(key);
         requireNonNull(newkey);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
@@ -3634,7 +3666,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<Long> renamenx(@RedisProtocolSupport.Key final Buffer key, @RedisProtocolSupport.Key final Buffer newkey) {
+    public Single<Long> renamenx(@RedisProtocolSupport.Key final Buffer key,
+                                 @RedisProtocolSupport.Key final Buffer newkey) {
         requireNonNull(key);
         requireNonNull(newkey);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
@@ -3649,7 +3682,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<String> restore(@RedisProtocolSupport.Key final Buffer key, final long ttl, final Buffer serializedValue) {
+    public Single<String> restore(@RedisProtocolSupport.Key final Buffer key, final long ttl,
+                                  final Buffer serializedValue) {
         requireNonNull(key);
         requireNonNull(serializedValue);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
@@ -3665,7 +3699,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<String> restore(@RedisProtocolSupport.Key final Buffer key, final long ttl, final Buffer serializedValue,
+    public Single<String> restore(@RedisProtocolSupport.Key final Buffer key, final long ttl,
+                                  final Buffer serializedValue,
                                   @Nullable final RedisProtocolSupport.RestoreReplace replace) {
         requireNonNull(key);
         requireNonNull(serializedValue);
@@ -3902,7 +3937,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> scan(final long cursor, @Nullable final Buffer matchPattern, @Nullable final Long count) {
+    public <T> Single<List<T>> scan(final long cursor, @Nullable final Buffer matchPattern,
+                                    @Nullable final Long count) {
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
@@ -4453,7 +4489,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> sinter(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
+    public <T> Single<List<T>> sinter(@RedisProtocolSupport.Key final Buffer key1,
+                                      @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
@@ -4468,7 +4505,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> sinter(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2,
+    public <T> Single<List<T>> sinter(@RedisProtocolSupport.Key final Buffer key1,
+                                      @RedisProtocolSupport.Key final Buffer key2,
                                       @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(key1);
         requireNonNull(key2);
@@ -4517,7 +4555,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
 
     @Override
     public Single<Long> sinterstore(@RedisProtocolSupport.Key final Buffer destination,
-                                    @RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
+                                    @RedisProtocolSupport.Key final Buffer key1,
+                                    @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(destination);
         requireNonNull(key1);
         requireNonNull(key2);
@@ -4535,7 +4574,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
 
     @Override
     public Single<Long> sinterstore(@RedisProtocolSupport.Key final Buffer destination,
-                                    @RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2,
+                                    @RedisProtocolSupport.Key final Buffer key1,
+                                    @RedisProtocolSupport.Key final Buffer key2,
                                     @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(destination);
         requireNonNull(key1);
@@ -4647,8 +4687,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<Long> smove(@RedisProtocolSupport.Key final Buffer source, @RedisProtocolSupport.Key final Buffer destination,
-                              final Buffer member) {
+    public Single<Long> smove(@RedisProtocolSupport.Key final Buffer source,
+                              @RedisProtocolSupport.Key final Buffer destination, final Buffer member) {
         requireNonNull(source);
         requireNonNull(destination);
         requireNonNull(member);
@@ -4680,7 +4720,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     @Override
     public <T> Single<List<T>> sort(@RedisProtocolSupport.Key final Buffer key, @Nullable final Buffer byPattern,
                                     @Nullable final RedisProtocolSupport.OffsetCount offsetCount,
-                                    final Collection<Buffer> getPatterns, @Nullable final RedisProtocolSupport.SortOrder order,
+                                    final Collection<Buffer> getPatterns,
+                                    @Nullable final RedisProtocolSupport.SortOrder order,
                                     @Nullable final RedisProtocolSupport.SortSorting sorting) {
         requireNonNull(key);
         requireNonNull(getPatterns);
@@ -4739,8 +4780,9 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<Long> sort(@RedisProtocolSupport.Key final Buffer key, @RedisProtocolSupport.Key final Buffer storeDestination,
-                             @Nullable final Buffer byPattern, @Nullable final RedisProtocolSupport.OffsetCount offsetCount,
+    public Single<Long> sort(@RedisProtocolSupport.Key final Buffer key,
+                             @RedisProtocolSupport.Key final Buffer storeDestination, @Nullable final Buffer byPattern,
+                             @Nullable final RedisProtocolSupport.OffsetCount offsetCount,
                              final Collection<Buffer> getPatterns, @Nullable final RedisProtocolSupport.SortOrder order,
                              @Nullable final RedisProtocolSupport.SortSorting sorting) {
         requireNonNull(key);
@@ -4977,8 +5019,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUBSCRIBE, allocator);
         addRequestArgument(channel, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUBSCRIBE, cb);
-        return newConnectedClient(requester, request,
-                    (rcnx, pub) -> new DefaultPubSubBufferRedisConnection(rcnx, pub.map(msg -> (PubSubRedisMessage) msg)));
+        return newConnectedClient(requester, request, (rcnx, pub) -> new DefaultPubSubBufferRedisConnection(rcnx,
+                    pub.map(msg -> (PubSubRedisMessage) msg)));
     }
 
     @Override
@@ -4995,7 +5037,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> sunion(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
+    public <T> Single<List<T>> sunion(@RedisProtocolSupport.Key final Buffer key1,
+                                      @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
@@ -5010,7 +5053,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> sunion(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2,
+    public <T> Single<List<T>> sunion(@RedisProtocolSupport.Key final Buffer key1,
+                                      @RedisProtocolSupport.Key final Buffer key2,
                                       @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(key1);
         requireNonNull(key2);
@@ -5059,7 +5103,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
 
     @Override
     public Single<Long> sunionstore(@RedisProtocolSupport.Key final Buffer destination,
-                                    @RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
+                                    @RedisProtocolSupport.Key final Buffer key1,
+                                    @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(destination);
         requireNonNull(key1);
         requireNonNull(key2);
@@ -5077,7 +5122,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
 
     @Override
     public Single<Long> sunionstore(@RedisProtocolSupport.Key final Buffer destination,
-                                    @RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2,
+                                    @RedisProtocolSupport.Key final Buffer key1,
+                                    @RedisProtocolSupport.Key final Buffer key2,
                                     @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(destination);
         requireNonNull(key1);
@@ -5151,7 +5197,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<Long> touch(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
+    public Single<Long> touch(@RedisProtocolSupport.Key final Buffer key1,
+                              @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
@@ -5237,7 +5284,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<Long> unlink(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
+    public Single<Long> unlink(@RedisProtocolSupport.Key final Buffer key1,
+                               @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
@@ -5321,7 +5369,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<String> watch(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
+    public Single<String> watch(@RedisProtocolSupport.Key final Buffer key1,
+                                @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
@@ -5336,7 +5385,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<String> watch(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2,
+    public Single<String> watch(@RedisProtocolSupport.Key final Buffer key1,
+                                @RedisProtocolSupport.Key final Buffer key2,
                                 @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(key1);
         requireNonNull(key2);
@@ -5489,8 +5539,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
 
     @Override
     public <T> Single<List<T>> xpending(@RedisProtocolSupport.Key final Buffer key, final Buffer group,
-                                        @Nullable final Buffer start, @Nullable final Buffer end, @Nullable final Long count,
-                                        @Nullable final Buffer consumer) {
+                                        @Nullable final Buffer start, @Nullable final Buffer end,
+                                        @Nullable final Long count, @Nullable final Buffer consumer) {
         requireNonNull(key);
         requireNonNull(group);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
@@ -5529,7 +5579,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> xrange(@RedisProtocolSupport.Key final Buffer key, final Buffer start, final Buffer end) {
+    public <T> Single<List<T>> xrange(@RedisProtocolSupport.Key final Buffer key, final Buffer start,
+                                      final Buffer end) {
         requireNonNull(key);
         requireNonNull(start);
         requireNonNull(end);
@@ -5571,7 +5622,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> xread(@RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Buffer> ids) {
+    public <T> Single<List<T>> xread(@RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                     final Collection<Buffer> ids) {
         requireNonNull(keys);
         requireNonNull(ids);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
@@ -5590,7 +5642,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
 
     @Override
     public <T> Single<List<T>> xread(@Nullable final Long count, @Nullable final Long blockMilliseconds,
-                                     @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Buffer> ids) {
+                                     @RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                     final Collection<Buffer> ids) {
         requireNonNull(keys);
         requireNonNull(ids);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
@@ -5623,7 +5676,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
 
     @Override
     public <T> Single<List<T>> xreadgroup(final RedisProtocolSupport.BufferGroupConsumer groupConsumer,
-                                          @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Buffer> ids) {
+                                          @RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                          final Collection<Buffer> ids) {
         requireNonNull(groupConsumer);
         requireNonNull(keys);
         requireNonNull(ids);
@@ -5645,7 +5699,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     @Override
     public <T> Single<List<T>> xreadgroup(final RedisProtocolSupport.BufferGroupConsumer groupConsumer,
                                           @Nullable final Long count, @Nullable final Long blockMilliseconds,
-                                          @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Buffer> ids) {
+                                          @RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                          final Collection<Buffer> ids) {
         requireNonNull(groupConsumer);
         requireNonNull(keys);
         requireNonNull(ids);
@@ -5679,7 +5734,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> xrevrange(@RedisProtocolSupport.Key final Buffer key, final Buffer end, final Buffer start) {
+    public <T> Single<List<T>> xrevrange(@RedisProtocolSupport.Key final Buffer key, final Buffer end,
+                                         final Buffer start) {
         requireNonNull(key);
         requireNonNull(end);
         requireNonNull(start);
@@ -5696,8 +5752,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> xrevrange(@RedisProtocolSupport.Key final Buffer key, final Buffer end, final Buffer start,
-                                         @Nullable final Long count) {
+    public <T> Single<List<T>> xrevrange(@RedisProtocolSupport.Key final Buffer key, final Buffer end,
+                                         final Buffer start, @Nullable final Long count) {
         requireNonNull(key);
         requireNonNull(end);
         requireNonNull(start);
@@ -5740,7 +5796,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     @Override
     public Single<Long> zadd(@RedisProtocolSupport.Key final Buffer key,
                              @Nullable final RedisProtocolSupport.ZaddCondition condition,
-                             @Nullable final RedisProtocolSupport.ZaddChange change, final double score, final Buffer member) {
+                             @Nullable final RedisProtocolSupport.ZaddChange change, final double score,
+                             final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
@@ -5770,8 +5827,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     @Override
     public Single<Long> zadd(@RedisProtocolSupport.Key final Buffer key,
                              @Nullable final RedisProtocolSupport.ZaddCondition condition,
-                             @Nullable final RedisProtocolSupport.ZaddChange change, final double score1, final Buffer member1,
-                             final double score2, final Buffer member2) {
+                             @Nullable final RedisProtocolSupport.ZaddChange change, final double score1,
+                             final Buffer member1, final double score2, final Buffer member2) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -5804,8 +5861,9 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     @Override
     public Single<Long> zadd(@RedisProtocolSupport.Key final Buffer key,
                              @Nullable final RedisProtocolSupport.ZaddCondition condition,
-                             @Nullable final RedisProtocolSupport.ZaddChange change, final double score1, final Buffer member1,
-                             final double score2, final Buffer member2, final double score3, final Buffer member3) {
+                             @Nullable final RedisProtocolSupport.ZaddChange change, final double score1,
+                             final Buffer member1, final double score2, final Buffer member2, final double score3,
+                             final Buffer member3) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -5883,7 +5941,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
         addRequestArgument(RedisProtocolSupport.ZaddIncrement.values()[0], cb, allocator);
         addRequestTupleArguments(scoreMembers, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
-        final Single<Double> result = requester.request(request, String.class).map(s -> s != null ? Double.valueOf(s) : null);
+        final Single<Double> result = requester.request(request, String.class)
+                    .map(s -> s != null ? Double.valueOf(s) : null);
         return result;
     }
 
@@ -5915,7 +5974,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
         addRequestArgument(score, cb, allocator);
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
-        final Single<Double> result = requester.request(request, String.class).map(s -> s != null ? Double.valueOf(s) : null);
+        final Single<Double> result = requester.request(request, String.class)
+                    .map(s -> s != null ? Double.valueOf(s) : null);
         return result;
     }
 
@@ -5950,7 +6010,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
         addRequestArgument(score2, cb, allocator);
         addRequestArgument(member2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
-        final Single<Double> result = requester.request(request, String.class).map(s -> s != null ? Double.valueOf(s) : null);
+        final Single<Double> result = requester.request(request, String.class)
+                    .map(s -> s != null ? Double.valueOf(s) : null);
         return result;
     }
 
@@ -5989,7 +6050,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
         addRequestArgument(score3, cb, allocator);
         addRequestArgument(member3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
-        final Single<Double> result = requester.request(request, String.class).map(s -> s != null ? Double.valueOf(s) : null);
+        final Single<Double> result = requester.request(request, String.class)
+                    .map(s -> s != null ? Double.valueOf(s) : null);
         return result;
     }
 
@@ -6021,7 +6083,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
         }
         addRequestTupleArguments(scoreMembers, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
-        final Single<Double> result = requester.request(request, String.class).map(s -> s != null ? Double.valueOf(s) : null);
+        final Single<Double> result = requester.request(request, String.class)
+                    .map(s -> s != null ? Double.valueOf(s) : null);
         return result;
     }
 
@@ -6054,7 +6117,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<Double> zincrby(@RedisProtocolSupport.Key final Buffer key, final long increment, final Buffer member) {
+    public Single<Double> zincrby(@RedisProtocolSupport.Key final Buffer key, final long increment,
+                                  final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
@@ -6065,7 +6129,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
         addRequestArgument(increment, cb, allocator);
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZINCRBY, cb);
-        final Single<Double> result = requester.request(request, String.class).map(s -> s != null ? Double.valueOf(s) : null);
+        final Single<Double> result = requester.request(request, String.class)
+                    .map(s -> s != null ? Double.valueOf(s) : null);
         return result;
     }
 
@@ -6089,7 +6154,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
 
     @Override
     public Single<Long> zinterstore(@RedisProtocolSupport.Key final Buffer destination, final long numkeys,
-                                    @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Long> weightses,
+                                    @RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                    final Collection<Long> weightses,
                                     @Nullable final RedisProtocolSupport.ZinterstoreAggregate aggregate) {
         requireNonNull(destination);
         requireNonNull(keys);
@@ -6234,7 +6300,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> zrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer min, final Buffer max) {
+    public <T> Single<List<T>> zrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer min,
+                                           final Buffer max) {
         requireNonNull(key);
         requireNonNull(min);
         requireNonNull(max);
@@ -6251,7 +6318,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> zrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer min, final Buffer max,
+    public <T> Single<List<T>> zrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer min,
+                                           final Buffer max,
                                            @Nullable final RedisProtocolSupport.OffsetCount offsetCount) {
         requireNonNull(key);
         requireNonNull(min);
@@ -6275,12 +6343,14 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> zrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double min, final double max) {
+    public <T> Single<List<T>> zrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double min,
+                                             final double max) {
         requireNonNull(key);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZRANGEBYSCORE, allocator);
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZRANGEBYSCORE,
+                    allocator);
         addRequestArgument(key, cb, allocator);
         addRequestArgument(min, cb, allocator);
         addRequestArgument(max, cb, allocator);
@@ -6290,7 +6360,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> zrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double min, final double max,
+    public <T> Single<List<T>> zrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double min,
+                                             final double max,
                                              @Nullable final RedisProtocolSupport.ZrangebyscoreWithscores withscores,
                                              @Nullable final RedisProtocolSupport.OffsetCount offsetCount) {
         requireNonNull(key);
@@ -6303,7 +6374,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
         if (offsetCount != null) {
             len += RedisProtocolSupport.OffsetCount.SIZE;
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZRANGEBYSCORE, allocator);
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZRANGEBYSCORE,
+                    allocator);
         addRequestArgument(key, cb, allocator);
         addRequestArgument(min, cb, allocator);
         addRequestArgument(max, cb, allocator);
@@ -6409,7 +6481,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREMRANGEBYLEX, allocator);
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREMRANGEBYLEX,
+                    allocator);
         addRequestArgument(key, cb, allocator);
         addRequestArgument(min, cb, allocator);
         addRequestArgument(max, cb, allocator);
@@ -6424,7 +6497,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREMRANGEBYRANK, allocator);
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREMRANGEBYRANK,
+                    allocator);
         addRequestArgument(key, cb, allocator);
         addRequestArgument(start, cb, allocator);
         addRequestArgument(stop, cb, allocator);
@@ -6434,12 +6508,14 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public Single<Long> zremrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double min, final double max) {
+    public Single<Long> zremrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double min,
+                                         final double max) {
         requireNonNull(key);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREMRANGEBYSCORE, allocator);
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREMRANGEBYSCORE,
+                    allocator);
         addRequestArgument(key, cb, allocator);
         addRequestArgument(min, cb, allocator);
         addRequestArgument(max, cb, allocator);
@@ -6449,7 +6525,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> zrevrange(@RedisProtocolSupport.Key final Buffer key, final long start, final long stop) {
+    public <T> Single<List<T>> zrevrange(@RedisProtocolSupport.Key final Buffer key, final long start,
+                                         final long stop) {
         requireNonNull(key);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -6486,14 +6563,16 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> zrevrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer max, final Buffer min) {
+    public <T> Single<List<T>> zrevrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer max,
+                                              final Buffer min) {
         requireNonNull(key);
         requireNonNull(max);
         requireNonNull(min);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGEBYLEX, allocator);
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGEBYLEX,
+                    allocator);
         addRequestArgument(key, cb, allocator);
         addRequestArgument(max, cb, allocator);
         addRequestArgument(min, cb, allocator);
@@ -6503,7 +6582,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> zrevrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer max, final Buffer min,
+    public <T> Single<List<T>> zrevrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer max,
+                                              final Buffer min,
                                               @Nullable final RedisProtocolSupport.OffsetCount offsetCount) {
         requireNonNull(key);
         requireNonNull(max);
@@ -6514,7 +6594,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
         if (offsetCount != null) {
             len += RedisProtocolSupport.OffsetCount.SIZE;
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGEBYLEX, allocator);
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGEBYLEX,
+                    allocator);
         addRequestArgument(key, cb, allocator);
         addRequestArgument(max, cb, allocator);
         addRequestArgument(min, cb, allocator);
@@ -6527,12 +6608,14 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> zrevrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double max, final double min) {
+    public <T> Single<List<T>> zrevrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double max,
+                                                final double min) {
         requireNonNull(key);
         final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGEBYSCORE, allocator);
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGEBYSCORE,
+                    allocator);
         addRequestArgument(key, cb, allocator);
         addRequestArgument(max, cb, allocator);
         addRequestArgument(min, cb, allocator);
@@ -6542,7 +6625,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
     }
 
     @Override
-    public <T> Single<List<T>> zrevrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double max, final double min,
+    public <T> Single<List<T>> zrevrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double max,
+                                                final double min,
                                                 @Nullable final RedisProtocolSupport.ZrevrangebyscoreWithscores withscores,
                                                 @Nullable final RedisProtocolSupport.OffsetCount offsetCount) {
         requireNonNull(key);
@@ -6555,7 +6639,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
         if (offsetCount != null) {
             len += RedisProtocolSupport.OffsetCount.SIZE;
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGEBYSCORE, allocator);
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGEBYSCORE,
+                    allocator);
         addRequestArgument(key, cb, allocator);
         addRequestArgument(max, cb, allocator);
         addRequestArgument(min, cb, allocator);
@@ -6639,7 +6724,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
         addRequestArgument(key, cb, allocator);
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZSCORE, cb);
-        final Single<Double> result = requester.request(request, String.class).map(s -> s != null ? Double.valueOf(s) : null);
+        final Single<Double> result = requester.request(request, String.class)
+                    .map(s -> s != null ? Double.valueOf(s) : null);
         return result;
     }
 
@@ -6663,7 +6749,8 @@ final class DefaultBufferRedisCommander implements BufferRedisCommander {
 
     @Override
     public Single<Long> zunionstore(@RedisProtocolSupport.Key final Buffer destination, final long numkeys,
-                                    @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Long> weightses,
+                                    @RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                    final Collection<Long> weightses,
                                     @Nullable final RedisProtocolSupport.ZunionstoreAggregate aggregate) {
         requireNonNull(destination);
         requireNonNull(keys);

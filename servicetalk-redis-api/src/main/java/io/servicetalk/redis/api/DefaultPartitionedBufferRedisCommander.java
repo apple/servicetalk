@@ -41,7 +41,7 @@ import static java.util.function.Function.identity;
 
 @Generated({})
 @SuppressWarnings("unchecked")
-final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommander {
+final class DefaultPartitionedBufferRedisCommander extends BufferRedisCommander {
 
     private final PartitionedRedisClient partitionedRedisClient;
 
@@ -77,7 +77,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.APPEND);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -92,7 +93,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.AUTH, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.AUTH);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -105,7 +107,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BGREWRITEAOF, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.BGREWRITEAOF);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -118,7 +121,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BGSAVE, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.BGSAVE);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -134,7 +138,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.BITCOUNT);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -163,7 +168,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.BITCOUNT);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -182,8 +188,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.BITFIELD);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<Long>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<Long>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -205,13 +211,15 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.BITOP);
         partitionAttributesBuilder.addKey(destkey);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
     public Single<Long> bitop(final Buffer operation, @RedisProtocolSupport.Key final Buffer destkey,
-                              @RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
+                              @RedisProtocolSupport.Key final Buffer key1,
+                              @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(operation);
         requireNonNull(destkey);
         requireNonNull(key1);
@@ -230,7 +238,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         partitionAttributesBuilder.addKey(destkey);
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -259,7 +268,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
         partitionAttributesBuilder.addKey(key3);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -282,7 +292,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.BITOP);
         partitionAttributesBuilder.addKey(destkey);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -299,7 +310,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.BITPOS);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -329,7 +341,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.BITPOS);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -347,8 +360,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.BLPOP);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -366,8 +379,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.BRPOP);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -388,7 +401,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.BRPOPLPUSH);
         partitionAttributesBuilder.addKey(source);
         partitionAttributesBuilder.addKey(destination);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -406,8 +420,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.BZPOPMAX);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -425,8 +439,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.BZPOPMIN);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -468,7 +482,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLIENT);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -482,7 +497,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLIENT);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -496,7 +512,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLIENT);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -511,7 +528,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLIENT);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -527,7 +545,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLIENT);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -543,7 +562,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLIENT);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -558,7 +578,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -574,7 +595,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -591,7 +613,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -608,7 +631,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -624,7 +648,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -639,7 +664,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -654,7 +680,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -670,7 +697,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -687,7 +715,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -704,7 +733,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -718,7 +748,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -738,7 +769,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -754,7 +786,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -770,8 +803,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -785,7 +818,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -801,7 +835,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -818,7 +853,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -832,7 +868,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -848,7 +885,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -862,7 +900,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -882,7 +921,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -896,7 +936,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -911,12 +952,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
     @Override
-    public Single<String> clusterSetslot(final long slot, final RedisProtocolSupport.ClusterSetslotSubcommand subcommand) {
+    public Single<String> clusterSetslot(final long slot,
+                                         final RedisProtocolSupport.ClusterSetslotSubcommand subcommand) {
         requireNonNull(subcommand);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -928,12 +971,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
     @Override
-    public Single<String> clusterSetslot(final long slot, final RedisProtocolSupport.ClusterSetslotSubcommand subcommand,
+    public Single<String> clusterSetslot(final long slot,
+                                         final RedisProtocolSupport.ClusterSetslotSubcommand subcommand,
                                          @Nullable final Buffer nodeId) {
         requireNonNull(subcommand);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
@@ -952,7 +997,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -968,7 +1014,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -982,8 +1029,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CLUSTER);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -996,8 +1043,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.COMMAND);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -1011,7 +1058,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.COMMAND);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -1025,8 +1073,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.COMMAND);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -1042,8 +1090,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.COMMAND);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -1061,13 +1109,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.COMMAND);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> commandInfo(final Buffer commandName1, final Buffer commandName2, final Buffer commandName3) {
+    public <T> Single<List<T>> commandInfo(final Buffer commandName1, final Buffer commandName2,
+                                           final Buffer commandName3) {
         requireNonNull(commandName1);
         requireNonNull(commandName2);
         requireNonNull(commandName3);
@@ -1082,8 +1131,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.COMMAND);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -1100,8 +1149,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.COMMAND);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -1117,8 +1166,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CONFIG, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CONFIG);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -1132,7 +1181,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CONFIG, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CONFIG);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -1150,7 +1200,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CONFIG, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CONFIG);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -1164,7 +1215,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CONFIG, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.CONFIG);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -1177,7 +1229,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DBSIZE, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.DBSIZE);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -1194,7 +1247,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.DEBUG);
         partitionAttributesBuilder.addKey(key);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -1208,7 +1262,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEBUG, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.DEBUG);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -1224,7 +1279,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.DECR);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -1241,7 +1297,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.DECRBY);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -1257,7 +1314,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.DEL);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -1276,7 +1334,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.DEL);
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -1299,7 +1358,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
         partitionAttributesBuilder.addKey(key3);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -1316,7 +1376,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.DEL);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -1332,7 +1393,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.DUMP);
         partitionAttributesBuilder.addKey(key);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -1347,13 +1409,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ECHO, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ECHO);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
     @Override
-    public Single<Buffer> eval(final Buffer script, final long numkeys, @RedisProtocolSupport.Key final Collection<Buffer> keys,
-                               final Collection<Buffer> args) {
+    public Single<Buffer> eval(final Buffer script, final long numkeys,
+                               @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Buffer> args) {
         requireNonNull(script);
         requireNonNull(keys);
         requireNonNull(args);
@@ -1371,13 +1434,15 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.EVAL);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
     @Override
     public <T> Single<List<T>> evalList(final Buffer script, final long numkeys,
-                                        @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Buffer> args) {
+                                        @RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                        final Collection<Buffer> args) {
         requireNonNull(script);
         requireNonNull(keys);
         requireNonNull(args);
@@ -1395,13 +1460,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.EVAL);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public Single<Long> evalLong(final Buffer script, final long numkeys, @RedisProtocolSupport.Key final Collection<Buffer> keys,
+    public Single<Long> evalLong(final Buffer script, final long numkeys,
+                                 @RedisProtocolSupport.Key final Collection<Buffer> keys,
                                  final Collection<Buffer> args) {
         requireNonNull(script);
         requireNonNull(keys);
@@ -1420,12 +1486,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.EVAL);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
-    public Single<Buffer> evalsha(final Buffer sha1, final long numkeys, @RedisProtocolSupport.Key final Collection<Buffer> keys,
+    public Single<Buffer> evalsha(final Buffer sha1, final long numkeys,
+                                  @RedisProtocolSupport.Key final Collection<Buffer> keys,
                                   final Collection<Buffer> args) {
         requireNonNull(sha1);
         requireNonNull(keys);
@@ -1444,7 +1512,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.EVALSHA);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -1469,14 +1538,15 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.EVALSHA);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
     public Single<Long> evalshaLong(final Buffer sha1, final long numkeys,
-                                    @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Buffer> args) {
+                                    @RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                    final Collection<Buffer> args) {
         requireNonNull(sha1);
         requireNonNull(keys);
         requireNonNull(args);
@@ -1494,7 +1564,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.EVALSHA);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -1510,12 +1581,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.EXISTS);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
-    public Single<Long> exists(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
+    public Single<Long> exists(@RedisProtocolSupport.Key final Buffer key1,
+                               @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
@@ -1529,7 +1602,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.EXISTS);
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -1552,7 +1626,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
         partitionAttributesBuilder.addKey(key3);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -1569,7 +1644,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.EXISTS);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -1586,7 +1662,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.EXPIRE);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -1603,7 +1680,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.EXPIREAT);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -1616,7 +1694,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.FLUSHALL, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.FLUSHALL);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -1635,7 +1714,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.FLUSHALL, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.FLUSHALL);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -1648,7 +1728,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.FLUSHDB, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.FLUSHDB);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -1667,13 +1748,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.FLUSHDB, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.FLUSHDB);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
     @Override
-    public Single<Long> geoadd(@RedisProtocolSupport.Key final Buffer key, final double longitude, final double latitude,
-                               final Buffer member) {
+    public Single<Long> geoadd(@RedisProtocolSupport.Key final Buffer key, final double longitude,
+                               final double latitude, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
@@ -1688,13 +1770,15 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.GEOADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
-    public Single<Long> geoadd(@RedisProtocolSupport.Key final Buffer key, final double longitude1, final double latitude1,
-                               final Buffer member1, final double longitude2, final double latitude2, final Buffer member2) {
+    public Single<Long> geoadd(@RedisProtocolSupport.Key final Buffer key, final double longitude1,
+                               final double latitude1, final Buffer member1, final double longitude2,
+                               final double latitude2, final Buffer member2) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -1713,14 +1797,16 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.GEOADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
-    public Single<Long> geoadd(@RedisProtocolSupport.Key final Buffer key, final double longitude1, final double latitude1,
-                               final Buffer member1, final double longitude2, final double latitude2, final Buffer member2,
-                               final double longitude3, final double latitude3, final Buffer member3) {
+    public Single<Long> geoadd(@RedisProtocolSupport.Key final Buffer key, final double longitude1,
+                               final double latitude1, final Buffer member1, final double longitude2,
+                               final double latitude2, final Buffer member2, final double longitude3,
+                               final double latitude3, final Buffer member3) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -1743,7 +1829,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.GEOADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -1763,12 +1850,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.GEOADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
-    public Single<Double> geodist(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2) {
+    public Single<Double> geodist(@RedisProtocolSupport.Key final Buffer key, final Buffer member1,
+                                  final Buffer member2) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -1783,14 +1872,15 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.GEODIST);
         partitionAttributesBuilder.addKey(key);
-        final Single<Double> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class)
+        final Single<Double> result = partitionedRedisClient
+                    .request(partitionAttributesBuilder.build(), request, String.class)
                     .map(s -> s != null ? Double.valueOf(s) : null);
         return result;
     }
 
     @Override
-    public Single<Double> geodist(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2,
-                                  @Nullable final Buffer unit) {
+    public Single<Double> geodist(@RedisProtocolSupport.Key final Buffer key, final Buffer member1,
+                                  final Buffer member2, @Nullable final Buffer unit) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -1811,7 +1901,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.GEODIST);
         partitionAttributesBuilder.addKey(key);
-        final Single<Double> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class)
+        final Single<Double> result = partitionedRedisClient
+                    .request(partitionAttributesBuilder.build(), request, String.class)
                     .map(s -> s != null ? Double.valueOf(s) : null);
         return result;
     }
@@ -1830,13 +1921,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.GEOHASH);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> geohash(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2) {
+    public <T> Single<List<T>> geohash(@RedisProtocolSupport.Key final Buffer key, final Buffer member1,
+                                       final Buffer member2) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -1851,14 +1943,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.GEOHASH);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> geohash(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2,
-                                       final Buffer member3) {
+    public <T> Single<List<T>> geohash(@RedisProtocolSupport.Key final Buffer key, final Buffer member1,
+                                       final Buffer member2, final Buffer member3) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -1875,8 +1967,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.GEOHASH);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -1895,8 +1987,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.GEOHASH);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -1914,13 +2006,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.GEOPOS);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> geopos(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2) {
+    public <T> Single<List<T>> geopos(@RedisProtocolSupport.Key final Buffer key, final Buffer member1,
+                                      final Buffer member2) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -1935,14 +2028,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.GEOPOS);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> geopos(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2,
-                                      final Buffer member3) {
+    public <T> Single<List<T>> geopos(@RedisProtocolSupport.Key final Buffer key, final Buffer member1,
+                                      final Buffer member2, final Buffer member3) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -1959,8 +2052,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.GEOPOS);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -1979,8 +2072,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.GEOPOS);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -2003,8 +2096,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.GEORADIUS);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -2015,7 +2108,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                                          @Nullable final RedisProtocolSupport.GeoradiusWithcoord withcoord,
                                          @Nullable final RedisProtocolSupport.GeoradiusWithdist withdist,
                                          @Nullable final RedisProtocolSupport.GeoradiusWithhash withhash,
-                                         @Nullable final Long count, @Nullable final RedisProtocolSupport.GeoradiusOrder order,
+                                         @Nullable final Long count,
+                                         @Nullable final RedisProtocolSupport.GeoradiusOrder order,
                                          @Nullable @RedisProtocolSupport.Key final Buffer storeKey,
                                          @Nullable @RedisProtocolSupport.Key final Buffer storedistKey) {
         requireNonNull(key);
@@ -2084,21 +2178,23 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         if (storedistKey != null) {
             partitionAttributesBuilder.addKey(storedistKey);
         }
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
     public <T> Single<List<T>> georadiusbymember(@RedisProtocolSupport.Key final Buffer key, final Buffer member,
-                                                 final double radius, final RedisProtocolSupport.GeoradiusbymemberUnit unit) {
+                                                 final double radius,
+                                                 final RedisProtocolSupport.GeoradiusbymemberUnit unit) {
         requireNonNull(key);
         requireNonNull(member);
         requireNonNull(unit);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEORADIUSBYMEMBER, allocator);
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEORADIUSBYMEMBER,
+                    allocator);
         addRequestArgument(key, cb, allocator);
         addRequestArgument(member, cb, allocator);
         addRequestArgument(radius, cb, allocator);
@@ -2107,14 +2203,15 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.GEORADIUSBYMEMBER);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
     public <T> Single<List<T>> georadiusbymember(@RedisProtocolSupport.Key final Buffer key, final Buffer member,
-                                                 final double radius, final RedisProtocolSupport.GeoradiusbymemberUnit unit,
+                                                 final double radius,
+                                                 final RedisProtocolSupport.GeoradiusbymemberUnit unit,
                                                  @Nullable final RedisProtocolSupport.GeoradiusbymemberWithcoord withcoord,
                                                  @Nullable final RedisProtocolSupport.GeoradiusbymemberWithdist withdist,
                                                  @Nullable final RedisProtocolSupport.GeoradiusbymemberWithhash withhash,
@@ -2149,7 +2246,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         if (storedistKey != null) {
             len += 2;
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEORADIUSBYMEMBER, allocator);
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEORADIUSBYMEMBER,
+                    allocator);
         addRequestArgument(key, cb, allocator);
         addRequestArgument(member, cb, allocator);
         addRequestArgument(radius, cb, allocator);
@@ -2188,8 +2286,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         if (storedistKey != null) {
             partitionAttributesBuilder.addKey(storedistKey);
         }
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -2205,7 +2303,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.GET);
         partitionAttributesBuilder.addKey(key);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -2222,7 +2321,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.GETBIT);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -2240,7 +2340,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.GETRANGE);
         partitionAttributesBuilder.addKey(key);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -2258,7 +2359,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.GETSET);
         partitionAttributesBuilder.addKey(key);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -2276,7 +2378,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HDEL);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -2296,7 +2399,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HDEL);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -2319,7 +2423,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HDEL);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -2338,7 +2443,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HDEL);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -2356,7 +2462,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HEXISTS);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -2374,7 +2481,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HGET);
         partitionAttributesBuilder.addKey(key);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -2390,8 +2498,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HGETALL);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -2410,12 +2518,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HINCRBY);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
-    public Single<Double> hincrbyfloat(@RedisProtocolSupport.Key final Buffer key, final Buffer field, final double increment) {
+    public Single<Double> hincrbyfloat(@RedisProtocolSupport.Key final Buffer key, final Buffer field,
+                                       final double increment) {
         requireNonNull(key);
         requireNonNull(field);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
@@ -2429,7 +2539,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HINCRBYFLOAT);
         partitionAttributesBuilder.addKey(key);
-        final Single<Double> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class)
+        final Single<Double> result = partitionedRedisClient
+                    .request(partitionAttributesBuilder.build(), request, String.class)
                     .map(s -> s != null ? Double.valueOf(s) : null);
         return result;
     }
@@ -2446,8 +2557,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HKEYS);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -2463,7 +2574,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HLEN);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -2481,13 +2593,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HMGET);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1, final Buffer field2) {
+    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1,
+                                     final Buffer field2) {
         requireNonNull(key);
         requireNonNull(field1);
         requireNonNull(field2);
@@ -2502,14 +2615,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HMGET);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1, final Buffer field2,
-                                     final Buffer field3) {
+    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1,
+                                     final Buffer field2, final Buffer field3) {
         requireNonNull(key);
         requireNonNull(field1);
         requireNonNull(field2);
@@ -2526,8 +2639,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HMGET);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -2546,8 +2659,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HMGET);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -2567,7 +2680,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HMSET);
         partitionAttributesBuilder.addKey(key);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -2592,7 +2706,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HMSET);
         partitionAttributesBuilder.addKey(key);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -2621,7 +2736,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HMSET);
         partitionAttributesBuilder.addKey(key);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -2641,7 +2757,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HMSET);
         partitionAttributesBuilder.addKey(key);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -2658,8 +2775,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HSCAN);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -2691,8 +2808,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HSCAN);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -2712,7 +2829,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HSET);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -2732,7 +2850,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HSETNX);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -2750,7 +2869,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HSTRLEN);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -2766,8 +2886,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.HVALS);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -2783,7 +2903,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.INCR);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -2800,7 +2921,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.INCRBY);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -2817,7 +2939,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.INCRBYFLOAT);
         partitionAttributesBuilder.addKey(key);
-        final Single<Double> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class)
+        final Single<Double> result = partitionedRedisClient
+                    .request(partitionAttributesBuilder.build(), request, String.class)
                     .map(s -> s != null ? Double.valueOf(s) : null);
         return result;
     }
@@ -2831,7 +2954,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.INFO, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.INFO);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -2850,7 +2974,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.INFO, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.INFO);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -2865,8 +2990,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.KEYS, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.KEYS);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -2879,7 +3004,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LASTSAVE, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.LASTSAVE);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -2896,13 +3022,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.LINDEX);
         partitionAttributesBuilder.addKey(key);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
     @Override
-    public Single<Long> linsert(@RedisProtocolSupport.Key final Buffer key, final RedisProtocolSupport.LinsertWhere where,
-                                final Buffer pivot, final Buffer value) {
+    public Single<Long> linsert(@RedisProtocolSupport.Key final Buffer key,
+                                final RedisProtocolSupport.LinsertWhere where, final Buffer pivot, final Buffer value) {
         requireNonNull(key);
         requireNonNull(where);
         requireNonNull(pivot);
@@ -2919,7 +3046,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.LINSERT);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -2935,7 +3063,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.LLEN);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -2951,7 +3080,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.LPOP);
         partitionAttributesBuilder.addKey(key);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -2969,7 +3099,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.LPUSH);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -2989,7 +3120,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.LPUSH);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -3012,7 +3144,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.LPUSH);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -3031,7 +3164,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.LPUSH);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -3049,7 +3183,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.LPUSHX);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -3067,8 +3202,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.LRANGE);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -3087,7 +3222,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.LREM);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -3106,7 +3242,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.LSET);
         partitionAttributesBuilder.addKey(key);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -3124,7 +3261,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.LTRIM);
         partitionAttributesBuilder.addKey(key);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -3138,7 +3276,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.MEMORY);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -3152,8 +3291,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.MEMORY);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -3167,7 +3306,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.MEMORY);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -3181,7 +3321,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.MEMORY);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -3195,8 +3336,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.MEMORY);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -3213,7 +3354,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.MEMORY);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -3237,7 +3379,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.MEMORY);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -3253,13 +3396,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.MGET);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
+    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Buffer key1,
+                                    @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
@@ -3273,13 +3417,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.MGET);
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2,
+    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Buffer key1,
+                                    @RedisProtocolSupport.Key final Buffer key2,
                                     @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(key1);
         requireNonNull(key2);
@@ -3297,8 +3442,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
         partitionAttributesBuilder.addKey(key3);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -3315,8 +3460,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.MGET);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -3346,7 +3491,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.MOVE);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -3364,7 +3510,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.MSET);
         partitionAttributesBuilder.addKey(key);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -3388,7 +3535,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.MSET);
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -3418,7 +3566,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
         partitionAttributesBuilder.addKey(key3);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -3434,7 +3583,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSET, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.MSET);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -3452,7 +3602,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.MSETNX);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -3476,7 +3627,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.MSETNX);
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -3506,7 +3658,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
         partitionAttributesBuilder.addKey(key3);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -3522,7 +3675,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSETNX, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.MSETNX);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -3535,8 +3689,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MULTI, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.MULTI);
-        return newConnectedClient(partitionedRedisClient, partitionAttributesBuilder.build(), request, RedisData.OK::equals,
-                    DefaultTransactedBufferRedisCommander::new);
+        return newConnectedClient(partitionedRedisClient, partitionAttributesBuilder.build(), request,
+                    RedisData.OK::equals, DefaultTransactedBufferRedisCommander::new);
     }
 
     @Override
@@ -3552,7 +3706,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.OBJECT);
         partitionAttributesBuilder.addKey(key);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -3569,7 +3724,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.OBJECT);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -3583,8 +3739,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.OBJECT);
-        final Single<List<String>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<String>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -3601,7 +3757,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.OBJECT);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -3618,7 +3775,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.OBJECT);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -3634,7 +3792,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PERSIST);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -3651,7 +3810,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PEXPIRE);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -3668,7 +3828,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PEXPIREAT);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -3686,12 +3847,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PFADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
-    public Single<Long> pfadd(@RedisProtocolSupport.Key final Buffer key, final Buffer element1, final Buffer element2) {
+    public Single<Long> pfadd(@RedisProtocolSupport.Key final Buffer key, final Buffer element1,
+                              final Buffer element2) {
         requireNonNull(key);
         requireNonNull(element1);
         requireNonNull(element2);
@@ -3706,7 +3869,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PFADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -3729,7 +3893,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PFADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -3748,7 +3913,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PFADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -3764,12 +3930,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PFCOUNT);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
-    public Single<Long> pfcount(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
+    public Single<Long> pfcount(@RedisProtocolSupport.Key final Buffer key1,
+                                @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
@@ -3783,12 +3951,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.PFCOUNT);
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
-    public Single<Long> pfcount(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2,
+    public Single<Long> pfcount(@RedisProtocolSupport.Key final Buffer key1,
+                                @RedisProtocolSupport.Key final Buffer key2,
                                 @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(key1);
         requireNonNull(key2);
@@ -3806,7 +3976,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
         partitionAttributesBuilder.addKey(key3);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -3823,7 +3994,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PFCOUNT);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -3843,7 +4015,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.PFMERGE);
         partitionAttributesBuilder.addKey(destkey);
         partitionAttributesBuilder.addKey(sourcekey);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -3867,7 +4040,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         partitionAttributesBuilder.addKey(destkey);
         partitionAttributesBuilder.addKey(sourcekey1);
         partitionAttributesBuilder.addKey(sourcekey2);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -3895,7 +4069,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         partitionAttributesBuilder.addKey(sourcekey1);
         partitionAttributesBuilder.addKey(sourcekey2);
         partitionAttributesBuilder.addKey(sourcekey3);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -3916,7 +4091,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.PFMERGE);
         partitionAttributesBuilder.addKey(destkey);
         addBufferKeysToAttributeBuilder(sourcekeys, partitionAttributesBuilder);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -3929,7 +4105,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PING, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PING);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -3944,12 +4121,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PING, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PING);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
     @Override
-    public Single<String> psetex(@RedisProtocolSupport.Key final Buffer key, final long milliseconds, final Buffer value) {
+    public Single<String> psetex(@RedisProtocolSupport.Key final Buffer key, final long milliseconds,
+                                 final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
@@ -3963,7 +4142,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PSETEX);
         partitionAttributesBuilder.addKey(key);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -3979,7 +4159,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PSUBSCRIBE);
         return newConnectedClient(partitionedRedisClient, partitionAttributesBuilder.build(), request,
-                    (rcnx, pub) -> new DefaultPubSubBufferRedisConnection(rcnx, pub.map(msg -> (PubSubRedisMessage) msg)));
+                    (rcnx, pub) -> new DefaultPubSubBufferRedisConnection(rcnx,
+                                pub.map(msg -> (PubSubRedisMessage) msg)));
     }
 
     @Override
@@ -3994,7 +4175,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PTTL);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -4011,7 +4193,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBLISH, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PUBLISH);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -4025,8 +4208,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PUBSUB);
-        final Single<List<String>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<String>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -4046,8 +4229,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PUBSUB);
-        final Single<List<String>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<String>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -4073,8 +4256,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PUBSUB);
-        final Single<List<String>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<String>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -4107,8 +4290,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PUBSUB);
-        final Single<List<String>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<String>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -4125,8 +4308,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PUBSUB);
-        final Single<List<String>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<String>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -4140,8 +4323,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PUBSUB);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -4161,8 +4344,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PUBSUB);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -4188,8 +4371,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PUBSUB);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -4222,8 +4405,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PUBSUB);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -4240,8 +4423,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PUBSUB);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -4255,7 +4438,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.PUBSUB);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -4268,7 +4452,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RANDOMKEY, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.RANDOMKEY);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -4281,7 +4466,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.READONLY, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.READONLY);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -4294,12 +4480,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.READWRITE, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.READWRITE);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
     @Override
-    public Single<String> rename(@RedisProtocolSupport.Key final Buffer key, @RedisProtocolSupport.Key final Buffer newkey) {
+    public Single<String> rename(@RedisProtocolSupport.Key final Buffer key,
+                                 @RedisProtocolSupport.Key final Buffer newkey) {
         requireNonNull(key);
         requireNonNull(newkey);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
@@ -4313,12 +4501,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.RENAME);
         partitionAttributesBuilder.addKey(key);
         partitionAttributesBuilder.addKey(newkey);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
     @Override
-    public Single<Long> renamenx(@RedisProtocolSupport.Key final Buffer key, @RedisProtocolSupport.Key final Buffer newkey) {
+    public Single<Long> renamenx(@RedisProtocolSupport.Key final Buffer key,
+                                 @RedisProtocolSupport.Key final Buffer newkey) {
         requireNonNull(key);
         requireNonNull(newkey);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
@@ -4332,12 +4522,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.RENAMENX);
         partitionAttributesBuilder.addKey(key);
         partitionAttributesBuilder.addKey(newkey);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
-    public Single<String> restore(@RedisProtocolSupport.Key final Buffer key, final long ttl, final Buffer serializedValue) {
+    public Single<String> restore(@RedisProtocolSupport.Key final Buffer key, final long ttl,
+                                  final Buffer serializedValue) {
         requireNonNull(key);
         requireNonNull(serializedValue);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
@@ -4351,12 +4543,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.RESTORE);
         partitionAttributesBuilder.addKey(key);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
     @Override
-    public Single<String> restore(@RedisProtocolSupport.Key final Buffer key, final long ttl, final Buffer serializedValue,
+    public Single<String> restore(@RedisProtocolSupport.Key final Buffer key, final long ttl,
+                                  final Buffer serializedValue,
                                   @Nullable final RedisProtocolSupport.RestoreReplace replace) {
         requireNonNull(key);
         requireNonNull(serializedValue);
@@ -4377,7 +4571,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.RESTORE);
         partitionAttributesBuilder.addKey(key);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -4390,8 +4585,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ROLE, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ROLE);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -4407,7 +4602,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.RPOP);
         partitionAttributesBuilder.addKey(key);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -4427,7 +4623,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.RPOPLPUSH);
         partitionAttributesBuilder.addKey(source);
         partitionAttributesBuilder.addKey(destination);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -4445,7 +4642,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.RPUSH);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -4465,7 +4663,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.RPUSH);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -4488,7 +4687,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.RPUSH);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -4507,7 +4707,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.RPUSH);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -4525,7 +4726,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.RPUSHX);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -4543,7 +4745,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -4563,7 +4766,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -4586,7 +4790,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -4605,7 +4810,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -4618,7 +4824,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SAVE, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SAVE);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -4632,13 +4839,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCAN, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SCAN);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> scan(final long cursor, @Nullable final Buffer matchPattern, @Nullable final Long count) {
+    public <T> Single<List<T>> scan(final long cursor, @Nullable final Buffer matchPattern,
+                                    @Nullable final Long count) {
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
@@ -4661,8 +4869,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCAN, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SCAN);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -4678,7 +4886,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SCARD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -4694,7 +4903,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SCRIPT);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -4710,8 +4920,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SCRIPT);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -4729,8 +4939,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SCRIPT);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -4750,8 +4960,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SCRIPT);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -4768,8 +4978,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SCRIPT);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -4783,7 +4993,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SCRIPT);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -4797,7 +5008,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SCRIPT);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -4813,7 +5025,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SCRIPT);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -4829,8 +5042,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SDIFF);
         partitionAttributesBuilder.addKey(firstkey);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -4856,8 +5069,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         if (otherkey != null) {
             partitionAttributesBuilder.addKey(otherkey);
         }
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -4893,8 +5106,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         if (otherkey2 != null) {
             partitionAttributesBuilder.addKey(otherkey2);
         }
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -4940,8 +5153,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         if (otherkey3 != null) {
             partitionAttributesBuilder.addKey(otherkey3);
         }
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -4962,8 +5175,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.SDIFF);
         partitionAttributesBuilder.addKey(firstkey);
         addBufferKeysToAttributeBuilder(otherkeys, partitionAttributesBuilder);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -4983,7 +5196,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.SDIFFSTORE);
         partitionAttributesBuilder.addKey(destination);
         partitionAttributesBuilder.addKey(firstkey);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -5013,7 +5227,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         if (otherkey != null) {
             partitionAttributesBuilder.addKey(otherkey);
         }
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -5053,7 +5268,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         if (otherkey2 != null) {
             partitionAttributesBuilder.addKey(otherkey2);
         }
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -5103,7 +5319,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         if (otherkey3 != null) {
             partitionAttributesBuilder.addKey(otherkey3);
         }
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -5128,7 +5345,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         partitionAttributesBuilder.addKey(destination);
         partitionAttributesBuilder.addKey(firstkey);
         addBufferKeysToAttributeBuilder(otherkeys, partitionAttributesBuilder);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -5142,7 +5360,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SELECT, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SELECT);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -5160,7 +5379,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SET);
         partitionAttributesBuilder.addKey(key);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -5192,7 +5412,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SET);
         partitionAttributesBuilder.addKey(key);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -5211,7 +5432,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SETBIT);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -5230,7 +5452,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SETEX);
         partitionAttributesBuilder.addKey(key);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -5248,7 +5471,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SETNX);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -5267,7 +5491,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SETRANGE);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -5280,7 +5505,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SHUTDOWN, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SHUTDOWN);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -5299,7 +5525,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SHUTDOWN, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SHUTDOWN);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -5315,13 +5542,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SINTER);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> sinter(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
+    public <T> Single<List<T>> sinter(@RedisProtocolSupport.Key final Buffer key1,
+                                      @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
@@ -5335,13 +5563,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.SINTER);
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> sinter(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2,
+    public <T> Single<List<T>> sinter(@RedisProtocolSupport.Key final Buffer key1,
+                                      @RedisProtocolSupport.Key final Buffer key2,
                                       @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(key1);
         requireNonNull(key2);
@@ -5359,8 +5588,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
         partitionAttributesBuilder.addKey(key3);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -5377,8 +5606,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SINTER);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -5398,13 +5627,15 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.SINTERSTORE);
         partitionAttributesBuilder.addKey(destination);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
     public Single<Long> sinterstore(@RedisProtocolSupport.Key final Buffer destination,
-                                    @RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
+                                    @RedisProtocolSupport.Key final Buffer key1,
+                                    @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(destination);
         requireNonNull(key1);
         requireNonNull(key2);
@@ -5421,13 +5652,15 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         partitionAttributesBuilder.addKey(destination);
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
     public Single<Long> sinterstore(@RedisProtocolSupport.Key final Buffer destination,
-                                    @RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2,
+                                    @RedisProtocolSupport.Key final Buffer key1,
+                                    @RedisProtocolSupport.Key final Buffer key2,
                                     @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(destination);
         requireNonNull(key1);
@@ -5448,7 +5681,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
         partitionAttributesBuilder.addKey(key3);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -5469,7 +5703,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.SINTERSTORE);
         partitionAttributesBuilder.addKey(destination);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -5487,7 +5722,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SISMEMBER);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -5504,7 +5740,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SLAVEOF, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SLAVEOF);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -5519,8 +5756,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SLOWLOG, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SLOWLOG);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -5541,8 +5778,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SLOWLOG, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SLOWLOG);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -5558,14 +5795,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SMEMBERS);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public Single<Long> smove(@RedisProtocolSupport.Key final Buffer source, @RedisProtocolSupport.Key final Buffer destination,
-                              final Buffer member) {
+    public Single<Long> smove(@RedisProtocolSupport.Key final Buffer source,
+                              @RedisProtocolSupport.Key final Buffer destination, final Buffer member) {
         requireNonNull(source);
         requireNonNull(destination);
         requireNonNull(member);
@@ -5581,7 +5818,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.SMOVE);
         partitionAttributesBuilder.addKey(source);
         partitionAttributesBuilder.addKey(destination);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -5597,15 +5835,16 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SORT);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
     public <T> Single<List<T>> sort(@RedisProtocolSupport.Key final Buffer key, @Nullable final Buffer byPattern,
                                     @Nullable final RedisProtocolSupport.OffsetCount offsetCount,
-                                    final Collection<Buffer> getPatterns, @Nullable final RedisProtocolSupport.SortOrder order,
+                                    final Collection<Buffer> getPatterns,
+                                    @Nullable final RedisProtocolSupport.SortOrder order,
                                     @Nullable final RedisProtocolSupport.SortSorting sorting) {
         requireNonNull(key);
         requireNonNull(getPatterns);
@@ -5645,8 +5884,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SORT);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -5667,13 +5906,15 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.SORT);
         partitionAttributesBuilder.addKey(key);
         partitionAttributesBuilder.addKey(storeDestination);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
-    public Single<Long> sort(@RedisProtocolSupport.Key final Buffer key, @RedisProtocolSupport.Key final Buffer storeDestination,
-                             @Nullable final Buffer byPattern, @Nullable final RedisProtocolSupport.OffsetCount offsetCount,
+    public Single<Long> sort(@RedisProtocolSupport.Key final Buffer key,
+                             @RedisProtocolSupport.Key final Buffer storeDestination, @Nullable final Buffer byPattern,
+                             @Nullable final RedisProtocolSupport.OffsetCount offsetCount,
                              final Collection<Buffer> getPatterns, @Nullable final RedisProtocolSupport.SortOrder order,
                              @Nullable final RedisProtocolSupport.SortSorting sorting) {
         requireNonNull(key);
@@ -5718,7 +5959,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.SORT);
         partitionAttributesBuilder.addKey(key);
         partitionAttributesBuilder.addKey(storeDestination);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -5734,7 +5976,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SPOP);
         partitionAttributesBuilder.addKey(key);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -5756,7 +5999,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SPOP);
         partitionAttributesBuilder.addKey(key);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -5772,7 +6016,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SRANDMEMBER);
         partitionAttributesBuilder.addKey(key);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -5789,8 +6034,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SRANDMEMBER);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<String>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<String>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -5808,7 +6053,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SREM);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -5828,7 +6074,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SREM);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -5851,7 +6098,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SREM);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -5870,7 +6118,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SREM);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -5887,8 +6136,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SSCAN);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -5920,8 +6169,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SSCAN);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -5937,7 +6186,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.STRLEN);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -5953,7 +6203,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SUBSCRIBE);
         return newConnectedClient(partitionedRedisClient, partitionAttributesBuilder.build(), request,
-                    (rcnx, pub) -> new DefaultPubSubBufferRedisConnection(rcnx, pub.map(msg -> (PubSubRedisMessage) msg)));
+                    (rcnx, pub) -> new DefaultPubSubBufferRedisConnection(rcnx,
+                                pub.map(msg -> (PubSubRedisMessage) msg)));
     }
 
     @Override
@@ -5968,13 +6219,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SUNION);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> sunion(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
+    public <T> Single<List<T>> sunion(@RedisProtocolSupport.Key final Buffer key1,
+                                      @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
@@ -5988,13 +6240,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.SUNION);
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> sunion(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2,
+    public <T> Single<List<T>> sunion(@RedisProtocolSupport.Key final Buffer key1,
+                                      @RedisProtocolSupport.Key final Buffer key2,
                                       @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(key1);
         requireNonNull(key2);
@@ -6012,8 +6265,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
         partitionAttributesBuilder.addKey(key3);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -6030,8 +6283,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SUNION);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -6051,13 +6304,15 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.SUNIONSTORE);
         partitionAttributesBuilder.addKey(destination);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
     public Single<Long> sunionstore(@RedisProtocolSupport.Key final Buffer destination,
-                                    @RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
+                                    @RedisProtocolSupport.Key final Buffer key1,
+                                    @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(destination);
         requireNonNull(key1);
         requireNonNull(key2);
@@ -6074,13 +6329,15 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         partitionAttributesBuilder.addKey(destination);
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
     public Single<Long> sunionstore(@RedisProtocolSupport.Key final Buffer destination,
-                                    @RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2,
+                                    @RedisProtocolSupport.Key final Buffer key1,
+                                    @RedisProtocolSupport.Key final Buffer key2,
                                     @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(destination);
         requireNonNull(key1);
@@ -6101,7 +6358,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
         partitionAttributesBuilder.addKey(key3);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -6122,7 +6380,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.SUNIONSTORE);
         partitionAttributesBuilder.addKey(destination);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -6137,7 +6396,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SWAPDB, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.SWAPDB);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -6150,8 +6410,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.TIME, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.TIME);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -6167,12 +6427,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.TOUCH);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
-    public Single<Long> touch(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
+    public Single<Long> touch(@RedisProtocolSupport.Key final Buffer key1,
+                              @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
@@ -6186,7 +6448,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.TOUCH);
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -6209,7 +6472,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
         partitionAttributesBuilder.addKey(key3);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -6226,7 +6490,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.TOUCH);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -6242,7 +6507,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.TTL);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -6258,7 +6524,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.TYPE);
         partitionAttributesBuilder.addKey(key);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -6274,12 +6541,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.UNLINK);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
-    public Single<Long> unlink(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
+    public Single<Long> unlink(@RedisProtocolSupport.Key final Buffer key1,
+                               @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
@@ -6293,7 +6562,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.UNLINK);
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -6316,7 +6586,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
         partitionAttributesBuilder.addKey(key3);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -6333,7 +6604,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.UNLINK);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -6346,7 +6618,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNWATCH, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.UNWATCH);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -6361,7 +6634,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.WAIT, cb);
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.WAIT);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -6377,12 +6651,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.WATCH);
         partitionAttributesBuilder.addKey(key);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
     @Override
-    public Single<String> watch(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
+    public Single<String> watch(@RedisProtocolSupport.Key final Buffer key1,
+                                @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
@@ -6396,12 +6672,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.WATCH);
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
     @Override
-    public Single<String> watch(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2,
+    public Single<String> watch(@RedisProtocolSupport.Key final Buffer key1,
+                                @RedisProtocolSupport.Key final Buffer key2,
                                 @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(key1);
         requireNonNull(key2);
@@ -6419,7 +6697,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         partitionAttributesBuilder.addKey(key1);
         partitionAttributesBuilder.addKey(key2);
         partitionAttributesBuilder.addKey(key3);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -6436,7 +6715,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.WATCH);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class);
+        final Single<String> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    String.class);
         return result;
     }
 
@@ -6459,7 +6739,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.XADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -6486,7 +6767,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.XADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -6518,7 +6800,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.XADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -6540,7 +6823,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.XADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Buffer.class);
+        final Single<Buffer> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Buffer.class);
         return result;
     }
 
@@ -6556,7 +6840,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.XLEN);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -6574,15 +6859,15 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.XPENDING);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
     public <T> Single<List<T>> xpending(@RedisProtocolSupport.Key final Buffer key, final Buffer group,
-                                        @Nullable final Buffer start, @Nullable final Buffer end, @Nullable final Long count,
-                                        @Nullable final Buffer consumer) {
+                                        @Nullable final Buffer start, @Nullable final Buffer end,
+                                        @Nullable final Long count, @Nullable final Buffer consumer) {
         requireNonNull(key);
         requireNonNull(group);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
@@ -6619,13 +6904,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.XPENDING);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> xrange(@RedisProtocolSupport.Key final Buffer key, final Buffer start, final Buffer end) {
+    public <T> Single<List<T>> xrange(@RedisProtocolSupport.Key final Buffer key, final Buffer start,
+                                      final Buffer end) {
         requireNonNull(key);
         requireNonNull(start);
         requireNonNull(end);
@@ -6640,8 +6926,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.XRANGE);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -6669,13 +6955,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.XRANGE);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> xread(@RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Buffer> ids) {
+    public <T> Single<List<T>> xread(@RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                     final Collection<Buffer> ids) {
         requireNonNull(keys);
         requireNonNull(ids);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
@@ -6691,14 +6978,15 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.XREAD);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
     public <T> Single<List<T>> xread(@Nullable final Long count, @Nullable final Long blockMilliseconds,
-                                     @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Buffer> ids) {
+                                     @RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                     final Collection<Buffer> ids) {
         requireNonNull(keys);
         requireNonNull(ids);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
@@ -6728,14 +7016,15 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.XREAD);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
     public <T> Single<List<T>> xreadgroup(final RedisProtocolSupport.BufferGroupConsumer groupConsumer,
-                                          @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Buffer> ids) {
+                                          @RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                          final Collection<Buffer> ids) {
         requireNonNull(groupConsumer);
         requireNonNull(keys);
         requireNonNull(ids);
@@ -6753,15 +7042,16 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.XREADGROUP);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
     public <T> Single<List<T>> xreadgroup(final RedisProtocolSupport.BufferGroupConsumer groupConsumer,
                                           @Nullable final Long count, @Nullable final Long blockMilliseconds,
-                                          @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Buffer> ids) {
+                                          @RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                          final Collection<Buffer> ids) {
         requireNonNull(groupConsumer);
         requireNonNull(keys);
         requireNonNull(ids);
@@ -6793,13 +7083,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.XREADGROUP);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> xrevrange(@RedisProtocolSupport.Key final Buffer key, final Buffer end, final Buffer start) {
+    public <T> Single<List<T>> xrevrange(@RedisProtocolSupport.Key final Buffer key, final Buffer end,
+                                         final Buffer start) {
         requireNonNull(key);
         requireNonNull(end);
         requireNonNull(start);
@@ -6814,14 +7105,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.XREVRANGE);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> xrevrange(@RedisProtocolSupport.Key final Buffer key, final Buffer end, final Buffer start,
-                                         @Nullable final Long count) {
+    public <T> Single<List<T>> xrevrange(@RedisProtocolSupport.Key final Buffer key, final Buffer end,
+                                         final Buffer start, @Nullable final Long count) {
         requireNonNull(key);
         requireNonNull(end);
         requireNonNull(start);
@@ -6843,8 +7134,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.XREVRANGE);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -6864,14 +7155,16 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
     public Single<Long> zadd(@RedisProtocolSupport.Key final Buffer key,
                              @Nullable final RedisProtocolSupport.ZaddCondition condition,
-                             @Nullable final RedisProtocolSupport.ZaddChange change, final double score, final Buffer member) {
+                             @Nullable final RedisProtocolSupport.ZaddChange change, final double score,
+                             final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
@@ -6897,15 +7190,16 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
     public Single<Long> zadd(@RedisProtocolSupport.Key final Buffer key,
                              @Nullable final RedisProtocolSupport.ZaddCondition condition,
-                             @Nullable final RedisProtocolSupport.ZaddChange change, final double score1, final Buffer member1,
-                             final double score2, final Buffer member2) {
+                             @Nullable final RedisProtocolSupport.ZaddChange change, final double score1,
+                             final Buffer member1, final double score2, final Buffer member2) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -6934,15 +7228,17 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
     public Single<Long> zadd(@RedisProtocolSupport.Key final Buffer key,
                              @Nullable final RedisProtocolSupport.ZaddCondition condition,
-                             @Nullable final RedisProtocolSupport.ZaddChange change, final double score1, final Buffer member1,
-                             final double score2, final Buffer member2, final double score3, final Buffer member3) {
+                             @Nullable final RedisProtocolSupport.ZaddChange change, final double score1,
+                             final Buffer member1, final double score2, final Buffer member2, final double score3,
+                             final Buffer member3) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -6974,7 +7270,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -7008,7 +7305,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -7029,7 +7327,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Double> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class)
+        final Single<Double> result = partitionedRedisClient
+                    .request(partitionAttributesBuilder.build(), request, String.class)
                     .map(s -> s != null ? Double.valueOf(s) : null);
         return result;
     }
@@ -7065,7 +7364,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Double> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class)
+        final Single<Double> result = partitionedRedisClient
+                    .request(partitionAttributesBuilder.build(), request, String.class)
                     .map(s -> s != null ? Double.valueOf(s) : null);
         return result;
     }
@@ -7104,7 +7404,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Double> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class)
+        final Single<Double> result = partitionedRedisClient
+                    .request(partitionAttributesBuilder.build(), request, String.class)
                     .map(s -> s != null ? Double.valueOf(s) : null);
         return result;
     }
@@ -7147,7 +7448,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Double> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class)
+        final Single<Double> result = partitionedRedisClient
+                    .request(partitionAttributesBuilder.build(), request, String.class)
                     .map(s -> s != null ? Double.valueOf(s) : null);
         return result;
     }
@@ -7183,7 +7485,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZADD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Double> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class)
+        final Single<Double> result = partitionedRedisClient
+                    .request(partitionAttributesBuilder.build(), request, String.class)
                     .map(s -> s != null ? Double.valueOf(s) : null);
         return result;
     }
@@ -7200,7 +7503,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZCARD);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -7218,12 +7522,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZCOUNT);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
-    public Single<Double> zincrby(@RedisProtocolSupport.Key final Buffer key, final long increment, final Buffer member) {
+    public Single<Double> zincrby(@RedisProtocolSupport.Key final Buffer key, final long increment,
+                                  final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
@@ -7237,7 +7543,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZINCRBY);
         partitionAttributesBuilder.addKey(key);
-        final Single<Double> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class)
+        final Single<Double> result = partitionedRedisClient
+                    .request(partitionAttributesBuilder.build(), request, String.class)
                     .map(s -> s != null ? Double.valueOf(s) : null);
         return result;
     }
@@ -7260,13 +7567,15 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.ZINTERSTORE);
         partitionAttributesBuilder.addKey(destination);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
     public Single<Long> zinterstore(@RedisProtocolSupport.Key final Buffer destination, final long numkeys,
-                                    @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Long> weightses,
+                                    @RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                    final Collection<Long> weightses,
                                     @Nullable final RedisProtocolSupport.ZinterstoreAggregate aggregate) {
         requireNonNull(destination);
         requireNonNull(keys);
@@ -7292,7 +7601,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.ZINTERSTORE);
         partitionAttributesBuilder.addKey(destination);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -7312,7 +7622,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZLEXCOUNT);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -7328,8 +7639,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZPOPMAX);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -7351,8 +7662,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZPOPMAX);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -7368,8 +7679,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZPOPMIN);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -7391,8 +7702,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZPOPMIN);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -7410,8 +7721,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZRANGE);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -7436,13 +7747,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZRANGE);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> zrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer min, final Buffer max) {
+    public <T> Single<List<T>> zrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer min,
+                                           final Buffer max) {
         requireNonNull(key);
         requireNonNull(min);
         requireNonNull(max);
@@ -7457,13 +7769,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZRANGEBYLEX);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> zrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer min, final Buffer max,
+    public <T> Single<List<T>> zrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer min,
+                                           final Buffer max,
                                            @Nullable final RedisProtocolSupport.OffsetCount offsetCount) {
         requireNonNull(key);
         requireNonNull(min);
@@ -7485,18 +7798,20 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZRANGEBYLEX);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> zrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double min, final double max) {
+    public <T> Single<List<T>> zrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double min,
+                                             final double max) {
         requireNonNull(key);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZRANGEBYSCORE, allocator);
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZRANGEBYSCORE,
+                    allocator);
         addRequestArgument(key, cb, allocator);
         addRequestArgument(min, cb, allocator);
         addRequestArgument(max, cb, allocator);
@@ -7504,13 +7819,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZRANGEBYSCORE);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> zrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double min, final double max,
+    public <T> Single<List<T>> zrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double min,
+                                             final double max,
                                              @Nullable final RedisProtocolSupport.ZrangebyscoreWithscores withscores,
                                              @Nullable final RedisProtocolSupport.OffsetCount offsetCount) {
         requireNonNull(key);
@@ -7523,7 +7839,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         if (offsetCount != null) {
             len += RedisProtocolSupport.OffsetCount.SIZE;
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZRANGEBYSCORE, allocator);
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZRANGEBYSCORE,
+                    allocator);
         addRequestArgument(key, cb, allocator);
         addRequestArgument(min, cb, allocator);
         addRequestArgument(max, cb, allocator);
@@ -7537,8 +7854,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZRANGEBYSCORE);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -7556,7 +7873,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZRANK);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -7574,7 +7892,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZREM);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -7594,7 +7913,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZREM);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -7617,7 +7937,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZREM);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -7636,7 +7957,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZREM);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -7648,7 +7970,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREMRANGEBYLEX, allocator);
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREMRANGEBYLEX,
+                    allocator);
         addRequestArgument(key, cb, allocator);
         addRequestArgument(min, cb, allocator);
         addRequestArgument(max, cb, allocator);
@@ -7656,7 +7979,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZREMRANGEBYLEX);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -7666,7 +7990,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREMRANGEBYRANK, allocator);
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREMRANGEBYRANK,
+                    allocator);
         addRequestArgument(key, cb, allocator);
         addRequestArgument(start, cb, allocator);
         addRequestArgument(stop, cb, allocator);
@@ -7674,17 +7999,20 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZREMRANGEBYRANK);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
-    public Single<Long> zremrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double min, final double max) {
+    public Single<Long> zremrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double min,
+                                         final double max) {
         requireNonNull(key);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREMRANGEBYSCORE, allocator);
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREMRANGEBYSCORE,
+                    allocator);
         addRequestArgument(key, cb, allocator);
         addRequestArgument(min, cb, allocator);
         addRequestArgument(max, cb, allocator);
@@ -7692,12 +8020,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZREMRANGEBYSCORE);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> zrevrange(@RedisProtocolSupport.Key final Buffer key, final long start, final long stop) {
+    public <T> Single<List<T>> zrevrange(@RedisProtocolSupport.Key final Buffer key, final long start,
+                                         final long stop) {
         requireNonNull(key);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -7710,8 +8040,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZREVRANGE);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -7736,20 +8066,22 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZREVRANGE);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> zrevrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer max, final Buffer min) {
+    public <T> Single<List<T>> zrevrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer max,
+                                              final Buffer min) {
         requireNonNull(key);
         requireNonNull(max);
         requireNonNull(min);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGEBYLEX, allocator);
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGEBYLEX,
+                    allocator);
         addRequestArgument(key, cb, allocator);
         addRequestArgument(max, cb, allocator);
         addRequestArgument(min, cb, allocator);
@@ -7757,13 +8089,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZREVRANGEBYLEX);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> zrevrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer max, final Buffer min,
+    public <T> Single<List<T>> zrevrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer max,
+                                              final Buffer min,
                                               @Nullable final RedisProtocolSupport.OffsetCount offsetCount) {
         requireNonNull(key);
         requireNonNull(max);
@@ -7774,7 +8107,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         if (offsetCount != null) {
             len += RedisProtocolSupport.OffsetCount.SIZE;
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGEBYLEX, allocator);
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGEBYLEX,
+                    allocator);
         addRequestArgument(key, cb, allocator);
         addRequestArgument(max, cb, allocator);
         addRequestArgument(min, cb, allocator);
@@ -7785,18 +8119,20 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZREVRANGEBYLEX);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> zrevrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double max, final double min) {
+    public <T> Single<List<T>> zrevrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double max,
+                                                final double min) {
         requireNonNull(key);
         final BufferAllocator allocator = partitionedRedisClient.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGEBYSCORE, allocator);
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGEBYSCORE,
+                    allocator);
         addRequestArgument(key, cb, allocator);
         addRequestArgument(max, cb, allocator);
         addRequestArgument(min, cb, allocator);
@@ -7804,13 +8140,14 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZREVRANGEBYSCORE);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> zrevrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double max, final double min,
+    public <T> Single<List<T>> zrevrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double max,
+                                                final double min,
                                                 @Nullable final RedisProtocolSupport.ZrevrangebyscoreWithscores withscores,
                                                 @Nullable final RedisProtocolSupport.OffsetCount offsetCount) {
         requireNonNull(key);
@@ -7823,7 +8160,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         if (offsetCount != null) {
             len += RedisProtocolSupport.OffsetCount.SIZE;
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGEBYSCORE, allocator);
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGEBYSCORE,
+                    allocator);
         addRequestArgument(key, cb, allocator);
         addRequestArgument(max, cb, allocator);
         addRequestArgument(min, cb, allocator);
@@ -7837,8 +8175,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZREVRANGEBYSCORE);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -7856,7 +8194,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZREVRANK);
         partitionAttributesBuilder.addKey(key);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
@@ -7873,8 +8212,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZSCAN);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -7906,8 +8245,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZSCAN);
         partitionAttributesBuilder.addKey(key);
-        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
-                    List.class);
+        final Single<List<T>> result = (Single) partitionedRedisClient.request(partitionAttributesBuilder.build(),
+                    request, List.class);
         return result;
     }
 
@@ -7925,7 +8264,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
         final RedisPartitionAttributesBuilder partitionAttributesBuilder = partitionAttributesBuilderFunction
                     .apply(RedisProtocolSupport.Command.ZSCORE);
         partitionAttributesBuilder.addKey(key);
-        final Single<Double> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, String.class)
+        final Single<Double> result = partitionedRedisClient
+                    .request(partitionAttributesBuilder.build(), request, String.class)
                     .map(s -> s != null ? Double.valueOf(s) : null);
         return result;
     }
@@ -7948,13 +8288,15 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.ZUNIONSTORE);
         partitionAttributesBuilder.addKey(destination);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 
     @Override
     public Single<Long> zunionstore(@RedisProtocolSupport.Key final Buffer destination, final long numkeys,
-                                    @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Long> weightses,
+                                    @RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                    final Collection<Long> weightses,
                                     @Nullable final RedisProtocolSupport.ZunionstoreAggregate aggregate) {
         requireNonNull(destination);
         requireNonNull(keys);
@@ -7980,7 +8322,8 @@ final class DefaultPartitionedBufferRedisCommander implements BufferRedisCommand
                     .apply(RedisProtocolSupport.Command.ZUNIONSTORE);
         partitionAttributesBuilder.addKey(destination);
         addBufferKeysToAttributeBuilder(keys, partitionAttributesBuilder);
-        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request, Long.class);
+        final Single<Long> result = partitionedRedisClient.request(partitionAttributesBuilder.build(), request,
+                    Long.class);
         return result;
     }
 }

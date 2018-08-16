@@ -16,6 +16,7 @@
 package io.servicetalk.redis.api;
 
 import io.servicetalk.concurrent.api.AsyncCloseable;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
@@ -25,32 +26,30 @@ import javax.annotation.Generated;
  * A Redis command client that is subscribed to one channel.
  */
 @Generated({})
-public interface PubSubRedisConnection extends AsyncCloseable {
+public abstract class PubSubRedisConnection implements AsyncCloseable {
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * This will close the underlying {@link RedisRequester}!
+     */
+    @Override
+    public abstract Completable closeAsync();
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * This will close the underlying {@link RedisRequester}!
+     */
+    @Override
+    public abstract Completable closeAsyncGracefully();
 
     /**
      * Messages that are received by this client.
      *
      * @return a {@link Publisher} of messages
      */
-    Publisher<PubSubRedisMessage> getMessages();
-
-    /**
-     * Listen for messages published to channels matching the given patterns.
-     *
-     * @param pattern the pattern
-     * @return a {@link Single} result
-     */
-    @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PSUBSCRIBE)
-    Single<PubSubRedisConnection> psubscribe(CharSequence pattern);
-
-    /**
-     * Listen for messages published to the given channels.
-     *
-     * @param channel the channel
-     * @return a {@link Single} result
-     */
-    @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SUBSCRIBE)
-    Single<PubSubRedisConnection> subscribe(CharSequence channel);
+    public abstract Publisher<PubSubRedisMessage> getMessages();
 
     /**
      * Ping the server.
@@ -58,7 +57,7 @@ public interface PubSubRedisConnection extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PING)
-    Single<PubSubRedisMessage.Pong<String>> ping();
+    public abstract Single<PubSubRedisMessage.Pong<String>> ping();
 
     /**
      * Ping the server.
@@ -67,5 +66,23 @@ public interface PubSubRedisConnection extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PING)
-    Single<PubSubRedisMessage.Pong<String>> ping(CharSequence message);
+    public abstract Single<PubSubRedisMessage.Pong<String>> ping(CharSequence message);
+
+    /**
+     * Listen for messages published to channels matching the given patterns.
+     *
+     * @param pattern the pattern
+     * @return a {@link Single} result
+     */
+    @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PSUBSCRIBE)
+    public abstract Single<PubSubRedisConnection> psubscribe(CharSequence pattern);
+
+    /**
+     * Listen for messages published to the given channels.
+     *
+     * @param channel the channel
+     * @return a {@link Single} result
+     */
+    @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SUBSCRIBE)
+    public abstract Single<PubSubRedisConnection> subscribe(CharSequence channel);
 }

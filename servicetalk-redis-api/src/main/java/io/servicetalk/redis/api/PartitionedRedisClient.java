@@ -36,6 +36,7 @@ public abstract class PartitionedRedisClient implements ListenableAsyncCloseable
             AtomicReferenceFieldUpdater.newUpdater(PartitionedRedisClient.class, RedisCommander.class, "redisCommander");
     private static final AtomicReferenceFieldUpdater<PartitionedRedisClient, BufferRedisCommander> redisBufferCommanderUpdater =
             AtomicReferenceFieldUpdater.newUpdater(PartitionedRedisClient.class, BufferRedisCommander.class, "redisBufferCommander");
+
     @SuppressWarnings("unused")
     @Nullable
     private volatile RedisCommander redisCommander;
@@ -114,6 +115,7 @@ public abstract class PartitionedRedisClient implements ListenableAsyncCloseable
      * expressive java API targeted at the Redis protocol which favors {@link Buffer}.
      * <p>
      * Calling {@link BufferRedisCommander#closeAsync()} will also close this {@link PartitionedRedisClient}!
+     *
      * @return an alternative java API to this {@link PartitionedRedisClient}.
      */
     public final BufferRedisCommander asBufferCommander() {
@@ -126,5 +128,33 @@ public abstract class PartitionedRedisClient implements ListenableAsyncCloseable
             }
         }
         return redisBufferCommander;
+    }
+
+    /**
+     * Provides an alternative java API to this {@link PartitionedRedisClient}. The {@link BlockingRedisCommander} API
+     * is provided for convenience for a more familiar sequential programming model. The return value has equivalent
+     * networking semantics and lifetime as this {@link PartitionedRedisClient}, and exists primarily to provide a more
+     * expressive java API targeted at the Redis protocol which favors {@link CharSequence} and {@link String}.
+     * <p>
+     * Calling {@link RedisCommander#closeAsync()} will also close this {@link PartitionedRedisClient}!
+     *
+     * @return an alternative java API to this {@link PartitionedRedisClient}.
+     */
+    public final BlockingRedisCommander asBlockingCommander() {
+        return asCommander().asBlockingCommander();
+    }
+
+    /**
+     * Provides an alternative java API to this {@link PartitionedRedisClient}. The
+     * {@link BlockingBufferRedisCommander} API is provided for convenience for a more familiar sequential programming
+     * model. The return value has equivalent networking semantics and lifetime as this {@link PartitionedRedisClient},
+     * and exists primarily to provide a more expressive java API targeted at the Redis protocol which favors
+     * {@link Buffer}.
+     * <p>
+     * Calling {@link BufferRedisCommander#closeAsync()} will also close this {@link PartitionedRedisClient}!
+     * @return an alternative java API to this {@link PartitionedRedisClient}.
+     */
+    public final BlockingBufferRedisCommander asBlockingBufferCommander() {
+        return asBufferCommander().asBlockingBufferCommander();
     }
 }

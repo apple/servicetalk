@@ -16,18 +16,16 @@
 package io.servicetalk.redis.api;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.concurrent.api.AsyncCloseable;
-import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.BlockingIterable;
 
 import javax.annotation.Generated;
 
 /**
- * A Redis command client that is subscribed to one channel.
+ * A Redis command client that is subscribed to one channel. This API is provided for convenience for a more familiar
+ * sequential programming model.
  */
 @Generated({})
-public abstract class PubSubBufferRedisConnection implements AsyncCloseable {
+public abstract class BlockingPubSubBufferRedisConnection implements AutoCloseable {
 
     /**
      * {@inheritDoc}
@@ -35,55 +33,51 @@ public abstract class PubSubBufferRedisConnection implements AsyncCloseable {
      * This will close the underlying {@link RedisRequester}!
      */
     @Override
-    public abstract Completable closeAsync();
-
-    /**
-     * {@inheritDoc}
-     * <p>
-     * This will close the underlying {@link RedisRequester}!
-     */
-    @Override
-    public abstract Completable closeAsyncGracefully();
+    public abstract void close() throws Exception;
 
     /**
      * Messages that are received by this client.
      *
-     * @return a {@link Publisher} of messages
+     * @return a {@link BlockingIterable} of messages
      */
-    public abstract Publisher<PubSubRedisMessage> getMessages();
+    public abstract BlockingIterable<PubSubRedisMessage> getMessages();
 
     /**
      * Ping the server.
      *
-     * @return a {@link Single} result
+     * @return a {@link PubSubRedisMessage.Pong} result
+     * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PING)
-    public abstract Single<PubSubRedisMessage.Pong<Buffer>> ping();
+    public abstract PubSubRedisMessage.Pong<Buffer> ping() throws Exception;
 
     /**
      * Ping the server.
      *
      * @param message the message
-     * @return a {@link Single} result
+     * @return a {@link PubSubRedisMessage.Pong} result
+     * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PING)
-    public abstract Single<PubSubRedisMessage.Pong<Buffer>> ping(Buffer message);
+    public abstract PubSubRedisMessage.Pong<Buffer> ping(Buffer message) throws Exception;
 
     /**
      * Listen for messages published to channels matching the given patterns.
      *
      * @param pattern the pattern
-     * @return a {@link Single} result
+     * @return a {@link BlockingPubSubBufferRedisConnection} result
+     * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PSUBSCRIBE)
-    public abstract Single<PubSubBufferRedisConnection> psubscribe(Buffer pattern);
+    public abstract BlockingPubSubBufferRedisConnection psubscribe(Buffer pattern) throws Exception;
 
     /**
      * Listen for messages published to the given channels.
      *
      * @param channel the channel
-     * @return a {@link Single} result
+     * @return a {@link BlockingPubSubBufferRedisConnection} result
+     * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SUBSCRIBE)
-    public abstract Single<PubSubBufferRedisConnection> subscribe(Buffer channel);
+    public abstract BlockingPubSubBufferRedisConnection subscribe(Buffer channel) throws Exception;
 }

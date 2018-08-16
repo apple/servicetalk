@@ -32,7 +32,7 @@ import static java.util.Objects.requireNonNull;
 
 @Generated({})
 @SuppressWarnings("unchecked")
-final class DefaultPubSubRedisConnection implements PubSubRedisConnection {
+final class DefaultPubSubRedisConnection extends PubSubRedisConnection {
 
     protected final RedisClient.ReservedRedisConnection reservedCnx;
 
@@ -60,6 +60,28 @@ final class DefaultPubSubRedisConnection implements PubSubRedisConnection {
     }
 
     @Override
+    public Single<PubSubRedisMessage.Pong<String>> ping() {
+        final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 1;
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PING, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PING, cb);
+        return toPubSubPongMessages(reservedCnx.request(request), String.class).first();
+    }
+
+    @Override
+    public Single<PubSubRedisMessage.Pong<String>> ping(final CharSequence message) {
+        requireNonNull(message);
+        final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 2;
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PING, allocator);
+        addRequestArgument(message, cb, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PING, cb);
+        return toPubSubPongMessages(reservedCnx.request(request), String.class).first();
+    }
+
+    @Override
     public Single<PubSubRedisConnection> psubscribe(final CharSequence pattern) {
         requireNonNull(pattern);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -83,27 +105,5 @@ final class DefaultPubSubRedisConnection implements PubSubRedisConnection {
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUBSCRIBE, cb);
         return newConnectedClient(reservedCnx, request,
                     (rcnx, pub) -> new DefaultPubSubRedisConnection(rcnx, pub.map(msg -> (PubSubRedisMessage) msg)));
-    }
-
-    @Override
-    public Single<PubSubRedisMessage.Pong<String>> ping() {
-        final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 1;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PING, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PING, cb);
-        return toPubSubPongMessages(reservedCnx.request(request), String.class).first();
-    }
-
-    @Override
-    public Single<PubSubRedisMessage.Pong<String>> ping(final CharSequence message) {
-        requireNonNull(message);
-        final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PING, allocator);
-        addRequestArgument(message, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.PING, cb);
-        return toPubSubPongMessages(reservedCnx.request(request), String.class).first();
     }
 }

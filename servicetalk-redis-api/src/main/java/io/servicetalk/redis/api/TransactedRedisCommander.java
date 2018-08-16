@@ -16,6 +16,7 @@
 package io.servicetalk.redis.api;
 
 import io.servicetalk.concurrent.api.AsyncCloseable;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
 import java.util.Collection;
@@ -27,7 +28,23 @@ import javax.annotation.Nullable;
  * Redis transacted command client that uses {@link String} for keys and data.
  */
 @Generated({})
-public interface TransactedRedisCommander extends AsyncCloseable {
+public abstract class TransactedRedisCommander implements AsyncCloseable {
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * This will close the underlying {@link RedisRequester}!
+     */
+    @Override
+    public abstract Completable closeAsync();
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * This will close the underlying {@link RedisRequester}!
+     */
+    @Override
+    public abstract Completable closeAsyncGracefully();
 
     /**
      * Append a value to a key.
@@ -37,7 +54,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.APPEND)
-    Single<String> append(@RedisProtocolSupport.Key CharSequence key, CharSequence value);
+    public abstract Single<String> append(@RedisProtocolSupport.Key CharSequence key, CharSequence value);
 
     /**
      * Authenticate to the server.
@@ -46,7 +63,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.AUTH)
-    Single<String> auth(CharSequence password);
+    public abstract Single<String> auth(CharSequence password);
 
     /**
      * Asynchronously rewrite the append-only file.
@@ -54,7 +71,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BGREWRITEAOF)
-    Single<String> bgrewriteaof();
+    public abstract Single<String> bgrewriteaof();
 
     /**
      * Asynchronously save the dataset to disk.
@@ -62,7 +79,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BGSAVE)
-    Single<String> bgsave();
+    public abstract Single<String> bgsave();
 
     /**
      * Count set bits in a string.
@@ -71,7 +88,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BITCOUNT)
-    Single<String> bitcount(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> bitcount(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Count set bits in a string.
@@ -82,7 +99,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BITCOUNT)
-    Single<String> bitcount(@RedisProtocolSupport.Key CharSequence key, @Nullable Long start, @Nullable Long end);
+    public abstract Single<String> bitcount(@RedisProtocolSupport.Key CharSequence key, @Nullable Long start,
+                                            @Nullable Long end);
 
     /**
      * Perform arbitrary bitfield integer operations on strings.
@@ -92,8 +110,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BITFIELD)
-    Single<String> bitfield(@RedisProtocolSupport.Key CharSequence key,
-                            @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.BitfieldOperation> operations);
+    public abstract Single<String> bitfield(@RedisProtocolSupport.Key CharSequence key,
+                                            @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.BitfieldOperation> operations);
 
     /**
      * Perform bitwise operations between strings.
@@ -104,8 +122,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BITOP)
-    Single<String> bitop(CharSequence operation, @RedisProtocolSupport.Key CharSequence destkey,
-                         @RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> bitop(CharSequence operation, @RedisProtocolSupport.Key CharSequence destkey,
+                                         @RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Perform bitwise operations between strings.
@@ -117,8 +135,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BITOP)
-    Single<String> bitop(CharSequence operation, @RedisProtocolSupport.Key CharSequence destkey,
-                         @RedisProtocolSupport.Key CharSequence key1, @RedisProtocolSupport.Key CharSequence key2);
+    public abstract Single<String> bitop(CharSequence operation, @RedisProtocolSupport.Key CharSequence destkey,
+                                         @RedisProtocolSupport.Key CharSequence key1,
+                                         @RedisProtocolSupport.Key CharSequence key2);
 
     /**
      * Perform bitwise operations between strings.
@@ -131,9 +150,10 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BITOP)
-    Single<String> bitop(CharSequence operation, @RedisProtocolSupport.Key CharSequence destkey,
-                         @RedisProtocolSupport.Key CharSequence key1, @RedisProtocolSupport.Key CharSequence key2,
-                         @RedisProtocolSupport.Key CharSequence key3);
+    public abstract Single<String> bitop(CharSequence operation, @RedisProtocolSupport.Key CharSequence destkey,
+                                         @RedisProtocolSupport.Key CharSequence key1,
+                                         @RedisProtocolSupport.Key CharSequence key2,
+                                         @RedisProtocolSupport.Key CharSequence key3);
 
     /**
      * Perform bitwise operations between strings.
@@ -144,8 +164,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BITOP)
-    Single<String> bitop(CharSequence operation, @RedisProtocolSupport.Key CharSequence destkey,
-                         @RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
+    public abstract Single<String> bitop(CharSequence operation, @RedisProtocolSupport.Key CharSequence destkey,
+                                         @RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
 
     /**
      * Find first bit set or clear in a string.
@@ -155,7 +175,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BITPOS)
-    Single<String> bitpos(@RedisProtocolSupport.Key CharSequence key, long bit);
+    public abstract Single<String> bitpos(@RedisProtocolSupport.Key CharSequence key, long bit);
 
     /**
      * Find first bit set or clear in a string.
@@ -167,7 +187,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BITPOS)
-    Single<String> bitpos(@RedisProtocolSupport.Key CharSequence key, long bit, @Nullable Long start, @Nullable Long end);
+    public abstract Single<String> bitpos(@RedisProtocolSupport.Key CharSequence key, long bit, @Nullable Long start,
+                                          @Nullable Long end);
 
     /**
      * Remove and get the first element in a list, or block until one is available.
@@ -177,7 +198,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BLPOP)
-    Single<String> blpop(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys, long timeout);
+    public abstract Single<String> blpop(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                         long timeout);
 
     /**
      * Remove and get the last element in a list, or block until one is available.
@@ -187,7 +209,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BRPOP)
-    Single<String> brpop(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys, long timeout);
+    public abstract Single<String> brpop(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                         long timeout);
 
     /**
      * Pop a value from a list, push it to another list and return it; or block until one is available.
@@ -198,8 +221,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BRPOPLPUSH)
-    Single<String> brpoplpush(@RedisProtocolSupport.Key CharSequence source, @RedisProtocolSupport.Key CharSequence destination,
-                              long timeout);
+    public abstract Single<String> brpoplpush(@RedisProtocolSupport.Key CharSequence source,
+                                              @RedisProtocolSupport.Key CharSequence destination, long timeout);
 
     /**
      * Remove and return the member with the highest score from one or more sorted sets, or block until one is
@@ -210,7 +233,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BZPOPMAX)
-    Single<String> bzpopmax(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys, long timeout);
+    public abstract Single<String> bzpopmax(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                            long timeout);
 
     /**
      * Remove and return the member with the lowest score from one or more sorted sets, or block until one is available.
@@ -220,7 +244,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BZPOPMIN)
-    Single<String> bzpopmin(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys, long timeout);
+    public abstract Single<String> bzpopmin(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                            long timeout);
 
     /**
      * Kill the connection of a client.
@@ -233,10 +258,10 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLIENT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.KILL)
-    Single<String> clientKill(@RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.ID) @Nullable Long id,
-                              @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ClientKillType type,
-                              @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.ADDR) @Nullable CharSequence addrIpPort,
-                              @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SKIPME) @Nullable CharSequence skipmeYesNo);
+    public abstract Single<String> clientKill(@RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.ID) @Nullable Long id,
+                                              @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ClientKillType type,
+                                              @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.ADDR) @Nullable CharSequence addrIpPort,
+                                              @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SKIPME) @Nullable CharSequence skipmeYesNo);
 
     /**
      * Get the list of client connections.
@@ -245,7 +270,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLIENT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIST)
-    Single<String> clientList();
+    public abstract Single<String> clientList();
 
     /**
      * Get the current connection name.
@@ -254,7 +279,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLIENT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.GETNAME)
-    Single<String> clientGetname();
+    public abstract Single<String> clientGetname();
 
     /**
      * Stop processing commands from clients for some time.
@@ -264,7 +289,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLIENT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.PAUSE)
-    Single<String> clientPause(long timeout);
+    public abstract Single<String> clientPause(long timeout);
 
     /**
      * Instruct the server whether to reply to commands.
@@ -274,7 +299,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLIENT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.REPLY)
-    Single<String> clientReply(@RedisProtocolSupport.Option RedisProtocolSupport.ClientReplyReplyMode replyMode);
+    public abstract Single<String> clientReply(@RedisProtocolSupport.Option RedisProtocolSupport.ClientReplyReplyMode replyMode);
 
     /**
      * Set the current connection name.
@@ -284,7 +309,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLIENT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SETNAME)
-    Single<String> clientSetname(CharSequence connectionName);
+    public abstract Single<String> clientSetname(CharSequence connectionName);
 
     /**
      * Assign new hash slots to receiving node.
@@ -294,7 +319,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.ADDSLOTS)
-    Single<String> clusterAddslots(long slot);
+    public abstract Single<String> clusterAddslots(long slot);
 
     /**
      * Assign new hash slots to receiving node.
@@ -305,7 +330,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.ADDSLOTS)
-    Single<String> clusterAddslots(long slot1, long slot2);
+    public abstract Single<String> clusterAddslots(long slot1, long slot2);
 
     /**
      * Assign new hash slots to receiving node.
@@ -317,7 +342,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.ADDSLOTS)
-    Single<String> clusterAddslots(long slot1, long slot2, long slot3);
+    public abstract Single<String> clusterAddslots(long slot1, long slot2, long slot3);
 
     /**
      * Assign new hash slots to receiving node.
@@ -327,7 +352,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.ADDSLOTS)
-    Single<String> clusterAddslots(Collection<Long> slots);
+    public abstract Single<String> clusterAddslots(Collection<Long> slots);
 
     /**
      * Return the number of failure reports active for a given node.
@@ -337,7 +362,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT_FAILURE_REPORTS)
-    Single<String> clusterCountFailureReports(CharSequence nodeId);
+    public abstract Single<String> clusterCountFailureReports(CharSequence nodeId);
 
     /**
      * Return the number of local keys in the specified hash slot.
@@ -347,7 +372,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNTKEYSINSLOT)
-    Single<String> clusterCountkeysinslot(long slot);
+    public abstract Single<String> clusterCountkeysinslot(long slot);
 
     /**
      * Set hash slots as unbound in receiving node.
@@ -357,7 +382,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.DELSLOTS)
-    Single<String> clusterDelslots(long slot);
+    public abstract Single<String> clusterDelslots(long slot);
 
     /**
      * Set hash slots as unbound in receiving node.
@@ -368,7 +393,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.DELSLOTS)
-    Single<String> clusterDelslots(long slot1, long slot2);
+    public abstract Single<String> clusterDelslots(long slot1, long slot2);
 
     /**
      * Set hash slots as unbound in receiving node.
@@ -380,7 +405,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.DELSLOTS)
-    Single<String> clusterDelslots(long slot1, long slot2, long slot3);
+    public abstract Single<String> clusterDelslots(long slot1, long slot2, long slot3);
 
     /**
      * Set hash slots as unbound in receiving node.
@@ -390,7 +415,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.DELSLOTS)
-    Single<String> clusterDelslots(Collection<Long> slots);
+    public abstract Single<String> clusterDelslots(Collection<Long> slots);
 
     /**
      * Forces a slave to perform a manual failover of its master.
@@ -399,7 +424,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.FAILOVER)
-    Single<String> clusterFailover();
+    public abstract Single<String> clusterFailover();
 
     /**
      * Forces a slave to perform a manual failover of its master.
@@ -409,7 +434,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.FAILOVER)
-    Single<String> clusterFailover(@RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ClusterFailoverOptions options);
+    public abstract Single<String> clusterFailover(@RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ClusterFailoverOptions options);
 
     /**
      * Remove a node from the nodes table.
@@ -419,7 +444,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.FORGET)
-    Single<String> clusterForget(CharSequence nodeId);
+    public abstract Single<String> clusterForget(CharSequence nodeId);
 
     /**
      * Return local key names in the specified hash slot.
@@ -430,7 +455,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.GETKEYSINSLOT)
-    Single<String> clusterGetkeysinslot(long slot, long count);
+    public abstract Single<String> clusterGetkeysinslot(long slot, long count);
 
     /**
      * Provides info about Redis Cluster node state.
@@ -439,7 +464,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.INFO)
-    Single<String> clusterInfo();
+    public abstract Single<String> clusterInfo();
 
     /**
      * Returns the hash slot of the specified key.
@@ -449,7 +474,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.KEYSLOT)
-    Single<String> clusterKeyslot(CharSequence key);
+    public abstract Single<String> clusterKeyslot(CharSequence key);
 
     /**
      * Force a node cluster to handshake with another node.
@@ -460,7 +485,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.MEET)
-    Single<String> clusterMeet(CharSequence ip, long port);
+    public abstract Single<String> clusterMeet(CharSequence ip, long port);
 
     /**
      * Get Cluster config for the node.
@@ -469,7 +494,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.NODES)
-    Single<String> clusterNodes();
+    public abstract Single<String> clusterNodes();
 
     /**
      * Reconfigure a node as a slave of the specified master node.
@@ -479,7 +504,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.REPLICATE)
-    Single<String> clusterReplicate(CharSequence nodeId);
+    public abstract Single<String> clusterReplicate(CharSequence nodeId);
 
     /**
      * Reset a Redis Cluster node.
@@ -488,7 +513,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.RESET)
-    Single<String> clusterReset();
+    public abstract Single<String> clusterReset();
 
     /**
      * Reset a Redis Cluster node.
@@ -498,7 +523,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.RESET)
-    Single<String> clusterReset(@RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ClusterResetResetType resetType);
+    public abstract Single<String> clusterReset(@RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ClusterResetResetType resetType);
 
     /**
      * Forces the node to save cluster state on disk.
@@ -507,7 +532,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SAVECONFIG)
-    Single<String> clusterSaveconfig();
+    public abstract Single<String> clusterSaveconfig();
 
     /**
      * Set the configuration epoch in a new node.
@@ -517,7 +542,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SET_CONFIG_EPOCH)
-    Single<String> clusterSetConfigEpoch(long configEpoch);
+    public abstract Single<String> clusterSetConfigEpoch(long configEpoch);
 
     /**
      * Bind a hash slot to a specific node.
@@ -528,8 +553,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SETSLOT)
-    Single<String> clusterSetslot(long slot,
-                                  @RedisProtocolSupport.Option RedisProtocolSupport.ClusterSetslotSubcommand subcommand);
+    public abstract Single<String> clusterSetslot(long slot,
+                                                  @RedisProtocolSupport.Option RedisProtocolSupport.ClusterSetslotSubcommand subcommand);
 
     /**
      * Bind a hash slot to a specific node.
@@ -541,9 +566,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SETSLOT)
-    Single<String> clusterSetslot(long slot,
-                                  @RedisProtocolSupport.Option RedisProtocolSupport.ClusterSetslotSubcommand subcommand,
-                                  @Nullable CharSequence nodeId);
+    public abstract Single<String> clusterSetslot(long slot,
+                                                  @RedisProtocolSupport.Option RedisProtocolSupport.ClusterSetslotSubcommand subcommand,
+                                                  @Nullable CharSequence nodeId);
 
     /**
      * List slave nodes of the specified master node.
@@ -553,7 +578,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SLAVES)
-    Single<String> clusterSlaves(CharSequence nodeId);
+    public abstract Single<String> clusterSlaves(CharSequence nodeId);
 
     /**
      * Get array of Cluster slot to node mappings.
@@ -562,7 +587,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SLOTS)
-    Single<String> clusterSlots();
+    public abstract Single<String> clusterSlots();
 
     /**
      * Get array of Redis command details.
@@ -570,7 +595,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.COMMAND)
-    Single<String> command();
+    public abstract Single<String> command();
 
     /**
      * Get total number of Redis commands.
@@ -579,7 +604,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.COMMAND)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT)
-    Single<String> commandCount();
+    public abstract Single<String> commandCount();
 
     /**
      * Extract keys given a full Redis command.
@@ -588,7 +613,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.COMMAND)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.GETKEYS)
-    Single<String> commandGetkeys();
+    public abstract Single<String> commandGetkeys();
 
     /**
      * Get array of specific Redis command details.
@@ -598,7 +623,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.COMMAND)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.INFO)
-    Single<String> commandInfo(CharSequence commandName);
+    public abstract Single<String> commandInfo(CharSequence commandName);
 
     /**
      * Get array of specific Redis command details.
@@ -609,7 +634,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.COMMAND)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.INFO)
-    Single<String> commandInfo(CharSequence commandName1, CharSequence commandName2);
+    public abstract Single<String> commandInfo(CharSequence commandName1, CharSequence commandName2);
 
     /**
      * Get array of specific Redis command details.
@@ -621,7 +646,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.COMMAND)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.INFO)
-    Single<String> commandInfo(CharSequence commandName1, CharSequence commandName2, CharSequence commandName3);
+    public abstract Single<String> commandInfo(CharSequence commandName1, CharSequence commandName2,
+                                               CharSequence commandName3);
 
     /**
      * Get array of specific Redis command details.
@@ -631,7 +657,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.COMMAND)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.INFO)
-    Single<String> commandInfo(Collection<? extends CharSequence> commandNames);
+    public abstract Single<String> commandInfo(Collection<? extends CharSequence> commandNames);
 
     /**
      * Get the value of a configuration parameter.
@@ -641,7 +667,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CONFIG)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.GET)
-    Single<String> configGet(CharSequence parameter);
+    public abstract Single<String> configGet(CharSequence parameter);
 
     /**
      * Rewrite the configuration file with the in memory configuration.
@@ -650,7 +676,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CONFIG)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.REWRITE)
-    Single<String> configRewrite();
+    public abstract Single<String> configRewrite();
 
     /**
      * Set a configuration parameter to the given value.
@@ -661,7 +687,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CONFIG)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SET)
-    Single<String> configSet(CharSequence parameter, CharSequence value);
+    public abstract Single<String> configSet(CharSequence parameter, CharSequence value);
 
     /**
      * Reset the stats returned by INFO.
@@ -670,7 +696,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CONFIG)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.RESETSTAT)
-    Single<String> configResetstat();
+    public abstract Single<String> configResetstat();
 
     /**
      * Return the number of keys in the selected database.
@@ -678,7 +704,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.DBSIZE)
-    Single<String> dbsize();
+    public abstract Single<String> dbsize();
 
     /**
      * Get debugging information about a key.
@@ -688,7 +714,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.DEBUG)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.OBJECT)
-    Single<String> debugObject(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> debugObject(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Make the server crash.
@@ -697,7 +723,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.DEBUG)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SEGFAULT)
-    Single<String> debugSegfault();
+    public abstract Single<String> debugSegfault();
 
     /**
      * Decrement the integer value of a key by one.
@@ -706,7 +732,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.DECR)
-    Single<String> decr(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> decr(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Decrement the integer value of a key by the given number.
@@ -716,7 +742,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.DECRBY)
-    Single<String> decrby(@RedisProtocolSupport.Key CharSequence key, long decrement);
+    public abstract Single<String> decrby(@RedisProtocolSupport.Key CharSequence key, long decrement);
 
     /**
      * Delete a key.
@@ -725,7 +751,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.DEL)
-    Single<String> del(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> del(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Delete a key.
@@ -735,7 +761,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.DEL)
-    Single<String> del(@RedisProtocolSupport.Key CharSequence key1, @RedisProtocolSupport.Key CharSequence key2);
+    public abstract Single<String> del(@RedisProtocolSupport.Key CharSequence key1,
+                                       @RedisProtocolSupport.Key CharSequence key2);
 
     /**
      * Delete a key.
@@ -746,8 +773,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.DEL)
-    Single<String> del(@RedisProtocolSupport.Key CharSequence key1, @RedisProtocolSupport.Key CharSequence key2,
-                       @RedisProtocolSupport.Key CharSequence key3);
+    public abstract Single<String> del(@RedisProtocolSupport.Key CharSequence key1,
+                                       @RedisProtocolSupport.Key CharSequence key2,
+                                       @RedisProtocolSupport.Key CharSequence key3);
 
     /**
      * Delete a key.
@@ -756,7 +784,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.DEL)
-    Single<String> del(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
+    public abstract Single<String> del(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
 
     /**
      * Discard all commands issued after MULTI.
@@ -764,7 +792,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.DISCARD)
-    Single<String> discard();
+    public abstract Single<String> discard();
 
     /**
      * Return a serialized version of the value stored at the specified key.
@@ -773,7 +801,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.DUMP)
-    Single<String> dump(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> dump(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Echo the given string.
@@ -782,7 +810,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ECHO)
-    Single<String> echo(CharSequence message);
+    public abstract Single<String> echo(CharSequence message);
 
     /**
      * Execute a Lua script server side.
@@ -794,8 +822,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EVAL)
-    Single<String> eval(CharSequence script, long numkeys, @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                        Collection<? extends CharSequence> args);
+    public abstract Single<String> eval(CharSequence script, long numkeys,
+                                        @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                        Collection<? extends CharSequence> args);
 
     /**
      * Execute a Lua script server side.
@@ -807,8 +836,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EVAL)
-    Single<String> evalList(CharSequence script, long numkeys, @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                            Collection<? extends CharSequence> args);
+    public abstract Single<String> evalList(CharSequence script, long numkeys,
+                                            @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                            Collection<? extends CharSequence> args);
 
     /**
      * Execute a Lua script server side.
@@ -820,8 +850,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EVAL)
-    Single<String> evalLong(CharSequence script, long numkeys, @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                            Collection<? extends CharSequence> args);
+    public abstract Single<String> evalLong(CharSequence script, long numkeys,
+                                            @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                            Collection<? extends CharSequence> args);
 
     /**
      * Execute a Lua script server side.
@@ -833,8 +864,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EVALSHA)
-    Single<String> evalsha(CharSequence sha1, long numkeys, @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                           Collection<? extends CharSequence> args);
+    public abstract Single<String> evalsha(CharSequence sha1, long numkeys,
+                                           @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                           Collection<? extends CharSequence> args);
 
     /**
      * Execute a Lua script server side.
@@ -846,8 +878,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EVALSHA)
-    Single<String> evalshaList(CharSequence sha1, long numkeys, @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                               Collection<? extends CharSequence> args);
+    public abstract Single<String> evalshaList(CharSequence sha1, long numkeys,
+                                               @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                               Collection<? extends CharSequence> args);
 
     /**
      * Execute a Lua script server side.
@@ -859,8 +892,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EVALSHA)
-    Single<String> evalshaLong(CharSequence sha1, long numkeys, @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                               Collection<? extends CharSequence> args);
+    public abstract Single<String> evalshaLong(CharSequence sha1, long numkeys,
+                                               @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                               Collection<? extends CharSequence> args);
 
     /**
      * Execute all commands issued after MULTI.
@@ -869,7 +903,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @param <T> the type of elements
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EXEC)
-    <T> Single<List<T>> exec();
+    public abstract <T> Single<List<T>> exec();
 
     /**
      * Determine if a key exists.
@@ -878,7 +912,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EXISTS)
-    Single<String> exists(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> exists(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Determine if a key exists.
@@ -888,7 +922,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EXISTS)
-    Single<String> exists(@RedisProtocolSupport.Key CharSequence key1, @RedisProtocolSupport.Key CharSequence key2);
+    public abstract Single<String> exists(@RedisProtocolSupport.Key CharSequence key1,
+                                          @RedisProtocolSupport.Key CharSequence key2);
 
     /**
      * Determine if a key exists.
@@ -899,8 +934,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EXISTS)
-    Single<String> exists(@RedisProtocolSupport.Key CharSequence key1, @RedisProtocolSupport.Key CharSequence key2,
-                          @RedisProtocolSupport.Key CharSequence key3);
+    public abstract Single<String> exists(@RedisProtocolSupport.Key CharSequence key1,
+                                          @RedisProtocolSupport.Key CharSequence key2,
+                                          @RedisProtocolSupport.Key CharSequence key3);
 
     /**
      * Determine if a key exists.
@@ -909,7 +945,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EXISTS)
-    Single<String> exists(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
+    public abstract Single<String> exists(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
 
     /**
      * Set a key's time to live in seconds.
@@ -919,7 +955,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EXPIRE)
-    Single<String> expire(@RedisProtocolSupport.Key CharSequence key, long seconds);
+    public abstract Single<String> expire(@RedisProtocolSupport.Key CharSequence key, long seconds);
 
     /**
      * Set the expiration for a key as a UNIX timestamp.
@@ -929,7 +965,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EXPIREAT)
-    Single<String> expireat(@RedisProtocolSupport.Key CharSequence key, long timestamp);
+    public abstract Single<String> expireat(@RedisProtocolSupport.Key CharSequence key, long timestamp);
 
     /**
      * Remove all keys from all databases.
@@ -937,7 +973,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.FLUSHALL)
-    Single<String> flushall();
+    public abstract Single<String> flushall();
 
     /**
      * Remove all keys from all databases.
@@ -946,7 +982,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.FLUSHALL)
-    Single<String> flushall(@RedisProtocolSupport.Option @Nullable RedisProtocolSupport.FlushallAsync async);
+    public abstract Single<String> flushall(@RedisProtocolSupport.Option @Nullable RedisProtocolSupport.FlushallAsync async);
 
     /**
      * Remove all keys from the current database.
@@ -954,7 +990,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.FLUSHDB)
-    Single<String> flushdb();
+    public abstract Single<String> flushdb();
 
     /**
      * Remove all keys from the current database.
@@ -963,7 +999,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.FLUSHDB)
-    Single<String> flushdb(@RedisProtocolSupport.Option @Nullable RedisProtocolSupport.FlushdbAsync async);
+    public abstract Single<String> flushdb(@RedisProtocolSupport.Option @Nullable RedisProtocolSupport.FlushdbAsync async);
 
     /**
      * Add one or more geospatial items in the geospatial index represented using a sorted set.
@@ -975,7 +1011,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEOADD)
-    Single<String> geoadd(@RedisProtocolSupport.Key CharSequence key, double longitude, double latitude, CharSequence member);
+    public abstract Single<String> geoadd(@RedisProtocolSupport.Key CharSequence key, double longitude, double latitude,
+                                          CharSequence member);
 
     /**
      * Add one or more geospatial items in the geospatial index represented using a sorted set.
@@ -990,8 +1027,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEOADD)
-    Single<String> geoadd(@RedisProtocolSupport.Key CharSequence key, double longitude1, double latitude1, CharSequence member1,
-                          double longitude2, double latitude2, CharSequence member2);
+    public abstract Single<String> geoadd(@RedisProtocolSupport.Key CharSequence key, double longitude1,
+                                          double latitude1, CharSequence member1, double longitude2, double latitude2,
+                                          CharSequence member2);
 
     /**
      * Add one or more geospatial items in the geospatial index represented using a sorted set.
@@ -1009,9 +1047,10 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEOADD)
-    Single<String> geoadd(@RedisProtocolSupport.Key CharSequence key, double longitude1, double latitude1, CharSequence member1,
-                          double longitude2, double latitude2, CharSequence member2, double longitude3, double latitude3,
-                          CharSequence member3);
+    public abstract Single<String> geoadd(@RedisProtocolSupport.Key CharSequence key, double longitude1,
+                                          double latitude1, CharSequence member1, double longitude2, double latitude2,
+                                          CharSequence member2, double longitude3, double latitude3,
+                                          CharSequence member3);
 
     /**
      * Add one or more geospatial items in the geospatial index represented using a sorted set.
@@ -1021,8 +1060,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEOADD)
-    Single<String> geoadd(@RedisProtocolSupport.Key CharSequence key,
-                          @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.LongitudeLatitudeMember> longitudeLatitudeMembers);
+    public abstract Single<String> geoadd(@RedisProtocolSupport.Key CharSequence key,
+                                          @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.LongitudeLatitudeMember> longitudeLatitudeMembers);
 
     /**
      * Returns the distance between two members of a geospatial index.
@@ -1033,7 +1072,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEODIST)
-    Single<String> geodist(@RedisProtocolSupport.Key CharSequence key, CharSequence member1, CharSequence member2);
+    public abstract Single<String> geodist(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
+                                           CharSequence member2);
 
     /**
      * Returns the distance between two members of a geospatial index.
@@ -1045,8 +1085,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEODIST)
-    Single<String> geodist(@RedisProtocolSupport.Key CharSequence key, CharSequence member1, CharSequence member2,
-                           @Nullable CharSequence unit);
+    public abstract Single<String> geodist(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
+                                           CharSequence member2, @Nullable CharSequence unit);
 
     /**
      * Returns members of a geospatial index as standard geohash strings.
@@ -1056,7 +1096,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEOHASH)
-    Single<String> geohash(@RedisProtocolSupport.Key CharSequence key, CharSequence member);
+    public abstract Single<String> geohash(@RedisProtocolSupport.Key CharSequence key, CharSequence member);
 
     /**
      * Returns members of a geospatial index as standard geohash strings.
@@ -1067,7 +1107,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEOHASH)
-    Single<String> geohash(@RedisProtocolSupport.Key CharSequence key, CharSequence member1, CharSequence member2);
+    public abstract Single<String> geohash(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
+                                           CharSequence member2);
 
     /**
      * Returns members of a geospatial index as standard geohash strings.
@@ -1079,8 +1120,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEOHASH)
-    Single<String> geohash(@RedisProtocolSupport.Key CharSequence key, CharSequence member1, CharSequence member2,
-                           CharSequence member3);
+    public abstract Single<String> geohash(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
+                                           CharSequence member2, CharSequence member3);
 
     /**
      * Returns members of a geospatial index as standard geohash strings.
@@ -1090,7 +1131,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEOHASH)
-    Single<String> geohash(@RedisProtocolSupport.Key CharSequence key, Collection<? extends CharSequence> members);
+    public abstract Single<String> geohash(@RedisProtocolSupport.Key CharSequence key,
+                                           Collection<? extends CharSequence> members);
 
     /**
      * Returns longitude and latitude of members of a geospatial index.
@@ -1100,7 +1142,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEOPOS)
-    Single<String> geopos(@RedisProtocolSupport.Key CharSequence key, CharSequence member);
+    public abstract Single<String> geopos(@RedisProtocolSupport.Key CharSequence key, CharSequence member);
 
     /**
      * Returns longitude and latitude of members of a geospatial index.
@@ -1111,7 +1153,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEOPOS)
-    Single<String> geopos(@RedisProtocolSupport.Key CharSequence key, CharSequence member1, CharSequence member2);
+    public abstract Single<String> geopos(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
+                                          CharSequence member2);
 
     /**
      * Returns longitude and latitude of members of a geospatial index.
@@ -1123,8 +1166,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEOPOS)
-    Single<String> geopos(@RedisProtocolSupport.Key CharSequence key, CharSequence member1, CharSequence member2,
-                          CharSequence member3);
+    public abstract Single<String> geopos(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
+                                          CharSequence member2, CharSequence member3);
 
     /**
      * Returns longitude and latitude of members of a geospatial index.
@@ -1134,7 +1177,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEOPOS)
-    Single<String> geopos(@RedisProtocolSupport.Key CharSequence key, Collection<? extends CharSequence> members);
+    public abstract Single<String> geopos(@RedisProtocolSupport.Key CharSequence key,
+                                          Collection<? extends CharSequence> members);
 
     /**
      * Query a sorted set representing a geospatial index to fetch members matching a given maximum distance from a
@@ -1148,8 +1192,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEORADIUS)
-    Single<String> georadius(@RedisProtocolSupport.Key CharSequence key, double longitude, double latitude, double radius,
-                             @RedisProtocolSupport.Option RedisProtocolSupport.GeoradiusUnit unit);
+    public abstract Single<String> georadius(@RedisProtocolSupport.Key CharSequence key, double longitude,
+                                             double latitude, double radius,
+                                             @RedisProtocolSupport.Option RedisProtocolSupport.GeoradiusUnit unit);
 
     /**
      * Query a sorted set representing a geospatial index to fetch members matching a given maximum distance from a
@@ -1170,15 +1215,16 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEORADIUS)
-    Single<String> georadius(@RedisProtocolSupport.Key CharSequence key, double longitude, double latitude, double radius,
-                             @RedisProtocolSupport.Option RedisProtocolSupport.GeoradiusUnit unit,
-                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusWithcoord withcoord,
-                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusWithdist withdist,
-                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusWithhash withhash,
-                             @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count,
-                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusOrder order,
-                             @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STORE) @Nullable @RedisProtocolSupport.Key CharSequence storeKey,
-                             @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STOREDIST) @Nullable @RedisProtocolSupport.Key CharSequence storedistKey);
+    public abstract Single<String> georadius(@RedisProtocolSupport.Key CharSequence key, double longitude,
+                                             double latitude, double radius,
+                                             @RedisProtocolSupport.Option RedisProtocolSupport.GeoradiusUnit unit,
+                                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusWithcoord withcoord,
+                                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusWithdist withdist,
+                                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusWithhash withhash,
+                                             @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count,
+                                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusOrder order,
+                                             @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STORE) @Nullable @RedisProtocolSupport.Key CharSequence storeKey,
+                                             @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STOREDIST) @Nullable @RedisProtocolSupport.Key CharSequence storedistKey);
 
     /**
      * Query a sorted set representing a geospatial index to fetch members matching a given maximum distance from a
@@ -1191,8 +1237,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEORADIUSBYMEMBER)
-    Single<String> georadiusbymember(@RedisProtocolSupport.Key CharSequence key, CharSequence member, double radius,
-                                     @RedisProtocolSupport.Option RedisProtocolSupport.GeoradiusbymemberUnit unit);
+    public abstract Single<String> georadiusbymember(@RedisProtocolSupport.Key CharSequence key, CharSequence member,
+                                                     double radius,
+                                                     @RedisProtocolSupport.Option RedisProtocolSupport.GeoradiusbymemberUnit unit);
 
     /**
      * Query a sorted set representing a geospatial index to fetch members matching a given maximum distance from a
@@ -1212,15 +1259,16 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEORADIUSBYMEMBER)
-    Single<String> georadiusbymember(@RedisProtocolSupport.Key CharSequence key, CharSequence member, double radius,
-                                     @RedisProtocolSupport.Option RedisProtocolSupport.GeoradiusbymemberUnit unit,
-                                     @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusbymemberWithcoord withcoord,
-                                     @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusbymemberWithdist withdist,
-                                     @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusbymemberWithhash withhash,
-                                     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count,
-                                     @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusbymemberOrder order,
-                                     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STORE) @Nullable @RedisProtocolSupport.Key CharSequence storeKey,
-                                     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STOREDIST) @Nullable @RedisProtocolSupport.Key CharSequence storedistKey);
+    public abstract Single<String> georadiusbymember(@RedisProtocolSupport.Key CharSequence key, CharSequence member,
+                                                     double radius,
+                                                     @RedisProtocolSupport.Option RedisProtocolSupport.GeoradiusbymemberUnit unit,
+                                                     @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusbymemberWithcoord withcoord,
+                                                     @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusbymemberWithdist withdist,
+                                                     @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusbymemberWithhash withhash,
+                                                     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count,
+                                                     @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusbymemberOrder order,
+                                                     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STORE) @Nullable @RedisProtocolSupport.Key CharSequence storeKey,
+                                                     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STOREDIST) @Nullable @RedisProtocolSupport.Key CharSequence storedistKey);
 
     /**
      * Get the value of a key.
@@ -1229,7 +1277,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GET)
-    Single<String> get(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> get(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Returns the bit value at offset in the string value stored at key.
@@ -1239,7 +1287,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GETBIT)
-    Single<String> getbit(@RedisProtocolSupport.Key CharSequence key, long offset);
+    public abstract Single<String> getbit(@RedisProtocolSupport.Key CharSequence key, long offset);
 
     /**
      * Get a substring of the string stored at a key.
@@ -1250,7 +1298,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GETRANGE)
-    Single<String> getrange(@RedisProtocolSupport.Key CharSequence key, long start, long end);
+    public abstract Single<String> getrange(@RedisProtocolSupport.Key CharSequence key, long start, long end);
 
     /**
      * Set the string value of a key and return its old value.
@@ -1260,7 +1308,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GETSET)
-    Single<String> getset(@RedisProtocolSupport.Key CharSequence key, CharSequence value);
+    public abstract Single<String> getset(@RedisProtocolSupport.Key CharSequence key, CharSequence value);
 
     /**
      * Delete one or more hash fields.
@@ -1270,7 +1318,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HDEL)
-    Single<String> hdel(@RedisProtocolSupport.Key CharSequence key, CharSequence field);
+    public abstract Single<String> hdel(@RedisProtocolSupport.Key CharSequence key, CharSequence field);
 
     /**
      * Delete one or more hash fields.
@@ -1281,7 +1329,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HDEL)
-    Single<String> hdel(@RedisProtocolSupport.Key CharSequence key, CharSequence field1, CharSequence field2);
+    public abstract Single<String> hdel(@RedisProtocolSupport.Key CharSequence key, CharSequence field1,
+                                        CharSequence field2);
 
     /**
      * Delete one or more hash fields.
@@ -1293,8 +1342,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HDEL)
-    Single<String> hdel(@RedisProtocolSupport.Key CharSequence key, CharSequence field1, CharSequence field2,
-                        CharSequence field3);
+    public abstract Single<String> hdel(@RedisProtocolSupport.Key CharSequence key, CharSequence field1,
+                                        CharSequence field2, CharSequence field3);
 
     /**
      * Delete one or more hash fields.
@@ -1304,7 +1353,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HDEL)
-    Single<String> hdel(@RedisProtocolSupport.Key CharSequence key, Collection<? extends CharSequence> fields);
+    public abstract Single<String> hdel(@RedisProtocolSupport.Key CharSequence key,
+                                        Collection<? extends CharSequence> fields);
 
     /**
      * Determine if a hash field exists.
@@ -1314,7 +1364,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HEXISTS)
-    Single<String> hexists(@RedisProtocolSupport.Key CharSequence key, CharSequence field);
+    public abstract Single<String> hexists(@RedisProtocolSupport.Key CharSequence key, CharSequence field);
 
     /**
      * Get the value of a hash field.
@@ -1324,7 +1374,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HGET)
-    Single<String> hget(@RedisProtocolSupport.Key CharSequence key, CharSequence field);
+    public abstract Single<String> hget(@RedisProtocolSupport.Key CharSequence key, CharSequence field);
 
     /**
      * Get all the fields and values in a hash.
@@ -1333,7 +1383,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HGETALL)
-    Single<String> hgetall(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> hgetall(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Increment the integer value of a hash field by the given number.
@@ -1344,7 +1394,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HINCRBY)
-    Single<String> hincrby(@RedisProtocolSupport.Key CharSequence key, CharSequence field, long increment);
+    public abstract Single<String> hincrby(@RedisProtocolSupport.Key CharSequence key, CharSequence field,
+                                           long increment);
 
     /**
      * Increment the float value of a hash field by the given amount.
@@ -1355,7 +1406,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HINCRBYFLOAT)
-    Single<String> hincrbyfloat(@RedisProtocolSupport.Key CharSequence key, CharSequence field, double increment);
+    public abstract Single<String> hincrbyfloat(@RedisProtocolSupport.Key CharSequence key, CharSequence field,
+                                                double increment);
 
     /**
      * Get all the fields in a hash.
@@ -1364,7 +1416,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HKEYS)
-    Single<String> hkeys(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> hkeys(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Get the number of fields in a hash.
@@ -1373,7 +1425,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HLEN)
-    Single<String> hlen(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> hlen(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Get the values of all the given hash fields.
@@ -1383,7 +1435,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMGET)
-    Single<String> hmget(@RedisProtocolSupport.Key CharSequence key, CharSequence field);
+    public abstract Single<String> hmget(@RedisProtocolSupport.Key CharSequence key, CharSequence field);
 
     /**
      * Get the values of all the given hash fields.
@@ -1394,7 +1446,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMGET)
-    Single<String> hmget(@RedisProtocolSupport.Key CharSequence key, CharSequence field1, CharSequence field2);
+    public abstract Single<String> hmget(@RedisProtocolSupport.Key CharSequence key, CharSequence field1,
+                                         CharSequence field2);
 
     /**
      * Get the values of all the given hash fields.
@@ -1406,8 +1459,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMGET)
-    Single<String> hmget(@RedisProtocolSupport.Key CharSequence key, CharSequence field1, CharSequence field2,
-                         CharSequence field3);
+    public abstract Single<String> hmget(@RedisProtocolSupport.Key CharSequence key, CharSequence field1,
+                                         CharSequence field2, CharSequence field3);
 
     /**
      * Get the values of all the given hash fields.
@@ -1417,7 +1470,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMGET)
-    Single<String> hmget(@RedisProtocolSupport.Key CharSequence key, Collection<? extends CharSequence> fields);
+    public abstract Single<String> hmget(@RedisProtocolSupport.Key CharSequence key,
+                                         Collection<? extends CharSequence> fields);
 
     /**
      * Set multiple hash fields to multiple values.
@@ -1428,7 +1482,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMSET)
-    Single<String> hmset(@RedisProtocolSupport.Key CharSequence key, CharSequence field, CharSequence value);
+    public abstract Single<String> hmset(@RedisProtocolSupport.Key CharSequence key, CharSequence field,
+                                         CharSequence value);
 
     /**
      * Set multiple hash fields to multiple values.
@@ -1441,8 +1496,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMSET)
-    Single<String> hmset(@RedisProtocolSupport.Key CharSequence key, CharSequence field1, CharSequence value1,
-                         CharSequence field2, CharSequence value2);
+    public abstract Single<String> hmset(@RedisProtocolSupport.Key CharSequence key, CharSequence field1,
+                                         CharSequence value1, CharSequence field2, CharSequence value2);
 
     /**
      * Set multiple hash fields to multiple values.
@@ -1457,8 +1512,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMSET)
-    Single<String> hmset(@RedisProtocolSupport.Key CharSequence key, CharSequence field1, CharSequence value1,
-                         CharSequence field2, CharSequence value2, CharSequence field3, CharSequence value3);
+    public abstract Single<String> hmset(@RedisProtocolSupport.Key CharSequence key, CharSequence field1,
+                                         CharSequence value1, CharSequence field2, CharSequence value2,
+                                         CharSequence field3, CharSequence value3);
 
     /**
      * Set multiple hash fields to multiple values.
@@ -1468,8 +1524,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMSET)
-    Single<String> hmset(@RedisProtocolSupport.Key CharSequence key,
-                         @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.FieldValue> fieldValues);
+    public abstract Single<String> hmset(@RedisProtocolSupport.Key CharSequence key,
+                                         @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.FieldValue> fieldValues);
 
     /**
      * Incrementally iterate hash fields and associated values.
@@ -1479,7 +1535,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HSCAN)
-    Single<String> hscan(@RedisProtocolSupport.Key CharSequence key, long cursor);
+    public abstract Single<String> hscan(@RedisProtocolSupport.Key CharSequence key, long cursor);
 
     /**
      * Incrementally iterate hash fields and associated values.
@@ -1491,9 +1547,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HSCAN)
-    Single<String> hscan(@RedisProtocolSupport.Key CharSequence key, long cursor,
-                         @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.MATCH) @Nullable CharSequence matchPattern,
-                         @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count);
+    public abstract Single<String> hscan(@RedisProtocolSupport.Key CharSequence key, long cursor,
+                                         @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.MATCH) @Nullable CharSequence matchPattern,
+                                         @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count);
 
     /**
      * Set the string value of a hash field.
@@ -1504,7 +1560,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HSET)
-    Single<String> hset(@RedisProtocolSupport.Key CharSequence key, CharSequence field, CharSequence value);
+    public abstract Single<String> hset(@RedisProtocolSupport.Key CharSequence key, CharSequence field,
+                                        CharSequence value);
 
     /**
      * Set the value of a hash field, only if the field does not exist.
@@ -1515,7 +1572,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HSETNX)
-    Single<String> hsetnx(@RedisProtocolSupport.Key CharSequence key, CharSequence field, CharSequence value);
+    public abstract Single<String> hsetnx(@RedisProtocolSupport.Key CharSequence key, CharSequence field,
+                                          CharSequence value);
 
     /**
      * Get the length of the value of a hash field.
@@ -1525,7 +1583,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HSTRLEN)
-    Single<String> hstrlen(@RedisProtocolSupport.Key CharSequence key, CharSequence field);
+    public abstract Single<String> hstrlen(@RedisProtocolSupport.Key CharSequence key, CharSequence field);
 
     /**
      * Get all the values in a hash.
@@ -1534,7 +1592,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HVALS)
-    Single<String> hvals(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> hvals(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Increment the integer value of a key by one.
@@ -1543,7 +1601,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.INCR)
-    Single<String> incr(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> incr(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Increment the integer value of a key by the given amount.
@@ -1553,7 +1611,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.INCRBY)
-    Single<String> incrby(@RedisProtocolSupport.Key CharSequence key, long increment);
+    public abstract Single<String> incrby(@RedisProtocolSupport.Key CharSequence key, long increment);
 
     /**
      * Increment the float value of a key by the given amount.
@@ -1563,7 +1621,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.INCRBYFLOAT)
-    Single<String> incrbyfloat(@RedisProtocolSupport.Key CharSequence key, double increment);
+    public abstract Single<String> incrbyfloat(@RedisProtocolSupport.Key CharSequence key, double increment);
 
     /**
      * Get information and statistics about the server.
@@ -1571,7 +1629,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.INFO)
-    Single<String> info();
+    public abstract Single<String> info();
 
     /**
      * Get information and statistics about the server.
@@ -1580,7 +1638,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.INFO)
-    Single<String> info(@Nullable CharSequence section);
+    public abstract Single<String> info(@Nullable CharSequence section);
 
     /**
      * Find all keys matching the given pattern.
@@ -1589,7 +1647,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.KEYS)
-    Single<String> keys(CharSequence pattern);
+    public abstract Single<String> keys(CharSequence pattern);
 
     /**
      * Get the UNIX time stamp of the last successful save to disk.
@@ -1597,7 +1655,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LASTSAVE)
-    Single<String> lastsave();
+    public abstract Single<String> lastsave();
 
     /**
      * Get an element from a list by its index.
@@ -1607,7 +1665,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LINDEX)
-    Single<String> lindex(@RedisProtocolSupport.Key CharSequence key, long index);
+    public abstract Single<String> lindex(@RedisProtocolSupport.Key CharSequence key, long index);
 
     /**
      * Insert an element before or after another element in a list.
@@ -1619,9 +1677,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LINSERT)
-    Single<String> linsert(@RedisProtocolSupport.Key CharSequence key,
-                           @RedisProtocolSupport.Option RedisProtocolSupport.LinsertWhere where, CharSequence pivot,
-                           CharSequence value);
+    public abstract Single<String> linsert(@RedisProtocolSupport.Key CharSequence key,
+                                           @RedisProtocolSupport.Option RedisProtocolSupport.LinsertWhere where,
+                                           CharSequence pivot, CharSequence value);
 
     /**
      * Get the length of a list.
@@ -1630,7 +1688,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LLEN)
-    Single<String> llen(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> llen(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Remove and get the first element in a list.
@@ -1639,7 +1697,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LPOP)
-    Single<String> lpop(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> lpop(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Prepend one or multiple values to a list.
@@ -1649,7 +1707,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LPUSH)
-    Single<String> lpush(@RedisProtocolSupport.Key CharSequence key, CharSequence value);
+    public abstract Single<String> lpush(@RedisProtocolSupport.Key CharSequence key, CharSequence value);
 
     /**
      * Prepend one or multiple values to a list.
@@ -1660,7 +1718,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LPUSH)
-    Single<String> lpush(@RedisProtocolSupport.Key CharSequence key, CharSequence value1, CharSequence value2);
+    public abstract Single<String> lpush(@RedisProtocolSupport.Key CharSequence key, CharSequence value1,
+                                         CharSequence value2);
 
     /**
      * Prepend one or multiple values to a list.
@@ -1672,8 +1731,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LPUSH)
-    Single<String> lpush(@RedisProtocolSupport.Key CharSequence key, CharSequence value1, CharSequence value2,
-                         CharSequence value3);
+    public abstract Single<String> lpush(@RedisProtocolSupport.Key CharSequence key, CharSequence value1,
+                                         CharSequence value2, CharSequence value3);
 
     /**
      * Prepend one or multiple values to a list.
@@ -1683,7 +1742,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LPUSH)
-    Single<String> lpush(@RedisProtocolSupport.Key CharSequence key, Collection<? extends CharSequence> values);
+    public abstract Single<String> lpush(@RedisProtocolSupport.Key CharSequence key,
+                                         Collection<? extends CharSequence> values);
 
     /**
      * Prepend a value to a list, only if the list exists.
@@ -1693,7 +1753,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LPUSHX)
-    Single<String> lpushx(@RedisProtocolSupport.Key CharSequence key, CharSequence value);
+    public abstract Single<String> lpushx(@RedisProtocolSupport.Key CharSequence key, CharSequence value);
 
     /**
      * Get a range of elements from a list.
@@ -1704,7 +1764,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LRANGE)
-    Single<String> lrange(@RedisProtocolSupport.Key CharSequence key, long start, long stop);
+    public abstract Single<String> lrange(@RedisProtocolSupport.Key CharSequence key, long start, long stop);
 
     /**
      * Remove elements from a list.
@@ -1715,7 +1775,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LREM)
-    Single<String> lrem(@RedisProtocolSupport.Key CharSequence key, long count, CharSequence value);
+    public abstract Single<String> lrem(@RedisProtocolSupport.Key CharSequence key, long count, CharSequence value);
 
     /**
      * Set the value of an element in a list by its index.
@@ -1726,7 +1786,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LSET)
-    Single<String> lset(@RedisProtocolSupport.Key CharSequence key, long index, CharSequence value);
+    public abstract Single<String> lset(@RedisProtocolSupport.Key CharSequence key, long index, CharSequence value);
 
     /**
      * Trim a list to the specified range.
@@ -1737,7 +1797,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LTRIM)
-    Single<String> ltrim(@RedisProtocolSupport.Key CharSequence key, long start, long stop);
+    public abstract Single<String> ltrim(@RedisProtocolSupport.Key CharSequence key, long start, long stop);
 
     /**
      * Outputs memory problems report.
@@ -1746,7 +1806,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MEMORY)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.DOCTOR)
-    Single<String> memoryDoctor();
+    public abstract Single<String> memoryDoctor();
 
     /**
      * Show helpful text about the different subcommands.
@@ -1755,7 +1815,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MEMORY)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.HELP)
-    Single<String> memoryHelp();
+    public abstract Single<String> memoryHelp();
 
     /**
      * Show allocator internal stats.
@@ -1764,7 +1824,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MEMORY)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.MALLOC_STATS)
-    Single<String> memoryMallocStats();
+    public abstract Single<String> memoryMallocStats();
 
     /**
      * Ask the allocator to release memory.
@@ -1773,7 +1833,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MEMORY)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.PURGE)
-    Single<String> memoryPurge();
+    public abstract Single<String> memoryPurge();
 
     /**
      * Show memory usage details.
@@ -1782,7 +1842,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MEMORY)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STATS)
-    Single<String> memoryStats();
+    public abstract Single<String> memoryStats();
 
     /**
      * Estimate the memory usage of a key.
@@ -1792,7 +1852,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MEMORY)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.USAGE)
-    Single<String> memoryUsage(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> memoryUsage(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Estimate the memory usage of a key.
@@ -1803,8 +1863,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MEMORY)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.USAGE)
-    Single<String> memoryUsage(@RedisProtocolSupport.Key CharSequence key,
-                               @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SAMPLES) @Nullable Long samplesCount);
+    public abstract Single<String> memoryUsage(@RedisProtocolSupport.Key CharSequence key,
+                                               @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SAMPLES) @Nullable Long samplesCount);
 
     /**
      * Get the values of all the given keys.
@@ -1813,7 +1873,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MGET)
-    Single<String> mget(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> mget(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Get the values of all the given keys.
@@ -1823,7 +1883,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MGET)
-    Single<String> mget(@RedisProtocolSupport.Key CharSequence key1, @RedisProtocolSupport.Key CharSequence key2);
+    public abstract Single<String> mget(@RedisProtocolSupport.Key CharSequence key1,
+                                        @RedisProtocolSupport.Key CharSequence key2);
 
     /**
      * Get the values of all the given keys.
@@ -1834,8 +1895,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MGET)
-    Single<String> mget(@RedisProtocolSupport.Key CharSequence key1, @RedisProtocolSupport.Key CharSequence key2,
-                        @RedisProtocolSupport.Key CharSequence key3);
+    public abstract Single<String> mget(@RedisProtocolSupport.Key CharSequence key1,
+                                        @RedisProtocolSupport.Key CharSequence key2,
+                                        @RedisProtocolSupport.Key CharSequence key3);
 
     /**
      * Get the values of all the given keys.
@@ -1844,7 +1906,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MGET)
-    Single<String> mget(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
+    public abstract Single<String> mget(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
 
     /**
      * Move a key to another database.
@@ -1854,7 +1916,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MOVE)
-    Single<String> move(@RedisProtocolSupport.Key CharSequence key, long db);
+    public abstract Single<String> move(@RedisProtocolSupport.Key CharSequence key, long db);
 
     /**
      * Set multiple keys to multiple values.
@@ -1864,7 +1926,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MSET)
-    Single<String> mset(@RedisProtocolSupport.Key CharSequence key, CharSequence value);
+    public abstract Single<String> mset(@RedisProtocolSupport.Key CharSequence key, CharSequence value);
 
     /**
      * Set multiple keys to multiple values.
@@ -1876,8 +1938,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MSET)
-    Single<String> mset(@RedisProtocolSupport.Key CharSequence key1, CharSequence value1,
-                        @RedisProtocolSupport.Key CharSequence key2, CharSequence value2);
+    public abstract Single<String> mset(@RedisProtocolSupport.Key CharSequence key1, CharSequence value1,
+                                        @RedisProtocolSupport.Key CharSequence key2, CharSequence value2);
 
     /**
      * Set multiple keys to multiple values.
@@ -1891,9 +1953,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MSET)
-    Single<String> mset(@RedisProtocolSupport.Key CharSequence key1, CharSequence value1,
-                        @RedisProtocolSupport.Key CharSequence key2, CharSequence value2,
-                        @RedisProtocolSupport.Key CharSequence key3, CharSequence value3);
+    public abstract Single<String> mset(@RedisProtocolSupport.Key CharSequence key1, CharSequence value1,
+                                        @RedisProtocolSupport.Key CharSequence key2, CharSequence value2,
+                                        @RedisProtocolSupport.Key CharSequence key3, CharSequence value3);
 
     /**
      * Set multiple keys to multiple values.
@@ -1902,7 +1964,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MSET)
-    Single<String> mset(@RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.KeyValue> keyValues);
+    public abstract Single<String> mset(@RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.KeyValue> keyValues);
 
     /**
      * Set multiple keys to multiple values, only if none of the keys exist.
@@ -1912,7 +1974,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MSETNX)
-    Single<String> msetnx(@RedisProtocolSupport.Key CharSequence key, CharSequence value);
+    public abstract Single<String> msetnx(@RedisProtocolSupport.Key CharSequence key, CharSequence value);
 
     /**
      * Set multiple keys to multiple values, only if none of the keys exist.
@@ -1924,8 +1986,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MSETNX)
-    Single<String> msetnx(@RedisProtocolSupport.Key CharSequence key1, CharSequence value1,
-                          @RedisProtocolSupport.Key CharSequence key2, CharSequence value2);
+    public abstract Single<String> msetnx(@RedisProtocolSupport.Key CharSequence key1, CharSequence value1,
+                                          @RedisProtocolSupport.Key CharSequence key2, CharSequence value2);
 
     /**
      * Set multiple keys to multiple values, only if none of the keys exist.
@@ -1939,9 +2001,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MSETNX)
-    Single<String> msetnx(@RedisProtocolSupport.Key CharSequence key1, CharSequence value1,
-                          @RedisProtocolSupport.Key CharSequence key2, CharSequence value2,
-                          @RedisProtocolSupport.Key CharSequence key3, CharSequence value3);
+    public abstract Single<String> msetnx(@RedisProtocolSupport.Key CharSequence key1, CharSequence value1,
+                                          @RedisProtocolSupport.Key CharSequence key2, CharSequence value2,
+                                          @RedisProtocolSupport.Key CharSequence key3, CharSequence value3);
 
     /**
      * Set multiple keys to multiple values, only if none of the keys exist.
@@ -1950,7 +2012,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MSETNX)
-    Single<String> msetnx(@RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.KeyValue> keyValues);
+    public abstract Single<String> msetnx(@RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.KeyValue> keyValues);
 
     /**
      * Returns the kind of internal representation used in order to store the value associated with a key.
@@ -1960,7 +2022,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.OBJECT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.ENCODING)
-    Single<String> objectEncoding(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> objectEncoding(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Returns the logarithmic access frequency counter of the object stored at the specified key.
@@ -1970,7 +2032,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.OBJECT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.FREQ)
-    Single<String> objectFreq(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> objectFreq(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Returns a succinct help text.
@@ -1979,7 +2041,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.OBJECT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.HELP)
-    Single<String> objectHelp();
+    public abstract Single<String> objectHelp();
 
     /**
      * Returns the number of seconds since the object stored at the specified key is idle.
@@ -1989,7 +2051,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.OBJECT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.IDLETIME)
-    Single<String> objectIdletime(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> objectIdletime(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Returns the number of references of the value associated with the specified key.
@@ -1999,7 +2061,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.OBJECT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.REFCOUNT)
-    Single<String> objectRefcount(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> objectRefcount(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Remove the expiration from a key.
@@ -2008,7 +2070,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PERSIST)
-    Single<String> persist(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> persist(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Set a key's time to live in milliseconds.
@@ -2018,7 +2080,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PEXPIRE)
-    Single<String> pexpire(@RedisProtocolSupport.Key CharSequence key, long milliseconds);
+    public abstract Single<String> pexpire(@RedisProtocolSupport.Key CharSequence key, long milliseconds);
 
     /**
      * Set the expiration for a key as a UNIX timestamp specified in milliseconds.
@@ -2028,7 +2090,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PEXPIREAT)
-    Single<String> pexpireat(@RedisProtocolSupport.Key CharSequence key, long millisecondsTimestamp);
+    public abstract Single<String> pexpireat(@RedisProtocolSupport.Key CharSequence key, long millisecondsTimestamp);
 
     /**
      * Adds the specified elements to the specified HyperLogLog.
@@ -2038,7 +2100,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PFADD)
-    Single<String> pfadd(@RedisProtocolSupport.Key CharSequence key, CharSequence element);
+    public abstract Single<String> pfadd(@RedisProtocolSupport.Key CharSequence key, CharSequence element);
 
     /**
      * Adds the specified elements to the specified HyperLogLog.
@@ -2049,7 +2111,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PFADD)
-    Single<String> pfadd(@RedisProtocolSupport.Key CharSequence key, CharSequence element1, CharSequence element2);
+    public abstract Single<String> pfadd(@RedisProtocolSupport.Key CharSequence key, CharSequence element1,
+                                         CharSequence element2);
 
     /**
      * Adds the specified elements to the specified HyperLogLog.
@@ -2061,8 +2124,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PFADD)
-    Single<String> pfadd(@RedisProtocolSupport.Key CharSequence key, CharSequence element1, CharSequence element2,
-                         CharSequence element3);
+    public abstract Single<String> pfadd(@RedisProtocolSupport.Key CharSequence key, CharSequence element1,
+                                         CharSequence element2, CharSequence element3);
 
     /**
      * Adds the specified elements to the specified HyperLogLog.
@@ -2072,7 +2135,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PFADD)
-    Single<String> pfadd(@RedisProtocolSupport.Key CharSequence key, Collection<? extends CharSequence> elements);
+    public abstract Single<String> pfadd(@RedisProtocolSupport.Key CharSequence key,
+                                         Collection<? extends CharSequence> elements);
 
     /**
      * Return the approximated cardinality of the set(s) observed by the HyperLogLog at key(s).
@@ -2081,7 +2145,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PFCOUNT)
-    Single<String> pfcount(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> pfcount(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Return the approximated cardinality of the set(s) observed by the HyperLogLog at key(s).
@@ -2091,7 +2155,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PFCOUNT)
-    Single<String> pfcount(@RedisProtocolSupport.Key CharSequence key1, @RedisProtocolSupport.Key CharSequence key2);
+    public abstract Single<String> pfcount(@RedisProtocolSupport.Key CharSequence key1,
+                                           @RedisProtocolSupport.Key CharSequence key2);
 
     /**
      * Return the approximated cardinality of the set(s) observed by the HyperLogLog at key(s).
@@ -2102,8 +2167,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PFCOUNT)
-    Single<String> pfcount(@RedisProtocolSupport.Key CharSequence key1, @RedisProtocolSupport.Key CharSequence key2,
-                           @RedisProtocolSupport.Key CharSequence key3);
+    public abstract Single<String> pfcount(@RedisProtocolSupport.Key CharSequence key1,
+                                           @RedisProtocolSupport.Key CharSequence key2,
+                                           @RedisProtocolSupport.Key CharSequence key3);
 
     /**
      * Return the approximated cardinality of the set(s) observed by the HyperLogLog at key(s).
@@ -2112,7 +2178,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PFCOUNT)
-    Single<String> pfcount(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
+    public abstract Single<String> pfcount(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
 
     /**
      * Merge N different HyperLogLogs into a single one.
@@ -2122,7 +2188,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PFMERGE)
-    Single<String> pfmerge(@RedisProtocolSupport.Key CharSequence destkey, @RedisProtocolSupport.Key CharSequence sourcekey);
+    public abstract Single<String> pfmerge(@RedisProtocolSupport.Key CharSequence destkey,
+                                           @RedisProtocolSupport.Key CharSequence sourcekey);
 
     /**
      * Merge N different HyperLogLogs into a single one.
@@ -2133,8 +2200,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PFMERGE)
-    Single<String> pfmerge(@RedisProtocolSupport.Key CharSequence destkey, @RedisProtocolSupport.Key CharSequence sourcekey1,
-                           @RedisProtocolSupport.Key CharSequence sourcekey2);
+    public abstract Single<String> pfmerge(@RedisProtocolSupport.Key CharSequence destkey,
+                                           @RedisProtocolSupport.Key CharSequence sourcekey1,
+                                           @RedisProtocolSupport.Key CharSequence sourcekey2);
 
     /**
      * Merge N different HyperLogLogs into a single one.
@@ -2146,8 +2214,10 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PFMERGE)
-    Single<String> pfmerge(@RedisProtocolSupport.Key CharSequence destkey, @RedisProtocolSupport.Key CharSequence sourcekey1,
-                           @RedisProtocolSupport.Key CharSequence sourcekey2, @RedisProtocolSupport.Key CharSequence sourcekey3);
+    public abstract Single<String> pfmerge(@RedisProtocolSupport.Key CharSequence destkey,
+                                           @RedisProtocolSupport.Key CharSequence sourcekey1,
+                                           @RedisProtocolSupport.Key CharSequence sourcekey2,
+                                           @RedisProtocolSupport.Key CharSequence sourcekey3);
 
     /**
      * Merge N different HyperLogLogs into a single one.
@@ -2157,8 +2227,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PFMERGE)
-    Single<String> pfmerge(@RedisProtocolSupport.Key CharSequence destkey,
-                           @RedisProtocolSupport.Key Collection<? extends CharSequence> sourcekeys);
+    public abstract Single<String> pfmerge(@RedisProtocolSupport.Key CharSequence destkey,
+                                           @RedisProtocolSupport.Key Collection<? extends CharSequence> sourcekeys);
 
     /**
      * Ping the server.
@@ -2166,7 +2236,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PING)
-    Single<String> ping();
+    public abstract Single<String> ping();
 
     /**
      * Ping the server.
@@ -2175,7 +2245,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PING)
-    Single<String> ping(CharSequence message);
+    public abstract Single<String> ping(CharSequence message);
 
     /**
      * Set the value and expiration in milliseconds of a key.
@@ -2186,7 +2256,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PSETEX)
-    Single<String> psetex(@RedisProtocolSupport.Key CharSequence key, long milliseconds, CharSequence value);
+    public abstract Single<String> psetex(@RedisProtocolSupport.Key CharSequence key, long milliseconds,
+                                          CharSequence value);
 
     /**
      * Get the time to live for a key in milliseconds.
@@ -2195,7 +2266,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PTTL)
-    Single<String> pttl(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> pttl(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Post a message to a channel.
@@ -2205,7 +2276,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBLISH)
-    Single<String> publish(CharSequence channel, CharSequence message);
+    public abstract Single<String> publish(CharSequence channel, CharSequence message);
 
     /**
      * Lists the currently active channels.
@@ -2214,7 +2285,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBSUB)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.CHANNELS)
-    Single<String> pubsubChannels();
+    public abstract Single<String> pubsubChannels();
 
     /**
      * Lists the currently active channels.
@@ -2224,7 +2295,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBSUB)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.CHANNELS)
-    Single<String> pubsubChannels(@Nullable CharSequence pattern);
+    public abstract Single<String> pubsubChannels(@Nullable CharSequence pattern);
 
     /**
      * Lists the currently active channels.
@@ -2235,7 +2306,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBSUB)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.CHANNELS)
-    Single<String> pubsubChannels(@Nullable CharSequence pattern1, @Nullable CharSequence pattern2);
+    public abstract Single<String> pubsubChannels(@Nullable CharSequence pattern1, @Nullable CharSequence pattern2);
 
     /**
      * Lists the currently active channels.
@@ -2247,8 +2318,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBSUB)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.CHANNELS)
-    Single<String> pubsubChannels(@Nullable CharSequence pattern1, @Nullable CharSequence pattern2,
-                                  @Nullable CharSequence pattern3);
+    public abstract Single<String> pubsubChannels(@Nullable CharSequence pattern1, @Nullable CharSequence pattern2,
+                                                  @Nullable CharSequence pattern3);
 
     /**
      * Lists the currently active channels.
@@ -2258,7 +2329,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBSUB)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.CHANNELS)
-    Single<String> pubsubChannels(Collection<? extends CharSequence> patterns);
+    public abstract Single<String> pubsubChannels(Collection<? extends CharSequence> patterns);
 
     /**
      * Returns the number of subscribers for the specified channels.
@@ -2267,7 +2338,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBSUB)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.NUMSUB)
-    Single<String> pubsubNumsub();
+    public abstract Single<String> pubsubNumsub();
 
     /**
      * Returns the number of subscribers for the specified channels.
@@ -2277,7 +2348,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBSUB)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.NUMSUB)
-    Single<String> pubsubNumsub(@Nullable CharSequence channel);
+    public abstract Single<String> pubsubNumsub(@Nullable CharSequence channel);
 
     /**
      * Returns the number of subscribers for the specified channels.
@@ -2288,7 +2359,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBSUB)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.NUMSUB)
-    Single<String> pubsubNumsub(@Nullable CharSequence channel1, @Nullable CharSequence channel2);
+    public abstract Single<String> pubsubNumsub(@Nullable CharSequence channel1, @Nullable CharSequence channel2);
 
     /**
      * Returns the number of subscribers for the specified channels.
@@ -2300,8 +2371,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBSUB)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.NUMSUB)
-    Single<String> pubsubNumsub(@Nullable CharSequence channel1, @Nullable CharSequence channel2,
-                                @Nullable CharSequence channel3);
+    public abstract Single<String> pubsubNumsub(@Nullable CharSequence channel1, @Nullable CharSequence channel2,
+                                                @Nullable CharSequence channel3);
 
     /**
      * Returns the number of subscribers for the specified channels.
@@ -2311,7 +2382,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBSUB)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.NUMSUB)
-    Single<String> pubsubNumsub(Collection<? extends CharSequence> channels);
+    public abstract Single<String> pubsubNumsub(Collection<? extends CharSequence> channels);
 
     /**
      * Returns the number of subscriptions to patterns.
@@ -2320,7 +2391,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBSUB)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.NUMPAT)
-    Single<String> pubsubNumpat();
+    public abstract Single<String> pubsubNumpat();
 
     /**
      * Return a random key from the keyspace.
@@ -2328,7 +2399,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RANDOMKEY)
-    Single<String> randomkey();
+    public abstract Single<String> randomkey();
 
     /**
      * Enables read queries for a connection to a cluster slave node.
@@ -2336,7 +2407,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.READONLY)
-    Single<String> readonly();
+    public abstract Single<String> readonly();
 
     /**
      * Disables read queries for a connection to a cluster slave node.
@@ -2344,7 +2415,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.READWRITE)
-    Single<String> readwrite();
+    public abstract Single<String> readwrite();
 
     /**
      * Rename a key.
@@ -2354,7 +2425,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RENAME)
-    Single<String> rename(@RedisProtocolSupport.Key CharSequence key, @RedisProtocolSupport.Key CharSequence newkey);
+    public abstract Single<String> rename(@RedisProtocolSupport.Key CharSequence key,
+                                          @RedisProtocolSupport.Key CharSequence newkey);
 
     /**
      * Rename a key, only if the new key does not exist.
@@ -2364,7 +2436,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RENAMENX)
-    Single<String> renamenx(@RedisProtocolSupport.Key CharSequence key, @RedisProtocolSupport.Key CharSequence newkey);
+    public abstract Single<String> renamenx(@RedisProtocolSupport.Key CharSequence key,
+                                            @RedisProtocolSupport.Key CharSequence newkey);
 
     /**
      * Create a key using the provided serialized value, previously obtained using DUMP.
@@ -2375,7 +2448,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RESTORE)
-    Single<String> restore(@RedisProtocolSupport.Key CharSequence key, long ttl, CharSequence serializedValue);
+    public abstract Single<String> restore(@RedisProtocolSupport.Key CharSequence key, long ttl,
+                                           CharSequence serializedValue);
 
     /**
      * Create a key using the provided serialized value, previously obtained using DUMP.
@@ -2387,8 +2461,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RESTORE)
-    Single<String> restore(@RedisProtocolSupport.Key CharSequence key, long ttl, CharSequence serializedValue,
-                           @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.RestoreReplace replace);
+    public abstract Single<String> restore(@RedisProtocolSupport.Key CharSequence key, long ttl,
+                                           CharSequence serializedValue,
+                                           @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.RestoreReplace replace);
 
     /**
      * Return the role of the instance in the context of replication.
@@ -2396,7 +2471,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ROLE)
-    Single<String> role();
+    public abstract Single<String> role();
 
     /**
      * Remove and get the last element in a list.
@@ -2405,7 +2480,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RPOP)
-    Single<String> rpop(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> rpop(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Remove the last element in a list, prepend it to another list and return it.
@@ -2415,7 +2490,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RPOPLPUSH)
-    Single<String> rpoplpush(@RedisProtocolSupport.Key CharSequence source, @RedisProtocolSupport.Key CharSequence destination);
+    public abstract Single<String> rpoplpush(@RedisProtocolSupport.Key CharSequence source,
+                                             @RedisProtocolSupport.Key CharSequence destination);
 
     /**
      * Append one or multiple values to a list.
@@ -2425,7 +2501,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RPUSH)
-    Single<String> rpush(@RedisProtocolSupport.Key CharSequence key, CharSequence value);
+    public abstract Single<String> rpush(@RedisProtocolSupport.Key CharSequence key, CharSequence value);
 
     /**
      * Append one or multiple values to a list.
@@ -2436,7 +2512,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RPUSH)
-    Single<String> rpush(@RedisProtocolSupport.Key CharSequence key, CharSequence value1, CharSequence value2);
+    public abstract Single<String> rpush(@RedisProtocolSupport.Key CharSequence key, CharSequence value1,
+                                         CharSequence value2);
 
     /**
      * Append one or multiple values to a list.
@@ -2448,8 +2525,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RPUSH)
-    Single<String> rpush(@RedisProtocolSupport.Key CharSequence key, CharSequence value1, CharSequence value2,
-                         CharSequence value3);
+    public abstract Single<String> rpush(@RedisProtocolSupport.Key CharSequence key, CharSequence value1,
+                                         CharSequence value2, CharSequence value3);
 
     /**
      * Append one or multiple values to a list.
@@ -2459,7 +2536,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RPUSH)
-    Single<String> rpush(@RedisProtocolSupport.Key CharSequence key, Collection<? extends CharSequence> values);
+    public abstract Single<String> rpush(@RedisProtocolSupport.Key CharSequence key,
+                                         Collection<? extends CharSequence> values);
 
     /**
      * Append a value to a list, only if the list exists.
@@ -2469,7 +2547,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RPUSHX)
-    Single<String> rpushx(@RedisProtocolSupport.Key CharSequence key, CharSequence value);
+    public abstract Single<String> rpushx(@RedisProtocolSupport.Key CharSequence key, CharSequence value);
 
     /**
      * Add one or more members to a set.
@@ -2479,7 +2557,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SADD)
-    Single<String> sadd(@RedisProtocolSupport.Key CharSequence key, CharSequence member);
+    public abstract Single<String> sadd(@RedisProtocolSupport.Key CharSequence key, CharSequence member);
 
     /**
      * Add one or more members to a set.
@@ -2490,7 +2568,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SADD)
-    Single<String> sadd(@RedisProtocolSupport.Key CharSequence key, CharSequence member1, CharSequence member2);
+    public abstract Single<String> sadd(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
+                                        CharSequence member2);
 
     /**
      * Add one or more members to a set.
@@ -2502,8 +2581,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SADD)
-    Single<String> sadd(@RedisProtocolSupport.Key CharSequence key, CharSequence member1, CharSequence member2,
-                        CharSequence member3);
+    public abstract Single<String> sadd(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
+                                        CharSequence member2, CharSequence member3);
 
     /**
      * Add one or more members to a set.
@@ -2513,7 +2592,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SADD)
-    Single<String> sadd(@RedisProtocolSupport.Key CharSequence key, Collection<? extends CharSequence> members);
+    public abstract Single<String> sadd(@RedisProtocolSupport.Key CharSequence key,
+                                        Collection<? extends CharSequence> members);
 
     /**
      * Synchronously save the dataset to disk.
@@ -2521,7 +2601,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SAVE)
-    Single<String> save();
+    public abstract Single<String> save();
 
     /**
      * Incrementally iterate the keys space.
@@ -2530,7 +2610,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SCAN)
-    Single<String> scan(long cursor);
+    public abstract Single<String> scan(long cursor);
 
     /**
      * Incrementally iterate the keys space.
@@ -2541,9 +2621,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SCAN)
-    Single<String> scan(long cursor,
-                        @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.MATCH) @Nullable CharSequence matchPattern,
-                        @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count);
+    public abstract Single<String> scan(long cursor,
+                                        @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.MATCH) @Nullable CharSequence matchPattern,
+                                        @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count);
 
     /**
      * Get the number of members in a set.
@@ -2552,7 +2632,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SCARD)
-    Single<String> scard(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> scard(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Set the debug mode for executed scripts.
@@ -2562,7 +2642,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SCRIPT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.DEBUG)
-    Single<String> scriptDebug(@RedisProtocolSupport.Option RedisProtocolSupport.ScriptDebugMode mode);
+    public abstract Single<String> scriptDebug(@RedisProtocolSupport.Option RedisProtocolSupport.ScriptDebugMode mode);
 
     /**
      * Check existence of scripts in the script cache.
@@ -2572,7 +2652,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SCRIPT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.EXISTS)
-    Single<String> scriptExists(CharSequence sha1);
+    public abstract Single<String> scriptExists(CharSequence sha1);
 
     /**
      * Check existence of scripts in the script cache.
@@ -2583,7 +2663,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SCRIPT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.EXISTS)
-    Single<String> scriptExists(CharSequence sha11, CharSequence sha12);
+    public abstract Single<String> scriptExists(CharSequence sha11, CharSequence sha12);
 
     /**
      * Check existence of scripts in the script cache.
@@ -2595,7 +2675,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SCRIPT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.EXISTS)
-    Single<String> scriptExists(CharSequence sha11, CharSequence sha12, CharSequence sha13);
+    public abstract Single<String> scriptExists(CharSequence sha11, CharSequence sha12, CharSequence sha13);
 
     /**
      * Check existence of scripts in the script cache.
@@ -2605,7 +2685,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SCRIPT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.EXISTS)
-    Single<String> scriptExists(Collection<? extends CharSequence> sha1s);
+    public abstract Single<String> scriptExists(Collection<? extends CharSequence> sha1s);
 
     /**
      * Remove all the scripts from the script cache.
@@ -2614,7 +2694,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SCRIPT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.FLUSH)
-    Single<String> scriptFlush();
+    public abstract Single<String> scriptFlush();
 
     /**
      * Kill the script currently in execution.
@@ -2623,7 +2703,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SCRIPT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.KILL)
-    Single<String> scriptKill();
+    public abstract Single<String> scriptKill();
 
     /**
      * Load the specified Lua script into the script cache.
@@ -2633,7 +2713,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SCRIPT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LOAD)
-    Single<String> scriptLoad(CharSequence script);
+    public abstract Single<String> scriptLoad(CharSequence script);
 
     /**
      * Subtract multiple sets.
@@ -2642,7 +2722,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SDIFF)
-    Single<String> sdiff(@RedisProtocolSupport.Key CharSequence firstkey);
+    public abstract Single<String> sdiff(@RedisProtocolSupport.Key CharSequence firstkey);
 
     /**
      * Subtract multiple sets.
@@ -2652,8 +2732,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SDIFF)
-    Single<String> sdiff(@RedisProtocolSupport.Key CharSequence firstkey,
-                         @Nullable @RedisProtocolSupport.Key CharSequence otherkey);
+    public abstract Single<String> sdiff(@RedisProtocolSupport.Key CharSequence firstkey,
+                                         @Nullable @RedisProtocolSupport.Key CharSequence otherkey);
 
     /**
      * Subtract multiple sets.
@@ -2664,9 +2744,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SDIFF)
-    Single<String> sdiff(@RedisProtocolSupport.Key CharSequence firstkey,
-                         @Nullable @RedisProtocolSupport.Key CharSequence otherkey1,
-                         @Nullable @RedisProtocolSupport.Key CharSequence otherkey2);
+    public abstract Single<String> sdiff(@RedisProtocolSupport.Key CharSequence firstkey,
+                                         @Nullable @RedisProtocolSupport.Key CharSequence otherkey1,
+                                         @Nullable @RedisProtocolSupport.Key CharSequence otherkey2);
 
     /**
      * Subtract multiple sets.
@@ -2678,10 +2758,10 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SDIFF)
-    Single<String> sdiff(@RedisProtocolSupport.Key CharSequence firstkey,
-                         @Nullable @RedisProtocolSupport.Key CharSequence otherkey1,
-                         @Nullable @RedisProtocolSupport.Key CharSequence otherkey2,
-                         @Nullable @RedisProtocolSupport.Key CharSequence otherkey3);
+    public abstract Single<String> sdiff(@RedisProtocolSupport.Key CharSequence firstkey,
+                                         @Nullable @RedisProtocolSupport.Key CharSequence otherkey1,
+                                         @Nullable @RedisProtocolSupport.Key CharSequence otherkey2,
+                                         @Nullable @RedisProtocolSupport.Key CharSequence otherkey3);
 
     /**
      * Subtract multiple sets.
@@ -2691,8 +2771,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SDIFF)
-    Single<String> sdiff(@RedisProtocolSupport.Key CharSequence firstkey,
-                         @RedisProtocolSupport.Key Collection<? extends CharSequence> otherkeys);
+    public abstract Single<String> sdiff(@RedisProtocolSupport.Key CharSequence firstkey,
+                                         @RedisProtocolSupport.Key Collection<? extends CharSequence> otherkeys);
 
     /**
      * Subtract multiple sets and store the resulting set in a key.
@@ -2702,8 +2782,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SDIFFSTORE)
-    Single<String> sdiffstore(@RedisProtocolSupport.Key CharSequence destination,
-                              @RedisProtocolSupport.Key CharSequence firstkey);
+    public abstract Single<String> sdiffstore(@RedisProtocolSupport.Key CharSequence destination,
+                                              @RedisProtocolSupport.Key CharSequence firstkey);
 
     /**
      * Subtract multiple sets and store the resulting set in a key.
@@ -2714,8 +2794,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SDIFFSTORE)
-    Single<String> sdiffstore(@RedisProtocolSupport.Key CharSequence destination, @RedisProtocolSupport.Key CharSequence firstkey,
-                              @Nullable @RedisProtocolSupport.Key CharSequence otherkey);
+    public abstract Single<String> sdiffstore(@RedisProtocolSupport.Key CharSequence destination,
+                                              @RedisProtocolSupport.Key CharSequence firstkey,
+                                              @Nullable @RedisProtocolSupport.Key CharSequence otherkey);
 
     /**
      * Subtract multiple sets and store the resulting set in a key.
@@ -2727,9 +2808,10 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SDIFFSTORE)
-    Single<String> sdiffstore(@RedisProtocolSupport.Key CharSequence destination, @RedisProtocolSupport.Key CharSequence firstkey,
-                              @Nullable @RedisProtocolSupport.Key CharSequence otherkey1,
-                              @Nullable @RedisProtocolSupport.Key CharSequence otherkey2);
+    public abstract Single<String> sdiffstore(@RedisProtocolSupport.Key CharSequence destination,
+                                              @RedisProtocolSupport.Key CharSequence firstkey,
+                                              @Nullable @RedisProtocolSupport.Key CharSequence otherkey1,
+                                              @Nullable @RedisProtocolSupport.Key CharSequence otherkey2);
 
     /**
      * Subtract multiple sets and store the resulting set in a key.
@@ -2742,10 +2824,11 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SDIFFSTORE)
-    Single<String> sdiffstore(@RedisProtocolSupport.Key CharSequence destination, @RedisProtocolSupport.Key CharSequence firstkey,
-                              @Nullable @RedisProtocolSupport.Key CharSequence otherkey1,
-                              @Nullable @RedisProtocolSupport.Key CharSequence otherkey2,
-                              @Nullable @RedisProtocolSupport.Key CharSequence otherkey3);
+    public abstract Single<String> sdiffstore(@RedisProtocolSupport.Key CharSequence destination,
+                                              @RedisProtocolSupport.Key CharSequence firstkey,
+                                              @Nullable @RedisProtocolSupport.Key CharSequence otherkey1,
+                                              @Nullable @RedisProtocolSupport.Key CharSequence otherkey2,
+                                              @Nullable @RedisProtocolSupport.Key CharSequence otherkey3);
 
     /**
      * Subtract multiple sets and store the resulting set in a key.
@@ -2756,8 +2839,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SDIFFSTORE)
-    Single<String> sdiffstore(@RedisProtocolSupport.Key CharSequence destination, @RedisProtocolSupport.Key CharSequence firstkey,
-                              @RedisProtocolSupport.Key Collection<? extends CharSequence> otherkeys);
+    public abstract Single<String> sdiffstore(@RedisProtocolSupport.Key CharSequence destination,
+                                              @RedisProtocolSupport.Key CharSequence firstkey,
+                                              @RedisProtocolSupport.Key Collection<? extends CharSequence> otherkeys);
 
     /**
      * Change the selected database for the current connection.
@@ -2766,7 +2850,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SELECT)
-    Single<String> select(long index);
+    public abstract Single<String> select(long index);
 
     /**
      * Set the string value of a key.
@@ -2776,7 +2860,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SET)
-    Single<String> set(@RedisProtocolSupport.Key CharSequence key, CharSequence value);
+    public abstract Single<String> set(@RedisProtocolSupport.Key CharSequence key, CharSequence value);
 
     /**
      * Set the string value of a key.
@@ -2788,9 +2872,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SET)
-    Single<String> set(@RedisProtocolSupport.Key CharSequence key, CharSequence value,
-                       @RedisProtocolSupport.Tuple @Nullable RedisProtocolSupport.ExpireDuration expireDuration,
-                       @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.SetCondition condition);
+    public abstract Single<String> set(@RedisProtocolSupport.Key CharSequence key, CharSequence value,
+                                       @RedisProtocolSupport.Tuple @Nullable RedisProtocolSupport.ExpireDuration expireDuration,
+                                       @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.SetCondition condition);
 
     /**
      * Sets or clears the bit at offset in the string value stored at key.
@@ -2801,7 +2885,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SETBIT)
-    Single<String> setbit(@RedisProtocolSupport.Key CharSequence key, long offset, CharSequence value);
+    public abstract Single<String> setbit(@RedisProtocolSupport.Key CharSequence key, long offset, CharSequence value);
 
     /**
      * Set the value and expiration of a key.
@@ -2812,7 +2896,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SETEX)
-    Single<String> setex(@RedisProtocolSupport.Key CharSequence key, long seconds, CharSequence value);
+    public abstract Single<String> setex(@RedisProtocolSupport.Key CharSequence key, long seconds, CharSequence value);
 
     /**
      * Set the value of a key, only if the key does not exist.
@@ -2822,7 +2906,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SETNX)
-    Single<String> setnx(@RedisProtocolSupport.Key CharSequence key, CharSequence value);
+    public abstract Single<String> setnx(@RedisProtocolSupport.Key CharSequence key, CharSequence value);
 
     /**
      * Overwrite part of a string at key starting at the specified offset.
@@ -2833,7 +2917,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SETRANGE)
-    Single<String> setrange(@RedisProtocolSupport.Key CharSequence key, long offset, CharSequence value);
+    public abstract Single<String> setrange(@RedisProtocolSupport.Key CharSequence key, long offset,
+                                            CharSequence value);
 
     /**
      * Synchronously save the dataset to disk and then shut down the server.
@@ -2841,7 +2926,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SHUTDOWN)
-    Single<String> shutdown();
+    public abstract Single<String> shutdown();
 
     /**
      * Synchronously save the dataset to disk and then shut down the server.
@@ -2850,7 +2935,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SHUTDOWN)
-    Single<String> shutdown(@RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ShutdownSaveMode saveMode);
+    public abstract Single<String> shutdown(@RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ShutdownSaveMode saveMode);
 
     /**
      * Intersect multiple sets.
@@ -2859,7 +2944,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SINTER)
-    Single<String> sinter(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> sinter(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Intersect multiple sets.
@@ -2869,7 +2954,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SINTER)
-    Single<String> sinter(@RedisProtocolSupport.Key CharSequence key1, @RedisProtocolSupport.Key CharSequence key2);
+    public abstract Single<String> sinter(@RedisProtocolSupport.Key CharSequence key1,
+                                          @RedisProtocolSupport.Key CharSequence key2);
 
     /**
      * Intersect multiple sets.
@@ -2880,8 +2966,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SINTER)
-    Single<String> sinter(@RedisProtocolSupport.Key CharSequence key1, @RedisProtocolSupport.Key CharSequence key2,
-                          @RedisProtocolSupport.Key CharSequence key3);
+    public abstract Single<String> sinter(@RedisProtocolSupport.Key CharSequence key1,
+                                          @RedisProtocolSupport.Key CharSequence key2,
+                                          @RedisProtocolSupport.Key CharSequence key3);
 
     /**
      * Intersect multiple sets.
@@ -2890,7 +2977,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SINTER)
-    Single<String> sinter(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
+    public abstract Single<String> sinter(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
 
     /**
      * Intersect multiple sets and store the resulting set in a key.
@@ -2900,7 +2987,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SINTERSTORE)
-    Single<String> sinterstore(@RedisProtocolSupport.Key CharSequence destination, @RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> sinterstore(@RedisProtocolSupport.Key CharSequence destination,
+                                               @RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Intersect multiple sets and store the resulting set in a key.
@@ -2911,8 +2999,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SINTERSTORE)
-    Single<String> sinterstore(@RedisProtocolSupport.Key CharSequence destination, @RedisProtocolSupport.Key CharSequence key1,
-                               @RedisProtocolSupport.Key CharSequence key2);
+    public abstract Single<String> sinterstore(@RedisProtocolSupport.Key CharSequence destination,
+                                               @RedisProtocolSupport.Key CharSequence key1,
+                                               @RedisProtocolSupport.Key CharSequence key2);
 
     /**
      * Intersect multiple sets and store the resulting set in a key.
@@ -2924,8 +3013,10 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SINTERSTORE)
-    Single<String> sinterstore(@RedisProtocolSupport.Key CharSequence destination, @RedisProtocolSupport.Key CharSequence key1,
-                               @RedisProtocolSupport.Key CharSequence key2, @RedisProtocolSupport.Key CharSequence key3);
+    public abstract Single<String> sinterstore(@RedisProtocolSupport.Key CharSequence destination,
+                                               @RedisProtocolSupport.Key CharSequence key1,
+                                               @RedisProtocolSupport.Key CharSequence key2,
+                                               @RedisProtocolSupport.Key CharSequence key3);
 
     /**
      * Intersect multiple sets and store the resulting set in a key.
@@ -2935,8 +3026,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SINTERSTORE)
-    Single<String> sinterstore(@RedisProtocolSupport.Key CharSequence destination,
-                               @RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
+    public abstract Single<String> sinterstore(@RedisProtocolSupport.Key CharSequence destination,
+                                               @RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
 
     /**
      * Determine if a given value is a member of a set.
@@ -2946,7 +3037,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SISMEMBER)
-    Single<String> sismember(@RedisProtocolSupport.Key CharSequence key, CharSequence member);
+    public abstract Single<String> sismember(@RedisProtocolSupport.Key CharSequence key, CharSequence member);
 
     /**
      * Make the server a slave of another instance, or promote it as master.
@@ -2956,7 +3047,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SLAVEOF)
-    Single<String> slaveof(CharSequence host, CharSequence port);
+    public abstract Single<String> slaveof(CharSequence host, CharSequence port);
 
     /**
      * Manages the Redis slow queries log.
@@ -2965,7 +3056,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SLOWLOG)
-    Single<String> slowlog(CharSequence subcommand);
+    public abstract Single<String> slowlog(CharSequence subcommand);
 
     /**
      * Manages the Redis slow queries log.
@@ -2975,7 +3066,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SLOWLOG)
-    Single<String> slowlog(CharSequence subcommand, @Nullable CharSequence argument);
+    public abstract Single<String> slowlog(CharSequence subcommand, @Nullable CharSequence argument);
 
     /**
      * Get all the members in a set.
@@ -2984,7 +3075,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SMEMBERS)
-    Single<String> smembers(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> smembers(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Move a member from one set to another.
@@ -2995,8 +3086,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SMOVE)
-    Single<String> smove(@RedisProtocolSupport.Key CharSequence source, @RedisProtocolSupport.Key CharSequence destination,
-                         CharSequence member);
+    public abstract Single<String> smove(@RedisProtocolSupport.Key CharSequence source,
+                                         @RedisProtocolSupport.Key CharSequence destination, CharSequence member);
 
     /**
      * Sort the elements in a list, set or sorted set.
@@ -3005,7 +3096,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SORT)
-    Single<String> sort(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> sort(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Sort the elements in a list, set or sorted set.
@@ -3019,12 +3110,12 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SORT)
-    Single<String> sort(@RedisProtocolSupport.Key CharSequence key,
-                        @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.BY) @Nullable CharSequence byPattern,
-                        @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIMIT) @Nullable @RedisProtocolSupport.Tuple RedisProtocolSupport.OffsetCount offsetCount,
-                        @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.GET) Collection<? extends CharSequence> getPatterns,
-                        @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.SortOrder order,
-                        @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.SortSorting sorting);
+    public abstract Single<String> sort(@RedisProtocolSupport.Key CharSequence key,
+                                        @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.BY) @Nullable CharSequence byPattern,
+                                        @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIMIT) @Nullable @RedisProtocolSupport.Tuple RedisProtocolSupport.OffsetCount offsetCount,
+                                        @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.GET) Collection<? extends CharSequence> getPatterns,
+                                        @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.SortOrder order,
+                                        @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.SortSorting sorting);
 
     /**
      * Sort the elements in a list, set or sorted set.
@@ -3034,8 +3125,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SORT)
-    Single<String> sort(@RedisProtocolSupport.Key CharSequence key,
-                        @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STORE) @RedisProtocolSupport.Key CharSequence storeDestination);
+    public abstract Single<String> sort(@RedisProtocolSupport.Key CharSequence key,
+                                        @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STORE) @RedisProtocolSupport.Key CharSequence storeDestination);
 
     /**
      * Sort the elements in a list, set or sorted set.
@@ -3050,13 +3141,13 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SORT)
-    Single<String> sort(@RedisProtocolSupport.Key CharSequence key,
-                        @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STORE) @RedisProtocolSupport.Key CharSequence storeDestination,
-                        @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.BY) @Nullable CharSequence byPattern,
-                        @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIMIT) @Nullable @RedisProtocolSupport.Tuple RedisProtocolSupport.OffsetCount offsetCount,
-                        @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.GET) Collection<? extends CharSequence> getPatterns,
-                        @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.SortOrder order,
-                        @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.SortSorting sorting);
+    public abstract Single<String> sort(@RedisProtocolSupport.Key CharSequence key,
+                                        @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STORE) @RedisProtocolSupport.Key CharSequence storeDestination,
+                                        @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.BY) @Nullable CharSequence byPattern,
+                                        @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIMIT) @Nullable @RedisProtocolSupport.Tuple RedisProtocolSupport.OffsetCount offsetCount,
+                                        @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.GET) Collection<? extends CharSequence> getPatterns,
+                                        @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.SortOrder order,
+                                        @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.SortSorting sorting);
 
     /**
      * Remove and return one or multiple random members from a set.
@@ -3065,7 +3156,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SPOP)
-    Single<String> spop(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> spop(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Remove and return one or multiple random members from a set.
@@ -3075,7 +3166,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SPOP)
-    Single<String> spop(@RedisProtocolSupport.Key CharSequence key, @Nullable Long count);
+    public abstract Single<String> spop(@RedisProtocolSupport.Key CharSequence key, @Nullable Long count);
 
     /**
      * Get one or multiple random members from a set.
@@ -3084,7 +3175,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SRANDMEMBER)
-    Single<String> srandmember(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> srandmember(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Get one or multiple random members from a set.
@@ -3094,7 +3185,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SRANDMEMBER)
-    Single<String> srandmember(@RedisProtocolSupport.Key CharSequence key, long count);
+    public abstract Single<String> srandmember(@RedisProtocolSupport.Key CharSequence key, long count);
 
     /**
      * Remove one or more members from a set.
@@ -3104,7 +3195,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SREM)
-    Single<String> srem(@RedisProtocolSupport.Key CharSequence key, CharSequence member);
+    public abstract Single<String> srem(@RedisProtocolSupport.Key CharSequence key, CharSequence member);
 
     /**
      * Remove one or more members from a set.
@@ -3115,7 +3206,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SREM)
-    Single<String> srem(@RedisProtocolSupport.Key CharSequence key, CharSequence member1, CharSequence member2);
+    public abstract Single<String> srem(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
+                                        CharSequence member2);
 
     /**
      * Remove one or more members from a set.
@@ -3127,8 +3219,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SREM)
-    Single<String> srem(@RedisProtocolSupport.Key CharSequence key, CharSequence member1, CharSequence member2,
-                        CharSequence member3);
+    public abstract Single<String> srem(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
+                                        CharSequence member2, CharSequence member3);
 
     /**
      * Remove one or more members from a set.
@@ -3138,7 +3230,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SREM)
-    Single<String> srem(@RedisProtocolSupport.Key CharSequence key, Collection<? extends CharSequence> members);
+    public abstract Single<String> srem(@RedisProtocolSupport.Key CharSequence key,
+                                        Collection<? extends CharSequence> members);
 
     /**
      * Incrementally iterate Set elements.
@@ -3148,7 +3241,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SSCAN)
-    Single<String> sscan(@RedisProtocolSupport.Key CharSequence key, long cursor);
+    public abstract Single<String> sscan(@RedisProtocolSupport.Key CharSequence key, long cursor);
 
     /**
      * Incrementally iterate Set elements.
@@ -3160,9 +3253,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SSCAN)
-    Single<String> sscan(@RedisProtocolSupport.Key CharSequence key, long cursor,
-                         @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.MATCH) @Nullable CharSequence matchPattern,
-                         @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count);
+    public abstract Single<String> sscan(@RedisProtocolSupport.Key CharSequence key, long cursor,
+                                         @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.MATCH) @Nullable CharSequence matchPattern,
+                                         @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count);
 
     /**
      * Get the length of the value stored in a key.
@@ -3171,7 +3264,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.STRLEN)
-    Single<String> strlen(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> strlen(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Add multiple sets.
@@ -3180,7 +3273,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SUNION)
-    Single<String> sunion(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> sunion(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Add multiple sets.
@@ -3190,7 +3283,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SUNION)
-    Single<String> sunion(@RedisProtocolSupport.Key CharSequence key1, @RedisProtocolSupport.Key CharSequence key2);
+    public abstract Single<String> sunion(@RedisProtocolSupport.Key CharSequence key1,
+                                          @RedisProtocolSupport.Key CharSequence key2);
 
     /**
      * Add multiple sets.
@@ -3201,8 +3295,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SUNION)
-    Single<String> sunion(@RedisProtocolSupport.Key CharSequence key1, @RedisProtocolSupport.Key CharSequence key2,
-                          @RedisProtocolSupport.Key CharSequence key3);
+    public abstract Single<String> sunion(@RedisProtocolSupport.Key CharSequence key1,
+                                          @RedisProtocolSupport.Key CharSequence key2,
+                                          @RedisProtocolSupport.Key CharSequence key3);
 
     /**
      * Add multiple sets.
@@ -3211,7 +3306,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SUNION)
-    Single<String> sunion(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
+    public abstract Single<String> sunion(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
 
     /**
      * Add multiple sets and store the resulting set in a key.
@@ -3221,7 +3316,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SUNIONSTORE)
-    Single<String> sunionstore(@RedisProtocolSupport.Key CharSequence destination, @RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> sunionstore(@RedisProtocolSupport.Key CharSequence destination,
+                                               @RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Add multiple sets and store the resulting set in a key.
@@ -3232,8 +3328,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SUNIONSTORE)
-    Single<String> sunionstore(@RedisProtocolSupport.Key CharSequence destination, @RedisProtocolSupport.Key CharSequence key1,
-                               @RedisProtocolSupport.Key CharSequence key2);
+    public abstract Single<String> sunionstore(@RedisProtocolSupport.Key CharSequence destination,
+                                               @RedisProtocolSupport.Key CharSequence key1,
+                                               @RedisProtocolSupport.Key CharSequence key2);
 
     /**
      * Add multiple sets and store the resulting set in a key.
@@ -3245,8 +3342,10 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SUNIONSTORE)
-    Single<String> sunionstore(@RedisProtocolSupport.Key CharSequence destination, @RedisProtocolSupport.Key CharSequence key1,
-                               @RedisProtocolSupport.Key CharSequence key2, @RedisProtocolSupport.Key CharSequence key3);
+    public abstract Single<String> sunionstore(@RedisProtocolSupport.Key CharSequence destination,
+                                               @RedisProtocolSupport.Key CharSequence key1,
+                                               @RedisProtocolSupport.Key CharSequence key2,
+                                               @RedisProtocolSupport.Key CharSequence key3);
 
     /**
      * Add multiple sets and store the resulting set in a key.
@@ -3256,8 +3355,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SUNIONSTORE)
-    Single<String> sunionstore(@RedisProtocolSupport.Key CharSequence destination,
-                               @RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
+    public abstract Single<String> sunionstore(@RedisProtocolSupport.Key CharSequence destination,
+                                               @RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
 
     /**
      * Swaps two Redis databases.
@@ -3267,7 +3366,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SWAPDB)
-    Single<String> swapdb(long index, long index1);
+    public abstract Single<String> swapdb(long index, long index1);
 
     /**
      * Return the current server time.
@@ -3275,7 +3374,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.TIME)
-    Single<String> time();
+    public abstract Single<String> time();
 
     /**
      * Alters the last access time of a key(s). Returns the number of existing keys specified.
@@ -3284,7 +3383,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.TOUCH)
-    Single<String> touch(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> touch(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Alters the last access time of a key(s). Returns the number of existing keys specified.
@@ -3294,7 +3393,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.TOUCH)
-    Single<String> touch(@RedisProtocolSupport.Key CharSequence key1, @RedisProtocolSupport.Key CharSequence key2);
+    public abstract Single<String> touch(@RedisProtocolSupport.Key CharSequence key1,
+                                         @RedisProtocolSupport.Key CharSequence key2);
 
     /**
      * Alters the last access time of a key(s). Returns the number of existing keys specified.
@@ -3305,8 +3405,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.TOUCH)
-    Single<String> touch(@RedisProtocolSupport.Key CharSequence key1, @RedisProtocolSupport.Key CharSequence key2,
-                         @RedisProtocolSupport.Key CharSequence key3);
+    public abstract Single<String> touch(@RedisProtocolSupport.Key CharSequence key1,
+                                         @RedisProtocolSupport.Key CharSequence key2,
+                                         @RedisProtocolSupport.Key CharSequence key3);
 
     /**
      * Alters the last access time of a key(s). Returns the number of existing keys specified.
@@ -3315,7 +3416,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.TOUCH)
-    Single<String> touch(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
+    public abstract Single<String> touch(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
 
     /**
      * Get the time to live for a key.
@@ -3324,7 +3425,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.TTL)
-    Single<String> ttl(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> ttl(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Determine the type stored at key.
@@ -3333,7 +3434,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.TYPE)
-    Single<String> type(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> type(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Delete a key asynchronously in another thread. Otherwise it is just as DEL, but non blocking.
@@ -3342,7 +3443,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.UNLINK)
-    Single<String> unlink(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> unlink(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Delete a key asynchronously in another thread. Otherwise it is just as DEL, but non blocking.
@@ -3352,7 +3453,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.UNLINK)
-    Single<String> unlink(@RedisProtocolSupport.Key CharSequence key1, @RedisProtocolSupport.Key CharSequence key2);
+    public abstract Single<String> unlink(@RedisProtocolSupport.Key CharSequence key1,
+                                          @RedisProtocolSupport.Key CharSequence key2);
 
     /**
      * Delete a key asynchronously in another thread. Otherwise it is just as DEL, but non blocking.
@@ -3363,8 +3465,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.UNLINK)
-    Single<String> unlink(@RedisProtocolSupport.Key CharSequence key1, @RedisProtocolSupport.Key CharSequence key2,
-                          @RedisProtocolSupport.Key CharSequence key3);
+    public abstract Single<String> unlink(@RedisProtocolSupport.Key CharSequence key1,
+                                          @RedisProtocolSupport.Key CharSequence key2,
+                                          @RedisProtocolSupport.Key CharSequence key3);
 
     /**
      * Delete a key asynchronously in another thread. Otherwise it is just as DEL, but non blocking.
@@ -3373,7 +3476,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.UNLINK)
-    Single<String> unlink(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
+    public abstract Single<String> unlink(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
 
     /**
      * Forget about all watched keys.
@@ -3381,7 +3484,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.UNWATCH)
-    Single<String> unwatch();
+    public abstract Single<String> unwatch();
 
     /**
      * Wait for the synchronous replication of all the write commands sent in the context of the current connection.
@@ -3391,7 +3494,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.WAIT)
-    Single<String> wait(long numslaves, long timeout);
+    public abstract Single<String> wait(long numslaves, long timeout);
 
     /**
      * Watch the given keys to determine execution of the MULTI/EXEC block.
@@ -3400,7 +3503,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.WATCH)
-    Single<String> watch(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> watch(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Watch the given keys to determine execution of the MULTI/EXEC block.
@@ -3410,7 +3513,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.WATCH)
-    Single<String> watch(@RedisProtocolSupport.Key CharSequence key1, @RedisProtocolSupport.Key CharSequence key2);
+    public abstract Single<String> watch(@RedisProtocolSupport.Key CharSequence key1,
+                                         @RedisProtocolSupport.Key CharSequence key2);
 
     /**
      * Watch the given keys to determine execution of the MULTI/EXEC block.
@@ -3421,8 +3525,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.WATCH)
-    Single<String> watch(@RedisProtocolSupport.Key CharSequence key1, @RedisProtocolSupport.Key CharSequence key2,
-                         @RedisProtocolSupport.Key CharSequence key3);
+    public abstract Single<String> watch(@RedisProtocolSupport.Key CharSequence key1,
+                                         @RedisProtocolSupport.Key CharSequence key2,
+                                         @RedisProtocolSupport.Key CharSequence key3);
 
     /**
      * Watch the given keys to determine execution of the MULTI/EXEC block.
@@ -3431,7 +3536,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.WATCH)
-    Single<String> watch(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
+    public abstract Single<String> watch(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
 
     /**
      * Appends a new entry to a stream.
@@ -3443,7 +3548,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XADD)
-    Single<String> xadd(@RedisProtocolSupport.Key CharSequence key, CharSequence id, CharSequence field, CharSequence value);
+    public abstract Single<String> xadd(@RedisProtocolSupport.Key CharSequence key, CharSequence id, CharSequence field,
+                                        CharSequence value);
 
     /**
      * Appends a new entry to a stream.
@@ -3457,8 +3563,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XADD)
-    Single<String> xadd(@RedisProtocolSupport.Key CharSequence key, CharSequence id, CharSequence field1, CharSequence value1,
-                        CharSequence field2, CharSequence value2);
+    public abstract Single<String> xadd(@RedisProtocolSupport.Key CharSequence key, CharSequence id,
+                                        CharSequence field1, CharSequence value1, CharSequence field2,
+                                        CharSequence value2);
 
     /**
      * Appends a new entry to a stream.
@@ -3474,8 +3581,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XADD)
-    Single<String> xadd(@RedisProtocolSupport.Key CharSequence key, CharSequence id, CharSequence field1, CharSequence value1,
-                        CharSequence field2, CharSequence value2, CharSequence field3, CharSequence value3);
+    public abstract Single<String> xadd(@RedisProtocolSupport.Key CharSequence key, CharSequence id,
+                                        CharSequence field1, CharSequence value1, CharSequence field2,
+                                        CharSequence value2, CharSequence field3, CharSequence value3);
 
     /**
      * Appends a new entry to a stream.
@@ -3486,8 +3594,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XADD)
-    Single<String> xadd(@RedisProtocolSupport.Key CharSequence key, CharSequence id,
-                        @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.FieldValue> fieldValues);
+    public abstract Single<String> xadd(@RedisProtocolSupport.Key CharSequence key, CharSequence id,
+                                        @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.FieldValue> fieldValues);
 
     /**
      * Return the number of entires in a stream.
@@ -3496,7 +3604,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XLEN)
-    Single<String> xlen(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> xlen(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Return information and entries from a stream conusmer group pending entries list, that are messages fetched but
@@ -3507,7 +3615,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XPENDING)
-    Single<String> xpending(@RedisProtocolSupport.Key CharSequence key, CharSequence group);
+    public abstract Single<String> xpending(@RedisProtocolSupport.Key CharSequence key, CharSequence group);
 
     /**
      * Return information and entries from a stream conusmer group pending entries list, that are messages fetched but
@@ -3522,8 +3630,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XPENDING)
-    Single<String> xpending(@RedisProtocolSupport.Key CharSequence key, CharSequence group, @Nullable CharSequence start,
-                            @Nullable CharSequence end, @Nullable Long count, @Nullable CharSequence consumer);
+    public abstract Single<String> xpending(@RedisProtocolSupport.Key CharSequence key, CharSequence group,
+                                            @Nullable CharSequence start, @Nullable CharSequence end,
+                                            @Nullable Long count, @Nullable CharSequence consumer);
 
     /**
      * Return a range of elements in a stream, with IDs matching the specified IDs interval.
@@ -3534,7 +3643,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XRANGE)
-    Single<String> xrange(@RedisProtocolSupport.Key CharSequence key, CharSequence start, CharSequence end);
+    public abstract Single<String> xrange(@RedisProtocolSupport.Key CharSequence key, CharSequence start,
+                                          CharSequence end);
 
     /**
      * Return a range of elements in a stream, with IDs matching the specified IDs interval.
@@ -3546,8 +3656,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XRANGE)
-    Single<String> xrange(@RedisProtocolSupport.Key CharSequence key, CharSequence start, CharSequence end,
-                          @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count);
+    public abstract Single<String> xrange(@RedisProtocolSupport.Key CharSequence key, CharSequence start,
+                                          CharSequence end,
+                                          @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count);
 
     /**
      * Return never seen elements in multiple streams, with IDs greater than the ones reported by the caller for each
@@ -3558,8 +3669,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XREAD)
-    Single<String> xread(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                         Collection<? extends CharSequence> ids);
+    public abstract Single<String> xread(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                         Collection<? extends CharSequence> ids);
 
     /**
      * Return never seen elements in multiple streams, with IDs greater than the ones reported by the caller for each
@@ -3572,10 +3683,10 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XREAD)
-    Single<String> xread(@RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count,
-                         @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.BLOCK) @Nullable Long blockMilliseconds,
-                         @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                         Collection<? extends CharSequence> ids);
+    public abstract Single<String> xread(@RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count,
+                                         @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.BLOCK) @Nullable Long blockMilliseconds,
+                                         @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                         Collection<? extends CharSequence> ids);
 
     /**
      * Return new entries from a stream using a consumer group, or access the history of the pending entries for a given
@@ -3587,9 +3698,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XREADGROUP)
-    Single<String> xreadgroup(@RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.GROUP) @RedisProtocolSupport.Tuple RedisProtocolSupport.GroupConsumer groupConsumer,
-                              @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                              Collection<? extends CharSequence> ids);
+    public abstract Single<String> xreadgroup(@RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.GROUP) @RedisProtocolSupport.Tuple RedisProtocolSupport.GroupConsumer groupConsumer,
+                                              @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                              Collection<? extends CharSequence> ids);
 
     /**
      * Return new entries from a stream using a consumer group, or access the history of the pending entries for a given
@@ -3603,11 +3714,11 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XREADGROUP)
-    Single<String> xreadgroup(@RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.GROUP) @RedisProtocolSupport.Tuple RedisProtocolSupport.GroupConsumer groupConsumer,
-                              @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count,
-                              @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.BLOCK) @Nullable Long blockMilliseconds,
-                              @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                              Collection<? extends CharSequence> ids);
+    public abstract Single<String> xreadgroup(@RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.GROUP) @RedisProtocolSupport.Tuple RedisProtocolSupport.GroupConsumer groupConsumer,
+                                              @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count,
+                                              @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.BLOCK) @Nullable Long blockMilliseconds,
+                                              @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                              Collection<? extends CharSequence> ids);
 
     /**
      * Return a range of elements in a stream, with IDs matching the specified IDs interval, in reverse order (from
@@ -3619,7 +3730,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XREVRANGE)
-    Single<String> xrevrange(@RedisProtocolSupport.Key CharSequence key, CharSequence end, CharSequence start);
+    public abstract Single<String> xrevrange(@RedisProtocolSupport.Key CharSequence key, CharSequence end,
+                                             CharSequence start);
 
     /**
      * Return a range of elements in a stream, with IDs matching the specified IDs interval, in reverse order (from
@@ -3632,8 +3744,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XREVRANGE)
-    Single<String> xrevrange(@RedisProtocolSupport.Key CharSequence key, CharSequence end, CharSequence start,
-                             @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count);
+    public abstract Single<String> xrevrange(@RedisProtocolSupport.Key CharSequence key, CharSequence end,
+                                             CharSequence start,
+                                             @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count);
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
@@ -3643,8 +3756,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZADD)
-    Single<String> zadd(@RedisProtocolSupport.Key CharSequence key,
-                        @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.ScoreMember> scoreMembers);
+    public abstract Single<String> zadd(@RedisProtocolSupport.Key CharSequence key,
+                                        @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.ScoreMember> scoreMembers);
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
@@ -3657,10 +3770,10 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZADD)
-    Single<String> zadd(@RedisProtocolSupport.Key CharSequence key,
-                        @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
-                        @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change, double score,
-                        CharSequence member);
+    public abstract Single<String> zadd(@RedisProtocolSupport.Key CharSequence key,
+                                        @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
+                                        @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
+                                        double score, CharSequence member);
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
@@ -3675,10 +3788,10 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZADD)
-    Single<String> zadd(@RedisProtocolSupport.Key CharSequence key,
-                        @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
-                        @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change, double score1,
-                        CharSequence member1, double score2, CharSequence member2);
+    public abstract Single<String> zadd(@RedisProtocolSupport.Key CharSequence key,
+                                        @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
+                                        @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
+                                        double score1, CharSequence member1, double score2, CharSequence member2);
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
@@ -3695,10 +3808,11 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZADD)
-    Single<String> zadd(@RedisProtocolSupport.Key CharSequence key,
-                        @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
-                        @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change, double score1,
-                        CharSequence member1, double score2, CharSequence member2, double score3, CharSequence member3);
+    public abstract Single<String> zadd(@RedisProtocolSupport.Key CharSequence key,
+                                        @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
+                                        @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
+                                        double score1, CharSequence member1, double score2, CharSequence member2,
+                                        double score3, CharSequence member3);
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
@@ -3710,10 +3824,10 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZADD)
-    Single<String> zadd(@RedisProtocolSupport.Key CharSequence key,
-                        @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
-                        @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
-                        @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.ScoreMember> scoreMembers);
+    public abstract Single<String> zadd(@RedisProtocolSupport.Key CharSequence key,
+                                        @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
+                                        @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
+                                        @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.ScoreMember> scoreMembers);
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
@@ -3723,8 +3837,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZADD)
-    Single<String> zaddIncr(@RedisProtocolSupport.Key CharSequence key,
-                            @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.ScoreMember> scoreMembers);
+    public abstract Single<String> zaddIncr(@RedisProtocolSupport.Key CharSequence key,
+                                            @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.ScoreMember> scoreMembers);
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
@@ -3737,10 +3851,10 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZADD)
-    Single<String> zaddIncr(@RedisProtocolSupport.Key CharSequence key,
-                            @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
-                            @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change, double score,
-                            CharSequence member);
+    public abstract Single<String> zaddIncr(@RedisProtocolSupport.Key CharSequence key,
+                                            @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
+                                            @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
+                                            double score, CharSequence member);
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
@@ -3755,10 +3869,10 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZADD)
-    Single<String> zaddIncr(@RedisProtocolSupport.Key CharSequence key,
-                            @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
-                            @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change, double score1,
-                            CharSequence member1, double score2, CharSequence member2);
+    public abstract Single<String> zaddIncr(@RedisProtocolSupport.Key CharSequence key,
+                                            @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
+                                            @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
+                                            double score1, CharSequence member1, double score2, CharSequence member2);
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
@@ -3775,10 +3889,11 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZADD)
-    Single<String> zaddIncr(@RedisProtocolSupport.Key CharSequence key,
-                            @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
-                            @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change, double score1,
-                            CharSequence member1, double score2, CharSequence member2, double score3, CharSequence member3);
+    public abstract Single<String> zaddIncr(@RedisProtocolSupport.Key CharSequence key,
+                                            @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
+                                            @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
+                                            double score1, CharSequence member1, double score2, CharSequence member2,
+                                            double score3, CharSequence member3);
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
@@ -3790,10 +3905,10 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZADD)
-    Single<String> zaddIncr(@RedisProtocolSupport.Key CharSequence key,
-                            @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
-                            @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
-                            @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.ScoreMember> scoreMembers);
+    public abstract Single<String> zaddIncr(@RedisProtocolSupport.Key CharSequence key,
+                                            @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
+                                            @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
+                                            @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.ScoreMember> scoreMembers);
 
     /**
      * Get the number of members in a sorted set.
@@ -3802,7 +3917,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZCARD)
-    Single<String> zcard(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> zcard(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Count the members in a sorted set with scores within the given values.
@@ -3813,7 +3928,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZCOUNT)
-    Single<String> zcount(@RedisProtocolSupport.Key CharSequence key, double min, double max);
+    public abstract Single<String> zcount(@RedisProtocolSupport.Key CharSequence key, double min, double max);
 
     /**
      * Increment the score of a member in a sorted set.
@@ -3824,7 +3939,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZINCRBY)
-    Single<String> zincrby(@RedisProtocolSupport.Key CharSequence key, long increment, CharSequence member);
+    public abstract Single<String> zincrby(@RedisProtocolSupport.Key CharSequence key, long increment,
+                                           CharSequence member);
 
     /**
      * Intersect multiple sorted sets and store the resulting sorted set in a new key.
@@ -3835,8 +3951,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZINTERSTORE)
-    Single<String> zinterstore(@RedisProtocolSupport.Key CharSequence destination, long numkeys,
-                               @RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
+    public abstract Single<String> zinterstore(@RedisProtocolSupport.Key CharSequence destination, long numkeys,
+                                               @RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
 
     /**
      * Intersect multiple sorted sets and store the resulting sorted set in a new key.
@@ -3849,10 +3965,10 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZINTERSTORE)
-    Single<String> zinterstore(@RedisProtocolSupport.Key CharSequence destination, long numkeys,
-                               @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                               @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.WEIGHTS) Collection<Long> weightses,
-                               @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZinterstoreAggregate aggregate);
+    public abstract Single<String> zinterstore(@RedisProtocolSupport.Key CharSequence destination, long numkeys,
+                                               @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                               @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.WEIGHTS) Collection<Long> weightses,
+                                               @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZinterstoreAggregate aggregate);
 
     /**
      * Count the number of members in a sorted set between a given lexicographical range.
@@ -3863,7 +3979,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZLEXCOUNT)
-    Single<String> zlexcount(@RedisProtocolSupport.Key CharSequence key, CharSequence min, CharSequence max);
+    public abstract Single<String> zlexcount(@RedisProtocolSupport.Key CharSequence key, CharSequence min,
+                                             CharSequence max);
 
     /**
      * Remove and return members with the highest scores in a sorted set.
@@ -3872,7 +3989,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZPOPMAX)
-    Single<String> zpopmax(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> zpopmax(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Remove and return members with the highest scores in a sorted set.
@@ -3882,7 +3999,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZPOPMAX)
-    Single<String> zpopmax(@RedisProtocolSupport.Key CharSequence key, @Nullable Long count);
+    public abstract Single<String> zpopmax(@RedisProtocolSupport.Key CharSequence key, @Nullable Long count);
 
     /**
      * Remove and return members with the lowest scores in a sorted set.
@@ -3891,7 +4008,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZPOPMIN)
-    Single<String> zpopmin(@RedisProtocolSupport.Key CharSequence key);
+    public abstract Single<String> zpopmin(@RedisProtocolSupport.Key CharSequence key);
 
     /**
      * Remove and return members with the lowest scores in a sorted set.
@@ -3901,7 +4018,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZPOPMIN)
-    Single<String> zpopmin(@RedisProtocolSupport.Key CharSequence key, @Nullable Long count);
+    public abstract Single<String> zpopmin(@RedisProtocolSupport.Key CharSequence key, @Nullable Long count);
 
     /**
      * Return a range of members in a sorted set, by index.
@@ -3912,7 +4029,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZRANGE)
-    Single<String> zrange(@RedisProtocolSupport.Key CharSequence key, long start, long stop);
+    public abstract Single<String> zrange(@RedisProtocolSupport.Key CharSequence key, long start, long stop);
 
     /**
      * Return a range of members in a sorted set, by index.
@@ -3924,8 +4041,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZRANGE)
-    Single<String> zrange(@RedisProtocolSupport.Key CharSequence key, long start, long stop,
-                          @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZrangeWithscores withscores);
+    public abstract Single<String> zrange(@RedisProtocolSupport.Key CharSequence key, long start, long stop,
+                                          @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZrangeWithscores withscores);
 
     /**
      * Return a range of members in a sorted set, by lexicographical range.
@@ -3936,7 +4053,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZRANGEBYLEX)
-    Single<String> zrangebylex(@RedisProtocolSupport.Key CharSequence key, CharSequence min, CharSequence max);
+    public abstract Single<String> zrangebylex(@RedisProtocolSupport.Key CharSequence key, CharSequence min,
+                                               CharSequence max);
 
     /**
      * Return a range of members in a sorted set, by lexicographical range.
@@ -3948,8 +4066,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZRANGEBYLEX)
-    Single<String> zrangebylex(@RedisProtocolSupport.Key CharSequence key, CharSequence min, CharSequence max,
-                               @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIMIT) @Nullable @RedisProtocolSupport.Tuple RedisProtocolSupport.OffsetCount offsetCount);
+    public abstract Single<String> zrangebylex(@RedisProtocolSupport.Key CharSequence key, CharSequence min,
+                                               CharSequence max,
+                                               @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIMIT) @Nullable @RedisProtocolSupport.Tuple RedisProtocolSupport.OffsetCount offsetCount);
 
     /**
      * Return a range of members in a sorted set, by score.
@@ -3960,7 +4079,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZRANGEBYSCORE)
-    Single<String> zrangebyscore(@RedisProtocolSupport.Key CharSequence key, double min, double max);
+    public abstract Single<String> zrangebyscore(@RedisProtocolSupport.Key CharSequence key, double min, double max);
 
     /**
      * Return a range of members in a sorted set, by score.
@@ -3973,9 +4092,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZRANGEBYSCORE)
-    Single<String> zrangebyscore(@RedisProtocolSupport.Key CharSequence key, double min, double max,
-                                 @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZrangebyscoreWithscores withscores,
-                                 @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIMIT) @Nullable @RedisProtocolSupport.Tuple RedisProtocolSupport.OffsetCount offsetCount);
+    public abstract Single<String> zrangebyscore(@RedisProtocolSupport.Key CharSequence key, double min, double max,
+                                                 @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZrangebyscoreWithscores withscores,
+                                                 @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIMIT) @Nullable @RedisProtocolSupport.Tuple RedisProtocolSupport.OffsetCount offsetCount);
 
     /**
      * Determine the index of a member in a sorted set.
@@ -3985,7 +4104,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZRANK)
-    Single<String> zrank(@RedisProtocolSupport.Key CharSequence key, CharSequence member);
+    public abstract Single<String> zrank(@RedisProtocolSupport.Key CharSequence key, CharSequence member);
 
     /**
      * Remove one or more members from a sorted set.
@@ -3995,7 +4114,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREM)
-    Single<String> zrem(@RedisProtocolSupport.Key CharSequence key, CharSequence member);
+    public abstract Single<String> zrem(@RedisProtocolSupport.Key CharSequence key, CharSequence member);
 
     /**
      * Remove one or more members from a sorted set.
@@ -4006,7 +4125,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREM)
-    Single<String> zrem(@RedisProtocolSupport.Key CharSequence key, CharSequence member1, CharSequence member2);
+    public abstract Single<String> zrem(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
+                                        CharSequence member2);
 
     /**
      * Remove one or more members from a sorted set.
@@ -4018,8 +4138,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREM)
-    Single<String> zrem(@RedisProtocolSupport.Key CharSequence key, CharSequence member1, CharSequence member2,
-                        CharSequence member3);
+    public abstract Single<String> zrem(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
+                                        CharSequence member2, CharSequence member3);
 
     /**
      * Remove one or more members from a sorted set.
@@ -4029,7 +4149,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREM)
-    Single<String> zrem(@RedisProtocolSupport.Key CharSequence key, Collection<? extends CharSequence> members);
+    public abstract Single<String> zrem(@RedisProtocolSupport.Key CharSequence key,
+                                        Collection<? extends CharSequence> members);
 
     /**
      * Remove all members in a sorted set between the given lexicographical range.
@@ -4040,7 +4161,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREMRANGEBYLEX)
-    Single<String> zremrangebylex(@RedisProtocolSupport.Key CharSequence key, CharSequence min, CharSequence max);
+    public abstract Single<String> zremrangebylex(@RedisProtocolSupport.Key CharSequence key, CharSequence min,
+                                                  CharSequence max);
 
     /**
      * Remove all members in a sorted set within the given indexes.
@@ -4051,7 +4173,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREMRANGEBYRANK)
-    Single<String> zremrangebyrank(@RedisProtocolSupport.Key CharSequence key, long start, long stop);
+    public abstract Single<String> zremrangebyrank(@RedisProtocolSupport.Key CharSequence key, long start, long stop);
 
     /**
      * Remove all members in a sorted set within the given scores.
@@ -4062,7 +4184,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREMRANGEBYSCORE)
-    Single<String> zremrangebyscore(@RedisProtocolSupport.Key CharSequence key, double min, double max);
+    public abstract Single<String> zremrangebyscore(@RedisProtocolSupport.Key CharSequence key, double min, double max);
 
     /**
      * Return a range of members in a sorted set, by index, with scores ordered from high to low.
@@ -4073,7 +4195,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREVRANGE)
-    Single<String> zrevrange(@RedisProtocolSupport.Key CharSequence key, long start, long stop);
+    public abstract Single<String> zrevrange(@RedisProtocolSupport.Key CharSequence key, long start, long stop);
 
     /**
      * Return a range of members in a sorted set, by index, with scores ordered from high to low.
@@ -4085,8 +4207,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREVRANGE)
-    Single<String> zrevrange(@RedisProtocolSupport.Key CharSequence key, long start, long stop,
-                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZrevrangeWithscores withscores);
+    public abstract Single<String> zrevrange(@RedisProtocolSupport.Key CharSequence key, long start, long stop,
+                                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZrevrangeWithscores withscores);
 
     /**
      * Return a range of members in a sorted set, by lexicographical range, ordered from higher to lower strings.
@@ -4097,7 +4219,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREVRANGEBYLEX)
-    Single<String> zrevrangebylex(@RedisProtocolSupport.Key CharSequence key, CharSequence max, CharSequence min);
+    public abstract Single<String> zrevrangebylex(@RedisProtocolSupport.Key CharSequence key, CharSequence max,
+                                                  CharSequence min);
 
     /**
      * Return a range of members in a sorted set, by lexicographical range, ordered from higher to lower strings.
@@ -4109,8 +4232,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREVRANGEBYLEX)
-    Single<String> zrevrangebylex(@RedisProtocolSupport.Key CharSequence key, CharSequence max, CharSequence min,
-                                  @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIMIT) @Nullable @RedisProtocolSupport.Tuple RedisProtocolSupport.OffsetCount offsetCount);
+    public abstract Single<String> zrevrangebylex(@RedisProtocolSupport.Key CharSequence key, CharSequence max,
+                                                  CharSequence min,
+                                                  @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIMIT) @Nullable @RedisProtocolSupport.Tuple RedisProtocolSupport.OffsetCount offsetCount);
 
     /**
      * Return a range of members in a sorted set, by score, with scores ordered from high to low.
@@ -4121,7 +4245,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREVRANGEBYSCORE)
-    Single<String> zrevrangebyscore(@RedisProtocolSupport.Key CharSequence key, double max, double min);
+    public abstract Single<String> zrevrangebyscore(@RedisProtocolSupport.Key CharSequence key, double max, double min);
 
     /**
      * Return a range of members in a sorted set, by score, with scores ordered from high to low.
@@ -4134,9 +4258,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREVRANGEBYSCORE)
-    Single<String> zrevrangebyscore(@RedisProtocolSupport.Key CharSequence key, double max, double min,
-                                    @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZrevrangebyscoreWithscores withscores,
-                                    @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIMIT) @Nullable @RedisProtocolSupport.Tuple RedisProtocolSupport.OffsetCount offsetCount);
+    public abstract Single<String> zrevrangebyscore(@RedisProtocolSupport.Key CharSequence key, double max, double min,
+                                                    @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZrevrangebyscoreWithscores withscores,
+                                                    @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIMIT) @Nullable @RedisProtocolSupport.Tuple RedisProtocolSupport.OffsetCount offsetCount);
 
     /**
      * Determine the index of a member in a sorted set, with scores ordered from high to low.
@@ -4146,7 +4270,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREVRANK)
-    Single<String> zrevrank(@RedisProtocolSupport.Key CharSequence key, CharSequence member);
+    public abstract Single<String> zrevrank(@RedisProtocolSupport.Key CharSequence key, CharSequence member);
 
     /**
      * Incrementally iterate sorted sets elements and associated scores.
@@ -4156,7 +4280,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZSCAN)
-    Single<String> zscan(@RedisProtocolSupport.Key CharSequence key, long cursor);
+    public abstract Single<String> zscan(@RedisProtocolSupport.Key CharSequence key, long cursor);
 
     /**
      * Incrementally iterate sorted sets elements and associated scores.
@@ -4168,9 +4292,9 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZSCAN)
-    Single<String> zscan(@RedisProtocolSupport.Key CharSequence key, long cursor,
-                         @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.MATCH) @Nullable CharSequence matchPattern,
-                         @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count);
+    public abstract Single<String> zscan(@RedisProtocolSupport.Key CharSequence key, long cursor,
+                                         @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.MATCH) @Nullable CharSequence matchPattern,
+                                         @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count);
 
     /**
      * Get the score associated with the given member in a sorted set.
@@ -4180,7 +4304,7 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZSCORE)
-    Single<String> zscore(@RedisProtocolSupport.Key CharSequence key, CharSequence member);
+    public abstract Single<String> zscore(@RedisProtocolSupport.Key CharSequence key, CharSequence member);
 
     /**
      * Add multiple sorted sets and store the resulting sorted set in a new key.
@@ -4191,8 +4315,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZUNIONSTORE)
-    Single<String> zunionstore(@RedisProtocolSupport.Key CharSequence destination, long numkeys,
-                               @RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
+    public abstract Single<String> zunionstore(@RedisProtocolSupport.Key CharSequence destination, long numkeys,
+                                               @RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
 
     /**
      * Add multiple sorted sets and store the resulting sorted set in a new key.
@@ -4205,8 +4329,8 @@ public interface TransactedRedisCommander extends AsyncCloseable {
      * @return a {@link Single} result
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZUNIONSTORE)
-    Single<String> zunionstore(@RedisProtocolSupport.Key CharSequence destination, long numkeys,
-                               @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                               @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.WEIGHTS) Collection<Long> weightses,
-                               @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZunionstoreAggregate aggregate);
+    public abstract Single<String> zunionstore(@RedisProtocolSupport.Key CharSequence destination, long numkeys,
+                                               @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                               @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.WEIGHTS) Collection<Long> weightses,
+                                               @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZunionstoreAggregate aggregate);
 }
