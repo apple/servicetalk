@@ -128,6 +128,27 @@ public class OverlappingCapacityAwareSupplierTest {
         requestNAndVerify(supplier, 10, 0L);
     }
 
+    @Test
+    public void testPredictionZeroAndNoOutstanding() {
+        AtomicLong toRequest = new AtomicLong(0);
+        OverlappingCapacityAwareSupplier supplier = newSupplier(toRequest::get);
+        requestNAndVerify(supplier, 10, 1L);
+        verify(supplier).getRequestNForCapacity(10);
+        verifyNoMoreInteractions(supplier);
+    }
+
+    @Test
+    public void testPredictionZeroAndSomeOutstanding() {
+        AtomicLong toRequest = new AtomicLong(5);
+        OverlappingCapacityAwareSupplier supplier = newSupplier(toRequest::get);
+        requestNAndVerify(supplier, 10, 5L);
+        verify(supplier).getRequestNForCapacity(10);
+
+        toRequest.set(0);
+        requestNAndVerify(supplier, 10, 0L);
+        verifyNoMoreInteractions(supplier);
+    }
+
     private static void requestNAndVerify(OverlappingCapacityAwareSupplier supplier, int writeBufferCapacityInBytes, long expectedRequestN) {
         long requestN = supplier.getRequestNFor(writeBufferCapacityInBytes);
         assertThat("Unexpected requestN", requestN, is(expectedRequestN));

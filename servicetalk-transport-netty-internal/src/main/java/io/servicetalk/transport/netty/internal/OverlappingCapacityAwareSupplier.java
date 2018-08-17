@@ -62,6 +62,11 @@ abstract class OverlappingCapacityAwareSupplier implements RequestNSupplier {
         long toRequest = 0;
         if (capacityToFill > 0) {
             toRequest = getRequestNForCapacity(capacityToFill);
+            if (toRequest == 0 && outstandingRequested == 0) {
+                // If we have capacity and for some reason getRequestNForCapacity returned 0, then at least request 1
+                // otherwise we may never get any more data and we may never request again.
+                toRequest = 1;
+            }
             outstandingRequested = addWithOverflowProtection(outstandingRequested, toRequest);
         }
         return toRequest;
