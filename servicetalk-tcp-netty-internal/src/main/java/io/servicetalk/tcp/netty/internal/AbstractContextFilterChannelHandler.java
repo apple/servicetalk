@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.transport.netty.internal.ContextFilterSuccessful.COMPLETED;
 
 abstract class AbstractContextFilterChannelHandler extends ChannelDuplexHandler {
@@ -39,26 +40,29 @@ abstract class AbstractContextFilterChannelHandler extends ChannelDuplexHandler 
     private static final byte READ_SUPPRESSED = 0;
     private static final byte PENDING_READ = 1;
     private static final byte READ_ALLOWED = 2;
+    private static final byte CHANNEL_INACTIVE = 3;
 
     private final ConnectionContext context;
     private final ContextFilter contextFilter;
     private final Executor executor;
+    private final SequentialCancellable sequentialCancellable;
     private byte state;
-    @Nullable
-    private SequentialCancellable sequentialCancellable;
 
     AbstractContextFilterChannelHandler(final ConnectionContext context, final ContextFilter contextFilter,
                                         final Executor executor) {
         this.context = context;
         this.contextFilter = contextFilter;
         this.executor = executor;
+        sequentialCancellable = new SequentialCancellable();
     }
 
-    void executeContextFilter(final ChannelHandlerContext ctx) {
+    final void executeContextFilter(final ChannelHandlerContext ctx) {
         assert ctx.channel().eventLoop().inEventLoop();
-
-        sequentialCancellable = new SequentialCancellable();
-        executor.execute(() -> runContextFilter(ctx));
+        if (executor == immediate()) {
+            runContextFilter(ctx);
+        } else {
+            executor.execute(() -> runContextFilter(ctx));
+        }
     }
 
     abstract void onContextFilterSuccessful(ChannelHandlerContext ctx);
@@ -68,8 +72,6 @@ abstract class AbstractContextFilterChannelHandler extends ChannelDuplexHandler 
             contextFilter.filter(context).subscribe(new Single.Subscriber<Boolean>() {
                 @Override
                 public void onSubscribe(final Cancellable cancellable) {
-                    assert sequentialCancellable != null;
-
                     sequentialCancellable.setNextCancellable(cancellable);
                 }
 
@@ -108,9 +110,7 @@ abstract class AbstractContextFilterChannelHandler extends ChannelDuplexHandler 
 
     @Override
     public void channelInactive(final ChannelHandlerContext ctx) {
-        assert sequentialCancellable != null;
-
-        state = READ_SUPPRESSED;
+        state = CHANNEL_INACTIVE;
         try {
             sequentialCancellable.cancel();
         } finally {
@@ -118,40 +118,39 @@ abstract class AbstractContextFilterChannelHandler extends ChannelDuplexHandler 
         }
     }
 
-    void handleSuccess(final ChannelHandlerContext ctx) {
-        try {
-            assert ctx.channel().eventLoop().inEventLoop();
-
-            // Getting the remote-address may involve volatile reads and potentially a syscall, so guard it.
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Accepted connection from {}", context.getRemoteAddress());
-            }
-
-            final byte oldState = state;
-            if (ctx.channel().isActive()) {
-                state = READ_ALLOWED;
-            }
-            if (oldState == PENDING_READ) {
-                ctx.read();
-            }
-
-            onContextFilterSuccessful(ctx);
-            ctx.fireUserEventTriggered(COMPLETED);
-
-            ctx.pipeline().remove(this);
-        } catch (Throwable t) {
-            LOGGER.error("An error occurred while handling success of context filter {} for context {}",
-                    contextFilter, ctx, t);
-            ctx.close();
+    private void handleSuccess(final ChannelHandlerContext ctx) {
+        final byte oldState = state;
+        if (oldState == CHANNEL_INACTIVE) {
+            return;
         }
+
+        // Getting the remote-address may involve volatile reads and potentially a syscall, so guard it.
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Accepted connection from {}", context.getRemoteAddress());
+        }
+
+        state = READ_ALLOWED;
+        if (oldState == PENDING_READ) {
+            ctx.read();
+        }
+
+        onContextFilterSuccessful(ctx);
+        ctx.fireUserEventTriggered(COMPLETED);
+
+        ctx.pipeline().remove(this);
     }
 
     @Override
     public void read(final ChannelHandlerContext ctx) {
-        if (state != READ_ALLOWED) {
-            state = PENDING_READ;
-        } else {
-            ctx.read();
+        switch (state) {
+            case READ_ALLOWED:
+                ctx.read();
+                break;
+            case READ_SUPPRESSED:
+                state = PENDING_READ;
+                break;
+            default:
+                break;
         }
     }
 }
