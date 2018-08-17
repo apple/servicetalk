@@ -32,8 +32,9 @@ import java.util.function.Function;
 final class DefaultAsyncContextProvider implements AsyncContextProvider {
     public static final AsyncContextProvider INSTANCE = new DefaultAsyncContextProvider();
 
-    private static final ThreadLocal<AsyncContextMap> contextLocal = ThreadLocal.withInitial(() -> CopyOnWriteContext.EMPTY_CONTEXT);
-    private static final SimpleCopyOnWriteSet<AsyncContext.Listener> listeners = new SimpleCopyOnWriteSet<>(AsyncContext.Listener.class);
+    private static final ThreadLocal<AsyncContextMap> contextLocal =
+            ThreadLocal.withInitial(() -> CopyOnWriteAsyncContextMap.EMPTY_CONTEXT_MAP);
+    private static final AsyncContextListenerSet listeners = new CopyOnWriteAsyncContextListenerSet();
 
     private DefaultAsyncContextProvider() {
         // singleton
@@ -61,21 +62,7 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
 
     @Override
     public void setContextMap(AsyncContextMap newContextMap) {
-        final AsyncContext.Listener[] listenerArray = listeners.array();
-        if (listenerArray.length == 0) {
-            contextLocal.set(newContextMap);
-            return;
-        }
-        final AsyncContextMap oldContextMap = contextLocal.get();
-        if (oldContextMap != newContextMap) {
-            contextLocal.set(newContextMap);
-            int i = 0;
-            // Use a do-while loop because we have already checked the first condition of the loop, so we can avoid
-            // an extra conditional check on the first iteration of the loop.
-            do {
-                listenerArray[i].contextMapChanged(oldContextMap, newContextMap);
-            } while (++i < listenerArray.length);
-        }
+        listeners.setContextMapAndNotifyListeners(newContextMap, contextLocal);
     }
 
     @Override
@@ -94,7 +81,8 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public <T> org.reactivestreams.Subscriber<T> wrap(org.reactivestreams.Subscriber<T> subscriber, AsyncContextMap current) {
+    public <T> org.reactivestreams.Subscriber<T> wrap(org.reactivestreams.Subscriber<T> subscriber,
+                                                      AsyncContextMap current) {
         return new ContextPreservingSubscriber<>(subscriber, current);
     }
 

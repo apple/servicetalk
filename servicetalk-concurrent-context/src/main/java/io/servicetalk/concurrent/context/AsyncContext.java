@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -31,9 +32,9 @@ import static io.servicetalk.concurrent.context.DefaultAsyncContextProvider.INST
 /**
  * Presents a static interface to retain state in an asynchronous environment.
  * <p>
- * This should not be used as a "catch all" to avoid designing APIs which accommodate for your needs. This should be used
- * as a last resort (e.g. for low level framework or infrastructure like tasks) because there maybe non-trivial overhead
- * required to maintain this context.
+ * This should not be used as a "catch all" to avoid designing APIs which accommodate for your needs. This should be
+ * used as a last resort (e.g. for low level framework or infrastructure like tasks) because there maybe non-trivial
+ * overhead required to maintain this context.
  */
 public final class AsyncContext {
     /**
@@ -50,7 +51,8 @@ public final class AsyncContext {
 
         /**
          * Called after the {@link AsyncContext} is changed.
-         *
+         * <p>
+         * This method must not throw.
          * @param oldContext the previous valud of the context.
          * @param newContext the new value of the context.
          */
@@ -208,13 +210,14 @@ public final class AsyncContext {
     /**
      * Convenience method to iterate over the key/value pairs contained in the current context.
      *
-     * @param consumer Each key/value pair will be passed as arguments to this {@link BiFunction}.
-     *                 Returns {@code true} if the consumer wants to keep iterating or {@code false} to stop iteration at the current key/value pair.
-     * @return {@code null} if {@code consumer} iterated through all key/value pairs or the {@link AsyncContextMap.Key} at which the iteration stopped.
-     * @see AsyncContextMap#forEach(BiFunction)
+     * @param consumer Each key/value pair will be passed as arguments to this {@link BiPredicate}. Returns {@code true}
+     * if the consumer wants to keep iterating or {@code false} to stop iteration at the current key/value pair.
+     * @return {@code null} if {@code consumer} iterated through all key/value pairs or the {@link AsyncContextMap.Key}
+     * at which the iteration stopped.
+     * @see AsyncContextMap#forEach(BiPredicate)
      */
     @Nullable
-    public static AsyncContextMap.Key<?> forEach(BiFunction<AsyncContextMap.Key<?>, Object, Boolean> consumer) {
+    public static AsyncContextMap.Key<?> forEach(BiPredicate<AsyncContextMap.Key<?>, Object> consumer) {
         return current().forEach(consumer);
     }
 

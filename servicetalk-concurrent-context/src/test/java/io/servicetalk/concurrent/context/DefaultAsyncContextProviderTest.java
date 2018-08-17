@@ -32,9 +32,13 @@ import org.junit.rules.Timeout;
 import org.reactivestreams.Subscription;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -52,9 +56,16 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.context.DefaultAsyncContextProvider.INSTANCE;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
+import static java.lang.Integer.bitCount;
+import static java.lang.Integer.numberOfTrailingZeros;
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class DefaultAsyncContextProviderTest {
     @Rule
@@ -62,6 +73,12 @@ public class DefaultAsyncContextProviderTest {
 
     private static final Key<String> K1 = Key.newKeyWithDebugToString("k1");
     private static final Key<String> K2 = Key.newKeyWithDebugToString("k2");
+    private static final Key<String> K3 = Key.newKeyWithDebugToString("k3");
+    private static final Key<String> K4 = Key.newKeyWithDebugToString("k4");
+    private static final Key<String> K5 = Key.newKeyWithDebugToString("k5");
+    private static final Key<String> K6 = Key.newKeyWithDebugToString("k6");
+    private static final Key<String> K7 = Key.newKeyWithDebugToString("k7");
+    private static final Key<String> K8 = Key.newKeyWithDebugToString("k8");
 
     private static ScheduledExecutorService executor;
 
@@ -94,6 +111,104 @@ public class DefaultAsyncContextProviderTest {
             subscriber.onSubscribe(IGNORE_CANCEL);
             subscriber.onSuccess(value);
         });
+    }
+
+    @Test
+    public void testOneListenerNotified() {
+        testListenersNotified(1);
+    }
+
+    @Test
+    public void testTwoListenersNotified() {
+        testListenersNotified(2);
+    }
+
+    @Test
+    public void testThreeListenersNotified() {
+        testListenersNotified(3);
+    }
+
+    @Test
+    public void testFourListenersNotified() {
+        testListenersNotified(4);
+    }
+
+    @Test
+    public void testFiveListenersNotified() {
+        testListenersNotified(5);
+    }
+
+    private void testListenersNotified(int numListeners) {
+        TestListener[] listeners = new TestListener[numListeners];
+        for (int i = 0; i < listeners.length; ++i) {
+            listeners[i] = new TestListener();
+            assertTrue(AsyncContext.addListener(listeners[i]));
+        }
+
+        // Test everyone is notified of a change, with empty context.
+        AsyncContext.put(K1, "v1");
+
+        for (TestListener listener : listeners) {
+            TestListenerChaneEvent event = listener.events.poll();
+            assertNotNull(event);
+            assertTrue(event.oldContext.isEmpty());
+            assertEquals(1, event.newContext.size());
+            assertEquals("v1", event.newContext.get(K1));
+            assertTrue(listener.events.isEmpty());
+        }
+
+        // Test everyone is notified of a change, with non-empty context.
+        AsyncContext.put(K2, "v2");
+
+        for (TestListener listener : listeners) {
+            TestListenerChaneEvent event = listener.events.poll();
+            assertNotNull(event);
+            assertEquals(1, event.oldContext.size());
+            assertEquals("v1", event.oldContext.get(K1));
+            assertEquals(2, event.newContext.size());
+            assertEquals("v1", event.newContext.get(K1));
+            assertEquals("v2", event.newContext.get(K2));
+            assertTrue(listener.events.isEmpty());
+        }
+
+        // Test everyone is notified of a change, clearing the context.
+        AsyncContext.clear();
+
+        for (TestListener listener : listeners) {
+            TestListenerChaneEvent event = listener.events.poll();
+            assertNotNull(event);
+            assertEquals(2, event.oldContext.size());
+            assertEquals("v1", event.oldContext.get(K1));
+            assertEquals("v2", event.oldContext.get(K2));
+            assertTrue(event.newContext.isEmpty());
+            assertTrue(listener.events.isEmpty());
+        }
+
+        // Test no one is notified if nothing changes.
+        AsyncContext.clear();
+
+        // Remove all listeners.
+        for (final TestListener listener : listeners) {
+            assertTrue(AsyncContext.removeListener(listener));
+        }
+    }
+
+    private static final class TestListener implements AsyncContext.Listener {
+        final Queue<TestListenerChaneEvent> events = new ConcurrentLinkedQueue<>();
+        @Override
+        public void contextMapChanged(final AsyncContextMap oldContext, final AsyncContextMap newContext) {
+            events.add(new TestListenerChaneEvent(oldContext, newContext));
+        }
+    }
+
+    private static final class TestListenerChaneEvent {
+        final AsyncContextMap oldContext;
+        final AsyncContextMap newContext;
+
+        TestListenerChaneEvent(AsyncContextMap oldContext, AsyncContextMap newContext) {
+            this.oldContext = oldContext;
+            this.newContext = newContext;
+        }
     }
 
     @Test
@@ -413,6 +528,486 @@ public class DefaultAsyncContextProviderTest {
                 .verifyContext(verifier);
     }
 
+    @Test
+    public void testSinglePutAndRemove() {
+        assertContextSize(0);
+
+        AsyncContext.put(K1, "v1");
+        assertContains(K1, "v1");
+        assertContextSize(1);
+
+        // Duplicate put
+        AsyncContext.put(K1, "v1-1");
+
+        AsyncContext.put(K2, "v2");
+        assertContains(K1, "v1-1");
+        assertContains(K2, "v2");
+        assertContextSize(2);
+
+        // Duplicate put
+        AsyncContext.put(K1, "v1-2");
+        AsyncContext.put(K2, "v2-1");
+
+        AsyncContext.put(K3, "v3");
+        assertContains(K1, "v1-2");
+        assertContains(K2, "v2-1");
+        assertContains(K3, "v3");
+        assertContextSize(3);
+
+        // Duplicate put
+        AsyncContext.put(K1, "v1-3");
+        AsyncContext.put(K2, "v2-2");
+        AsyncContext.put(K3, "v3-1");
+
+        AsyncContext.put(K4, "v4");
+        assertContains(K1, "v1-3");
+        assertContains(K2, "v2-2");
+        assertContains(K3, "v3-1");
+        assertContains(K4, "v4");
+        assertContextSize(4);
+
+        // Duplicate put
+        AsyncContext.put(K1, "v1-4");
+        AsyncContext.put(K2, "v2-3");
+        AsyncContext.put(K3, "v3-2");
+        AsyncContext.put(K4, "v4-1");
+
+        AsyncContext.put(K5, "v5");
+        assertContains(K1, "v1-4");
+        assertContains(K2, "v2-3");
+        assertContains(K3, "v3-2");
+        assertContains(K4, "v4-1");
+        assertContains(K5, "v5");
+        assertContextSize(5);
+
+        // Duplicate put
+        AsyncContext.put(K1, "v1-5");
+        AsyncContext.put(K2, "v2-4");
+        AsyncContext.put(K3, "v3-3");
+        AsyncContext.put(K4, "v4-2");
+        AsyncContext.put(K5, "v5-1");
+
+        AsyncContext.put(K6, "v6");
+        assertContains(K1, "v1-5");
+        assertContains(K2, "v2-4");
+        assertContains(K3, "v3-3");
+        assertContains(K4, "v4-2");
+        assertContains(K5, "v5-1");
+        assertContains(K6, "v6");
+        assertContextSize(6);
+
+        // Duplicate put
+        AsyncContext.put(K1, "v1-6");
+        AsyncContext.put(K2, "v2-5");
+        AsyncContext.put(K3, "v3-4");
+        AsyncContext.put(K4, "v4-3");
+        AsyncContext.put(K5, "v5-2");
+        AsyncContext.put(K6, "v6-1");
+
+        AsyncContext.put(K7, "v7");
+        assertContains(K1, "v1-6");
+        assertContains(K2, "v2-5");
+        assertContains(K3, "v3-4");
+        assertContains(K4, "v4-3");
+        assertContains(K5, "v5-2");
+        assertContains(K6, "v6-1");
+        assertContains(K7, "v7");
+        assertContextSize(7);
+
+        // Duplicate put
+        AsyncContext.put(K1, "v1-7");
+        AsyncContext.put(K2, "v2-6");
+        AsyncContext.put(K3, "v3-5");
+        AsyncContext.put(K4, "v4-4");
+        AsyncContext.put(K5, "v5-3");
+        AsyncContext.put(K6, "v6-2");
+        AsyncContext.put(K7, "v7-1");
+
+        AsyncContext.put(K8, "v8");
+        assertContains(K1, "v1-7");
+        assertContains(K2, "v2-6");
+        assertContains(K3, "v3-5");
+        assertContains(K4, "v4-4");
+        assertContains(K5, "v5-3");
+        assertContains(K6, "v6-2");
+        assertContains(K7, "v7-1");
+        assertContains(K8, "v8");
+        assertContextSize(8);
+
+        // Now do removal
+        AsyncContext.remove(K8);
+        assertContains(K1, "v1-7");
+        assertContains(K2, "v2-6");
+        assertContains(K3, "v3-5");
+        assertContains(K4, "v4-4");
+        assertContains(K5, "v5-3");
+        assertContains(K6, "v6-2");
+        assertContains(K7, "v7-1");
+        assertContextSize(7);
+
+        AsyncContext.remove(K7);
+        assertContains(K1, "v1-7");
+        assertContains(K2, "v2-6");
+        assertContains(K3, "v3-5");
+        assertContains(K4, "v4-4");
+        assertContains(K5, "v5-3");
+        assertContains(K6, "v6-2");
+        assertContextSize(6);
+
+        AsyncContext.remove(K6);
+        assertContains(K1, "v1-7");
+        assertContains(K2, "v2-6");
+        assertContains(K3, "v3-5");
+        assertContains(K4, "v4-4");
+        assertContains(K5, "v5-3");
+        assertContextSize(5);
+
+        AsyncContext.remove(K5);
+        assertContains(K1, "v1-7");
+        assertContains(K2, "v2-6");
+        assertContains(K3, "v3-5");
+        assertContains(K4, "v4-4");
+        assertContextSize(4);
+
+        AsyncContext.remove(K4);
+        assertContains(K1, "v1-7");
+        assertContains(K2, "v2-6");
+        assertContains(K3, "v3-5");
+        assertContextSize(3);
+
+        AsyncContext.remove(K3);
+        assertContains(K1, "v1-7");
+        assertContains(K2, "v2-6");
+        assertContextSize(2);
+
+        AsyncContext.remove(K2);
+        assertContains(K1, "v1-7");
+        assertContextSize(1);
+
+        AsyncContext.remove(K1);
+        assertContextSize(0);
+    }
+
+    @Test
+    public void testMultiPutAndRemove() {
+        AsyncContext.putAll(newMap(K1, "v1"));
+        assertContains(K1, "v1");
+        assertContextSize(1);
+
+        AsyncContext.putAll(newMap(K1, "v1-2", K2, "v2"));
+        assertContains(K1, "v1-2");
+        assertContains(K2, "v2");
+        assertContextSize(2);
+
+        AsyncContext.putAll(newMap(K1, "v1-3", K3, "v3"));
+        assertContains(K1, "v1-3");
+        assertContains(K2, "v2");
+        assertContains(K3, "v3");
+        assertContextSize(3);
+
+        AsyncContext.putAll(newMap(K1, "v1-4", K2, "v2-2", K3, "v3-1"));
+        assertContains(K1, "v1-4");
+        assertContains(K2, "v2-2");
+        assertContains(K3, "v3-1");
+        assertContextSize(3);
+
+        AsyncContext.putAll(newMap(K1, "v1-4", K2, "v2-2", K3, "v3-1"));
+        assertContains(K1, "v1-4");
+        assertContains(K2, "v2-2");
+        assertContains(K3, "v3-1");
+        assertContextSize(3);
+
+        AsyncContext.putAll(newMap(K4, "v4", K5, "v5", K6, "v6"));
+        assertContains(K1, "v1-4");
+        assertContains(K2, "v2-2");
+        assertContains(K3, "v3-1");
+        assertContains(K4, "v4");
+        assertContains(K5, "v5");
+        assertContains(K6, "v6");
+        assertContextSize(6);
+
+        AsyncContext.putAll(newMap(K1, "v1-5", K7, "v7", K8, "v8"));
+        assertContains(K1, "v1-5");
+        assertContains(K2, "v2-2");
+        assertContains(K3, "v3-1");
+        assertContains(K4, "v4");
+        assertContains(K5, "v5");
+        assertContains(K6, "v6");
+        assertContains(K7, "v7");
+        assertContains(K8, "v8");
+        assertContextSize(8);
+
+        // Start removal
+        AsyncContext.removeAll(asList(K1));
+        assertContains(K2, "v2-2");
+        assertContains(K3, "v3-1");
+        assertContains(K4, "v4");
+        assertContains(K5, "v5");
+        assertContains(K6, "v6");
+        assertContains(K7, "v7");
+        assertContains(K8, "v8");
+        assertContextSize(7);
+
+        AsyncContext.removeAll(asList(K1, K8, K3));
+        assertContains(K2, "v2-2");
+        assertContains(K4, "v4");
+        assertContains(K5, "v5");
+        assertContains(K6, "v6");
+        assertContains(K7, "v7");
+        assertContextSize(5);
+
+        AsyncContext.removeAll(asList(K7));
+        assertContains(K2, "v2-2");
+        assertContains(K4, "v4");
+        assertContains(K5, "v5");
+        assertContains(K6, "v6");
+        assertContextSize(4);
+
+        AsyncContext.removeAll(asList(K6, K4, K2, K5));
+        assertContextSize(0);
+    }
+
+    @Test
+    public void oneRemoveMultiplePermutations() {
+        testRemoveMultiplePermutations(asList(K1));
+    }
+
+    @Test
+    public void twoRemoveMultiplePermutations() {
+        testRemoveMultiplePermutations(asList(K1, K2));
+    }
+
+    @Test
+    public void threeRemoveMultiplePermutations() {
+        testRemoveMultiplePermutations(asList(K1, K2, K3));
+    }
+
+    @Test
+    public void fourRemoveMultiplePermutations() {
+        testRemoveMultiplePermutations(asList(K1, K2, K3, K4));
+    }
+
+    @Test
+    public void fiveRemoveMultiplePermutations() {
+        testRemoveMultiplePermutations(asList(K1, K2, K3, K4, K5));
+    }
+
+    @Test
+    public void sixRemoveMultiplePermutations() {
+        testRemoveMultiplePermutations(asList(K1, K2, K3, K4, K5, K6));
+    }
+
+    @Test
+    public void sevenRemoveMultiplePermutations() {
+        testRemoveMultiplePermutations(asList(K1, K2, K3, K4, K5, K6, K7));
+    }
+
+    @Test
+    public void eightRemoveMultiplePermutations() {
+        testRemoveMultiplePermutations(asList(K1, K2, K3, K4, K5, K6, K7, K8));
+    }
+
+    private static void testRemoveMultiplePermutations(List<Key<String>> keys) {
+        for (int i = 0; i < keys.size(); ++i) {
+            AsyncContext.put(keys.get(i), "v" + (i + 1));
+        }
+        for (int i = 0; i < keys.size(); ++i) {
+            assertContains(keys.get(i), "v" + (i + 1));
+        }
+
+        final int numCombinations = 1 << keys.size();
+        for (int i = 1; i < numCombinations; ++i) {
+            int remainingBits = i;
+            Key<?>[] permutation = new Key<?>[bitCount(i)];
+            int x = 0;
+            do {
+                int keysIndex = numberOfTrailingZeros(remainingBits);
+                permutation[x++] = keys.get(keysIndex);
+                remainingBits &= ~(1 << keysIndex);
+            } while (remainingBits != 0);
+
+            AsyncContext.removeAll(asList(permutation));
+
+            // Verify all the remove elements are not present in the context, and the size is as expected.
+            assertContextSize(keys.size() - permutation.length);
+            for (x = 0; x < permutation.length; ++x) {
+                assertNotContains(permutation[x]);
+            }
+
+            // Verify all the values that should be in the context, are contained in the context.
+            containsLoop:
+            for (int j = 0; j < keys.size(); ++j) {
+                final Key<?> key = keys.get(j);
+                for (x = 0; x < permutation.length; ++x) {
+                    if (key == permutation[x]) {
+                        continue containsLoop;
+                    }
+                }
+                assertContains(key, "v" + (j + 1));
+            }
+
+            // Rest the map to the initial state, and verify starting condition
+            AsyncContext.clear();
+            for (int j = 0; j < keys.size(); ++j) {
+                AsyncContext.put(keys.get(j), "v" + (j + 1));
+            }
+            for (int j = 0; j < keys.size(); ++j) {
+                assertContains(keys.get(j), "v" + (j + 1));
+            }
+        }
+    }
+
+    @Test
+    public void emptyPutMultiplePermutations() {
+        testPutMultiplePermutations(emptyList());
+    }
+
+    @Test
+    public void onePutMultiplePermutations() {
+        testPutMultiplePermutations(asList(K1));
+    }
+
+    @Test
+    public void twoPutMultiplePermutations() {
+        testPutMultiplePermutations(asList(K1, K2));
+    }
+
+    @Test
+    public void threePutMultiplePermutations() {
+        testPutMultiplePermutations(asList(K1, K2, K3));
+    }
+
+    @Test
+    public void fourPutMultiplePermutations() {
+        testPutMultiplePermutations(asList(K1, K2, K3, K4));
+    }
+
+    @Test
+    public void fivePutMultiplePermutations() {
+        testPutMultiplePermutations(asList(K1, K2, K3, K4, K5));
+    }
+
+    @Test
+    public void sixPutMultiplePermutations() {
+        testPutMultiplePermutations(asList(K1, K2, K3, K4, K5, K6));
+    }
+
+    @Test
+    public void sevenPutMultiplePermutations() {
+        testPutMultiplePermutations(asList(K1, K2, K3, K4, K5, K6, K7));
+    }
+
+    @Test
+    public void eightPutMultiplePermutations() {
+        testPutMultiplePermutations(asList(K1, K2, K3, K4, K5, K6, K7, K8));
+    }
+
+    private static void testPutMultiplePermutations(List<Key<String>> initialKeys) {
+        final Key<?>[] putKeys = new Key<?>[] {K1, K2, K3, K4, K5, K6, K7, K8};
+        for (int i = 0; i < initialKeys.size(); ++i) {
+            AsyncContext.put(initialKeys.get(i), "v" + (i + 1));
+        }
+        for (int i = 0; i < initialKeys.size(); ++i) {
+            assertContains(initialKeys.get(i), "v" + (i + 1));
+        }
+
+        final int numCombinations = 1 << putKeys.length;
+        for (int i = 1; i < numCombinations; ++i) {
+            int remainingBits = i;
+            Key<?>[] permutation = new Key<?>[bitCount(i)];
+            int x = 0;
+            do {
+                int putKeysIndex = numberOfTrailingZeros(remainingBits);
+                permutation[x++] = putKeys[putKeysIndex];
+                remainingBits &= ~(1 << putKeysIndex);
+            } while (remainingBits != 0);
+
+            Map<Key<?>, Object> insertionMap = newMap(permutation);
+            AsyncContext.putAll(insertionMap);
+
+            // Verify all the put values are present and the expected size is as expected.
+            int expectedSize = initialKeys.size();
+            for (x = 0; x < permutation.length; ++x) {
+                Key<?> key = permutation[x];
+                if (!initialKeys.contains(key)) {
+                    ++expectedSize;
+                }
+                assertContains(key, "permutation" + (x + 1));
+            }
+            assertContextSize(expectedSize);
+
+            // Make sure all the initial keys, whose value has not been modified, still exist.
+            for (int j = 0; j < initialKeys.size(); ++j) {
+                Key<?> key = initialKeys.get(j);
+                if (!insertionMap.containsKey(key)) {
+                    assertContains(key, "v" + (j + 1));
+                }
+            }
+
+            // Make sure elements that are not expected to be in the context, are not there.
+            for (x = 0; x < putKeys.length; ++x) {
+                Key<?> key = putKeys[x];
+                if (!insertionMap.containsKey(key) && !initialKeys.contains(key)) {
+                    assertNotContains(key);
+                }
+            }
+
+            // Rest the map to the initial state, and verify starting condition
+            AsyncContext.clear();
+            for (int j = 0; j < initialKeys.size(); ++j) {
+                AsyncContext.put(initialKeys.get(j), "v" + (j + 1));
+            }
+            for (int j = 0; j < initialKeys.size(); ++j) {
+                assertContains(initialKeys.get(j), "v" + (j + 1));
+            }
+        }
+    }
+
+    public static Map<Key<?>, Object> newMap(Key<?>... keys) {
+        HashMap<Key<?>, Object> map = new HashMap<>();
+        for (int i = 0; i < keys.length; ++i) {
+            map.put(keys[i], "permutation" + (i + 1));
+        }
+        return map;
+    }
+
+    public static Map<Key<?>, Object> newMap(Key<?> k1, Object v1) {
+        HashMap<Key<?>, Object> map = new HashMap<>();
+        map.put(k1, v1);
+        return map;
+    }
+
+    public static Map<Key<?>, Object> newMap(Key<?> k1, Object v1, Key<?> k2, Object v2) {
+        HashMap<Key<?>, Object> map = new HashMap<>();
+        map.put(k1, v1);
+        map.put(k2, v2);
+        return map;
+    }
+
+    public static Map<Key<?>, Object> newMap(Key<?> k1, Object v1, Key<?> k2, Object v2, Key<?> k3, Object v3) {
+        HashMap<Key<?>, Object> map = new HashMap<>();
+        map.put(k1, v1);
+        map.put(k2, v2);
+        map.put(k3, v3);
+        return map;
+    }
+
+    private static <T> void assertContains(Key<T> key, Object value) {
+        assertEquals(value, AsyncContext.get(key));
+        assertTrue(AsyncContext.contains(key));
+        assertFalse(AsyncContext.current().isEmpty());
+    }
+
+    private static void assertNotContains(Key<?> key) {
+        assertNull(AsyncContext.get(key));
+        assertFalse(AsyncContext.contains(key));
+    }
+
+    private static void assertContextSize(int size) {
+        assertEquals(size, AsyncContext.current().size());
+        assertEquals(size == 0, AsyncContext.current().isEmpty());
+    }
+
     private static class ContextCaptureCompletableSubscriber implements Completable.Subscriber {
         final CountDownLatch latch = new CountDownLatch(2);
 
@@ -594,7 +1189,8 @@ public class DefaultAsyncContextProviderTest {
             return this;
         }
 
-        ContextCaptureRunnable verifyContext(Consumer<AsyncContextMap> consumer) throws ExecutionException, InterruptedException {
+        ContextCaptureRunnable verifyContext(Consumer<AsyncContextMap> consumer)
+                throws ExecutionException, InterruptedException {
             consumer.accept(mapFuture.get());
             return this;
         }
@@ -615,13 +1211,15 @@ public class DefaultAsyncContextProviderTest {
             return this;
         }
 
-        ContextCaptureCallable<T> scheduleAndWait(ScheduledExecutorService executor) throws ExecutionException, InterruptedException {
+        ContextCaptureCallable<T> scheduleAndWait(ScheduledExecutorService executor)
+                throws ExecutionException, InterruptedException {
             executor.schedule(this, 10, TimeUnit.MILLISECONDS);
             mapFuture.get();
             return this;
         }
 
-        ContextCaptureCallable<T> verifyContext(Consumer<AsyncContextMap> consumer) throws ExecutionException, InterruptedException {
+        ContextCaptureCallable<T> verifyContext(Consumer<AsyncContextMap> consumer)
+                throws ExecutionException, InterruptedException {
             consumer.accept(mapFuture.get());
             return this;
         }
@@ -630,13 +1228,15 @@ public class DefaultAsyncContextProviderTest {
     private static class ContextCapturer {
         final CompletableFuture<AsyncContextMap> mapFuture = new CompletableFuture<>();
 
-        ContextCapturer runAndWait(Consumer<CompletableFuture<AsyncContextMap>> consumer) throws ExecutionException, InterruptedException {
+        ContextCapturer runAndWait(Consumer<CompletableFuture<AsyncContextMap>> consumer)
+                throws ExecutionException, InterruptedException {
             consumer.accept(mapFuture);
             mapFuture.get();
             return this;
         }
 
-        ContextCapturer verifyContext(Consumer<AsyncContextMap> consumer) throws ExecutionException, InterruptedException {
+        ContextCapturer verifyContext(Consumer<AsyncContextMap> consumer)
+                throws ExecutionException, InterruptedException {
             consumer.accept(mapFuture.get());
             return this;
         }
