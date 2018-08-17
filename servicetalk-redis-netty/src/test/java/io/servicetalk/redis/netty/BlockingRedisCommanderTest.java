@@ -353,7 +353,6 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
                 hasProperty("charSequenceValue", equalTo("test-message"))));
 
         // Check the second psubscribe subscription never got anything beyond the subscription confirmation
-        // subscriber3.cancel();
         iterator3.close();
 
         // Cancel the subscriber, which issues an PUNSUBSCRIBE behind the scenes
