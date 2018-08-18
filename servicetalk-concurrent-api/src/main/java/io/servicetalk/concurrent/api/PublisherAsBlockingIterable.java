@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
+import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
@@ -26,6 +27,7 @@ import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -35,6 +37,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
+import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
@@ -80,24 +83,38 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
         private final int maxBufferedItems;
         private final DelayedSubscription subscription = new DelayedSubscription();
         private final int queueCapacity;
+        /**
+         * Number of items to emit from {@link #next()} till we request more.
+         * Alternatively we can {@link Subscription#request(long) request(1)} every time we emit an item.
+         * This approach aids batch production of data without sacrificing responsiveness.
+         * Assumption here is that the source does not necessarily wait to produce all data before emitting hence
+         * {@link Subscription#request(long) request(n)} should be as fast as
+         * {@link Subscription#request(long) request(1)}.
+         * <p>
+         * Only accessed from {@link Iterator} methods and not from {@link Subscriber} methods.
+         */
+        private int itemsToNextRequest;
 
-        private int requested;
-
+        /**
+         * Next item to return from {@link #next()}
+         */
         @Nullable
-        private Object next; // Next item to return from next()
+        private Object next;
         private boolean terminated;
 
         SubscriberAndIterator(int queueCapacity) {
             maxBufferedItems = queueCapacity;
+            itemsToNextRequest = max(1, maxBufferedItems / 2);
             // max items => queueCapacityHint + 1 terminal + 1 CANCELLED_SIGNAL
             this.queueCapacity = queueCapacity + 2;
             data = new LinkedBlockingQueue<>(this.queueCapacity);
-            requested = queueCapacity;
         }
 
         @Override
         public void onSubscribe(final Subscription s) {
-            subscription.setDelayedSubscription(s);
+            // Subscription is requested from here as well as hasNext. Also, it can be cancelled from close(). So, we
+            // need to protect it from concurrent access.
+            subscription.setDelayedSubscription(ConcurrentSubscription.wrap(s));
             subscription.request(maxBufferedItems);
         }
 
@@ -105,33 +122,22 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
         public void close() {
             subscription.cancel();
             if (!terminated && !data.offer(CANCELLED_SIGNAL)) {
-                throw new IllegalStateException("Unexpected reject from queue while offering cancel. Requested: " +
-                        requested + ", capacity: " + (queueCapacity));
+                throw new IllegalStateException("Unexpected reject from queue while offering cancel. Queue size: " +
+                        data.size() + ", capacity: " + queueCapacity);
             }
         }
 
         @Override
         public void onNext(@Nullable T t) {
-            --requested;
             if (!data.offer(t == null ? NULL_PLACEHOLDER : t)) { // We have received more data than we requested.
-                subscription.cancel();
                 throw new QueueFullException("publisher-iterator", maxBufferedItems);
-            }
-            // Alternatively we can request(1) every time we receive an item.
-            // This approach aids batch production of data without sacrificing responsiveness.
-            // Assumption here is that the source does not necessarily wait to produce all data before emitting hence
-            // request(n) should be as fast as request(1).
-            if (requested == maxBufferedItems / 2) {
-                final long delta = maxBufferedItems - requested;
-                requested += delta;
-                subscription.request(delta);
             }
         }
 
         @Override
         public void onError(final Throwable t) {
             if (!data.offer(error(t))) {
-                LOGGER.error("Unexpected reject from queue while offering terminal event. Requested: " + requested
+                LOGGER.error("Unexpected reject from queue while offering terminal event. Queue size: " + data.size()
                         + ", capacity: " + (queueCapacity), t);
             }
         }
@@ -139,7 +145,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
         @Override
         public void onComplete() {
             if (!data.offer(COMPLETE_NOTIFICATION)) {
-                LOGGER.error("Unexpected reject from queue while offering terminal event. Requested: " + requested
+                LOGGER.error("Unexpected reject from queue while offering terminal event. Queue size: " + data.size()
                         + ", capacity: " + (queueCapacity));
             }
         }
@@ -154,6 +160,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
             }
             try {
                 next = data.take();
+                requestMoreIfRequired();
             } catch (InterruptedException e) {
                 return hasNextInterrupted(e);
             }
@@ -175,6 +182,7 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
                     subscription.cancel();
                     throw new TimeoutException("timed out after: " + timeout + " units: " + unit);
                 }
+                requestMoreIfRequired();
             } catch (InterruptedException e) {
                 return hasNextInterrupted(e);
             }
@@ -201,6 +209,13 @@ final class PublisherAsBlockingIterable<T> implements BlockingIterable<T> {
                 return false;
             }
             return true;
+        }
+
+        private void requestMoreIfRequired() {
+            if (--itemsToNextRequest == 0) {
+                itemsToNextRequest = max(1, maxBufferedItems / 2);
+                subscription.request(itemsToNextRequest);
+            }
         }
 
         @Nullable

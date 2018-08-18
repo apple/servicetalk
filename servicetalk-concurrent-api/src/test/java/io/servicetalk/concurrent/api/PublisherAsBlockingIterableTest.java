@@ -261,9 +261,9 @@ public final class PublisherAsBlockingIterableTest {
     public void verifyRequestedReplenishedCapacityAs1() {
         TestPublisher<Integer> source = new TestPublisher<>();
         Iterator<Integer> iterator = source.toIterable(1).iterator();
-        source.verifySubscribed().sendOnSubscribe().verifyRequested(1);
-        source.sendItems(1).verifyRequested(2).sendItems(2);
+        source.verifySubscribed().sendOnSubscribe().verifyRequested(1).sendItems(1);
         verifyNextIs(iterator, 1);
+        source.verifyRequested(2).sendItems(2);
         verifyNextIs(iterator, 2);
     }
 
@@ -275,10 +275,11 @@ public final class PublisherAsBlockingIterableTest {
         source.sendItems(1, 2);
         verifyNextIs(iterator, 1);
         verifyNextIs(iterator, 2);
-        source.verifyRequested(5)
-                .verifyOutstanding(3)
-                .sendItems(1)
-                .verifyRequested(8) /*5 + 3*/;
+        source.verifyRequested(7) /*5 + 2*/
+                .verifyOutstanding(5)
+                .sendItems(3);
+        verifyNextIs(iterator, 3);
+        source.verifyRequested(7);
     }
 
     @Test
@@ -290,9 +291,9 @@ public final class PublisherAsBlockingIterableTest {
         verifyNextIs(iterator, 1);
         source.verifyRequested(4)
                 .verifyOutstanding(3)
-                .sendItems(2)
-                .verifyRequested(6)/*4 + 2*/;
+                .sendItems(2);
         verifyNextIs(iterator, 2);
+        source.verifyRequested(6); /*4 + 2*/
     }
 
     @Test
@@ -305,9 +306,9 @@ public final class PublisherAsBlockingIterableTest {
         verifyNextIs(iterator, 2);
         source.verifyRequested(4)
                 .verifyOutstanding(2)
-                .sendItems(2)
-                .verifyRequested(5)/*4 + 2*/;
+                .sendItems(2);
         verifyNextIs(iterator, 2);
+        source.verifyRequested(5); /*4 + 1*/
     }
 
     @Test
@@ -339,6 +340,22 @@ public final class PublisherAsBlockingIterableTest {
         iterator.close();
         verifyNextIs(iterator, 1);
         assertThat("Item expected but not found.", iterator.hasNext(), is(false));
+    }
+
+    @Test
+    public void replenishingRequestedShouldHonourQueueContents() {
+        TestPublisher<Integer> source = new TestPublisher<>();
+        Iterator<Integer> iterator = source.toIterable(2).iterator();
+        source.verifySubscribed()
+                .sendOnSubscribe()
+                .verifyRequested(2)
+                .sendItems(1)
+                .verifyRequested(2); // Since, we have not consumed any item, we should not be requesting more.
+        verifyNextIs(iterator, 1); // Take next item, queue is half full, we should now be requesting more.
+        source.verifyRequested(3).sendItems(2, 3);
+        verifyNextIs(iterator, 2);
+        verifyNextIs(iterator, 3);
+        source.verifyRequested(5);
     }
 
     @Test
