@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Iterator;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
@@ -256,19 +257,29 @@ public final class BasicAuthHttpServiceBuilder<UserInfo> {
             // Check only "Authorization/Proxy-Authorization" headers, according to the format described in:
             //  - https://tools.ietf.org/html/rfc7617#section-2
             //  - https://tools.ietf.org/html/rfc2617#section-2
-            final CharSequence authorization = request.getHeaders().get(proxy ? PROXY_AUTHORIZATION : AUTHORIZATION);
-            if (authorization == null || authorization.length() <= AUTH_SCHEME_LENGTH) {
-                return onAccessDenied(request);
-            }
-            final String strAuth = authorization.toString();
-            final int schemeIdx = strAuth.toLowerCase().indexOf(AUTH_SCHEME);
-            if (schemeIdx < 0) {
-                return onAccessDenied(request);
-            }
+            final Iterator<? extends CharSequence> authorizations = request.getHeaders()
+                    .getAll(proxy ? PROXY_AUTHORIZATION : AUTHORIZATION);
+            String token = "";
+            while (authorizations.hasNext()) {
+                final CharSequence authorization = authorizations.next();
+                if (authorization.length() <= AUTH_SCHEME_LENGTH) {
+                    continue;
+                }
 
-            final int tokenIdx = schemeIdx + AUTH_SCHEME_LENGTH;
-            final int commaIdx = strAuth.indexOf(',', tokenIdx);
-            final String token = strAuth.substring(tokenIdx, commaIdx < 0 ? strAuth.length() : commaIdx);
+                final String strAuth = authorization.toString();
+                final int schemeIdx = strAuth.toLowerCase().indexOf(AUTH_SCHEME);
+                if (schemeIdx < 0) {
+                    continue;
+                }
+
+                final int beginIdx = schemeIdx + AUTH_SCHEME_LENGTH;
+                final int commaIdx = strAuth.indexOf(',', beginIdx);
+                final int endIdx = commaIdx < 0 ? strAuth.length() : commaIdx;
+                if (endIdx > beginIdx) {
+                    token = strAuth.substring(beginIdx, endIdx);
+                    break;
+                }
+            }
             if (token.isEmpty()) {
                 return onAccessDenied(request);
             }

@@ -255,6 +255,24 @@ public class BasicAuthHttpServiceBuilderTest {
     }
 
     @Test
+    public void authenticatedWithSecondHeader() throws Exception {
+        HttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        request.getHeaders().add(AUTHORIZATION, "Other token1");
+        request.getHeaders().add(AUTHORIZATION, "Basic " + base64("userId:password"));
+        request.getHeaders().add(AUTHORIZATION, "Some token2");
+        testAuthenticated(request);
+    }
+
+    @Test
+    public void authenticatedWithSecondHeaderForProxy() throws Exception {
+        HttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        request.getHeaders().add(PROXY_AUTHORIZATION, "Other token1");
+        request.getHeaders().add(PROXY_AUTHORIZATION, "Basic " + base64("userId:password"));
+        request.getHeaders().add(PROXY_AUTHORIZATION, "Some token2");
+        testAuthenticatedForProxy(request);
+    }
+
+    @Test
     public void utf8() throws Exception {
         final CredentialsVerifier<BasicUserInfo> utf8CredentialsVerifier = new CredentialsVerifier<BasicUserInfo>() {
             @Override
