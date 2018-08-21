@@ -48,6 +48,19 @@ dependencies {
   testImplementation "org.hamcrest:hamcrest-library"
 }
 
+tasks.checkstyleJmh {
+  it.dependsOn checkstyleConfig
+  tasks.checkstyle.dependsOn it
+}
+
+tasks.pmdJmh {
+  tasks.pmd.dependsOn it
+}
+
+tasks.spotbugsJmh {
+  tasks.spotbugs.dependsOn it
+}
+
 jmh {
   include = ".*Benchmark"
 //  iterations = 5
