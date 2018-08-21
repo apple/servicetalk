@@ -20,6 +20,7 @@ import org.junit.Test;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.http.api.CharSequences.contentEquals;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
@@ -89,5 +90,18 @@ public class AsciiBufferTest {
         assertTrue("failure for " + s, contentEquals(buffer, buffer2));
         assertTrue("failure for " + s, contentEquals(buffer, s));
         assertTrue("failure for " + s, contentEquals(buffer2, s));
+    }
+
+    @Test
+    public void testSubSequence() {
+        testSubSequence(newAsciiString("some-data"));
+        testSubSequence(newAsciiString(DEFAULT_RO_ALLOCATOR.fromAscii("some-data")));
+        testSubSequence(newAsciiString(DEFAULT_ALLOCATOR.fromAscii("some-data")));
+    }
+
+    private static void testSubSequence(CharSequence cs) {
+        assertEquals("some", cs.subSequence(0, 4));
+        assertEquals("data", cs.subSequence(5, 9));
+        assertEquals("e-d", cs.subSequence(3, 6));
     }
 }

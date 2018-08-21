@@ -475,7 +475,7 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
 
     @Override
     public String toString(int index, int length, Charset charset) {
-        ByteBuffer slice = sliceByteBuffer(getReaderIndex(), getReadableBytes());
+        ByteBuffer slice = sliceByteBuffer(index, length);
         try {
             // TODO(scott): thread local for the decoder?
             return charset.newDecoder().decode(slice).toString();

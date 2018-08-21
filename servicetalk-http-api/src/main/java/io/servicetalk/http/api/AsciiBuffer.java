@@ -67,7 +67,7 @@ final class AsciiBuffer implements CharSequence {
 
     @Override
     public CharSequence subSequence(int start, int end) {
-        return buffer.toString(start, end, US_ASCII);
+        return buffer.toString(start, end - start, US_ASCII);
     }
 
     /**
