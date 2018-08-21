@@ -38,7 +38,9 @@ import java.util.concurrent.CompletableFuture;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.transport.api.FlushStrategy.defaultFlushStrategy;
 import static io.servicetalk.transport.api.FlushStrategy.flushBeforeEnd;
 import static io.servicetalk.transport.api.FlushStrategy.flushOnEach;
@@ -90,9 +92,11 @@ public class NettyConnectionTest {
 
     private void setupWithCloseHandler(final CloseHandler closeHandler) {
         ExecutionContext executionContext = mock(ExecutionContext.class);
+        when(executionContext.getExecutor()).thenReturn(immediate());
         allocator = DEFAULT_ALLOCATOR;
         channel = new EmbeddedChannel();
         context = mock(ConnectionContext.class);
+        when(context.onClose()).thenReturn(new NettyFutureCompletable(channel::closeFuture));
         when(context.closeAsync()).thenReturn(new NettyFutureCompletable(channel::close));
         when(context.getExecutionContext()).thenReturn(executionContext);
         requestNSupplier = mock(Connection.RequestNSupplier.class);
@@ -322,6 +326,33 @@ public class NettyConnectionTest {
     }
 
     @Test
+    public void testOnClosingWithGracefulClose() throws Exception {
+        CloseHandler closeHandler = CloseHandler.forPipelinedRequestResponse(true);
+        setupWithCloseHandler(closeHandler);
+        closeListener.listen(conn.onClosing());
+        awaitIndefinitely(conn.closeAsyncGracefully());
+        closeListener.verifyCompletion();
+    }
+
+    @Test
+    public void testOnClosingWithHardClose() throws Exception {
+        CloseHandler closeHandler = CloseHandler.forPipelinedRequestResponse(true);
+        setupWithCloseHandler(closeHandler);
+        closeListener.listen(conn.onClosing());
+        awaitIndefinitely(conn.closeAsync());
+        closeListener.verifyCompletion();
+    }
+
+    @Test
+    public void testOnClosingWithoutUserInitiatedClose() throws Exception {
+        CloseHandler closeHandler = CloseHandler.forPipelinedRequestResponse(true);
+        setupWithCloseHandler(closeHandler);
+        closeListener.listen(conn.onClosing());
+        channel.close().get(); // Close and await closure.
+        closeListener.verifyCompletion();
+    }
+
+    @Test
     public void testContextDelegation() {
         conn.getExecutionContext();
         verify(context).getExecutionContext();
@@ -335,7 +366,7 @@ public class NettyConnectionTest {
         conn.getSslSession();
         verify(context).getSslSession();
         verifyNoMoreInteractions(context);
-        conn.closeAsync();
+        conn.closeAsync().subscribe();
         verify(context).closeAsync();
         verifyNoMoreInteractions(context);
         conn.onClose();

@@ -147,6 +147,13 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
                     onClosing.onComplete();
                 }
             });
+            // Users may depend on onClosing to be notified for all kinds of closures and not just graceful close.
+            // So, we should make sure that onClosing at least terminates with the channel.
+            // Since, onClose is guaranteed to be notified for any kind of closures, we cascade it to onClosing.
+            // An alternative would be to intercept channelInactive() in the pipeline but adding a pipeline handler
+            // in the pipeline may race with closure as we have already created the channel. If that happens, we may
+            // miss channelInactive event.
+            context.onClose().subscribe(onClosing);
         } else {
             onClosing = null;
         }
