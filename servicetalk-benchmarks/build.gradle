@@ -1,0 +1,57 @@
+/*
+ * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+buildscript {
+  if (!repositories) {
+    repositories {
+      jcenter()
+      maven { url "https://plugins.gradle.org/m2/" }
+    }
+  }
+
+  dependencies {
+    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.1.0-SNAPSHOT"
+  }
+}
+
+plugins {
+  id "me.champeau.gradle.jmh" version "0.4.7"
+}
+
+apply plugin: "servicetalk-library"
+apply plugin: "me.champeau.gradle.jmh"
+
+dependencies {
+  implementation "io.servicetalk:servicetalk-bom-internal:0.1.0-SNAPSHOT"
+
+  compile "io.servicetalk:servicetalk-concurrent-context:0.1.0-SNAPSHOT"
+
+  implementation "com.google.code.findbugs:jsr305"
+  implementation "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
+
+  testImplementation "io.servicetalk:servicetalk-concurrent-internal:0.1.0-SNAPSHOT"
+  testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:0.1.0-SNAPSHOT"
+  testImplementation "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
+  testImplementation "junit:junit"
+  testImplementation "org.hamcrest:hamcrest-library"
+}
+
+jmh {
+  include = ".*Benchmark"
+//  iterations = 5
+  jmhVersion = "$jmhVersion"
+  jvmArgsPrepend = "-Dio.netty.maxDirectMemory=9223372036854775807"
+  // jvmArgsPrepend = "-XX:+UnlockCommercialFeatures -XX:+FlightRecorder"
+}
