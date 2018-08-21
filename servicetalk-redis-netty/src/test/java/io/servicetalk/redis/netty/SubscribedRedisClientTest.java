@@ -531,17 +531,20 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
 
         @Override
         public void onSubscribe(Subscription s) {
-            subscribed.countDown();
+            assertThat("Received null Subscription.", s, is(notNullValue()));
             subscription = s;
+            subscribed.countDown();
         }
 
         @Override
         public void onNext(RedisData redisData) {
+            assertThat("Received null RedisData.", redisData, is(notNullValue()));
             dataReceived.countDown();
         }
 
         @Override
         public void onError(Throwable t) {
+            assertThat("Received null Throwable.", t, is(notNullValue()));
             if (notification != null) {
                 throw new IllegalStateException("Duplicate terminal notification. Existing: " + notification + ", new: " + t);
             }
@@ -565,11 +568,11 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
 
         void requestAndAwaitResponse() throws InterruptedException {
             Subscription s = subscription;
-            assert s != null;
+            assertThat("Subscription should not be null at time of request.", s, is(notNullValue()));
             s.request(1);
             dataReceived.await();
             termReceived.await();
-            TerminalNotification n = this.notification;
+            TerminalNotification n = notification;
             assertThat("Completion not received.", n, is(notNullValue()));
             assertThat("Completion not received.", n.getCause(), is(nullValue()));
         }
