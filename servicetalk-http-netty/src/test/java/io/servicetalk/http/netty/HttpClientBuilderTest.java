@@ -27,13 +27,12 @@ import org.junit.Test;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutionException;
 
-import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class DefaultHttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterTest {
+public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterTest {
 
     @Test
     public void httpClientWithStaticLoadBalancing() throws ExecutionException, InterruptedException {
@@ -64,10 +63,11 @@ public class DefaultHttpClientBuilderTest extends AbstractEchoServerBasedHttpReq
 
     private void sendRequestAndValidate(final Publisher<ServiceDiscoverer.Event<InetSocketAddress>> sdPub)
             throws ExecutionException, InterruptedException {
-        ServiceDiscoverer disco = mock(ServiceDiscoverer.class);
+        ServiceDiscoverer<HostAndPort, InetSocketAddress> disco = mock(ServiceDiscoverer.class);
         when(disco.discover(any())).thenReturn(sdPub);
-        HttpClient requester = DefaultHttpClientBuilder.forSingleAddress(newRoundRobinFactory(), disco,
-                HostAndPort.of("localhost", ((InetSocketAddress) serverContext.getListenAddress()).getPort()))
+        int port = ((InetSocketAddress) serverContext.getListenAddress()).getPort();
+        HttpClient requester = HttpClients.forSingleAddress("localhost", port)
+                .setServiceDiscoverer(disco)
                 .build(CTX);
         makeRequestValidateResponseAndClose(requester);
     }

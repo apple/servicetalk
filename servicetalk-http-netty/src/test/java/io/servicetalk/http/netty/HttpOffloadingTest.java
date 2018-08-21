@@ -61,7 +61,7 @@ import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponses.newResponse;
-import static io.servicetalk.http.netty.DefaultHttpClientBuilder.forSingleAddress;
+import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static java.lang.Long.MAX_VALUE;
 import static java.lang.Thread.currentThread;

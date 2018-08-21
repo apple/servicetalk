@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpRequests;
+import io.servicetalk.http.api.ClientFilterFunction;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
@@ -42,27 +43,45 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.http.api.ClientFilterFunction.from;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponses.newResponse;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 
-public class ClientFilterFactoryTest {
+public class ClientFilterFunctionTest {
 
     private List<Integer> filterOrder;
     private ExecutionContext executionContext;
-    private DefaultHttpClientBuilder<HostAndPort, InetSocketAddress> builder;
+    private SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder;
     @Nullable
     private BlockingHttpClient client;
+    private ClientFilterFunction mockClientFilter;
+    private ClientFilterFunction filter1;
+    private ClientFilterFunction filter2;
+    private ClientFilterFunction filter3;
 
     @Before
     public void setUp() {
         filterOrder = new ArrayList<>();
         executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR, createIoExecutor(), immediate());
-        builder = DefaultHttpClientBuilder.forSingleAddress("localhost", 0)
-                .addClientFilterFactory(httpClient ->
-                        new DelegatingHttpClient(httpClient, request -> success(newResponse(OK))));
+        builder = HttpClients.forSingleAddress("localhost", 0);
+        mockClientFilter = from(httpClient ->
+                new DelegatingHttpClient(httpClient, request -> success(newResponse(OK))));
+
+        filter1 = from(httpClient -> new DelegatingHttpClient(httpClient, request -> {
+            filterOrder.add(1);
+            return httpClient.request(request);
+        }));
+        filter2 = from(httpClient -> new DelegatingHttpClient(httpClient, request -> {
+            filterOrder.add(2);
+            return httpClient.request(request);
+        }));
+        filter3 = from(httpClient -> new DelegatingHttpClient(httpClient, request -> {
+            filterOrder.add(3);
+            return httpClient.request(request);
+        }));
     }
 
     @After
@@ -75,41 +94,12 @@ public class ClientFilterFactoryTest {
     }
 
     @Test
-    public void appendClientFilterFactoryOrder() throws Exception {
-        builder.addClientFilterFactory(httpClient -> new DelegatingHttpClient(httpClient, request -> {
-            filterOrder.add(1);
-            return httpClient.request(request);
-        }));
-        builder.addClientFilterFactory(httpClient -> new DelegatingHttpClient(httpClient, request -> {
-            filterOrder.add(2);
-            return httpClient.request(request);
-        }));
-        builder.addClientFilterFactory(httpClient -> new DelegatingHttpClient(httpClient, request -> {
-            filterOrder.add(3);
-            return httpClient.request(request);
-        }));
+    public void appendClientFilterExecutesInAppendOrder() throws Exception {
+        builder.appendClientFilter(filter1.append(filter2).append(filter3));
+        builder.appendClientFilter(mockClientFilter);
         buildClientAndSendRequest();
-        // Filters are applied in the reverse order, i.e. the last added filter is closest to the user.
-        assertThat("Unexpected order.", filterOrder, contains(3, 2, 1));
-    }
-
-    @Test
-    public void appendClientFilterFactoryBiFunctionOrder() throws Exception {
-        builder.addClientFilterFactory((httpClient, lbStream) -> new DelegatingHttpClient(httpClient, request -> {
-            filterOrder.add(1);
-            return httpClient.request(request);
-        }));
-        builder.addClientFilterFactory((httpClient, lbStream) -> new DelegatingHttpClient(httpClient, request -> {
-            filterOrder.add(2);
-            return httpClient.request(request);
-        }));
-        builder.addClientFilterFactory((httpClient, lbStream) -> new DelegatingHttpClient(httpClient, request -> {
-            filterOrder.add(3);
-            return httpClient.request(request);
-        }));
-        buildClientAndSendRequest();
-        // Filters are applied in the reverse order, i.e. the last added filter is closest to the user.
-        assertThat("Unexpected order.", filterOrder, contains(3, 2, 1));
+        // Filters are applied in order, i.e. the first added filter is closest to the user.
+        assertThat("Unexpected order.", filterOrder, contains(1, 2, 3));
     }
 
     private void buildClientAndSendRequest() throws Exception {

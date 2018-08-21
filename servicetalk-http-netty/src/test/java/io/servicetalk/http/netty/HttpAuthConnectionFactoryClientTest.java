@@ -76,8 +76,9 @@ public class HttpAuthConnectionFactoryClientTest {
         serverContext = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
                 .start(CTX, new InetSocketAddress(0), ContextFilter.ACCEPT_ALL,
                         fromAsync((ctx, req) -> success(newTestResponse()))));
-        client = DefaultHttpClientBuilder.forSingleAddress(
-                "localhost", ((InetSocketAddress) serverContext.getListenAddress()).getPort()).build(CTX);
+        client = HttpClients.forSingleAddress("localhost",
+                ((InetSocketAddress) serverContext.getListenAddress()).getPort())
+                .build(CTX);
 
         HttpResponse<HttpPayloadChunk> response = awaitIndefinitely(client.request(newTestRequest("/foo")));
         assertEquals(OK, response.getStatus());

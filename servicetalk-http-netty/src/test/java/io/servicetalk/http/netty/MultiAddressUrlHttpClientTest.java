@@ -75,7 +75,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-public class AddressParsingHttpRequesterTest {
+public class MultiAddressUrlHttpClientTest {
 
     private static final String HOSTNAME = "localhost";
     private static final String X_REQUESTED_LOCATION = "X-Requested-Location";
@@ -100,7 +100,7 @@ public class AddressParsingHttpRequesterTest {
     public static void beforeClass() throws Exception {
         afterClassCloseables = newCompositeCloseable();
 
-        requester = afterClassCloseables.append(new AddressParsingHttpClientBuilder().build(CTX));
+        requester = afterClassCloseables.append(HttpClients.forMultiAddressUrl().build(CTX));
 
         final HttpHeaders httpHeaders = DefaultHttpHeadersFactory.INSTANCE.newHeaders().set(CONTENT_LENGTH, ZERO);
         httpService = fromAsync((ctx, request) -> {

@@ -72,7 +72,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class AddressParsingHttpRequesterSslTest {
+public class MultiAddressUrlHttpClientSslTest {
 
     private static final String HOSTNAME = "localhost";
 
@@ -135,7 +135,7 @@ public class AddressParsingHttpRequesterSslTest {
 
     @Test(expected = ExecutionException.class)
     public void nonSecureClientToSecureServer() throws Exception {
-        AggregatedHttpRequester requester = new AddressParsingHttpClientBuilder()
+        AggregatedHttpRequester requester = HttpClients.forMultiAddressUrl()
                 .buildAggregated(CTX);
 
         AggregatedHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/");
@@ -146,8 +146,7 @@ public class AddressParsingHttpRequesterSslTest {
 
     @Test(expected = TimeoutException.class)
     public void secureClientToNonSecureServer() throws Exception {
-        AggregatedHttpRequester requester = new AddressParsingHttpClientBuilder()
-                .setSslConfigProvider(secureByDefault())
+        AggregatedHttpRequester requester = HttpClients.forMultiAddressUrl().setSslConfigProvider(secureByDefault())
                 .buildAggregated(CTX);
 
         AggregatedHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/");
@@ -158,7 +157,7 @@ public class AddressParsingHttpRequesterSslTest {
 
     @Test
     public void requesterWithDefaultSslConfigProvider() throws Exception {
-        try (BlockingAggregatedHttpRequester requester = new AddressParsingHttpClientBuilder()
+        try (BlockingAggregatedHttpRequester requester = HttpClients.forMultiAddressUrl()
                 .buildBlockingAggregated(CTX)) {
             testOnlyNonSecureRequestTargets(requester);
         }
@@ -166,8 +165,7 @@ public class AddressParsingHttpRequesterSslTest {
 
     @Test
     public void requesterWithPlainSslConfigProvider() throws Exception {
-        try (BlockingAggregatedHttpRequester requester = new AddressParsingHttpClientBuilder()
-                .setSslConfigProvider(plainByDefault())
+        try (BlockingAggregatedHttpRequester requester = HttpClients.forMultiAddressUrl().setSslConfigProvider(plainByDefault())
                 .buildBlockingAggregated(CTX)) {
             testOnlyNonSecureRequestTargets(requester);
         }
@@ -175,21 +173,21 @@ public class AddressParsingHttpRequesterSslTest {
 
     @Test
     public void requesterWithSecureSslConfigProvider() throws Exception {
-        try (BlockingAggregatedHttpRequester requester = new AddressParsingHttpClientBuilder()
-                .setSslConfigProvider(new SslConfigProvider() {
-                    @Override
-                    public int defaultPort(final HttpScheme scheme, @Nullable final String effectiveHost) {
-                        return secureByDefault().defaultPort(scheme, effectiveHost);
-                    }
+        SslConfigProvider sslConfigProvider = new SslConfigProvider() {
+            @Override
+            public int defaultPort(final HttpScheme scheme, @Nullable final String effectiveHost) {
+                return secureByDefault().defaultPort(scheme, effectiveHost);
+            }
 
-                    @Override
-                    public SslConfig forHostAndPort(final HostAndPort hostAndPort) {
-                        return forClient(hostAndPort)
-                                // required for generated certificates
-                                .trustManager(() -> loadMutualAuthCaPem())
-                                .build();
-                    }
-                })
+            @Override
+            public SslConfig forHostAndPort(final HostAndPort hostAndPort) {
+                return forClient(hostAndPort)
+                        // required for generated certificates
+                        .trustManager(() -> loadMutualAuthCaPem())
+                        .build();
+            }
+        };
+        try (BlockingAggregatedHttpRequester requester = HttpClients.forMultiAddressUrl().setSslConfigProvider(sslConfigProvider)
                 .buildBlockingAggregated(CTX)) {
             testAllFormsOfRequestTargetWithSecureByDefault(requester);
         }

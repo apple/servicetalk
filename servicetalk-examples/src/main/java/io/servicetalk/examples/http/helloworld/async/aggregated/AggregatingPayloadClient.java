@@ -18,7 +18,7 @@ package io.servicetalk.examples.http.helloworld.async.aggregated;
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.http.api.AggregatedHttpClient;
-import io.servicetalk.http.netty.DefaultHttpClientBuilder;
+import io.servicetalk.http.netty.HttpClients;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +37,7 @@ public final class AggregatingPayloadClient {
         try (CompositeCloseable resources = AsyncCloseables.newCompositeCloseable()) {
             // Build the client, and register for DNS discovery events.
             AggregatedHttpClient client = resources.prepend(
-                    DefaultHttpClientBuilder.forSingleAddress("localhost", 8080).build().asAggregatedClient());
+                    HttpClients.forSingleAddress("localhost", 8080).build().asAggregatedClient());
 
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
             // before the response has been processed. This isn't typical usage for a streaming API but is useful for

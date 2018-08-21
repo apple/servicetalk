@@ -18,7 +18,7 @@ package io.servicetalk.examples.http.helloworld.blocking.aggregated;
 import io.servicetalk.http.api.AggregatedHttpResponse;
 import io.servicetalk.http.api.BlockingAggregatedHttpClient;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.netty.DefaultHttpClientBuilder;
+import io.servicetalk.http.netty.HttpClients;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +32,7 @@ public final class HelloWorldBlockingAggregatedClient {
 
     public static void main(String[] args) throws Exception {
         // Build the client with DNS and round robin load balancing
-        try(BlockingAggregatedHttpClient client = DefaultHttpClientBuilder
+        try(BlockingAggregatedHttpClient client = HttpClients
                 .forSingleAddress("localhost",8080)
                 .build().asBlockingAggregatedClient()) {
 

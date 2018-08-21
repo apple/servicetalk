@@ -50,9 +50,6 @@ final class RedirectSingle extends Single<HttpResponse<HttpPayloadChunk>> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RedirectSingle.class);
 
-    private static final int DEFAULT_PORT_HTTP = 80;
-    private static final int DEFAULT_PORT_HTTPS = 443;
-
     private final Single<HttpResponse<HttpPayloadChunk>> originalResponse;
     private final HttpRequest<HttpPayloadChunk> originalRequest;
     private final int maxRedirects;

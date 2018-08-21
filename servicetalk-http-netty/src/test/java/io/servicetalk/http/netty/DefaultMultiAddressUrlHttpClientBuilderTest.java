@@ -38,7 +38,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-public class AddressParsingHttpRequesterBuilderTest {
+public class DefaultMultiAddressUrlHttpClientBuilderTest {
 
     @ClassRule
     public static final ExecutionContextRule CTX = immediate();
@@ -48,7 +48,7 @@ public class AddressParsingHttpRequesterBuilderTest {
 
     @Test
     public void buildWithDefaults() throws Exception {
-        HttpRequester newRequester = new AddressParsingHttpClientBuilder()
+        HttpRequester newRequester = HttpClients.forMultiAddressUrl()
                 .build(CTX);
         assertNotNull(newRequester);
         awaitIndefinitely(newRequester.closeAsync());
@@ -56,7 +56,7 @@ public class AddressParsingHttpRequesterBuilderTest {
 
     @Test
     public void buildAggregatedWithDefaults() throws Exception {
-        AggregatedHttpRequester newAggregatedRequester = new AddressParsingHttpClientBuilder()
+        AggregatedHttpRequester newAggregatedRequester = HttpClients.forMultiAddressUrl()
                 .buildAggregated(CTX);
         assertNotNull(newAggregatedRequester);
         awaitIndefinitely(newAggregatedRequester.closeAsync());
@@ -64,7 +64,7 @@ public class AddressParsingHttpRequesterBuilderTest {
 
     @Test
     public void buildBlockingWithDefaults() throws Exception {
-        BlockingHttpRequester newBlockingRequester = new AddressParsingHttpClientBuilder()
+        BlockingHttpRequester newBlockingRequester = HttpClients.forMultiAddressUrl()
                 .buildBlocking(CTX);
         assertNotNull(newBlockingRequester);
         newBlockingRequester.close();
@@ -72,7 +72,7 @@ public class AddressParsingHttpRequesterBuilderTest {
 
     @Test
     public void buildBlockingAggregatedWithDefaults() throws Exception {
-        BlockingAggregatedHttpRequester newBlockingAggregatedRequester = new AddressParsingHttpClientBuilder()
+        BlockingAggregatedHttpRequester newBlockingAggregatedRequester = HttpClients.forMultiAddressUrl()
                 .buildBlockingAggregated(CTX);
         assertNotNull(newBlockingAggregatedRequester);
         newBlockingAggregatedRequester.close();
@@ -82,7 +82,7 @@ public class AddressParsingHttpRequesterBuilderTest {
     @SuppressWarnings("unchecked")
     public void buildWithProvidedServiceDiscoverer() throws Exception {
         ServiceDiscoverer<HostAndPort, InetSocketAddress> mockedServiceDiscoverer = mock(ServiceDiscoverer.class);
-        HttpRequester newRequester = new AddressParsingHttpClientBuilder(mockedServiceDiscoverer).build(CTX);
+        HttpRequester newRequester = HttpClients.forMultiAddressUrl().setServiceDiscoverer(mockedServiceDiscoverer).build(CTX);
         awaitIndefinitely(newRequester.closeAsync());
         verify(mockedServiceDiscoverer, never()).closeAsync();
     }

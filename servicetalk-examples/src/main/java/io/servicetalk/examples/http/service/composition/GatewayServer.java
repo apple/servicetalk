@@ -22,8 +22,8 @@ import io.servicetalk.http.api.DefaultHttpSerializer;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpSerializer;
 import io.servicetalk.http.api.HttpService;
-import io.servicetalk.http.netty.DefaultHttpClientBuilder;
 import io.servicetalk.http.netty.DefaultHttpServerStarter;
+import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 import io.servicetalk.http.utils.HttpClientFunctionFilter;
 import io.servicetalk.transport.api.DefaultExecutionContext;
@@ -127,9 +127,9 @@ public final class GatewayServer {
                 resources.prepend(newCachedThreadExecutor()));
 
         return resources.prepend(
-                DefaultHttpClientBuilder.forSingleAddress(serviceAddress)
+                HttpClients.forSingleAddress(serviceAddress)
                         // Set retry and timeout filters for all clients.
-                        .setClientFilterFactory((client, lbEventStream) -> {
+                        .appendClientFilter((client, lbEventStream) -> {
                             // Apply a timeout filter for the client to guard against extremely latent clients.
                             return new HttpClientFunctionFilter((requester, request) ->
                                     requester.request(request).timeout(ofMillis(100),

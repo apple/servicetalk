@@ -18,7 +18,7 @@ package io.servicetalk.examples.http.helloworld.blocking.streaming;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpResponse;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.netty.DefaultHttpClientBuilder;
+import io.servicetalk.http.netty.HttpClients;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +32,7 @@ public final class HelloWorldBlockingClient {
 
     public static void main(String[] args) throws Exception {
         // Collection of all resources in this test that can be closed together at the end.
-        try (BlockingHttpClient client = DefaultHttpClientBuilder
+        try (BlockingHttpClient client = HttpClients
                 .forSingleAddress("localhost", 8080)
                 .build().asBlockingClient()) {
 

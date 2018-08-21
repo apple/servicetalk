@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.ConnectionFilterFunction;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpConnectionBuilder;
@@ -35,13 +36,11 @@ import java.io.InputStream;
 import java.net.SocketOption;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.util.Objects.requireNonNull;
-import static java.util.function.UnaryOperator.identity;
 
 /**
  * A builder for instances of {@link HttpConnectionBuilder}.
@@ -53,7 +52,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
     private static final Predicate<Object> LAST_CHUNK_PREDICATE = p -> p instanceof LastHttpPayloadChunk;
 
     private final HttpClientConfig config;
-    private UnaryOperator<HttpConnection> connectionFilterFactory = identity();
+    private ConnectionFilterFunction connectionFilterFunction = ConnectionFilterFunction.identity();
 
     /**
      * Create a new builder.
@@ -71,8 +70,8 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
                                         final ResolvedAddress resolvedAddress) {
         ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
         return (roConfig.getMaxPipelinedRequests() == 1 ?
-                  buildForNonPipelined(executionContext, resolvedAddress, roConfig, connectionFilterFactory) :
-                  buildForPipelined(executionContext, resolvedAddress, roConfig, connectionFilterFactory))
+                  buildForNonPipelined(executionContext, resolvedAddress, roConfig, connectionFilterFunction) :
+                  buildForPipelined(executionContext, resolvedAddress, roConfig, connectionFilterFunction))
                         .map(filteredConnection -> new HttpConnectionConcurrentRequestsFilter(filteredConnection,
                                 roConfig.getMaxPipelinedRequests()));
     }
@@ -84,16 +83,16 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
 
     static <ResolvedAddress> Single<HttpConnection> buildForPipelined(
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
-            final Function<HttpConnection, HttpConnection> connectionFilterFactory) {
+            final ConnectionFilterFunction connectionFilterFunction) {
         return build(executionContext, resolvedAddress, roConfig, conn ->
-                connectionFilterFactory.apply(new PipelinedHttpConnection(conn, roConfig, executionContext)));
+                connectionFilterFunction.apply(new PipelinedHttpConnection(conn, roConfig, executionContext)));
     }
 
     static <ResolvedAddress> Single<HttpConnection> buildForNonPipelined(
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
-            final Function<HttpConnection, HttpConnection> connectionFilterFactory) {
+            final ConnectionFilterFunction connectionFilterFunction) {
         return build(executionContext, resolvedAddress, roConfig, conn ->
-                connectionFilterFactory.apply(new NonPipelinedHttpConnection(conn, roConfig, executionContext)));
+                connectionFilterFunction.apply(new NonPipelinedHttpConnection(conn, roConfig, executionContext)));
     }
 
     private static <ResolvedAddress> Single<HttpConnection> build(
@@ -242,17 +241,17 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
     }
 
     /**
-     * Set the filter factory that is used to decorate {@link HttpConnection} created by this builder.
+     * Set the filter that is used to decorate {@link HttpConnection} created by this builder.
      * <p>
      * Note this method will be used to decorate the result of {@link #build(ExecutionContext, Object)} before it is
      * returned to the user.
      *
-     * @param connectionFilterFactory {@link Function} to decorate a {@link HttpConnection} for the purpose of filtering
+     * @param function decorates a {@link HttpConnection} for the purpose of filtering
      * @return {@code this}
      */
-    public DefaultHttpConnectionBuilder<ResolvedAddress> setConnectionFilterFactory(
-            final UnaryOperator<HttpConnection> connectionFilterFactory) {
-        this.connectionFilterFactory = requireNonNull(connectionFilterFactory);
+    public DefaultHttpConnectionBuilder<ResolvedAddress> setConnectionFilterFunction(
+            final ConnectionFilterFunction function) {
+        this.connectionFilterFunction = requireNonNull(function);
         return this;
     }
 }
