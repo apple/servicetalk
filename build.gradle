@@ -111,7 +111,7 @@ task quality {
 // Override behavior for existing tasks:
 
 task publish(overwrite: true) {
-  dependsOn gradle.includedBuilds*.task(':publish')
+  dependsOn findTasks(':publish', ['servicetalk-benchmarks'])
 }
 
 task license(overwrite: true) {
