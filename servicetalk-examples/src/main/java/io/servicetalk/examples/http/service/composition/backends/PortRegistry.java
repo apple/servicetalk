@@ -18,7 +18,7 @@ package io.servicetalk.examples.http.service.composition.backends;
 import io.servicetalk.transport.api.HostAndPort;
 
 /**
- * A static registry for backends -> port mapping. This typically will be fetched from a service discovery system
+ * A static registry for backends to port mapping. This typically will be fetched from a service discovery system
  * instead of a static registry.
  */
 public final class PortRegistry {
