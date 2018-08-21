@@ -38,7 +38,7 @@ import javax.annotation.Nullable;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.Response.StatusType;
 
-import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_DIRECT_ALLOCATOR;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_DIRECT_RO_ALLOCATOR;
 import static io.servicetalk.http.api.CharSequences.emptyAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
@@ -59,7 +59,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
             unmodifiableMap(stream(Status.values())
                     .collect(toMap(identity(),
                             s -> getResponseStatus(s.getStatusCode(),
-                                    PREFER_DIRECT_ALLOCATOR.fromAscii(s.getReasonPhrase())))));
+                                    PREFER_DIRECT_RO_ALLOCATOR.fromAscii(s.getReasonPhrase())))));
 
     private static final int UNKNOWN_RESPONSE_LENGTH = -1;
     private static final int EMPTY_RESPONSE = 0;

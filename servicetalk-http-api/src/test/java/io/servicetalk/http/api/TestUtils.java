@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 
 final class TestUtils {
@@ -24,6 +24,6 @@ final class TestUtils {
     }
 
     static HttpPayloadChunk chunkFromString(String ascii) {
-        return newPayloadChunk(DEFAULT_ALLOCATOR.fromAscii(ascii));
+        return newPayloadChunk(DEFAULT_RO_ALLOCATOR.fromAscii(ascii));
     }
 }

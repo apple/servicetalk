@@ -19,7 +19,7 @@ import org.junit.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.http.api.CharSequences.contentEquals;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
@@ -44,7 +44,7 @@ public class AsciiBufferTest {
 
     private static void verifyCaseInsensitive(String s) {
         CharSequence buffer = newAsciiString(s);
-        CharSequence buffer2 = newAsciiString(DEFAULT_ALLOCATOR.fromAscii(s));
+        CharSequence buffer2 = newAsciiString(DEFAULT_RO_ALLOCATOR.fromAscii(s));
         verifyDifferentAsciiStringTypes(s, buffer, buffer2);
 
         StringBuilder sb = new StringBuilder(s.length());
@@ -58,7 +58,7 @@ public class AsciiBufferTest {
         }
         String flipCase = sb.toString();
         CharSequence bufferFlipCase = newAsciiString(flipCase);
-        CharSequence buffer2FlipCase = newAsciiString(DEFAULT_ALLOCATOR.fromAscii(flipCase));
+        CharSequence buffer2FlipCase = newAsciiString(DEFAULT_RO_ALLOCATOR.fromAscii(flipCase));
         verifyDifferentAsciiStringTypes(flipCase, bufferFlipCase, buffer2FlipCase);
         if (flipCase.equals(s)) {
             assertEquals("failure for " + s + " and " + flipCase, buffer, bufferFlipCase);

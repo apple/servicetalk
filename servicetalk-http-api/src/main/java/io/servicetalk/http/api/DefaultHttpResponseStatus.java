@@ -17,7 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 
-import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.toStatusClass;
 import static java.util.Objects.requireNonNull;
 
@@ -84,6 +84,6 @@ final class DefaultHttpResponseStatus implements HttpResponseStatus {
     }
 
     static Buffer statusCodeToBuffer(int status) {
-        return DEFAULT_ALLOCATOR.fromAscii(String.valueOf(status));
+        return DEFAULT_RO_ALLOCATOR.fromAscii(String.valueOf(status));
     }
 }

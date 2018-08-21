@@ -19,7 +19,7 @@ import org.junit.Test;
 
 import java.nio.ByteBuffer;
 
-import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.Assert.assertEquals;
@@ -31,8 +31,8 @@ public class ReadOnlyByteBufferTest {
         ByteBuffer expectedBuffer = allocateDirect(expectedString.length());
         expectedBuffer.put(expectedString.getBytes(US_ASCII));
         expectedBuffer.flip();
-        Buffer buffer1 = DEFAULT_ALLOCATOR.wrap(expectedBuffer);
-        Buffer buffer2 = DEFAULT_ALLOCATOR.fromAscii("testing");
+        Buffer buffer1 = DEFAULT_RO_ALLOCATOR.wrap(expectedBuffer);
+        Buffer buffer2 = DEFAULT_RO_ALLOCATOR.fromAscii("testing");
         assertEquals(buffer1, buffer2);
         assertEquals(expectedBuffer, buffer1.toNioBuffer());
         assertEquals(expectedBuffer, buffer2.toNioBuffer());
@@ -50,7 +50,7 @@ public class ReadOnlyByteBufferTest {
         ByteBuffer expectedBuffer = allocateDirect(8);
         expectedBuffer.putLong(Long.MAX_VALUE);
         expectedBuffer.flip();
-        Buffer buffer1 = DEFAULT_ALLOCATOR.wrap(expectedBuffer);
+        Buffer buffer1 = DEFAULT_RO_ALLOCATOR.wrap(expectedBuffer);
         assertEquals(Long.MAX_VALUE, buffer1.getLong(buffer1.getReaderIndex()));
     }
 }

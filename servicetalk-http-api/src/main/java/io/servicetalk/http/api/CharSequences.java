@@ -19,7 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.http.api.AsciiBuffer.EMPTY_ASCII_BUFFER;
 import static io.servicetalk.http.api.AsciiBuffer.hashCodeAscii;
 import static java.lang.Character.toUpperCase;
@@ -43,7 +43,7 @@ public final class CharSequences {
      * @return a {@link CharSequence}
      */
     public static CharSequence newAsciiString(final String input) {
-        return newAsciiString(DEFAULT_ALLOCATOR.fromAscii(input));
+        return newAsciiString(DEFAULT_RO_ALLOCATOR.fromAscii(input));
     }
 
     /**

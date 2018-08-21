@@ -18,7 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.http.api.DefaultHttpRequestMethod.DefaultHttpRequestMethodProperties;
 
-import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_DIRECT_ALLOCATOR;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_DIRECT_RO_ALLOCATOR;
 import static io.servicetalk.http.api.HttpRequestMethods.HttpRequestMethodProperties.CACHEABLE;
 import static io.servicetalk.http.api.HttpRequestMethods.HttpRequestMethodProperties.IDEMPOTENT;
 import static io.servicetalk.http.api.HttpRequestMethods.HttpRequestMethodProperties.NONE;
@@ -31,15 +31,15 @@ import static io.servicetalk.http.api.HttpRequestMethods.HttpRequestMethodProper
  */
 public enum HttpRequestMethods implements HttpRequestMethod {
 
-    GET(PREFER_DIRECT_ALLOCATOR.fromAscii("GET"), SAFE_IDEMPOTENT_CACHEABLE),
-    HEAD(PREFER_DIRECT_ALLOCATOR.fromAscii("HEAD"), SAFE_IDEMPOTENT_CACHEABLE),
-    OPTIONS(PREFER_DIRECT_ALLOCATOR.fromAscii("OPTIONS"), SAFE_IDEMPOTENT),
-    TRACE(PREFER_DIRECT_ALLOCATOR.fromAscii("TRACE"), SAFE_IDEMPOTENT),
-    PUT(PREFER_DIRECT_ALLOCATOR.fromAscii("PUT"), IDEMPOTENT),
-    DELETE(PREFER_DIRECT_ALLOCATOR.fromAscii("DELETE"), IDEMPOTENT),
-    POST(PREFER_DIRECT_ALLOCATOR.fromAscii("POST"), CACHEABLE),
-    PATCH(PREFER_DIRECT_ALLOCATOR.fromAscii("PATCH"), NONE),
-    CONNECT(PREFER_DIRECT_ALLOCATOR.fromAscii("CONNECT"), NONE);
+    GET(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("GET"), SAFE_IDEMPOTENT_CACHEABLE),
+    HEAD(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("HEAD"), SAFE_IDEMPOTENT_CACHEABLE),
+    OPTIONS(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("OPTIONS"), SAFE_IDEMPOTENT),
+    TRACE(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("TRACE"), SAFE_IDEMPOTENT),
+    PUT(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("PUT"), IDEMPOTENT),
+    DELETE(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("DELETE"), IDEMPOTENT),
+    POST(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("POST"), CACHEABLE),
+    PATCH(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("PATCH"), NONE),
+    CONNECT(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("CONNECT"), NONE);
 
     private final Buffer methodName;
     private final Properties properties;

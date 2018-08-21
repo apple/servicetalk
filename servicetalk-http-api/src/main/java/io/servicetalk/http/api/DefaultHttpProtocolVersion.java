@@ -17,7 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 
-import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_DIRECT_ALLOCATOR;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_DIRECT_RO_ALLOCATOR;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
 final class DefaultHttpProtocolVersion implements HttpProtocolVersion {
@@ -104,6 +104,6 @@ final class DefaultHttpProtocolVersion implements HttpProtocolVersion {
     }
 
     static Buffer httpVersionToBuffer(int major, int minor) {
-        return PREFER_DIRECT_ALLOCATOR.fromAscii("HTTP/" + major + '.' + minor);
+        return PREFER_DIRECT_RO_ALLOCATOR.fromAscii("HTTP/" + major + '.' + minor);
     }
 }
