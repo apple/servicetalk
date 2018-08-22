@@ -31,6 +31,11 @@ import static io.servicetalk.concurrent.api.ImmediateExecutor.IMMEDIATE_EXECUTOR
  * Utility methods to create various {@link Executor}s.
  */
 public final class Executors {
+    static final ExecutorPluginSet EXECUTOR_PLUGINS = new ExecutorPluginSet();
+
+    static {
+        AsyncContext.autoEnable();
+    }
 
     private Executors() {
         // no instances
@@ -80,7 +85,7 @@ public final class Executors {
      * @return A new {@link Executor} that will use the {@code size} number of threads.
      */
     public static Executor newFixedSizeExecutor(int size, ThreadFactory threadFactory) {
-        return new DefaultExecutor(size, size, threadFactory);
+        return EXECUTOR_PLUGINS.wrapExecutor(new DefaultExecutor(size, size, threadFactory));
     }
 
     /**
@@ -99,19 +104,20 @@ public final class Executors {
      * @return A new {@link Executor}.
      */
     public static Executor newCachedThreadExecutor(ThreadFactory threadFactory) {
-        return new DefaultExecutor(1, Integer.MAX_VALUE, threadFactory);
+        return EXECUTOR_PLUGINS.wrapExecutor(new DefaultExecutor(1, Integer.MAX_VALUE, threadFactory));
     }
 
     /**
      * Creates a new {@link Executor} from the provided {@code jdkExecutor}. <p>
-     * Delayed task execution will be delegated to a global scheduler, unless passed {@link java.util.concurrent.Executor}
-     * is an instance of {@link ScheduledExecutorService}.<p>
+     * Delayed task execution will be delegated to a global scheduler, unless passed
+     * {@link java.util.concurrent.Executor} is an instance of {@link ScheduledExecutorService}.<p>
      * Task execution will not honor cancellations unless passed {@link java.util.concurrent.Executor}
      * is an instance of {@link ExecutorService}.
      * <h2>Long running tasks</h2>
      * {@link java.util.concurrent.Executor} implementations are expected to run long running (blocking) tasks which may
      * depend on other tasks submitted to the same {@link java.util.concurrent.Executor} instance.
-     * In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the {@link java.util.concurrent.Executor}.
+     * In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the
+     * {@link java.util.concurrent.Executor}.
      *
      * @param jdkExecutor {@link java.util.concurrent.Executor} to use for executing tasks.
      * The lifetime of this object is transferred to the return value. In other words {@link Executor#closeAsync()} will
@@ -119,7 +125,7 @@ public final class Executors {
      * @return {@link Executor} that wraps the passed {@code jdkExecutor}.
      */
     public static Executor from(java.util.concurrent.Executor jdkExecutor) {
-        return new DefaultExecutor(jdkExecutor);
+        return EXECUTOR_PLUGINS.wrapExecutor(new DefaultExecutor(jdkExecutor));
     }
 
     /**
@@ -131,7 +137,8 @@ public final class Executors {
      * <h2>Long running tasks</h2>
      * {@link java.util.concurrent.Executor} implementations are expected to run long running (blocking) tasks which may
      * depend on other tasks submitted to the same {@link java.util.concurrent.Executor} instance.
-     * In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the {@link java.util.concurrent.Executor}.
+     * In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the
+     * {@link java.util.concurrent.Executor}.
      *
      * @param executorService {@link ExecutorService} to use for executing tasks.
      * The lifetime of this object is transferred to the return value. In other words {@link Executor#closeAsync()} will
@@ -139,7 +146,7 @@ public final class Executors {
      * @return {@link Executor} that wraps the passed {@code executorService}.
      */
     public static Executor from(ExecutorService executorService) {
-        return new DefaultExecutor(executorService);
+        return EXECUTOR_PLUGINS.wrapExecutor(new DefaultExecutor(executorService));
     }
 
     /**
@@ -149,16 +156,18 @@ public final class Executors {
      * <h2>Long running tasks</h2>
      * {@link java.util.concurrent.Executor} implementations are expected to run long running (blocking) tasks which may
      * depend on other tasks submitted to the same {@link java.util.concurrent.Executor} instance.
-     * In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the {@link java.util.concurrent.Executor}.
+     * In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the
+     * {@link java.util.concurrent.Executor}.
      *
      * @param executorService {@link ExecutorService} to use for executing tasks.
      * The lifetime of this object is transferred to the return value. In other words {@link Executor#closeAsync()} will
      * call {@link ExecutorService#shutdown()}.
-     * @param mayInterruptOnCancel If set to {@code true}, when a task is cancelled, thread running the task will be interrupted.
+     * @param mayInterruptOnCancel If set to {@code true}, when a task is cancelled, thread running the task will be
+     * interrupted.
      * @return {@link Executor} that wraps the passed {@code executorService}.
      */
     public static Executor from(ExecutorService executorService, boolean mayInterruptOnCancel) {
-        return new DefaultExecutor(executorService, mayInterruptOnCancel);
+        return EXECUTOR_PLUGINS.wrapExecutor(new DefaultExecutor(executorService, mayInterruptOnCancel));
     }
 
     /**
@@ -168,7 +177,8 @@ public final class Executors {
      * <h2>Long running tasks</h2>
      * {@link java.util.concurrent.Executor} implementations are expected to run long running (blocking) tasks which may
      * depend on other tasks submitted to the same {@link java.util.concurrent.Executor} instance.
-     * In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the {@link java.util.concurrent.Executor}.
+     * In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the
+     * {@link java.util.concurrent.Executor}.
      *
      * @param scheduledExecutorService {@link ScheduledExecutorService} to use for executing tasks.
      * The lifetime of this object is transferred to the return value. In other words {@link Executor#closeAsync()} will
@@ -176,7 +186,7 @@ public final class Executors {
      * @return {@link Executor} that wraps the passed {@code scheduledExecutorService}.
      */
     public static Executor from(ScheduledExecutorService scheduledExecutorService) {
-        return new DefaultExecutor(scheduledExecutorService, scheduledExecutorService);
+        return EXECUTOR_PLUGINS.wrapExecutor(new DefaultExecutor(scheduledExecutorService, scheduledExecutorService));
     }
 
     /**
@@ -184,21 +194,24 @@ public final class Executors {
      * <h2>Long running tasks</h2>
      * {@link java.util.concurrent.Executor} implementations are expected to run long running (blocking) tasks which may
      * depend on other tasks submitted to the same {@link java.util.concurrent.Executor} instance.
-     * In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the {@link java.util.concurrent.Executor}.
+     * In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the
+     * {@link java.util.concurrent.Executor}.
      *
      * @param scheduledExecutorService {@link ScheduledExecutorService} to use for executing tasks.
      * The lifetime of this object is transferred to the return value. In other words {@link Executor#closeAsync()} will
      * call {@link ScheduledExecutorService#shutdown()}.
-     * @param mayInterruptOnCancel If set to {@code true}, when a task is cancelled, thread running the task will be interrupted.
+     * @param mayInterruptOnCancel If set to {@code true}, when a task is cancelled, thread running the task will be
+     * interrupted.
      * @return {@link Executor} that wraps the passed {@code scheduledExecutorService}.
      */
     public static Executor from(ScheduledExecutorService scheduledExecutorService, boolean mayInterruptOnCancel) {
-        return new DefaultExecutor(scheduledExecutorService, scheduledExecutorService, mayInterruptOnCancel);
+        return EXECUTOR_PLUGINS.wrapExecutor(
+                new DefaultExecutor(scheduledExecutorService, scheduledExecutorService, mayInterruptOnCancel));
     }
 
     /**
-     * Creates a new {@link Executor} using {@code executor} to execute immediate tasks and {@code scheduler} to schedule
-     * delayed tasks.
+     * Creates a new {@link Executor} using {@code executor} to execute immediate tasks and {@code scheduler} to
+     * schedule delayed tasks.
      * When a running task is cancelled, the thread running it will be interrupted.
      * For overriding this behavior use {@link #from(java.util.concurrent.Executor, ScheduledExecutorService, boolean)}.
      * Task execution will not honor cancellations unless passed {@link java.util.concurrent.Executor}
@@ -206,7 +219,8 @@ public final class Executors {
      * <h2>Long running tasks</h2>
      * {@link java.util.concurrent.Executor} implementations are expected to run long running (blocking) tasks which may
      * depend on other tasks submitted to the same {@link java.util.concurrent.Executor} instance.
-     * In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the {@link java.util.concurrent.Executor}.
+     * In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the
+     * {@link java.util.concurrent.Executor}.
      *
      * @param jdkExecutor {@link java.util.concurrent.Executor} to use for executing tasks.
      * The lifetime of this object is transferred to the return value. In other words {@link Executor#closeAsync()} will
@@ -216,19 +230,21 @@ public final class Executors {
      * call {@link ScheduledExecutorService#shutdown()}.
      * @return A new {@link Executor}.
      */
-    public static Executor from(java.util.concurrent.Executor jdkExecutor, ScheduledExecutorService scheduledExecutorService) {
+    public static Executor from(java.util.concurrent.Executor jdkExecutor,
+                                ScheduledExecutorService scheduledExecutorService) {
         return from(jdkExecutor, scheduledExecutorService, true);
     }
 
     /**
-     * Creates a new {@link Executor} using {@code executor} to execute immediate tasks and {@code scheduler} to schedule
-     * delayed tasks.
+     * Creates a new {@link Executor} using {@code executor} to execute immediate tasks and {@code scheduler} to
+     * schedule delayed tasks.
      * Task execution will not honor cancellations unless passed {@link java.util.concurrent.Executor}
      * is an instance of {@link ExecutorService}.
      * <h2>Long running tasks</h2>
      * {@link java.util.concurrent.Executor} implementations are expected to run long running (blocking) tasks which may
      * depend on other tasks submitted to the same {@link java.util.concurrent.Executor} instance.
-     * In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the {@link java.util.concurrent.Executor}.
+     * In order to avoid deadlocks, it is generally a good idea to not allow task queuing in the
+     * {@link java.util.concurrent.Executor}.
      *
      * @param jdkExecutor {@link java.util.concurrent.Executor} to use for executing tasks.
      * The lifetime of this object is transferred to the return value. In other words {@link Executor#closeAsync()} will
@@ -236,10 +252,13 @@ public final class Executors {
      * @param scheduledExecutorService {@link ScheduledExecutorService} to use for executing tasks.
      * The lifetime of this object is transferred to the return value. In other words {@link Executor#closeAsync()} will
      * call {@link ScheduledExecutorService#shutdown()}.
-     * @param mayInterruptOnCancel If set to {@code true}, when a task is cancelled, thread running the task will be interrupted.
+     * @param mayInterruptOnCancel If set to {@code true}, when a task is cancelled, thread running the task will be
+     * interrupted.
      * @return A new {@link Executor}.
      */
-    public static Executor from(java.util.concurrent.Executor jdkExecutor, ScheduledExecutorService scheduledExecutorService, boolean mayInterruptOnCancel) {
-        return new DefaultExecutor(jdkExecutor, scheduledExecutorService, mayInterruptOnCancel);
+    public static Executor from(java.util.concurrent.Executor jdkExecutor,
+                                ScheduledExecutorService scheduledExecutorService, boolean mayInterruptOnCancel) {
+        return EXECUTOR_PLUGINS.wrapExecutor(
+                new DefaultExecutor(jdkExecutor, scheduledExecutorService, mayInterruptOnCancel));
     }
 }

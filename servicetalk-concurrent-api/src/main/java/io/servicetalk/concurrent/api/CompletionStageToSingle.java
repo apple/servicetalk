@@ -43,8 +43,6 @@ final class CompletionStageToSingle<T> extends Single<T> {
             }
         }
 
-        // TODO(scott): preserve AsyncContext
-
         stage.whenComplete((value, cause) -> {
            if (cause != null) {
                subscriber.onError(cause);

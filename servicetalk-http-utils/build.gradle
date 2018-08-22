@@ -32,7 +32,7 @@ dependencies {
   implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
 
   api "io.servicetalk:servicetalk-http-api:$project.version"
-  api "io.servicetalk:servicetalk-concurrent-context:$project.version"
+  api "io.servicetalk:servicetalk-concurrent-api:$project.version"
 
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.servicetalk:servicetalk-annotations:$project.version"

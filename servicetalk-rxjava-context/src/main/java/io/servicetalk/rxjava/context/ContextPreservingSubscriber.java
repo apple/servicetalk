@@ -15,8 +15,8 @@
  */
 package io.servicetalk.rxjava.context;
 
-import io.servicetalk.concurrent.context.AsyncContext;
-import io.servicetalk.concurrent.context.AsyncContextMap;
+import io.servicetalk.concurrent.api.AsyncContext;
+import io.servicetalk.concurrent.api.AsyncContextMap;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;

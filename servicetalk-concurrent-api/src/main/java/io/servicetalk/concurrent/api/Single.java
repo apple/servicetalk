@@ -23,8 +23,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntFunction;
@@ -40,6 +38,7 @@ import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSuccessSupplier;
 import static io.servicetalk.concurrent.api.SingleToCompletionStage.createAndSubscribe;
+import static io.servicetalk.concurrent.internal.ConcurrentPlugins.getSinglePlugin;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -48,9 +47,11 @@ import static java.util.Objects.requireNonNull;
  * @param <T> Type of the result of the single.
  */
 public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
-    private static final AtomicReference<BiConsumer<? super Subscriber, Consumer<? super Subscriber>>>
-            SUBSCRIBE_PLUGIN_REF = new AtomicReference<>();
     private final Executor executor;
+
+    static {
+        AsyncContext.autoEnable();
+    }
 
     /**
      * New instance.
@@ -981,7 +982,8 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return A {@link CompletionStage} that mirrors the terminal signal from this {@link Single}.
      */
     public final CompletionStage<T> toCompletionStage() {
-        return createAndSubscribe(this, executor);
+        return getSinglePlugin().toCompletionStage(this, executor,
+                SingleToCompletionStage::createAndSubscribe);
     }
 
     /**
@@ -1109,22 +1111,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return A {@link Single} that derives results from {@link CompletionStage}.
      */
     public static <T> Single<T> fromStage(CompletionStage<T> stage) {
-        return new CompletionStageToSingle<>(stage);
-    }
-
-    /**
-     * Add a plugin that will be invoked on each {@link #subscribe(Subscriber)} call. This can be used for visibility or
-     * to extend functionality to all {@link Subscriber}s which pass through {@link #subscribe(Subscriber)}.
-     * @param subscribePlugin the plugin that will be invoked on each {@link #subscribe(Subscriber)} call.
-     */
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public static void addSubscribePlugin(
-            BiConsumer<? super Subscriber, Consumer<? super Subscriber>> subscribePlugin) {
-        requireNonNull(subscribePlugin);
-        SUBSCRIBE_PLUGIN_REF.updateAndGet(currentPlugin -> currentPlugin == null ? subscribePlugin :
-                (subscriber, handleSubscribe) -> subscribePlugin.accept(subscriber,
-                        subscriber2 -> subscribePlugin.accept(subscriber2, handleSubscribe))
-        );
+        return new CompletionStageToSingle<>(getSinglePlugin().fromCompletionStage(stage));
     }
 
     //
@@ -1161,13 +1148,8 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
      */
     final void subscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader) {
-        requireNonNull(subscriber);
-        BiConsumer<? super Subscriber, Consumer<? super Subscriber>> plugin = SUBSCRIBE_PLUGIN_REF.get();
-        if (plugin != null) {
-            plugin.accept(subscriber, sub -> handleSubscribe(sub, signalOffloader));
-        } else {
-            handleSubscribe(subscriber, signalOffloader);
-        }
+        getSinglePlugin().handleSubscribe(requireNonNull(subscriber),
+                signalOffloader, this::handleSubscribe);
     }
 
     /**

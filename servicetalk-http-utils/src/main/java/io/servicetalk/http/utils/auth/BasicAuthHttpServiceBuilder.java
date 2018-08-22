@@ -16,11 +16,11 @@
 package io.servicetalk.http.utils.auth;
 
 import io.servicetalk.concurrent.api.AsyncCloseable;
+import io.servicetalk.concurrent.api.AsyncContext;
+import io.servicetalk.concurrent.api.AsyncContextMap;
+import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.context.AsyncContext;
-import io.servicetalk.concurrent.context.AsyncContextMap;
-import io.servicetalk.concurrent.context.AsyncContextMap.Key;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;

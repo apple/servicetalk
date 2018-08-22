@@ -24,18 +24,18 @@ final class SingleToCompletionStage<T> extends ExecutorCompletionStage<T>
         implements io.servicetalk.concurrent.Single.Subscriber<T> {
     private final DelayedCancellable cancellable;
 
-    private SingleToCompletionStage(io.servicetalk.concurrent.api.Executor executor) {
+    private SingleToCompletionStage(io.servicetalk.concurrent.Executor executor) {
         this(executor, new DelayedCancellable());
     }
 
-    private SingleToCompletionStage(io.servicetalk.concurrent.api.Executor executor,
+    private SingleToCompletionStage(io.servicetalk.concurrent.Executor executor,
                                     DelayedCancellable cancellable) {
         super(executor);
         this.cancellable = cancellable;
     }
 
-    static <X> SingleToCompletionStage<X> createAndSubscribe(Single<X> original,
-                                                             io.servicetalk.concurrent.api.Executor executor) {
+    static <X> SingleToCompletionStage<X> createAndSubscribe(io.servicetalk.concurrent.Single<X> original,
+                                                             io.servicetalk.concurrent.Executor executor) {
         SingleToCompletionStage<X> stage = new SingleToCompletionStage<>(executor);
         original.subscribe(stage);
         return stage;
@@ -47,7 +47,7 @@ final class SingleToCompletionStage<T> extends ExecutorCompletionStage<T>
     }
 
     @Override
-    <U> ExecutorCompletionStage<U> newDependentStage(io.servicetalk.concurrent.api.Executor executor) {
+    <U> ExecutorCompletionStage<U> newDependentStage(io.servicetalk.concurrent.Executor executor) {
         return new SingleToCompletionStage<>(executor, cancellable);
     }
 

@@ -23,8 +23,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
@@ -38,16 +36,18 @@ import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnErrorSuppli
 import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Executors.newOffloaderFor;
+import static io.servicetalk.concurrent.internal.ConcurrentPlugins.getCompletablePlugin;
 import static java.util.Objects.requireNonNull;
 
 /**
  * An asynchronous computation that does not emit any data. It just completes or emits an error.
  */
 public abstract class Completable implements io.servicetalk.concurrent.Completable {
-    private static final AtomicReference<BiConsumer<? super Subscriber, Consumer<? super Subscriber>>>
-            SUBSCRIBE_PLUGIN_REF = new AtomicReference<>();
-
     private final Executor executor;
+
+    static {
+        AsyncContext.autoEnable();
+    }
 
     /**
      * New instance.
@@ -1196,21 +1196,6 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
         return Single.fromStage(stage).toCompletable();
     }
 
-    /**
-     * Add a plugin that will be invoked on each {@link #subscribe(Subscriber)} call. This can be used for visibility or
-     * to extend functionality to all {@link Subscriber}s which pass through {@link #subscribe(Subscriber)}.
-     * @param subscribePlugin the plugin that will be invoked on each {@link #subscribe(Subscriber)} call.
-     */
-    @SuppressWarnings("rawtypes")
-    public static void addSubscribePlugin(
-            BiConsumer<? super Subscriber, Consumer<? super Subscriber>> subscribePlugin) {
-        requireNonNull(subscribePlugin);
-        SUBSCRIBE_PLUGIN_REF.updateAndGet(currentPlugin -> currentPlugin == null ? subscribePlugin :
-                (subscriber, handleSubscribe) -> subscribePlugin.accept(subscriber,
-                        subscriber2 -> subscribePlugin.accept(subscriber2, handleSubscribe))
-        );
-    }
-
     //
     // Static Utility Methods End
     //
@@ -1235,13 +1220,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
      */
     final void subscribe(Subscriber subscriber, SignalOffloader signalOffloader) {
-        requireNonNull(subscriber);
-        BiConsumer<? super Subscriber, Consumer<? super Subscriber>> plugin = SUBSCRIBE_PLUGIN_REF.get();
-        if (plugin != null) {
-            plugin.accept(subscriber, sub -> handleSubscribe(sub, signalOffloader));
-        } else {
-            handleSubscribe(subscriber, signalOffloader);
-        }
+        getCompletablePlugin().handleSubscribe(requireNonNull(subscriber), signalOffloader, this::handleSubscribe);
     }
 
     /**
