@@ -16,6 +16,7 @@
 enableFeaturePreview("IMPROVED_POM_SUPPORT")
 rootProject.name = "servicetalk"
 
+includeBuild "servicetalk-bom"
 includeBuild "servicetalk-bom-internal"
 includeBuild "servicetalk-annotations"
 includeBuild "servicetalk-buffer-api"
