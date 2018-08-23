@@ -32,7 +32,6 @@ import static io.servicetalk.redis.internal.RedisUtils.EOL_LENGTH;
 import static io.servicetalk.redis.internal.RedisUtils.EOL_SHORT;
 
 final class RedisDecoder extends ByteToMessageDecoder {
-    private static final int NULL_LENGTH = 2;
     private static final int NULL_VALUE = -1;
     private static final int REDIS_MESSAGE_MAX_LENGTH = 512 * 1024 * 1024; // 512MB
     private static final int POSITIVE_LONG_MAX_LENGTH = 19; // length of Long.MAX_VALUE
@@ -185,11 +184,7 @@ final class RedisDecoder extends ByteToMessageDecoder {
                 return decodeBulkStringEndOfLine(in, ctx);
             default: // expectedBulkLength is always positive.
                 state = State.DECODE_BULK_STRING_CONTENT;
-                if (remainingBulkLength == NULL_LENGTH) {
-                    ctx.fireChannelRead(RedisData.NULL);
-                } else {
-                    ctx.fireChannelRead(new RedisData.BulkStringSize(remainingBulkLength));
-                }
+                ctx.fireChannelRead(new RedisData.BulkStringSize(remainingBulkLength));
                 return decodeBulkStringContent(in, ctx);
         }
     }

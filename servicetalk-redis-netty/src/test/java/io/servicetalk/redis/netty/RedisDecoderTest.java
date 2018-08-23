@@ -141,6 +141,29 @@ public class RedisDecoderTest {
     }
 
     @Test
+    public void shouldDecodeBulkStringsOfVariousLengths() {
+        String baseString = "abcdefghij";
+        for (int len = 1; len <= baseString.length(); ++len) {
+            String input = baseString.substring(0, len);
+
+            assertFalse(channel.writeInbound(byteBufOf("$")));
+            assertFalse(channel.writeInbound(byteBufOf(Integer.toString(input.length()))));
+            assertTrue(channel.writeInbound(byteBufOf("\r\n")));
+            assertTrue(channel.writeInbound(byteBufOf(input)));
+            assertTrue(channel.writeInbound(byteBufOf("\r\n")));
+
+            RedisData.BulkStringSize stringSize = channel.readInbound();
+            assertEquals(len, stringSize.getIntValue());
+
+            RedisData.BulkStringChunk stringChunk = channel.readInbound();
+            assertEquals(asciiBuffer(input), stringChunk.getBufferValue());
+
+            RedisData.LastBulkStringChunk lastStringChunk = channel.readInbound();
+            assertEquals(emptyBuffer(), lastStringChunk.getBufferValue());
+        }
+    }
+
+    @Test
     public void shouldDecodeEmptyBulkString() {
         byte[] content = bytesOf("");
         assertFalse(channel.writeInbound(byteBufOf("$")));

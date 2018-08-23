@@ -25,6 +25,7 @@ import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Incrby;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Overflow;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Set;
 import io.servicetalk.redis.api.RedisProtocolSupport.ExpireDuration;
+import io.servicetalk.redis.api.RedisProtocolSupport.FieldValue;
 import io.servicetalk.redis.api.RedisProtocolSupport.LongitudeLatitudeMember;
 import io.servicetalk.redis.api.TransactedRedisCommander;
 import io.servicetalk.redis.netty.SubscribedRedisClientTest.AccumulatingSubscriber;
@@ -34,12 +35,14 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.nio.channels.ClosedChannelException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.IntStream;
 
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
+import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyUnchecked;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOverflow.FAIL;
@@ -238,6 +241,18 @@ public class RedisCommanderTest extends BaseRedisClientTest {
 
         final List<?> evalMixedList = awaitIndefinitely(commandClient.evalList("return {1,2,{3,'four'}}", 0L, emptyList(), emptyList()));
         assertThat(evalMixedList, contains(1L, 2L, asList(3L, "four")));
+    }
+
+    @Test
+    public void testHGetAll() throws Exception {
+        String testKey = "key";
+        List<FieldValue> fields = new ArrayList<>(3);
+        fields.add(new FieldValue("f", "v"));
+        fields.add(new FieldValue("f1", "v1"));
+        fields.add(new FieldValue("f2", "v2"));
+        awaitIndefinitelyNonNull(commandClient.hmset(testKey, fields));
+        final List<Object> values = awaitIndefinitelyNonNull(commandClient.hgetall(testKey));
+        assertThat(values, is(asList("f", "v", "f1", "v1", "f2", "v2")));
     }
 
     @Test
