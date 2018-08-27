@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.EmptyHttpHeaders;
@@ -83,13 +84,22 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
         final Publisher<Object> responseObjectPublisher = requestSingle.flatMapPublisher(request -> {
             final HttpRequestMethod requestMethod = request.getMethod();
             final HttpKeepAlive keepAlive = HttpKeepAlive.getResponseKeepAlive(request);
-            final Completable drainRequestPayloadBody = request.getPayloadBody().ignoreElements().onErrorResume(
-                    t -> completed()
-                    /* ignore error from SpliceFlatStreamToMetaSingle about duplicate subscriptions. */);
-
-            return handleRequest(request)
+            // We transform the request and delay the completion of the result flattened stream to avoid resubscribing
+            // to the NettyChannelPublisher before the previous subscriber has terminated. Otherwise we may attempt
+            // to do duplicate subscribe on NettyChannelPublisher, which will result in a connection closure.
+            CompletableProcessor processor = new CompletableProcessor();
+            StreamingHttpRequest<HttpPayloadChunk> request2 = request.transformPayloadBody(
+                    // Cancellation is assumed to close the connection, so we don't need to trigger the processor as
+                    // completed because we don't care about processing more requests.
+                    payload -> payload.doOnComplete(processor::onComplete));
+            final Completable drainRequestPayloadBody = request2.getPayloadBody().ignoreElements()
+                    // ignore error about duplicate subscriptions, we are forcing a subscription here and the user
+                    // may also subscribe, so it is OK if we fail here.
+                    .onErrorResume(t -> completed());
+            return handleRequest(request2)
                     .map(response -> processResponse(requestMethod, keepAlive, drainRequestPayloadBody, response))
-                    .flatMapPublisher(resp -> flatten(resp, StreamingHttpResponse::getPayloadBody));
+                    .flatMapPublisher(resp -> flatten(resp, StreamingHttpResponse::getPayloadBody))
+                    .concatWith(processor);
             // We are writing to the connection which may request more data from the EventLoop. So offload control
             // signals which may have blocking code.
         }).subscribeOn(context.getExecutionContext().getExecutor());
