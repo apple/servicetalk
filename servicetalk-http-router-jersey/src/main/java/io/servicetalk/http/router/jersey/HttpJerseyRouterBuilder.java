@@ -22,8 +22,6 @@ import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 
-import org.glassfish.jersey.server.ApplicationHandler;
-
 import java.io.InputStream;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -45,7 +43,7 @@ public final class HttpJerseyRouterBuilder {
     private int publisherInputStreamQueueCapacity = 16;
     private BiFunction<ConnectionContext, HttpRequest<HttpPayloadChunk>, String> baseUriFunction =
             (ctx, req) -> getBaseRequestUri(ctx, req, false);
-    private Function<String, Executor> executorFactory = $ -> null;
+    private Function<String, Executor> executorFactory = __ -> null;
 
     /**
      * Set the hint for the capacity of the intermediary queue that stores items when adapting {@link Publisher}s
@@ -100,7 +98,8 @@ public final class HttpJerseyRouterBuilder {
      * @return the {@link HttpService}.
      */
     public HttpService build(final Application application) {
-        return build(new ApplicationHandler(application));
+        return new DefaultJerseyHttpRouter(application, publisherInputStreamQueueCapacity, baseUriFunction,
+                executorFactory);
     }
 
     /**
@@ -110,13 +109,7 @@ public final class HttpJerseyRouterBuilder {
      * @return the {@link HttpService}.
      */
     public HttpService build(final Class<? extends Application> applicationClass) {
-        return build(new ApplicationHandler(applicationClass));
-    }
-
-    private HttpService build(final ApplicationHandler applicationHandler) {
-        return new DefaultJerseyHttpRouter(applicationHandler,
-                publisherInputStreamQueueCapacity,
-                baseUriFunction,
+        return new DefaultJerseyHttpRouter(applicationClass, publisherInputStreamQueueCapacity, baseUriFunction,
                 executorFactory);
     }
 }

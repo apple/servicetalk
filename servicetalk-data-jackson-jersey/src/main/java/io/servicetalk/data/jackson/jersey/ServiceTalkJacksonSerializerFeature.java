@@ -1,0 +1,61 @@
+/*
+ * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.servicetalk.data.jackson.jersey;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.ws.rs.core.Configuration;
+import javax.ws.rs.core.Feature;
+import javax.ws.rs.core.FeatureContext;
+
+import static org.glassfish.jersey.CommonProperties.getValue;
+import static org.glassfish.jersey.internal.InternalProperties.JSON_FEATURE;
+import static org.glassfish.jersey.internal.util.PropertiesHelper.getPropertyNameForRuntime;
+
+/**
+ * Feature enabling ServiceTalk Jackson serializer request/response content handling.
+ */
+public final class ServiceTalkJacksonSerializerFeature implements Feature {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ServiceTalkJacksonSerializerFeature.class);
+    private static final String ST_JSON_FEATURE = ServiceTalkJacksonSerializerFeature.class.getSimpleName();
+
+    @Override
+    public boolean configure(final FeatureContext context) {
+        final Configuration config = context.getConfiguration();
+
+        final String jsonFeature = getValue(config.getProperties(), config.getRuntimeType(),
+                JSON_FEATURE, ST_JSON_FEATURE, String.class);
+
+        // Do not register our JSON feature if another one is already registered
+        if (!ST_JSON_FEATURE.equalsIgnoreCase(jsonFeature)) {
+            LOGGER.warn("Skipping registration of: {} as JSON support is already provided by: {}",
+                    ST_JSON_FEATURE, jsonFeature);
+            return false;
+        }
+
+        // Prevent other not yet registered JSON features to register themselves
+        context.property(getPropertyNameForRuntime(JSON_FEATURE, config.getRuntimeType()),
+                ST_JSON_FEATURE);
+
+        if (!config.isRegistered(JacksonSerializerMessageBodyReaderWriter.class)) {
+            context.register(SerializationExceptionMapper.class);
+            context.register(JacksonSerializerMessageBodyReaderWriter.class);
+        }
+
+        return true;
+    }
+}

@@ -37,25 +37,26 @@ import static org.glassfish.jersey.internal.inject.ReferencingFactory.referenceF
 public final class ServiceTalkFeature implements Feature {
     @Override
     public boolean configure(final FeatureContext context) {
-        context.register(BufferMessageBodyWriter.class);
-        context.register(BufferPublisherMessageBodyReaderWriter.class);
-        context.register(BufferSingleMessageBodyReaderWriter.class);
-        context.register(SingleWriterInterceptor.class);
-        context.register(EndpointEnhancingRequestFilter.class);
-        context.register(HttpPayloadChunkPublisherMessageBodyReaderWriter.class);
+        if (!context.getConfiguration().isRegistered(EndpointEnhancingRequestFilter.class)) {
+            context.register(BufferMessageBodyReaderWriter.class);
+            context.register(BufferPublisherMessageBodyReaderWriter.class);
+            context.register(BufferSingleMessageBodyReaderWriter.class);
+            context.register(EndpointEnhancingRequestFilter.class);
+            context.register(HttpPayloadChunkPublisherMessageBodyReaderWriter.class);
 
-        context.register(new AbstractBinder() {
-            @Override
-            protected void configure() {
-                bindFactory(ConnectionContextReferencingFactory.class).to(ConnectionContext.class)
-                        .proxy(true).proxyForSameScope(true).in(RequestScoped.class);
-                bindFactory(referenceFactory()).to(CONNECTION_CONTEXT_REF_GENERIC_TYPE).in(RequestScoped.class);
+            context.register(new AbstractBinder() {
+                @Override
+                protected void configure() {
+                    bindFactory(ConnectionContextReferencingFactory.class).to(ConnectionContext.class)
+                            .proxy(true).proxyForSameScope(true).in(RequestScoped.class);
+                    bindFactory(referenceFactory()).to(CONNECTION_CONTEXT_REF_GENERIC_TYPE).in(RequestScoped.class);
 
-                bindFactory(HttpRequestReferencingFactory.class).to(HTTP_REQUEST_GENERIC_TYPE)
-                        .proxy(true).proxyForSameScope(false).in(RequestScoped.class);
-                bindFactory(referenceFactory()).to(HTTP_REQUEST_REF_GENERIC_TYPE).in(RequestScoped.class);
-            }
-        });
+                    bindFactory(HttpRequestReferencingFactory.class).to(HTTP_REQUEST_GENERIC_TYPE)
+                            .proxy(true).proxyForSameScope(false).in(RequestScoped.class);
+                    bindFactory(referenceFactory()).to(HTTP_REQUEST_REF_GENERIC_TYPE).in(RequestScoped.class);
+                }
+            });
+        }
 
         return true;
     }

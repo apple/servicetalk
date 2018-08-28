@@ -24,6 +24,7 @@ import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.router.jersey.internal.ChunkPublisherInputStream;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.glassfish.jersey.internal.MapPropertiesDelegate;
@@ -38,6 +39,8 @@ import java.security.Principal;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
+import javax.ws.rs.core.Application;
+import javax.ws.rs.core.Configuration;
 import javax.ws.rs.core.SecurityContext;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
@@ -46,8 +49,8 @@ import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.http.router.jersey.CharSequenceUtils.ensureNoLeadingSlash;
 import static io.servicetalk.http.router.jersey.Context.CONNECTION_CONTEXT_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.HTTP_REQUEST_REF_TYPE;
-import static io.servicetalk.http.router.jersey.Context.initRequestProperties;
 import static io.servicetalk.http.router.jersey.ExecutionStrategyUtils.validateExecutorConfiguration;
+import static io.servicetalk.http.router.jersey.internal.RequestProperties.initRequestProperties;
 import static java.util.Objects.requireNonNull;
 import static org.glassfish.jersey.server.internal.ContainerUtils.encodeUnsafeCharacters;
 
@@ -82,10 +85,27 @@ final class DefaultJerseyHttpRouter extends HttpService {
     private final BiFunction<ConnectionContext, HttpRequest<HttpPayloadChunk>, String> baseUriFunction;
     private final Container container;
 
-    DefaultJerseyHttpRouter(final ApplicationHandler applicationHandler,
+    DefaultJerseyHttpRouter(final Application application,
                             final int publisherInputStreamQueueCapacity,
                             final BiFunction<ConnectionContext, HttpRequest<HttpPayloadChunk>, String> baseUriFunction,
                             final Function<String, Executor> executorFactory) {
+        this(new ApplicationHandler(application), publisherInputStreamQueueCapacity, baseUriFunction,
+                executorFactory);
+    }
+
+    DefaultJerseyHttpRouter(final Class<? extends Application> applicationClass,
+                            final int publisherInputStreamQueueCapacity,
+                            final BiFunction<ConnectionContext, HttpRequest<HttpPayloadChunk>, String> baseUriFunction,
+                            final Function<String, Executor> executorFactory) {
+        this(new ApplicationHandler(applicationClass), publisherInputStreamQueueCapacity, baseUriFunction,
+                executorFactory);
+    }
+
+    private DefaultJerseyHttpRouter(final ApplicationHandler applicationHandler,
+                                    final int publisherInputStreamQueueCapacity,
+                                    final BiFunction<ConnectionContext,
+                                            HttpRequest<HttpPayloadChunk>, String> baseUriFunction,
+                                    final Function<String, Executor> executorFactory) {
 
         if (!applicationHandler.getConfiguration().isEnabled(ServiceTalkFeature.class)) {
             throw new IllegalStateException("The " + ServiceTalkFeature.class.getSimpleName()
@@ -109,6 +129,10 @@ final class DefaultJerseyHttpRouter extends HttpService {
 
         container = new DefaultContainer(applicationHandler);
         applicationHandler.onStartup(container);
+    }
+
+    Configuration getConfiguration() {
+        return applicationHandler.getConfiguration();
     }
 
     @Override
@@ -179,7 +203,7 @@ final class DefaultJerseyHttpRouter extends HttpService {
         final ChunkPublisherInputStream entityStream = new ChunkPublisherInputStream(req.getPayloadBody(),
                 publisherInputStreamQueueCapacity);
         containerRequest.setEntityStream(entityStream);
-        initRequestProperties(containerRequest, entityStream);
+        initRequestProperties(entityStream, containerRequest);
 
         final DefaultContainerResponseWriter responseWriter = new DefaultContainerResponseWriter(containerRequest,
                 req.getVersion(), ctx.getExecutionContext().getBufferAllocator(),

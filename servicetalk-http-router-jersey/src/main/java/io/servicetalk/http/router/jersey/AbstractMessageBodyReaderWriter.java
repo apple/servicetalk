@@ -18,20 +18,19 @@ package io.servicetalk.http.router.jersey;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.router.jersey.internal.InputStreamIterator;
 import io.servicetalk.transport.api.ConnectionContext;
 
-import org.glassfish.jersey.message.internal.EntityInputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.glassfish.jersey.internal.util.collection.Ref;
 
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
+import javax.annotation.Priority;
 import javax.inject.Provider;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
@@ -43,24 +42,25 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
 import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
-import static io.servicetalk.http.router.jersey.Context.setResponseChunkPublisher;
+import static io.servicetalk.http.router.jersey.internal.ChunkPublisherInputStream.handleEntityStream;
+import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseChunkPublisher;
+import static javax.ws.rs.Priorities.ENTITY_CODER;
 import static javax.ws.rs.core.MediaType.WILDCARD;
-import static org.glassfish.jersey.message.internal.ReaderInterceptorExecutor.closeableInputStream;
 
+@Priority(ENTITY_CODER)
 @Consumes(WILDCARD)
 @Produces(WILDCARD)
 abstract class AbstractMessageBodyReaderWriter<Source, T, SourceOfT, WrappedSourceOfT extends SourceOfT>
         implements MessageBodyReader<SourceOfT>, MessageBodyWriter<SourceOfT> {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
     private final Class<Source> sourceClass;
     private final Class<T> contentClass;
 
     @Context
-    protected ConnectionContext ctx;
+    protected Provider<Ref<ConnectionContext>> ctxRefProvider;
 
     @Context
-    protected Provider<ContainerRequestContext> requestContextProvider;
+    protected Provider<ContainerRequestContext> requestCtxProvider;
 
     protected AbstractMessageBodyReaderWriter(final Class<Source> sourceClass, final Class<T> contentClass) {
         this.sourceClass = sourceClass;
@@ -72,27 +72,22 @@ abstract class AbstractMessageBodyReaderWriter<Source, T, SourceOfT, WrappedSour
                                     final Type genericType,
                                     final Annotation[] annotations,
                                     final MediaType mediaType) {
-        return isSupported(genericType, false);
+        return isSupported(genericType);
     }
 
     final SourceOfT readFrom(final InputStream entityStream,
                              final BiFunction<Publisher<HttpPayloadChunk>, BufferAllocator, SourceOfT> bodyFunction,
                              final Function<SourceOfT, WrappedSourceOfT> sourceFunction)
             throws WebApplicationException {
-        // Unwrap the entity stream created by Jersey to fetch the wrapped one
-        final EntityInputStream eis = (EntityInputStream) closeableInputStream(entityStream);
-        final InputStream wrappedStream = eis.getWrappedStream();
-        final BufferAllocator allocator = ctx.getExecutionContext().getBufferAllocator();
 
-        if (wrappedStream instanceof ChunkPublisherInputStream) {
-            // If the wrapped stream is built around a Publisher, provide it to the resource as-is
-            return bodyFunction.apply(((ChunkPublisherInputStream) wrappedStream).getChunkPublisher(), allocator);
-        }
-
-        return bodyFunction
-                .andThen(sourceFunction)
-                .apply(Publisher.from(() -> new InputStreamIterator(wrappedStream))
-                        .map(bytes -> newPayloadChunk(allocator.wrap(bytes))), allocator);
+        // The original ChunkPublisherInputStream has been replaced via a filter/interceptor so we need to build
+        // a new RS source from the actual input stream
+        final BufferAllocator allocator = ctxRefProvider.get().get().getExecutionContext().getBufferAllocator();
+        return handleEntityStream(entityStream, allocator, bodyFunction,
+                (is, a) -> bodyFunction
+                        .andThen(sourceFunction)
+                        .apply(Publisher.from(() -> new InputStreamIterator(is))
+                                .map(bytes -> newPayloadChunk(a.wrap(bytes))), a));
     }
 
     @Override
@@ -100,31 +95,33 @@ abstract class AbstractMessageBodyReaderWriter<Source, T, SourceOfT, WrappedSour
                                      final Type genericType,
                                      final Annotation[] annotations,
                                      final MediaType mediaType) {
-        return isSupported(genericType, true);
+        return isSupported(genericType);
     }
 
     final void writeTo(final Publisher<HttpPayloadChunk> publisher) throws WebApplicationException {
         // The response entity being a Publisher, we do not need to write it to the entity stream
         // but instead store it in request context to bypass the stream writing infrastructure.
-        setResponseChunkPublisher(publisher, requestContextProvider.get());
+        setResponseChunkPublisher(publisher, requestCtxProvider.get());
     }
 
-    private boolean isSupported(final Type entityType, final boolean unwrapCompletionStage) {
-        if (!(entityType instanceof ParameterizedType)) {
+    private boolean isSupported(final Type entityType) {
+        return isSourceOfType(entityType, sourceClass, contentClass);
+    }
+
+    static boolean isSourceOfType(final Type type, final Class<?> sourceClass, final Class<?> contentClass) {
+        if (!(type instanceof ParameterizedType)) {
             return false;
         }
 
-        final ParameterizedType parameterizedType = (ParameterizedType) entityType;
+        final ParameterizedType parameterizedType = (ParameterizedType) type;
+        final Type typeArgument;
+        final Type rawType = parameterizedType.getRawType();
 
-        if (CompletionStage.class.equals(parameterizedType.getRawType()) && unwrapCompletionStage) {
-            final Type type = getSingleTypeArgumentOrNull(parameterizedType);
-            return type != null && isSupported(type, false);
-        }
-
-        final Type type;
-        return sourceClass.isAssignableFrom((Class<?>) parameterizedType.getRawType()) &&
-                (type = getSingleTypeArgumentOrNull(parameterizedType)) != null &&
-                contentClass.isAssignableFrom((Class<?>) type);
+        return rawType instanceof Class &&
+                sourceClass.isAssignableFrom((Class<?>) rawType) &&
+                (typeArgument = getSingleTypeArgumentOrNull(parameterizedType)) != null &&
+                typeArgument instanceof Class &&
+                contentClass.isAssignableFrom((Class<?>) typeArgument);
     }
 
     @Nullable

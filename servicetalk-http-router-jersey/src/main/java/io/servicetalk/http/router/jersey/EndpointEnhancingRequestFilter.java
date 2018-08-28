@@ -24,6 +24,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 import org.glassfish.jersey.internal.util.collection.Ref;
 import org.glassfish.jersey.message.internal.OutboundJaxrsResponse;
+import org.glassfish.jersey.message.internal.OutboundMessageContext;
 import org.glassfish.jersey.process.internal.RequestContext;
 import org.glassfish.jersey.process.internal.RequestScope;
 import org.glassfish.jersey.server.AsyncContext;
@@ -33,24 +34,27 @@ import org.glassfish.jersey.server.internal.process.RequestProcessingContext;
 import org.glassfish.jersey.server.internal.routing.UriRoutingContext;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.net.SocketAddress;
 import java.util.concurrent.CompletionStage;
 import javax.annotation.Nullable;
 import javax.annotation.Priority;
-import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.net.ssl.SSLSession;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
 
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.router.jersey.Context.getRequestChunkPublisherInputStream;
 import static io.servicetalk.http.router.jersey.ExecutionStrategyUtils.getResourceExecutor;
+import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRequestChunkPublisherInputStream;
 import static java.lang.Integer.MAX_VALUE;
+import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.noContent;
 
 /**
@@ -66,10 +70,10 @@ import static javax.ws.rs.core.Response.noContent;
 // on Endpoint instances of type ResourceMethodInvoker to get the response filters.
 @Priority(MAX_VALUE)
 final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
-    @Inject
+    @Context
     private Provider<Ref<ConnectionContext>> ctxRefProvider;
 
-    @Inject
+    @Context
     private Provider<ExecutorConfig> executorConfigProvider;
 
     @Context
@@ -195,7 +199,7 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
         }
 
         @SuppressWarnings("unchecked")
-        protected Single<Object> handleContainerResponse(final ContainerResponse res) {
+        protected Single<Response> handleContainerResponse(final ContainerResponse res) {
             return success(new OutboundJaxrsResponse(res.getStatusInfo(), res.getWrappedMessageContext()));
         }
     }
@@ -221,17 +225,30 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
         }
 
         @Override
-        protected final Single<Object> handleContainerResponse(final ContainerResponse res) {
+        protected final Single<Response> handleContainerResponse(final ContainerResponse res) {
             if (!res.hasEntity()) {
                 return super.handleContainerResponse(res);
             }
 
             final Object responseEntity = res.getEntity();
             return sourceType.isAssignableFrom(responseEntity.getClass()) ?
-                    handleSourceResponse(sourceType.cast(responseEntity)) : super.handleContainerResponse(res);
+                    handleSourceResponse(sourceType.cast(responseEntity), res) : super.handleContainerResponse(res);
         }
 
-        protected abstract Single<Object> handleSourceResponse(T source);
+        protected abstract Single<Response> handleSourceResponse(T source, ContainerResponse res);
+    }
+
+    private static final class CompletableAwareEndpoint extends AbstractSourceAwareEndpoint<Completable> {
+        private CompletableAwareEndpoint(final UriRoutingContext uriRoutingContext,
+                                         final RequestScope requestScope,
+                                         @Nullable final ExecutorOverrideConnectionContext execOverrideCnxCtx) {
+            super(uriRoutingContext, Completable.class, requestScope, execOverrideCnxCtx);
+        }
+
+        @Override
+        protected Single<Response> handleSourceResponse(final Completable source, final ContainerResponse res) {
+            return source.andThen(defer(() -> success(noContent().build())));
+        }
     }
 
     @SuppressWarnings("rawtypes")
@@ -244,21 +261,62 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
 
         @SuppressWarnings("unchecked")
         @Override
-        protected Single<Object> handleSourceResponse(final Single source) {
-            return source;
+        protected Single<Response> handleSourceResponse(final Single source, final ContainerResponse res) {
+            // Since we offer Single as an alternative to JAX-RS' supported CompletionStage, we have to manually deal
+            // with aligning the generic entity type associated with the response by Jersey (which is Single<T>) to
+            // what is expected by the downstream filter/interceptors/body writers (the actual T, which we get in map).
+            return source.map(content -> {
+                if (content instanceof Response) {
+                    final Response contentResponse = (Response) content;
+                    if (!contentResponse.hasEntity()) {
+                        return contentResponse;
+                    }
+                    final OutboundJaxrsResponse jaxrsResponse = OutboundJaxrsResponse.from(contentResponse);
+                    final OutboundMessageContext context = jaxrsResponse.getContext();
+                    if (context.getEntityType() instanceof ParameterizedType) {
+                        return jaxrsResponse;
+                    } else {
+                        context.setEntityType(new NestedParameterizedType(context.getEntityClass()));
+                        return new OutboundJaxrsResponse(jaxrsResponse.getStatusInfo(), context);
+                    }
+                }
+
+                final OutboundMessageContext requestContext = res.getWrappedMessageContext();
+                if (content == null) {
+                    requestContext.setEntity(null);
+                    return new OutboundJaxrsResponse(NO_CONTENT, requestContext);
+                }
+
+                requestContext.setEntity(content);
+                requestContext.setEntityType(new NestedParameterizedType(content.getClass()));
+                return new OutboundJaxrsResponse(res.getStatusInfo(), requestContext);
+            });
         }
     }
 
-    private static final class CompletableAwareEndpoint extends AbstractSourceAwareEndpoint<Completable> {
-        private CompletableAwareEndpoint(final UriRoutingContext uriRoutingContext,
-                                         final RequestScope requestScope,
-                                         @Nullable final ExecutorOverrideConnectionContext execOverrideCnxCtx) {
-            super(uriRoutingContext, Completable.class, requestScope, execOverrideCnxCtx);
+    private static final class NestedParameterizedType implements ParameterizedType {
+        private static final Type[] EMPTY_TYPE_ARRAY = new Type[0];
+
+        private final Class<?> nestedClass;
+
+        private NestedParameterizedType(final Class<?> nestedClass) {
+            this.nestedClass = nestedClass;
         }
 
         @Override
-        protected Single<Object> handleSourceResponse(final Completable source) {
-            return source.andThen(defer(() -> success(noContent().build())));
+        public Type[] getActualTypeArguments() {
+            return EMPTY_TYPE_ARRAY;
+        }
+
+        @Override
+        public Type getRawType() {
+            return nestedClass;
+        }
+
+        @Nullable
+        @Override
+        public Type getOwnerType() {
+            return null;
         }
     }
 

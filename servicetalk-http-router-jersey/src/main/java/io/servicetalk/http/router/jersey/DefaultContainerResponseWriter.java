@@ -43,10 +43,11 @@ import static io.servicetalk.http.api.CharSequences.emptyAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
+import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
 import static io.servicetalk.http.api.HttpResponses.newResponse;
 import static io.servicetalk.http.router.jersey.CharSequenceUtils.asCharSequence;
-import static io.servicetalk.http.router.jersey.Context.getResponseChunkPublisher;
+import static io.servicetalk.http.router.jersey.internal.RequestProperties.getResponseChunkPublisher;
 import static java.util.Arrays.stream;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
@@ -93,16 +94,12 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     public OutputStream writeResponseStatusAndHeaders(final long contentLength, final ContainerResponse responseContext)
             throws ContainerException {
 
-        @Nullable
         final Publisher<HttpPayloadChunk> chunkPublisher = getResponseChunkPublisher(request);
         // contentLength is >= 0 if the entity content length in bytes is known to Jersey, otherwise -1
         if (chunkPublisher != null) {
             sendResponse(UNKNOWN_RESPONSE_LENGTH, chunkPublisher, responseContext);
             return null;
-        } else if (contentLength == 0) {
-            sendResponse(EMPTY_RESPONSE, null, responseContext);
-            return null;
-        } else if (HEAD.equals(request.getMethod())) {
+        } else if (contentLength == 0 || isHeadRequest()) {
             sendResponse(contentLength, null, responseContext);
             return null;
         } else {
@@ -187,7 +184,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
 
         final HttpResponse<HttpPayloadChunk> response;
         final HttpResponseStatus status = getStatus(containerResponse);
-        if (content != null) {
+        if (content != null && !isHeadRequest()) {
             response = newResponse(protocolVersion, status, content);
         } else {
             response = newResponse(protocolVersion, status);
@@ -198,13 +195,16 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
             headers.add(k, v == null ? emptyAsciiString() : asCharSequence(v));
         }));
 
-        if (contentLength == UNKNOWN_RESPONSE_LENGTH) {
-            if (!headers.contains(CONTENT_LENGTH)) {
-                headers.set(TRANSFER_ENCODING, CHUNKED);
+        if (!headers.contains(CONTENT_LENGTH)) {
+            if (contentLength == UNKNOWN_RESPONSE_LENGTH) {
+                // We can omit Transfer-Encoding for HEAD per https://tools.ietf.org/html/rfc7231#section-4.3.2
+                if (!isHeadRequest()) {
+                    headers.set(TRANSFER_ENCODING, CHUNKED);
+                }
+            } else {
+                headers.set(CONTENT_LENGTH, contentLength == 0 ? ZERO : Long.toString(contentLength));
+                headers.remove(TRANSFER_ENCODING, CHUNKED, true);
             }
-        } else {
-            headers.set(CONTENT_LENGTH, Long.toString(contentLength));
-            headers.remove(TRANSFER_ENCODING, CHUNKED, true);
         }
 
         responseSubscriber.onSuccess(response);
@@ -215,5 +215,9 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         return statusInfo instanceof Status ? RESPONSE_STATUSES.get(statusInfo) :
                 getResponseStatus(statusInfo.getStatusCode(),
                         allocator.fromAscii(statusInfo.getReasonPhrase()));
+    }
+
+    private boolean isHeadRequest() {
+        return HEAD.equals(request.getMethod());
     }
 }

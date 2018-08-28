@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.router.jersey;
 
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -24,36 +23,26 @@ import org.glassfish.jersey.internal.inject.ReferencingFactory;
 import org.glassfish.jersey.internal.util.collection.Ref;
 
 import java.lang.reflect.Type;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Provider;
-import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.GenericType;
 
+/**
+ * Constants and helper classes used internally for carrying request context data.
+ */
 final class Context {
-    private static final String REQUEST_CHUNK_PUBLISHER_IS = new GenericType<ChunkPublisherInputStream>() {
-        // NOOP
-    }.getType().getTypeName();
-
-    private static final String RESPONSE_CHUNK_PUBLISHER = new GenericType<Publisher<HttpPayloadChunk>>() {
-        // NOOP
-    }.getType().getTypeName();
-
     static final GenericType<Ref<ConnectionContext>> CONNECTION_CONTEXT_REF_GENERIC_TYPE =
-            new GenericType<Ref<ConnectionContext>>() {
-            };
+            new GenericType<Ref<ConnectionContext>>() { };
 
     static final Type CONNECTION_CONTEXT_REF_TYPE = CONNECTION_CONTEXT_REF_GENERIC_TYPE.getType();
 
     static final GenericType<Ref<HttpRequest<HttpPayloadChunk>>> HTTP_REQUEST_REF_GENERIC_TYPE =
-            new GenericType<Ref<HttpRequest<HttpPayloadChunk>>>() {
-            };
+            new GenericType<Ref<HttpRequest<HttpPayloadChunk>>>() { };
 
     static final Type HTTP_REQUEST_REF_TYPE = HTTP_REQUEST_REF_GENERIC_TYPE.getType();
 
     static final GenericType<HttpRequest<HttpPayloadChunk>> HTTP_REQUEST_GENERIC_TYPE =
-            new GenericType<HttpRequest<HttpPayloadChunk>>() {
-            };
+            new GenericType<HttpRequest<HttpPayloadChunk>>() { };
 
     static final class ConnectionContextReferencingFactory extends ReferencingFactory<ConnectionContext> {
         @Inject
@@ -71,26 +60,5 @@ final class Context {
 
     private Context() {
         // no instances
-    }
-
-    static void initRequestProperties(final ContainerRequestContext requestContext,
-                                      final ChunkPublisherInputStream entityStream) {
-        requestContext.setProperty(REQUEST_CHUNK_PUBLISHER_IS, entityStream);
-        requestContext.setProperty(RESPONSE_CHUNK_PUBLISHER, null);
-    }
-
-    static ChunkPublisherInputStream getRequestChunkPublisherInputStream(final ContainerRequestContext requestContext) {
-        return (ChunkPublisherInputStream) requestContext.getProperty(REQUEST_CHUNK_PUBLISHER_IS);
-    }
-
-    @Nullable
-    @SuppressWarnings("unchecked")
-    static Publisher<HttpPayloadChunk> getResponseChunkPublisher(final ContainerRequestContext requestContext) {
-        return (Publisher<HttpPayloadChunk>) requestContext.getProperty(RESPONSE_CHUNK_PUBLISHER);
-    }
-
-    static void setResponseChunkPublisher(final Publisher<HttpPayloadChunk> chunkPublisher,
-                                          final ContainerRequestContext requestContext) {
-        requestContext.setProperty(RESPONSE_CHUNK_PUBLISHER, chunkPublisher);
     }
 }

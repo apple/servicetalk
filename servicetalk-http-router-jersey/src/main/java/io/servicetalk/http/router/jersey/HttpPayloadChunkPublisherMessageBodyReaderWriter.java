@@ -33,7 +33,6 @@ import javax.ws.rs.ext.MessageBodyWriter;
  * A combined {@link MessageBodyReader} / {@link MessageBodyWriter} that allows bypassing Java IO streams
  * when request/response entities need to be converted to/from {@code Publisher<HttpPayloadChunk>}.
  */
-@SuppressWarnings("rawtypes")
 final class HttpPayloadChunkPublisherMessageBodyReaderWriter extends AbstractMessageBodyReaderWriter<Publisher,
         HttpPayloadChunk, Publisher<HttpPayloadChunk>, PublisherSource<HttpPayloadChunk>> {
 
