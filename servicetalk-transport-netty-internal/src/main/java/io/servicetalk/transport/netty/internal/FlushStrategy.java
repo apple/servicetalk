@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.transport.api;
+package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.Publisher;
 
-import static io.servicetalk.transport.api.FlushBeforeEnd.FLUSH_BEFORE_END;
-import static io.servicetalk.transport.api.FlushOnEach.FLUSH_ON_EACH;
+import static io.servicetalk.transport.netty.internal.FlushBeforeEnd.FLUSH_BEFORE_END;
+import static io.servicetalk.transport.netty.internal.FlushOnEach.FLUSH_ON_EACH;
 
 /**
  * A strategy to decorate a {@link Publisher} with flush boundaries.

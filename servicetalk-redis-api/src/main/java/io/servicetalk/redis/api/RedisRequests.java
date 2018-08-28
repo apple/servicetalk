@@ -30,7 +30,6 @@ import io.servicetalk.redis.api.RedisData.RequestRedisData;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisProtocolSupport.SubCommand;
 import io.servicetalk.redis.api.RedisProtocolSupport.TupleArgument;
-import io.servicetalk.transport.api.FlushStrategy;
 
 import java.util.Collection;
 import java.util.List;
@@ -42,8 +41,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.redis.internal.RedisUtils.toRespArraySize;
 import static io.servicetalk.redis.internal.RedisUtils.toRespBulkString;
-import static io.servicetalk.transport.api.FlushStrategy.defaultFlushStrategy;
-import static io.servicetalk.transport.api.FlushStrategy.flushBeforeEnd;
 import static java.lang.System.arraycopy;
 import static java.util.Objects.requireNonNull;
 
@@ -63,7 +60,7 @@ public final class RedisRequests {
      * @return a new {@link RedisRequest}.
      */
     public static RedisRequest newRequest(final Command command) {
-        return newRequest(command, Publisher.from(new ArraySize(1L), command), flushBeforeEnd());
+        return newRequest(command, Publisher.from(new ArraySize(1L), command));
     }
 
     /**
@@ -74,7 +71,7 @@ public final class RedisRequests {
      * @return a new {@link RedisRequest}.
      */
     public static RedisRequest newRequest(final Command command, final SubCommand subCommand) {
-        return newRequest(command, Publisher.from(new ArraySize(2L), command, requireNonNull(subCommand)), flushBeforeEnd());
+        return newRequest(command, Publisher.from(new ArraySize(2L), command, requireNonNull(subCommand)));
     }
 
     /**
@@ -85,7 +82,7 @@ public final class RedisRequests {
      * @return a new {@link RedisRequest}.
      */
     public static RedisRequest newRequest(final Command command, final CompleteBulkString arg) {
-        return newRequest(command, Publisher.from(new ArraySize(2L), command, requireNonNull(arg)), flushBeforeEnd());
+        return newRequest(command, Publisher.from(new ArraySize(2L), command, requireNonNull(arg)));
     }
 
     /**
@@ -97,7 +94,8 @@ public final class RedisRequests {
      * @return a new {@link RedisRequest}.
      */
     public static RedisRequest newRequest(final Command command, final SubCommand subCommand, final CompleteBulkString arg) {
-        return newRequest(command, Publisher.from(new ArraySize(3L), command, requireNonNull(subCommand), requireNonNull(arg)), flushBeforeEnd());
+        return newRequest(command, Publisher.from(new ArraySize(3L), command, requireNonNull(subCommand),
+                requireNonNull(arg)));
     }
 
     /**
@@ -163,21 +161,7 @@ public final class RedisRequests {
      */
     public static RedisRequest newRequest(final Command command,
                                           final Publisher<RequestRedisData> content) {
-        return newRequest(command, content, defaultFlushStrategy());
-    }
-
-    /**
-     * Instantiates a new {@link RedisRequest}.
-     *
-     * @param command the request {@link Command}.
-     * @param content a {@link Publisher} that provides the request content.
-     * @param flushStrategy the {@link FlushStrategy} to use with this request.
-     * @return a new {@link RedisRequest}.
-     */
-    public static RedisRequest newRequest(final Command command,
-                                          final Publisher<RequestRedisData> content,
-                                          final FlushStrategy flushStrategy) {
-        return new DefaultRedisRequest(command, content, flushStrategy);
+        return new DefaultRedisRequest(command, content);
     }
 
     /**
@@ -191,23 +175,7 @@ public final class RedisRequests {
      */
     public static RedisRequest newRequest(final Command command,
                                           final Buffer content) {
-        return newRequest(command, content, flushBeforeEnd());
-    }
-
-    /**
-     * Instantiates a new {@link RedisRequest} from a prepared {@link Buffer} that contains a complete Redis request.
-     *
-     * @param command the request command {@link Command}, provided for information only.
-     * @param content the complete request.
-     * @param flushStrategy the {@link FlushStrategy} to use with this request.
-     * @return a new {@link RedisRequest}.
-     * @see <a href="https://redis.io/topics/protocol#sending-commands-to-a-redis-server">Sending commands to a Redis
-     * Server</a>
-     */
-    public static RedisRequest newRequest(final Command command,
-                                          final Buffer content,
-                                          final FlushStrategy flushStrategy) {
-        return new DefaultRedisRequest(command, Publisher.just(new RESPBuffer(content)), flushStrategy);
+        return new DefaultRedisRequest(command, Publisher.just(new RESPBuffer(content)));
     }
 
     static CompositeBuffer newRequestCompositeBuffer(final int argCount, final Command command, final BufferAllocator allocator) {

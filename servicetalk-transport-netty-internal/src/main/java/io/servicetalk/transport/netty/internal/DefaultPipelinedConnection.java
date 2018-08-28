@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.transport.api.ExecutionContext;
-import io.servicetalk.transport.api.FlushStrategy;
 
 import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;

@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.CLIENT;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.COMMAND;
@@ -61,8 +60,6 @@ import static io.servicetalk.redis.netty.RedisDataMatcher.redisCompleteBulkStrin
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisLastBulkStringChunk;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisNull;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisSimpleString;
-import static io.servicetalk.transport.api.FlushStrategy.batchFlush;
-import static io.servicetalk.transport.api.FlushStrategy.defaultFlushStrategy;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.contains;
@@ -100,8 +97,7 @@ public class RedisClientTest extends BaseRedisClientTest {
                         new CompleteBulkString(buf("exp-key")),
                         new CompleteBulkString(buf("exp-value")),
                         EX, RedisData.Integer.newInstance(5L),
-                        NX),
-                batchFlush(7, empty())))),
+                        NX)))),
                 contains(anyOf(redisNull(), redisSimpleString("OK"))));
 
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(new RedisData.Array<>(PING, new CompleteBulkString(buf("my-pong")))))),
@@ -115,8 +111,7 @@ public class RedisClientTest extends BaseRedisClientTest {
                         new ArraySize(3L),
                         SET,
                         new CompleteBulkString(buf("\u263A-rc")),
-                        new CompleteBulkString(buf("\u263A-foo"))),
-                defaultFlushStrategy()))), contains(redisSimpleString("OK")));
+                        new CompleteBulkString(buf("\u263A-foo")))))), contains(redisSimpleString("OK")));
 
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(GET, new CompleteBulkString(buf("\u263A-rc"))))),
                 contains(redisBulkStringSize(7), redisLastBulkStringChunk(buf("\u263A-foo"))));

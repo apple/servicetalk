@@ -15,8 +15,6 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.transport.api.FlushStrategy;
-
 import java.util.function.IntPredicate;
 
 import static io.servicetalk.concurrent.api.Publisher.never;

@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.transport.api;
+package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.TerminalNotification;
-import io.servicetalk.transport.api.FlushStrategyHolder.FlushSignals;
+import io.servicetalk.transport.netty.internal.FlushStrategyHolder.FlushSignals;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;

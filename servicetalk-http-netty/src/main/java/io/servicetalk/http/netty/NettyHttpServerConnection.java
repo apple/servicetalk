@@ -27,8 +27,8 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.LastHttpPayloadChunk;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.FlushStrategy;
 import io.servicetalk.transport.netty.internal.CloseHandler;
+import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.channel.Channel;

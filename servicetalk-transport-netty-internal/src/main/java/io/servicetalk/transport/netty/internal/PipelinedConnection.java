@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.FlushStrategy;
 import io.servicetalk.transport.netty.internal.Connection.RequestNSupplier;
 
 import java.util.function.Predicate;

@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.Connection;
 
-import static io.servicetalk.transport.api.FlushStrategy.flushOnEach;
+import static io.servicetalk.transport.netty.internal.FlushStrategy.flushOnEach;
 
 final class NonPipelinedHttpConnection extends AbstractHttpConnection<Connection<Object, Object>> {
 

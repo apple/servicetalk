@@ -16,7 +16,6 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.transport.api.FlushStrategyHolder;
 
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoop;

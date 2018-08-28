@@ -41,12 +41,12 @@ import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEP
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.transport.api.FlushStrategy.defaultFlushStrategy;
-import static io.servicetalk.transport.api.FlushStrategy.flushBeforeEnd;
-import static io.servicetalk.transport.api.FlushStrategy.flushOnEach;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_OUTBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.FlushStrategy.defaultFlushStrategy;
+import static io.servicetalk.transport.netty.internal.FlushStrategy.flushBeforeEnd;
+import static io.servicetalk.transport.netty.internal.FlushStrategy.flushOnEach;
 import static io.servicetalk.transport.netty.internal.ReadAwareFlushStrategyHolder.flushOnReadComplete;
 import static java.lang.Integer.MAX_VALUE;
 import static java.nio.charset.Charset.defaultCharset;

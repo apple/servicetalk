@@ -22,8 +22,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
-import io.servicetalk.transport.api.FlushStrategy;
-import io.servicetalk.transport.api.FlushStrategyHolder;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 
 import io.netty.channel.AbstractChannel;

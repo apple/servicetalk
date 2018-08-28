@@ -18,7 +18,6 @@ package io.servicetalk.redis.api;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.redis.api.RedisData.RequestRedisData;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
-import io.servicetalk.transport.api.FlushStrategy;
 
 import java.util.function.Function;
 
@@ -27,12 +26,10 @@ import static java.util.Objects.requireNonNull;
 final class DefaultRedisRequest implements RedisRequest {
     private final Command command;
     private final Publisher<RequestRedisData> content;
-    private final FlushStrategy flushStrategy;
 
-    DefaultRedisRequest(final Command command, final Publisher<RequestRedisData> content, final FlushStrategy flushStrategy) {
+    DefaultRedisRequest(final Command command, final Publisher<RequestRedisData> content) {
         this.command = requireNonNull(command);
         this.content = requireNonNull(content);
-        this.flushStrategy = requireNonNull(flushStrategy);
     }
 
     @Override
@@ -46,13 +43,8 @@ final class DefaultRedisRequest implements RedisRequest {
     }
 
     @Override
-    public FlushStrategy getFlushStrategy() {
-        return flushStrategy;
-    }
-
-    @Override
     public RedisRequest transformContent(final Function<Publisher<RequestRedisData>, Publisher<RequestRedisData>> transformer) {
-        return new DefaultRedisRequest(command, transformer.apply(content), flushStrategy);
+        return new DefaultRedisRequest(command, transformer.apply(content));
     }
 
     @Override

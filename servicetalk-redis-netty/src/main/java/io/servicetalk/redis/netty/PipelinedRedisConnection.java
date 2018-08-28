@@ -164,7 +164,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
                         return Completable.error(new PingRejectedException(potentiallyConflictingCommand));
                     }
                     return rawConnection.write(encodeRequestContent(request,
-                            connection.getExecutionContext().getBufferAllocator()), request.getFlushStrategy());
+                            connection.getExecutionContext().getBufferAllocator()));
                 }, () -> predicate)
                         .doBeforeNext(predicate::trackMessage)
                         .doBeforeFinally(() -> {

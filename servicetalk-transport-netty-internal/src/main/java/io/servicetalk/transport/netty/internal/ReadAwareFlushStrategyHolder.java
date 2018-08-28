@@ -16,8 +16,6 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.transport.api.FlushStrategy;
-import io.servicetalk.transport.api.FlushStrategyHolder;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;

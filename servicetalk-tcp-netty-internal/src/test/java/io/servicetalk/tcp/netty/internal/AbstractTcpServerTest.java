@@ -39,8 +39,8 @@ import java.util.function.Function;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
-import static io.servicetalk.transport.api.FlushStrategy.defaultFlushStrategy;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
+import static io.servicetalk.transport.netty.internal.FlushStrategy.defaultFlushStrategy;
 
 public abstract class AbstractTcpServerTest {
 

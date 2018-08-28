@@ -109,9 +109,9 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
             protected void handleSubscribe(Subscriber<? super RedisData> subscriber) {
                 Completable write;
                 if (command == QUIT) {
-                    write = writeQueue.quit(connection.write(reqContent, request.getFlushStrategy()));
+                    write = writeQueue.quit(connection.write(reqContent));
                 } else {
-                    write = writeQueue.write(connection.write(reqContent, request.getFlushStrategy()), command);
+                    write = writeQueue.write(connection.write(reqContent), command);
                 }
                 /*
                  We register a new command after we have written the request completely. Following is the reason:

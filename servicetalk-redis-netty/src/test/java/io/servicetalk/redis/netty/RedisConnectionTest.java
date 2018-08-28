@@ -61,7 +61,6 @@ import static io.servicetalk.redis.netty.RedisDataMatcher.redisBulkStringSize;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisError;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisLastBulkStringChunk;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisNull;
-import static io.servicetalk.transport.api.FlushStrategy.defaultFlushStrategy;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.instanceOf;
@@ -236,8 +235,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
                                         new ArraySize(3L),
                                         SET,
                                         new CompleteBulkString(buf("ptf-rccsk")),
-                                        new CompleteBulkString(buf("foo"))),
-                                defaultFlushStrategy())))
+                                        new CompleteBulkString(buf("foo"))))))
                         .concatWith(cnx.request(newRequest(LPOP, new CompleteBulkString(buf("ptf-rccsk")))))
                         .concatWith(cnx.request(newRequest(EXEC)))));
 

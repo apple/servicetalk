@@ -18,7 +18,6 @@ package io.servicetalk.redis.api;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.redis.api.RedisData.RequestRedisData;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
-import io.servicetalk.transport.api.FlushStrategy;
 
 import java.util.function.Function;
 
@@ -39,13 +38,6 @@ public interface RedisRequest {
      * @return the content.
      */
     Publisher<RequestRedisData> getContent();
-
-    /**
-     * The flush strategy for {@link #getContent()}.
-     *
-     * @return the {@link FlushStrategy}.
-     */
-    FlushStrategy getFlushStrategy();
 
     /**
      * Modifies the content {@link Publisher} of this {@link RedisRequest} preserving other properties.

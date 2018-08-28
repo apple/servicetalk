@@ -26,7 +26,7 @@ import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.DefaultPipelinedConnection;
 
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
-import static io.servicetalk.transport.api.FlushStrategy.flushOnEach;
+import static io.servicetalk.transport.netty.internal.FlushStrategy.flushOnEach;
 
 final class PipelinedHttpConnection extends AbstractHttpConnection<DefaultPipelinedConnection<Object, Object>> {
 
