@@ -15,6 +15,7 @@
  */
 package io.servicetalk.redis.netty;
 
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.api.PubSubRedisConnection;
 import io.servicetalk.redis.api.PubSubRedisMessage;
 import io.servicetalk.redis.api.RedisCommander;
@@ -39,6 +40,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.stream.IntStream;
 
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
@@ -68,7 +70,6 @@ import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.either;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -256,41 +257,67 @@ public class RedisCommanderTest extends BaseRedisClientTest {
     }
 
     @Test
-    public void transactionEmpty() throws Exception {
-        final List<?> results = awaitIndefinitely(commandClient.multi().flatMap(TransactedRedisCommander::exec));
-        assertThat(results, is(empty()));
+    public void transactionExec() throws Exception {
+        final TransactedRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
+        Future<Long> value1 = tcc.del(key("a-key")).toFuture();
+        Future<String> value2 = tcc.set(key("a-key"), "a-value3").toFuture();
+        Future<String> value3 = tcc.ping("in-transac").toFuture();
+        Future<String> value4 = tcc.get(key("a-key")).toFuture();
+        awaitIndefinitely(tcc.exec());
+        assertThat(value1.get(), is(1L));
+        assertThat(value2.get(), is("OK"));
+        assertThat(value3.get(), is("in-transac"));
+        assertThat(value4.get(), is("a-value3"));
     }
 
     @Test
-    public void transactionExec() throws Exception {
-        final List<?> results = awaitIndefinitely(commandClient.multi()
-                .flatMap(tcc -> tcc.del(key("a-key"))
-                        .flatMap($ -> tcc.set(key("a-key"), "a-value3"))
-                        .flatMap($ -> tcc.ping("in-transac"))
-                        .flatMap($ -> tcc.get(key("a-key")))
-                        .flatMap($ -> tcc.exec())));
+    public void transactionSubscribeAfterExec() throws Exception {
+        final TransactedRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
+        Single<String> single = tcc.ping("in-transac");
+        awaitIndefinitely(tcc.exec());
 
-        assertThat(results, contains(1L, "OK", "in-transac", "a-value3"));
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("Single cannot be subscribed to after the transaction has completed.");
+        awaitIndefinitely(single);
+    }
+
+    @Test
+    public void transactionSubscribeAfterDiscard() throws Exception {
+        final TransactedRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
+        Single<String> single = tcc.ping("in-transac");
+        awaitIndefinitely(tcc.discard());
+
+        thrown.expect(RuntimeException.class);
+        thrown.expectMessage("Single cannot be subscribed to after the transaction has completed.");
+        awaitIndefinitely(single);
     }
 
     @Test
     public void transactionDiscard() throws Exception {
-        final String result = awaitIndefinitely(commandClient.multi()
-                .flatMap(tcc -> tcc.ping("in-transac")
-                        .flatMap($ -> tcc.discard())));
+        final TransactedRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
 
-        assertThat(result, is("OK"));
+        Single<String> result = tcc.ping("in-transac");
+        singleListenerRule.listen(result);
+        tcc.discard();
+
+        singleListenerRule.verifyNoEmissions();
     }
 
     @Test
     public void transactionPartialFailure() throws Exception {
-        final List<?> results = awaitIndefinitely(commandClient.multi()
-                .flatMap(tcc -> tcc.set(key("ptf"), "foo")
-                        .flatMap($ -> tcc.lpop(key("ptf")))
-                        .flatMap($ -> tcc.exec())));
+        final TransactedRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
 
-        assertThat(results, contains(is("OK"), instanceOf(RedisException.class)));
-        assertThat(((RedisException) results.get(1)).getMessage(), startsWith("WRONGTYPE"));
+        Future<String> r1 = tcc.set(key("ptf"), "foo").toFuture();
+        Future<String> r2 = tcc.lpop(key("ptf")).toFuture();
+
+        awaitIndefinitely(tcc.exec());
+
+        assertThat(r1.get(), is("OK"));
+
+        thrown.expect(ExecutionException.class);
+        thrown.expectCause(is(instanceOf(RedisException.class)));
+        thrown.expectCause(hasProperty("message", startsWith("WRONGTYPE")));
+        r2.get();
     }
 
     @Test

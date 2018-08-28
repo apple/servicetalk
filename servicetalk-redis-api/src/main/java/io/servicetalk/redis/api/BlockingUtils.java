@@ -16,6 +16,7 @@
 package io.servicetalk.redis.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -71,6 +72,29 @@ final class BlockingUtils {
 
     static <T> BlockingIterable<T> blockingInvocation(final Publisher<T> source) throws Exception {
         return source.toIterable();
+    }
+
+    static <T> DeferredValue singleToDeferredValue(Single<T> single) {
+        DeferredValue<T> deferredValue = new DeferredValue<>();
+
+        single.subscribe(new io.servicetalk.concurrent.Single.Subscriber<T>() {
+            @Override
+            public void onSubscribe(final Cancellable cancellable) {
+                // nothing to do
+            }
+
+            @Override
+            public void onSuccess(@Nullable final T result) {
+                deferredValue.set(result);
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+                deferredValue.setError(t);
+            }
+        });
+
+        return deferredValue;
     }
 
     static Completable blockingToCompletable(RunnableCheckedException r) {

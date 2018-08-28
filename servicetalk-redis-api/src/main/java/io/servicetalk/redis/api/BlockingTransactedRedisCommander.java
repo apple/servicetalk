@@ -40,49 +40,50 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      *
      * @param key the key
      * @param value the value
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.APPEND)
-    public abstract String append(@RedisProtocolSupport.Key CharSequence key, CharSequence value) throws Exception;
+    public abstract DeferredValue<Long> append(@RedisProtocolSupport.Key CharSequence key,
+                                               CharSequence value) throws Exception;
 
     /**
      * Authenticate to the server.
      *
      * @param password the password
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.AUTH)
-    public abstract String auth(CharSequence password) throws Exception;
+    public abstract DeferredValue<String> auth(CharSequence password) throws Exception;
 
     /**
      * Asynchronously rewrite the append-only file.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BGREWRITEAOF)
-    public abstract String bgrewriteaof() throws Exception;
+    public abstract DeferredValue<String> bgrewriteaof() throws Exception;
 
     /**
      * Asynchronously save the dataset to disk.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BGSAVE)
-    public abstract String bgsave() throws Exception;
+    public abstract DeferredValue<String> bgsave() throws Exception;
 
     /**
      * Count set bits in a string.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BITCOUNT)
-    public abstract String bitcount(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> bitcount(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Count set bits in a string.
@@ -90,24 +91,24 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param start the start
      * @param end the end
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BITCOUNT)
-    public abstract String bitcount(@RedisProtocolSupport.Key CharSequence key, @Nullable Long start,
-                                    @Nullable Long end) throws Exception;
+    public abstract DeferredValue<Long> bitcount(@RedisProtocolSupport.Key CharSequence key, @Nullable Long start,
+                                                 @Nullable Long end) throws Exception;
 
     /**
      * Perform arbitrary bitfield integer operations on strings.
      *
      * @param key the key
      * @param operations the operations
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BITFIELD)
-    public abstract String bitfield(@RedisProtocolSupport.Key CharSequence key,
-                                    @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.BitfieldOperation> operations) throws Exception;
+    public abstract DeferredValue<List<Long>> bitfield(@RedisProtocolSupport.Key CharSequence key,
+                                                       @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.BitfieldOperation> operations) throws Exception;
 
     /**
      * Perform bitwise operations between strings.
@@ -115,12 +116,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param operation the operation
      * @param destkey the destkey
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BITOP)
-    public abstract String bitop(CharSequence operation, @RedisProtocolSupport.Key CharSequence destkey,
-                                 @RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> bitop(CharSequence operation, @RedisProtocolSupport.Key CharSequence destkey,
+                                              @RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Perform bitwise operations between strings.
@@ -129,13 +130,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param destkey the destkey
      * @param key1 the key1
      * @param key2 the key2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BITOP)
-    public abstract String bitop(CharSequence operation, @RedisProtocolSupport.Key CharSequence destkey,
-                                 @RedisProtocolSupport.Key CharSequence key1,
-                                 @RedisProtocolSupport.Key CharSequence key2) throws Exception;
+    public abstract DeferredValue<Long> bitop(CharSequence operation, @RedisProtocolSupport.Key CharSequence destkey,
+                                              @RedisProtocolSupport.Key CharSequence key1,
+                                              @RedisProtocolSupport.Key CharSequence key2) throws Exception;
 
     /**
      * Perform bitwise operations between strings.
@@ -145,14 +146,14 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key1 the key1
      * @param key2 the key2
      * @param key3 the key3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BITOP)
-    public abstract String bitop(CharSequence operation, @RedisProtocolSupport.Key CharSequence destkey,
-                                 @RedisProtocolSupport.Key CharSequence key1,
-                                 @RedisProtocolSupport.Key CharSequence key2,
-                                 @RedisProtocolSupport.Key CharSequence key3) throws Exception;
+    public abstract DeferredValue<Long> bitop(CharSequence operation, @RedisProtocolSupport.Key CharSequence destkey,
+                                              @RedisProtocolSupport.Key CharSequence key1,
+                                              @RedisProtocolSupport.Key CharSequence key2,
+                                              @RedisProtocolSupport.Key CharSequence key3) throws Exception;
 
     /**
      * Perform bitwise operations between strings.
@@ -160,23 +161,23 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param operation the operation
      * @param destkey the destkey
      * @param keys the keys
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BITOP)
-    public abstract String bitop(CharSequence operation, @RedisProtocolSupport.Key CharSequence destkey,
-                                 @RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
+    public abstract DeferredValue<Long> bitop(CharSequence operation, @RedisProtocolSupport.Key CharSequence destkey,
+                                              @RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
 
     /**
      * Find first bit set or clear in a string.
      *
      * @param key the key
      * @param bit the bit
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BITPOS)
-    public abstract String bitpos(@RedisProtocolSupport.Key CharSequence key, long bit) throws Exception;
+    public abstract DeferredValue<Long> bitpos(@RedisProtocolSupport.Key CharSequence key, long bit) throws Exception;
 
     /**
      * Find first bit set or clear in a string.
@@ -185,36 +186,38 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param bit the bit
      * @param start the start
      * @param end the end
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BITPOS)
-    public abstract String bitpos(@RedisProtocolSupport.Key CharSequence key, long bit, @Nullable Long start,
-                                  @Nullable Long end) throws Exception;
+    public abstract DeferredValue<Long> bitpos(@RedisProtocolSupport.Key CharSequence key, long bit,
+                                               @Nullable Long start, @Nullable Long end) throws Exception;
 
     /**
      * Remove and get the first element in a list, or block until one is available.
      *
      * @param keys the keys
      * @param timeout the timeout
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BLPOP)
-    public abstract String blpop(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                                 long timeout) throws Exception;
+    public abstract <T> DeferredValue<List<T>> blpop(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                                     long timeout) throws Exception;
 
     /**
      * Remove and get the last element in a list, or block until one is available.
      *
      * @param keys the keys
      * @param timeout the timeout
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BRPOP)
-    public abstract String brpop(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                                 long timeout) throws Exception;
+    public abstract <T> DeferredValue<List<T>> brpop(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                                     long timeout) throws Exception;
 
     /**
      * Pop a value from a list, push it to another list and return it; or block until one is available.
@@ -222,13 +225,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param source the source
      * @param destination the destination
      * @param timeout the timeout
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BRPOPLPUSH)
-    public abstract String brpoplpush(@RedisProtocolSupport.Key CharSequence source,
-                                      @RedisProtocolSupport.Key CharSequence destination,
-                                      long timeout) throws Exception;
+    public abstract DeferredValue<String> brpoplpush(@RedisProtocolSupport.Key CharSequence source,
+                                                     @RedisProtocolSupport.Key CharSequence destination,
+                                                     long timeout) throws Exception;
 
     /**
      * Remove and return the member with the highest score from one or more sorted sets, or block until one is
@@ -236,24 +239,26 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      *
      * @param keys the keys
      * @param timeout the timeout
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BZPOPMAX)
-    public abstract String bzpopmax(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                                    long timeout) throws Exception;
+    public abstract <T> DeferredValue<List<T>> bzpopmax(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                                        long timeout) throws Exception;
 
     /**
      * Remove and return the member with the lowest score from one or more sorted sets, or block until one is available.
      *
      * @param keys the keys
      * @param timeout the timeout
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.BZPOPMIN)
-    public abstract String bzpopmin(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                                    long timeout) throws Exception;
+    public abstract <T> DeferredValue<List<T>> bzpopmin(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                                        long timeout) throws Exception;
 
     /**
      * Kill the connection of a client.
@@ -262,91 +267,91 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param type the type
      * @param addrIpPort the addrIpPort
      * @param skipmeYesNo the skipmeYesNo
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLIENT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.KILL)
-    public abstract String clientKill(@RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.ID) @Nullable Long id,
-                                      @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ClientKillType type,
-                                      @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.ADDR) @Nullable CharSequence addrIpPort,
-                                      @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SKIPME) @Nullable CharSequence skipmeYesNo) throws Exception;
+    public abstract DeferredValue<Long> clientKill(@RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.ID) @Nullable Long id,
+                                                   @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ClientKillType type,
+                                                   @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.ADDR) @Nullable CharSequence addrIpPort,
+                                                   @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SKIPME) @Nullable CharSequence skipmeYesNo) throws Exception;
 
     /**
      * Get the list of client connections.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLIENT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIST)
-    public abstract String clientList() throws Exception;
+    public abstract DeferredValue<String> clientList() throws Exception;
 
     /**
      * Get the current connection name.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLIENT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.GETNAME)
-    public abstract String clientGetname() throws Exception;
+    public abstract DeferredValue<String> clientGetname() throws Exception;
 
     /**
      * Stop processing commands from clients for some time.
      *
      * @param timeout the timeout
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLIENT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.PAUSE)
-    public abstract String clientPause(long timeout) throws Exception;
+    public abstract DeferredValue<String> clientPause(long timeout) throws Exception;
 
     /**
      * Instruct the server whether to reply to commands.
      *
      * @param replyMode the replyMode
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLIENT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.REPLY)
-    public abstract String clientReply(@RedisProtocolSupport.Option RedisProtocolSupport.ClientReplyReplyMode replyMode) throws Exception;
+    public abstract DeferredValue<String> clientReply(@RedisProtocolSupport.Option RedisProtocolSupport.ClientReplyReplyMode replyMode) throws Exception;
 
     /**
      * Set the current connection name.
      *
      * @param connectionName the connectionName
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLIENT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SETNAME)
-    public abstract String clientSetname(CharSequence connectionName) throws Exception;
+    public abstract DeferredValue<String> clientSetname(CharSequence connectionName) throws Exception;
 
     /**
      * Assign new hash slots to receiving node.
      *
      * @param slot the slot
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.ADDSLOTS)
-    public abstract String clusterAddslots(long slot) throws Exception;
+    public abstract DeferredValue<String> clusterAddslots(long slot) throws Exception;
 
     /**
      * Assign new hash slots to receiving node.
      *
      * @param slot1 the slot1
      * @param slot2 the slot2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.ADDSLOTS)
-    public abstract String clusterAddslots(long slot1, long slot2) throws Exception;
+    public abstract DeferredValue<String> clusterAddslots(long slot1, long slot2) throws Exception;
 
     /**
      * Assign new hash slots to receiving node.
@@ -354,68 +359,68 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param slot1 the slot1
      * @param slot2 the slot2
      * @param slot3 the slot3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.ADDSLOTS)
-    public abstract String clusterAddslots(long slot1, long slot2, long slot3) throws Exception;
+    public abstract DeferredValue<String> clusterAddslots(long slot1, long slot2, long slot3) throws Exception;
 
     /**
      * Assign new hash slots to receiving node.
      *
      * @param slots the slots
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.ADDSLOTS)
-    public abstract String clusterAddslots(Collection<Long> slots) throws Exception;
+    public abstract DeferredValue<String> clusterAddslots(Collection<Long> slots) throws Exception;
 
     /**
      * Return the number of failure reports active for a given node.
      *
      * @param nodeId the nodeId
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT_FAILURE_REPORTS)
-    public abstract String clusterCountFailureReports(CharSequence nodeId) throws Exception;
+    public abstract DeferredValue<Long> clusterCountFailureReports(CharSequence nodeId) throws Exception;
 
     /**
      * Return the number of local keys in the specified hash slot.
      *
      * @param slot the slot
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNTKEYSINSLOT)
-    public abstract String clusterCountkeysinslot(long slot) throws Exception;
+    public abstract DeferredValue<Long> clusterCountkeysinslot(long slot) throws Exception;
 
     /**
      * Set hash slots as unbound in receiving node.
      *
      * @param slot the slot
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.DELSLOTS)
-    public abstract String clusterDelslots(long slot) throws Exception;
+    public abstract DeferredValue<String> clusterDelslots(long slot) throws Exception;
 
     /**
      * Set hash slots as unbound in receiving node.
      *
      * @param slot1 the slot1
      * @param slot2 the slot2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.DELSLOTS)
-    public abstract String clusterDelslots(long slot1, long slot2) throws Exception;
+    public abstract DeferredValue<String> clusterDelslots(long slot1, long slot2) throws Exception;
 
     /**
      * Set hash slots as unbound in receiving node.
@@ -423,176 +428,177 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param slot1 the slot1
      * @param slot2 the slot2
      * @param slot3 the slot3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.DELSLOTS)
-    public abstract String clusterDelslots(long slot1, long slot2, long slot3) throws Exception;
+    public abstract DeferredValue<String> clusterDelslots(long slot1, long slot2, long slot3) throws Exception;
 
     /**
      * Set hash slots as unbound in receiving node.
      *
      * @param slots the slots
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.DELSLOTS)
-    public abstract String clusterDelslots(Collection<Long> slots) throws Exception;
+    public abstract DeferredValue<String> clusterDelslots(Collection<Long> slots) throws Exception;
 
     /**
      * Forces a slave to perform a manual failover of its master.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.FAILOVER)
-    public abstract String clusterFailover() throws Exception;
+    public abstract DeferredValue<String> clusterFailover() throws Exception;
 
     /**
      * Forces a slave to perform a manual failover of its master.
      *
      * @param options the options
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.FAILOVER)
-    public abstract String clusterFailover(@RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ClusterFailoverOptions options) throws Exception;
+    public abstract DeferredValue<String> clusterFailover(@RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ClusterFailoverOptions options) throws Exception;
 
     /**
      * Remove a node from the nodes table.
      *
      * @param nodeId the nodeId
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.FORGET)
-    public abstract String clusterForget(CharSequence nodeId) throws Exception;
+    public abstract DeferredValue<String> clusterForget(CharSequence nodeId) throws Exception;
 
     /**
      * Return local key names in the specified hash slot.
      *
      * @param slot the slot
      * @param count the count
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.GETKEYSINSLOT)
-    public abstract String clusterGetkeysinslot(long slot, long count) throws Exception;
+    public abstract <T> DeferredValue<List<T>> clusterGetkeysinslot(long slot, long count) throws Exception;
 
     /**
      * Provides info about Redis Cluster node state.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.INFO)
-    public abstract String clusterInfo() throws Exception;
+    public abstract DeferredValue<String> clusterInfo() throws Exception;
 
     /**
      * Returns the hash slot of the specified key.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.KEYSLOT)
-    public abstract String clusterKeyslot(CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> clusterKeyslot(CharSequence key) throws Exception;
 
     /**
      * Force a node cluster to handshake with another node.
      *
      * @param ip the ip
      * @param port the port
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.MEET)
-    public abstract String clusterMeet(CharSequence ip, long port) throws Exception;
+    public abstract DeferredValue<String> clusterMeet(CharSequence ip, long port) throws Exception;
 
     /**
      * Get Cluster config for the node.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.NODES)
-    public abstract String clusterNodes() throws Exception;
+    public abstract DeferredValue<String> clusterNodes() throws Exception;
 
     /**
      * Reconfigure a node as a slave of the specified master node.
      *
      * @param nodeId the nodeId
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.REPLICATE)
-    public abstract String clusterReplicate(CharSequence nodeId) throws Exception;
+    public abstract DeferredValue<String> clusterReplicate(CharSequence nodeId) throws Exception;
 
     /**
      * Reset a Redis Cluster node.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.RESET)
-    public abstract String clusterReset() throws Exception;
+    public abstract DeferredValue<String> clusterReset() throws Exception;
 
     /**
      * Reset a Redis Cluster node.
      *
      * @param resetType the resetType
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.RESET)
-    public abstract String clusterReset(@RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ClusterResetResetType resetType) throws Exception;
+    public abstract DeferredValue<String> clusterReset(@RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ClusterResetResetType resetType) throws Exception;
 
     /**
      * Forces the node to save cluster state on disk.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SAVECONFIG)
-    public abstract String clusterSaveconfig() throws Exception;
+    public abstract DeferredValue<String> clusterSaveconfig() throws Exception;
 
     /**
      * Set the configuration epoch in a new node.
      *
      * @param configEpoch the configEpoch
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SET_CONFIG_EPOCH)
-    public abstract String clusterSetConfigEpoch(long configEpoch) throws Exception;
+    public abstract DeferredValue<String> clusterSetConfigEpoch(long configEpoch) throws Exception;
 
     /**
      * Bind a hash slot to a specific node.
      *
      * @param slot the slot
      * @param subcommand the subcommand
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SETSLOT)
-    public abstract String clusterSetslot(long slot,
-                                          @RedisProtocolSupport.Option RedisProtocolSupport.ClusterSetslotSubcommand subcommand) throws Exception;
+    public abstract DeferredValue<String> clusterSetslot(long slot,
+                                                         @RedisProtocolSupport.Option RedisProtocolSupport.ClusterSetslotSubcommand subcommand) throws Exception;
 
     /**
      * Bind a hash slot to a specific node.
@@ -600,87 +606,93 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param slot the slot
      * @param subcommand the subcommand
      * @param nodeId the nodeId
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SETSLOT)
-    public abstract String clusterSetslot(long slot,
-                                          @RedisProtocolSupport.Option RedisProtocolSupport.ClusterSetslotSubcommand subcommand,
-                                          @Nullable CharSequence nodeId) throws Exception;
+    public abstract DeferredValue<String> clusterSetslot(long slot,
+                                                         @RedisProtocolSupport.Option RedisProtocolSupport.ClusterSetslotSubcommand subcommand,
+                                                         @Nullable CharSequence nodeId) throws Exception;
 
     /**
      * List slave nodes of the specified master node.
      *
      * @param nodeId the nodeId
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SLAVES)
-    public abstract String clusterSlaves(CharSequence nodeId) throws Exception;
+    public abstract DeferredValue<String> clusterSlaves(CharSequence nodeId) throws Exception;
 
     /**
      * Get array of Cluster slot to node mappings.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CLUSTER)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SLOTS)
-    public abstract String clusterSlots() throws Exception;
+    public abstract <T> DeferredValue<List<T>> clusterSlots() throws Exception;
 
     /**
      * Get array of Redis command details.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.COMMAND)
-    public abstract String command() throws Exception;
+    public abstract <T> DeferredValue<List<T>> command() throws Exception;
 
     /**
      * Get total number of Redis commands.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.COMMAND)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT)
-    public abstract String commandCount() throws Exception;
+    public abstract DeferredValue<Long> commandCount() throws Exception;
 
     /**
      * Extract keys given a full Redis command.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.COMMAND)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.GETKEYS)
-    public abstract String commandGetkeys() throws Exception;
+    public abstract <T> DeferredValue<List<T>> commandGetkeys() throws Exception;
 
     /**
      * Get array of specific Redis command details.
      *
      * @param commandName the commandName
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.COMMAND)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.INFO)
-    public abstract String commandInfo(CharSequence commandName) throws Exception;
+    public abstract <T> DeferredValue<List<T>> commandInfo(CharSequence commandName) throws Exception;
 
     /**
      * Get array of specific Redis command details.
      *
      * @param commandName1 the commandName1
      * @param commandName2 the commandName2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.COMMAND)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.INFO)
-    public abstract String commandInfo(CharSequence commandName1, CharSequence commandName2) throws Exception;
+    public abstract <T> DeferredValue<List<T>> commandInfo(CharSequence commandName1,
+                                                           CharSequence commandName2) throws Exception;
 
     /**
      * Get array of specific Redis command details.
@@ -688,140 +700,144 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param commandName1 the commandName1
      * @param commandName2 the commandName2
      * @param commandName3 the commandName3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.COMMAND)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.INFO)
-    public abstract String commandInfo(CharSequence commandName1, CharSequence commandName2,
-                                       CharSequence commandName3) throws Exception;
+    public abstract <T> DeferredValue<List<T>> commandInfo(CharSequence commandName1, CharSequence commandName2,
+                                                           CharSequence commandName3) throws Exception;
 
     /**
      * Get array of specific Redis command details.
      *
      * @param commandNames the commandNames
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.COMMAND)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.INFO)
-    public abstract String commandInfo(Collection<? extends CharSequence> commandNames) throws Exception;
+    public abstract <T> DeferredValue<List<T>> commandInfo(Collection<? extends CharSequence> commandNames) throws Exception;
 
     /**
      * Get the value of a configuration parameter.
      *
      * @param parameter the parameter
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CONFIG)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.GET)
-    public abstract String configGet(CharSequence parameter) throws Exception;
+    public abstract <T> DeferredValue<List<T>> configGet(CharSequence parameter) throws Exception;
 
     /**
      * Rewrite the configuration file with the in memory configuration.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CONFIG)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.REWRITE)
-    public abstract String configRewrite() throws Exception;
+    public abstract DeferredValue<String> configRewrite() throws Exception;
 
     /**
      * Set a configuration parameter to the given value.
      *
      * @param parameter the parameter
      * @param value the value
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CONFIG)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SET)
-    public abstract String configSet(CharSequence parameter, CharSequence value) throws Exception;
+    public abstract DeferredValue<String> configSet(CharSequence parameter, CharSequence value) throws Exception;
 
     /**
      * Reset the stats returned by INFO.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.CONFIG)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.RESETSTAT)
-    public abstract String configResetstat() throws Exception;
+    public abstract DeferredValue<String> configResetstat() throws Exception;
 
     /**
      * Return the number of keys in the selected database.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.DBSIZE)
-    public abstract String dbsize() throws Exception;
+    public abstract DeferredValue<Long> dbsize() throws Exception;
 
     /**
      * Get debugging information about a key.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.DEBUG)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.OBJECT)
-    public abstract String debugObject(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<String> debugObject(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Make the server crash.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.DEBUG)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SEGFAULT)
-    public abstract String debugSegfault() throws Exception;
+    public abstract DeferredValue<String> debugSegfault() throws Exception;
 
     /**
      * Decrement the integer value of a key by one.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.DECR)
-    public abstract String decr(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> decr(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Decrement the integer value of a key by the given number.
      *
      * @param key the key
      * @param decrement the decrement
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.DECRBY)
-    public abstract String decrby(@RedisProtocolSupport.Key CharSequence key, long decrement) throws Exception;
+    public abstract DeferredValue<Long> decrby(@RedisProtocolSupport.Key CharSequence key,
+                                               long decrement) throws Exception;
 
     /**
      * Delete a key.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.DEL)
-    public abstract String del(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> del(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Delete a key.
      *
      * @param key1 the key1
      * @param key2 the key2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.DEL)
-    public abstract String del(@RedisProtocolSupport.Key CharSequence key1,
-                               @RedisProtocolSupport.Key CharSequence key2) throws Exception;
+    public abstract DeferredValue<Long> del(@RedisProtocolSupport.Key CharSequence key1,
+                                            @RedisProtocolSupport.Key CharSequence key2) throws Exception;
 
     /**
      * Delete a key.
@@ -829,22 +845,23 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key1 the key1
      * @param key2 the key2
      * @param key3 the key3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.DEL)
-    public abstract String del(@RedisProtocolSupport.Key CharSequence key1, @RedisProtocolSupport.Key CharSequence key2,
-                               @RedisProtocolSupport.Key CharSequence key3) throws Exception;
+    public abstract DeferredValue<Long> del(@RedisProtocolSupport.Key CharSequence key1,
+                                            @RedisProtocolSupport.Key CharSequence key2,
+                                            @RedisProtocolSupport.Key CharSequence key3) throws Exception;
 
     /**
      * Delete a key.
      *
      * @param keys the keys
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.DEL)
-    public abstract String del(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
+    public abstract DeferredValue<Long> del(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
 
     /**
      * Discard all commands issued after MULTI.
@@ -859,21 +876,21 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * Return a serialized version of the value stored at the specified key.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.DUMP)
-    public abstract String dump(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<String> dump(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Echo the given string.
      *
      * @param message the message
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ECHO)
-    public abstract String echo(CharSequence message) throws Exception;
+    public abstract DeferredValue<String> echo(CharSequence message) throws Exception;
 
     /**
      * Execute a Lua script server side.
@@ -882,13 +899,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param numkeys the numkeys
      * @param keys the keys
      * @param args the args
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EVAL)
-    public abstract String eval(CharSequence script, long numkeys,
-                                @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                                Collection<? extends CharSequence> args) throws Exception;
+    public abstract DeferredValue<String> eval(CharSequence script, long numkeys,
+                                               @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                               Collection<? extends CharSequence> args) throws Exception;
 
     /**
      * Execute a Lua script server side.
@@ -897,13 +914,14 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param numkeys the numkeys
      * @param keys the keys
      * @param args the args
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EVAL)
-    public abstract String evalList(CharSequence script, long numkeys,
-                                    @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                                    Collection<? extends CharSequence> args) throws Exception;
+    public abstract <T> DeferredValue<List<T>> evalList(CharSequence script, long numkeys,
+                                                        @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                                        Collection<? extends CharSequence> args) throws Exception;
 
     /**
      * Execute a Lua script server side.
@@ -912,13 +930,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param numkeys the numkeys
      * @param keys the keys
      * @param args the args
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EVAL)
-    public abstract String evalLong(CharSequence script, long numkeys,
-                                    @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                                    Collection<? extends CharSequence> args) throws Exception;
+    public abstract DeferredValue<Long> evalLong(CharSequence script, long numkeys,
+                                                 @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                                 Collection<? extends CharSequence> args) throws Exception;
 
     /**
      * Execute a Lua script server side.
@@ -927,13 +945,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param numkeys the numkeys
      * @param keys the keys
      * @param args the args
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EVALSHA)
-    public abstract String evalsha(CharSequence sha1, long numkeys,
-                                   @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                                   Collection<? extends CharSequence> args) throws Exception;
+    public abstract DeferredValue<String> evalsha(CharSequence sha1, long numkeys,
+                                                  @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                                  Collection<? extends CharSequence> args) throws Exception;
 
     /**
      * Execute a Lua script server side.
@@ -942,13 +960,14 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param numkeys the numkeys
      * @param keys the keys
      * @param args the args
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EVALSHA)
-    public abstract String evalshaList(CharSequence sha1, long numkeys,
-                                       @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                                       Collection<? extends CharSequence> args) throws Exception;
+    public abstract <T> DeferredValue<List<T>> evalshaList(CharSequence sha1, long numkeys,
+                                                           @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                                           Collection<? extends CharSequence> args) throws Exception;
 
     /**
      * Execute a Lua script server side.
@@ -957,45 +976,43 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param numkeys the numkeys
      * @param keys the keys
      * @param args the args
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EVALSHA)
-    public abstract String evalshaLong(CharSequence sha1, long numkeys,
-                                       @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                                       Collection<? extends CharSequence> args) throws Exception;
+    public abstract DeferredValue<Long> evalshaLong(CharSequence sha1, long numkeys,
+                                                    @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                                    Collection<? extends CharSequence> args) throws Exception;
 
     /**
      * Execute all commands issued after MULTI.
      *
-     * @return a {@link List} result
-     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EXEC)
-    public abstract <T> List<T> exec() throws Exception;
+    public abstract void exec() throws Exception;
 
     /**
      * Determine if a key exists.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EXISTS)
-    public abstract String exists(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> exists(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Determine if a key exists.
      *
      * @param key1 the key1
      * @param key2 the key2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EXISTS)
-    public abstract String exists(@RedisProtocolSupport.Key CharSequence key1,
-                                  @RedisProtocolSupport.Key CharSequence key2) throws Exception;
+    public abstract DeferredValue<Long> exists(@RedisProtocolSupport.Key CharSequence key1,
+                                               @RedisProtocolSupport.Key CharSequence key2) throws Exception;
 
     /**
      * Determine if a key exists.
@@ -1003,83 +1020,85 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key1 the key1
      * @param key2 the key2
      * @param key3 the key3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EXISTS)
-    public abstract String exists(@RedisProtocolSupport.Key CharSequence key1,
-                                  @RedisProtocolSupport.Key CharSequence key2,
-                                  @RedisProtocolSupport.Key CharSequence key3) throws Exception;
+    public abstract DeferredValue<Long> exists(@RedisProtocolSupport.Key CharSequence key1,
+                                               @RedisProtocolSupport.Key CharSequence key2,
+                                               @RedisProtocolSupport.Key CharSequence key3) throws Exception;
 
     /**
      * Determine if a key exists.
      *
      * @param keys the keys
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EXISTS)
-    public abstract String exists(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
+    public abstract DeferredValue<Long> exists(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
 
     /**
      * Set a key's time to live in seconds.
      *
      * @param key the key
      * @param seconds the seconds
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EXPIRE)
-    public abstract String expire(@RedisProtocolSupport.Key CharSequence key, long seconds) throws Exception;
+    public abstract DeferredValue<Long> expire(@RedisProtocolSupport.Key CharSequence key,
+                                               long seconds) throws Exception;
 
     /**
      * Set the expiration for a key as a UNIX timestamp.
      *
      * @param key the key
      * @param timestamp the timestamp
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.EXPIREAT)
-    public abstract String expireat(@RedisProtocolSupport.Key CharSequence key, long timestamp) throws Exception;
+    public abstract DeferredValue<Long> expireat(@RedisProtocolSupport.Key CharSequence key,
+                                                 long timestamp) throws Exception;
 
     /**
      * Remove all keys from all databases.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.FLUSHALL)
-    public abstract String flushall() throws Exception;
+    public abstract DeferredValue<String> flushall() throws Exception;
 
     /**
      * Remove all keys from all databases.
      *
      * @param async the async
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.FLUSHALL)
-    public abstract String flushall(@RedisProtocolSupport.Option @Nullable RedisProtocolSupport.FlushallAsync async) throws Exception;
+    public abstract DeferredValue<String> flushall(@RedisProtocolSupport.Option @Nullable RedisProtocolSupport.FlushallAsync async) throws Exception;
 
     /**
      * Remove all keys from the current database.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.FLUSHDB)
-    public abstract String flushdb() throws Exception;
+    public abstract DeferredValue<String> flushdb() throws Exception;
 
     /**
      * Remove all keys from the current database.
      *
      * @param async the async
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.FLUSHDB)
-    public abstract String flushdb(@RedisProtocolSupport.Option @Nullable RedisProtocolSupport.FlushdbAsync async) throws Exception;
+    public abstract DeferredValue<String> flushdb(@RedisProtocolSupport.Option @Nullable RedisProtocolSupport.FlushdbAsync async) throws Exception;
 
     /**
      * Add one or more geospatial items in the geospatial index represented using a sorted set.
@@ -1088,12 +1107,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param longitude the longitude
      * @param latitude the latitude
      * @param member the member
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEOADD)
-    public abstract String geoadd(@RedisProtocolSupport.Key CharSequence key, double longitude, double latitude,
-                                  CharSequence member) throws Exception;
+    public abstract DeferredValue<Long> geoadd(@RedisProtocolSupport.Key CharSequence key, double longitude,
+                                               double latitude, CharSequence member) throws Exception;
 
     /**
      * Add one or more geospatial items in the geospatial index represented using a sorted set.
@@ -1105,13 +1124,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param longitude2 the longitude2
      * @param latitude2 the latitude2
      * @param member2 the member2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEOADD)
-    public abstract String geoadd(@RedisProtocolSupport.Key CharSequence key, double longitude1, double latitude1,
-                                  CharSequence member1, double longitude2, double latitude2,
-                                  CharSequence member2) throws Exception;
+    public abstract DeferredValue<Long> geoadd(@RedisProtocolSupport.Key CharSequence key, double longitude1,
+                                               double latitude1, CharSequence member1, double longitude2,
+                                               double latitude2, CharSequence member2) throws Exception;
 
     /**
      * Add one or more geospatial items in the geospatial index represented using a sorted set.
@@ -1126,25 +1145,26 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param longitude3 the longitude3
      * @param latitude3 the latitude3
      * @param member3 the member3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEOADD)
-    public abstract String geoadd(@RedisProtocolSupport.Key CharSequence key, double longitude1, double latitude1,
-                                  CharSequence member1, double longitude2, double latitude2, CharSequence member2,
-                                  double longitude3, double latitude3, CharSequence member3) throws Exception;
+    public abstract DeferredValue<Long> geoadd(@RedisProtocolSupport.Key CharSequence key, double longitude1,
+                                               double latitude1, CharSequence member1, double longitude2,
+                                               double latitude2, CharSequence member2, double longitude3,
+                                               double latitude3, CharSequence member3) throws Exception;
 
     /**
      * Add one or more geospatial items in the geospatial index represented using a sorted set.
      *
      * @param key the key
      * @param longitudeLatitudeMembers the longitudeLatitudeMembers
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEOADD)
-    public abstract String geoadd(@RedisProtocolSupport.Key CharSequence key,
-                                  @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.LongitudeLatitudeMember> longitudeLatitudeMembers) throws Exception;
+    public abstract DeferredValue<Long> geoadd(@RedisProtocolSupport.Key CharSequence key,
+                                               @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.LongitudeLatitudeMember> longitudeLatitudeMembers) throws Exception;
 
     /**
      * Returns the distance between two members of a geospatial index.
@@ -1152,12 +1172,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param member1 the member1
      * @param member2 the member2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEODIST)
-    public abstract String geodist(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
-                                   CharSequence member2) throws Exception;
+    public abstract DeferredValue<Double> geodist(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
+                                                  CharSequence member2) throws Exception;
 
     /**
      * Returns the distance between two members of a geospatial index.
@@ -1166,23 +1186,25 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param member1 the member1
      * @param member2 the member2
      * @param unit the unit
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEODIST)
-    public abstract String geodist(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
-                                   CharSequence member2, @Nullable CharSequence unit) throws Exception;
+    public abstract DeferredValue<Double> geodist(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
+                                                  CharSequence member2, @Nullable CharSequence unit) throws Exception;
 
     /**
      * Returns members of a geospatial index as standard geohash strings.
      *
      * @param key the key
      * @param member the member
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEOHASH)
-    public abstract String geohash(@RedisProtocolSupport.Key CharSequence key, CharSequence member) throws Exception;
+    public abstract <T> DeferredValue<List<T>> geohash(@RedisProtocolSupport.Key CharSequence key,
+                                                       CharSequence member) throws Exception;
 
     /**
      * Returns members of a geospatial index as standard geohash strings.
@@ -1190,12 +1212,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param member1 the member1
      * @param member2 the member2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEOHASH)
-    public abstract String geohash(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
-                                   CharSequence member2) throws Exception;
+    public abstract <T> DeferredValue<List<T>> geohash(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
+                                                       CharSequence member2) throws Exception;
 
     /**
      * Returns members of a geospatial index as standard geohash strings.
@@ -1204,35 +1227,39 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param member1 the member1
      * @param member2 the member2
      * @param member3 the member3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEOHASH)
-    public abstract String geohash(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
-                                   CharSequence member2, CharSequence member3) throws Exception;
+    public abstract <T> DeferredValue<List<T>> geohash(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
+                                                       CharSequence member2, CharSequence member3) throws Exception;
 
     /**
      * Returns members of a geospatial index as standard geohash strings.
      *
      * @param key the key
      * @param members the members
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEOHASH)
-    public abstract String geohash(@RedisProtocolSupport.Key CharSequence key,
-                                   Collection<? extends CharSequence> members) throws Exception;
+    public abstract <T> DeferredValue<List<T>> geohash(@RedisProtocolSupport.Key CharSequence key,
+                                                       Collection<? extends CharSequence> members) throws Exception;
 
     /**
      * Returns longitude and latitude of members of a geospatial index.
      *
      * @param key the key
      * @param member the member
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEOPOS)
-    public abstract String geopos(@RedisProtocolSupport.Key CharSequence key, CharSequence member) throws Exception;
+    public abstract <T> DeferredValue<List<T>> geopos(@RedisProtocolSupport.Key CharSequence key,
+                                                      CharSequence member) throws Exception;
 
     /**
      * Returns longitude and latitude of members of a geospatial index.
@@ -1240,12 +1267,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param member1 the member1
      * @param member2 the member2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEOPOS)
-    public abstract String geopos(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
-                                  CharSequence member2) throws Exception;
+    public abstract <T> DeferredValue<List<T>> geopos(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
+                                                      CharSequence member2) throws Exception;
 
     /**
      * Returns longitude and latitude of members of a geospatial index.
@@ -1254,24 +1282,26 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param member1 the member1
      * @param member2 the member2
      * @param member3 the member3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEOPOS)
-    public abstract String geopos(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
-                                  CharSequence member2, CharSequence member3) throws Exception;
+    public abstract <T> DeferredValue<List<T>> geopos(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
+                                                      CharSequence member2, CharSequence member3) throws Exception;
 
     /**
      * Returns longitude and latitude of members of a geospatial index.
      *
      * @param key the key
      * @param members the members
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEOPOS)
-    public abstract String geopos(@RedisProtocolSupport.Key CharSequence key,
-                                  Collection<? extends CharSequence> members) throws Exception;
+    public abstract <T> DeferredValue<List<T>> geopos(@RedisProtocolSupport.Key CharSequence key,
+                                                      Collection<? extends CharSequence> members) throws Exception;
 
     /**
      * Query a sorted set representing a geospatial index to fetch members matching a given maximum distance from a
@@ -1282,13 +1312,14 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param latitude the latitude
      * @param radius the radius
      * @param unit the unit
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEORADIUS)
-    public abstract String georadius(@RedisProtocolSupport.Key CharSequence key, double longitude, double latitude,
-                                     double radius,
-                                     @RedisProtocolSupport.Option RedisProtocolSupport.GeoradiusUnit unit) throws Exception;
+    public abstract <T> DeferredValue<List<T>> georadius(@RedisProtocolSupport.Key CharSequence key, double longitude,
+                                                         double latitude, double radius,
+                                                         @RedisProtocolSupport.Option RedisProtocolSupport.GeoradiusUnit unit) throws Exception;
 
     /**
      * Query a sorted set representing a geospatial index to fetch members matching a given maximum distance from a
@@ -1306,20 +1337,21 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param order the order
      * @param storeKey the storeKey
      * @param storedistKey the storedistKey
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEORADIUS)
-    public abstract String georadius(@RedisProtocolSupport.Key CharSequence key, double longitude, double latitude,
-                                     double radius,
-                                     @RedisProtocolSupport.Option RedisProtocolSupport.GeoradiusUnit unit,
-                                     @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusWithcoord withcoord,
-                                     @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusWithdist withdist,
-                                     @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusWithhash withhash,
-                                     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count,
-                                     @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusOrder order,
-                                     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STORE) @Nullable @RedisProtocolSupport.Key CharSequence storeKey,
-                                     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STOREDIST) @Nullable @RedisProtocolSupport.Key CharSequence storedistKey) throws Exception;
+    public abstract <T> DeferredValue<List<T>> georadius(@RedisProtocolSupport.Key CharSequence key, double longitude,
+                                                         double latitude, double radius,
+                                                         @RedisProtocolSupport.Option RedisProtocolSupport.GeoradiusUnit unit,
+                                                         @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusWithcoord withcoord,
+                                                         @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusWithdist withdist,
+                                                         @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusWithhash withhash,
+                                                         @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count,
+                                                         @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusOrder order,
+                                                         @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STORE) @Nullable @RedisProtocolSupport.Key CharSequence storeKey,
+                                                         @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STOREDIST) @Nullable @RedisProtocolSupport.Key CharSequence storedistKey) throws Exception;
 
     /**
      * Query a sorted set representing a geospatial index to fetch members matching a given maximum distance from a
@@ -1329,13 +1361,14 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param member the member
      * @param radius the radius
      * @param unit the unit
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEORADIUSBYMEMBER)
-    public abstract String georadiusbymember(@RedisProtocolSupport.Key CharSequence key, CharSequence member,
-                                             double radius,
-                                             @RedisProtocolSupport.Option RedisProtocolSupport.GeoradiusbymemberUnit unit) throws Exception;
+    public abstract <T> DeferredValue<List<T>> georadiusbymember(@RedisProtocolSupport.Key CharSequence key,
+                                                                 CharSequence member, double radius,
+                                                                 @RedisProtocolSupport.Option RedisProtocolSupport.GeoradiusbymemberUnit unit) throws Exception;
 
     /**
      * Query a sorted set representing a geospatial index to fetch members matching a given maximum distance from a
@@ -1352,41 +1385,43 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param order the order
      * @param storeKey the storeKey
      * @param storedistKey the storedistKey
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GEORADIUSBYMEMBER)
-    public abstract String georadiusbymember(@RedisProtocolSupport.Key CharSequence key, CharSequence member,
-                                             double radius,
-                                             @RedisProtocolSupport.Option RedisProtocolSupport.GeoradiusbymemberUnit unit,
-                                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusbymemberWithcoord withcoord,
-                                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusbymemberWithdist withdist,
-                                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusbymemberWithhash withhash,
-                                             @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count,
-                                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusbymemberOrder order,
-                                             @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STORE) @Nullable @RedisProtocolSupport.Key CharSequence storeKey,
-                                             @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STOREDIST) @Nullable @RedisProtocolSupport.Key CharSequence storedistKey) throws Exception;
+    public abstract <T> DeferredValue<List<T>> georadiusbymember(@RedisProtocolSupport.Key CharSequence key,
+                                                                 CharSequence member, double radius,
+                                                                 @RedisProtocolSupport.Option RedisProtocolSupport.GeoradiusbymemberUnit unit,
+                                                                 @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusbymemberWithcoord withcoord,
+                                                                 @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusbymemberWithdist withdist,
+                                                                 @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusbymemberWithhash withhash,
+                                                                 @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count,
+                                                                 @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.GeoradiusbymemberOrder order,
+                                                                 @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STORE) @Nullable @RedisProtocolSupport.Key CharSequence storeKey,
+                                                                 @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STOREDIST) @Nullable @RedisProtocolSupport.Key CharSequence storedistKey) throws Exception;
 
     /**
      * Get the value of a key.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GET)
-    public abstract String get(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<String> get(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Returns the bit value at offset in the string value stored at key.
      *
      * @param key the key
      * @param offset the offset
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GETBIT)
-    public abstract String getbit(@RedisProtocolSupport.Key CharSequence key, long offset) throws Exception;
+    public abstract DeferredValue<Long> getbit(@RedisProtocolSupport.Key CharSequence key,
+                                               long offset) throws Exception;
 
     /**
      * Get a substring of the string stored at a key.
@@ -1394,33 +1429,36 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param start the start
      * @param end the end
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GETRANGE)
-    public abstract String getrange(@RedisProtocolSupport.Key CharSequence key, long start, long end) throws Exception;
+    public abstract DeferredValue<String> getrange(@RedisProtocolSupport.Key CharSequence key, long start,
+                                                   long end) throws Exception;
 
     /**
      * Set the string value of a key and return its old value.
      *
      * @param key the key
      * @param value the value
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.GETSET)
-    public abstract String getset(@RedisProtocolSupport.Key CharSequence key, CharSequence value) throws Exception;
+    public abstract DeferredValue<String> getset(@RedisProtocolSupport.Key CharSequence key,
+                                                 CharSequence value) throws Exception;
 
     /**
      * Delete one or more hash fields.
      *
      * @param key the key
      * @param field the field
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HDEL)
-    public abstract String hdel(@RedisProtocolSupport.Key CharSequence key, CharSequence field) throws Exception;
+    public abstract DeferredValue<Long> hdel(@RedisProtocolSupport.Key CharSequence key,
+                                             CharSequence field) throws Exception;
 
     /**
      * Delete one or more hash fields.
@@ -1428,12 +1466,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param field1 the field1
      * @param field2 the field2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HDEL)
-    public abstract String hdel(@RedisProtocolSupport.Key CharSequence key, CharSequence field1,
-                                CharSequence field2) throws Exception;
+    public abstract DeferredValue<Long> hdel(@RedisProtocolSupport.Key CharSequence key, CharSequence field1,
+                                             CharSequence field2) throws Exception;
 
     /**
      * Delete one or more hash fields.
@@ -1442,56 +1480,59 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param field1 the field1
      * @param field2 the field2
      * @param field3 the field3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HDEL)
-    public abstract String hdel(@RedisProtocolSupport.Key CharSequence key, CharSequence field1, CharSequence field2,
-                                CharSequence field3) throws Exception;
+    public abstract DeferredValue<Long> hdel(@RedisProtocolSupport.Key CharSequence key, CharSequence field1,
+                                             CharSequence field2, CharSequence field3) throws Exception;
 
     /**
      * Delete one or more hash fields.
      *
      * @param key the key
      * @param fields the fields
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HDEL)
-    public abstract String hdel(@RedisProtocolSupport.Key CharSequence key,
-                                Collection<? extends CharSequence> fields) throws Exception;
+    public abstract DeferredValue<Long> hdel(@RedisProtocolSupport.Key CharSequence key,
+                                             Collection<? extends CharSequence> fields) throws Exception;
 
     /**
      * Determine if a hash field exists.
      *
      * @param key the key
      * @param field the field
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HEXISTS)
-    public abstract String hexists(@RedisProtocolSupport.Key CharSequence key, CharSequence field) throws Exception;
+    public abstract DeferredValue<Long> hexists(@RedisProtocolSupport.Key CharSequence key,
+                                                CharSequence field) throws Exception;
 
     /**
      * Get the value of a hash field.
      *
      * @param key the key
      * @param field the field
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HGET)
-    public abstract String hget(@RedisProtocolSupport.Key CharSequence key, CharSequence field) throws Exception;
+    public abstract DeferredValue<String> hget(@RedisProtocolSupport.Key CharSequence key,
+                                               CharSequence field) throws Exception;
 
     /**
      * Get all the fields and values in a hash.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HGETALL)
-    public abstract String hgetall(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract <T> DeferredValue<List<T>> hgetall(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Increment the integer value of a hash field by the given number.
@@ -1499,12 +1540,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param field the field
      * @param increment the increment
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HINCRBY)
-    public abstract String hincrby(@RedisProtocolSupport.Key CharSequence key, CharSequence field,
-                                   long increment) throws Exception;
+    public abstract DeferredValue<Long> hincrby(@RedisProtocolSupport.Key CharSequence key, CharSequence field,
+                                                long increment) throws Exception;
 
     /**
      * Increment the float value of a hash field by the given amount.
@@ -1512,43 +1553,46 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param field the field
      * @param increment the increment
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HINCRBYFLOAT)
-    public abstract String hincrbyfloat(@RedisProtocolSupport.Key CharSequence key, CharSequence field,
-                                        double increment) throws Exception;
+    public abstract DeferredValue<Double> hincrbyfloat(@RedisProtocolSupport.Key CharSequence key, CharSequence field,
+                                                       double increment) throws Exception;
 
     /**
      * Get all the fields in a hash.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HKEYS)
-    public abstract String hkeys(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract <T> DeferredValue<List<T>> hkeys(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Get the number of fields in a hash.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HLEN)
-    public abstract String hlen(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> hlen(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Get the values of all the given hash fields.
      *
      * @param key the key
      * @param field the field
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMGET)
-    public abstract String hmget(@RedisProtocolSupport.Key CharSequence key, CharSequence field) throws Exception;
+    public abstract <T> DeferredValue<List<T>> hmget(@RedisProtocolSupport.Key CharSequence key,
+                                                     CharSequence field) throws Exception;
 
     /**
      * Get the values of all the given hash fields.
@@ -1556,12 +1600,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param field1 the field1
      * @param field2 the field2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMGET)
-    public abstract String hmget(@RedisProtocolSupport.Key CharSequence key, CharSequence field1,
-                                 CharSequence field2) throws Exception;
+    public abstract <T> DeferredValue<List<T>> hmget(@RedisProtocolSupport.Key CharSequence key, CharSequence field1,
+                                                     CharSequence field2) throws Exception;
 
     /**
      * Get the values of all the given hash fields.
@@ -1570,24 +1615,26 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param field1 the field1
      * @param field2 the field2
      * @param field3 the field3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMGET)
-    public abstract String hmget(@RedisProtocolSupport.Key CharSequence key, CharSequence field1, CharSequence field2,
-                                 CharSequence field3) throws Exception;
+    public abstract <T> DeferredValue<List<T>> hmget(@RedisProtocolSupport.Key CharSequence key, CharSequence field1,
+                                                     CharSequence field2, CharSequence field3) throws Exception;
 
     /**
      * Get the values of all the given hash fields.
      *
      * @param key the key
      * @param fields the fields
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMGET)
-    public abstract String hmget(@RedisProtocolSupport.Key CharSequence key,
-                                 Collection<? extends CharSequence> fields) throws Exception;
+    public abstract <T> DeferredValue<List<T>> hmget(@RedisProtocolSupport.Key CharSequence key,
+                                                     Collection<? extends CharSequence> fields) throws Exception;
 
     /**
      * Set multiple hash fields to multiple values.
@@ -1595,12 +1642,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param field the field
      * @param value the value
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMSET)
-    public abstract String hmset(@RedisProtocolSupport.Key CharSequence key, CharSequence field,
-                                 CharSequence value) throws Exception;
+    public abstract DeferredValue<String> hmset(@RedisProtocolSupport.Key CharSequence key, CharSequence field,
+                                                CharSequence value) throws Exception;
 
     /**
      * Set multiple hash fields to multiple values.
@@ -1610,12 +1657,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param value1 the value1
      * @param field2 the field2
      * @param value2 the value2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMSET)
-    public abstract String hmset(@RedisProtocolSupport.Key CharSequence key, CharSequence field1, CharSequence value1,
-                                 CharSequence field2, CharSequence value2) throws Exception;
+    public abstract DeferredValue<String> hmset(@RedisProtocolSupport.Key CharSequence key, CharSequence field1,
+                                                CharSequence value1, CharSequence field2,
+                                                CharSequence value2) throws Exception;
 
     /**
      * Set multiple hash fields to multiple values.
@@ -1627,36 +1675,38 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param value2 the value2
      * @param field3 the field3
      * @param value3 the value3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMSET)
-    public abstract String hmset(@RedisProtocolSupport.Key CharSequence key, CharSequence field1, CharSequence value1,
-                                 CharSequence field2, CharSequence value2, CharSequence field3,
-                                 CharSequence value3) throws Exception;
+    public abstract DeferredValue<String> hmset(@RedisProtocolSupport.Key CharSequence key, CharSequence field1,
+                                                CharSequence value1, CharSequence field2, CharSequence value2,
+                                                CharSequence field3, CharSequence value3) throws Exception;
 
     /**
      * Set multiple hash fields to multiple values.
      *
      * @param key the key
      * @param fieldValues the fieldValues
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HMSET)
-    public abstract String hmset(@RedisProtocolSupport.Key CharSequence key,
-                                 @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.FieldValue> fieldValues) throws Exception;
+    public abstract DeferredValue<String> hmset(@RedisProtocolSupport.Key CharSequence key,
+                                                @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.FieldValue> fieldValues) throws Exception;
 
     /**
      * Incrementally iterate hash fields and associated values.
      *
      * @param key the key
      * @param cursor the cursor
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HSCAN)
-    public abstract String hscan(@RedisProtocolSupport.Key CharSequence key, long cursor) throws Exception;
+    public abstract <T> DeferredValue<List<T>> hscan(@RedisProtocolSupport.Key CharSequence key,
+                                                     long cursor) throws Exception;
 
     /**
      * Incrementally iterate hash fields and associated values.
@@ -1665,13 +1715,14 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param cursor the cursor
      * @param matchPattern the matchPattern
      * @param count the count
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HSCAN)
-    public abstract String hscan(@RedisProtocolSupport.Key CharSequence key, long cursor,
-                                 @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.MATCH) @Nullable CharSequence matchPattern,
-                                 @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count) throws Exception;
+    public abstract <T> DeferredValue<List<T>> hscan(@RedisProtocolSupport.Key CharSequence key, long cursor,
+                                                     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.MATCH) @Nullable CharSequence matchPattern,
+                                                     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count) throws Exception;
 
     /**
      * Set the string value of a hash field.
@@ -1679,12 +1730,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param field the field
      * @param value the value
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HSET)
-    public abstract String hset(@RedisProtocolSupport.Key CharSequence key, CharSequence field,
-                                CharSequence value) throws Exception;
+    public abstract DeferredValue<Long> hset(@RedisProtocolSupport.Key CharSequence key, CharSequence field,
+                                             CharSequence value) throws Exception;
 
     /**
      * Set the value of a hash field, only if the field does not exist.
@@ -1692,114 +1743,120 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param field the field
      * @param value the value
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HSETNX)
-    public abstract String hsetnx(@RedisProtocolSupport.Key CharSequence key, CharSequence field,
-                                  CharSequence value) throws Exception;
+    public abstract DeferredValue<Long> hsetnx(@RedisProtocolSupport.Key CharSequence key, CharSequence field,
+                                               CharSequence value) throws Exception;
 
     /**
      * Get the length of the value of a hash field.
      *
      * @param key the key
      * @param field the field
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HSTRLEN)
-    public abstract String hstrlen(@RedisProtocolSupport.Key CharSequence key, CharSequence field) throws Exception;
+    public abstract DeferredValue<Long> hstrlen(@RedisProtocolSupport.Key CharSequence key,
+                                                CharSequence field) throws Exception;
 
     /**
      * Get all the values in a hash.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.HVALS)
-    public abstract String hvals(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract <T> DeferredValue<List<T>> hvals(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Increment the integer value of a key by one.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.INCR)
-    public abstract String incr(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> incr(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Increment the integer value of a key by the given amount.
      *
      * @param key the key
      * @param increment the increment
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.INCRBY)
-    public abstract String incrby(@RedisProtocolSupport.Key CharSequence key, long increment) throws Exception;
+    public abstract DeferredValue<Long> incrby(@RedisProtocolSupport.Key CharSequence key,
+                                               long increment) throws Exception;
 
     /**
      * Increment the float value of a key by the given amount.
      *
      * @param key the key
      * @param increment the increment
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.INCRBYFLOAT)
-    public abstract String incrbyfloat(@RedisProtocolSupport.Key CharSequence key, double increment) throws Exception;
+    public abstract DeferredValue<Double> incrbyfloat(@RedisProtocolSupport.Key CharSequence key,
+                                                      double increment) throws Exception;
 
     /**
      * Get information and statistics about the server.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.INFO)
-    public abstract String info() throws Exception;
+    public abstract DeferredValue<String> info() throws Exception;
 
     /**
      * Get information and statistics about the server.
      *
      * @param section the section
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.INFO)
-    public abstract String info(@Nullable CharSequence section) throws Exception;
+    public abstract DeferredValue<String> info(@Nullable CharSequence section) throws Exception;
 
     /**
      * Find all keys matching the given pattern.
      *
      * @param pattern the pattern
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.KEYS)
-    public abstract String keys(CharSequence pattern) throws Exception;
+    public abstract <T> DeferredValue<List<T>> keys(CharSequence pattern) throws Exception;
 
     /**
      * Get the UNIX time stamp of the last successful save to disk.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LASTSAVE)
-    public abstract String lastsave() throws Exception;
+    public abstract DeferredValue<Long> lastsave() throws Exception;
 
     /**
      * Get an element from a list by its index.
      *
      * @param key the key
      * @param index the index
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LINDEX)
-    public abstract String lindex(@RedisProtocolSupport.Key CharSequence key, long index) throws Exception;
+    public abstract DeferredValue<String> lindex(@RedisProtocolSupport.Key CharSequence key,
+                                                 long index) throws Exception;
 
     /**
      * Insert an element before or after another element in a list.
@@ -1808,44 +1865,45 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param where the where
      * @param pivot the pivot
      * @param value the value
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LINSERT)
-    public abstract String linsert(@RedisProtocolSupport.Key CharSequence key,
-                                   @RedisProtocolSupport.Option RedisProtocolSupport.LinsertWhere where,
-                                   CharSequence pivot, CharSequence value) throws Exception;
+    public abstract DeferredValue<Long> linsert(@RedisProtocolSupport.Key CharSequence key,
+                                                @RedisProtocolSupport.Option RedisProtocolSupport.LinsertWhere where,
+                                                CharSequence pivot, CharSequence value) throws Exception;
 
     /**
      * Get the length of a list.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LLEN)
-    public abstract String llen(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> llen(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Remove and get the first element in a list.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LPOP)
-    public abstract String lpop(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<String> lpop(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Prepend one or multiple values to a list.
      *
      * @param key the key
      * @param value the value
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LPUSH)
-    public abstract String lpush(@RedisProtocolSupport.Key CharSequence key, CharSequence value) throws Exception;
+    public abstract DeferredValue<Long> lpush(@RedisProtocolSupport.Key CharSequence key,
+                                              CharSequence value) throws Exception;
 
     /**
      * Prepend one or multiple values to a list.
@@ -1853,12 +1911,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param value1 the value1
      * @param value2 the value2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LPUSH)
-    public abstract String lpush(@RedisProtocolSupport.Key CharSequence key, CharSequence value1,
-                                 CharSequence value2) throws Exception;
+    public abstract DeferredValue<Long> lpush(@RedisProtocolSupport.Key CharSequence key, CharSequence value1,
+                                              CharSequence value2) throws Exception;
 
     /**
      * Prepend one or multiple values to a list.
@@ -1867,35 +1925,36 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param value1 the value1
      * @param value2 the value2
      * @param value3 the value3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LPUSH)
-    public abstract String lpush(@RedisProtocolSupport.Key CharSequence key, CharSequence value1, CharSequence value2,
-                                 CharSequence value3) throws Exception;
+    public abstract DeferredValue<Long> lpush(@RedisProtocolSupport.Key CharSequence key, CharSequence value1,
+                                              CharSequence value2, CharSequence value3) throws Exception;
 
     /**
      * Prepend one or multiple values to a list.
      *
      * @param key the key
      * @param values the values
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LPUSH)
-    public abstract String lpush(@RedisProtocolSupport.Key CharSequence key,
-                                 Collection<? extends CharSequence> values) throws Exception;
+    public abstract DeferredValue<Long> lpush(@RedisProtocolSupport.Key CharSequence key,
+                                              Collection<? extends CharSequence> values) throws Exception;
 
     /**
      * Prepend a value to a list, only if the list exists.
      *
      * @param key the key
      * @param value the value
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LPUSHX)
-    public abstract String lpushx(@RedisProtocolSupport.Key CharSequence key, CharSequence value) throws Exception;
+    public abstract DeferredValue<Long> lpushx(@RedisProtocolSupport.Key CharSequence key,
+                                               CharSequence value) throws Exception;
 
     /**
      * Get a range of elements from a list.
@@ -1903,11 +1962,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param start the start
      * @param stop the stop
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LRANGE)
-    public abstract String lrange(@RedisProtocolSupport.Key CharSequence key, long start, long stop) throws Exception;
+    public abstract <T> DeferredValue<List<T>> lrange(@RedisProtocolSupport.Key CharSequence key, long start,
+                                                      long stop) throws Exception;
 
     /**
      * Remove elements from a list.
@@ -1915,12 +1976,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param count the count
      * @param value the value
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LREM)
-    public abstract String lrem(@RedisProtocolSupport.Key CharSequence key, long count,
-                                CharSequence value) throws Exception;
+    public abstract DeferredValue<Long> lrem(@RedisProtocolSupport.Key CharSequence key, long count,
+                                             CharSequence value) throws Exception;
 
     /**
      * Set the value of an element in a list by its index.
@@ -1928,12 +1989,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param index the index
      * @param value the value
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LSET)
-    public abstract String lset(@RedisProtocolSupport.Key CharSequence key, long index,
-                                CharSequence value) throws Exception;
+    public abstract DeferredValue<String> lset(@RedisProtocolSupport.Key CharSequence key, long index,
+                                               CharSequence value) throws Exception;
 
     /**
      * Trim a list to the specified range.
@@ -1941,107 +2002,112 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param start the start
      * @param stop the stop
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.LTRIM)
-    public abstract String ltrim(@RedisProtocolSupport.Key CharSequence key, long start, long stop) throws Exception;
+    public abstract DeferredValue<String> ltrim(@RedisProtocolSupport.Key CharSequence key, long start,
+                                                long stop) throws Exception;
 
     /**
      * Outputs memory problems report.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MEMORY)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.DOCTOR)
-    public abstract String memoryDoctor() throws Exception;
+    public abstract DeferredValue<String> memoryDoctor() throws Exception;
 
     /**
      * Show helpful text about the different subcommands.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MEMORY)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.HELP)
-    public abstract String memoryHelp() throws Exception;
+    public abstract <T> DeferredValue<List<T>> memoryHelp() throws Exception;
 
     /**
      * Show allocator internal stats.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MEMORY)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.MALLOC_STATS)
-    public abstract String memoryMallocStats() throws Exception;
+    public abstract DeferredValue<String> memoryMallocStats() throws Exception;
 
     /**
      * Ask the allocator to release memory.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MEMORY)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.PURGE)
-    public abstract String memoryPurge() throws Exception;
+    public abstract DeferredValue<String> memoryPurge() throws Exception;
 
     /**
      * Show memory usage details.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MEMORY)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STATS)
-    public abstract String memoryStats() throws Exception;
+    public abstract <T> DeferredValue<List<T>> memoryStats() throws Exception;
 
     /**
      * Estimate the memory usage of a key.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MEMORY)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.USAGE)
-    public abstract String memoryUsage(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> memoryUsage(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Estimate the memory usage of a key.
      *
      * @param key the key
      * @param samplesCount the samplesCount
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MEMORY)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.USAGE)
-    public abstract String memoryUsage(@RedisProtocolSupport.Key CharSequence key,
-                                       @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SAMPLES) @Nullable Long samplesCount) throws Exception;
+    public abstract DeferredValue<Long> memoryUsage(@RedisProtocolSupport.Key CharSequence key,
+                                                    @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.SAMPLES) @Nullable Long samplesCount) throws Exception;
 
     /**
      * Get the values of all the given keys.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MGET)
-    public abstract String mget(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract <T> DeferredValue<List<T>> mget(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Get the values of all the given keys.
      *
      * @param key1 the key1
      * @param key2 the key2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MGET)
-    public abstract String mget(@RedisProtocolSupport.Key CharSequence key1,
-                                @RedisProtocolSupport.Key CharSequence key2) throws Exception;
+    public abstract <T> DeferredValue<List<T>> mget(@RedisProtocolSupport.Key CharSequence key1,
+                                                    @RedisProtocolSupport.Key CharSequence key2) throws Exception;
 
     /**
      * Get the values of all the given keys.
@@ -2049,45 +2115,48 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key1 the key1
      * @param key2 the key2
      * @param key3 the key3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MGET)
-    public abstract String mget(@RedisProtocolSupport.Key CharSequence key1,
-                                @RedisProtocolSupport.Key CharSequence key2,
-                                @RedisProtocolSupport.Key CharSequence key3) throws Exception;
+    public abstract <T> DeferredValue<List<T>> mget(@RedisProtocolSupport.Key CharSequence key1,
+                                                    @RedisProtocolSupport.Key CharSequence key2,
+                                                    @RedisProtocolSupport.Key CharSequence key3) throws Exception;
 
     /**
      * Get the values of all the given keys.
      *
      * @param keys the keys
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MGET)
-    public abstract String mget(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
+    public abstract <T> DeferredValue<List<T>> mget(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
 
     /**
      * Move a key to another database.
      *
      * @param key the key
      * @param db the db
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MOVE)
-    public abstract String move(@RedisProtocolSupport.Key CharSequence key, long db) throws Exception;
+    public abstract DeferredValue<Long> move(@RedisProtocolSupport.Key CharSequence key, long db) throws Exception;
 
     /**
      * Set multiple keys to multiple values.
      *
      * @param key the key
      * @param value the value
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MSET)
-    public abstract String mset(@RedisProtocolSupport.Key CharSequence key, CharSequence value) throws Exception;
+    public abstract DeferredValue<String> mset(@RedisProtocolSupport.Key CharSequence key,
+                                               CharSequence value) throws Exception;
 
     /**
      * Set multiple keys to multiple values.
@@ -2096,12 +2165,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param value1 the value1
      * @param key2 the key2
      * @param value2 the value2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MSET)
-    public abstract String mset(@RedisProtocolSupport.Key CharSequence key1, CharSequence value1,
-                                @RedisProtocolSupport.Key CharSequence key2, CharSequence value2) throws Exception;
+    public abstract DeferredValue<String> mset(@RedisProtocolSupport.Key CharSequence key1, CharSequence value1,
+                                               @RedisProtocolSupport.Key CharSequence key2,
+                                               CharSequence value2) throws Exception;
 
     /**
      * Set multiple keys to multiple values.
@@ -2112,34 +2182,36 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param value2 the value2
      * @param key3 the key3
      * @param value3 the value3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MSET)
-    public abstract String mset(@RedisProtocolSupport.Key CharSequence key1, CharSequence value1,
-                                @RedisProtocolSupport.Key CharSequence key2, CharSequence value2,
-                                @RedisProtocolSupport.Key CharSequence key3, CharSequence value3) throws Exception;
+    public abstract DeferredValue<String> mset(@RedisProtocolSupport.Key CharSequence key1, CharSequence value1,
+                                               @RedisProtocolSupport.Key CharSequence key2, CharSequence value2,
+                                               @RedisProtocolSupport.Key CharSequence key3,
+                                               CharSequence value3) throws Exception;
 
     /**
      * Set multiple keys to multiple values.
      *
      * @param keyValues the keyValues
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MSET)
-    public abstract String mset(@RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.KeyValue> keyValues) throws Exception;
+    public abstract DeferredValue<String> mset(@RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.KeyValue> keyValues) throws Exception;
 
     /**
      * Set multiple keys to multiple values, only if none of the keys exist.
      *
      * @param key the key
      * @param value the value
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MSETNX)
-    public abstract String msetnx(@RedisProtocolSupport.Key CharSequence key, CharSequence value) throws Exception;
+    public abstract DeferredValue<Long> msetnx(@RedisProtocolSupport.Key CharSequence key,
+                                               CharSequence value) throws Exception;
 
     /**
      * Set multiple keys to multiple values, only if none of the keys exist.
@@ -2148,12 +2220,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param value1 the value1
      * @param key2 the key2
      * @param value2 the value2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MSETNX)
-    public abstract String msetnx(@RedisProtocolSupport.Key CharSequence key1, CharSequence value1,
-                                  @RedisProtocolSupport.Key CharSequence key2, CharSequence value2) throws Exception;
+    public abstract DeferredValue<Long> msetnx(@RedisProtocolSupport.Key CharSequence key1, CharSequence value1,
+                                               @RedisProtocolSupport.Key CharSequence key2,
+                                               CharSequence value2) throws Exception;
 
     /**
      * Set multiple keys to multiple values, only if none of the keys exist.
@@ -2164,121 +2237,124 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param value2 the value2
      * @param key3 the key3
      * @param value3 the value3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MSETNX)
-    public abstract String msetnx(@RedisProtocolSupport.Key CharSequence key1, CharSequence value1,
-                                  @RedisProtocolSupport.Key CharSequence key2, CharSequence value2,
-                                  @RedisProtocolSupport.Key CharSequence key3, CharSequence value3) throws Exception;
+    public abstract DeferredValue<Long> msetnx(@RedisProtocolSupport.Key CharSequence key1, CharSequence value1,
+                                               @RedisProtocolSupport.Key CharSequence key2, CharSequence value2,
+                                               @RedisProtocolSupport.Key CharSequence key3,
+                                               CharSequence value3) throws Exception;
 
     /**
      * Set multiple keys to multiple values, only if none of the keys exist.
      *
      * @param keyValues the keyValues
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.MSETNX)
-    public abstract String msetnx(@RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.KeyValue> keyValues) throws Exception;
+    public abstract DeferredValue<Long> msetnx(@RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.KeyValue> keyValues) throws Exception;
 
     /**
      * Returns the kind of internal representation used in order to store the value associated with a key.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.OBJECT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.ENCODING)
-    public abstract String objectEncoding(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<String> objectEncoding(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Returns the logarithmic access frequency counter of the object stored at the specified key.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.OBJECT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.FREQ)
-    public abstract String objectFreq(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> objectFreq(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Returns a succinct help text.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.OBJECT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.HELP)
-    public abstract String objectHelp() throws Exception;
+    public abstract DeferredValue<List<String>> objectHelp() throws Exception;
 
     /**
      * Returns the number of seconds since the object stored at the specified key is idle.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.OBJECT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.IDLETIME)
-    public abstract String objectIdletime(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> objectIdletime(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Returns the number of references of the value associated with the specified key.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.OBJECT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.REFCOUNT)
-    public abstract String objectRefcount(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> objectRefcount(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Remove the expiration from a key.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PERSIST)
-    public abstract String persist(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> persist(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Set a key's time to live in milliseconds.
      *
      * @param key the key
      * @param milliseconds the milliseconds
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PEXPIRE)
-    public abstract String pexpire(@RedisProtocolSupport.Key CharSequence key, long milliseconds) throws Exception;
+    public abstract DeferredValue<Long> pexpire(@RedisProtocolSupport.Key CharSequence key,
+                                                long milliseconds) throws Exception;
 
     /**
      * Set the expiration for a key as a UNIX timestamp specified in milliseconds.
      *
      * @param key the key
      * @param millisecondsTimestamp the millisecondsTimestamp
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PEXPIREAT)
-    public abstract String pexpireat(@RedisProtocolSupport.Key CharSequence key,
-                                     long millisecondsTimestamp) throws Exception;
+    public abstract DeferredValue<Long> pexpireat(@RedisProtocolSupport.Key CharSequence key,
+                                                  long millisecondsTimestamp) throws Exception;
 
     /**
      * Adds the specified elements to the specified HyperLogLog.
      *
      * @param key the key
      * @param element the element
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PFADD)
-    public abstract String pfadd(@RedisProtocolSupport.Key CharSequence key, CharSequence element) throws Exception;
+    public abstract DeferredValue<Long> pfadd(@RedisProtocolSupport.Key CharSequence key,
+                                              CharSequence element) throws Exception;
 
     /**
      * Adds the specified elements to the specified HyperLogLog.
@@ -2286,12 +2362,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param element1 the element1
      * @param element2 the element2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PFADD)
-    public abstract String pfadd(@RedisProtocolSupport.Key CharSequence key, CharSequence element1,
-                                 CharSequence element2) throws Exception;
+    public abstract DeferredValue<Long> pfadd(@RedisProtocolSupport.Key CharSequence key, CharSequence element1,
+                                              CharSequence element2) throws Exception;
 
     /**
      * Adds the specified elements to the specified HyperLogLog.
@@ -2300,46 +2376,46 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param element1 the element1
      * @param element2 the element2
      * @param element3 the element3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PFADD)
-    public abstract String pfadd(@RedisProtocolSupport.Key CharSequence key, CharSequence element1,
-                                 CharSequence element2, CharSequence element3) throws Exception;
+    public abstract DeferredValue<Long> pfadd(@RedisProtocolSupport.Key CharSequence key, CharSequence element1,
+                                              CharSequence element2, CharSequence element3) throws Exception;
 
     /**
      * Adds the specified elements to the specified HyperLogLog.
      *
      * @param key the key
      * @param elements the elements
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PFADD)
-    public abstract String pfadd(@RedisProtocolSupport.Key CharSequence key,
-                                 Collection<? extends CharSequence> elements) throws Exception;
+    public abstract DeferredValue<Long> pfadd(@RedisProtocolSupport.Key CharSequence key,
+                                              Collection<? extends CharSequence> elements) throws Exception;
 
     /**
      * Return the approximated cardinality of the set(s) observed by the HyperLogLog at key(s).
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PFCOUNT)
-    public abstract String pfcount(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> pfcount(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Return the approximated cardinality of the set(s) observed by the HyperLogLog at key(s).
      *
      * @param key1 the key1
      * @param key2 the key2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PFCOUNT)
-    public abstract String pfcount(@RedisProtocolSupport.Key CharSequence key1,
-                                   @RedisProtocolSupport.Key CharSequence key2) throws Exception;
+    public abstract DeferredValue<Long> pfcount(@RedisProtocolSupport.Key CharSequence key1,
+                                                @RedisProtocolSupport.Key CharSequence key2) throws Exception;
 
     /**
      * Return the approximated cardinality of the set(s) observed by the HyperLogLog at key(s).
@@ -2347,35 +2423,35 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key1 the key1
      * @param key2 the key2
      * @param key3 the key3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PFCOUNT)
-    public abstract String pfcount(@RedisProtocolSupport.Key CharSequence key1,
-                                   @RedisProtocolSupport.Key CharSequence key2,
-                                   @RedisProtocolSupport.Key CharSequence key3) throws Exception;
+    public abstract DeferredValue<Long> pfcount(@RedisProtocolSupport.Key CharSequence key1,
+                                                @RedisProtocolSupport.Key CharSequence key2,
+                                                @RedisProtocolSupport.Key CharSequence key3) throws Exception;
 
     /**
      * Return the approximated cardinality of the set(s) observed by the HyperLogLog at key(s).
      *
      * @param keys the keys
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PFCOUNT)
-    public abstract String pfcount(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
+    public abstract DeferredValue<Long> pfcount(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
 
     /**
      * Merge N different HyperLogLogs into a single one.
      *
      * @param destkey the destkey
      * @param sourcekey the sourcekey
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PFMERGE)
-    public abstract String pfmerge(@RedisProtocolSupport.Key CharSequence destkey,
-                                   @RedisProtocolSupport.Key CharSequence sourcekey) throws Exception;
+    public abstract DeferredValue<String> pfmerge(@RedisProtocolSupport.Key CharSequence destkey,
+                                                  @RedisProtocolSupport.Key CharSequence sourcekey) throws Exception;
 
     /**
      * Merge N different HyperLogLogs into a single one.
@@ -2383,13 +2459,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param destkey the destkey
      * @param sourcekey1 the sourcekey1
      * @param sourcekey2 the sourcekey2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PFMERGE)
-    public abstract String pfmerge(@RedisProtocolSupport.Key CharSequence destkey,
-                                   @RedisProtocolSupport.Key CharSequence sourcekey1,
-                                   @RedisProtocolSupport.Key CharSequence sourcekey2) throws Exception;
+    public abstract DeferredValue<String> pfmerge(@RedisProtocolSupport.Key CharSequence destkey,
+                                                  @RedisProtocolSupport.Key CharSequence sourcekey1,
+                                                  @RedisProtocolSupport.Key CharSequence sourcekey2) throws Exception;
 
     /**
      * Merge N different HyperLogLogs into a single one.
@@ -2398,45 +2474,45 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param sourcekey1 the sourcekey1
      * @param sourcekey2 the sourcekey2
      * @param sourcekey3 the sourcekey3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PFMERGE)
-    public abstract String pfmerge(@RedisProtocolSupport.Key CharSequence destkey,
-                                   @RedisProtocolSupport.Key CharSequence sourcekey1,
-                                   @RedisProtocolSupport.Key CharSequence sourcekey2,
-                                   @RedisProtocolSupport.Key CharSequence sourcekey3) throws Exception;
+    public abstract DeferredValue<String> pfmerge(@RedisProtocolSupport.Key CharSequence destkey,
+                                                  @RedisProtocolSupport.Key CharSequence sourcekey1,
+                                                  @RedisProtocolSupport.Key CharSequence sourcekey2,
+                                                  @RedisProtocolSupport.Key CharSequence sourcekey3) throws Exception;
 
     /**
      * Merge N different HyperLogLogs into a single one.
      *
      * @param destkey the destkey
      * @param sourcekeys the sourcekeys
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PFMERGE)
-    public abstract String pfmerge(@RedisProtocolSupport.Key CharSequence destkey,
-                                   @RedisProtocolSupport.Key Collection<? extends CharSequence> sourcekeys) throws Exception;
+    public abstract DeferredValue<String> pfmerge(@RedisProtocolSupport.Key CharSequence destkey,
+                                                  @RedisProtocolSupport.Key Collection<? extends CharSequence> sourcekeys) throws Exception;
 
     /**
      * Ping the server.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PING)
-    public abstract String ping() throws Exception;
+    public abstract DeferredValue<String> ping() throws Exception;
 
     /**
      * Ping the server.
      *
      * @param message the message
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PING)
-    public abstract String ping(CharSequence message) throws Exception;
+    public abstract DeferredValue<String> ping(CharSequence message) throws Exception;
 
     /**
      * Set the value and expiration in milliseconds of a key.
@@ -2444,67 +2520,67 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param milliseconds the milliseconds
      * @param value the value
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PSETEX)
-    public abstract String psetex(@RedisProtocolSupport.Key CharSequence key, long milliseconds,
-                                  CharSequence value) throws Exception;
+    public abstract DeferredValue<String> psetex(@RedisProtocolSupport.Key CharSequence key, long milliseconds,
+                                                 CharSequence value) throws Exception;
 
     /**
      * Get the time to live for a key in milliseconds.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PTTL)
-    public abstract String pttl(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> pttl(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Post a message to a channel.
      *
      * @param channel the channel
      * @param message the message
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBLISH)
-    public abstract String publish(CharSequence channel, CharSequence message) throws Exception;
+    public abstract DeferredValue<Long> publish(CharSequence channel, CharSequence message) throws Exception;
 
     /**
      * Lists the currently active channels.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBSUB)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.CHANNELS)
-    public abstract String pubsubChannels() throws Exception;
+    public abstract DeferredValue<List<String>> pubsubChannels() throws Exception;
 
     /**
      * Lists the currently active channels.
      *
      * @param pattern the pattern
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBSUB)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.CHANNELS)
-    public abstract String pubsubChannels(@Nullable CharSequence pattern) throws Exception;
+    public abstract DeferredValue<List<String>> pubsubChannels(@Nullable CharSequence pattern) throws Exception;
 
     /**
      * Lists the currently active channels.
      *
      * @param pattern1 the pattern1
      * @param pattern2 the pattern2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBSUB)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.CHANNELS)
-    public abstract String pubsubChannels(@Nullable CharSequence pattern1,
-                                          @Nullable CharSequence pattern2) throws Exception;
+    public abstract DeferredValue<List<String>> pubsubChannels(@Nullable CharSequence pattern1,
+                                                               @Nullable CharSequence pattern2) throws Exception;
 
     /**
      * Lists the currently active channels.
@@ -2512,58 +2588,62 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param pattern1 the pattern1
      * @param pattern2 the pattern2
      * @param pattern3 the pattern3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBSUB)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.CHANNELS)
-    public abstract String pubsubChannels(@Nullable CharSequence pattern1, @Nullable CharSequence pattern2,
-                                          @Nullable CharSequence pattern3) throws Exception;
+    public abstract DeferredValue<List<String>> pubsubChannels(@Nullable CharSequence pattern1,
+                                                               @Nullable CharSequence pattern2,
+                                                               @Nullable CharSequence pattern3) throws Exception;
 
     /**
      * Lists the currently active channels.
      *
      * @param patterns the patterns
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBSUB)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.CHANNELS)
-    public abstract String pubsubChannels(Collection<? extends CharSequence> patterns) throws Exception;
+    public abstract DeferredValue<List<String>> pubsubChannels(Collection<? extends CharSequence> patterns) throws Exception;
 
     /**
      * Returns the number of subscribers for the specified channels.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBSUB)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.NUMSUB)
-    public abstract String pubsubNumsub() throws Exception;
+    public abstract <T> DeferredValue<List<T>> pubsubNumsub() throws Exception;
 
     /**
      * Returns the number of subscribers for the specified channels.
      *
      * @param channel the channel
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBSUB)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.NUMSUB)
-    public abstract String pubsubNumsub(@Nullable CharSequence channel) throws Exception;
+    public abstract <T> DeferredValue<List<T>> pubsubNumsub(@Nullable CharSequence channel) throws Exception;
 
     /**
      * Returns the number of subscribers for the specified channels.
      *
      * @param channel1 the channel1
      * @param channel2 the channel2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBSUB)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.NUMSUB)
-    public abstract String pubsubNumsub(@Nullable CharSequence channel1,
-                                        @Nullable CharSequence channel2) throws Exception;
+    public abstract <T> DeferredValue<List<T>> pubsubNumsub(@Nullable CharSequence channel1,
+                                                            @Nullable CharSequence channel2) throws Exception;
 
     /**
      * Returns the number of subscribers for the specified channels.
@@ -2571,85 +2651,88 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param channel1 the channel1
      * @param channel2 the channel2
      * @param channel3 the channel3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBSUB)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.NUMSUB)
-    public abstract String pubsubNumsub(@Nullable CharSequence channel1, @Nullable CharSequence channel2,
-                                        @Nullable CharSequence channel3) throws Exception;
+    public abstract <T> DeferredValue<List<T>> pubsubNumsub(@Nullable CharSequence channel1,
+                                                            @Nullable CharSequence channel2,
+                                                            @Nullable CharSequence channel3) throws Exception;
 
     /**
      * Returns the number of subscribers for the specified channels.
      *
      * @param channels the channels
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBSUB)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.NUMSUB)
-    public abstract String pubsubNumsub(Collection<? extends CharSequence> channels) throws Exception;
+    public abstract <T> DeferredValue<List<T>> pubsubNumsub(Collection<? extends CharSequence> channels) throws Exception;
 
     /**
      * Returns the number of subscriptions to patterns.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.PUBSUB)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.NUMPAT)
-    public abstract String pubsubNumpat() throws Exception;
+    public abstract DeferredValue<Long> pubsubNumpat() throws Exception;
 
     /**
      * Return a random key from the keyspace.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RANDOMKEY)
-    public abstract String randomkey() throws Exception;
+    public abstract DeferredValue<String> randomkey() throws Exception;
 
     /**
      * Enables read queries for a connection to a cluster slave node.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.READONLY)
-    public abstract String readonly() throws Exception;
+    public abstract DeferredValue<String> readonly() throws Exception;
 
     /**
      * Disables read queries for a connection to a cluster slave node.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.READWRITE)
-    public abstract String readwrite() throws Exception;
+    public abstract DeferredValue<String> readwrite() throws Exception;
 
     /**
      * Rename a key.
      *
      * @param key the key
      * @param newkey the newkey
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RENAME)
-    public abstract String rename(@RedisProtocolSupport.Key CharSequence key,
-                                  @RedisProtocolSupport.Key CharSequence newkey) throws Exception;
+    public abstract DeferredValue<String> rename(@RedisProtocolSupport.Key CharSequence key,
+                                                 @RedisProtocolSupport.Key CharSequence newkey) throws Exception;
 
     /**
      * Rename a key, only if the new key does not exist.
      *
      * @param key the key
      * @param newkey the newkey
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RENAMENX)
-    public abstract String renamenx(@RedisProtocolSupport.Key CharSequence key,
-                                    @RedisProtocolSupport.Key CharSequence newkey) throws Exception;
+    public abstract DeferredValue<Long> renamenx(@RedisProtocolSupport.Key CharSequence key,
+                                                 @RedisProtocolSupport.Key CharSequence newkey) throws Exception;
 
     /**
      * Create a key using the provided serialized value, previously obtained using DUMP.
@@ -2657,12 +2740,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param ttl the ttl
      * @param serializedValue the serializedValue
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RESTORE)
-    public abstract String restore(@RedisProtocolSupport.Key CharSequence key, long ttl,
-                                   CharSequence serializedValue) throws Exception;
+    public abstract DeferredValue<String> restore(@RedisProtocolSupport.Key CharSequence key, long ttl,
+                                                  CharSequence serializedValue) throws Exception;
 
     /**
      * Create a key using the provided serialized value, previously obtained using DUMP.
@@ -2671,54 +2754,57 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param ttl the ttl
      * @param serializedValue the serializedValue
      * @param replace the replace
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RESTORE)
-    public abstract String restore(@RedisProtocolSupport.Key CharSequence key, long ttl, CharSequence serializedValue,
-                                   @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.RestoreReplace replace) throws Exception;
+    public abstract DeferredValue<String> restore(@RedisProtocolSupport.Key CharSequence key, long ttl,
+                                                  CharSequence serializedValue,
+                                                  @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.RestoreReplace replace) throws Exception;
 
     /**
      * Return the role of the instance in the context of replication.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ROLE)
-    public abstract String role() throws Exception;
+    public abstract <T> DeferredValue<List<T>> role() throws Exception;
 
     /**
      * Remove and get the last element in a list.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RPOP)
-    public abstract String rpop(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<String> rpop(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Remove the last element in a list, prepend it to another list and return it.
      *
      * @param source the source
      * @param destination the destination
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RPOPLPUSH)
-    public abstract String rpoplpush(@RedisProtocolSupport.Key CharSequence source,
-                                     @RedisProtocolSupport.Key CharSequence destination) throws Exception;
+    public abstract DeferredValue<String> rpoplpush(@RedisProtocolSupport.Key CharSequence source,
+                                                    @RedisProtocolSupport.Key CharSequence destination) throws Exception;
 
     /**
      * Append one or multiple values to a list.
      *
      * @param key the key
      * @param value the value
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RPUSH)
-    public abstract String rpush(@RedisProtocolSupport.Key CharSequence key, CharSequence value) throws Exception;
+    public abstract DeferredValue<Long> rpush(@RedisProtocolSupport.Key CharSequence key,
+                                              CharSequence value) throws Exception;
 
     /**
      * Append one or multiple values to a list.
@@ -2726,12 +2812,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param value1 the value1
      * @param value2 the value2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RPUSH)
-    public abstract String rpush(@RedisProtocolSupport.Key CharSequence key, CharSequence value1,
-                                 CharSequence value2) throws Exception;
+    public abstract DeferredValue<Long> rpush(@RedisProtocolSupport.Key CharSequence key, CharSequence value1,
+                                              CharSequence value2) throws Exception;
 
     /**
      * Append one or multiple values to a list.
@@ -2740,46 +2826,48 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param value1 the value1
      * @param value2 the value2
      * @param value3 the value3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RPUSH)
-    public abstract String rpush(@RedisProtocolSupport.Key CharSequence key, CharSequence value1, CharSequence value2,
-                                 CharSequence value3) throws Exception;
+    public abstract DeferredValue<Long> rpush(@RedisProtocolSupport.Key CharSequence key, CharSequence value1,
+                                              CharSequence value2, CharSequence value3) throws Exception;
 
     /**
      * Append one or multiple values to a list.
      *
      * @param key the key
      * @param values the values
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RPUSH)
-    public abstract String rpush(@RedisProtocolSupport.Key CharSequence key,
-                                 Collection<? extends CharSequence> values) throws Exception;
+    public abstract DeferredValue<Long> rpush(@RedisProtocolSupport.Key CharSequence key,
+                                              Collection<? extends CharSequence> values) throws Exception;
 
     /**
      * Append a value to a list, only if the list exists.
      *
      * @param key the key
      * @param value the value
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.RPUSHX)
-    public abstract String rpushx(@RedisProtocolSupport.Key CharSequence key, CharSequence value) throws Exception;
+    public abstract DeferredValue<Long> rpushx(@RedisProtocolSupport.Key CharSequence key,
+                                               CharSequence value) throws Exception;
 
     /**
      * Add one or more members to a set.
      *
      * @param key the key
      * @param member the member
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SADD)
-    public abstract String sadd(@RedisProtocolSupport.Key CharSequence key, CharSequence member) throws Exception;
+    public abstract DeferredValue<Long> sadd(@RedisProtocolSupport.Key CharSequence key,
+                                             CharSequence member) throws Exception;
 
     /**
      * Add one or more members to a set.
@@ -2787,12 +2875,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param member1 the member1
      * @param member2 the member2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SADD)
-    public abstract String sadd(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
-                                CharSequence member2) throws Exception;
+    public abstract DeferredValue<Long> sadd(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
+                                             CharSequence member2) throws Exception;
 
     /**
      * Add one or more members to a set.
@@ -2801,43 +2889,44 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param member1 the member1
      * @param member2 the member2
      * @param member3 the member3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SADD)
-    public abstract String sadd(@RedisProtocolSupport.Key CharSequence key, CharSequence member1, CharSequence member2,
-                                CharSequence member3) throws Exception;
+    public abstract DeferredValue<Long> sadd(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
+                                             CharSequence member2, CharSequence member3) throws Exception;
 
     /**
      * Add one or more members to a set.
      *
      * @param key the key
      * @param members the members
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SADD)
-    public abstract String sadd(@RedisProtocolSupport.Key CharSequence key,
-                                Collection<? extends CharSequence> members) throws Exception;
+    public abstract DeferredValue<Long> sadd(@RedisProtocolSupport.Key CharSequence key,
+                                             Collection<? extends CharSequence> members) throws Exception;
 
     /**
      * Synchronously save the dataset to disk.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SAVE)
-    public abstract String save() throws Exception;
+    public abstract DeferredValue<String> save() throws Exception;
 
     /**
      * Incrementally iterate the keys space.
      *
      * @param cursor the cursor
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SCAN)
-    public abstract String scan(long cursor) throws Exception;
+    public abstract <T> DeferredValue<List<T>> scan(long cursor) throws Exception;
 
     /**
      * Incrementally iterate the keys space.
@@ -2845,57 +2934,60 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param cursor the cursor
      * @param matchPattern the matchPattern
      * @param count the count
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SCAN)
-    public abstract String scan(long cursor,
-                                @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.MATCH) @Nullable CharSequence matchPattern,
-                                @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count) throws Exception;
+    public abstract <T> DeferredValue<List<T>> scan(long cursor,
+                                                    @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.MATCH) @Nullable CharSequence matchPattern,
+                                                    @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count) throws Exception;
 
     /**
      * Get the number of members in a set.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SCARD)
-    public abstract String scard(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> scard(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Set the debug mode for executed scripts.
      *
      * @param mode the mode
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SCRIPT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.DEBUG)
-    public abstract String scriptDebug(@RedisProtocolSupport.Option RedisProtocolSupport.ScriptDebugMode mode) throws Exception;
+    public abstract DeferredValue<String> scriptDebug(@RedisProtocolSupport.Option RedisProtocolSupport.ScriptDebugMode mode) throws Exception;
 
     /**
      * Check existence of scripts in the script cache.
      *
      * @param sha1 the sha1
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SCRIPT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.EXISTS)
-    public abstract String scriptExists(CharSequence sha1) throws Exception;
+    public abstract <T> DeferredValue<List<T>> scriptExists(CharSequence sha1) throws Exception;
 
     /**
      * Check existence of scripts in the script cache.
      *
      * @param sha11 the sha11
      * @param sha12 the sha12
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SCRIPT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.EXISTS)
-    public abstract String scriptExists(CharSequence sha11, CharSequence sha12) throws Exception;
+    public abstract <T> DeferredValue<List<T>> scriptExists(CharSequence sha11, CharSequence sha12) throws Exception;
 
     /**
      * Check existence of scripts in the script cache.
@@ -2903,76 +2995,81 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param sha11 the sha11
      * @param sha12 the sha12
      * @param sha13 the sha13
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SCRIPT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.EXISTS)
-    public abstract String scriptExists(CharSequence sha11, CharSequence sha12, CharSequence sha13) throws Exception;
+    public abstract <T> DeferredValue<List<T>> scriptExists(CharSequence sha11, CharSequence sha12,
+                                                            CharSequence sha13) throws Exception;
 
     /**
      * Check existence of scripts in the script cache.
      *
      * @param sha1s the sha1s
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SCRIPT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.EXISTS)
-    public abstract String scriptExists(Collection<? extends CharSequence> sha1s) throws Exception;
+    public abstract <T> DeferredValue<List<T>> scriptExists(Collection<? extends CharSequence> sha1s) throws Exception;
 
     /**
      * Remove all the scripts from the script cache.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SCRIPT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.FLUSH)
-    public abstract String scriptFlush() throws Exception;
+    public abstract DeferredValue<String> scriptFlush() throws Exception;
 
     /**
      * Kill the script currently in execution.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SCRIPT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.KILL)
-    public abstract String scriptKill() throws Exception;
+    public abstract DeferredValue<String> scriptKill() throws Exception;
 
     /**
      * Load the specified Lua script into the script cache.
      *
      * @param script the script
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SCRIPT)
     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LOAD)
-    public abstract String scriptLoad(CharSequence script) throws Exception;
+    public abstract DeferredValue<String> scriptLoad(CharSequence script) throws Exception;
 
     /**
      * Subtract multiple sets.
      *
      * @param firstkey the firstkey
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SDIFF)
-    public abstract String sdiff(@RedisProtocolSupport.Key CharSequence firstkey) throws Exception;
+    public abstract <T> DeferredValue<List<T>> sdiff(@RedisProtocolSupport.Key CharSequence firstkey) throws Exception;
 
     /**
      * Subtract multiple sets.
      *
      * @param firstkey the firstkey
      * @param otherkey the otherkey
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SDIFF)
-    public abstract String sdiff(@RedisProtocolSupport.Key CharSequence firstkey,
-                                 @Nullable @RedisProtocolSupport.Key CharSequence otherkey) throws Exception;
+    public abstract <T> DeferredValue<List<T>> sdiff(@RedisProtocolSupport.Key CharSequence firstkey,
+                                                     @Nullable @RedisProtocolSupport.Key CharSequence otherkey) throws Exception;
 
     /**
      * Subtract multiple sets.
@@ -2980,13 +3077,14 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param firstkey the firstkey
      * @param otherkey1 the otherkey1
      * @param otherkey2 the otherkey2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SDIFF)
-    public abstract String sdiff(@RedisProtocolSupport.Key CharSequence firstkey,
-                                 @Nullable @RedisProtocolSupport.Key CharSequence otherkey1,
-                                 @Nullable @RedisProtocolSupport.Key CharSequence otherkey2) throws Exception;
+    public abstract <T> DeferredValue<List<T>> sdiff(@RedisProtocolSupport.Key CharSequence firstkey,
+                                                     @Nullable @RedisProtocolSupport.Key CharSequence otherkey1,
+                                                     @Nullable @RedisProtocolSupport.Key CharSequence otherkey2) throws Exception;
 
     /**
      * Subtract multiple sets.
@@ -2995,38 +3093,40 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param otherkey1 the otherkey1
      * @param otherkey2 the otherkey2
      * @param otherkey3 the otherkey3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SDIFF)
-    public abstract String sdiff(@RedisProtocolSupport.Key CharSequence firstkey,
-                                 @Nullable @RedisProtocolSupport.Key CharSequence otherkey1,
-                                 @Nullable @RedisProtocolSupport.Key CharSequence otherkey2,
-                                 @Nullable @RedisProtocolSupport.Key CharSequence otherkey3) throws Exception;
+    public abstract <T> DeferredValue<List<T>> sdiff(@RedisProtocolSupport.Key CharSequence firstkey,
+                                                     @Nullable @RedisProtocolSupport.Key CharSequence otherkey1,
+                                                     @Nullable @RedisProtocolSupport.Key CharSequence otherkey2,
+                                                     @Nullable @RedisProtocolSupport.Key CharSequence otherkey3) throws Exception;
 
     /**
      * Subtract multiple sets.
      *
      * @param firstkey the firstkey
      * @param otherkeys the otherkeys
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SDIFF)
-    public abstract String sdiff(@RedisProtocolSupport.Key CharSequence firstkey,
-                                 @RedisProtocolSupport.Key Collection<? extends CharSequence> otherkeys) throws Exception;
+    public abstract <T> DeferredValue<List<T>> sdiff(@RedisProtocolSupport.Key CharSequence firstkey,
+                                                     @RedisProtocolSupport.Key Collection<? extends CharSequence> otherkeys) throws Exception;
 
     /**
      * Subtract multiple sets and store the resulting set in a key.
      *
      * @param destination the destination
      * @param firstkey the firstkey
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SDIFFSTORE)
-    public abstract String sdiffstore(@RedisProtocolSupport.Key CharSequence destination,
-                                      @RedisProtocolSupport.Key CharSequence firstkey) throws Exception;
+    public abstract DeferredValue<Long> sdiffstore(@RedisProtocolSupport.Key CharSequence destination,
+                                                   @RedisProtocolSupport.Key CharSequence firstkey) throws Exception;
 
     /**
      * Subtract multiple sets and store the resulting set in a key.
@@ -3034,13 +3134,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param destination the destination
      * @param firstkey the firstkey
      * @param otherkey the otherkey
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SDIFFSTORE)
-    public abstract String sdiffstore(@RedisProtocolSupport.Key CharSequence destination,
-                                      @RedisProtocolSupport.Key CharSequence firstkey,
-                                      @Nullable @RedisProtocolSupport.Key CharSequence otherkey) throws Exception;
+    public abstract DeferredValue<Long> sdiffstore(@RedisProtocolSupport.Key CharSequence destination,
+                                                   @RedisProtocolSupport.Key CharSequence firstkey,
+                                                   @Nullable @RedisProtocolSupport.Key CharSequence otherkey) throws Exception;
 
     /**
      * Subtract multiple sets and store the resulting set in a key.
@@ -3049,14 +3149,14 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param firstkey the firstkey
      * @param otherkey1 the otherkey1
      * @param otherkey2 the otherkey2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SDIFFSTORE)
-    public abstract String sdiffstore(@RedisProtocolSupport.Key CharSequence destination,
-                                      @RedisProtocolSupport.Key CharSequence firstkey,
-                                      @Nullable @RedisProtocolSupport.Key CharSequence otherkey1,
-                                      @Nullable @RedisProtocolSupport.Key CharSequence otherkey2) throws Exception;
+    public abstract DeferredValue<Long> sdiffstore(@RedisProtocolSupport.Key CharSequence destination,
+                                                   @RedisProtocolSupport.Key CharSequence firstkey,
+                                                   @Nullable @RedisProtocolSupport.Key CharSequence otherkey1,
+                                                   @Nullable @RedisProtocolSupport.Key CharSequence otherkey2) throws Exception;
 
     /**
      * Subtract multiple sets and store the resulting set in a key.
@@ -3066,15 +3166,15 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param otherkey1 the otherkey1
      * @param otherkey2 the otherkey2
      * @param otherkey3 the otherkey3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SDIFFSTORE)
-    public abstract String sdiffstore(@RedisProtocolSupport.Key CharSequence destination,
-                                      @RedisProtocolSupport.Key CharSequence firstkey,
-                                      @Nullable @RedisProtocolSupport.Key CharSequence otherkey1,
-                                      @Nullable @RedisProtocolSupport.Key CharSequence otherkey2,
-                                      @Nullable @RedisProtocolSupport.Key CharSequence otherkey3) throws Exception;
+    public abstract DeferredValue<Long> sdiffstore(@RedisProtocolSupport.Key CharSequence destination,
+                                                   @RedisProtocolSupport.Key CharSequence firstkey,
+                                                   @Nullable @RedisProtocolSupport.Key CharSequence otherkey1,
+                                                   @Nullable @RedisProtocolSupport.Key CharSequence otherkey2,
+                                                   @Nullable @RedisProtocolSupport.Key CharSequence otherkey3) throws Exception;
 
     /**
      * Subtract multiple sets and store the resulting set in a key.
@@ -3082,34 +3182,35 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param destination the destination
      * @param firstkey the firstkey
      * @param otherkeys the otherkeys
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SDIFFSTORE)
-    public abstract String sdiffstore(@RedisProtocolSupport.Key CharSequence destination,
-                                      @RedisProtocolSupport.Key CharSequence firstkey,
-                                      @RedisProtocolSupport.Key Collection<? extends CharSequence> otherkeys) throws Exception;
+    public abstract DeferredValue<Long> sdiffstore(@RedisProtocolSupport.Key CharSequence destination,
+                                                   @RedisProtocolSupport.Key CharSequence firstkey,
+                                                   @RedisProtocolSupport.Key Collection<? extends CharSequence> otherkeys) throws Exception;
 
     /**
      * Change the selected database for the current connection.
      *
      * @param index the index
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SELECT)
-    public abstract String select(long index) throws Exception;
+    public abstract DeferredValue<String> select(long index) throws Exception;
 
     /**
      * Set the string value of a key.
      *
      * @param key the key
      * @param value the value
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SET)
-    public abstract String set(@RedisProtocolSupport.Key CharSequence key, CharSequence value) throws Exception;
+    public abstract DeferredValue<String> set(@RedisProtocolSupport.Key CharSequence key,
+                                              CharSequence value) throws Exception;
 
     /**
      * Set the string value of a key.
@@ -3118,13 +3219,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param value the value
      * @param expireDuration the expireDuration
      * @param condition the condition
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SET)
-    public abstract String set(@RedisProtocolSupport.Key CharSequence key, CharSequence value,
-                               @RedisProtocolSupport.Tuple @Nullable RedisProtocolSupport.ExpireDuration expireDuration,
-                               @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.SetCondition condition) throws Exception;
+    public abstract DeferredValue<String> set(@RedisProtocolSupport.Key CharSequence key, CharSequence value,
+                                              @RedisProtocolSupport.Tuple @Nullable RedisProtocolSupport.ExpireDuration expireDuration,
+                                              @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.SetCondition condition) throws Exception;
 
     /**
      * Sets or clears the bit at offset in the string value stored at key.
@@ -3132,12 +3233,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param offset the offset
      * @param value the value
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SETBIT)
-    public abstract String setbit(@RedisProtocolSupport.Key CharSequence key, long offset,
-                                  CharSequence value) throws Exception;
+    public abstract DeferredValue<Long> setbit(@RedisProtocolSupport.Key CharSequence key, long offset,
+                                               CharSequence value) throws Exception;
 
     /**
      * Set the value and expiration of a key.
@@ -3145,23 +3246,24 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param seconds the seconds
      * @param value the value
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SETEX)
-    public abstract String setex(@RedisProtocolSupport.Key CharSequence key, long seconds,
-                                 CharSequence value) throws Exception;
+    public abstract DeferredValue<String> setex(@RedisProtocolSupport.Key CharSequence key, long seconds,
+                                                CharSequence value) throws Exception;
 
     /**
      * Set the value of a key, only if the key does not exist.
      *
      * @param key the key
      * @param value the value
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SETNX)
-    public abstract String setnx(@RedisProtocolSupport.Key CharSequence key, CharSequence value) throws Exception;
+    public abstract DeferredValue<Long> setnx(@RedisProtocolSupport.Key CharSequence key,
+                                              CharSequence value) throws Exception;
 
     /**
      * Overwrite part of a string at key starting at the specified offset.
@@ -3169,53 +3271,55 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param offset the offset
      * @param value the value
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SETRANGE)
-    public abstract String setrange(@RedisProtocolSupport.Key CharSequence key, long offset,
-                                    CharSequence value) throws Exception;
+    public abstract DeferredValue<Long> setrange(@RedisProtocolSupport.Key CharSequence key, long offset,
+                                                 CharSequence value) throws Exception;
 
     /**
      * Synchronously save the dataset to disk and then shut down the server.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SHUTDOWN)
-    public abstract String shutdown() throws Exception;
+    public abstract DeferredValue<String> shutdown() throws Exception;
 
     /**
      * Synchronously save the dataset to disk and then shut down the server.
      *
      * @param saveMode the saveMode
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SHUTDOWN)
-    public abstract String shutdown(@RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ShutdownSaveMode saveMode) throws Exception;
+    public abstract DeferredValue<String> shutdown(@RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ShutdownSaveMode saveMode) throws Exception;
 
     /**
      * Intersect multiple sets.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SINTER)
-    public abstract String sinter(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract <T> DeferredValue<List<T>> sinter(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Intersect multiple sets.
      *
      * @param key1 the key1
      * @param key2 the key2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SINTER)
-    public abstract String sinter(@RedisProtocolSupport.Key CharSequence key1,
-                                  @RedisProtocolSupport.Key CharSequence key2) throws Exception;
+    public abstract <T> DeferredValue<List<T>> sinter(@RedisProtocolSupport.Key CharSequence key1,
+                                                      @RedisProtocolSupport.Key CharSequence key2) throws Exception;
 
     /**
      * Intersect multiple sets.
@@ -3223,35 +3327,37 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key1 the key1
      * @param key2 the key2
      * @param key3 the key3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SINTER)
-    public abstract String sinter(@RedisProtocolSupport.Key CharSequence key1,
-                                  @RedisProtocolSupport.Key CharSequence key2,
-                                  @RedisProtocolSupport.Key CharSequence key3) throws Exception;
+    public abstract <T> DeferredValue<List<T>> sinter(@RedisProtocolSupport.Key CharSequence key1,
+                                                      @RedisProtocolSupport.Key CharSequence key2,
+                                                      @RedisProtocolSupport.Key CharSequence key3) throws Exception;
 
     /**
      * Intersect multiple sets.
      *
      * @param keys the keys
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SINTER)
-    public abstract String sinter(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
+    public abstract <T> DeferredValue<List<T>> sinter(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
 
     /**
      * Intersect multiple sets and store the resulting set in a key.
      *
      * @param destination the destination
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SINTERSTORE)
-    public abstract String sinterstore(@RedisProtocolSupport.Key CharSequence destination,
-                                       @RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> sinterstore(@RedisProtocolSupport.Key CharSequence destination,
+                                                    @RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Intersect multiple sets and store the resulting set in a key.
@@ -3259,13 +3365,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param destination the destination
      * @param key1 the key1
      * @param key2 the key2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SINTERSTORE)
-    public abstract String sinterstore(@RedisProtocolSupport.Key CharSequence destination,
-                                       @RedisProtocolSupport.Key CharSequence key1,
-                                       @RedisProtocolSupport.Key CharSequence key2) throws Exception;
+    public abstract DeferredValue<Long> sinterstore(@RedisProtocolSupport.Key CharSequence destination,
+                                                    @RedisProtocolSupport.Key CharSequence key1,
+                                                    @RedisProtocolSupport.Key CharSequence key2) throws Exception;
 
     /**
      * Intersect multiple sets and store the resulting set in a key.
@@ -3274,79 +3380,84 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key1 the key1
      * @param key2 the key2
      * @param key3 the key3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SINTERSTORE)
-    public abstract String sinterstore(@RedisProtocolSupport.Key CharSequence destination,
-                                       @RedisProtocolSupport.Key CharSequence key1,
-                                       @RedisProtocolSupport.Key CharSequence key2,
-                                       @RedisProtocolSupport.Key CharSequence key3) throws Exception;
+    public abstract DeferredValue<Long> sinterstore(@RedisProtocolSupport.Key CharSequence destination,
+                                                    @RedisProtocolSupport.Key CharSequence key1,
+                                                    @RedisProtocolSupport.Key CharSequence key2,
+                                                    @RedisProtocolSupport.Key CharSequence key3) throws Exception;
 
     /**
      * Intersect multiple sets and store the resulting set in a key.
      *
      * @param destination the destination
      * @param keys the keys
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SINTERSTORE)
-    public abstract String sinterstore(@RedisProtocolSupport.Key CharSequence destination,
-                                       @RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
+    public abstract DeferredValue<Long> sinterstore(@RedisProtocolSupport.Key CharSequence destination,
+                                                    @RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
 
     /**
      * Determine if a given value is a member of a set.
      *
      * @param key the key
      * @param member the member
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SISMEMBER)
-    public abstract String sismember(@RedisProtocolSupport.Key CharSequence key, CharSequence member) throws Exception;
+    public abstract DeferredValue<Long> sismember(@RedisProtocolSupport.Key CharSequence key,
+                                                  CharSequence member) throws Exception;
 
     /**
      * Make the server a slave of another instance, or promote it as master.
      *
      * @param host the host
      * @param port the port
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SLAVEOF)
-    public abstract String slaveof(CharSequence host, CharSequence port) throws Exception;
+    public abstract DeferredValue<String> slaveof(CharSequence host, CharSequence port) throws Exception;
 
     /**
      * Manages the Redis slow queries log.
      *
      * @param subcommand the subcommand
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SLOWLOG)
-    public abstract String slowlog(CharSequence subcommand) throws Exception;
+    public abstract <T> DeferredValue<List<T>> slowlog(CharSequence subcommand) throws Exception;
 
     /**
      * Manages the Redis slow queries log.
      *
      * @param subcommand the subcommand
      * @param argument the argument
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SLOWLOG)
-    public abstract String slowlog(CharSequence subcommand, @Nullable CharSequence argument) throws Exception;
+    public abstract <T> DeferredValue<List<T>> slowlog(CharSequence subcommand,
+                                                       @Nullable CharSequence argument) throws Exception;
 
     /**
      * Get all the members in a set.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SMEMBERS)
-    public abstract String smembers(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract <T> DeferredValue<List<T>> smembers(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Move a member from one set to another.
@@ -3354,23 +3465,24 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param source the source
      * @param destination the destination
      * @param member the member
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SMOVE)
-    public abstract String smove(@RedisProtocolSupport.Key CharSequence source,
-                                 @RedisProtocolSupport.Key CharSequence destination,
-                                 CharSequence member) throws Exception;
+    public abstract DeferredValue<Long> smove(@RedisProtocolSupport.Key CharSequence source,
+                                              @RedisProtocolSupport.Key CharSequence destination,
+                                              CharSequence member) throws Exception;
 
     /**
      * Sort the elements in a list, set or sorted set.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SORT)
-    public abstract String sort(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract <T> DeferredValue<List<T>> sort(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Sort the elements in a list, set or sorted set.
@@ -3381,28 +3493,29 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param getPatterns the getPatterns
      * @param order the order
      * @param sorting the sorting
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SORT)
-    public abstract String sort(@RedisProtocolSupport.Key CharSequence key,
-                                @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.BY) @Nullable CharSequence byPattern,
-                                @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIMIT) @Nullable @RedisProtocolSupport.Tuple RedisProtocolSupport.OffsetCount offsetCount,
-                                @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.GET) Collection<? extends CharSequence> getPatterns,
-                                @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.SortOrder order,
-                                @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.SortSorting sorting) throws Exception;
+    public abstract <T> DeferredValue<List<T>> sort(@RedisProtocolSupport.Key CharSequence key,
+                                                    @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.BY) @Nullable CharSequence byPattern,
+                                                    @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIMIT) @Nullable @RedisProtocolSupport.Tuple RedisProtocolSupport.OffsetCount offsetCount,
+                                                    @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.GET) Collection<? extends CharSequence> getPatterns,
+                                                    @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.SortOrder order,
+                                                    @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.SortSorting sorting) throws Exception;
 
     /**
      * Sort the elements in a list, set or sorted set.
      *
      * @param key the key
      * @param storeDestination the storeDestination
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SORT)
-    public abstract String sort(@RedisProtocolSupport.Key CharSequence key,
-                                @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STORE) @RedisProtocolSupport.Key CharSequence storeDestination) throws Exception;
+    public abstract DeferredValue<Long> sort(@RedisProtocolSupport.Key CharSequence key,
+                                             @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STORE) @RedisProtocolSupport.Key CharSequence storeDestination) throws Exception;
 
     /**
      * Sort the elements in a list, set or sorted set.
@@ -3414,70 +3527,73 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param getPatterns the getPatterns
      * @param order the order
      * @param sorting the sorting
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SORT)
-    public abstract String sort(@RedisProtocolSupport.Key CharSequence key,
-                                @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STORE) @RedisProtocolSupport.Key CharSequence storeDestination,
-                                @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.BY) @Nullable CharSequence byPattern,
-                                @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIMIT) @Nullable @RedisProtocolSupport.Tuple RedisProtocolSupport.OffsetCount offsetCount,
-                                @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.GET) Collection<? extends CharSequence> getPatterns,
-                                @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.SortOrder order,
-                                @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.SortSorting sorting) throws Exception;
+    public abstract DeferredValue<Long> sort(@RedisProtocolSupport.Key CharSequence key,
+                                             @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.STORE) @RedisProtocolSupport.Key CharSequence storeDestination,
+                                             @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.BY) @Nullable CharSequence byPattern,
+                                             @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIMIT) @Nullable @RedisProtocolSupport.Tuple RedisProtocolSupport.OffsetCount offsetCount,
+                                             @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.GET) Collection<? extends CharSequence> getPatterns,
+                                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.SortOrder order,
+                                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.SortSorting sorting) throws Exception;
 
     /**
      * Remove and return one or multiple random members from a set.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SPOP)
-    public abstract String spop(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<String> spop(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Remove and return one or multiple random members from a set.
      *
      * @param key the key
      * @param count the count
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SPOP)
-    public abstract String spop(@RedisProtocolSupport.Key CharSequence key, @Nullable Long count) throws Exception;
+    public abstract DeferredValue<String> spop(@RedisProtocolSupport.Key CharSequence key,
+                                               @Nullable Long count) throws Exception;
 
     /**
      * Get one or multiple random members from a set.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SRANDMEMBER)
-    public abstract String srandmember(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<String> srandmember(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Get one or multiple random members from a set.
      *
      * @param key the key
      * @param count the count
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SRANDMEMBER)
-    public abstract String srandmember(@RedisProtocolSupport.Key CharSequence key, long count) throws Exception;
+    public abstract DeferredValue<List<String>> srandmember(@RedisProtocolSupport.Key CharSequence key,
+                                                            long count) throws Exception;
 
     /**
      * Remove one or more members from a set.
      *
      * @param key the key
      * @param member the member
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SREM)
-    public abstract String srem(@RedisProtocolSupport.Key CharSequence key, CharSequence member) throws Exception;
+    public abstract DeferredValue<Long> srem(@RedisProtocolSupport.Key CharSequence key,
+                                             CharSequence member) throws Exception;
 
     /**
      * Remove one or more members from a set.
@@ -3485,12 +3601,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param member1 the member1
      * @param member2 the member2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SREM)
-    public abstract String srem(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
-                                CharSequence member2) throws Exception;
+    public abstract DeferredValue<Long> srem(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
+                                             CharSequence member2) throws Exception;
 
     /**
      * Remove one or more members from a set.
@@ -3499,35 +3615,37 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param member1 the member1
      * @param member2 the member2
      * @param member3 the member3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SREM)
-    public abstract String srem(@RedisProtocolSupport.Key CharSequence key, CharSequence member1, CharSequence member2,
-                                CharSequence member3) throws Exception;
+    public abstract DeferredValue<Long> srem(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
+                                             CharSequence member2, CharSequence member3) throws Exception;
 
     /**
      * Remove one or more members from a set.
      *
      * @param key the key
      * @param members the members
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SREM)
-    public abstract String srem(@RedisProtocolSupport.Key CharSequence key,
-                                Collection<? extends CharSequence> members) throws Exception;
+    public abstract DeferredValue<Long> srem(@RedisProtocolSupport.Key CharSequence key,
+                                             Collection<? extends CharSequence> members) throws Exception;
 
     /**
      * Incrementally iterate Set elements.
      *
      * @param key the key
      * @param cursor the cursor
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SSCAN)
-    public abstract String sscan(@RedisProtocolSupport.Key CharSequence key, long cursor) throws Exception;
+    public abstract <T> DeferredValue<List<T>> sscan(@RedisProtocolSupport.Key CharSequence key,
+                                                     long cursor) throws Exception;
 
     /**
      * Incrementally iterate Set elements.
@@ -3536,45 +3654,48 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param cursor the cursor
      * @param matchPattern the matchPattern
      * @param count the count
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SSCAN)
-    public abstract String sscan(@RedisProtocolSupport.Key CharSequence key, long cursor,
-                                 @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.MATCH) @Nullable CharSequence matchPattern,
-                                 @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count) throws Exception;
+    public abstract <T> DeferredValue<List<T>> sscan(@RedisProtocolSupport.Key CharSequence key, long cursor,
+                                                     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.MATCH) @Nullable CharSequence matchPattern,
+                                                     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count) throws Exception;
 
     /**
      * Get the length of the value stored in a key.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.STRLEN)
-    public abstract String strlen(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> strlen(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Add multiple sets.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SUNION)
-    public abstract String sunion(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract <T> DeferredValue<List<T>> sunion(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Add multiple sets.
      *
      * @param key1 the key1
      * @param key2 the key2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SUNION)
-    public abstract String sunion(@RedisProtocolSupport.Key CharSequence key1,
-                                  @RedisProtocolSupport.Key CharSequence key2) throws Exception;
+    public abstract <T> DeferredValue<List<T>> sunion(@RedisProtocolSupport.Key CharSequence key1,
+                                                      @RedisProtocolSupport.Key CharSequence key2) throws Exception;
 
     /**
      * Add multiple sets.
@@ -3582,35 +3703,37 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key1 the key1
      * @param key2 the key2
      * @param key3 the key3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SUNION)
-    public abstract String sunion(@RedisProtocolSupport.Key CharSequence key1,
-                                  @RedisProtocolSupport.Key CharSequence key2,
-                                  @RedisProtocolSupport.Key CharSequence key3) throws Exception;
+    public abstract <T> DeferredValue<List<T>> sunion(@RedisProtocolSupport.Key CharSequence key1,
+                                                      @RedisProtocolSupport.Key CharSequence key2,
+                                                      @RedisProtocolSupport.Key CharSequence key3) throws Exception;
 
     /**
      * Add multiple sets.
      *
      * @param keys the keys
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SUNION)
-    public abstract String sunion(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
+    public abstract <T> DeferredValue<List<T>> sunion(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
 
     /**
      * Add multiple sets and store the resulting set in a key.
      *
      * @param destination the destination
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SUNIONSTORE)
-    public abstract String sunionstore(@RedisProtocolSupport.Key CharSequence destination,
-                                       @RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> sunionstore(@RedisProtocolSupport.Key CharSequence destination,
+                                                    @RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Add multiple sets and store the resulting set in a key.
@@ -3618,13 +3741,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param destination the destination
      * @param key1 the key1
      * @param key2 the key2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SUNIONSTORE)
-    public abstract String sunionstore(@RedisProtocolSupport.Key CharSequence destination,
-                                       @RedisProtocolSupport.Key CharSequence key1,
-                                       @RedisProtocolSupport.Key CharSequence key2) throws Exception;
+    public abstract DeferredValue<Long> sunionstore(@RedisProtocolSupport.Key CharSequence destination,
+                                                    @RedisProtocolSupport.Key CharSequence key1,
+                                                    @RedisProtocolSupport.Key CharSequence key2) throws Exception;
 
     /**
      * Add multiple sets and store the resulting set in a key.
@@ -3633,68 +3756,69 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key1 the key1
      * @param key2 the key2
      * @param key3 the key3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SUNIONSTORE)
-    public abstract String sunionstore(@RedisProtocolSupport.Key CharSequence destination,
-                                       @RedisProtocolSupport.Key CharSequence key1,
-                                       @RedisProtocolSupport.Key CharSequence key2,
-                                       @RedisProtocolSupport.Key CharSequence key3) throws Exception;
+    public abstract DeferredValue<Long> sunionstore(@RedisProtocolSupport.Key CharSequence destination,
+                                                    @RedisProtocolSupport.Key CharSequence key1,
+                                                    @RedisProtocolSupport.Key CharSequence key2,
+                                                    @RedisProtocolSupport.Key CharSequence key3) throws Exception;
 
     /**
      * Add multiple sets and store the resulting set in a key.
      *
      * @param destination the destination
      * @param keys the keys
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SUNIONSTORE)
-    public abstract String sunionstore(@RedisProtocolSupport.Key CharSequence destination,
-                                       @RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
+    public abstract DeferredValue<Long> sunionstore(@RedisProtocolSupport.Key CharSequence destination,
+                                                    @RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
 
     /**
      * Swaps two Redis databases.
      *
      * @param index the index
      * @param index1 the index1
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.SWAPDB)
-    public abstract String swapdb(long index, long index1) throws Exception;
+    public abstract DeferredValue<String> swapdb(long index, long index1) throws Exception;
 
     /**
      * Return the current server time.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.TIME)
-    public abstract String time() throws Exception;
+    public abstract <T> DeferredValue<List<T>> time() throws Exception;
 
     /**
      * Alters the last access time of a key(s). Returns the number of existing keys specified.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.TOUCH)
-    public abstract String touch(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> touch(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Alters the last access time of a key(s). Returns the number of existing keys specified.
      *
      * @param key1 the key1
      * @param key2 the key2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.TOUCH)
-    public abstract String touch(@RedisProtocolSupport.Key CharSequence key1,
-                                 @RedisProtocolSupport.Key CharSequence key2) throws Exception;
+    public abstract DeferredValue<Long> touch(@RedisProtocolSupport.Key CharSequence key1,
+                                              @RedisProtocolSupport.Key CharSequence key2) throws Exception;
 
     /**
      * Alters the last access time of a key(s). Returns the number of existing keys specified.
@@ -3702,65 +3826,65 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key1 the key1
      * @param key2 the key2
      * @param key3 the key3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.TOUCH)
-    public abstract String touch(@RedisProtocolSupport.Key CharSequence key1,
-                                 @RedisProtocolSupport.Key CharSequence key2,
-                                 @RedisProtocolSupport.Key CharSequence key3) throws Exception;
+    public abstract DeferredValue<Long> touch(@RedisProtocolSupport.Key CharSequence key1,
+                                              @RedisProtocolSupport.Key CharSequence key2,
+                                              @RedisProtocolSupport.Key CharSequence key3) throws Exception;
 
     /**
      * Alters the last access time of a key(s). Returns the number of existing keys specified.
      *
      * @param keys the keys
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.TOUCH)
-    public abstract String touch(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
+    public abstract DeferredValue<Long> touch(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
 
     /**
      * Get the time to live for a key.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.TTL)
-    public abstract String ttl(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> ttl(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Determine the type stored at key.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.TYPE)
-    public abstract String type(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<String> type(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Delete a key asynchronously in another thread. Otherwise it is just as DEL, but non blocking.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.UNLINK)
-    public abstract String unlink(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> unlink(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Delete a key asynchronously in another thread. Otherwise it is just as DEL, but non blocking.
      *
      * @param key1 the key1
      * @param key2 the key2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.UNLINK)
-    public abstract String unlink(@RedisProtocolSupport.Key CharSequence key1,
-                                  @RedisProtocolSupport.Key CharSequence key2) throws Exception;
+    public abstract DeferredValue<Long> unlink(@RedisProtocolSupport.Key CharSequence key1,
+                                               @RedisProtocolSupport.Key CharSequence key2) throws Exception;
 
     /**
      * Delete a key asynchronously in another thread. Otherwise it is just as DEL, but non blocking.
@@ -3768,65 +3892,65 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key1 the key1
      * @param key2 the key2
      * @param key3 the key3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.UNLINK)
-    public abstract String unlink(@RedisProtocolSupport.Key CharSequence key1,
-                                  @RedisProtocolSupport.Key CharSequence key2,
-                                  @RedisProtocolSupport.Key CharSequence key3) throws Exception;
+    public abstract DeferredValue<Long> unlink(@RedisProtocolSupport.Key CharSequence key1,
+                                               @RedisProtocolSupport.Key CharSequence key2,
+                                               @RedisProtocolSupport.Key CharSequence key3) throws Exception;
 
     /**
      * Delete a key asynchronously in another thread. Otherwise it is just as DEL, but non blocking.
      *
      * @param keys the keys
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.UNLINK)
-    public abstract String unlink(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
+    public abstract DeferredValue<Long> unlink(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
 
     /**
      * Forget about all watched keys.
      *
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.UNWATCH)
-    public abstract String unwatch() throws Exception;
+    public abstract DeferredValue<String> unwatch() throws Exception;
 
     /**
      * Wait for the synchronous replication of all the write commands sent in the context of the current connection.
      *
      * @param numslaves the numslaves
      * @param timeout the timeout
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.WAIT)
-    public abstract String wait(long numslaves, long timeout) throws Exception;
+    public abstract DeferredValue<Long> wait(long numslaves, long timeout) throws Exception;
 
     /**
      * Watch the given keys to determine execution of the MULTI/EXEC block.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.WATCH)
-    public abstract String watch(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<String> watch(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Watch the given keys to determine execution of the MULTI/EXEC block.
      *
      * @param key1 the key1
      * @param key2 the key2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.WATCH)
-    public abstract String watch(@RedisProtocolSupport.Key CharSequence key1,
-                                 @RedisProtocolSupport.Key CharSequence key2) throws Exception;
+    public abstract DeferredValue<String> watch(@RedisProtocolSupport.Key CharSequence key1,
+                                                @RedisProtocolSupport.Key CharSequence key2) throws Exception;
 
     /**
      * Watch the given keys to determine execution of the MULTI/EXEC block.
@@ -3834,23 +3958,23 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key1 the key1
      * @param key2 the key2
      * @param key3 the key3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.WATCH)
-    public abstract String watch(@RedisProtocolSupport.Key CharSequence key1,
-                                 @RedisProtocolSupport.Key CharSequence key2,
-                                 @RedisProtocolSupport.Key CharSequence key3) throws Exception;
+    public abstract DeferredValue<String> watch(@RedisProtocolSupport.Key CharSequence key1,
+                                                @RedisProtocolSupport.Key CharSequence key2,
+                                                @RedisProtocolSupport.Key CharSequence key3) throws Exception;
 
     /**
      * Watch the given keys to determine execution of the MULTI/EXEC block.
      *
      * @param keys the keys
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.WATCH)
-    public abstract String watch(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
+    public abstract DeferredValue<String> watch(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
 
     /**
      * Appends a new entry to a stream.
@@ -3859,12 +3983,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param id the id
      * @param field the field
      * @param value the value
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XADD)
-    public abstract String xadd(@RedisProtocolSupport.Key CharSequence key, CharSequence id, CharSequence field,
-                                CharSequence value) throws Exception;
+    public abstract DeferredValue<String> xadd(@RedisProtocolSupport.Key CharSequence key, CharSequence id,
+                                               CharSequence field, CharSequence value) throws Exception;
 
     /**
      * Appends a new entry to a stream.
@@ -3875,12 +3999,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param value1 the value1
      * @param field2 the field2
      * @param value2 the value2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XADD)
-    public abstract String xadd(@RedisProtocolSupport.Key CharSequence key, CharSequence id, CharSequence field1,
-                                CharSequence value1, CharSequence field2, CharSequence value2) throws Exception;
+    public abstract DeferredValue<String> xadd(@RedisProtocolSupport.Key CharSequence key, CharSequence id,
+                                               CharSequence field1, CharSequence value1, CharSequence field2,
+                                               CharSequence value2) throws Exception;
 
     /**
      * Appends a new entry to a stream.
@@ -3893,13 +4018,14 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param value2 the value2
      * @param field3 the field3
      * @param value3 the value3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XADD)
-    public abstract String xadd(@RedisProtocolSupport.Key CharSequence key, CharSequence id, CharSequence field1,
-                                CharSequence value1, CharSequence field2, CharSequence value2, CharSequence field3,
-                                CharSequence value3) throws Exception;
+    public abstract DeferredValue<String> xadd(@RedisProtocolSupport.Key CharSequence key, CharSequence id,
+                                               CharSequence field1, CharSequence value1, CharSequence field2,
+                                               CharSequence value2, CharSequence field3,
+                                               CharSequence value3) throws Exception;
 
     /**
      * Appends a new entry to a stream.
@@ -3907,22 +4033,22 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param id the id
      * @param fieldValues the fieldValues
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XADD)
-    public abstract String xadd(@RedisProtocolSupport.Key CharSequence key, CharSequence id,
-                                @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.FieldValue> fieldValues) throws Exception;
+    public abstract DeferredValue<String> xadd(@RedisProtocolSupport.Key CharSequence key, CharSequence id,
+                                               @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.FieldValue> fieldValues) throws Exception;
 
     /**
      * Return the number of entires in a stream.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XLEN)
-    public abstract String xlen(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> xlen(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Return information and entries from a stream conusmer group pending entries list, that are messages fetched but
@@ -3930,11 +4056,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      *
      * @param key the key
      * @param group the group
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XPENDING)
-    public abstract String xpending(@RedisProtocolSupport.Key CharSequence key, CharSequence group) throws Exception;
+    public abstract <T> DeferredValue<List<T>> xpending(@RedisProtocolSupport.Key CharSequence key,
+                                                        CharSequence group) throws Exception;
 
     /**
      * Return information and entries from a stream conusmer group pending entries list, that are messages fetched but
@@ -3946,13 +4074,15 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param end the end
      * @param count the count
      * @param consumer the consumer
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XPENDING)
-    public abstract String xpending(@RedisProtocolSupport.Key CharSequence key, CharSequence group,
-                                    @Nullable CharSequence start, @Nullable CharSequence end, @Nullable Long count,
-                                    @Nullable CharSequence consumer) throws Exception;
+    public abstract <T> DeferredValue<List<T>> xpending(@RedisProtocolSupport.Key CharSequence key, CharSequence group,
+                                                        @Nullable CharSequence start, @Nullable CharSequence end,
+                                                        @Nullable Long count,
+                                                        @Nullable CharSequence consumer) throws Exception;
 
     /**
      * Return a range of elements in a stream, with IDs matching the specified IDs interval.
@@ -3960,12 +4090,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param start the start
      * @param end the end
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XRANGE)
-    public abstract String xrange(@RedisProtocolSupport.Key CharSequence key, CharSequence start,
-                                  CharSequence end) throws Exception;
+    public abstract <T> DeferredValue<List<T>> xrange(@RedisProtocolSupport.Key CharSequence key, CharSequence start,
+                                                      CharSequence end) throws Exception;
 
     /**
      * Return a range of elements in a stream, with IDs matching the specified IDs interval.
@@ -3974,12 +4105,14 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param start the start
      * @param end the end
      * @param count the count
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XRANGE)
-    public abstract String xrange(@RedisProtocolSupport.Key CharSequence key, CharSequence start, CharSequence end,
-                                  @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count) throws Exception;
+    public abstract <T> DeferredValue<List<T>> xrange(@RedisProtocolSupport.Key CharSequence key, CharSequence start,
+                                                      CharSequence end,
+                                                      @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count) throws Exception;
 
     /**
      * Return never seen elements in multiple streams, with IDs greater than the ones reported by the caller for each
@@ -3987,12 +4120,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      *
      * @param keys the keys
      * @param ids the ids
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XREAD)
-    public abstract String xread(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                                 Collection<? extends CharSequence> ids) throws Exception;
+    public abstract <T> DeferredValue<List<T>> xread(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                                     Collection<? extends CharSequence> ids) throws Exception;
 
     /**
      * Return never seen elements in multiple streams, with IDs greater than the ones reported by the caller for each
@@ -4002,14 +4136,15 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param blockMilliseconds the blockMilliseconds
      * @param keys the keys
      * @param ids the ids
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XREAD)
-    public abstract String xread(@RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count,
-                                 @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.BLOCK) @Nullable Long blockMilliseconds,
-                                 @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                                 Collection<? extends CharSequence> ids) throws Exception;
+    public abstract <T> DeferredValue<List<T>> xread(@RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count,
+                                                     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.BLOCK) @Nullable Long blockMilliseconds,
+                                                     @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                                     Collection<? extends CharSequence> ids) throws Exception;
 
     /**
      * Return new entries from a stream using a consumer group, or access the history of the pending entries for a given
@@ -4018,13 +4153,14 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param groupConsumer the groupConsumer
      * @param keys the keys
      * @param ids the ids
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XREADGROUP)
-    public abstract String xreadgroup(@RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.GROUP) @RedisProtocolSupport.Tuple RedisProtocolSupport.GroupConsumer groupConsumer,
-                                      @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                                      Collection<? extends CharSequence> ids) throws Exception;
+    public abstract <T> DeferredValue<List<T>> xreadgroup(@RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.GROUP) @RedisProtocolSupport.Tuple RedisProtocolSupport.GroupConsumer groupConsumer,
+                                                          @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                                          Collection<? extends CharSequence> ids) throws Exception;
 
     /**
      * Return new entries from a stream using a consumer group, or access the history of the pending entries for a given
@@ -4035,15 +4171,16 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param blockMilliseconds the blockMilliseconds
      * @param keys the keys
      * @param ids the ids
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XREADGROUP)
-    public abstract String xreadgroup(@RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.GROUP) @RedisProtocolSupport.Tuple RedisProtocolSupport.GroupConsumer groupConsumer,
-                                      @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count,
-                                      @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.BLOCK) @Nullable Long blockMilliseconds,
-                                      @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                                      Collection<? extends CharSequence> ids) throws Exception;
+    public abstract <T> DeferredValue<List<T>> xreadgroup(@RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.GROUP) @RedisProtocolSupport.Tuple RedisProtocolSupport.GroupConsumer groupConsumer,
+                                                          @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count,
+                                                          @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.BLOCK) @Nullable Long blockMilliseconds,
+                                                          @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                                          Collection<? extends CharSequence> ids) throws Exception;
 
     /**
      * Return a range of elements in a stream, with IDs matching the specified IDs interval, in reverse order (from
@@ -4052,12 +4189,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param end the end
      * @param start the start
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XREVRANGE)
-    public abstract String xrevrange(@RedisProtocolSupport.Key CharSequence key, CharSequence end,
-                                     CharSequence start) throws Exception;
+    public abstract <T> DeferredValue<List<T>> xrevrange(@RedisProtocolSupport.Key CharSequence key, CharSequence end,
+                                                         CharSequence start) throws Exception;
 
     /**
      * Return a range of elements in a stream, with IDs matching the specified IDs interval, in reverse order (from
@@ -4067,24 +4205,26 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param end the end
      * @param start the start
      * @param count the count
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.XREVRANGE)
-    public abstract String xrevrange(@RedisProtocolSupport.Key CharSequence key, CharSequence end, CharSequence start,
-                                     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count) throws Exception;
+    public abstract <T> DeferredValue<List<T>> xrevrange(@RedisProtocolSupport.Key CharSequence key, CharSequence end,
+                                                         CharSequence start,
+                                                         @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count) throws Exception;
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
      *
      * @param key the key
      * @param scoreMembers the scoreMembers
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZADD)
-    public abstract String zadd(@RedisProtocolSupport.Key CharSequence key,
-                                @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.ScoreMember> scoreMembers) throws Exception;
+    public abstract DeferredValue<Long> zadd(@RedisProtocolSupport.Key CharSequence key,
+                                             @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.ScoreMember> scoreMembers) throws Exception;
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
@@ -4094,14 +4234,14 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param change the change
      * @param score the score
      * @param member the member
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZADD)
-    public abstract String zadd(@RedisProtocolSupport.Key CharSequence key,
-                                @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
-                                @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
-                                double score, CharSequence member) throws Exception;
+    public abstract DeferredValue<Long> zadd(@RedisProtocolSupport.Key CharSequence key,
+                                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
+                                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
+                                             double score, CharSequence member) throws Exception;
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
@@ -4113,15 +4253,15 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param member1 the member1
      * @param score2 the score2
      * @param member2 the member2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZADD)
-    public abstract String zadd(@RedisProtocolSupport.Key CharSequence key,
-                                @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
-                                @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
-                                double score1, CharSequence member1, double score2,
-                                CharSequence member2) throws Exception;
+    public abstract DeferredValue<Long> zadd(@RedisProtocolSupport.Key CharSequence key,
+                                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
+                                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
+                                             double score1, CharSequence member1, double score2,
+                                             CharSequence member2) throws Exception;
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
@@ -4135,15 +4275,15 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param member2 the member2
      * @param score3 the score3
      * @param member3 the member3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZADD)
-    public abstract String zadd(@RedisProtocolSupport.Key CharSequence key,
-                                @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
-                                @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
-                                double score1, CharSequence member1, double score2, CharSequence member2, double score3,
-                                CharSequence member3) throws Exception;
+    public abstract DeferredValue<Long> zadd(@RedisProtocolSupport.Key CharSequence key,
+                                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
+                                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
+                                             double score1, CharSequence member1, double score2, CharSequence member2,
+                                             double score3, CharSequence member3) throws Exception;
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
@@ -4152,26 +4292,26 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param condition the condition
      * @param change the change
      * @param scoreMembers the scoreMembers
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZADD)
-    public abstract String zadd(@RedisProtocolSupport.Key CharSequence key,
-                                @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
-                                @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
-                                @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.ScoreMember> scoreMembers) throws Exception;
+    public abstract DeferredValue<Long> zadd(@RedisProtocolSupport.Key CharSequence key,
+                                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
+                                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
+                                             @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.ScoreMember> scoreMembers) throws Exception;
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
      *
      * @param key the key
      * @param scoreMembers the scoreMembers
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZADD)
-    public abstract String zaddIncr(@RedisProtocolSupport.Key CharSequence key,
-                                    @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.ScoreMember> scoreMembers) throws Exception;
+    public abstract DeferredValue<Double> zaddIncr(@RedisProtocolSupport.Key CharSequence key,
+                                                   @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.ScoreMember> scoreMembers) throws Exception;
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
@@ -4181,14 +4321,14 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param change the change
      * @param score the score
      * @param member the member
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZADD)
-    public abstract String zaddIncr(@RedisProtocolSupport.Key CharSequence key,
-                                    @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
-                                    @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
-                                    double score, CharSequence member) throws Exception;
+    public abstract DeferredValue<Double> zaddIncr(@RedisProtocolSupport.Key CharSequence key,
+                                                   @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
+                                                   @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
+                                                   double score, CharSequence member) throws Exception;
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
@@ -4200,15 +4340,15 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param member1 the member1
      * @param score2 the score2
      * @param member2 the member2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZADD)
-    public abstract String zaddIncr(@RedisProtocolSupport.Key CharSequence key,
-                                    @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
-                                    @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
-                                    double score1, CharSequence member1, double score2,
-                                    CharSequence member2) throws Exception;
+    public abstract DeferredValue<Double> zaddIncr(@RedisProtocolSupport.Key CharSequence key,
+                                                   @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
+                                                   @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
+                                                   double score1, CharSequence member1, double score2,
+                                                   CharSequence member2) throws Exception;
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
@@ -4222,15 +4362,16 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param member2 the member2
      * @param score3 the score3
      * @param member3 the member3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZADD)
-    public abstract String zaddIncr(@RedisProtocolSupport.Key CharSequence key,
-                                    @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
-                                    @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
-                                    double score1, CharSequence member1, double score2, CharSequence member2,
-                                    double score3, CharSequence member3) throws Exception;
+    public abstract DeferredValue<Double> zaddIncr(@RedisProtocolSupport.Key CharSequence key,
+                                                   @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
+                                                   @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
+                                                   double score1, CharSequence member1, double score2,
+                                                   CharSequence member2, double score3,
+                                                   CharSequence member3) throws Exception;
 
     /**
      * Add one or more members to a sorted set, or update its score if it already exists.
@@ -4239,24 +4380,24 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param condition the condition
      * @param change the change
      * @param scoreMembers the scoreMembers
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZADD)
-    public abstract String zaddIncr(@RedisProtocolSupport.Key CharSequence key,
-                                    @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
-                                    @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
-                                    @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.ScoreMember> scoreMembers) throws Exception;
+    public abstract DeferredValue<Double> zaddIncr(@RedisProtocolSupport.Key CharSequence key,
+                                                   @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddCondition condition,
+                                                   @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZaddChange change,
+                                                   @RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.ScoreMember> scoreMembers) throws Exception;
 
     /**
      * Get the number of members in a sorted set.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZCARD)
-    public abstract String zcard(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract DeferredValue<Long> zcard(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Count the members in a sorted set with scores within the given values.
@@ -4264,11 +4405,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param min the min
      * @param max the max
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZCOUNT)
-    public abstract String zcount(@RedisProtocolSupport.Key CharSequence key, double min, double max) throws Exception;
+    public abstract DeferredValue<Long> zcount(@RedisProtocolSupport.Key CharSequence key, double min,
+                                               double max) throws Exception;
 
     /**
      * Increment the score of a member in a sorted set.
@@ -4276,12 +4418,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param increment the increment
      * @param member the member
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZINCRBY)
-    public abstract String zincrby(@RedisProtocolSupport.Key CharSequence key, long increment,
-                                   CharSequence member) throws Exception;
+    public abstract DeferredValue<Double> zincrby(@RedisProtocolSupport.Key CharSequence key, long increment,
+                                                  CharSequence member) throws Exception;
 
     /**
      * Intersect multiple sorted sets and store the resulting sorted set in a new key.
@@ -4289,12 +4431,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param destination the destination
      * @param numkeys the numkeys
      * @param keys the keys
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZINTERSTORE)
-    public abstract String zinterstore(@RedisProtocolSupport.Key CharSequence destination, long numkeys,
-                                       @RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
+    public abstract DeferredValue<Long> zinterstore(@RedisProtocolSupport.Key CharSequence destination, long numkeys,
+                                                    @RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
 
     /**
      * Intersect multiple sorted sets and store the resulting sorted set in a new key.
@@ -4304,14 +4446,14 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param keys the keys
      * @param weightses the weightses
      * @param aggregate the aggregate
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZINTERSTORE)
-    public abstract String zinterstore(@RedisProtocolSupport.Key CharSequence destination, long numkeys,
-                                       @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                                       @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.WEIGHTS) Collection<Long> weightses,
-                                       @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZinterstoreAggregate aggregate) throws Exception;
+    public abstract DeferredValue<Long> zinterstore(@RedisProtocolSupport.Key CharSequence destination, long numkeys,
+                                                    @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                                    @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.WEIGHTS) Collection<Long> weightses,
+                                                    @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZinterstoreAggregate aggregate) throws Exception;
 
     /**
      * Count the number of members in a sorted set between a given lexicographical range.
@@ -4319,54 +4461,60 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param min the min
      * @param max the max
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZLEXCOUNT)
-    public abstract String zlexcount(@RedisProtocolSupport.Key CharSequence key, CharSequence min,
-                                     CharSequence max) throws Exception;
+    public abstract DeferredValue<Long> zlexcount(@RedisProtocolSupport.Key CharSequence key, CharSequence min,
+                                                  CharSequence max) throws Exception;
 
     /**
      * Remove and return members with the highest scores in a sorted set.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZPOPMAX)
-    public abstract String zpopmax(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract <T> DeferredValue<List<T>> zpopmax(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Remove and return members with the highest scores in a sorted set.
      *
      * @param key the key
      * @param count the count
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZPOPMAX)
-    public abstract String zpopmax(@RedisProtocolSupport.Key CharSequence key, @Nullable Long count) throws Exception;
+    public abstract <T> DeferredValue<List<T>> zpopmax(@RedisProtocolSupport.Key CharSequence key,
+                                                       @Nullable Long count) throws Exception;
 
     /**
      * Remove and return members with the lowest scores in a sorted set.
      *
      * @param key the key
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZPOPMIN)
-    public abstract String zpopmin(@RedisProtocolSupport.Key CharSequence key) throws Exception;
+    public abstract <T> DeferredValue<List<T>> zpopmin(@RedisProtocolSupport.Key CharSequence key) throws Exception;
 
     /**
      * Remove and return members with the lowest scores in a sorted set.
      *
      * @param key the key
      * @param count the count
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZPOPMIN)
-    public abstract String zpopmin(@RedisProtocolSupport.Key CharSequence key, @Nullable Long count) throws Exception;
+    public abstract <T> DeferredValue<List<T>> zpopmin(@RedisProtocolSupport.Key CharSequence key,
+                                                       @Nullable Long count) throws Exception;
 
     /**
      * Return a range of members in a sorted set, by index.
@@ -4374,11 +4522,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param start the start
      * @param stop the stop
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZRANGE)
-    public abstract String zrange(@RedisProtocolSupport.Key CharSequence key, long start, long stop) throws Exception;
+    public abstract <T> DeferredValue<List<T>> zrange(@RedisProtocolSupport.Key CharSequence key, long start,
+                                                      long stop) throws Exception;
 
     /**
      * Return a range of members in a sorted set, by index.
@@ -4387,12 +4537,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param start the start
      * @param stop the stop
      * @param withscores the withscores
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZRANGE)
-    public abstract String zrange(@RedisProtocolSupport.Key CharSequence key, long start, long stop,
-                                  @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZrangeWithscores withscores) throws Exception;
+    public abstract <T> DeferredValue<List<T>> zrange(@RedisProtocolSupport.Key CharSequence key, long start, long stop,
+                                                      @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZrangeWithscores withscores) throws Exception;
 
     /**
      * Return a range of members in a sorted set, by lexicographical range.
@@ -4400,12 +4551,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param min the min
      * @param max the max
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZRANGEBYLEX)
-    public abstract String zrangebylex(@RedisProtocolSupport.Key CharSequence key, CharSequence min,
-                                       CharSequence max) throws Exception;
+    public abstract <T> DeferredValue<List<T>> zrangebylex(@RedisProtocolSupport.Key CharSequence key, CharSequence min,
+                                                           CharSequence max) throws Exception;
 
     /**
      * Return a range of members in a sorted set, by lexicographical range.
@@ -4414,12 +4566,14 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param min the min
      * @param max the max
      * @param offsetCount the offsetCount
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZRANGEBYLEX)
-    public abstract String zrangebylex(@RedisProtocolSupport.Key CharSequence key, CharSequence min, CharSequence max,
-                                       @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIMIT) @Nullable @RedisProtocolSupport.Tuple RedisProtocolSupport.OffsetCount offsetCount) throws Exception;
+    public abstract <T> DeferredValue<List<T>> zrangebylex(@RedisProtocolSupport.Key CharSequence key, CharSequence min,
+                                                           CharSequence max,
+                                                           @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIMIT) @Nullable @RedisProtocolSupport.Tuple RedisProtocolSupport.OffsetCount offsetCount) throws Exception;
 
     /**
      * Return a range of members in a sorted set, by score.
@@ -4427,12 +4581,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param min the min
      * @param max the max
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZRANGEBYSCORE)
-    public abstract String zrangebyscore(@RedisProtocolSupport.Key CharSequence key, double min,
-                                         double max) throws Exception;
+    public abstract <T> DeferredValue<List<T>> zrangebyscore(@RedisProtocolSupport.Key CharSequence key, double min,
+                                                             double max) throws Exception;
 
     /**
      * Return a range of members in a sorted set, by score.
@@ -4442,35 +4597,39 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param max the max
      * @param withscores the withscores
      * @param offsetCount the offsetCount
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZRANGEBYSCORE)
-    public abstract String zrangebyscore(@RedisProtocolSupport.Key CharSequence key, double min, double max,
-                                         @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZrangebyscoreWithscores withscores,
-                                         @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIMIT) @Nullable @RedisProtocolSupport.Tuple RedisProtocolSupport.OffsetCount offsetCount) throws Exception;
+    public abstract <T> DeferredValue<List<T>> zrangebyscore(@RedisProtocolSupport.Key CharSequence key, double min,
+                                                             double max,
+                                                             @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZrangebyscoreWithscores withscores,
+                                                             @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIMIT) @Nullable @RedisProtocolSupport.Tuple RedisProtocolSupport.OffsetCount offsetCount) throws Exception;
 
     /**
      * Determine the index of a member in a sorted set.
      *
      * @param key the key
      * @param member the member
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZRANK)
-    public abstract String zrank(@RedisProtocolSupport.Key CharSequence key, CharSequence member) throws Exception;
+    public abstract DeferredValue<Long> zrank(@RedisProtocolSupport.Key CharSequence key,
+                                              CharSequence member) throws Exception;
 
     /**
      * Remove one or more members from a sorted set.
      *
      * @param key the key
      * @param member the member
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREM)
-    public abstract String zrem(@RedisProtocolSupport.Key CharSequence key, CharSequence member) throws Exception;
+    public abstract DeferredValue<Long> zrem(@RedisProtocolSupport.Key CharSequence key,
+                                             CharSequence member) throws Exception;
 
     /**
      * Remove one or more members from a sorted set.
@@ -4478,12 +4637,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param member1 the member1
      * @param member2 the member2
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREM)
-    public abstract String zrem(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
-                                CharSequence member2) throws Exception;
+    public abstract DeferredValue<Long> zrem(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
+                                             CharSequence member2) throws Exception;
 
     /**
      * Remove one or more members from a sorted set.
@@ -4492,24 +4651,24 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param member1 the member1
      * @param member2 the member2
      * @param member3 the member3
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREM)
-    public abstract String zrem(@RedisProtocolSupport.Key CharSequence key, CharSequence member1, CharSequence member2,
-                                CharSequence member3) throws Exception;
+    public abstract DeferredValue<Long> zrem(@RedisProtocolSupport.Key CharSequence key, CharSequence member1,
+                                             CharSequence member2, CharSequence member3) throws Exception;
 
     /**
      * Remove one or more members from a sorted set.
      *
      * @param key the key
      * @param members the members
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREM)
-    public abstract String zrem(@RedisProtocolSupport.Key CharSequence key,
-                                Collection<? extends CharSequence> members) throws Exception;
+    public abstract DeferredValue<Long> zrem(@RedisProtocolSupport.Key CharSequence key,
+                                             Collection<? extends CharSequence> members) throws Exception;
 
     /**
      * Remove all members in a sorted set between the given lexicographical range.
@@ -4517,12 +4676,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param min the min
      * @param max the max
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREMRANGEBYLEX)
-    public abstract String zremrangebylex(@RedisProtocolSupport.Key CharSequence key, CharSequence min,
-                                          CharSequence max) throws Exception;
+    public abstract DeferredValue<Long> zremrangebylex(@RedisProtocolSupport.Key CharSequence key, CharSequence min,
+                                                       CharSequence max) throws Exception;
 
     /**
      * Remove all members in a sorted set within the given indexes.
@@ -4530,12 +4689,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param start the start
      * @param stop the stop
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREMRANGEBYRANK)
-    public abstract String zremrangebyrank(@RedisProtocolSupport.Key CharSequence key, long start,
-                                           long stop) throws Exception;
+    public abstract DeferredValue<Long> zremrangebyrank(@RedisProtocolSupport.Key CharSequence key, long start,
+                                                        long stop) throws Exception;
 
     /**
      * Remove all members in a sorted set within the given scores.
@@ -4543,12 +4702,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param min the min
      * @param max the max
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREMRANGEBYSCORE)
-    public abstract String zremrangebyscore(@RedisProtocolSupport.Key CharSequence key, double min,
-                                            double max) throws Exception;
+    public abstract DeferredValue<Long> zremrangebyscore(@RedisProtocolSupport.Key CharSequence key, double min,
+                                                         double max) throws Exception;
 
     /**
      * Return a range of members in a sorted set, by index, with scores ordered from high to low.
@@ -4556,12 +4715,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param start the start
      * @param stop the stop
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREVRANGE)
-    public abstract String zrevrange(@RedisProtocolSupport.Key CharSequence key, long start,
-                                     long stop) throws Exception;
+    public abstract <T> DeferredValue<List<T>> zrevrange(@RedisProtocolSupport.Key CharSequence key, long start,
+                                                         long stop) throws Exception;
 
     /**
      * Return a range of members in a sorted set, by index, with scores ordered from high to low.
@@ -4570,12 +4730,14 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param start the start
      * @param stop the stop
      * @param withscores the withscores
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREVRANGE)
-    public abstract String zrevrange(@RedisProtocolSupport.Key CharSequence key, long start, long stop,
-                                     @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZrevrangeWithscores withscores) throws Exception;
+    public abstract <T> DeferredValue<List<T>> zrevrange(@RedisProtocolSupport.Key CharSequence key, long start,
+                                                         long stop,
+                                                         @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZrevrangeWithscores withscores) throws Exception;
 
     /**
      * Return a range of members in a sorted set, by lexicographical range, ordered from higher to lower strings.
@@ -4583,12 +4745,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param max the max
      * @param min the min
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREVRANGEBYLEX)
-    public abstract String zrevrangebylex(@RedisProtocolSupport.Key CharSequence key, CharSequence max,
-                                          CharSequence min) throws Exception;
+    public abstract <T> DeferredValue<List<T>> zrevrangebylex(@RedisProtocolSupport.Key CharSequence key,
+                                                              CharSequence max, CharSequence min) throws Exception;
 
     /**
      * Return a range of members in a sorted set, by lexicographical range, ordered from higher to lower strings.
@@ -4597,13 +4760,14 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param max the max
      * @param min the min
      * @param offsetCount the offsetCount
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREVRANGEBYLEX)
-    public abstract String zrevrangebylex(@RedisProtocolSupport.Key CharSequence key, CharSequence max,
-                                          CharSequence min,
-                                          @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIMIT) @Nullable @RedisProtocolSupport.Tuple RedisProtocolSupport.OffsetCount offsetCount) throws Exception;
+    public abstract <T> DeferredValue<List<T>> zrevrangebylex(@RedisProtocolSupport.Key CharSequence key,
+                                                              CharSequence max, CharSequence min,
+                                                              @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIMIT) @Nullable @RedisProtocolSupport.Tuple RedisProtocolSupport.OffsetCount offsetCount) throws Exception;
 
     /**
      * Return a range of members in a sorted set, by score, with scores ordered from high to low.
@@ -4611,12 +4775,13 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param key the key
      * @param max the max
      * @param min the min
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREVRANGEBYSCORE)
-    public abstract String zrevrangebyscore(@RedisProtocolSupport.Key CharSequence key, double max,
-                                            double min) throws Exception;
+    public abstract <T> DeferredValue<List<T>> zrevrangebyscore(@RedisProtocolSupport.Key CharSequence key, double max,
+                                                                double min) throws Exception;
 
     /**
      * Return a range of members in a sorted set, by score, with scores ordered from high to low.
@@ -4626,35 +4791,40 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param min the min
      * @param withscores the withscores
      * @param offsetCount the offsetCount
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREVRANGEBYSCORE)
-    public abstract String zrevrangebyscore(@RedisProtocolSupport.Key CharSequence key, double max, double min,
-                                            @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZrevrangebyscoreWithscores withscores,
-                                            @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIMIT) @Nullable @RedisProtocolSupport.Tuple RedisProtocolSupport.OffsetCount offsetCount) throws Exception;
+    public abstract <T> DeferredValue<List<T>> zrevrangebyscore(@RedisProtocolSupport.Key CharSequence key, double max,
+                                                                double min,
+                                                                @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZrevrangebyscoreWithscores withscores,
+                                                                @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.LIMIT) @Nullable @RedisProtocolSupport.Tuple RedisProtocolSupport.OffsetCount offsetCount) throws Exception;
 
     /**
      * Determine the index of a member in a sorted set, with scores ordered from high to low.
      *
      * @param key the key
      * @param member the member
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZREVRANK)
-    public abstract String zrevrank(@RedisProtocolSupport.Key CharSequence key, CharSequence member) throws Exception;
+    public abstract DeferredValue<Long> zrevrank(@RedisProtocolSupport.Key CharSequence key,
+                                                 CharSequence member) throws Exception;
 
     /**
      * Incrementally iterate sorted sets elements and associated scores.
      *
      * @param key the key
      * @param cursor the cursor
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZSCAN)
-    public abstract String zscan(@RedisProtocolSupport.Key CharSequence key, long cursor) throws Exception;
+    public abstract <T> DeferredValue<List<T>> zscan(@RedisProtocolSupport.Key CharSequence key,
+                                                     long cursor) throws Exception;
 
     /**
      * Incrementally iterate sorted sets elements and associated scores.
@@ -4663,24 +4833,26 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param cursor the cursor
      * @param matchPattern the matchPattern
      * @param count the count
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
+     * @param <T> the type of elements
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZSCAN)
-    public abstract String zscan(@RedisProtocolSupport.Key CharSequence key, long cursor,
-                                 @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.MATCH) @Nullable CharSequence matchPattern,
-                                 @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count) throws Exception;
+    public abstract <T> DeferredValue<List<T>> zscan(@RedisProtocolSupport.Key CharSequence key, long cursor,
+                                                     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.MATCH) @Nullable CharSequence matchPattern,
+                                                     @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.COUNT) @Nullable Long count) throws Exception;
 
     /**
      * Get the score associated with the given member in a sorted set.
      *
      * @param key the key
      * @param member the member
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZSCORE)
-    public abstract String zscore(@RedisProtocolSupport.Key CharSequence key, CharSequence member) throws Exception;
+    public abstract DeferredValue<Double> zscore(@RedisProtocolSupport.Key CharSequence key,
+                                                 CharSequence member) throws Exception;
 
     /**
      * Add multiple sorted sets and store the resulting sorted set in a new key.
@@ -4688,12 +4860,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param destination the destination
      * @param numkeys the numkeys
      * @param keys the keys
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZUNIONSTORE)
-    public abstract String zunionstore(@RedisProtocolSupport.Key CharSequence destination, long numkeys,
-                                       @RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
+    public abstract DeferredValue<Long> zunionstore(@RedisProtocolSupport.Key CharSequence destination, long numkeys,
+                                                    @RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
 
     /**
      * Add multiple sorted sets and store the resulting sorted set in a new key.
@@ -4703,12 +4875,12 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
      * @param keys the keys
      * @param weightses the weightses
      * @param aggregate the aggregate
-     * @return a {@link String} result
+     * @return a {@link DeferredValue} result
      * @throws Exception if an exception occurs during the request processing.
      */
     @RedisProtocolSupport.Cmd(RedisProtocolSupport.Command.ZUNIONSTORE)
-    public abstract String zunionstore(@RedisProtocolSupport.Key CharSequence destination, long numkeys,
-                                       @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
-                                       @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.WEIGHTS) Collection<Long> weightses,
-                                       @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZunionstoreAggregate aggregate) throws Exception;
+    public abstract DeferredValue<Long> zunionstore(@RedisProtocolSupport.Key CharSequence destination, long numkeys,
+                                                    @RedisProtocolSupport.Key Collection<? extends CharSequence> keys,
+                                                    @RedisProtocolSupport.SubCmd(RedisProtocolSupport.SubCommand.WEIGHTS) Collection<Long> weightses,
+                                                    @RedisProtocolSupport.Option @Nullable RedisProtocolSupport.ZunionstoreAggregate aggregate) throws Exception;
 }

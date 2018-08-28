@@ -21,9 +21,12 @@ import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import javax.annotation.Generated;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.redis.api.RedisRequests.addRequestArgument;
@@ -42,10 +45,32 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     private final boolean releaseAfterDone;
 
+    private volatile boolean transactionCompleted;
+
+    private final List<CompletableFuture> futures;
+
     DefaultTransactedBufferRedisCommander(final RedisClient.ReservedRedisConnection reservedCnx,
                 final boolean releaseAfterDone) {
         this.reservedCnx = requireNonNull(reservedCnx);
         this.releaseAfterDone = releaseAfterDone;
+        this.futures = new ArrayList<>();
+    }
+
+    @Nonnull
+    private <T> Single<T> execute(final Single<String> queued) {
+        CompletableFuture<T> future = new CompletableFuture<>();
+        futures.add(future);
+        return queued.doBeforeSubscribe(cancellable -> {
+            if (transactionCompleted) {
+                throw new RedisClientException(Single.class.getSimpleName() +
+                            " cannot be subscribed to after the transaction has completed.");
+            }
+        }).flatMap(status -> {
+            if (status.equals("QUEUED")) {
+                return Single.fromStage(future);
+            }
+            throw new RedisClientException("Read '" + status + "' but expected 'QUEUED'");
+        });
     }
 
     @Override
@@ -59,7 +84,7 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     }
 
     @Override
-    public Single<String> append(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
+    public Single<Long> append(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -69,7 +94,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.APPEND, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
@@ -82,7 +108,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.AUTH, allocator);
         addRequestArgument(password, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.AUTH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -93,7 +120,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BGREWRITEAOF, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BGREWRITEAOF, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -104,12 +132,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BGSAVE, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BGSAVE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> bitcount(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Long> bitcount(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -117,13 +146,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BITCOUNT, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITCOUNT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> bitcount(@RedisProtocolSupport.Key final Buffer key, @Nullable final Long start,
-                                   @Nullable final Long end) {
+    public Single<Long> bitcount(@RedisProtocolSupport.Key final Buffer key, @Nullable final Long start,
+                                 @Nullable final Long end) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -143,13 +173,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(end, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITCOUNT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> bitfield(@RedisProtocolSupport.Key final Buffer key,
-                                   final Collection<RedisProtocolSupport.BitfieldOperation> operations) {
+    public Single<List<Long>> bitfield(@RedisProtocolSupport.Key final Buffer key,
+                                       final Collection<RedisProtocolSupport.BitfieldOperation> operations) {
         requireNonNull(key);
         requireNonNull(operations);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -159,13 +190,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         cb.addBuffer(cbOps);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITFIELD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<Long>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> bitop(final Buffer operation, @RedisProtocolSupport.Key final Buffer destkey,
-                                @RedisProtocolSupport.Key final Buffer key) {
+    public Single<Long> bitop(final Buffer operation, @RedisProtocolSupport.Key final Buffer destkey,
+                              @RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(operation);
         requireNonNull(destkey);
         requireNonNull(key);
@@ -177,14 +209,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(destkey, cb, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITOP, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> bitop(final Buffer operation, @RedisProtocolSupport.Key final Buffer destkey,
-                                @RedisProtocolSupport.Key final Buffer key1,
-                                @RedisProtocolSupport.Key final Buffer key2) {
+    public Single<Long> bitop(final Buffer operation, @RedisProtocolSupport.Key final Buffer destkey,
+                              @RedisProtocolSupport.Key final Buffer key1,
+                              @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(operation);
         requireNonNull(destkey);
         requireNonNull(key1);
@@ -198,15 +231,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key1, cb, allocator);
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITOP, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> bitop(final Buffer operation, @RedisProtocolSupport.Key final Buffer destkey,
-                                @RedisProtocolSupport.Key final Buffer key1,
-                                @RedisProtocolSupport.Key final Buffer key2,
-                                @RedisProtocolSupport.Key final Buffer key3) {
+    public Single<Long> bitop(final Buffer operation, @RedisProtocolSupport.Key final Buffer destkey,
+                              @RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2,
+                              @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(operation);
         requireNonNull(destkey);
         requireNonNull(key1);
@@ -222,13 +255,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key2, cb, allocator);
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITOP, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> bitop(final Buffer operation, @RedisProtocolSupport.Key final Buffer destkey,
-                                @RedisProtocolSupport.Key final Collection<Buffer> keys) {
+    public Single<Long> bitop(final Buffer operation, @RedisProtocolSupport.Key final Buffer destkey,
+                              @RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(operation);
         requireNonNull(destkey);
         requireNonNull(keys);
@@ -241,12 +275,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(destkey, cb, allocator);
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITOP, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> bitpos(@RedisProtocolSupport.Key final Buffer key, final long bit) {
+    public Single<Long> bitpos(@RedisProtocolSupport.Key final Buffer key, final long bit) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -255,13 +290,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(bit, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITPOS, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> bitpos(@RedisProtocolSupport.Key final Buffer key, final long bit, @Nullable final Long start,
-                                 @Nullable final Long end) {
+    public Single<Long> bitpos(@RedisProtocolSupport.Key final Buffer key, final long bit, @Nullable final Long start,
+                               @Nullable final Long end) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -282,12 +318,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(end, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITPOS, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> blpop(@RedisProtocolSupport.Key final Collection<Buffer> keys, final long timeout) {
+    public <T> Single<List<T>> blpop(@RedisProtocolSupport.Key final Collection<Buffer> keys, final long timeout) {
         requireNonNull(keys);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -297,12 +334,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestBufferArguments(keys, null, cb, allocator);
         addRequestArgument(timeout, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BLPOP, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> brpop(@RedisProtocolSupport.Key final Collection<Buffer> keys, final long timeout) {
+    public <T> Single<List<T>> brpop(@RedisProtocolSupport.Key final Collection<Buffer> keys, final long timeout) {
         requireNonNull(keys);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -312,12 +350,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestBufferArguments(keys, null, cb, allocator);
         addRequestArgument(timeout, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BRPOP, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> brpoplpush(@RedisProtocolSupport.Key final Buffer source,
+    public Single<Buffer> brpoplpush(@RedisProtocolSupport.Key final Buffer source,
                                      @RedisProtocolSupport.Key final Buffer destination, final long timeout) {
         requireNonNull(source);
         requireNonNull(destination);
@@ -329,12 +368,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(destination, cb, allocator);
         addRequestArgument(timeout, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BRPOPLPUSH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> bzpopmax(@RedisProtocolSupport.Key final Collection<Buffer> keys, final long timeout) {
+    public <T> Single<List<T>> bzpopmax(@RedisProtocolSupport.Key final Collection<Buffer> keys, final long timeout) {
         requireNonNull(keys);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -344,12 +384,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestBufferArguments(keys, null, cb, allocator);
         addRequestArgument(timeout, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BZPOPMAX, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> bzpopmin(@RedisProtocolSupport.Key final Collection<Buffer> keys, final long timeout) {
+    public <T> Single<List<T>> bzpopmin(@RedisProtocolSupport.Key final Collection<Buffer> keys, final long timeout) {
         requireNonNull(keys);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -359,13 +400,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestBufferArguments(keys, null, cb, allocator);
         addRequestArgument(timeout, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BZPOPMIN, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> clientKill(@Nullable final Long id, @Nullable final RedisProtocolSupport.ClientKillType type,
-                                     @Nullable final Buffer addrIpPort, @Nullable final Buffer skipmeYesNo) {
+    public Single<Long> clientKill(@Nullable final Long id, @Nullable final RedisProtocolSupport.ClientKillType type,
+                                   @Nullable final Buffer addrIpPort, @Nullable final Buffer skipmeYesNo) {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
@@ -399,31 +441,34 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(skipmeYesNo, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> clientList() {
+    public Single<Buffer> clientList() {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLIENT,
                     RedisProtocolSupport.SubCommand.LIST, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> clientGetname() {
+    public Single<Buffer> clientGetname() {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLIENT,
                     RedisProtocolSupport.SubCommand.GETNAME, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
@@ -436,7 +481,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.PAUSE, allocator);
         addRequestArgument(timeout, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -450,7 +496,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.REPLY, allocator);
         addRequestArgument(replyMode, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -464,7 +511,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.SETNAME, allocator);
         addRequestArgument(connectionName, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -477,7 +525,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.ADDSLOTS, allocator);
         addRequestArgument(slot, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -491,7 +540,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(slot1, cb, allocator);
         addRequestArgument(slot2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -506,7 +556,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(slot2, cb, allocator);
         addRequestArgument(slot3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -521,12 +572,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.ADDSLOTS, allocator);
         addRequestLongArguments(slots, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> clusterCountFailureReports(final Buffer nodeId) {
+    public Single<Long> clusterCountFailureReports(final Buffer nodeId) {
         requireNonNull(nodeId);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -535,12 +587,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.COUNT_FAILURE_REPORTS, allocator);
         addRequestArgument(nodeId, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> clusterCountkeysinslot(final long slot) {
+    public Single<Long> clusterCountkeysinslot(final long slot) {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
@@ -548,7 +601,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.COUNTKEYSINSLOT, allocator);
         addRequestArgument(slot, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
@@ -561,7 +615,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.DELSLOTS, allocator);
         addRequestArgument(slot, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -575,7 +630,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(slot1, cb, allocator);
         addRequestArgument(slot2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -590,7 +646,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(slot2, cb, allocator);
         addRequestArgument(slot3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -605,7 +662,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.DELSLOTS, allocator);
         addRequestLongArguments(slots, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -617,7 +675,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
                     RedisProtocolSupport.SubCommand.FAILOVER, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -635,7 +694,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(options, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -649,12 +709,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.FORGET, allocator);
         addRequestArgument(nodeId, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> clusterGetkeysinslot(final long slot, final long count) {
+    public <T> Single<List<T>> clusterGetkeysinslot(final long slot, final long count) {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
@@ -663,24 +724,26 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(slot, cb, allocator);
         addRequestArgument(count, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> clusterInfo() {
+    public Single<Buffer> clusterInfo() {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
                     RedisProtocolSupport.SubCommand.INFO, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> clusterKeyslot(final Buffer key) {
+    public Single<Long> clusterKeyslot(final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -689,7 +752,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.KEYSLOT, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
@@ -704,19 +768,21 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(ip, cb, allocator);
         addRequestArgument(port, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> clusterNodes() {
+    public Single<Buffer> clusterNodes() {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
                     RedisProtocolSupport.SubCommand.NODES, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
@@ -730,7 +796,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.REPLICATE, allocator);
         addRequestArgument(nodeId, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -742,7 +809,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
                     RedisProtocolSupport.SubCommand.RESET, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -760,7 +828,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(resetType, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -772,7 +841,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
                     RedisProtocolSupport.SubCommand.SAVECONFIG, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -785,7 +855,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.SET_CONFIG_EPOCH, allocator);
         addRequestArgument(configEpoch, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -801,7 +872,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(slot, cb, allocator);
         addRequestArgument(subcommand, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -824,12 +896,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(nodeId, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> clusterSlaves(final Buffer nodeId) {
+    public Single<Buffer> clusterSlaves(final Buffer nodeId) {
         requireNonNull(nodeId);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -838,59 +911,64 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.SLAVES, allocator);
         addRequestArgument(nodeId, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> clusterSlots() {
+    public <T> Single<List<T>> clusterSlots() {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
                     RedisProtocolSupport.SubCommand.SLOTS, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> command() {
+    public <T> Single<List<T>> command() {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.COMMAND, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> commandCount() {
+    public Single<Long> commandCount() {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.COMMAND,
                     RedisProtocolSupport.SubCommand.COUNT, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> commandGetkeys() {
+    public <T> Single<List<T>> commandGetkeys() {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.COMMAND,
                     RedisProtocolSupport.SubCommand.GETKEYS, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> commandInfo(final Buffer commandName) {
+    public <T> Single<List<T>> commandInfo(final Buffer commandName) {
         requireNonNull(commandName);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -899,12 +977,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.INFO, allocator);
         addRequestArgument(commandName, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> commandInfo(final Buffer commandName1, final Buffer commandName2) {
+    public <T> Single<List<T>> commandInfo(final Buffer commandName1, final Buffer commandName2) {
         requireNonNull(commandName1);
         requireNonNull(commandName2);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -915,12 +994,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(commandName1, cb, allocator);
         addRequestArgument(commandName2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> commandInfo(final Buffer commandName1, final Buffer commandName2, final Buffer commandName3) {
+    public <T> Single<List<T>> commandInfo(final Buffer commandName1, final Buffer commandName2,
+                                           final Buffer commandName3) {
         requireNonNull(commandName1);
         requireNonNull(commandName2);
         requireNonNull(commandName3);
@@ -933,12 +1014,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(commandName2, cb, allocator);
         addRequestArgument(commandName3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> commandInfo(final Collection<Buffer> commandNames) {
+    public <T> Single<List<T>> commandInfo(final Collection<Buffer> commandNames) {
         requireNonNull(commandNames);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -948,12 +1030,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.INFO, allocator);
         addRequestBufferArguments(commandNames, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> configGet(final Buffer parameter) {
+    public <T> Single<List<T>> configGet(final Buffer parameter) {
         requireNonNull(parameter);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -962,7 +1045,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.GET, allocator);
         addRequestArgument(parameter, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CONFIG, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
@@ -974,7 +1058,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CONFIG,
                     RedisProtocolSupport.SubCommand.REWRITE, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CONFIG, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -990,7 +1075,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(parameter, cb, allocator);
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CONFIG, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -1002,18 +1088,20 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CONFIG,
                     RedisProtocolSupport.SubCommand.RESETSTAT, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CONFIG, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> dbsize() {
+    public Single<Long> dbsize() {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DBSIZE, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DBSIZE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
@@ -1027,7 +1115,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.OBJECT, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEBUG, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -1039,12 +1128,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DEBUG,
                     RedisProtocolSupport.SubCommand.SEGFAULT, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEBUG, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> decr(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Long> decr(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -1052,12 +1142,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DECR, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DECR, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> decrby(@RedisProtocolSupport.Key final Buffer key, final long decrement) {
+    public Single<Long> decrby(@RedisProtocolSupport.Key final Buffer key, final long decrement) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -1066,12 +1157,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(decrement, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DECRBY, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> del(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Long> del(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -1079,13 +1171,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DEL, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEL, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> del(@RedisProtocolSupport.Key final Buffer key1,
-                              @RedisProtocolSupport.Key final Buffer key2) {
+    public Single<Long> del(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -1095,13 +1187,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key1, cb, allocator);
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEL, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> del(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2,
-                              @RedisProtocolSupport.Key final Buffer key3) {
+    public Single<Long> del(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2,
+                            @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
@@ -1113,12 +1206,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key2, cb, allocator);
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEL, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> del(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
+    public Single<Long> del(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -1127,7 +1221,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DEL, allocator);
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEL, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
@@ -1138,12 +1233,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DISCARD, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DISCARD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = queued.doAfterFinally(() -> {
+            transactionCompleted = true;
+        });
         return releaseAfterDone ? result.doBeforeFinally(reservedCnx::releaseAsync) : result;
     }
 
     @Override
-    public Single<String> dump(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Buffer> dump(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -1151,12 +1249,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DUMP, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DUMP, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> echo(final Buffer message) {
+    public Single<Buffer> echo(final Buffer message) {
         requireNonNull(message);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -1164,12 +1263,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ECHO, allocator);
         addRequestArgument(message, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ECHO, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> eval(final Buffer script, final long numkeys,
+    public Single<Buffer> eval(final Buffer script, final long numkeys,
                                @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Buffer> args) {
         requireNonNull(script);
         requireNonNull(keys);
@@ -1185,14 +1285,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestBufferArguments(keys, null, cb, allocator);
         addRequestBufferArguments(args, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVAL, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> evalList(final Buffer script, final long numkeys,
-                                   @RedisProtocolSupport.Key final Collection<Buffer> keys,
-                                   final Collection<Buffer> args) {
+    public <T> Single<List<T>> evalList(final Buffer script, final long numkeys,
+                                        @RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                        final Collection<Buffer> args) {
         requireNonNull(script);
         requireNonNull(keys);
         requireNonNull(args);
@@ -1207,14 +1308,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestBufferArguments(keys, null, cb, allocator);
         addRequestBufferArguments(args, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVAL, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> evalLong(final Buffer script, final long numkeys,
-                                   @RedisProtocolSupport.Key final Collection<Buffer> keys,
-                                   final Collection<Buffer> args) {
+    public Single<Long> evalLong(final Buffer script, final long numkeys,
+                                 @RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                 final Collection<Buffer> args) {
         requireNonNull(script);
         requireNonNull(keys);
         requireNonNull(args);
@@ -1229,12 +1331,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestBufferArguments(keys, null, cb, allocator);
         addRequestBufferArguments(args, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVAL, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> evalsha(final Buffer sha1, final long numkeys,
+    public Single<Buffer> evalsha(final Buffer sha1, final long numkeys,
                                   @RedisProtocolSupport.Key final Collection<Buffer> keys,
                                   final Collection<Buffer> args) {
         requireNonNull(sha1);
@@ -1251,14 +1354,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestBufferArguments(keys, null, cb, allocator);
         addRequestBufferArguments(args, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVALSHA, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> evalshaList(final Buffer sha1, final long numkeys,
-                                      @RedisProtocolSupport.Key final Collection<Buffer> keys,
-                                      final Collection<Buffer> args) {
+    public <T> Single<List<T>> evalshaList(final Buffer sha1, final long numkeys,
+                                           @RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                           final Collection<Buffer> args) {
         requireNonNull(sha1);
         requireNonNull(keys);
         requireNonNull(args);
@@ -1273,14 +1377,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestBufferArguments(keys, null, cb, allocator);
         addRequestBufferArguments(args, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVALSHA, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> evalshaLong(final Buffer sha1, final long numkeys,
-                                      @RedisProtocolSupport.Key final Collection<Buffer> keys,
-                                      final Collection<Buffer> args) {
+    public Single<Long> evalshaLong(final Buffer sha1, final long numkeys,
+                                    @RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                    final Collection<Buffer> args) {
         requireNonNull(sha1);
         requireNonNull(keys);
         requireNonNull(args);
@@ -1295,23 +1400,37 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestBufferArguments(keys, null, cb, allocator);
         addRequestBufferArguments(args, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVALSHA, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public <T> Single<List<T>> exec() {
+    public Completable exec() {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EXEC, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXEC, cb);
-        final Single<List<T>> result = (Single) reservedCnx.request(request, List.class);
+        final Single<List<Object>> queued = (Single) reservedCnx.request(request, List.class);
+        Completable result = queued.doBeforeSuccess(list -> {
+            transactionCompleted = true;
+            int index = 0;
+            for (Object obj : list) {
+                CompletableFuture future = futures.get(index);
+                if (obj instanceof Throwable) {
+                    future.completeExceptionally((Throwable) obj);
+                } else {
+                    future.complete(obj);
+                }
+                index++;
+            }
+        }).ignoreResult();
         return releaseAfterDone ? result.doBeforeFinally(reservedCnx::releaseAsync) : result;
     }
 
     @Override
-    public Single<String> exists(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Long> exists(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -1319,13 +1438,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EXISTS, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXISTS, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> exists(@RedisProtocolSupport.Key final Buffer key1,
-                                 @RedisProtocolSupport.Key final Buffer key2) {
+    public Single<Long> exists(@RedisProtocolSupport.Key final Buffer key1,
+                               @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -1335,14 +1455,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key1, cb, allocator);
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXISTS, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> exists(@RedisProtocolSupport.Key final Buffer key1,
-                                 @RedisProtocolSupport.Key final Buffer key2,
-                                 @RedisProtocolSupport.Key final Buffer key3) {
+    public Single<Long> exists(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2,
+                               @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
@@ -1354,12 +1474,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key2, cb, allocator);
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXISTS, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> exists(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
+    public Single<Long> exists(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -1368,12 +1489,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EXISTS, allocator);
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXISTS, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> expire(@RedisProtocolSupport.Key final Buffer key, final long seconds) {
+    public Single<Long> expire(@RedisProtocolSupport.Key final Buffer key, final long seconds) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -1382,12 +1504,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(seconds, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXPIRE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> expireat(@RedisProtocolSupport.Key final Buffer key, final long timestamp) {
+    public Single<Long> expireat(@RedisProtocolSupport.Key final Buffer key, final long timestamp) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -1396,7 +1519,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(timestamp, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXPIREAT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
@@ -1407,7 +1531,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.FLUSHALL, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.FLUSHALL, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -1424,7 +1549,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(async, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.FLUSHALL, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -1435,7 +1561,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.FLUSHDB, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.FLUSHDB, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -1452,13 +1579,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(async, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.FLUSHDB, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> geoadd(@RedisProtocolSupport.Key final Buffer key, final double longitude,
-                                 final double latitude, final Buffer member) {
+    public Single<Long> geoadd(@RedisProtocolSupport.Key final Buffer key, final double longitude,
+                               final double latitude, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -1470,14 +1598,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(latitude, cb, allocator);
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> geoadd(@RedisProtocolSupport.Key final Buffer key, final double longitude1,
-                                 final double latitude1, final Buffer member1, final double longitude2,
-                                 final double latitude2, final Buffer member2) {
+    public Single<Long> geoadd(@RedisProtocolSupport.Key final Buffer key, final double longitude1,
+                               final double latitude1, final Buffer member1, final double longitude2,
+                               final double latitude2, final Buffer member2) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -1493,15 +1622,16 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(latitude2, cb, allocator);
         addRequestArgument(member2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> geoadd(@RedisProtocolSupport.Key final Buffer key, final double longitude1,
-                                 final double latitude1, final Buffer member1, final double longitude2,
-                                 final double latitude2, final Buffer member2, final double longitude3,
-                                 final double latitude3, final Buffer member3) {
+    public Single<Long> geoadd(@RedisProtocolSupport.Key final Buffer key, final double longitude1,
+                               final double latitude1, final Buffer member1, final double longitude2,
+                               final double latitude2, final Buffer member2, final double longitude3,
+                               final double latitude3, final Buffer member3) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -1521,13 +1651,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(latitude3, cb, allocator);
         addRequestArgument(member3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> geoadd(@RedisProtocolSupport.Key final Buffer key,
-                                 final Collection<RedisProtocolSupport.BufferLongitudeLatitudeMember> longitudeLatitudeMembers) {
+    public Single<Long> geoadd(@RedisProtocolSupport.Key final Buffer key,
+                               final Collection<RedisProtocolSupport.BufferLongitudeLatitudeMember> longitudeLatitudeMembers) {
         requireNonNull(key);
         requireNonNull(longitudeLatitudeMembers);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -1538,12 +1669,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestTupleArguments(longitudeLatitudeMembers, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> geodist(@RedisProtocolSupport.Key final Buffer key, final Buffer member1,
+    public Single<Double> geodist(@RedisProtocolSupport.Key final Buffer key, final Buffer member1,
                                   final Buffer member2) {
         requireNonNull(key);
         requireNonNull(member1);
@@ -1556,12 +1688,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(member1, cb, allocator);
         addRequestArgument(member2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEODIST, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Double> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> geodist(@RedisProtocolSupport.Key final Buffer key, final Buffer member1,
+    public Single<Double> geodist(@RedisProtocolSupport.Key final Buffer key, final Buffer member1,
                                   final Buffer member2, @Nullable final Buffer unit) {
         requireNonNull(key);
         requireNonNull(member1);
@@ -1580,12 +1713,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(unit, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEODIST, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Double> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> geohash(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
+    public <T> Single<List<T>> geohash(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -1595,13 +1729,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOHASH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> geohash(@RedisProtocolSupport.Key final Buffer key, final Buffer member1,
-                                  final Buffer member2) {
+    public <T> Single<List<T>> geohash(@RedisProtocolSupport.Key final Buffer key, final Buffer member1,
+                                       final Buffer member2) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -1613,13 +1748,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(member1, cb, allocator);
         addRequestArgument(member2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOHASH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> geohash(@RedisProtocolSupport.Key final Buffer key, final Buffer member1,
-                                  final Buffer member2, final Buffer member3) {
+    public <T> Single<List<T>> geohash(@RedisProtocolSupport.Key final Buffer key, final Buffer member1,
+                                       final Buffer member2, final Buffer member3) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -1633,12 +1769,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(member2, cb, allocator);
         addRequestArgument(member3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOHASH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> geohash(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> members) {
+    public <T> Single<List<T>> geohash(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> members) {
         requireNonNull(key);
         requireNonNull(members);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -1649,12 +1786,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestBufferArguments(members, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOHASH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> geopos(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
+    public <T> Single<List<T>> geopos(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -1664,13 +1802,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOPOS, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> geopos(@RedisProtocolSupport.Key final Buffer key, final Buffer member1,
-                                 final Buffer member2) {
+    public <T> Single<List<T>> geopos(@RedisProtocolSupport.Key final Buffer key, final Buffer member1,
+                                      final Buffer member2) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -1682,13 +1821,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(member1, cb, allocator);
         addRequestArgument(member2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOPOS, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> geopos(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2,
-                                 final Buffer member3) {
+    public <T> Single<List<T>> geopos(@RedisProtocolSupport.Key final Buffer key, final Buffer member1,
+                                      final Buffer member2, final Buffer member3) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -1702,12 +1842,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(member2, cb, allocator);
         addRequestArgument(member3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOPOS, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> geopos(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> members) {
+    public <T> Single<List<T>> geopos(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> members) {
         requireNonNull(key);
         requireNonNull(members);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -1718,14 +1859,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestBufferArguments(members, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOPOS, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> georadius(@RedisProtocolSupport.Key final Buffer key, final double longitude,
-                                    final double latitude, final double radius,
-                                    final RedisProtocolSupport.GeoradiusUnit unit) {
+    public <T> Single<List<T>> georadius(@RedisProtocolSupport.Key final Buffer key, final double longitude,
+                                         final double latitude, final double radius,
+                                         final RedisProtocolSupport.GeoradiusUnit unit) {
         requireNonNull(key);
         requireNonNull(unit);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -1738,21 +1880,22 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(radius, cb, allocator);
         addRequestArgument(unit, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEORADIUS, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> georadius(@RedisProtocolSupport.Key final Buffer key, final double longitude,
-                                    final double latitude, final double radius,
-                                    final RedisProtocolSupport.GeoradiusUnit unit,
-                                    @Nullable final RedisProtocolSupport.GeoradiusWithcoord withcoord,
-                                    @Nullable final RedisProtocolSupport.GeoradiusWithdist withdist,
-                                    @Nullable final RedisProtocolSupport.GeoradiusWithhash withhash,
-                                    @Nullable final Long count,
-                                    @Nullable final RedisProtocolSupport.GeoradiusOrder order,
-                                    @Nullable @RedisProtocolSupport.Key final Buffer storeKey,
-                                    @Nullable @RedisProtocolSupport.Key final Buffer storedistKey) {
+    public <T> Single<List<T>> georadius(@RedisProtocolSupport.Key final Buffer key, final double longitude,
+                                         final double latitude, final double radius,
+                                         final RedisProtocolSupport.GeoradiusUnit unit,
+                                         @Nullable final RedisProtocolSupport.GeoradiusWithcoord withcoord,
+                                         @Nullable final RedisProtocolSupport.GeoradiusWithdist withdist,
+                                         @Nullable final RedisProtocolSupport.GeoradiusWithhash withhash,
+                                         @Nullable final Long count,
+                                         @Nullable final RedisProtocolSupport.GeoradiusOrder order,
+                                         @Nullable @RedisProtocolSupport.Key final Buffer storeKey,
+                                         @Nullable @RedisProtocolSupport.Key final Buffer storedistKey) {
         requireNonNull(key);
         requireNonNull(unit);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -1810,14 +1953,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(storedistKey, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEORADIUS, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> georadiusbymember(@RedisProtocolSupport.Key final Buffer key, final Buffer member,
-                                            final double radius,
-                                            final RedisProtocolSupport.GeoradiusbymemberUnit unit) {
+    public <T> Single<List<T>> georadiusbymember(@RedisProtocolSupport.Key final Buffer key, final Buffer member,
+                                                 final double radius,
+                                                 final RedisProtocolSupport.GeoradiusbymemberUnit unit) {
         requireNonNull(key);
         requireNonNull(member);
         requireNonNull(unit);
@@ -1831,20 +1975,22 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(radius, cb, allocator);
         addRequestArgument(unit, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEORADIUSBYMEMBER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> georadiusbymember(@RedisProtocolSupport.Key final Buffer key, final Buffer member,
-                                            final double radius, final RedisProtocolSupport.GeoradiusbymemberUnit unit,
-                                            @Nullable final RedisProtocolSupport.GeoradiusbymemberWithcoord withcoord,
-                                            @Nullable final RedisProtocolSupport.GeoradiusbymemberWithdist withdist,
-                                            @Nullable final RedisProtocolSupport.GeoradiusbymemberWithhash withhash,
-                                            @Nullable final Long count,
-                                            @Nullable final RedisProtocolSupport.GeoradiusbymemberOrder order,
-                                            @Nullable @RedisProtocolSupport.Key final Buffer storeKey,
-                                            @Nullable @RedisProtocolSupport.Key final Buffer storedistKey) {
+    public <T> Single<List<T>> georadiusbymember(@RedisProtocolSupport.Key final Buffer key, final Buffer member,
+                                                 final double radius,
+                                                 final RedisProtocolSupport.GeoradiusbymemberUnit unit,
+                                                 @Nullable final RedisProtocolSupport.GeoradiusbymemberWithcoord withcoord,
+                                                 @Nullable final RedisProtocolSupport.GeoradiusbymemberWithdist withdist,
+                                                 @Nullable final RedisProtocolSupport.GeoradiusbymemberWithhash withhash,
+                                                 @Nullable final Long count,
+                                                 @Nullable final RedisProtocolSupport.GeoradiusbymemberOrder order,
+                                                 @Nullable @RedisProtocolSupport.Key final Buffer storeKey,
+                                                 @Nullable @RedisProtocolSupport.Key final Buffer storedistKey) {
         requireNonNull(key);
         requireNonNull(member);
         requireNonNull(unit);
@@ -1903,12 +2049,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(storedistKey, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEORADIUSBYMEMBER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> get(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Buffer> get(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -1916,12 +2063,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GET, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GET, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> getbit(@RedisProtocolSupport.Key final Buffer key, final long offset) {
+    public Single<Long> getbit(@RedisProtocolSupport.Key final Buffer key, final long offset) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -1930,12 +2078,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(offset, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GETBIT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> getrange(@RedisProtocolSupport.Key final Buffer key, final long start, final long end) {
+    public Single<Buffer> getrange(@RedisProtocolSupport.Key final Buffer key, final long start, final long end) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -1945,12 +2094,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(start, cb, allocator);
         addRequestArgument(end, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GETRANGE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> getset(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
+    public Single<Buffer> getset(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -1960,12 +2110,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GETSET, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> hdel(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
+    public Single<Long> hdel(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
         requireNonNull(key);
         requireNonNull(field);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -1975,12 +2126,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(field, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HDEL, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> hdel(@RedisProtocolSupport.Key final Buffer key, final Buffer field1, final Buffer field2) {
+    public Single<Long> hdel(@RedisProtocolSupport.Key final Buffer key, final Buffer field1, final Buffer field2) {
         requireNonNull(key);
         requireNonNull(field1);
         requireNonNull(field2);
@@ -1992,13 +2144,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(field1, cb, allocator);
         addRequestArgument(field2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HDEL, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> hdel(@RedisProtocolSupport.Key final Buffer key, final Buffer field1, final Buffer field2,
-                               final Buffer field3) {
+    public Single<Long> hdel(@RedisProtocolSupport.Key final Buffer key, final Buffer field1, final Buffer field2,
+                             final Buffer field3) {
         requireNonNull(key);
         requireNonNull(field1);
         requireNonNull(field2);
@@ -2012,12 +2165,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(field2, cb, allocator);
         addRequestArgument(field3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HDEL, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> hdel(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> fields) {
+    public Single<Long> hdel(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> fields) {
         requireNonNull(key);
         requireNonNull(fields);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -2028,12 +2182,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestBufferArguments(fields, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HDEL, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> hexists(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
+    public Single<Long> hexists(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
         requireNonNull(key);
         requireNonNull(field);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -2043,12 +2198,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(field, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HEXISTS, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> hget(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
+    public Single<Buffer> hget(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
         requireNonNull(key);
         requireNonNull(field);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -2058,12 +2214,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(field, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HGET, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> hgetall(@RedisProtocolSupport.Key final Buffer key) {
+    public <T> Single<List<T>> hgetall(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -2071,13 +2228,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HGETALL, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HGETALL, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> hincrby(@RedisProtocolSupport.Key final Buffer key, final Buffer field,
-                                  final long increment) {
+    public Single<Long> hincrby(@RedisProtocolSupport.Key final Buffer key, final Buffer field, final long increment) {
         requireNonNull(key);
         requireNonNull(field);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -2088,12 +2245,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(field, cb, allocator);
         addRequestArgument(increment, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HINCRBY, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> hincrbyfloat(@RedisProtocolSupport.Key final Buffer key, final Buffer field,
+    public Single<Double> hincrbyfloat(@RedisProtocolSupport.Key final Buffer key, final Buffer field,
                                        final double increment) {
         requireNonNull(key);
         requireNonNull(field);
@@ -2105,12 +2263,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(field, cb, allocator);
         addRequestArgument(increment, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HINCRBYFLOAT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Double> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> hkeys(@RedisProtocolSupport.Key final Buffer key) {
+    public <T> Single<List<T>> hkeys(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -2118,12 +2277,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HKEYS, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HKEYS, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> hlen(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Long> hlen(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -2131,12 +2291,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HLEN, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HLEN, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
+    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
         requireNonNull(key);
         requireNonNull(field);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -2146,12 +2307,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(field, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1, final Buffer field2) {
+    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1,
+                                     final Buffer field2) {
         requireNonNull(key);
         requireNonNull(field1);
         requireNonNull(field2);
@@ -2163,13 +2326,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(field1, cb, allocator);
         addRequestArgument(field2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1, final Buffer field2,
-                                final Buffer field3) {
+    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field1,
+                                     final Buffer field2, final Buffer field3) {
         requireNonNull(key);
         requireNonNull(field1);
         requireNonNull(field2);
@@ -2183,12 +2347,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(field2, cb, allocator);
         addRequestArgument(field3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> hmget(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> fields) {
+    public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> fields) {
         requireNonNull(key);
         requireNonNull(fields);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -2199,7 +2364,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestBufferArguments(fields, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
@@ -2216,7 +2382,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(field, cb, allocator);
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMSET, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -2238,7 +2405,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(field2, cb, allocator);
         addRequestArgument(value2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMSET, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -2264,7 +2432,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(field3, cb, allocator);
         addRequestArgument(value3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMSET, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -2281,12 +2450,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestTupleArguments(fieldValues, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMSET, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> hscan(@RedisProtocolSupport.Key final Buffer key, final long cursor) {
+    public <T> Single<List<T>> hscan(@RedisProtocolSupport.Key final Buffer key, final long cursor) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -2295,13 +2465,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(cursor, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSCAN, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> hscan(@RedisProtocolSupport.Key final Buffer key, final long cursor,
-                                @Nullable final Buffer matchPattern, @Nullable final Long count) {
+    public <T> Single<List<T>> hscan(@RedisProtocolSupport.Key final Buffer key, final long cursor,
+                                     @Nullable final Buffer matchPattern, @Nullable final Long count) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -2324,12 +2495,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(count, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSCAN, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> hset(@RedisProtocolSupport.Key final Buffer key, final Buffer field, final Buffer value) {
+    public Single<Long> hset(@RedisProtocolSupport.Key final Buffer key, final Buffer field, final Buffer value) {
         requireNonNull(key);
         requireNonNull(field);
         requireNonNull(value);
@@ -2341,12 +2513,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(field, cb, allocator);
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSET, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> hsetnx(@RedisProtocolSupport.Key final Buffer key, final Buffer field, final Buffer value) {
+    public Single<Long> hsetnx(@RedisProtocolSupport.Key final Buffer key, final Buffer field, final Buffer value) {
         requireNonNull(key);
         requireNonNull(field);
         requireNonNull(value);
@@ -2358,12 +2531,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(field, cb, allocator);
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSETNX, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> hstrlen(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
+    public Single<Long> hstrlen(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
         requireNonNull(key);
         requireNonNull(field);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -2373,12 +2547,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(field, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSTRLEN, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> hvals(@RedisProtocolSupport.Key final Buffer key) {
+    public <T> Single<List<T>> hvals(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -2386,12 +2561,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HVALS, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HVALS, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> incr(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Long> incr(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -2399,12 +2575,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.INCR, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.INCR, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> incrby(@RedisProtocolSupport.Key final Buffer key, final long increment) {
+    public Single<Long> incrby(@RedisProtocolSupport.Key final Buffer key, final long increment) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -2413,12 +2590,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(increment, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.INCRBY, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> incrbyfloat(@RedisProtocolSupport.Key final Buffer key, final double increment) {
+    public Single<Double> incrbyfloat(@RedisProtocolSupport.Key final Buffer key, final double increment) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -2427,23 +2605,25 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(increment, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.INCRBYFLOAT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Double> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> info() {
+    public Single<Buffer> info() {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.INFO, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.INFO, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> info(@Nullable final Buffer section) {
+    public Single<Buffer> info(@Nullable final Buffer section) {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
@@ -2455,12 +2635,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(section, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.INFO, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> keys(final Buffer pattern) {
+    public <T> Single<List<T>> keys(final Buffer pattern) {
         requireNonNull(pattern);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -2468,23 +2649,25 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.KEYS, allocator);
         addRequestArgument(pattern, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.KEYS, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> lastsave() {
+    public Single<Long> lastsave() {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LASTSAVE, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LASTSAVE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> lindex(@RedisProtocolSupport.Key final Buffer key, final long index) {
+    public Single<Buffer> lindex(@RedisProtocolSupport.Key final Buffer key, final long index) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -2493,14 +2676,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(index, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LINDEX, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> linsert(@RedisProtocolSupport.Key final Buffer key,
-                                  final RedisProtocolSupport.LinsertWhere where, final Buffer pivot,
-                                  final Buffer value) {
+    public Single<Long> linsert(@RedisProtocolSupport.Key final Buffer key,
+                                final RedisProtocolSupport.LinsertWhere where, final Buffer pivot, final Buffer value) {
         requireNonNull(key);
         requireNonNull(where);
         requireNonNull(pivot);
@@ -2514,12 +2697,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(pivot, cb, allocator);
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LINSERT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> llen(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Long> llen(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -2527,12 +2711,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LLEN, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LLEN, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> lpop(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Buffer> lpop(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -2540,12 +2725,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LPOP, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPOP, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> lpush(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
+    public Single<Long> lpush(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -2555,12 +2741,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> lpush(@RedisProtocolSupport.Key final Buffer key, final Buffer value1, final Buffer value2) {
+    public Single<Long> lpush(@RedisProtocolSupport.Key final Buffer key, final Buffer value1, final Buffer value2) {
         requireNonNull(key);
         requireNonNull(value1);
         requireNonNull(value2);
@@ -2572,13 +2759,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(value1, cb, allocator);
         addRequestArgument(value2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> lpush(@RedisProtocolSupport.Key final Buffer key, final Buffer value1, final Buffer value2,
-                                final Buffer value3) {
+    public Single<Long> lpush(@RedisProtocolSupport.Key final Buffer key, final Buffer value1, final Buffer value2,
+                              final Buffer value3) {
         requireNonNull(key);
         requireNonNull(value1);
         requireNonNull(value2);
@@ -2592,12 +2780,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(value2, cb, allocator);
         addRequestArgument(value3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> lpush(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> values) {
+    public Single<Long> lpush(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> values) {
         requireNonNull(key);
         requireNonNull(values);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -2608,12 +2797,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestBufferArguments(values, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> lpushx(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
+    public Single<Long> lpushx(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -2623,12 +2813,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSHX, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> lrange(@RedisProtocolSupport.Key final Buffer key, final long start, final long stop) {
+    public <T> Single<List<T>> lrange(@RedisProtocolSupport.Key final Buffer key, final long start, final long stop) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -2638,12 +2829,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(start, cb, allocator);
         addRequestArgument(stop, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LRANGE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> lrem(@RedisProtocolSupport.Key final Buffer key, final long count, final Buffer value) {
+    public Single<Long> lrem(@RedisProtocolSupport.Key final Buffer key, final long count, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -2654,7 +2846,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(count, cb, allocator);
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LREM, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
@@ -2670,7 +2863,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(index, cb, allocator);
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LSET, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -2685,43 +2879,47 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(start, cb, allocator);
         addRequestArgument(stop, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LTRIM, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> memoryDoctor() {
+    public Single<Buffer> memoryDoctor() {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
                     RedisProtocolSupport.SubCommand.DOCTOR, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> memoryHelp() {
+    public <T> Single<List<T>> memoryHelp() {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
                     RedisProtocolSupport.SubCommand.HELP, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> memoryMallocStats() {
+    public Single<Buffer> memoryMallocStats() {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
                     RedisProtocolSupport.SubCommand.MALLOC_STATS, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
@@ -2733,24 +2931,26 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
                     RedisProtocolSupport.SubCommand.PURGE, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> memoryStats() {
+    public <T> Single<List<T>> memoryStats() {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
                     RedisProtocolSupport.SubCommand.STATS, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> memoryUsage(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Long> memoryUsage(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -2759,12 +2959,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.USAGE, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> memoryUsage(@RedisProtocolSupport.Key final Buffer key, @Nullable final Long samplesCount) {
+    public Single<Long> memoryUsage(@RedisProtocolSupport.Key final Buffer key, @Nullable final Long samplesCount) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -2780,12 +2981,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(samplesCount, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> mget(@RedisProtocolSupport.Key final Buffer key) {
+    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -2793,13 +2995,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MGET, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> mget(@RedisProtocolSupport.Key final Buffer key1,
-                               @RedisProtocolSupport.Key final Buffer key2) {
+    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Buffer key1,
+                                    @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -2809,13 +3012,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key1, cb, allocator);
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> mget(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2,
-                               @RedisProtocolSupport.Key final Buffer key3) {
+    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Buffer key1,
+                                    @RedisProtocolSupport.Key final Buffer key2,
+                                    @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
@@ -2827,12 +3032,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key2, cb, allocator);
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> mget(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
+    public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -2841,12 +3047,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MGET, allocator);
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> move(@RedisProtocolSupport.Key final Buffer key, final long db) {
+    public Single<Long> move(@RedisProtocolSupport.Key final Buffer key, final long db) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -2855,7 +3062,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(db, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MOVE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
@@ -2870,7 +3078,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSET, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -2890,7 +3099,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key2, cb, allocator);
         addRequestArgument(value2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSET, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -2915,7 +3125,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key3, cb, allocator);
         addRequestArgument(value3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSET, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -2929,12 +3140,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MSET, allocator);
         addRequestTupleArguments(keyValues, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSET, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> msetnx(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
+    public Single<Long> msetnx(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -2944,13 +3156,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSETNX, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> msetnx(@RedisProtocolSupport.Key final Buffer key1, final Buffer value1,
-                                 @RedisProtocolSupport.Key final Buffer key2, final Buffer value2) {
+    public Single<Long> msetnx(@RedisProtocolSupport.Key final Buffer key1, final Buffer value1,
+                               @RedisProtocolSupport.Key final Buffer key2, final Buffer value2) {
         requireNonNull(key1);
         requireNonNull(value1);
         requireNonNull(key2);
@@ -2964,14 +3177,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key2, cb, allocator);
         addRequestArgument(value2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSETNX, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> msetnx(@RedisProtocolSupport.Key final Buffer key1, final Buffer value1,
-                                 @RedisProtocolSupport.Key final Buffer key2, final Buffer value2,
-                                 @RedisProtocolSupport.Key final Buffer key3, final Buffer value3) {
+    public Single<Long> msetnx(@RedisProtocolSupport.Key final Buffer key1, final Buffer value1,
+                               @RedisProtocolSupport.Key final Buffer key2, final Buffer value2,
+                               @RedisProtocolSupport.Key final Buffer key3, final Buffer value3) {
         requireNonNull(key1);
         requireNonNull(value1);
         requireNonNull(key2);
@@ -2989,12 +3203,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key3, cb, allocator);
         addRequestArgument(value3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSETNX, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> msetnx(final Collection<RedisProtocolSupport.BufferKeyValue> keyValues) {
+    public Single<Long> msetnx(final Collection<RedisProtocolSupport.BufferKeyValue> keyValues) {
         requireNonNull(keyValues);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -3003,12 +3218,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MSETNX, allocator);
         addRequestTupleArguments(keyValues, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSETNX, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> objectEncoding(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Buffer> objectEncoding(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -3017,12 +3233,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.ENCODING, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> objectFreq(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Long> objectFreq(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -3031,24 +3248,26 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.FREQ, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> objectHelp() {
+    public Single<List<String>> objectHelp() {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.OBJECT,
                     RedisProtocolSupport.SubCommand.HELP, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<String>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> objectIdletime(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Long> objectIdletime(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -3057,12 +3276,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.IDLETIME, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> objectRefcount(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Long> objectRefcount(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -3071,12 +3291,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.REFCOUNT, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> persist(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Long> persist(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -3084,12 +3305,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PERSIST, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PERSIST, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> pexpire(@RedisProtocolSupport.Key final Buffer key, final long milliseconds) {
+    public Single<Long> pexpire(@RedisProtocolSupport.Key final Buffer key, final long milliseconds) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -3098,12 +3320,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(milliseconds, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PEXPIRE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> pexpireat(@RedisProtocolSupport.Key final Buffer key, final long millisecondsTimestamp) {
+    public Single<Long> pexpireat(@RedisProtocolSupport.Key final Buffer key, final long millisecondsTimestamp) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -3112,12 +3335,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(millisecondsTimestamp, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PEXPIREAT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> pfadd(@RedisProtocolSupport.Key final Buffer key, final Buffer element) {
+    public Single<Long> pfadd(@RedisProtocolSupport.Key final Buffer key, final Buffer element) {
         requireNonNull(key);
         requireNonNull(element);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -3127,13 +3351,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(element, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> pfadd(@RedisProtocolSupport.Key final Buffer key, final Buffer element1,
-                                final Buffer element2) {
+    public Single<Long> pfadd(@RedisProtocolSupport.Key final Buffer key, final Buffer element1,
+                              final Buffer element2) {
         requireNonNull(key);
         requireNonNull(element1);
         requireNonNull(element2);
@@ -3145,13 +3370,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(element1, cb, allocator);
         addRequestArgument(element2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> pfadd(@RedisProtocolSupport.Key final Buffer key, final Buffer element1,
-                                final Buffer element2, final Buffer element3) {
+    public Single<Long> pfadd(@RedisProtocolSupport.Key final Buffer key, final Buffer element1, final Buffer element2,
+                              final Buffer element3) {
         requireNonNull(key);
         requireNonNull(element1);
         requireNonNull(element2);
@@ -3165,12 +3391,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(element2, cb, allocator);
         addRequestArgument(element3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> pfadd(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> elements) {
+    public Single<Long> pfadd(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> elements) {
         requireNonNull(key);
         requireNonNull(elements);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -3181,12 +3408,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestBufferArguments(elements, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> pfcount(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Long> pfcount(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -3194,13 +3422,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFCOUNT, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFCOUNT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> pfcount(@RedisProtocolSupport.Key final Buffer key1,
-                                  @RedisProtocolSupport.Key final Buffer key2) {
+    public Single<Long> pfcount(@RedisProtocolSupport.Key final Buffer key1,
+                                @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -3210,14 +3439,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key1, cb, allocator);
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFCOUNT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> pfcount(@RedisProtocolSupport.Key final Buffer key1,
-                                  @RedisProtocolSupport.Key final Buffer key2,
-                                  @RedisProtocolSupport.Key final Buffer key3) {
+    public Single<Long> pfcount(@RedisProtocolSupport.Key final Buffer key1,
+                                @RedisProtocolSupport.Key final Buffer key2,
+                                @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
@@ -3229,12 +3459,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key2, cb, allocator);
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFCOUNT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> pfcount(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
+    public Single<Long> pfcount(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -3243,7 +3474,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFCOUNT, allocator);
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFCOUNT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
@@ -3259,7 +3491,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(destkey, cb, allocator);
         addRequestArgument(sourcekey, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFMERGE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -3278,7 +3511,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(sourcekey1, cb, allocator);
         addRequestArgument(sourcekey2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFMERGE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -3300,7 +3534,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(sourcekey2, cb, allocator);
         addRequestArgument(sourcekey3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFMERGE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -3317,7 +3552,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(destkey, cb, allocator);
         addRequestBufferArguments(sourcekeys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFMERGE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -3328,12 +3564,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PING, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PING, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> ping(final Buffer message) {
+    public Single<Buffer> ping(final Buffer message) {
         requireNonNull(message);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -3341,7 +3578,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PING, allocator);
         addRequestArgument(message, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PING, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
@@ -3358,12 +3596,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(milliseconds, cb, allocator);
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PSETEX, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> pttl(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Long> pttl(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -3371,12 +3610,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PTTL, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PTTL, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> publish(final Buffer channel, final Buffer message) {
+    public Single<Long> publish(final Buffer channel, final Buffer message) {
         requireNonNull(channel);
         requireNonNull(message);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -3386,24 +3626,26 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(channel, cb, allocator);
         addRequestArgument(message, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBLISH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> pubsubChannels() {
+    public Single<List<String>> pubsubChannels() {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PUBSUB,
                     RedisProtocolSupport.SubCommand.CHANNELS, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<String>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> pubsubChannels(@Nullable final Buffer pattern) {
+    public Single<List<String>> pubsubChannels(@Nullable final Buffer pattern) {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
@@ -3416,12 +3658,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(pattern, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<String>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> pubsubChannels(@Nullable final Buffer pattern1, @Nullable final Buffer pattern2) {
+    public Single<List<String>> pubsubChannels(@Nullable final Buffer pattern1, @Nullable final Buffer pattern2) {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
@@ -3440,13 +3683,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(pattern2, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<String>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> pubsubChannels(@Nullable final Buffer pattern1, @Nullable final Buffer pattern2,
-                                         @Nullable final Buffer pattern3) {
+    public Single<List<String>> pubsubChannels(@Nullable final Buffer pattern1, @Nullable final Buffer pattern2,
+                                               @Nullable final Buffer pattern3) {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
@@ -3471,12 +3715,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(pattern3, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<String>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> pubsubChannels(final Collection<Buffer> patterns) {
+    public Single<List<String>> pubsubChannels(final Collection<Buffer> patterns) {
         requireNonNull(patterns);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -3486,24 +3731,26 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.CHANNELS, allocator);
         addRequestBufferArguments(patterns, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<String>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> pubsubNumsub() {
+    public <T> Single<List<T>> pubsubNumsub() {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PUBSUB,
                     RedisProtocolSupport.SubCommand.NUMSUB, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> pubsubNumsub(@Nullable final Buffer channel) {
+    public <T> Single<List<T>> pubsubNumsub(@Nullable final Buffer channel) {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
@@ -3516,12 +3763,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(channel, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> pubsubNumsub(@Nullable final Buffer channel1, @Nullable final Buffer channel2) {
+    public <T> Single<List<T>> pubsubNumsub(@Nullable final Buffer channel1, @Nullable final Buffer channel2) {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
@@ -3540,13 +3788,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(channel2, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> pubsubNumsub(@Nullable final Buffer channel1, @Nullable final Buffer channel2,
-                                       @Nullable final Buffer channel3) {
+    public <T> Single<List<T>> pubsubNumsub(@Nullable final Buffer channel1, @Nullable final Buffer channel2,
+                                            @Nullable final Buffer channel3) {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
@@ -3571,12 +3820,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(channel3, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> pubsubNumsub(final Collection<Buffer> channels) {
+    public <T> Single<List<T>> pubsubNumsub(final Collection<Buffer> channels) {
         requireNonNull(channels);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -3586,30 +3836,33 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.NUMSUB, allocator);
         addRequestBufferArguments(channels, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> pubsubNumpat() {
+    public Single<Long> pubsubNumpat() {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PUBSUB,
                     RedisProtocolSupport.SubCommand.NUMPAT, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> randomkey() {
+    public Single<Buffer> randomkey() {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RANDOMKEY, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RANDOMKEY, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
@@ -3620,7 +3873,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.READONLY, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.READONLY, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -3631,7 +3885,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.READWRITE, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.READWRITE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -3647,13 +3902,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(newkey, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RENAME, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> renamenx(@RedisProtocolSupport.Key final Buffer key,
-                                   @RedisProtocolSupport.Key final Buffer newkey) {
+    public Single<Long> renamenx(@RedisProtocolSupport.Key final Buffer key,
+                                 @RedisProtocolSupport.Key final Buffer newkey) {
         requireNonNull(key);
         requireNonNull(newkey);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -3663,7 +3919,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(newkey, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RENAMENX, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
@@ -3680,7 +3937,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(ttl, cb, allocator);
         addRequestArgument(serializedValue, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RESTORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -3704,23 +3962,25 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(replace, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RESTORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> role() {
+    public <T> Single<List<T>> role() {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ROLE, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ROLE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> rpop(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Buffer> rpop(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -3728,12 +3988,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RPOP, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPOP, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> rpoplpush(@RedisProtocolSupport.Key final Buffer source,
+    public Single<Buffer> rpoplpush(@RedisProtocolSupport.Key final Buffer source,
                                     @RedisProtocolSupport.Key final Buffer destination) {
         requireNonNull(source);
         requireNonNull(destination);
@@ -3744,12 +4005,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(source, cb, allocator);
         addRequestArgument(destination, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPOPLPUSH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> rpush(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
+    public Single<Long> rpush(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -3759,12 +4021,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> rpush(@RedisProtocolSupport.Key final Buffer key, final Buffer value1, final Buffer value2) {
+    public Single<Long> rpush(@RedisProtocolSupport.Key final Buffer key, final Buffer value1, final Buffer value2) {
         requireNonNull(key);
         requireNonNull(value1);
         requireNonNull(value2);
@@ -3776,13 +4039,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(value1, cb, allocator);
         addRequestArgument(value2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> rpush(@RedisProtocolSupport.Key final Buffer key, final Buffer value1, final Buffer value2,
-                                final Buffer value3) {
+    public Single<Long> rpush(@RedisProtocolSupport.Key final Buffer key, final Buffer value1, final Buffer value2,
+                              final Buffer value3) {
         requireNonNull(key);
         requireNonNull(value1);
         requireNonNull(value2);
@@ -3796,12 +4060,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(value2, cb, allocator);
         addRequestArgument(value3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> rpush(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> values) {
+    public Single<Long> rpush(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> values) {
         requireNonNull(key);
         requireNonNull(values);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -3812,12 +4077,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestBufferArguments(values, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> rpushx(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
+    public Single<Long> rpushx(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -3827,12 +4093,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSHX, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sadd(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
+    public Single<Long> sadd(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -3842,12 +4109,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sadd(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2) {
+    public Single<Long> sadd(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -3859,13 +4127,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(member1, cb, allocator);
         addRequestArgument(member2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sadd(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2,
-                               final Buffer member3) {
+    public Single<Long> sadd(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2,
+                             final Buffer member3) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -3879,12 +4148,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(member2, cb, allocator);
         addRequestArgument(member3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sadd(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> members) {
+    public Single<Long> sadd(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> members) {
         requireNonNull(key);
         requireNonNull(members);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -3895,7 +4165,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestBufferArguments(members, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
@@ -3906,24 +4177,27 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SAVE, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SAVE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> scan(final long cursor) {
+    public <T> Single<List<T>> scan(final long cursor) {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCAN, allocator);
         addRequestArgument(cursor, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCAN, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> scan(final long cursor, @Nullable final Buffer matchPattern, @Nullable final Long count) {
+    public <T> Single<List<T>> scan(final long cursor, @Nullable final Buffer matchPattern,
+                                    @Nullable final Long count) {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
@@ -3944,12 +4218,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(count, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCAN, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> scard(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Long> scard(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -3957,7 +4232,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCARD, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCARD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
@@ -3971,12 +4247,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.DEBUG, allocator);
         addRequestArgument(mode, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> scriptExists(final Buffer sha1) {
+    public <T> Single<List<T>> scriptExists(final Buffer sha1) {
         requireNonNull(sha1);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -3985,12 +4262,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.EXISTS, allocator);
         addRequestArgument(sha1, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> scriptExists(final Buffer sha11, final Buffer sha12) {
+    public <T> Single<List<T>> scriptExists(final Buffer sha11, final Buffer sha12) {
         requireNonNull(sha11);
         requireNonNull(sha12);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -4001,12 +4279,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(sha11, cb, allocator);
         addRequestArgument(sha12, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> scriptExists(final Buffer sha11, final Buffer sha12, final Buffer sha13) {
+    public <T> Single<List<T>> scriptExists(final Buffer sha11, final Buffer sha12, final Buffer sha13) {
         requireNonNull(sha11);
         requireNonNull(sha12);
         requireNonNull(sha13);
@@ -4019,12 +4298,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(sha12, cb, allocator);
         addRequestArgument(sha13, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> scriptExists(final Collection<Buffer> sha1s) {
+    public <T> Single<List<T>> scriptExists(final Collection<Buffer> sha1s) {
         requireNonNull(sha1s);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -4034,7 +4314,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.EXISTS, allocator);
         addRequestBufferArguments(sha1s, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
@@ -4046,7 +4327,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCRIPT,
                     RedisProtocolSupport.SubCommand.FLUSH, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -4058,12 +4340,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCRIPT,
                     RedisProtocolSupport.SubCommand.KILL, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> scriptLoad(final Buffer script) {
+    public Single<Buffer> scriptLoad(final Buffer script) {
         requireNonNull(script);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -4072,12 +4355,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
                     RedisProtocolSupport.SubCommand.LOAD, allocator);
         addRequestArgument(script, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sdiff(@RedisProtocolSupport.Key final Buffer firstkey) {
+    public <T> Single<List<T>> sdiff(@RedisProtocolSupport.Key final Buffer firstkey) {
         requireNonNull(firstkey);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -4085,165 +4369,47 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFF, allocator);
         addRequestArgument(firstkey, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sdiff(@RedisProtocolSupport.Key final Buffer firstkey,
-                                @Nullable @RedisProtocolSupport.Key final Buffer otherkey) {
-        requireNonNull(firstkey);
-        final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        if (otherkey != null) {
-            len++;
-        }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFF, allocator);
-        addRequestArgument(firstkey, cb, allocator);
-        if (otherkey != null) {
-            addRequestArgument(otherkey, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
-        return result;
-    }
-
-    @Override
-    public Single<String> sdiff(@RedisProtocolSupport.Key final Buffer firstkey,
-                                @Nullable @RedisProtocolSupport.Key final Buffer otherkey1,
-                                @Nullable @RedisProtocolSupport.Key final Buffer otherkey2) {
-        requireNonNull(firstkey);
-        final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        if (otherkey1 != null) {
-            len++;
-        }
-        if (otherkey2 != null) {
-            len++;
-        }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFF, allocator);
-        addRequestArgument(firstkey, cb, allocator);
-        if (otherkey1 != null) {
-            addRequestArgument(otherkey1, cb, allocator);
-        }
-        if (otherkey2 != null) {
-            addRequestArgument(otherkey2, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
-        return result;
-    }
-
-    @Override
-    public Single<String> sdiff(@RedisProtocolSupport.Key final Buffer firstkey,
-                                @Nullable @RedisProtocolSupport.Key final Buffer otherkey1,
-                                @Nullable @RedisProtocolSupport.Key final Buffer otherkey2,
-                                @Nullable @RedisProtocolSupport.Key final Buffer otherkey3) {
-        requireNonNull(firstkey);
-        final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        if (otherkey1 != null) {
-            len++;
-        }
-        if (otherkey2 != null) {
-            len++;
-        }
-        if (otherkey3 != null) {
-            len++;
-        }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFF, allocator);
-        addRequestArgument(firstkey, cb, allocator);
-        if (otherkey1 != null) {
-            addRequestArgument(otherkey1, cb, allocator);
-        }
-        if (otherkey2 != null) {
-            addRequestArgument(otherkey2, cb, allocator);
-        }
-        if (otherkey3 != null) {
-            addRequestArgument(otherkey3, cb, allocator);
-        }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
-        return result;
-    }
-
-    @Override
-    public Single<String> sdiff(@RedisProtocolSupport.Key final Buffer firstkey,
-                                @RedisProtocolSupport.Key final Collection<Buffer> otherkeys) {
-        requireNonNull(firstkey);
-        requireNonNull(otherkeys);
-        final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 2;
-        len += otherkeys.size();
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFF, allocator);
-        addRequestArgument(firstkey, cb, allocator);
-        addRequestBufferArguments(otherkeys, null, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
-        return result;
-    }
-
-    @Override
-    public Single<String> sdiffstore(@RedisProtocolSupport.Key final Buffer destination,
-                                     @RedisProtocolSupport.Key final Buffer firstkey) {
-        requireNonNull(destination);
-        requireNonNull(firstkey);
-        final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
-        // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFFSTORE, allocator);
-        addRequestArgument(destination, cb, allocator);
-        addRequestArgument(firstkey, cb, allocator);
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
-        return result;
-    }
-
-    @Override
-    public Single<String> sdiffstore(@RedisProtocolSupport.Key final Buffer destination,
-                                     @RedisProtocolSupport.Key final Buffer firstkey,
+    public <T> Single<List<T>> sdiff(@RedisProtocolSupport.Key final Buffer firstkey,
                                      @Nullable @RedisProtocolSupport.Key final Buffer otherkey) {
-        requireNonNull(destination);
         requireNonNull(firstkey);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
+        int len = 2;
         if (otherkey != null) {
             len++;
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFFSTORE, allocator);
-        addRequestArgument(destination, cb, allocator);
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFF, allocator);
         addRequestArgument(firstkey, cb, allocator);
         if (otherkey != null) {
             addRequestArgument(otherkey, cb, allocator);
         }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, cb);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sdiffstore(@RedisProtocolSupport.Key final Buffer destination,
-                                     @RedisProtocolSupport.Key final Buffer firstkey,
+    public <T> Single<List<T>> sdiff(@RedisProtocolSupport.Key final Buffer firstkey,
                                      @Nullable @RedisProtocolSupport.Key final Buffer otherkey1,
                                      @Nullable @RedisProtocolSupport.Key final Buffer otherkey2) {
-        requireNonNull(destination);
         requireNonNull(firstkey);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
-        int len = 3;
+        int len = 2;
         if (otherkey1 != null) {
             len++;
         }
         if (otherkey2 != null) {
             len++;
         }
-        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFFSTORE, allocator);
-        addRequestArgument(destination, cb, allocator);
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFF, allocator);
         addRequestArgument(firstkey, cb, allocator);
         if (otherkey1 != null) {
             addRequestArgument(otherkey1, cb, allocator);
@@ -4251,17 +4417,143 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         if (otherkey2 != null) {
             addRequestArgument(otherkey2, cb, allocator);
         }
-        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, cb);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sdiffstore(@RedisProtocolSupport.Key final Buffer destination,
-                                     @RedisProtocolSupport.Key final Buffer firstkey,
+    public <T> Single<List<T>> sdiff(@RedisProtocolSupport.Key final Buffer firstkey,
                                      @Nullable @RedisProtocolSupport.Key final Buffer otherkey1,
                                      @Nullable @RedisProtocolSupport.Key final Buffer otherkey2,
                                      @Nullable @RedisProtocolSupport.Key final Buffer otherkey3) {
+        requireNonNull(firstkey);
+        final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 2;
+        if (otherkey1 != null) {
+            len++;
+        }
+        if (otherkey2 != null) {
+            len++;
+        }
+        if (otherkey3 != null) {
+            len++;
+        }
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFF, allocator);
+        addRequestArgument(firstkey, cb, allocator);
+        if (otherkey1 != null) {
+            addRequestArgument(otherkey1, cb, allocator);
+        }
+        if (otherkey2 != null) {
+            addRequestArgument(otherkey2, cb, allocator);
+        }
+        if (otherkey3 != null) {
+            addRequestArgument(otherkey3, cb, allocator);
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, cb);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
+        return result;
+    }
+
+    @Override
+    public <T> Single<List<T>> sdiff(@RedisProtocolSupport.Key final Buffer firstkey,
+                                     @RedisProtocolSupport.Key final Collection<Buffer> otherkeys) {
+        requireNonNull(firstkey);
+        requireNonNull(otherkeys);
+        final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 2;
+        len += otherkeys.size();
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFF, allocator);
+        addRequestArgument(firstkey, cb, allocator);
+        addRequestBufferArguments(otherkeys, null, cb, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, cb);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
+        return result;
+    }
+
+    @Override
+    public Single<Long> sdiffstore(@RedisProtocolSupport.Key final Buffer destination,
+                                   @RedisProtocolSupport.Key final Buffer firstkey) {
+        requireNonNull(destination);
+        requireNonNull(firstkey);
+        final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 3;
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFFSTORE, allocator);
+        addRequestArgument(destination, cb, allocator);
+        addRequestArgument(firstkey, cb, allocator);
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, cb);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
+        return result;
+    }
+
+    @Override
+    public Single<Long> sdiffstore(@RedisProtocolSupport.Key final Buffer destination,
+                                   @RedisProtocolSupport.Key final Buffer firstkey,
+                                   @Nullable @RedisProtocolSupport.Key final Buffer otherkey) {
+        requireNonNull(destination);
+        requireNonNull(firstkey);
+        final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 3;
+        if (otherkey != null) {
+            len++;
+        }
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFFSTORE, allocator);
+        addRequestArgument(destination, cb, allocator);
+        addRequestArgument(firstkey, cb, allocator);
+        if (otherkey != null) {
+            addRequestArgument(otherkey, cb, allocator);
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, cb);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
+        return result;
+    }
+
+    @Override
+    public Single<Long> sdiffstore(@RedisProtocolSupport.Key final Buffer destination,
+                                   @RedisProtocolSupport.Key final Buffer firstkey,
+                                   @Nullable @RedisProtocolSupport.Key final Buffer otherkey1,
+                                   @Nullable @RedisProtocolSupport.Key final Buffer otherkey2) {
+        requireNonNull(destination);
+        requireNonNull(firstkey);
+        final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
+        // Compute the number of request arguments, accounting for nullable ones
+        int len = 3;
+        if (otherkey1 != null) {
+            len++;
+        }
+        if (otherkey2 != null) {
+            len++;
+        }
+        final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFFSTORE, allocator);
+        addRequestArgument(destination, cb, allocator);
+        addRequestArgument(firstkey, cb, allocator);
+        if (otherkey1 != null) {
+            addRequestArgument(otherkey1, cb, allocator);
+        }
+        if (otherkey2 != null) {
+            addRequestArgument(otherkey2, cb, allocator);
+        }
+        final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, cb);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
+        return result;
+    }
+
+    @Override
+    public Single<Long> sdiffstore(@RedisProtocolSupport.Key final Buffer destination,
+                                   @RedisProtocolSupport.Key final Buffer firstkey,
+                                   @Nullable @RedisProtocolSupport.Key final Buffer otherkey1,
+                                   @Nullable @RedisProtocolSupport.Key final Buffer otherkey2,
+                                   @Nullable @RedisProtocolSupport.Key final Buffer otherkey3) {
         requireNonNull(destination);
         requireNonNull(firstkey);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -4289,14 +4581,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(otherkey3, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sdiffstore(@RedisProtocolSupport.Key final Buffer destination,
-                                     @RedisProtocolSupport.Key final Buffer firstkey,
-                                     @RedisProtocolSupport.Key final Collection<Buffer> otherkeys) {
+    public Single<Long> sdiffstore(@RedisProtocolSupport.Key final Buffer destination,
+                                   @RedisProtocolSupport.Key final Buffer firstkey,
+                                   @RedisProtocolSupport.Key final Collection<Buffer> otherkeys) {
         requireNonNull(destination);
         requireNonNull(firstkey);
         requireNonNull(otherkeys);
@@ -4309,7 +4602,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(firstkey, cb, allocator);
         addRequestBufferArguments(otherkeys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
@@ -4321,7 +4615,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SELECT, allocator);
         addRequestArgument(index, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SELECT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -4336,7 +4631,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SET, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -4365,12 +4661,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(condition, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SET, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> setbit(@RedisProtocolSupport.Key final Buffer key, final long offset, final Buffer value) {
+    public Single<Long> setbit(@RedisProtocolSupport.Key final Buffer key, final long offset, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -4381,7 +4678,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(offset, cb, allocator);
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SETBIT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
@@ -4397,12 +4695,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(seconds, cb, allocator);
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SETEX, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> setnx(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
+    public Single<Long> setnx(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -4412,12 +4711,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SETNX, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> setrange(@RedisProtocolSupport.Key final Buffer key, final long offset, final Buffer value) {
+    public Single<Long> setrange(@RedisProtocolSupport.Key final Buffer key, final long offset, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -4428,7 +4728,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(offset, cb, allocator);
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SETRANGE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
@@ -4439,7 +4740,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SHUTDOWN, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SHUTDOWN, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -4456,12 +4758,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(saveMode, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SHUTDOWN, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sinter(@RedisProtocolSupport.Key final Buffer key) {
+    public <T> Single<List<T>> sinter(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -4469,13 +4772,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SINTER, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sinter(@RedisProtocolSupport.Key final Buffer key1,
-                                 @RedisProtocolSupport.Key final Buffer key2) {
+    public <T> Single<List<T>> sinter(@RedisProtocolSupport.Key final Buffer key1,
+                                      @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -4485,14 +4789,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key1, cb, allocator);
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sinter(@RedisProtocolSupport.Key final Buffer key1,
-                                 @RedisProtocolSupport.Key final Buffer key2,
-                                 @RedisProtocolSupport.Key final Buffer key3) {
+    public <T> Single<List<T>> sinter(@RedisProtocolSupport.Key final Buffer key1,
+                                      @RedisProtocolSupport.Key final Buffer key2,
+                                      @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
@@ -4504,12 +4809,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key2, cb, allocator);
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sinter(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
+    public <T> Single<List<T>> sinter(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -4518,13 +4824,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SINTER, allocator);
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sinterstore(@RedisProtocolSupport.Key final Buffer destination,
-                                      @RedisProtocolSupport.Key final Buffer key) {
+    public Single<Long> sinterstore(@RedisProtocolSupport.Key final Buffer destination,
+                                    @RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(destination);
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -4534,14 +4841,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(destination, cb, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTERSTORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sinterstore(@RedisProtocolSupport.Key final Buffer destination,
-                                      @RedisProtocolSupport.Key final Buffer key1,
-                                      @RedisProtocolSupport.Key final Buffer key2) {
+    public Single<Long> sinterstore(@RedisProtocolSupport.Key final Buffer destination,
+                                    @RedisProtocolSupport.Key final Buffer key1,
+                                    @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(destination);
         requireNonNull(key1);
         requireNonNull(key2);
@@ -4553,15 +4861,16 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key1, cb, allocator);
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTERSTORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sinterstore(@RedisProtocolSupport.Key final Buffer destination,
-                                      @RedisProtocolSupport.Key final Buffer key1,
-                                      @RedisProtocolSupport.Key final Buffer key2,
-                                      @RedisProtocolSupport.Key final Buffer key3) {
+    public Single<Long> sinterstore(@RedisProtocolSupport.Key final Buffer destination,
+                                    @RedisProtocolSupport.Key final Buffer key1,
+                                    @RedisProtocolSupport.Key final Buffer key2,
+                                    @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(destination);
         requireNonNull(key1);
         requireNonNull(key2);
@@ -4575,13 +4884,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key2, cb, allocator);
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTERSTORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sinterstore(@RedisProtocolSupport.Key final Buffer destination,
-                                      @RedisProtocolSupport.Key final Collection<Buffer> keys) {
+    public Single<Long> sinterstore(@RedisProtocolSupport.Key final Buffer destination,
+                                    @RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(destination);
         requireNonNull(keys);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -4592,12 +4902,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(destination, cb, allocator);
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTERSTORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sismember(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
+    public Single<Long> sismember(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -4607,7 +4918,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SISMEMBER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
@@ -4622,12 +4934,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(host, cb, allocator);
         addRequestArgument(port, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SLAVEOF, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> slowlog(final Buffer subcommand) {
+    public <T> Single<List<T>> slowlog(final Buffer subcommand) {
         requireNonNull(subcommand);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -4635,12 +4948,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SLOWLOG, allocator);
         addRequestArgument(subcommand, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SLOWLOG, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> slowlog(final Buffer subcommand, @Nullable final Buffer argument) {
+    public <T> Single<List<T>> slowlog(final Buffer subcommand, @Nullable final Buffer argument) {
         requireNonNull(subcommand);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -4654,12 +4968,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(argument, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SLOWLOG, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> smembers(@RedisProtocolSupport.Key final Buffer key) {
+    public <T> Single<List<T>> smembers(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -4667,13 +4982,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SMEMBERS, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SMEMBERS, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> smove(@RedisProtocolSupport.Key final Buffer source,
-                                @RedisProtocolSupport.Key final Buffer destination, final Buffer member) {
+    public Single<Long> smove(@RedisProtocolSupport.Key final Buffer source,
+                              @RedisProtocolSupport.Key final Buffer destination, final Buffer member) {
         requireNonNull(source);
         requireNonNull(destination);
         requireNonNull(member);
@@ -4685,12 +5001,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(destination, cb, allocator);
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SMOVE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sort(@RedisProtocolSupport.Key final Buffer key) {
+    public <T> Single<List<T>> sort(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -4698,16 +5015,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SORT, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SORT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sort(@RedisProtocolSupport.Key final Buffer key, @Nullable final Buffer byPattern,
-                               @Nullable final RedisProtocolSupport.OffsetCount offsetCount,
-                               final Collection<Buffer> getPatterns,
-                               @Nullable final RedisProtocolSupport.SortOrder order,
-                               @Nullable final RedisProtocolSupport.SortSorting sorting) {
+    public <T> Single<List<T>> sort(@RedisProtocolSupport.Key final Buffer key, @Nullable final Buffer byPattern,
+                                    @Nullable final RedisProtocolSupport.OffsetCount offsetCount,
+                                    final Collection<Buffer> getPatterns,
+                                    @Nullable final RedisProtocolSupport.SortOrder order,
+                                    @Nullable final RedisProtocolSupport.SortSorting sorting) {
         requireNonNull(key);
         requireNonNull(getPatterns);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -4743,13 +5061,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(sorting, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SORT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sort(@RedisProtocolSupport.Key final Buffer key,
-                               @RedisProtocolSupport.Key final Buffer storeDestination) {
+    public Single<Long> sort(@RedisProtocolSupport.Key final Buffer key,
+                             @RedisProtocolSupport.Key final Buffer storeDestination) {
         requireNonNull(key);
         requireNonNull(storeDestination);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -4760,18 +5079,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(RedisProtocolSupport.SubCommand.STORE, cb, allocator);
         addRequestArgument(storeDestination, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SORT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sort(@RedisProtocolSupport.Key final Buffer key,
-                               @RedisProtocolSupport.Key final Buffer storeDestination,
-                               @Nullable final Buffer byPattern,
-                               @Nullable final RedisProtocolSupport.OffsetCount offsetCount,
-                               final Collection<Buffer> getPatterns,
-                               @Nullable final RedisProtocolSupport.SortOrder order,
-                               @Nullable final RedisProtocolSupport.SortSorting sorting) {
+    public Single<Long> sort(@RedisProtocolSupport.Key final Buffer key,
+                             @RedisProtocolSupport.Key final Buffer storeDestination, @Nullable final Buffer byPattern,
+                             @Nullable final RedisProtocolSupport.OffsetCount offsetCount,
+                             final Collection<Buffer> getPatterns, @Nullable final RedisProtocolSupport.SortOrder order,
+                             @Nullable final RedisProtocolSupport.SortSorting sorting) {
         requireNonNull(key);
         requireNonNull(storeDestination);
         requireNonNull(getPatterns);
@@ -4810,12 +5128,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(sorting, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SORT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> spop(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Buffer> spop(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -4823,12 +5142,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SPOP, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SPOP, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> spop(@RedisProtocolSupport.Key final Buffer key, @Nullable final Long count) {
+    public Single<Buffer> spop(@RedisProtocolSupport.Key final Buffer key, @Nullable final Long count) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -4842,12 +5162,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(count, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SPOP, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> srandmember(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Buffer> srandmember(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -4855,12 +5176,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SRANDMEMBER, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SRANDMEMBER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> srandmember(@RedisProtocolSupport.Key final Buffer key, final long count) {
+    public Single<List<String>> srandmember(@RedisProtocolSupport.Key final Buffer key, final long count) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -4869,12 +5191,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(count, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SRANDMEMBER, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<String>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> srem(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
+    public Single<Long> srem(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -4884,12 +5207,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SREM, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> srem(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2) {
+    public Single<Long> srem(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -4901,13 +5225,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(member1, cb, allocator);
         addRequestArgument(member2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SREM, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> srem(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2,
-                               final Buffer member3) {
+    public Single<Long> srem(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2,
+                             final Buffer member3) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -4921,12 +5246,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(member2, cb, allocator);
         addRequestArgument(member3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SREM, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> srem(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> members) {
+    public Single<Long> srem(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> members) {
         requireNonNull(key);
         requireNonNull(members);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -4937,12 +5263,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestBufferArguments(members, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SREM, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sscan(@RedisProtocolSupport.Key final Buffer key, final long cursor) {
+    public <T> Single<List<T>> sscan(@RedisProtocolSupport.Key final Buffer key, final long cursor) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -4951,13 +5278,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(cursor, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SSCAN, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sscan(@RedisProtocolSupport.Key final Buffer key, final long cursor,
-                                @Nullable final Buffer matchPattern, @Nullable final Long count) {
+    public <T> Single<List<T>> sscan(@RedisProtocolSupport.Key final Buffer key, final long cursor,
+                                     @Nullable final Buffer matchPattern, @Nullable final Long count) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -4980,12 +5308,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(count, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SSCAN, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> strlen(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Long> strlen(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -4993,12 +5322,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.STRLEN, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.STRLEN, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sunion(@RedisProtocolSupport.Key final Buffer key) {
+    public <T> Single<List<T>> sunion(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -5006,13 +5336,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUNION, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNION, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sunion(@RedisProtocolSupport.Key final Buffer key1,
-                                 @RedisProtocolSupport.Key final Buffer key2) {
+    public <T> Single<List<T>> sunion(@RedisProtocolSupport.Key final Buffer key1,
+                                      @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -5022,14 +5353,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key1, cb, allocator);
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNION, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sunion(@RedisProtocolSupport.Key final Buffer key1,
-                                 @RedisProtocolSupport.Key final Buffer key2,
-                                 @RedisProtocolSupport.Key final Buffer key3) {
+    public <T> Single<List<T>> sunion(@RedisProtocolSupport.Key final Buffer key1,
+                                      @RedisProtocolSupport.Key final Buffer key2,
+                                      @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
@@ -5041,12 +5373,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key2, cb, allocator);
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNION, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sunion(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
+    public <T> Single<List<T>> sunion(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -5055,13 +5388,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUNION, allocator);
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNION, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sunionstore(@RedisProtocolSupport.Key final Buffer destination,
-                                      @RedisProtocolSupport.Key final Buffer key) {
+    public Single<Long> sunionstore(@RedisProtocolSupport.Key final Buffer destination,
+                                    @RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(destination);
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -5071,14 +5405,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(destination, cb, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNIONSTORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sunionstore(@RedisProtocolSupport.Key final Buffer destination,
-                                      @RedisProtocolSupport.Key final Buffer key1,
-                                      @RedisProtocolSupport.Key final Buffer key2) {
+    public Single<Long> sunionstore(@RedisProtocolSupport.Key final Buffer destination,
+                                    @RedisProtocolSupport.Key final Buffer key1,
+                                    @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(destination);
         requireNonNull(key1);
         requireNonNull(key2);
@@ -5090,15 +5425,16 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key1, cb, allocator);
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNIONSTORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sunionstore(@RedisProtocolSupport.Key final Buffer destination,
-                                      @RedisProtocolSupport.Key final Buffer key1,
-                                      @RedisProtocolSupport.Key final Buffer key2,
-                                      @RedisProtocolSupport.Key final Buffer key3) {
+    public Single<Long> sunionstore(@RedisProtocolSupport.Key final Buffer destination,
+                                    @RedisProtocolSupport.Key final Buffer key1,
+                                    @RedisProtocolSupport.Key final Buffer key2,
+                                    @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(destination);
         requireNonNull(key1);
         requireNonNull(key2);
@@ -5112,13 +5448,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key2, cb, allocator);
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNIONSTORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> sunionstore(@RedisProtocolSupport.Key final Buffer destination,
-                                      @RedisProtocolSupport.Key final Collection<Buffer> keys) {
+    public Single<Long> sunionstore(@RedisProtocolSupport.Key final Buffer destination,
+                                    @RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(destination);
         requireNonNull(keys);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -5129,7 +5466,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(destination, cb, allocator);
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNIONSTORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
@@ -5142,23 +5480,25 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(index, cb, allocator);
         addRequestArgument(index1, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SWAPDB, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> time() {
+    public <T> Single<List<T>> time() {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TIME, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.TIME, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> touch(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Long> touch(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -5166,13 +5506,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TOUCH, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.TOUCH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> touch(@RedisProtocolSupport.Key final Buffer key1,
-                                @RedisProtocolSupport.Key final Buffer key2) {
+    public Single<Long> touch(@RedisProtocolSupport.Key final Buffer key1,
+                              @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -5182,14 +5523,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key1, cb, allocator);
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.TOUCH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> touch(@RedisProtocolSupport.Key final Buffer key1,
-                                @RedisProtocolSupport.Key final Buffer key2,
-                                @RedisProtocolSupport.Key final Buffer key3) {
+    public Single<Long> touch(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2,
+                              @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
@@ -5201,12 +5542,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key2, cb, allocator);
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.TOUCH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> touch(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
+    public Single<Long> touch(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -5215,12 +5557,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TOUCH, allocator);
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.TOUCH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> ttl(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Long> ttl(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -5228,7 +5571,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TTL, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.TTL, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
@@ -5241,12 +5585,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TYPE, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.TYPE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> unlink(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Long> unlink(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -5254,13 +5599,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.UNLINK, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNLINK, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> unlink(@RedisProtocolSupport.Key final Buffer key1,
-                                 @RedisProtocolSupport.Key final Buffer key2) {
+    public Single<Long> unlink(@RedisProtocolSupport.Key final Buffer key1,
+                               @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -5270,14 +5616,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key1, cb, allocator);
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNLINK, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> unlink(@RedisProtocolSupport.Key final Buffer key1,
-                                 @RedisProtocolSupport.Key final Buffer key2,
-                                 @RedisProtocolSupport.Key final Buffer key3) {
+    public Single<Long> unlink(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2,
+                               @RedisProtocolSupport.Key final Buffer key3) {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
@@ -5289,12 +5635,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key2, cb, allocator);
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNLINK, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> unlink(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
+    public Single<Long> unlink(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -5303,7 +5650,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.UNLINK, allocator);
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNLINK, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
@@ -5314,12 +5662,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.UNWATCH, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNWATCH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> wait(final long numslaves, final long timeout) {
+    public Single<Long> wait(final long numslaves, final long timeout) {
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
@@ -5327,7 +5676,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(numslaves, cb, allocator);
         addRequestArgument(timeout, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.WAIT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
@@ -5340,7 +5690,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.WATCH, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.WATCH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -5356,7 +5707,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key1, cb, allocator);
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.WATCH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -5375,7 +5727,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key2, cb, allocator);
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.WATCH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
@@ -5389,12 +5742,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.WATCH, allocator);
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.WATCH, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<String> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> xadd(@RedisProtocolSupport.Key final Buffer key, final Buffer id, final Buffer field,
+    public Single<Buffer> xadd(@RedisProtocolSupport.Key final Buffer key, final Buffer id, final Buffer field,
                                final Buffer value) {
         requireNonNull(key);
         requireNonNull(id);
@@ -5409,12 +5763,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(field, cb, allocator);
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> xadd(@RedisProtocolSupport.Key final Buffer key, final Buffer id, final Buffer field1,
+    public Single<Buffer> xadd(@RedisProtocolSupport.Key final Buffer key, final Buffer id, final Buffer field1,
                                final Buffer value1, final Buffer field2, final Buffer value2) {
         requireNonNull(key);
         requireNonNull(id);
@@ -5433,12 +5788,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(field2, cb, allocator);
         addRequestArgument(value2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> xadd(@RedisProtocolSupport.Key final Buffer key, final Buffer id, final Buffer field1,
+    public Single<Buffer> xadd(@RedisProtocolSupport.Key final Buffer key, final Buffer id, final Buffer field1,
                                final Buffer value1, final Buffer field2, final Buffer value2, final Buffer field3,
                                final Buffer value3) {
         requireNonNull(key);
@@ -5462,12 +5818,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(field3, cb, allocator);
         addRequestArgument(value3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> xadd(@RedisProtocolSupport.Key final Buffer key, final Buffer id,
+    public Single<Buffer> xadd(@RedisProtocolSupport.Key final Buffer key, final Buffer id,
                                final Collection<RedisProtocolSupport.BufferFieldValue> fieldValues) {
         requireNonNull(key);
         requireNonNull(id);
@@ -5481,12 +5838,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(id, cb, allocator);
         addRequestTupleArguments(fieldValues, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Buffer> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> xlen(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Long> xlen(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -5494,12 +5852,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XLEN, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XLEN, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> xpending(@RedisProtocolSupport.Key final Buffer key, final Buffer group) {
+    public <T> Single<List<T>> xpending(@RedisProtocolSupport.Key final Buffer key, final Buffer group) {
         requireNonNull(key);
         requireNonNull(group);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -5509,14 +5868,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(group, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XPENDING, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> xpending(@RedisProtocolSupport.Key final Buffer key, final Buffer group,
-                                   @Nullable final Buffer start, @Nullable final Buffer end, @Nullable final Long count,
-                                   @Nullable final Buffer consumer) {
+    public <T> Single<List<T>> xpending(@RedisProtocolSupport.Key final Buffer key, final Buffer group,
+                                        @Nullable final Buffer start, @Nullable final Buffer end,
+                                        @Nullable final Long count, @Nullable final Buffer consumer) {
         requireNonNull(key);
         requireNonNull(group);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -5550,12 +5910,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(consumer, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XPENDING, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> xrange(@RedisProtocolSupport.Key final Buffer key, final Buffer start, final Buffer end) {
+    public <T> Single<List<T>> xrange(@RedisProtocolSupport.Key final Buffer key, final Buffer start,
+                                      final Buffer end) {
         requireNonNull(key);
         requireNonNull(start);
         requireNonNull(end);
@@ -5567,13 +5929,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(start, cb, allocator);
         addRequestArgument(end, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XRANGE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> xrange(@RedisProtocolSupport.Key final Buffer key, final Buffer start, final Buffer end,
-                                 @Nullable final Long count) {
+    public <T> Single<List<T>> xrange(@RedisProtocolSupport.Key final Buffer key, final Buffer start, final Buffer end,
+                                      @Nullable final Long count) {
         requireNonNull(key);
         requireNonNull(start);
         requireNonNull(end);
@@ -5592,12 +5955,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(count, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XRANGE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> xread(@RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Buffer> ids) {
+    public <T> Single<List<T>> xread(@RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                     final Collection<Buffer> ids) {
         requireNonNull(keys);
         requireNonNull(ids);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -5610,13 +5975,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestBufferArguments(keys, null, cb, allocator);
         addRequestBufferArguments(ids, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREAD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> xread(@Nullable final Long count, @Nullable final Long blockMilliseconds,
-                                @RedisProtocolSupport.Key final Collection<Buffer> keys, final Collection<Buffer> ids) {
+    public <T> Single<List<T>> xread(@Nullable final Long count, @Nullable final Long blockMilliseconds,
+                                     @RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                     final Collection<Buffer> ids) {
         requireNonNull(keys);
         requireNonNull(ids);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -5643,14 +6010,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestBufferArguments(keys, null, cb, allocator);
         addRequestBufferArguments(ids, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREAD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> xreadgroup(final RedisProtocolSupport.BufferGroupConsumer groupConsumer,
-                                     @RedisProtocolSupport.Key final Collection<Buffer> keys,
-                                     final Collection<Buffer> ids) {
+    public <T> Single<List<T>> xreadgroup(final RedisProtocolSupport.BufferGroupConsumer groupConsumer,
+                                          @RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                          final Collection<Buffer> ids) {
         requireNonNull(groupConsumer);
         requireNonNull(keys);
         requireNonNull(ids);
@@ -5665,15 +6033,16 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestBufferArguments(keys, null, cb, allocator);
         addRequestBufferArguments(ids, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREADGROUP, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> xreadgroup(final RedisProtocolSupport.BufferGroupConsumer groupConsumer,
-                                     @Nullable final Long count, @Nullable final Long blockMilliseconds,
-                                     @RedisProtocolSupport.Key final Collection<Buffer> keys,
-                                     final Collection<Buffer> ids) {
+    public <T> Single<List<T>> xreadgroup(final RedisProtocolSupport.BufferGroupConsumer groupConsumer,
+                                          @Nullable final Long count, @Nullable final Long blockMilliseconds,
+                                          @RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                          final Collection<Buffer> ids) {
         requireNonNull(groupConsumer);
         requireNonNull(keys);
         requireNonNull(ids);
@@ -5702,12 +6071,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestBufferArguments(keys, null, cb, allocator);
         addRequestBufferArguments(ids, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREADGROUP, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> xrevrange(@RedisProtocolSupport.Key final Buffer key, final Buffer end, final Buffer start) {
+    public <T> Single<List<T>> xrevrange(@RedisProtocolSupport.Key final Buffer key, final Buffer end,
+                                         final Buffer start) {
         requireNonNull(key);
         requireNonNull(end);
         requireNonNull(start);
@@ -5719,13 +6090,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(end, cb, allocator);
         addRequestArgument(start, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREVRANGE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> xrevrange(@RedisProtocolSupport.Key final Buffer key, final Buffer end, final Buffer start,
-                                    @Nullable final Long count) {
+    public <T> Single<List<T>> xrevrange(@RedisProtocolSupport.Key final Buffer key, final Buffer end,
+                                         final Buffer start, @Nullable final Long count) {
         requireNonNull(key);
         requireNonNull(end);
         requireNonNull(start);
@@ -5744,13 +6116,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(count, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREVRANGE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zadd(@RedisProtocolSupport.Key final Buffer key,
-                               final Collection<RedisProtocolSupport.BufferScoreMember> scoreMembers) {
+    public Single<Long> zadd(@RedisProtocolSupport.Key final Buffer key,
+                             final Collection<RedisProtocolSupport.BufferScoreMember> scoreMembers) {
         requireNonNull(key);
         requireNonNull(scoreMembers);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -5761,15 +6134,16 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestTupleArguments(scoreMembers, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zadd(@RedisProtocolSupport.Key final Buffer key,
-                               @Nullable final RedisProtocolSupport.ZaddCondition condition,
-                               @Nullable final RedisProtocolSupport.ZaddChange change, final double score,
-                               final Buffer member) {
+    public Single<Long> zadd(@RedisProtocolSupport.Key final Buffer key,
+                             @Nullable final RedisProtocolSupport.ZaddCondition condition,
+                             @Nullable final RedisProtocolSupport.ZaddChange change, final double score,
+                             final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -5792,15 +6166,16 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(score, cb, allocator);
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zadd(@RedisProtocolSupport.Key final Buffer key,
-                               @Nullable final RedisProtocolSupport.ZaddCondition condition,
-                               @Nullable final RedisProtocolSupport.ZaddChange change, final double score1,
-                               final Buffer member1, final double score2, final Buffer member2) {
+    public Single<Long> zadd(@RedisProtocolSupport.Key final Buffer key,
+                             @Nullable final RedisProtocolSupport.ZaddCondition condition,
+                             @Nullable final RedisProtocolSupport.ZaddChange change, final double score1,
+                             final Buffer member1, final double score2, final Buffer member2) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -5826,16 +6201,17 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(score2, cb, allocator);
         addRequestArgument(member2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zadd(@RedisProtocolSupport.Key final Buffer key,
-                               @Nullable final RedisProtocolSupport.ZaddCondition condition,
-                               @Nullable final RedisProtocolSupport.ZaddChange change, final double score1,
-                               final Buffer member1, final double score2, final Buffer member2, final double score3,
-                               final Buffer member3) {
+    public Single<Long> zadd(@RedisProtocolSupport.Key final Buffer key,
+                             @Nullable final RedisProtocolSupport.ZaddCondition condition,
+                             @Nullable final RedisProtocolSupport.ZaddChange change, final double score1,
+                             final Buffer member1, final double score2, final Buffer member2, final double score3,
+                             final Buffer member3) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -5864,15 +6240,16 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(score3, cb, allocator);
         addRequestArgument(member3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zadd(@RedisProtocolSupport.Key final Buffer key,
-                               @Nullable final RedisProtocolSupport.ZaddCondition condition,
-                               @Nullable final RedisProtocolSupport.ZaddChange change,
-                               final Collection<RedisProtocolSupport.BufferScoreMember> scoreMembers) {
+    public Single<Long> zadd(@RedisProtocolSupport.Key final Buffer key,
+                             @Nullable final RedisProtocolSupport.ZaddCondition condition,
+                             @Nullable final RedisProtocolSupport.ZaddChange change,
+                             final Collection<RedisProtocolSupport.BufferScoreMember> scoreMembers) {
         requireNonNull(key);
         requireNonNull(scoreMembers);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -5895,12 +6272,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         }
         addRequestTupleArguments(scoreMembers, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zaddIncr(@RedisProtocolSupport.Key final Buffer key,
+    public Single<Double> zaddIncr(@RedisProtocolSupport.Key final Buffer key,
                                    final Collection<RedisProtocolSupport.BufferScoreMember> scoreMembers) {
         requireNonNull(key);
         requireNonNull(scoreMembers);
@@ -5913,12 +6291,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(RedisProtocolSupport.ZaddIncrement.values()[0], cb, allocator);
         addRequestTupleArguments(scoreMembers, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Double> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zaddIncr(@RedisProtocolSupport.Key final Buffer key,
+    public Single<Double> zaddIncr(@RedisProtocolSupport.Key final Buffer key,
                                    @Nullable final RedisProtocolSupport.ZaddCondition condition,
                                    @Nullable final RedisProtocolSupport.ZaddChange change, final double score,
                                    final Buffer member) {
@@ -5945,12 +6324,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(score, cb, allocator);
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Double> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zaddIncr(@RedisProtocolSupport.Key final Buffer key,
+    public Single<Double> zaddIncr(@RedisProtocolSupport.Key final Buffer key,
                                    @Nullable final RedisProtocolSupport.ZaddCondition condition,
                                    @Nullable final RedisProtocolSupport.ZaddChange change, final double score1,
                                    final Buffer member1, final double score2, final Buffer member2) {
@@ -5980,12 +6360,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(score2, cb, allocator);
         addRequestArgument(member2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Double> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zaddIncr(@RedisProtocolSupport.Key final Buffer key,
+    public Single<Double> zaddIncr(@RedisProtocolSupport.Key final Buffer key,
                                    @Nullable final RedisProtocolSupport.ZaddCondition condition,
                                    @Nullable final RedisProtocolSupport.ZaddChange change, final double score1,
                                    final Buffer member1, final double score2, final Buffer member2, final double score3,
@@ -6019,12 +6400,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(score3, cb, allocator);
         addRequestArgument(member3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Double> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zaddIncr(@RedisProtocolSupport.Key final Buffer key,
+    public Single<Double> zaddIncr(@RedisProtocolSupport.Key final Buffer key,
                                    @Nullable final RedisProtocolSupport.ZaddCondition condition,
                                    @Nullable final RedisProtocolSupport.ZaddChange change,
                                    final Collection<RedisProtocolSupport.BufferScoreMember> scoreMembers) {
@@ -6051,12 +6433,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         }
         addRequestTupleArguments(scoreMembers, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Double> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zcard(@RedisProtocolSupport.Key final Buffer key) {
+    public Single<Long> zcard(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -6064,12 +6447,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZCARD, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZCARD, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zcount(@RedisProtocolSupport.Key final Buffer key, final double min, final double max) {
+    public Single<Long> zcount(@RedisProtocolSupport.Key final Buffer key, final double min, final double max) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -6079,12 +6463,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(min, cb, allocator);
         addRequestArgument(max, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZCOUNT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zincrby(@RedisProtocolSupport.Key final Buffer key, final long increment,
+    public Single<Double> zincrby(@RedisProtocolSupport.Key final Buffer key, final long increment,
                                   final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
@@ -6096,13 +6481,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(increment, cb, allocator);
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZINCRBY, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Double> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zinterstore(@RedisProtocolSupport.Key final Buffer destination, final long numkeys,
-                                      @RedisProtocolSupport.Key final Collection<Buffer> keys) {
+    public Single<Long> zinterstore(@RedisProtocolSupport.Key final Buffer destination, final long numkeys,
+                                    @RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(destination);
         requireNonNull(keys);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -6114,15 +6500,16 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(numkeys, cb, allocator);
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZINTERSTORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zinterstore(@RedisProtocolSupport.Key final Buffer destination, final long numkeys,
-                                      @RedisProtocolSupport.Key final Collection<Buffer> keys,
-                                      final Collection<Long> weightses,
-                                      @Nullable final RedisProtocolSupport.ZinterstoreAggregate aggregate) {
+    public Single<Long> zinterstore(@RedisProtocolSupport.Key final Buffer destination, final long numkeys,
+                                    @RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                    final Collection<Long> weightses,
+                                    @Nullable final RedisProtocolSupport.ZinterstoreAggregate aggregate) {
         requireNonNull(destination);
         requireNonNull(keys);
         requireNonNull(weightses);
@@ -6143,12 +6530,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(aggregate, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZINTERSTORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zlexcount(@RedisProtocolSupport.Key final Buffer key, final Buffer min, final Buffer max) {
+    public Single<Long> zlexcount(@RedisProtocolSupport.Key final Buffer key, final Buffer min, final Buffer max) {
         requireNonNull(key);
         requireNonNull(min);
         requireNonNull(max);
@@ -6160,12 +6548,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(min, cb, allocator);
         addRequestArgument(max, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZLEXCOUNT, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zpopmax(@RedisProtocolSupport.Key final Buffer key) {
+    public <T> Single<List<T>> zpopmax(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -6173,12 +6562,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZPOPMAX, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZPOPMAX, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zpopmax(@RedisProtocolSupport.Key final Buffer key, @Nullable final Long count) {
+    public <T> Single<List<T>> zpopmax(@RedisProtocolSupport.Key final Buffer key, @Nullable final Long count) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -6192,12 +6582,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(count, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZPOPMAX, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zpopmin(@RedisProtocolSupport.Key final Buffer key) {
+    public <T> Single<List<T>> zpopmin(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -6205,12 +6596,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZPOPMIN, allocator);
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZPOPMIN, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zpopmin(@RedisProtocolSupport.Key final Buffer key, @Nullable final Long count) {
+    public <T> Single<List<T>> zpopmin(@RedisProtocolSupport.Key final Buffer key, @Nullable final Long count) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -6224,12 +6616,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(count, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZPOPMIN, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zrange(@RedisProtocolSupport.Key final Buffer key, final long start, final long stop) {
+    public <T> Single<List<T>> zrange(@RedisProtocolSupport.Key final Buffer key, final long start, final long stop) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -6239,13 +6632,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(start, cb, allocator);
         addRequestArgument(stop, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zrange(@RedisProtocolSupport.Key final Buffer key, final long start, final long stop,
-                                 @Nullable final RedisProtocolSupport.ZrangeWithscores withscores) {
+    public <T> Single<List<T>> zrange(@RedisProtocolSupport.Key final Buffer key, final long start, final long stop,
+                                      @Nullable final RedisProtocolSupport.ZrangeWithscores withscores) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -6261,12 +6655,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(withscores, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer min, final Buffer max) {
+    public <T> Single<List<T>> zrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer min,
+                                           final Buffer max) {
         requireNonNull(key);
         requireNonNull(min);
         requireNonNull(max);
@@ -6278,13 +6674,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(min, cb, allocator);
         addRequestArgument(max, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGEBYLEX, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer min, final Buffer max,
-                                      @Nullable final RedisProtocolSupport.OffsetCount offsetCount) {
+    public <T> Single<List<T>> zrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer min,
+                                           final Buffer max,
+                                           @Nullable final RedisProtocolSupport.OffsetCount offsetCount) {
         requireNonNull(key);
         requireNonNull(min);
         requireNonNull(max);
@@ -6302,13 +6700,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             offsetCount.writeTo(cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGEBYLEX, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double min,
-                                        final double max) {
+    public <T> Single<List<T>> zrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double min,
+                                             final double max) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -6319,14 +6718,16 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(min, cb, allocator);
         addRequestArgument(max, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGEBYSCORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double min, final double max,
-                                        @Nullable final RedisProtocolSupport.ZrangebyscoreWithscores withscores,
-                                        @Nullable final RedisProtocolSupport.OffsetCount offsetCount) {
+    public <T> Single<List<T>> zrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double min,
+                                             final double max,
+                                             @Nullable final RedisProtocolSupport.ZrangebyscoreWithscores withscores,
+                                             @Nullable final RedisProtocolSupport.OffsetCount offsetCount) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -6349,12 +6750,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             offsetCount.writeTo(cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGEBYSCORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zrank(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
+    public Single<Long> zrank(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -6364,12 +6766,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANK, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zrem(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
+    public Single<Long> zrem(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -6379,12 +6782,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREM, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zrem(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2) {
+    public Single<Long> zrem(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -6396,13 +6800,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(member1, cb, allocator);
         addRequestArgument(member2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREM, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zrem(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2,
-                               final Buffer member3) {
+    public Single<Long> zrem(@RedisProtocolSupport.Key final Buffer key, final Buffer member1, final Buffer member2,
+                             final Buffer member3) {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
@@ -6416,12 +6821,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(member2, cb, allocator);
         addRequestArgument(member3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREM, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zrem(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> members) {
+    public Single<Long> zrem(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> members) {
         requireNonNull(key);
         requireNonNull(members);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -6432,13 +6838,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestBufferArguments(members, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREM, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zremrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer min,
-                                         final Buffer max) {
+    public Single<Long> zremrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer min, final Buffer max) {
         requireNonNull(key);
         requireNonNull(min);
         requireNonNull(max);
@@ -6451,13 +6857,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(min, cb, allocator);
         addRequestArgument(max, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREMRANGEBYLEX, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zremrangebyrank(@RedisProtocolSupport.Key final Buffer key, final long start,
-                                          final long stop) {
+    public Single<Long> zremrangebyrank(@RedisProtocolSupport.Key final Buffer key, final long start, final long stop) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -6468,13 +6874,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(start, cb, allocator);
         addRequestArgument(stop, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREMRANGEBYRANK, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zremrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double min,
-                                           final double max) {
+    public Single<Long> zremrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double min,
+                                         final double max) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -6485,12 +6892,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(min, cb, allocator);
         addRequestArgument(max, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREMRANGEBYSCORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zrevrange(@RedisProtocolSupport.Key final Buffer key, final long start, final long stop) {
+    public <T> Single<List<T>> zrevrange(@RedisProtocolSupport.Key final Buffer key, final long start,
+                                         final long stop) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -6500,13 +6909,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(start, cb, allocator);
         addRequestArgument(stop, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zrevrange(@RedisProtocolSupport.Key final Buffer key, final long start, final long stop,
-                                    @Nullable final RedisProtocolSupport.ZrevrangeWithscores withscores) {
+    public <T> Single<List<T>> zrevrange(@RedisProtocolSupport.Key final Buffer key, final long start, final long stop,
+                                         @Nullable final RedisProtocolSupport.ZrevrangeWithscores withscores) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -6522,13 +6932,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(withscores, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zrevrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer max,
-                                         final Buffer min) {
+    public <T> Single<List<T>> zrevrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer max,
+                                              final Buffer min) {
         requireNonNull(key);
         requireNonNull(max);
         requireNonNull(min);
@@ -6541,13 +6952,15 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(max, cb, allocator);
         addRequestArgument(min, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGEBYLEX, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zrevrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer max, final Buffer min,
-                                         @Nullable final RedisProtocolSupport.OffsetCount offsetCount) {
+    public <T> Single<List<T>> zrevrangebylex(@RedisProtocolSupport.Key final Buffer key, final Buffer max,
+                                              final Buffer min,
+                                              @Nullable final RedisProtocolSupport.OffsetCount offsetCount) {
         requireNonNull(key);
         requireNonNull(max);
         requireNonNull(min);
@@ -6566,13 +6979,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             offsetCount.writeTo(cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGEBYLEX, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zrevrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double max,
-                                           final double min) {
+    public <T> Single<List<T>> zrevrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double max,
+                                                final double min) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -6583,15 +6997,16 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(max, cb, allocator);
         addRequestArgument(min, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGEBYSCORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zrevrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double max,
-                                           final double min,
-                                           @Nullable final RedisProtocolSupport.ZrevrangebyscoreWithscores withscores,
-                                           @Nullable final RedisProtocolSupport.OffsetCount offsetCount) {
+    public <T> Single<List<T>> zrevrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double max,
+                                                final double min,
+                                                @Nullable final RedisProtocolSupport.ZrevrangebyscoreWithscores withscores,
+                                                @Nullable final RedisProtocolSupport.OffsetCount offsetCount) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -6614,12 +7029,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             offsetCount.writeTo(cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGEBYSCORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zrevrank(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
+    public Single<Long> zrevrank(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -6629,12 +7045,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANK, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zscan(@RedisProtocolSupport.Key final Buffer key, final long cursor) {
+    public <T> Single<List<T>> zscan(@RedisProtocolSupport.Key final Buffer key, final long cursor) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -6643,13 +7060,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(cursor, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZSCAN, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zscan(@RedisProtocolSupport.Key final Buffer key, final long cursor,
-                                @Nullable final Buffer matchPattern, @Nullable final Long count) {
+    public <T> Single<List<T>> zscan(@RedisProtocolSupport.Key final Buffer key, final long cursor,
+                                     @Nullable final Buffer matchPattern, @Nullable final Long count) {
         requireNonNull(key);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
@@ -6672,12 +7090,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(count, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZSCAN, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<List<T>> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zscore(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
+    public Single<Double> zscore(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -6687,13 +7106,14 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(key, cb, allocator);
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZSCORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Double> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zunionstore(@RedisProtocolSupport.Key final Buffer destination, final long numkeys,
-                                      @RedisProtocolSupport.Key final Collection<Buffer> keys) {
+    public Single<Long> zunionstore(@RedisProtocolSupport.Key final Buffer destination, final long numkeys,
+                                    @RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(destination);
         requireNonNull(keys);
         final BufferAllocator allocator = reservedCnx.getExecutionContext().getBufferAllocator();
@@ -6705,15 +7125,16 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         addRequestArgument(numkeys, cb, allocator);
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZUNIONSTORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 
     @Override
-    public Single<String> zunionstore(@RedisProtocolSupport.Key final Buffer destination, final long numkeys,
-                                      @RedisProtocolSupport.Key final Collection<Buffer> keys,
-                                      final Collection<Long> weightses,
-                                      @Nullable final RedisProtocolSupport.ZunionstoreAggregate aggregate) {
+    public Single<Long> zunionstore(@RedisProtocolSupport.Key final Buffer destination, final long numkeys,
+                                    @RedisProtocolSupport.Key final Collection<Buffer> keys,
+                                    final Collection<Long> weightses,
+                                    @Nullable final RedisProtocolSupport.ZunionstoreAggregate aggregate) {
         requireNonNull(destination);
         requireNonNull(keys);
         requireNonNull(weightses);
@@ -6734,7 +7155,8 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
             addRequestArgument(aggregate, cb, allocator);
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZUNIONSTORE, cb);
-        final Single<String> result = reservedCnx.request(request, String.class);
+        final Single<String> queued = reservedCnx.request(request, String.class);
+        Single<Long> result = execute(queued);
         return result;
     }
 }
