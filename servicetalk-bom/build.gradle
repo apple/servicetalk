@@ -66,6 +66,7 @@ dependencyManagement {
     dependency "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-data-jackson:0.1.0-SNAPSHOT"
+    dependency "io.servicetalk:servicetalk-data-jackson-jersey:0.1.0-SNAPSHOT"
     dependency "io.servicetalk:servicetalk-serialization-api:0.1.0-SNAPSHOT"
   }
 }

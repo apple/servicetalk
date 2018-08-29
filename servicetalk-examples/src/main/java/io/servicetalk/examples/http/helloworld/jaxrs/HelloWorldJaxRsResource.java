@@ -15,11 +15,11 @@
  */
 package io.servicetalk.examples.http.helloworld.jaxrs;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.LastHttpPayloadChunk;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.Map;
@@ -37,7 +37,6 @@ import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.Response;
 
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.http.api.HttpPayloadChunks.aggregateChunks;
 import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static java.lang.Math.random;
 import static java.util.Collections.singletonMap;
@@ -73,6 +72,7 @@ public class HelloWorldJaxRsResource {
 
     /**
      * Resource that relies on the Publisher/OIO adapters and Jackson to consume and produce JSON entities.
+     * This project uses ServiceTalk's Jackson provider for Jersey hence no OIO adaptation is involved.
      * <p>
      * Test with:
      * <pre>
@@ -118,9 +118,9 @@ public class HelloWorldJaxRsResource {
     }
 
     /**
-     * Resource that only relies on {@link Publisher}s for consuming and producing data.
-     * No OIO adaptation is involved when requests are dispatched to it,
-     * allowing it to fully benefit from ReactiveStream's features like flow control.
+     * Resource that only relies on {@link Single}s for consuming and producing data, and operators for processing it.
+     * Behind the scene, ServiceTalk's aggregation mechanism is used to provide the resource with a
+     * {@link Single Single&lt;Buffer&gt;} that contains the whole request entity as a {@link Buffer}.
      * Note that the {@link ConnectionContext} could also be injected into a class-level {@code @Context} field.
      * <p>
      * Test with:
@@ -136,17 +136,13 @@ public class HelloWorldJaxRsResource {
     @Path("hello")
     @Consumes(TEXT_PLAIN)
     @Produces(TEXT_PLAIN)
-    public Publisher<HttpPayloadChunk> hello(final Publisher<HttpPayloadChunk> who,
-                                             @Context final ConnectionContext ctx) {
+    public Single<Buffer> hello(final Single<Buffer> who,
+                                @Context final ConnectionContext ctx) {
         final BufferAllocator allocator = ctx.getExecutionContext().getBufferAllocator();
-        // ServiceTalk by default delivers content as multiple payload chunks.
-        // If required, users can aggregate potential multiple chunks into a single chunk.
-        final Single<LastHttpPayloadChunk> aggregatedPayload = aggregateChunks(who, allocator);
-        return aggregatedPayload.toPublisher().map(chunk ->
-                chunk.replace(allocator.newCompositeBuffer()
-                        .addBuffer(allocator.fromAscii("hello, "))
-                        .addBuffer(chunk.getContent())
-                        .addBuffer(allocator.fromAscii("!"))));
+        return who.map(b -> allocator.newCompositeBuffer()
+                .addBuffer(allocator.fromAscii("hello, "))
+                .addBuffer(b)
+                .addBuffer(allocator.fromAscii("!")));
     }
 
     /**
@@ -175,13 +171,36 @@ public class HelloWorldJaxRsResource {
             return accepted("greetings accepted, call again for a response").build();
         }
 
+        final BufferAllocator allocator = ctx.getExecutionContext().getBufferAllocator();
         final Publisher<HttpPayloadChunk> payload =
-                just(newPayloadChunk(ctx.getExecutionContext().getBufferAllocator().fromAscii("hello "))).concatWith(who);
+                just(newPayloadChunk(allocator.fromAscii("hello "))).concatWith(who);
 
         // Wrap content Publisher to capture its generic type (i.e. HttpPayloadChunk) so it is handled correctly
-        final GenericEntity<Publisher<HttpPayloadChunk>> entity = new GenericEntity<Publisher<HttpPayloadChunk>>(payload) {
-        };
+        final GenericEntity<Publisher<HttpPayloadChunk>> entity =
+                new GenericEntity<Publisher<HttpPayloadChunk>>(payload) { };
 
         return ok(entity).build();
+    }
+
+    /**
+     * Resource that only relies on {@link Single}s for consuming and producing data, and operators for processing it.
+     * No OIO adaptation is involved when requests are dispatched to it, as it relies on ServiceTalk/Jackson
+     * non-blocking (de)serialization.
+     * <p>
+     * Test with:
+     * <pre>
+     * curl -H 'content-type: application/json' -d '{}' http://localhost:8080/greetings/single-hello
+     * curl -H 'content-type: application/json' -d '{"who":"turnip"}' http://localhost:8080/greetings/single-hello
+     * </pre>
+     *
+     * @param salutation a {@link Single Single&lt;Map&gt;} that provides salutation data.
+     * @return greetings as a {@link Single Single&lt;Map&gt;}.
+     */
+    @POST
+    @Path("single-hello")
+    @Consumes(APPLICATION_JSON)
+    @Produces(APPLICATION_JSON)
+    public Single<Map<String, String>> singleHello(final Single<Map<String, String>> salutation) {
+        return salutation.map(m -> singletonMap("single hello", m.getOrDefault("who", "world")));
     }
 }
