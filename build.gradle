@@ -88,10 +88,6 @@ task build {
   dependsOn gradle.includedBuilds*.task(':build')
 }
 
-task publishToMavenLocal {
-  dependsOn findTasks(':publishToMavenLocal', ['servicetalk-examples'])
-}
-
 task checkstyle {
   dependsOn findTasks(':checkstyle',
     ['servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
@@ -116,6 +112,10 @@ task quality {
 
 task publish(overwrite: true) {
   dependsOn findTasks(':publish', ['servicetalk-benchmarks'])
+}
+
+task publishToMavenLocal(overwrite: true) {
+  dependsOn findTasks(':publishToMavenLocal', ['servicetalk-benchmarks', 'servicetalk-examples'])
 }
 
 task license(overwrite: true) {
