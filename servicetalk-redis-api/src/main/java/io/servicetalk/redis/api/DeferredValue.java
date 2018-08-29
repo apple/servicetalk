@@ -34,14 +34,14 @@ public final class DeferredValue<T> {
     @Nullable
     private volatile Throwable cause;
 
-    void set(@Nullable T value) {
+    void onSuccess(@Nullable T value) {
         synchronized (this) {
             this.value = value;
             this.notifyAll();
         }
     }
 
-    void setError(Throwable cause) {
+    void onError(Throwable cause) {
         synchronized (this) {
             this.cause = requireNonNull(cause);
             this.notifyAll();
@@ -62,8 +62,9 @@ public final class DeferredValue<T> {
             return (T) value;
         }
         if (cause != null) {
-            assert cause != null;
-            throwException(cause);
+            // cause is never set back to null once it's been set to non-null, but
+            // requireNonNull to satisfy static analysis warnings.
+            throwException(requireNonNull(cause));
         }
         throw new IllegalStateException("Not yet set");
     }

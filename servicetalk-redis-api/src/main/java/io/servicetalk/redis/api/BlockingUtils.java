@@ -75,7 +75,7 @@ final class BlockingUtils {
     }
 
     static <T> DeferredValue singleToDeferredValue(Single<T> single) {
-        DeferredValue<T> deferredValue = new DeferredValue<>();
+        final DeferredValue<T> deferredValue = new DeferredValue<>();
 
         single.subscribe(new io.servicetalk.concurrent.Single.Subscriber<T>() {
             @Override
@@ -85,12 +85,12 @@ final class BlockingUtils {
 
             @Override
             public void onSuccess(@Nullable final T result) {
-                deferredValue.set(result);
+                deferredValue.onSuccess(result);
             }
 
             @Override
             public void onError(final Throwable t) {
-                deferredValue.setError(t);
+                deferredValue.onError(t);
             }
         });
 

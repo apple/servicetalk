@@ -26,7 +26,7 @@ public class RedisClientException extends RuntimeException {
      *
      * @param message the message containing the details of the error.
      */
-    protected RedisClientException(final String message) {
+    public RedisClientException(final String message) {
         super(message);
     }
 }
