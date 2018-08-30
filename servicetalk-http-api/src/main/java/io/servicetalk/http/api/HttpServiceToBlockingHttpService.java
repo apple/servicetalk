@@ -18,7 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
-import static io.servicetalk.http.api.HttpRequests.fromBlockingRequest;
 import static java.util.Objects.requireNonNull;
 
 final class HttpServiceToBlockingHttpService extends BlockingHttpService {
@@ -29,13 +28,10 @@ final class HttpServiceToBlockingHttpService extends BlockingHttpService {
     }
 
     @Override
-    public BlockingHttpResponse<HttpPayloadChunk> handle(final ConnectionContext ctx,
-                                                         final BlockingHttpRequest<HttpPayloadChunk> request)
+    public HttpResponse<HttpPayloadChunk> handle(final ConnectionContext ctx,
+                                                 final HttpRequest<HttpPayloadChunk> request)
             throws Exception {
-        // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
-        // apply any explicit timeout here and just wait forever.
-        return new DefaultBlockingHttpResponse<>(
-                blockingInvocation(service.handle(ctx, fromBlockingRequest(request))));
+        return blockingInvocation(service.handle(ctx, request));
     }
 
     @Override

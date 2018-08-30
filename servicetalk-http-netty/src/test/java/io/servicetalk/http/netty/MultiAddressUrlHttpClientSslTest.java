@@ -16,13 +16,13 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.AggregatedHttpRequest;
-import io.servicetalk.http.api.AggregatedHttpRequester;
-import io.servicetalk.http.api.BlockingAggregatedHttpRequester;
+import io.servicetalk.http.api.BlockingHttpRequester;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpRequester;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
@@ -47,13 +47,13 @@ import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.await;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
-import static io.servicetalk.http.api.AggregatedHttpRequests.newRequest;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
+import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.api.HttpResponses.newResponse;
+import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.http.netty.SslConfigProviders.plainByDefault;
 import static io.servicetalk.http.netty.SslConfigProviders.secureByDefault;
 import static io.servicetalk.test.resources.DefaultTestCerts.loadMutualAuthCaPem;
@@ -83,13 +83,13 @@ public class MultiAddressUrlHttpClientSslTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     // HTTP server
-    private static final HttpService httpService = mock(HttpService.class);
+    private static final StreamingHttpService STREAMING_HTTP_SERVICE = mock(StreamingHttpService.class);
     @Nullable
     private static ServerContext serverCtx;
     private static String serverHostHeader;
 
     // HTTPS server
-    private static final HttpService secureHttpService = mock(HttpService.class);
+    private static final StreamingHttpService SECURE_STREAMING_HTTP_SERVICE = mock(StreamingHttpService.class);
     @Nullable
     private static ServerContext secureServerCtx;
     private static String secureServerHostHeader;
@@ -99,21 +99,21 @@ public class MultiAddressUrlHttpClientSslTest {
         final HttpHeaders httpHeaders = DefaultHttpHeadersFactory.INSTANCE.newHeaders().set(CONTENT_LENGTH, ZERO);
 
         // Configure HTTP server
-        when(httpService.handle(any(), any())).thenReturn(success(newResponse(OK, httpHeaders)));
-        when(httpService.closeAsync()).thenReturn(completed());
-        when(httpService.closeAsyncGracefully()).thenReturn(completed());
+        when(STREAMING_HTTP_SERVICE.handle(any(), any())).thenReturn(success(newResponse(OK, httpHeaders)));
+        when(STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
+        when(STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
         serverCtx = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
-                .start(CTX, new InetSocketAddress(HOSTNAME, 0), httpService));
+                .start(CTX, new InetSocketAddress(HOSTNAME, 0), STREAMING_HTTP_SERVICE));
         serverHostHeader = HostAndPort.of(HOSTNAME,
                 ((InetSocketAddress) serverCtx.getListenAddress()).getPort()).toString();
 
         // Configure HTTPS server
-        when(secureHttpService.handle(any(), any())).thenReturn(success(newResponse(OK, httpHeaders)));
-        when(secureHttpService.closeAsync()).thenReturn(completed());
-        when(secureHttpService.closeAsyncGracefully()).thenReturn(completed());
+        when(SECURE_STREAMING_HTTP_SERVICE.handle(any(), any())).thenReturn(success(newResponse(OK, httpHeaders)));
+        when(SECURE_STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
+        when(SECURE_STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
         secureServerCtx = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
                 .setSslConfig(SslConfigBuilder.forServer(() -> loadServerPem(), () -> loadServerKey()).build())
-                .start(CTX, new InetSocketAddress(HOSTNAME, 0), secureHttpService));
+                .start(CTX, new InetSocketAddress(HOSTNAME, 0), SECURE_STREAMING_HTTP_SERVICE));
         secureServerHostHeader = HostAndPort.of(HOSTNAME,
                 ((InetSocketAddress) secureServerCtx.getListenAddress()).getPort()).toString();
     }
@@ -130,15 +130,15 @@ public class MultiAddressUrlHttpClientSslTest {
 
     @After
     public void resetMocks() {
-        clearInvocations(httpService, secureHttpService);
+        clearInvocations(STREAMING_HTTP_SERVICE, SECURE_STREAMING_HTTP_SERVICE);
     }
 
     @Test(expected = ExecutionException.class)
     public void nonSecureClientToSecureServer() throws Exception {
-        AggregatedHttpRequester requester = HttpClients.forMultiAddressUrl()
-                .buildAggregated(CTX);
+        HttpRequester requester = HttpClients.forMultiAddressUrl()
+                .build(CTX);
 
-        AggregatedHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/");
+        HttpRequest<HttpPayloadChunk> request = newRequest(GET, "/");
         request.getHeaders().add(HOST, secureServerHostHeader);
         request.getHeaders().add(CONTENT_LENGTH, ZERO);
         await(requester.request(request), 2, SECONDS);
@@ -146,10 +146,10 @@ public class MultiAddressUrlHttpClientSslTest {
 
     @Test(expected = TimeoutException.class)
     public void secureClientToNonSecureServer() throws Exception {
-        AggregatedHttpRequester requester = HttpClients.forMultiAddressUrl().setSslConfigProvider(secureByDefault())
-                .buildAggregated(CTX);
+        HttpRequester requester = HttpClients.forMultiAddressUrl().setSslConfigProvider(secureByDefault())
+                .build(CTX);
 
-        AggregatedHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/");
+        HttpRequest<HttpPayloadChunk> request = newRequest(GET, "/");
         request.getHeaders().add(HOST, serverHostHeader);
         request.getHeaders().add(CONTENT_LENGTH, ZERO);
         await(requester.request(request), 2, SECONDS);
@@ -157,16 +157,16 @@ public class MultiAddressUrlHttpClientSslTest {
 
     @Test
     public void requesterWithDefaultSslConfigProvider() throws Exception {
-        try (BlockingAggregatedHttpRequester requester = HttpClients.forMultiAddressUrl()
-                .buildBlockingAggregated(CTX)) {
+        try (BlockingHttpRequester requester = HttpClients.forMultiAddressUrl()
+                .buildBlocking(CTX)) {
             testOnlyNonSecureRequestTargets(requester);
         }
     }
 
     @Test
     public void requesterWithPlainSslConfigProvider() throws Exception {
-        try (BlockingAggregatedHttpRequester requester = HttpClients.forMultiAddressUrl().setSslConfigProvider(plainByDefault())
-                .buildBlockingAggregated(CTX)) {
+        try (BlockingHttpRequester requester = HttpClients.forMultiAddressUrl().setSslConfigProvider(plainByDefault())
+                .buildBlocking(CTX)) {
             testOnlyNonSecureRequestTargets(requester);
         }
     }
@@ -187,37 +187,37 @@ public class MultiAddressUrlHttpClientSslTest {
                         .build();
             }
         };
-        try (BlockingAggregatedHttpRequester requester = HttpClients.forMultiAddressUrl().setSslConfigProvider(sslConfigProvider)
-                .buildBlockingAggregated(CTX)) {
+        try (BlockingHttpRequester requester = HttpClients.forMultiAddressUrl().setSslConfigProvider(sslConfigProvider)
+                .buildBlocking(CTX)) {
             testAllFormsOfRequestTargetWithSecureByDefault(requester);
         }
     }
 
-    private static void testOnlyNonSecureRequestTargets(final BlockingAggregatedHttpRequester requester)
+    private static void testOnlyNonSecureRequestTargets(final BlockingHttpRequester requester)
             throws Exception {
 
         requestAndValidate(requester, "/", serverHostHeader);
         requestAndValidate(requester, format("http://%s/", serverHostHeader), serverHostHeader);
         // Do not test default SslConfig, because our generated certificates require custom trust manager
 
-        verify(httpService, times(2)).handle(any(), any());
-        verify(secureHttpService, never()).handle(any(), any());
+        verify(STREAMING_HTTP_SERVICE, times(2)).handle(any(), any());
+        verify(SECURE_STREAMING_HTTP_SERVICE, never()).handle(any(), any());
     }
 
-    private static void testAllFormsOfRequestTargetWithSecureByDefault(final BlockingAggregatedHttpRequester requester)
+    private static void testAllFormsOfRequestTargetWithSecureByDefault(final BlockingHttpRequester requester)
             throws Exception {
 
         requestAndValidate(requester, "/", secureServerHostHeader);
         requestAndValidate(requester, format("http://%s/", serverHostHeader), serverHostHeader);
         requestAndValidate(requester, format("https://%s/", secureServerHostHeader), secureServerHostHeader);
 
-        verify(httpService).handle(any(), any());
-        verify(secureHttpService, times(2)).handle(any(), any());
+        verify(STREAMING_HTTP_SERVICE).handle(any(), any());
+        verify(SECURE_STREAMING_HTTP_SERVICE, times(2)).handle(any(), any());
     }
 
-        private static void requestAndValidate(final BlockingAggregatedHttpRequester requester,
+        private static void requestAndValidate(final BlockingHttpRequester requester,
                                            final String requestTarget, final String hostHeader) throws Exception {
-        AggregatedHttpRequest<HttpPayloadChunk> request = newRequest(GET, requestTarget);
+        HttpRequest<HttpPayloadChunk> request = newRequest(GET, requestTarget);
         request.getHeaders().add(HOST, hostHeader);
         request.getHeaders().add(CONTENT_LENGTH, ZERO);
         assertEquals(OK, requester.request(request).getStatus());

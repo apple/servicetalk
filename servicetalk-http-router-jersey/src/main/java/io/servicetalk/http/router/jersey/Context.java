@@ -16,7 +16,7 @@
 package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.glassfish.jersey.internal.inject.ReferencingFactory;
@@ -36,13 +36,13 @@ final class Context {
 
     static final Type CONNECTION_CONTEXT_REF_TYPE = CONNECTION_CONTEXT_REF_GENERIC_TYPE.getType();
 
-    static final GenericType<Ref<HttpRequest<HttpPayloadChunk>>> HTTP_REQUEST_REF_GENERIC_TYPE =
-            new GenericType<Ref<HttpRequest<HttpPayloadChunk>>>() { };
+    static final GenericType<Ref<StreamingHttpRequest<HttpPayloadChunk>>> HTTP_REQUEST_REF_GENERIC_TYPE =
+            new GenericType<Ref<StreamingHttpRequest<HttpPayloadChunk>>>() { };
 
     static final Type HTTP_REQUEST_REF_TYPE = HTTP_REQUEST_REF_GENERIC_TYPE.getType();
 
-    static final GenericType<HttpRequest<HttpPayloadChunk>> HTTP_REQUEST_GENERIC_TYPE =
-            new GenericType<HttpRequest<HttpPayloadChunk>>() { };
+    static final GenericType<StreamingHttpRequest<HttpPayloadChunk>> HTTP_REQUEST_GENERIC_TYPE =
+            new GenericType<StreamingHttpRequest<HttpPayloadChunk>>() { };
 
     static final class ConnectionContextReferencingFactory extends ReferencingFactory<ConnectionContext> {
         @Inject
@@ -51,9 +51,9 @@ final class Context {
         }
     }
 
-    static final class HttpRequestReferencingFactory extends ReferencingFactory<HttpRequest<HttpPayloadChunk>> {
+    static final class HttpRequestReferencingFactory extends ReferencingFactory<StreamingHttpRequest<HttpPayloadChunk>> {
         @Inject
-        HttpRequestReferencingFactory(final Provider<Ref<HttpRequest<HttpPayloadChunk>>> referenceFactory) {
+        HttpRequestReferencingFactory(final Provider<Ref<StreamingHttpRequest<HttpPayloadChunk>>> referenceFactory) {
             super(referenceFactory);
         }
     }

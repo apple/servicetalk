@@ -16,7 +16,7 @@
 package io.servicetalk.http.router.predicate;
 
 import io.servicetalk.http.api.HttpCookie;
-import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.StreamingHttpService;
 
 import org.junit.Test;
 import org.mockito.Mock;
@@ -32,10 +32,10 @@ public class HttpPredicateRouterBuilderCookieTest extends BaseHttpPredicateRoute
 
     @Test
     public void testWhenCookieIsPresent() {
-        final HttpService service = new HttpPredicateRouterBuilder()
+        final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenCookie("session").isPresent().thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
-                .build();
+                .buildStreaming();
 
         when(headers.getCookies("session")).then(answerIteratorOf(cookie1));
         assertSame(responseA, service.handle(ctx, request));
@@ -46,10 +46,10 @@ public class HttpPredicateRouterBuilderCookieTest extends BaseHttpPredicateRoute
 
     @Test
     public void testWhenCookieIs() {
-        final HttpService service = new HttpPredicateRouterBuilder()
+        final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenCookie("session").value(cookie1::equals).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
-                .build();
+                .buildStreaming();
 
         when(headers.getCookies("session")).then(answerIteratorOf(cookie1));
         assertSame(responseA, service.handle(ctx, request));
@@ -69,10 +69,10 @@ public class HttpPredicateRouterBuilderCookieTest extends BaseHttpPredicateRoute
 
     @Test
     public void testWhenCookieValues() {
-        final HttpService service = new HttpPredicateRouterBuilder()
+        final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenCookie("session").values(new AnyMatchPredicate<>(cookie1)).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
-                .build();
+                .buildStreaming();
 
         when(headers.getCookies("session")).then(answerIteratorOf(cookie1));
         assertSame(responseA, service.handle(ctx, request));

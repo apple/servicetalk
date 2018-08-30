@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.Single.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.SingleOperator;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponse;
 
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
@@ -35,7 +35,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 final class ConcurrencyControlSingleOperator
-        implements SingleOperator<HttpResponse<HttpPayloadChunk>, HttpResponse<HttpPayloadChunk>> {
+        implements SingleOperator<StreamingHttpResponse<HttpPayloadChunk>, StreamingHttpResponse<HttpPayloadChunk>> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConcurrencyControlSingleOperator.class);
 
@@ -56,20 +56,20 @@ final class ConcurrencyControlSingleOperator
     }
 
     @Override
-    public Subscriber<? super HttpResponse<HttpPayloadChunk>> apply(
-            final Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber) {
+    public Subscriber<? super StreamingHttpResponse<HttpPayloadChunk>> apply(
+            final Subscriber<? super StreamingHttpResponse<HttpPayloadChunk>> subscriber) {
         // Here we avoid calling limiter.requestFinished() when we get a cancel() on the Single after we have handed
-        // out the HttpResponse to the subscriber. Doing which will mean we double decrement the concurrency controller.
-        // In case, we do get an HttpResponse after we got cancel(), we subscribe to the payload Publisher and cancel
+        // out the StreamingHttpResponse to the subscriber. Doing which will mean we double decrement the concurrency controller.
+        // In case, we do get an StreamingHttpResponse after we got cancel(), we subscribe to the payload Publisher and cancel
         // to indicate to the Connection that there is no other Subscriber that will use the payload Publisher.
         return new ConcurrencyControlManagingSubscriber(subscriber);
     }
 
-    private final class ConcurrencyControlManagingSubscriber implements Subscriber<HttpResponse<HttpPayloadChunk>> {
+    private final class ConcurrencyControlManagingSubscriber implements Subscriber<StreamingHttpResponse<HttpPayloadChunk>> {
 
-        private final Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber;
+        private final Subscriber<? super StreamingHttpResponse<HttpPayloadChunk>> subscriber;
 
-        ConcurrencyControlManagingSubscriber(final Subscriber<? super HttpResponse<HttpPayloadChunk>> sub) {
+        ConcurrencyControlManagingSubscriber(final Subscriber<? super StreamingHttpResponse<HttpPayloadChunk>> sub) {
             this.subscriber = sub;
         }
 
@@ -85,7 +85,7 @@ final class ConcurrencyControlSingleOperator
         }
 
         @Override
-        public void onSuccess(@Nullable final HttpResponse<HttpPayloadChunk> response) {
+        public void onSuccess(@Nullable final StreamingHttpResponse<HttpPayloadChunk> response) {
             if (response == null) {
                 sendNullResponse();
             } else if (stateUpdater.compareAndSet(ConcurrencyControlSingleOperator.this, IDLE, TERMINATED)) {

@@ -18,16 +18,16 @@ package io.servicetalk.examples.http.service.composition.backends;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.examples.http.service.composition.pojo.Recommendation;
-import io.servicetalk.http.api.AggregatedHttpRequest;
-import io.servicetalk.http.api.AggregatedHttpResponse;
-import io.servicetalk.http.api.AggregatedHttpResponses;
-import io.servicetalk.http.api.AggregatedHttpService;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponses;
-import io.servicetalk.http.api.HttpSerializer;
 import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponses;
+import io.servicetalk.http.api.HttpSerializer;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 import io.servicetalk.transport.api.ConnectionContext;
 
@@ -38,7 +38,7 @@ import javax.annotation.Nonnull;
 
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.AggregatedHttpResponses.newResponse;
+import static io.servicetalk.http.api.HttpResponses.newResponse;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static java.lang.Integer.parseInt;
@@ -53,13 +53,13 @@ final class RecommendationBackend {
     private static final String USER_ID_QP_NAME = "userId";
     private static final String EXPECTED_ENTITY_COUNT_QP_NAME = "expectedEntityCount";
 
-    static HttpService newRecommendationsService(HttpSerializer serializer) {
+    static StreamingHttpService newRecommendationsService(HttpSerializer serializer) {
         HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
         routerBuilder.whenPathStartsWith("/recommendations/stream")
                 .thenRouteTo(new StreamingService(serializer));
         routerBuilder.whenPathStartsWith("/recommendations/aggregated")
                 .thenRouteTo(new AggregatedService(serializer));
-        return routerBuilder.build();
+        return routerBuilder.buildStreaming();
     }
 
     @Nonnull
@@ -70,7 +70,7 @@ final class RecommendationBackend {
         return new Recommendation(valueOf(entityId), valueOf(random.nextInt()));
     }
 
-    private static final class StreamingService extends HttpService {
+    private static final class StreamingService extends StreamingHttpService {
 
         private final HttpSerializer serializer;
 
@@ -79,10 +79,10 @@ final class RecommendationBackend {
         }
 
         @Override
-        public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx, final HttpRequest<HttpPayloadChunk> request) {
+        public Single<StreamingHttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx, final StreamingHttpRequest<HttpPayloadChunk> request) {
             final String userId = request.parseQuery().get(USER_ID_QP_NAME);
             if (userId == null) {
-                return success(HttpResponses.newResponse(BAD_REQUEST));
+                return success(StreamingHttpResponses.newResponse(BAD_REQUEST));
             }
 
             // Create a new random recommendation every 1 SECOND.
@@ -96,12 +96,12 @@ final class RecommendationBackend {
                     // they are available.
                     .repeat(count -> true);
 
-            return success(serializer.serialize(HttpResponses.newResponse(OK, recommendations),
+            return success(serializer.serialize(StreamingHttpResponses.newResponse(OK, recommendations),
                     ctx.getExecutionContext().getBufferAllocator(), Recommendation.class));
         }
     }
 
-    private static final class AggregatedService extends AggregatedHttpService {
+    private static final class AggregatedService extends HttpService {
 
         private final HttpSerializer serializer;
 
@@ -110,11 +110,11 @@ final class RecommendationBackend {
         }
 
         @Override
-        public Single<AggregatedHttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                                       final AggregatedHttpRequest<HttpPayloadChunk> request) {
+        public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
+                                                             final HttpRequest<HttpPayloadChunk> request) {
             final String userId = request.parseQuery().get(USER_ID_QP_NAME);
             if (userId == null) {
-                return success(AggregatedHttpResponses.newResponse(BAD_REQUEST));
+                return success(HttpResponses.newResponse(BAD_REQUEST));
             }
             int expectedEntitiesCount = 10;
             final String expectedEntitiesCountStr = request.parseQuery().get(EXPECTED_ENTITY_COUNT_QP_NAME);

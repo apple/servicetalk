@@ -23,7 +23,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpPayloadChunks;
-import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.router.jersey.AbstractResourceTest.TestFiltered;
 import io.servicetalk.http.router.jersey.TestPojo;
 import io.servicetalk.serialization.api.DefaultSerializer;
@@ -137,7 +137,7 @@ public class SynchronousResources {
     @Produces(TEXT_PLAIN)
     @Path("/servicetalk-request")
     @GET
-    public String serviceTalkRequest(@Context final HttpRequest<HttpPayloadChunk> serviceTalkRequest) {
+    public String serviceTalkRequest(@Context final StreamingHttpRequest<HttpPayloadChunk> serviceTalkRequest) {
         return "GOT: " + serviceTalkRequest.getRequestTarget();
     }
 

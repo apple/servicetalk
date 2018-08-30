@@ -16,8 +16,8 @@
 package io.servicetalk.examples.http.service.composition.backends;
 
 import io.servicetalk.concurrent.api.CompositeCloseable;
-import io.servicetalk.http.api.AggregatedHttpService;
 import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.DefaultHttpServerStarter;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -35,7 +35,7 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A simple class that starts an HTTP server for this example using an {@link AggregatedHttpService}.
+ * A simple class that starts an HTTP server for this example using an {@link HttpService}.
  */
 final class BackendStarter {
 
@@ -52,7 +52,7 @@ final class BackendStarter {
         starter = new DefaultHttpServerStarter();
     }
 
-    ServerContext start(int listenPort, String name, HttpService service)
+    ServerContext start(int listenPort, String name, StreamingHttpService service)
             throws ExecutionException, InterruptedException {
         // Create ExecutionContext for this ServerContext with new Executor.
         final ExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR,
@@ -63,8 +63,8 @@ final class BackendStarter {
         return ctx;
     }
 
-    ServerContext start(int listenPort, String name, AggregatedHttpService service)
+    ServerContext start(int listenPort, String name, HttpService service)
             throws ExecutionException, InterruptedException {
-        return start(listenPort, name, service.asService());
+        return start(listenPort, name, service.asStreamingService());
     }
 }

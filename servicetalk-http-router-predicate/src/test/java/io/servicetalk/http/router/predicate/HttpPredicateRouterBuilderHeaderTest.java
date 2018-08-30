@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.router.predicate;
 
-import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.StreamingHttpService;
 
 import org.junit.Test;
 
@@ -33,10 +33,10 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
 
     @Test
     public void testWhenHeaderIsPresent() {
-        final HttpService service = new HttpPredicateRouterBuilder()
+        final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenHeader("host").isPresent().thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
-                .build();
+                .buildStreaming();
 
         when(headers.getAll("host")).then(answerIteratorOf("localhost"));
         assertSame(responseA, service.handle(ctx, request));
@@ -47,10 +47,10 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
 
     @Test
     public void testWhenHeaderFirstValue() {
-        final HttpService service = new HttpPredicateRouterBuilder()
+        final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenHeader("host").firstValue("localhost").thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
-                .build();
+                .buildStreaming();
 
         when(headers.getAll("host")).then(answerIteratorOf("localhost"));
         assertSame(responseA, service.handle(ctx, request));
@@ -70,10 +70,10 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
 
     @Test
     public void testWhenHeaderFirstValueMatches() {
-        final HttpService service = new HttpPredicateRouterBuilder()
+        final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenHeader("host").firstValueMatches("127\\..*").thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
-                .build();
+                .buildStreaming();
 
         when(headers.getAll("host")).then(answerIteratorOf("127.0.0.1"));
         assertSame(responseA, service.handle(ctx, request));
@@ -90,10 +90,10 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
 
     @Test
     public void testWhenHeaderFirstValueMatchesPattern() {
-        final HttpService service = new HttpPredicateRouterBuilder()
+        final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenHeader("host").firstValueMatches(Pattern.compile("127\\..*", CASE_INSENSITIVE)).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
-                .build();
+                .buildStreaming();
 
         when(headers.getAll("host")).then(answerIteratorOf("127.0.0.1"));
         assertSame(responseA, service.handle(ctx, request));
@@ -110,10 +110,10 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
 
     @Test
     public void testWhenHeaderValues() {
-        final HttpService service = new HttpPredicateRouterBuilder()
+        final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenHeader("host").values(new AnyMatchPredicate<>("localhost")).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
-                .build();
+                .buildStreaming();
 
         when(headers.getAll("host")).then(answerIteratorOf("localhost"));
         assertSame(responseA, service.handle(ctx, request));
@@ -130,13 +130,13 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
 
     @Test
     public void testMultipleHeaderRoutes() {
-        final HttpService service = new HttpPredicateRouterBuilder()
+        final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenHeader("host").firstValue("a.com").thenRouteTo(serviceA)
                 .whenHeader("host").firstValue("b.com").thenRouteTo(serviceB)
                 .whenHeader("host").firstValue("c.com").thenRouteTo(serviceC)
                 .whenHeader("host").firstValue("d.com").thenRouteTo(serviceD)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
-                .build();
+                .buildStreaming();
 
         when(headers.getAll("host")).then(answerIteratorOf("d.com"));
         assertSame(responseD, service.handle(ctx, request));

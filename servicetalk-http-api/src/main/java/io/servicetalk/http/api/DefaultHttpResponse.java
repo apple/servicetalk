@@ -15,81 +15,88 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.Single;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import static java.util.Objects.requireNonNull;
+import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.http.api.HttpPayloadChunks.aggregateChunks;
+import static io.servicetalk.http.api.HttpPayloadChunks.newLastPayloadChunk;
+import static java.lang.System.lineSeparator;
 
-/**
- * Default implementation of {@link HttpResponse}.
- *
- * @param <O> The type of payload of the response.
- */
-final class DefaultHttpResponse<O> extends DefaultHttpResponseMetaData implements HttpResponse<O> {
+final class DefaultHttpResponse<T> implements HttpResponse<T> {
 
-    private final Publisher<O> payloadBody;
+    private final HttpResponseMetaData original;
+    private final T payloadBody;
+    private final HttpHeaders trailers;
 
-    /**
-     * Create a new instance.
-     *
-     * @param status the {@link HttpResponseStatus} of the response.
-     * @param version the {@link HttpProtocolVersion} of the response.
-     * @param headers the {@link HttpHeaders} of the response.
-     * @param payloadBody a {@link Publisher} of the payload body of the response.
-     */
-    DefaultHttpResponse(final HttpResponseStatus status, final HttpProtocolVersion version, final HttpHeaders headers,
-                        final Publisher<O> payloadBody) {
-        super(status, version, headers);
-        this.payloadBody = requireNonNull(payloadBody);
-    }
-
-    private DefaultHttpResponse(final DefaultHttpResponse<?> responseMetaData, final Publisher<O> payloadBody) {
-        super(responseMetaData);
-        this.payloadBody = requireNonNull(payloadBody);
+    DefaultHttpResponse(final HttpResponseMetaData original,
+                        final T payloadBody,
+                        final HttpHeaders trailers) {
+        this.original = original;
+        this.payloadBody = payloadBody;
+        this.trailers = trailers;
     }
 
     @Override
-    public HttpResponse<O> setVersion(final HttpProtocolVersion version) {
-        super.setVersion(version);
+    public HttpProtocolVersion getVersion() {
+        return original.getVersion();
+    }
+
+    @Override
+    public HttpResponse<T> setVersion(final HttpProtocolVersion version) {
+        original.setVersion(version);
         return this;
     }
 
     @Override
-    public HttpResponse<O> setStatus(final HttpResponseStatus status) {
-        super.setStatus(status);
+    public HttpHeaders getHeaders() {
+        return original.getHeaders();
+    }
+
+    @Override
+    public String toString(final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> headerFilter) {
+        return original.toString(headerFilter) + lineSeparator() + trailers.toString(headerFilter);
+    }
+
+    @Override
+    public HttpResponseStatus getStatus() {
+        return original.getStatus();
+    }
+
+    @Override
+    public HttpResponse<T> setStatus(final HttpResponseStatus status) {
+        original.setStatus(status);
         return this;
     }
 
     @Override
-    public Publisher<O> getPayloadBody() {
+    public T getPayloadBody() {
         return payloadBody;
     }
 
     @Override
-    public <R> HttpResponse<R> transformPayloadBody(final Function<Publisher<O>, Publisher<R>> transformer) {
-        return new DefaultHttpResponse<>(this, transformer.apply(payloadBody));
+    public <R> HttpResponse<R> transformPayloadBody(final Function<T, R> transformer) {
+        return new DefaultHttpResponse<>(original, transformer.apply(payloadBody), trailers);
     }
 
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        if (!super.equals(o)) {
-            return false;
-        }
-
-        final DefaultHttpResponse<?> that = (DefaultHttpResponse<?>) o;
-
-        return payloadBody.equals(that.payloadBody);
+    public HttpHeaders getTrailers() {
+        return trailers;
     }
 
-    @Override
-    public int hashCode() {
-        return 31 * super.hashCode() + payloadBody.hashCode();
+    static StreamingHttpResponse<HttpPayloadChunk> toHttpResponse(HttpResponse<HttpPayloadChunk> response) {
+        return new DefaultStreamingHttpResponse<>(response.getStatus(), response.getVersion(), response.getHeaders(),
+                // We can not simply write "request" here as the encoder will see two metadata objects,
+                // one created by splice and the next the chunk itself.
+                just(newLastPayloadChunk(response.getPayloadBody().getContent(), response.getTrailers())));
+    }
+
+    static Single<HttpResponse<HttpPayloadChunk>> from(StreamingHttpResponse<HttpPayloadChunk> original,
+                                                       BufferAllocator allocator) {
+        final Single<LastHttpPayloadChunk> reduce = aggregateChunks(original.getPayloadBody(), allocator);
+        return reduce.map(payload -> new DefaultHttpResponse<>(original, payload, payload.getTrailers()));
     }
 }

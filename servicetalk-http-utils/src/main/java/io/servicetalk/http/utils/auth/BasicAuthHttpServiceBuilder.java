@@ -25,10 +25,10 @@ import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMetaData;
-import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.slf4j.Logger;
@@ -51,12 +51,12 @@ import static io.servicetalk.http.api.HttpHeaderNames.WWW_AUTHENTICATE;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatuses.PROXY_AUTHENTICATION_REQUIRED;
 import static io.servicetalk.http.api.HttpResponseStatuses.UNAUTHORIZED;
-import static io.servicetalk.http.api.HttpResponses.newResponse;
+import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A builder for an {@link HttpService}, which filters HTTP requests using
+ * A builder for an {@link StreamingHttpService}, which filters HTTP requests using
  * <a href="https://tools.ietf.org/html/rfc7617">RFC7617</a>: The 'Basic' HTTP Authentication Scheme.
  * <p>
  * It accepts credentials as {@code user-id:password} pairs, encoded using {@link Base64} for
@@ -137,8 +137,8 @@ public final class BasicAuthHttpServiceBuilder<UserInfo> {
      * </table></blockquote>
      *
      * @param credentialsVerifier a {@link CredentialsVerifier} for {@code user-id} and {@code passwords} pair. The
-     * future built {@link HttpService} will manage the lifecycle of the passed one, ensuring it is closed when the
-     * {@link HttpService} is closed
+     * future built {@link StreamingHttpService} will manage the lifecycle of the passed one, ensuring it is closed when the
+     * {@link StreamingHttpService} is closed
      * @param realm a <a href="https://tools.ietf.org/html/rfc7235#section-2.2">protection space (realm)</a>
      * @param <UserInfo> a type for authenticated user info object
      * @return a new {@link BasicAuthHttpServiceBuilder}
@@ -170,8 +170,8 @@ public final class BasicAuthHttpServiceBuilder<UserInfo> {
      * </table></blockquote>
      *
      * @param credentialsVerifier a {@link CredentialsVerifier} for {@code user-id} and {@code passwords} pair. The
-     * future built {@link HttpService} will manage the lifecycle of the passed one, ensuring it is closed when the
-     * {@link HttpService} is closed
+     * future built {@link StreamingHttpService} will manage the lifecycle of the passed one, ensuring it is closed when the
+     * {@link StreamingHttpService} is closed
      * @param realm a <a href="https://tools.ietf.org/html/rfc7235#section-2.2">protection space (realm)</a>
      * @param <UserInfo> a type for authenticated user info object
      * @return a new {@link BasicAuthHttpServiceBuilder}
@@ -209,19 +209,19 @@ public final class BasicAuthHttpServiceBuilder<UserInfo> {
     }
 
     /**
-     * Builds a new Basic HTTP Auth filtering {@link HttpService}.
+     * Builds a new Basic HTTP Auth filtering {@link StreamingHttpService}.
      *
-     * @param next an {@link HttpService} to protect against unauthorized access. The returned {@link HttpService}
-     * manages the lifecycle of the passed one, ensuring it is closed when the {@link HttpService} is closed
-     * @return a new {@link HttpService}
+     * @param next an {@link StreamingHttpService} to protect against unauthorized access. The returned {@link StreamingHttpService}
+     * manages the lifecycle of the passed one, ensuring it is closed when the {@link StreamingHttpService} is closed
+     * @return a new {@link StreamingHttpService}
      */
-    public HttpService build(final HttpService next) {
-        return new BasicAuthHttpService<>(credentialsVerifier, realm, proxy, userInfoKey, utf8, requireNonNull(next));
+    public StreamingHttpService build(final StreamingHttpService next) {
+        return new BasicAuthStreamingHttpService<>(credentialsVerifier, realm, proxy, userInfoKey, utf8, requireNonNull(next));
     }
 
-    private static final class BasicAuthHttpService<UserInfo> extends HttpService {
+    private static final class BasicAuthStreamingHttpService<UserInfo> extends StreamingHttpService {
 
-        private static final Logger LOGGER = LoggerFactory.getLogger(BasicAuthHttpService.class);
+        private static final Logger LOGGER = LoggerFactory.getLogger(BasicAuthStreamingHttpService.class);
 
         private static final String AUTH_SCHEME = "basic ";
         private static final int AUTH_SCHEME_LENGTH = AUTH_SCHEME.length();
@@ -231,15 +231,15 @@ public final class BasicAuthHttpServiceBuilder<UserInfo> {
         private final boolean proxy;
         @Nullable
         private final Key<UserInfo> userInfoKey;
-        private final HttpService next;
+        private final StreamingHttpService next;
         private final AsyncCloseable closeable;
 
-        BasicAuthHttpService(final CredentialsVerifier<UserInfo> credentialsVerifier,
-                             final String realm,
-                             final boolean proxy,
-                             @Nullable final Key<UserInfo> userInfoKey,
-                             final boolean utf8,
-                             final HttpService next) {
+        BasicAuthStreamingHttpService(final CredentialsVerifier<UserInfo> credentialsVerifier,
+                                      final String realm,
+                                      final boolean proxy,
+                                      @Nullable final Key<UserInfo> userInfoKey,
+                                      final boolean utf8,
+                                      final StreamingHttpService next) {
             this.credentialsVerifier = credentialsVerifier;
             this.authenticateHeader = "Basic realm=\"" + realm + (utf8 ? "\", charset=\"UTF-8\"" : '"');
             this.proxy = proxy;
@@ -249,8 +249,8 @@ public final class BasicAuthHttpServiceBuilder<UserInfo> {
         }
 
         @Override
-        public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                             final HttpRequest<HttpPayloadChunk> request) {
+        public Single<StreamingHttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
+                                                                      final StreamingHttpRequest<HttpPayloadChunk> request) {
             // Use of the format "user:password" in the userinfo field is deprecated:
             //  - https://tools.ietf.org/html/rfc3986#section-3.2.1
             //  - https://tools.ietf.org/html/rfc3986#section-7.5
@@ -320,8 +320,8 @@ public final class BasicAuthHttpServiceBuilder<UserInfo> {
             return closeable.closeAsyncGracefully();
         }
 
-        private Single<HttpResponse<HttpPayloadChunk>> onAccessDenied(final HttpMetaData requestMetaData) {
-            final HttpResponse<HttpPayloadChunk> response = newResponse(requestMetaData.getVersion(),
+        private Single<StreamingHttpResponse<HttpPayloadChunk>> onAccessDenied(final HttpMetaData requestMetaData) {
+            final StreamingHttpResponse<HttpPayloadChunk> response = newResponse(requestMetaData.getVersion(),
                     proxy ? PROXY_AUTHENTICATION_REQUIRED : UNAUTHORIZED);
             HttpHeaders headers = response.getHeaders();
             headers.set(proxy ? PROXY_AUTHENTICATE : WWW_AUTHENTICATE, authenticateHeader);
@@ -329,9 +329,9 @@ public final class BasicAuthHttpServiceBuilder<UserInfo> {
             return success(response);
         }
 
-        private Single<HttpResponse<HttpPayloadChunk>> onAuthenticated(final ConnectionContext ctx,
-                                                                       final HttpRequest<HttpPayloadChunk> request,
-                                                                       final UserInfo userInfo) {
+        private Single<StreamingHttpResponse<HttpPayloadChunk>> onAuthenticated(final ConnectionContext ctx,
+                                                                                final StreamingHttpRequest<HttpPayloadChunk> request,
+                                                                                final UserInfo userInfo) {
             if (userInfoKey != null) {
                 AsyncContext.put(userInfoKey, userInfo);
             }

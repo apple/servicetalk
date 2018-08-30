@@ -16,8 +16,8 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.GroupKey;
-import io.servicetalk.http.api.BlockingHttpClient.BlockingReservedHttpConnection;
-import io.servicetalk.http.api.BlockingHttpClient.BlockingUpgradableHttpResponse;
+import io.servicetalk.http.api.BlockingHttpClient.ReservedBlockingHttpConnection;
+import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
 
 /**
  * The equivalent of {@link HttpClientGroup} but with synchronous/blocking APIs instead of asynchronous APIs.
@@ -26,55 +26,66 @@ import io.servicetalk.http.api.BlockingHttpClient.BlockingUpgradableHttpResponse
  */
 public abstract class BlockingHttpClientGroup<UnresolvedAddress> implements AutoCloseable {
     /**
-     * Locate or create a client and delegate to {@link BlockingHttpClient#request(BlockingHttpRequest)}.
+     * Locate or create a client and delegate to {@link BlockingHttpClient#request(HttpRequest)}.
      *
      * @param key Identifies the {@link BlockingHttpClient} to use, or provides enough information to create
      * a {@link BlockingHttpClient} if non exist.
-     * @param request The {@link BlockingHttpRequest} to send.
-     * @return The received {@link BlockingHttpResponse}.
+     * @param request The {@link HttpRequest} to send.
+     * @return The received {@link HttpResponse}.
      * @throws Exception if an exception occurs during the request processing.
-     * @see BlockingHttpClient#request(BlockingHttpRequest)
+     * @see BlockingHttpClient#request(HttpRequest)
      */
-    public abstract BlockingHttpResponse<HttpPayloadChunk> request(GroupKey<UnresolvedAddress> key,
-                                                                   BlockingHttpRequest<HttpPayloadChunk> request)
-            throws Exception;
+    public abstract HttpResponse<HttpPayloadChunk> request(
+            GroupKey<UnresolvedAddress> key, HttpRequest<HttpPayloadChunk> request) throws Exception;
 
     /**
-     * Locate or create a client and delegate to {@link BlockingHttpClient#reserveConnection(BlockingHttpRequest)}.
+     * Locate or create a client and delegate to
+     * {@link BlockingHttpClient#reserveConnection(HttpRequest)}.
      *
      * @param key Identifies the {@link BlockingHttpClient} to use, or provides enough information to create
      * a {@link BlockingHttpClient} if non exist.
      * @param request The {@link HttpRequest} which may provide more information about which
-     * {@link BlockingHttpConnection} to reserve.
-     * @return A {@link BlockingReservedHttpConnection}.
+     * {@link BlockingHttpConnection} to
+     * reserve.
+     * @return A {@link ReservedBlockingHttpConnection}.
      * @throws Exception if a exception occurs during the reservation process.
-     * @see BlockingHttpClient#reserveConnection(BlockingHttpRequest)
+     * @see BlockingHttpClient#reserveConnection(HttpRequest)
      */
-    public abstract BlockingReservedHttpConnection reserveConnection(GroupKey<UnresolvedAddress> key,
-                                                                     BlockingHttpRequest<HttpPayloadChunk> request)
-            throws Exception;
+    public abstract ReservedBlockingHttpConnection reserveConnection(
+            GroupKey<UnresolvedAddress> key, HttpRequest<HttpPayloadChunk> request) throws Exception;
 
     /**
-     * Locate or create a client and delegate to {@link BlockingHttpClient#upgradeConnection(BlockingHttpRequest)}.
+     * Locate or create a client and delegate to
+     * {@link BlockingHttpClient#upgradeConnection(HttpRequest)}.
      *
      * @param key Identifies the {@link BlockingHttpClient} to use, or provides enough information to create
      * a {@link BlockingHttpClient} if non exist.
      * @param request The {@link HttpRequest} which may provide more information about which
      * {@link BlockingHttpConnection} to upgrade.
-     * @return An object that provides the {@link HttpResponse} for the upgrade attempt and also contains the
-     * {@link HttpConnection} used for the upgrade.
+     * @return An object that provides the {@link StreamingHttpResponse} for the upgrade attempt and also contains the
+     * {@link StreamingHttpConnection} used for the upgrade.
      * @throws Exception if a exception occurs during the reservation process.
-     * @see BlockingHttpClient#upgradeConnection(BlockingHttpRequest)
+     * @see BlockingHttpClient#upgradeConnection(HttpRequest)
      */
-    public abstract BlockingUpgradableHttpResponse<HttpPayloadChunk> upgradeConnection(GroupKey<UnresolvedAddress> key,
-                                                        BlockingHttpRequest<HttpPayloadChunk> request) throws Exception;
+    public abstract UpgradableHttpResponse<HttpPayloadChunk> upgradeConnection(
+            GroupKey<UnresolvedAddress> key, HttpRequest<HttpPayloadChunk> request) throws Exception;
+
+    /**
+     * Convert this {@link BlockingHttpClientGroup} to the {@link StreamingHttpClientGroup} API.
+     * <p>
+     * Note that the resulting {@link StreamingHttpClientGroup} may still be subject to any blocking, in memory
+     * aggregation, and other behavior as this {@link BlockingHttpClientGroup}.
+     * @return a {@link StreamingHttpClientGroup} representation of this {@link BlockingHttpClientGroup}.
+     */
+    public final StreamingHttpClientGroup<UnresolvedAddress> asStreamingClientGroup() {
+        return asStreamingClientGroupInternal();
+    }
 
     /**
      * Convert this {@link BlockingHttpClientGroup} to the {@link HttpClientGroup} API.
      * <p>
-     * Note that the resulting {@link HttpClientGroup} may still be subject to any blocking, in memory aggregation, and
-     * other behavior as this {@link BlockingHttpClientGroup}.
-     *
+     * Note that the resulting {@link HttpClientGroup} may still be subject to any blocking, in memory
+     * aggregation, and other behavior as this {@link BlockingHttpClientGroup}.
      * @return a {@link HttpClientGroup} representation of this {@link BlockingHttpClientGroup}.
      */
     public final HttpClientGroup<UnresolvedAddress> asClientGroup() {
@@ -82,27 +93,18 @@ public abstract class BlockingHttpClientGroup<UnresolvedAddress> implements Auto
     }
 
     /**
-     * Convert this {@link BlockingHttpClientGroup} to the {@link AggregatedHttpClientGroup} API.
+     * Convert this {@link BlockingHttpClientGroup} to the {@link BlockingStreamingHttpClientGroup} API.
      * <p>
-     * Note that the resulting {@link AggregatedHttpClientGroup} may still be subject to any blocking, in memory
-     * aggregation, and other behavior as this {@link BlockingHttpClientGroup}.
-     *
-     * @return a {@link AggregatedHttpClientGroup} representation of this {@link BlockingHttpClientGroup}.
+     * Note that the resulting {@link BlockingStreamingHttpClientGroup} may still be subject to in memory
+     * aggregation and other behavior as this {@link BlockingHttpClientGroup}.
+     * @return a {@link BlockingStreamingHttpClientGroup} representation of this {@link BlockingHttpClientGroup}.
      */
-    public final AggregatedHttpClientGroup<UnresolvedAddress> asAggregatedClientGroup() {
-        return asClientGroup().asAggregatedClientGroup();
+    public final BlockingStreamingHttpClientGroup<UnresolvedAddress> asBlockingStreamingClientGroup() {
+        return asStreamingClientGroup().asBlockingStreamingClientGroup();
     }
 
-    /**
-     * Convert this {@link BlockingHttpClientGroup} to the {@link BlockingAggregatedHttpClientGroup} API.
-     * <p>
-     * Note that the resulting {@link BlockingAggregatedHttpClientGroup} may still be subject to in
-     * memory aggregation and other behavior as this {@link BlockingHttpClientGroup}.
-     *
-     * @return a {@link BlockingAggregatedHttpClientGroup} representation of this {@link BlockingHttpClientGroup}.
-     */
-    public final BlockingAggregatedHttpClientGroup<UnresolvedAddress> asBlockingAggregatedClientGroup() {
-        return asClientGroup().asBlockingAggregatedClientGroup();
+    StreamingHttpClientGroup<UnresolvedAddress> asStreamingClientGroupInternal() {
+        return new BlockingHttpClientGroupToStreamingHttpClientGroup<>(this);
     }
 
     HttpClientGroup<UnresolvedAddress> asClientGroupInternal() {

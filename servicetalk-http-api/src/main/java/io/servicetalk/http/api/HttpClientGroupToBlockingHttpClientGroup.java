@@ -17,17 +17,14 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.http.api.BlockingHttpClient.BlockingReservedHttpConnection;
-import io.servicetalk.http.api.BlockingHttpClient.BlockingUpgradableHttpResponse;
+import io.servicetalk.http.api.BlockingHttpClient.ReservedBlockingHttpConnection;
 import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
-import io.servicetalk.http.api.HttpClientToBlockingHttpClient.UpgradableHttpResponseToBlocking;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
-import static io.servicetalk.http.api.HttpRequests.fromBlockingRequest;
 import static java.util.Objects.requireNonNull;
 
-final class HttpClientGroupToBlockingHttpClientGroup<UnresolvedAddress> extends
-                                                                  BlockingHttpClientGroup<UnresolvedAddress> {
+final class HttpClientGroupToBlockingHttpClientGroup<UnresolvedAddress>
+        extends BlockingHttpClientGroup<UnresolvedAddress> {
     private final HttpClientGroup<UnresolvedAddress> clientGroup;
 
     HttpClientGroupToBlockingHttpClientGroup(HttpClientGroup<UnresolvedAddress> clientGroup) {
@@ -35,33 +32,25 @@ final class HttpClientGroupToBlockingHttpClientGroup<UnresolvedAddress> extends
     }
 
     @Override
-    public BlockingHttpResponse<HttpPayloadChunk> request(final GroupKey<UnresolvedAddress> key,
-                                                          final BlockingHttpRequest<HttpPayloadChunk> request)
+    public HttpResponse<HttpPayloadChunk> request(final GroupKey<UnresolvedAddress> key,
+                                                  final HttpRequest<HttpPayloadChunk> request)
             throws Exception {
-        // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
+        // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
-        return new DefaultBlockingHttpResponse<>(
-                blockingInvocation(clientGroup.request(key, fromBlockingRequest(request))));
+        return blockingInvocation(clientGroup.request(key, request));
     }
 
     @Override
-    public BlockingReservedHttpConnection reserveConnection(final GroupKey<UnresolvedAddress> key,
-                                                            final BlockingHttpRequest<HttpPayloadChunk> request)
-            throws Exception {
-        // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
-        // apply any explicit timeout here and just wait forever.
-        return blockingInvocation(clientGroup.reserveConnection(key, fromBlockingRequest(request)))
-                .asBlockingReservedConnection();
+    public ReservedBlockingHttpConnection reserveConnection(
+            final GroupKey<UnresolvedAddress> key, final HttpRequest<HttpPayloadChunk> request) throws Exception {
+        return blockingInvocation(clientGroup.reserveConnection(key, request))
+                .asReservedBlockingConnection();
     }
 
     @Override
-    public BlockingUpgradableHttpResponse<HttpPayloadChunk> upgradeConnection(final GroupKey<UnresolvedAddress> key,
-                                              final BlockingHttpRequest<HttpPayloadChunk> request) throws Exception {
-        // It is assumed that users will always apply timeouts at the HttpService layer (e.g. via filter). So we don't
-        // apply any explicit timeout here and just wait forever.
-        UpgradableHttpResponse<HttpPayloadChunk> upgradeResponse = blockingInvocation(
-                clientGroup.upgradeConnection(key, fromBlockingRequest(request)));
-        return new UpgradableHttpResponseToBlocking<>(upgradeResponse, upgradeResponse.getPayloadBody().toIterable());
+    public UpgradableHttpResponse<HttpPayloadChunk> upgradeConnection(
+            final GroupKey<UnresolvedAddress> key, final HttpRequest<HttpPayloadChunk> request) throws Exception {
+        return blockingInvocation(clientGroup.upgradeConnection(key, request));
     }
 
     @Override
@@ -69,12 +58,12 @@ final class HttpClientGroupToBlockingHttpClientGroup<UnresolvedAddress> extends
         blockingInvocation(clientGroup.closeAsync());
     }
 
-    Completable onClose() {
-        return clientGroup.onClose();
-    }
-
     @Override
     HttpClientGroup<UnresolvedAddress> asClientGroupInternal() {
         return clientGroup;
+    }
+
+    Completable onClose() {
+        return clientGroup.onClose();
     }
 }

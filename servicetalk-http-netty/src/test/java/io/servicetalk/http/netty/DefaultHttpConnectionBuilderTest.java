@@ -19,10 +19,10 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
-import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -34,7 +34,7 @@ import javax.annotation.Nonnull;
 
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
-import static io.servicetalk.http.api.HttpConnection.SettingKey.MAX_CONCURRENCY;
+import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
@@ -52,23 +52,23 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
 
     @Test
     public void requestFromConnectionFactory() throws ExecutionException, InterruptedException {
-        ConnectionFactory<SocketAddress, HttpConnection> cf =
+        ConnectionFactory<SocketAddress, StreamingHttpConnection> cf =
                 prepareBuilder(1).asConnectionFactory(CTX);
-        Single<HttpConnection> connectionSingle =
+        Single<StreamingHttpConnection> connectionSingle =
                 cf.newConnection(serverContext.getListenAddress());
         makeRequestValidateResponseAndClose(awaitIndefinitelyNonNull(connectionSingle));
     }
 
-    private static final class DummyFanoutFilter extends HttpConnection {
+    private static final class DummyFanoutFilter extends StreamingHttpConnection {
 
-        private final HttpConnection delegate;
+        private final StreamingHttpConnection delegate;
 
-        private DummyFanoutFilter(final HttpConnection connection) {
+        private DummyFanoutFilter(final StreamingHttpConnection connection) {
             this.delegate = connection;
         }
 
         @Override
-        public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
+        public Single<StreamingHttpResponse<HttpPayloadChunk>> request(final StreamingHttpRequest<HttpPayloadChunk> request) {
             // fanout - simulates followup request on response
             return delegate.request(request).flatMap(resp ->
                     resp.getPayloadBody().ignoreElements().andThen(delegate.request(request)));
@@ -129,8 +129,8 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
     private void sendRequestAndValidate(int pipelinedRequests) throws ExecutionException, InterruptedException {
         DefaultHttpConnectionBuilder<SocketAddress> defaultBuilder = prepareBuilder(pipelinedRequests);
 
-        Single<HttpConnection> connectionSingle =
-                defaultBuilder.build(CTX, serverContext.getListenAddress());
+        Single<StreamingHttpConnection> connectionSingle =
+                defaultBuilder.buildStreaming(CTX, serverContext.getListenAddress());
 
         makeRequestValidateResponseAndClose(awaitIndefinitelyNonNull(connectionSingle));
     }

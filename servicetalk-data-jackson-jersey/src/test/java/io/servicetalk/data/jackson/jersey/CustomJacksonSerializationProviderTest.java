@@ -17,7 +17,7 @@ package io.servicetalk.data.jackson.jersey;
 
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.data.jackson.jersey.resources.SingleJsonResources;
-import io.servicetalk.http.router.jersey.AbstractJerseyHttpServiceTest;
+import io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
@@ -34,7 +34,7 @@ import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static java.util.Collections.singleton;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 
-public class CustomJacksonSerializationProviderTest extends AbstractJerseyHttpServiceTest {
+public class CustomJacksonSerializationProviderTest extends AbstractJerseyStreamingHttpServiceTest {
     public static class TestApplication extends Application {
         @Override
         public Set<Class<?>> getClasses() {

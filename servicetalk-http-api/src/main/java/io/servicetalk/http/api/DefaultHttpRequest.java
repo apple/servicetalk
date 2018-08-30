@@ -15,107 +15,171 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.Single;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
-import static java.util.Objects.requireNonNull;
+import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.http.api.HttpPayloadChunks.aggregateChunks;
+import static io.servicetalk.http.api.HttpPayloadChunks.newLastPayloadChunk;
+import static java.lang.System.lineSeparator;
 
-/**
- * Default implementation of {@link HttpRequest}.
- *
- * @param <I> The type of payload of the request.
- */
-final class DefaultHttpRequest<I> extends DefaultHttpRequestMetaData implements HttpRequest<I> {
+final class DefaultHttpRequest<T> implements HttpRequest<T> {
+    private final HttpRequestMetaData original;
+    private final T payloadBody;
+    private final HttpHeaders trailers;
 
-    private final Publisher<I> payloadBody;
-
-    /**
-     * Create a new instance.
-     *
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param version the {@link HttpProtocolVersion} of the request.
-     * @param payloadBody a {@link Publisher} of the payload body of the request.
-     * @param headers the {@link HttpHeaders} of the request.
-     */
-    DefaultHttpRequest(final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
-                       final Publisher<I> payloadBody, final HttpHeaders headers) {
-        super(method, requestTarget, version, headers);
-        this.payloadBody = requireNonNull(payloadBody);
-    }
-
-    private DefaultHttpRequest(final DefaultHttpRequest<?> request, final Publisher<I> payloadBody) {
-        super(request);
-        this.payloadBody = requireNonNull(payloadBody);
+    DefaultHttpRequest(final HttpRequestMetaData original, final T payloadBody, final HttpHeaders trailers) {
+        this.original = original;
+        this.payloadBody = payloadBody;
+        this.trailers = trailers;
     }
 
     @Override
-    public DefaultHttpRequest<I> setVersion(final HttpProtocolVersion version) {
-        super.setVersion(version);
-        return this;
-    }
-
-    @Override
-    public DefaultHttpRequest<I> setMethod(final HttpRequestMethod method) {
-        super.setMethod(method);
-        return this;
-    }
-
-    @Override
-    public DefaultHttpRequest<I> setRequestTarget(final String requestTarget) {
-        super.setRequestTarget(requestTarget);
-        return this;
-    }
-
-    @Override
-    public DefaultHttpRequest<I> setPath(final String path) {
-        super.setPath(path);
-        return this;
-    }
-
-    @Override
-    public DefaultHttpRequest<I> setRawPath(final String path) {
-        super.setRawPath(path);
-        return this;
-    }
-
-    @Override
-    public DefaultHttpRequest<I> setRawQuery(final String query) {
-        super.setRawQuery(query);
-        return this;
-    }
-
-    @Override
-    public Publisher<I> getPayloadBody() {
+    public T getPayloadBody() {
         return payloadBody;
     }
 
     @Override
-    public <R> HttpRequest<R> transformPayloadBody(final Function<Publisher<I>, Publisher<R>> transformer) {
-        return new DefaultHttpRequest<>(this, transformer.apply(payloadBody));
+    public HttpHeaders getTrailers() {
+        return trailers;
     }
 
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        if (!super.equals(o)) {
-            return false;
-        }
-
-        final DefaultHttpRequest<?> that = (DefaultHttpRequest<?>) o;
-
-        return payloadBody.equals(that.payloadBody);
+    public <R> HttpRequest<R> transformPayloadBody(final Function<T, R> transformer) {
+        return new DefaultHttpRequest<>(original, transformer.apply(payloadBody), trailers);
     }
 
     @Override
-    public int hashCode() {
-        return 31 * super.hashCode() + payloadBody.hashCode();
+    public HttpRequest<T> setRawPath(final String path) {
+        original.setRawPath(path);
+        return this;
+    }
+
+    @Override
+    public HttpRequest<T> setPath(final String path) {
+        original.setPath(path);
+        return this;
+    }
+
+    @Override
+    public HttpQuery parseQuery() {
+        return original.parseQuery();
+    }
+
+    @Override
+    public String getRawQuery() {
+        return original.getRawQuery();
+    }
+
+    @Override
+    public HttpRequest<T> setRawQuery(final String query) {
+        original.setRawQuery(query);
+        return this;
+    }
+
+    @Override
+    public HttpProtocolVersion getVersion() {
+        return original.getVersion();
+    }
+
+    @Override
+    public HttpRequest<T> setVersion(final HttpProtocolVersion version) {
+        original.setVersion(version);
+        return this;
+    }
+
+    @Override
+    public HttpHeaders getHeaders() {
+        return original.getHeaders();
+    }
+
+    @Override
+    public String toString(
+            final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> headerFilter) {
+        return original.toString(headerFilter) + lineSeparator() + trailers.toString(headerFilter);
+    }
+
+    @Override
+    public HttpRequestMethod getMethod() {
+        return original.getMethod();
+    }
+
+    @Override
+    public HttpRequest<T> setMethod(final HttpRequestMethod method) {
+        original.setMethod(method);
+        return this;
+    }
+
+    @Override
+    public String getRequestTarget() {
+        return original.getRequestTarget();
+    }
+
+    @Override
+    public HttpRequest<T> setRequestTarget(final String requestTarget) {
+        original.setRequestTarget(requestTarget);
+        return this;
+    }
+
+    @Nullable
+    @Override
+    public String getScheme() {
+        return original.getScheme();
+    }
+
+    @Nullable
+    @Override
+    public String getUserInfo() {
+        return original.getUserInfo();
+    }
+
+    @Nullable
+    @Override
+    public String getHost() {
+        return original.getHost();
+    }
+
+    @Override
+    public int getPort() {
+        return original.getPort();
+    }
+
+    @Override
+    public String getRawPath() {
+        return original.getRawPath();
+    }
+
+    @Override
+    public String getPath() {
+        return original.getPath();
+    }
+
+    @Nullable
+    @Override
+    public String getEffectiveHost() {
+        return original.getEffectiveHost();
+    }
+
+    @Override
+    public int getEffectivePort() {
+        return original.getEffectivePort();
+    }
+
+    static StreamingHttpRequest<HttpPayloadChunk> toHttpRequest(final HttpRequest<HttpPayloadChunk> request) {
+        return new DefaultStreamingHttpRequest<>(request.getMethod(), request.getRequestTarget(), request.getVersion(),
+                // We can not simply write "request" here as the encoder will see two metadata objects,
+                // one created by splice and the next the chunk itself.
+                just(newLastPayloadChunk(request.getPayloadBody().getContent(), request.getTrailers())),
+                request.getHeaders());
+    }
+
+    static Single<HttpRequest<HttpPayloadChunk>> from(final StreamingHttpRequest<HttpPayloadChunk> original,
+                                                      final BufferAllocator allocator) {
+        final Single<LastHttpPayloadChunk> reduce = aggregateChunks(original.getPayloadBody(), allocator);
+        return reduce.map(payload -> new DefaultHttpRequest<>(original, payload, payload.getTrailers()));
     }
 }

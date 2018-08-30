@@ -23,19 +23,19 @@ import java.util.function.BiFunction;
 import java.util.function.UnaryOperator;
 
 /**
- * Function to filter an {@link HttpClient} when created from an {@link HttpClientGroup}.
+ * Function to filter an {@link StreamingHttpClient} when created from an {@link StreamingHttpClientGroup}.
  * @param <U> the type of address before resolution (unresolved address)
  */
 @FunctionalInterface
 public interface GroupedClientFilterFunction<U> {
     /**
-     * Applies a filter function to the {@link HttpClient}.
-     * @param address the {@code UnresolvedAddress} for the {@link HttpClient}
-     * @param client the {@link HttpClient} to filter
+     * Applies a filter function to the {@link StreamingHttpClient}.
+     * @param address the {@code UnresolvedAddress} for the {@link StreamingHttpClient}
+     * @param client the {@link StreamingHttpClient} to filter
      * @param lbEvents the {@link LoadBalancer} events stream
-     * @return the filtered {@link HttpClient}
+     * @return the filtered {@link StreamingHttpClient}
      */
-    HttpClient apply(U address, HttpClient client, Publisher<Object> lbEvents);
+    StreamingHttpClient apply(U address, StreamingHttpClient client, Publisher<Object> lbEvents);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -68,36 +68,36 @@ public interface GroupedClientFilterFunction<U> {
     }
 
     /**
-     * Returns a function that always returns its input {@link HttpClient}.
+     * Returns a function that always returns its input {@link StreamingHttpClient}.
      *
      * @param <U> the type of address before resolution (unresolved address)
-     * @return a function that always returns its input {@link HttpClient}.
+     * @return a function that always returns its input {@link StreamingHttpClient}.
      */
     static <U> GroupedClientFilterFunction<U> identity() {
         return (group, client, lbEvents) -> client;
     }
 
     /**
-     * Returns a function that adapts from the {@link UnaryOperator}&lt;{@link HttpClient}&gt; function type to the
+     * Returns a function that adapts from the {@link UnaryOperator}&lt;{@link StreamingHttpClient}&gt; function type to the
      * {@link ClientFilterFunction}.
      *
-     * @param function the function that is applied to the input {@link GroupKey} and {@link HttpClient}
+     * @param function the function that is applied to the input {@link GroupKey} and {@link StreamingHttpClient}
      * @param <U> the type of address before resolution (unresolved address)
-     * @return the filtered {@link HttpClient}
+     * @return the filtered {@link StreamingHttpClient}
      */
-    static <U> GroupedClientFilterFunction<U> from(BiFunction<U, HttpClient, HttpClient> function) {
+    static <U> GroupedClientFilterFunction<U> from(BiFunction<U, StreamingHttpClient, StreamingHttpClient> function) {
         return (address, client, lbEvents) -> function.apply(address, client);
     }
 
     /**
-     * Returns a function that adapts from the {@link UnaryOperator}&lt;{@link HttpClient}&gt; function type to the
+     * Returns a function that adapts from the {@link UnaryOperator}&lt;{@link StreamingHttpClient}&gt; function type to the
      * {@link ClientFilterFunction}.
      *
-     * @param function the function that is applied to the input {@link HttpClient}
+     * @param function the function that is applied to the input {@link StreamingHttpClient}
      * @param <U> the type of address before resolution (unresolved address)
-     * @return the filtered {@link HttpClient}
+     * @return the filtered {@link StreamingHttpClient}
      */
-    static <U> GroupedClientFilterFunction<U> from(UnaryOperator<HttpClient> function) {
+    static <U> GroupedClientFilterFunction<U> from(UnaryOperator<StreamingHttpClient> function) {
         return (address, client, lbEvents) -> function.apply(client);
     }
 }

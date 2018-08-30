@@ -17,15 +17,15 @@ package io.servicetalk.examples.http.service.composition;
 
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
-import io.servicetalk.http.api.AggregatedHttpClient;
-import io.servicetalk.http.api.DefaultHttpSerializer;
 import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.api.DefaultHttpSerializer;
+import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.HttpSerializer;
-import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.DefaultHttpServerStarter;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
-import io.servicetalk.http.utils.HttpClientFunctionFilter;
+import io.servicetalk.http.utils.StreamingHttpClientFunctionFilter;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
@@ -74,14 +74,14 @@ public final class GatewayServer {
                     ioExecutor, resources.prepend(newCachedThreadExecutor()));
 
             // Create clients for the different backends we are going to use in the gateway.
-            HttpClient recommendationsClient =
+            StreamingHttpClient recommendationsClient =
                     newClient(ioExecutor, RECOMMENDATIONS_BACKEND_ADDRESS, resources);
-            AggregatedHttpClient metadataClient =
-                    newClient(ioExecutor, METADATA_BACKEND_ADDRESS, resources).asAggregatedClient();
-            AggregatedHttpClient userClient =
-                    newClient(ioExecutor, USER_BACKEND_ADDRESS, resources).asAggregatedClient();
-            AggregatedHttpClient ratingsClient =
-                    newClient(ioExecutor, RATINGS_BACKEND_ADDRESS, resources).asAggregatedClient();
+            HttpClient metadataClient =
+                    newClient(ioExecutor, METADATA_BACKEND_ADDRESS, resources).asClient();
+            HttpClient userClient =
+                    newClient(ioExecutor, USER_BACKEND_ADDRESS, resources).asClient();
+            HttpClient ratingsClient =
+                    newClient(ioExecutor, RATINGS_BACKEND_ADDRESS, resources).asClient();
 
             // Use Jackson for serialization and deserialization.
             // HttpSerializer validates HTTP metadata for serialization/deserialization and also provides higher level
@@ -91,19 +91,19 @@ public final class GatewayServer {
             // Gateway supports different endpoints for blocking, streaming or aggregated implementations.
             // We create a router to express these endpoints.
             HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
-            final HttpService gatewayService =
+            final StreamingHttpService gatewayService =
                     routerBuilder.whenPathStartsWith("/recommendations/stream")
-                            .thenRouteTo(new GatewayService(recommendationsClient, metadataClient, ratingsClient,
+                            .thenRouteTo(new StreamingGatewayService(recommendationsClient, metadataClient, ratingsClient,
                                     userClient, httpSerializer))
                             .whenPathStartsWith("/recommendations/aggregated")
-                            .thenRouteTo(new AggregatedGatewayService(recommendationsClient.asAggregatedClient(),
-                                    metadataClient, ratingsClient, userClient, httpSerializer).asService())
+                            .thenRouteTo(new GatewayService(recommendationsClient.asClient(),
+                                    metadataClient, ratingsClient, userClient, httpSerializer).asStreamingService())
                             .whenPathStartsWith("/recommendations/blocking")
-                            .thenRouteTo(new BlockingGatewayService(recommendationsClient.asBlockingAggregatedClient(),
-                                    metadataClient.asBlockingAggregatedClient(),
-                                    ratingsClient.asBlockingAggregatedClient(),
-                                    userClient.asBlockingAggregatedClient(), httpSerializer).asService())
-                            .build();
+                            .thenRouteTo(new BlockingGatewayService(recommendationsClient.asBlockingClient(),
+                                    metadataClient.asBlockingClient(),
+                                    ratingsClient.asBlockingClient(),
+                                    userClient.asBlockingClient(), httpSerializer).asStreamingService())
+                            .buildStreaming();
 
             // Create configurable starter for HTTP server.
             DefaultHttpServerStarter starter = new DefaultHttpServerStarter();
@@ -118,9 +118,9 @@ public final class GatewayServer {
         }
     }
 
-    private static HttpClient newClient(final IoExecutor ioExecutor,
-                                        final HostAndPort serviceAddress,
-                                        final CompositeCloseable resources) {
+    private static StreamingHttpClient newClient(final IoExecutor ioExecutor,
+                                                 final HostAndPort serviceAddress,
+                                                 final CompositeCloseable resources) {
 
         // Setup the ExecutionContext to offload user code onto a cached Executor.
         DefaultExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor,
@@ -131,10 +131,10 @@ public final class GatewayServer {
                         // Set retry and timeout filters for all clients.
                         .appendClientFilter((client, lbEventStream) -> {
                             // Apply a timeout filter for the client to guard against extremely latent clients.
-                            return new HttpClientFunctionFilter((requester, request) ->
+                            return new StreamingHttpClientFunctionFilter((requester, request) ->
                                     requester.request(request).timeout(ofMillis(100),
                                             requester.getExecutionContext().getExecutor()), client);
                         })
-                        .build(executionContext));
+                        .buildStreaming(executionContext));
     }
 }

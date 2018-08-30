@@ -20,11 +20,13 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
 /**
- * Provides a means to make a HTTP request.
+ * The equivalent of {@link StreamingHttpRequester} but that accepts {@link HttpRequest} and returns
+ * {@link HttpResponse}.
  */
 public abstract class HttpRequester implements ListenableAsyncCloseable {
     /**
      * Send a {@code request}.
+     *
      * @param request the request to send.
      * @return The response.
      */
@@ -35,52 +37,43 @@ public abstract class HttpRequester implements ListenableAsyncCloseable {
      * <p>
      * Note that the {@link ExecutionContext#getIoExecutor()} will not necessarily be associated with a specific thread
      * unless that was how this object was built.
+     *
      * @return the {@link ExecutionContext} used during construction of this object.
      */
     public abstract ExecutionContext getExecutionContext();
 
     /**
+     * Convert this {@link HttpRequester} to the {@link StreamingHttpRequester} API.
+     *
+     * @return a {@link StreamingHttpRequester} representation of this {@link HttpRequester}.
+     */
+    public final StreamingHttpRequester asStreamingRequester() {
+        return asStreamingRequesterInternal();
+    }
+
+    /**
+     * Convert this {@link HttpRequester} to the {@link BlockingStreamingHttpRequester} API.
+     *
+     * @return a {@link BlockingStreamingHttpRequester} representation of this {@link HttpRequester}.
+     */
+    public final BlockingStreamingHttpRequester asBlockingStreamingRequester() {
+        return asStreamingRequester().asBlockingStreamingRequester();
+    }
+
+    /**
      * Convert this {@link HttpRequester} to the {@link BlockingHttpRequester} API.
-     * <p>
-     * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
-     * filters are implemented using the {@link HttpRequester} asynchronous API for maximum portability.
+     *
      * @return a {@link BlockingHttpRequester} representation of this {@link HttpRequester}.
      */
     public final BlockingHttpRequester asBlockingRequester() {
         return asBlockingRequesterInternal();
     }
 
-    /**
-     * Convert this {@link HttpRequester} to the {@link AggregatedHttpRequester} API.
-     * <p>
-     * This API is provided for convenience. It is recommended that
-     * filters are implemented using the {@link HttpRequester} asynchronous API for maximum portability.
-     * @return a {@link AggregatedHttpRequester} representation of this {@link HttpRequester}.
-     */
-    public final AggregatedHttpRequester asAggregatedRequester() {
-        return asAggregatedRequesterInternal();
-    }
-
-    /**
-     * Convert this {@link HttpRequester} to the {@link BlockingAggregatedHttpRequester} API.
-     * <p>
-     * This API is provided for convenience. It is recommended that
-     * filters are implemented using the {@link HttpRequester} asynchronous API for maximum portability.
-     * @return a {@link BlockingAggregatedHttpRequester} representation of this {@link HttpRequester}.
-     */
-    public final BlockingAggregatedHttpRequester asBlockingAggregatedRequester() {
-        return asBlockingAggregatedRequesterInternal();
-    }
-
-    AggregatedHttpRequester asAggregatedRequesterInternal() {
-        return new HttpRequesterToAggregatedHttpRequester(this);
+    StreamingHttpRequester asStreamingRequesterInternal() {
+        return new HttpRequesterToStreamingHttpRequester(this);
     }
 
     BlockingHttpRequester asBlockingRequesterInternal() {
         return new HttpRequesterToBlockingHttpRequester(this);
-    }
-
-    BlockingAggregatedHttpRequester asBlockingAggregatedRequesterInternal() {
-        return new HttpRequesterToBlockingAggregatedHttpRequester(this);
     }
 }

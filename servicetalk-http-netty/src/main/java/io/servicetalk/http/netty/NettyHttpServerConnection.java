@@ -20,12 +20,12 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
-import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.LastHttpPayloadChunk;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.NettyConnection;
@@ -43,9 +43,9 @@ import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpPayloadChunks.newLastPayloadChunk;
-import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.http.api.HttpResponseStatuses.INTERNAL_SERVER_ERROR;
-import static io.servicetalk.http.api.HttpResponses.newResponse;
+import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
+import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.http.netty.HeaderUtils.addResponseTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.SpliceFlatStreamToMetaSingle.flatten;
 
@@ -55,13 +55,13 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
     private static final Predicate<HttpPayloadChunk> LAST_HTTP_PAYLOAD_CHUNK_PREDICATE =
             p -> p instanceof LastHttpPayloadChunk;
     private final ConnectionContext context;
-    private final HttpService service;
+    private final StreamingHttpService service;
 
     NettyHttpServerConnection(final Channel channel, final Publisher<Object> requestObjectPublisher,
                               final TerminalPredicate<Object> terminalPredicate,
                               final CloseHandler closeHandler,
                               final ConnectionContext context,
-                              final HttpService service) {
+                              final StreamingHttpService service) {
         super(channel, context, requestObjectPublisher, terminalPredicate, closeHandler);
         this.context = context;
         this.service = service;
@@ -69,17 +69,17 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
 
     Completable process() {
         final Publisher<Object> connRequestObjectPublisher = read();
-        final Single<HttpRequest<HttpPayloadChunk>> requestSingle =
+        final Single<StreamingHttpRequest<HttpPayloadChunk>> requestSingle =
                 new SpliceFlatStreamToMetaSingle<>(connRequestObjectPublisher, NettyHttpServerConnection::spliceRequest);
         return handleRequestAndWriteResponse(requestSingle);
     }
 
-    private static HttpRequest<HttpPayloadChunk> spliceRequest(final HttpRequestMetaData hr,
-                                                               final Publisher<HttpPayloadChunk> pub) {
+    private static StreamingHttpRequest<HttpPayloadChunk> spliceRequest(final HttpRequestMetaData hr,
+                                                                        final Publisher<HttpPayloadChunk> pub) {
         return newRequest(hr.getVersion(), hr.getMethod(), hr.getRequestTarget(), pub, hr.getHeaders());
     }
 
-    private Completable handleRequestAndWriteResponse(final Single<HttpRequest<HttpPayloadChunk>> requestSingle) {
+    private Completable handleRequestAndWriteResponse(final Single<StreamingHttpRequest<HttpPayloadChunk>> requestSingle) {
         final Publisher<Object> responseObjectPublisher = requestSingle.flatMapPublisher(request -> {
             final HttpRequestMethod requestMethod = request.getMethod();
             final HttpKeepAlive keepAlive = HttpKeepAlive.getResponseKeepAlive(request);
@@ -89,21 +89,21 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
 
             return handleRequest(request)
                     .map(response -> processResponse(requestMethod, keepAlive, drainRequestPayloadBody, response))
-                    .flatMapPublisher(resp -> flatten(resp, HttpResponse::getPayloadBody));
+                    .flatMapPublisher(resp -> flatten(resp, StreamingHttpResponse::getPayloadBody));
             // We are writing to the connection which may request more data from the EventLoop. So offload control
             // signals which may have blocking code.
         }).subscribeOn(context.getExecutionContext().getExecutor());
         return writeResponse(responseObjectPublisher.repeat(val -> true));
     }
 
-    private Single<HttpResponse<HttpPayloadChunk>> handleRequest(final HttpRequest<HttpPayloadChunk> request) {
-        return new Single<HttpResponse<HttpPayloadChunk>>() {
+    private Single<StreamingHttpResponse<HttpPayloadChunk>> handleRequest(final StreamingHttpRequest<HttpPayloadChunk> request) {
+        return new Single<StreamingHttpResponse<HttpPayloadChunk>>() {
             @Override
-            protected void handleSubscribe(final Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber) {
+            protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse<HttpPayloadChunk>> subscriber) {
                 // Since we do not offload data path for the request single, this method will be invoked from the
-                // EventLoop. So, we offload the call to HttpService.
+                // EventLoop. So, we offload the call to StreamingHttpService.
                 context.getExecutionContext().getExecutor().execute(() -> {
-                    Single<HttpResponse<HttpPayloadChunk>> source;
+                    Single<StreamingHttpResponse<HttpPayloadChunk>> source;
                     try {
                         source = service.handle(context,
                                 request.transformPayloadBody(bdy ->
@@ -118,10 +118,10 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
         };
     }
 
-    private static HttpResponse<HttpPayloadChunk> processResponse(final HttpRequestMethod requestMethod,
-                                                                  final HttpKeepAlive keepAlive,
-                                                                  final Completable drainRequestPayloadBody,
-                                                                  final HttpResponse<HttpPayloadChunk> response) {
+    private static StreamingHttpResponse<HttpPayloadChunk> processResponse(final HttpRequestMethod requestMethod,
+                                                                           final HttpKeepAlive keepAlive,
+                                                                           final Completable drainRequestPayloadBody,
+                                                                           final StreamingHttpResponse<HttpPayloadChunk> response) {
         addResponseTransferEncodingIfNecessary(response, requestMethod);
         keepAlive.addConnectionHeaderIfNecessary(response);
 
@@ -138,10 +138,10 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
                 () -> EmptyLastHttpPayloadChunk.INSTANCE));
     }
 
-    private Single<HttpResponse<HttpPayloadChunk>> newErrorResponse(final Throwable cause,
-                                                                    final HttpRequest<HttpPayloadChunk> request) {
+    private Single<StreamingHttpResponse<HttpPayloadChunk>> newErrorResponse(final Throwable cause,
+                                                                             final StreamingHttpRequest<HttpPayloadChunk> request) {
         LOGGER.error("internal server error service={} connection={}", service, context, cause);
-        final HttpResponse<HttpPayloadChunk> response = newResponse(request.getVersion(), INTERNAL_SERVER_ERROR,
+        final StreamingHttpResponse<HttpPayloadChunk> response = newResponse(request.getVersion(), INTERNAL_SERVER_ERROR,
                 just(newLastPayloadChunk(EMPTY_BUFFER, EmptyHttpHeaders.INSTANCE)));
         response.getHeaders().set(CONTENT_LENGTH, ZERO);
         return success(response);

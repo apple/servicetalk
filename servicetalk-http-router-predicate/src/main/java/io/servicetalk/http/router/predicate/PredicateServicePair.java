@@ -16,8 +16,8 @@
 package io.servicetalk.http.router.predicate;
 
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
-import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.function.BiPredicate;
@@ -25,21 +25,21 @@ import java.util.function.BiPredicate;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A POJO for holding a {@link BiPredicate} to be evaluated on the request and connection context, and an {@link HttpService}
+ * A POJO for holding a {@link BiPredicate} to be evaluated on the request and connection context, and an {@link StreamingHttpService}
  * to be called if the predicate matches.
  */
 final class PredicateServicePair {
 
-    private final BiPredicate<ConnectionContext, HttpRequest<HttpPayloadChunk>> predicate;
-    private final HttpService service;
+    private final BiPredicate<ConnectionContext, StreamingHttpRequest<HttpPayloadChunk>> predicate;
+    private final StreamingHttpService service;
 
     /**
      * Constructs a {@link PredicateServicePair} POJO.
      * @param predicate the {@link BiPredicate} to evaluate.
-     * @param service the {@link HttpService} to route to.
+     * @param service the {@link StreamingHttpService} to route to.
      */
-    PredicateServicePair(final BiPredicate<ConnectionContext, HttpRequest<HttpPayloadChunk>> predicate,
-                         final HttpService service) {
+    PredicateServicePair(final BiPredicate<ConnectionContext, StreamingHttpRequest<HttpPayloadChunk>> predicate,
+                         final StreamingHttpService service) {
         this.predicate = requireNonNull(predicate);
         this.service = requireNonNull(service);
     }
@@ -48,7 +48,7 @@ final class PredicateServicePair {
      * Get the predicate.
      * @return the predicate.
      */
-    BiPredicate<ConnectionContext, HttpRequest<HttpPayloadChunk>> getPredicate() {
+    BiPredicate<ConnectionContext, StreamingHttpRequest<HttpPayloadChunk>> getPredicate() {
         return predicate;
     }
 
@@ -56,7 +56,7 @@ final class PredicateServicePair {
      * Get the service.
      * @return the service.
      */
-    HttpService getService() {
+    StreamingHttpService getService() {
         return service;
     }
 }

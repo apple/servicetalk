@@ -17,10 +17,10 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.ClientGroupFilterFunction;
 import io.servicetalk.http.api.GroupedClientFilterFunction;
-import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpClientGroup;
 import io.servicetalk.http.api.HttpHeaderNames;
-import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpClientGroup;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.SslConfig;
@@ -29,8 +29,8 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 /**
- * A builder of {@link HttpClient} instances which have a capacity to call any server based on the parsed absolute-form
- * URL address information from each {@link HttpRequest}.
+ * A builder of {@link StreamingHttpClient} instances which have a capacity to call any server based on the parsed absolute-form
+ * URL address information from each {@link StreamingHttpRequest}.
  * <p>
  * It also provides a good set of default settings and configurations, which could be used by most users as-is or
  * could be overridden to address specific use cases.
@@ -42,7 +42,7 @@ public interface MultiAddressHttpClientBuilder<U, R>
         extends BaseHttpClientBuilder<U, R, MultiAddressHttpClientBuilder<U, R>> {
 
     /**
-     * Automatically set the provided {@link HttpHeaderNames#HOST} on {@link HttpRequest}s when it's missing.
+     * Automatically set the provided {@link HttpHeaderNames#HOST} on {@link StreamingHttpRequest}s when it's missing.
      * <p>
      * For known address types such as {@link HostAndPort} the {@link HttpHeaderNames#HOST} is inferred and
      * automatically set by default, if you have a custom address type or want to override the inferred value use this
@@ -54,10 +54,10 @@ public interface MultiAddressHttpClientBuilder<U, R>
     MultiAddressHttpClientBuilder<U, R> enableHostHeaderFallback(Function<U, CharSequence> hostHeaderTransformer);
 
     /**
-     * Appends the filter to the chain of filters used to decorate the {@link HttpClient} created by this builder for a
+     * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created by this builder for a
      * given {@code UnresolvedAddress}.
      * <p>
-     * Note this method will be used to decorate the result of {@link #build(ExecutionContext)} before it is
+     * Note this method will be used to decorate the result of {@link #buildStreaming(ExecutionContext)} before it is
      * returned to the user.
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
@@ -68,16 +68,16 @@ public interface MultiAddressHttpClientBuilder<U, R>
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
      * </pre>
-     * @param function {@link GroupedClientFilterFunction} to decorate a {@link HttpClient} for the purpose
+     * @param function {@link GroupedClientFilterFunction} to decorate a {@link StreamingHttpClient} for the purpose
      * of filtering.
      * @return {@code this}
      */
     MultiAddressHttpClientBuilder<U, R> appendClientFilter(GroupedClientFilterFunction<U> function);
 
     /**
-     * Appends the filter to the chain of filters used to decorate the {@link HttpClientGroup} created by this builder.
+     * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpClientGroup} created by this builder.
      * <p>
-     * Filtering allows you to wrap {@link HttpClientGroup} and modify behavior during request/response processing.
+     * Filtering allows you to wrap {@link StreamingHttpClientGroup} and modify behavior during request/response processing.
      * Some potential candidates for filtering include logging, metrics, and decorating responses.
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
@@ -88,7 +88,7 @@ public interface MultiAddressHttpClientBuilder<U, R>
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
      * </pre>
-     * @param function A {@link UnaryOperator} to decorate {@link HttpClientGroup} for the purpose of
+     * @param function A {@link UnaryOperator} to decorate {@link StreamingHttpClientGroup} for the purpose of
      * filtering.
      * @return {@code this}.
      */

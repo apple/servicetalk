@@ -20,10 +20,10 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
-import io.servicetalk.http.api.HttpRequester;
-import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequester;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
@@ -46,9 +46,9 @@ import static io.servicetalk.http.api.HttpPayloadChunks.aggregateChunks;
 import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
-import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.api.HttpResponses.newResponse;
+import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
+import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -68,7 +68,7 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
     @BeforeClass
     public static void startServer() throws ExecutionException, InterruptedException {
         serverContext = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
-                .start(CTX, 0, new EchoService()));
+                .start(CTX, 0, new EchoServiceStreaming()));
     }
 
     @AfterClass
@@ -76,12 +76,12 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
         awaitIndefinitely(serverContext.closeAsync());
     }
 
-    private static class EchoService extends HttpService {
+    private static class EchoServiceStreaming extends StreamingHttpService {
         @Override
-        public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                             final HttpRequest<HttpPayloadChunk> request) {
+        public Single<StreamingHttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
+                                                                      final StreamingHttpRequest<HttpPayloadChunk> request) {
 
-            HttpResponse<HttpPayloadChunk> resp = newResponse(HTTP_1_1, OK, request.getPayloadBody());
+            StreamingHttpResponse<HttpPayloadChunk> resp = newResponse(HTTP_1_1, OK, request.getPayloadBody());
 
             resp.getHeaders()
                     .set("test-req-target", request.getRequestTarget())
@@ -93,14 +93,14 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
         }
     }
 
-    public static void makeRequestValidateResponseAndClose(HttpRequester requester)
+    public static void makeRequestValidateResponseAndClose(StreamingHttpRequester requester)
             throws ExecutionException, InterruptedException {
         try {
-            HttpRequest<HttpPayloadChunk> request = newRequest(GET, "/request?foo=bar&foo=baz",
+            StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/request?foo=bar&foo=baz",
                     newPayloadChunk(DEFAULT_ALLOCATOR.fromAscii("Testing123")));
             request.getHeaders().set(HttpHeaderNames.HOST, "mock.servicetalk.io");
 
-            HttpResponse<HttpPayloadChunk> resp = awaitIndefinitelyNonNull(requester.request(request).retryWhen(
+            StreamingHttpResponse<HttpPayloadChunk> resp = awaitIndefinitelyNonNull(requester.request(request).retryWhen(
                     retryWithExponentialBackoff(10, t -> true, Duration.ofMillis(100),
                             CTX.getExecutor())));
 

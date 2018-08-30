@@ -18,7 +18,7 @@ package io.servicetalk.data.jackson.jersey;
 import io.servicetalk.data.jackson.jersey.resources.PublisherJsonResources;
 import io.servicetalk.data.jackson.jersey.resources.SingleJsonResources;
 import io.servicetalk.http.router.jersey.AbstractFilterInterceptorTest.UpperCaseInputStream;
-import io.servicetalk.http.router.jersey.AbstractJerseyHttpServiceTest;
+import io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest;
 
 import org.junit.Test;
 
@@ -36,7 +36,7 @@ import static java.util.Arrays.asList;
 import static javax.ws.rs.Priorities.ENTITY_CODER;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 
-public class FilterStreamingJsonTest extends AbstractJerseyHttpServiceTest {
+public class FilterStreamingJsonTest extends AbstractJerseyStreamingHttpServiceTest {
     @Priority(ENTITY_CODER)
     @Provider
     public static class TestGlobalFilter implements ContainerRequestFilter {

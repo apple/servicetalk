@@ -24,8 +24,8 @@ import io.servicetalk.concurrent.api.internal.ConnectableOutputStream;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpProtocolVersion;
-import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.StreamingHttpResponse;
 
 import org.glassfish.jersey.server.ContainerException;
 import org.glassfish.jersey.server.ContainerRequest;
@@ -47,7 +47,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
-import static io.servicetalk.http.api.HttpResponses.newResponse;
+import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.http.router.jersey.CharSequenceUtils.asCharSequence;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getResponseChunkPublisher;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getResponseExecutorOffloader;
@@ -71,7 +71,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     private final HttpProtocolVersion protocolVersion;
     private final BufferAllocator allocator;
     private final Executor executor;
-    private final Subscriber<? super HttpResponse<HttpPayloadChunk>> responseSubscriber;
+    private final Subscriber<? super StreamingHttpResponse<HttpPayloadChunk>> responseSubscriber;
 
     @Nullable
     private volatile Cancellable suspendedTimerCancellable;
@@ -83,7 +83,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
                                    final HttpProtocolVersion protocolVersion,
                                    final BufferAllocator allocator,
                                    final Executor executor,
-                                   final Subscriber<? super HttpResponse<HttpPayloadChunk>> responseSubscriber) {
+                                   final Subscriber<? super StreamingHttpResponse<HttpPayloadChunk>> responseSubscriber) {
         this.request = requireNonNull(request);
         this.protocolVersion = requireNonNull(protocolVersion);
         this.allocator = requireNonNull(allocator);
@@ -185,7 +185,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
                               @Nullable final Publisher<HttpPayloadChunk> content,
                               final ContainerResponse containerResponse) {
 
-        final HttpResponse<HttpPayloadChunk> response;
+        final StreamingHttpResponse<HttpPayloadChunk> response;
         final HttpResponseStatus status = getStatus(containerResponse);
         if (content != null && !isHeadRequest()) {
             final Executor executor = getResponseExecutorOffloader(request);

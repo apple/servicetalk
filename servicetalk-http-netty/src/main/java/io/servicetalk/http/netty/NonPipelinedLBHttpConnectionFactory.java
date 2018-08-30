@@ -20,7 +20,7 @@ import io.servicetalk.http.api.ConnectionFilterFunction;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.client.internal.ReservableRequestConcurrencyControllers.newSingleController;
-import static io.servicetalk.http.api.HttpConnection.SettingKey.MAX_CONCURRENCY;
+import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.netty.DefaultHttpConnectionBuilder.buildForNonPipelined;
 import static java.util.Objects.requireNonNull;
 
@@ -37,10 +37,10 @@ final class NonPipelinedLBHttpConnectionFactory<ResolvedAddress> extends Abstrac
     }
 
     @Override
-    Single<LoadBalancedHttpConnection> newConnection(final ResolvedAddress resolvedAddress,
-                                    final ConnectionFilterFunction connectionFilterFunction) {
+    Single<LoadBalancedStreamingHttpConnection> newConnection(final ResolvedAddress resolvedAddress,
+                                                              final ConnectionFilterFunction connectionFilterFunction) {
         return buildForNonPipelined(executionContext, resolvedAddress, config, connectionFilterFunction)
-                .map(filteredConnection -> new LoadBalancedHttpConnection(filteredConnection, newSingleController(
+                .map(filteredConnection -> new LoadBalancedStreamingHttpConnection(filteredConnection, newSingleController(
                         filteredConnection.getSettingStream(MAX_CONCURRENCY), filteredConnection.onClose())));
     }
 }

@@ -20,14 +20,14 @@ import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpPayloadChunks;
 import io.servicetalk.http.api.HttpProtocolVersions;
-import io.servicetalk.http.api.HttpRequest;
-import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatuses;
-import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.DefaultExecutionContext;
@@ -96,7 +96,7 @@ public abstract class AbstractNettyHttpServerTest {
     public final MockitoRule rule = MockitoJUnit.rule().silent();
 
     @Mock
-    Function<HttpRequest<HttpPayloadChunk>, Publisher<HttpPayloadChunk>> publisherSupplier;
+    Function<StreamingHttpRequest<HttpPayloadChunk>, Publisher<HttpPayloadChunk>> publisherSupplier;
 
     private static IoExecutor clientIoExecutor;
     private static IoExecutor serverIoExecutor;
@@ -108,8 +108,8 @@ public abstract class AbstractNettyHttpServerTest {
     private ContextFilter contextFilter = ACCEPT_ALL;
     private boolean sslEnabled;
     private ServerContext serverContext;
-    private HttpConnection httpConnection;
-    private HttpService service;
+    private StreamingHttpConnection httpConnection;
+    private StreamingHttpService service;
 
     AbstractNettyHttpServerTest(ExecutorSupplier clientExecutorSupplier, ExecutorSupplier serverExecutorSupplier) {
         this.clientExecutorSupplier = clientExecutorSupplier;
@@ -127,7 +127,7 @@ public abstract class AbstractNettyHttpServerTest {
     @Before
     public void startServer() throws Exception {
         final InetSocketAddress bindAddress = new InetSocketAddress(LOOPBACK_ADDRESS, 0);
-        setService(new TestService(publisherSupplier));
+        setService(new TestServiceStreaming(publisherSupplier));
 
         // A small SNDBUF is needed to test that the server defers closing the connection until writes are complete.
         // However, if it is too small, tests that expect certain chunks of data will see those chunks broken up
@@ -157,7 +157,7 @@ public abstract class AbstractNettyHttpServerTest {
                     .trustManager(DefaultTestCerts::loadMutualAuthCaPem).build();
             httpConnectionBuilder.setSslConfig(sslConfig);
         }
-        httpConnection = awaitIndefinitelyNonNull(httpConnectionBuilder.build(
+        httpConnection = awaitIndefinitelyNonNull(httpConnectionBuilder.buildStreaming(
                 new DefaultExecutionContext(DEFAULT_ALLOCATOR, clientIoExecutor, clientExecutor), socketAddress));
     }
 
@@ -168,7 +168,7 @@ public abstract class AbstractNettyHttpServerTest {
                 this.serverExecutorSupplier == serverExecutorSupplier, is(FALSE));
     }
 
-    void setService(final HttpService service) {
+    void setService(final StreamingHttpService service) {
         this.service = service;
     }
 
@@ -198,16 +198,16 @@ public abstract class AbstractNettyHttpServerTest {
         return serverContext;
     }
 
-    Function<HttpRequest<HttpPayloadChunk>, Publisher<HttpPayloadChunk>> getPublisherSupplier() {
+    Function<StreamingHttpRequest<HttpPayloadChunk>, Publisher<HttpPayloadChunk>> getPublisherSupplier() {
         return publisherSupplier;
     }
 
-    HttpResponse<HttpPayloadChunk> makeRequest(final HttpRequest<HttpPayloadChunk> request)
+    StreamingHttpResponse<HttpPayloadChunk> makeRequest(final StreamingHttpRequest<HttpPayloadChunk> request)
             throws Exception {
         return awaitIndefinitelyNonNull(httpConnection.request(request));
     }
 
-    void assertResponse(final HttpResponse<HttpPayloadChunk> response, final HttpProtocolVersions version,
+    void assertResponse(final StreamingHttpResponse<HttpPayloadChunk> response, final HttpProtocolVersions version,
                         final HttpResponseStatuses status, final int expectedSize)
             throws ExecutionException, InterruptedException {
         assertEquals(status, response.getStatus());
@@ -218,7 +218,7 @@ public abstract class AbstractNettyHttpServerTest {
         assertEquals(expectedSize, size);
     }
 
-    void assertResponse(final HttpResponse<HttpPayloadChunk> response, final HttpProtocolVersions version,
+    void assertResponse(final StreamingHttpResponse<HttpPayloadChunk> response, final HttpProtocolVersions version,
                         final HttpResponseStatuses status, final List<String> expectedPayloadChunksAsStrings)
             throws ExecutionException, InterruptedException {
         assertEquals(status, response.getStatus());
@@ -236,7 +236,7 @@ public abstract class AbstractNettyHttpServerTest {
         return HttpPayloadChunks.newPayloadChunk(DEFAULT_ALLOCATOR.fromAscii(text));
     }
 
-    static List<String> getBodyAsListOfStrings(final HttpResponse<HttpPayloadChunk> response)
+    static List<String> getBodyAsListOfStrings(final StreamingHttpResponse<HttpPayloadChunk> response)
             throws ExecutionException, InterruptedException {
         return awaitIndefinitelyNonNull(response.getPayloadBody().map(c -> c.getContent().toString(US_ASCII)));
     }

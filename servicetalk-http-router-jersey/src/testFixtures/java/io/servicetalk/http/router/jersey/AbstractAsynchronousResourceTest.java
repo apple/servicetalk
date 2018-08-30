@@ -16,7 +16,7 @@
 package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponse;
 
 import org.junit.Test;
 
@@ -42,7 +42,7 @@ public abstract class AbstractAsynchronousResourceTest extends AbstractResourceT
 
     @Test
     public void getCompletable() {
-        HttpResponse<HttpPayloadChunk> res =
+        StreamingHttpResponse<HttpPayloadChunk> res =
                 sendAndAssertResponse(get("/completable"), NO_CONTENT, null, isEmptyString(), __ -> null);
         assertThat(res.getHeaders().get("X-Foo-Prop"), is(newAsciiString("barProp")));
 
@@ -68,7 +68,7 @@ public abstract class AbstractAsynchronousResourceTest extends AbstractResourceT
 
     @Test
     public void headCompletable() {
-        HttpResponse<HttpPayloadChunk> res =
+        StreamingHttpResponse<HttpPayloadChunk> res =
                 sendAndAssertResponse(head("/completable"), NO_CONTENT, null, isEmptyString(), __ -> null);
         assertThat(res.getHeaders().get("X-Foo-Prop"), is(newAsciiString("barProp")));
 

@@ -27,15 +27,15 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.ClientGroupFilterFunction;
 import io.servicetalk.http.api.ConnectionFilterFunction;
 import io.servicetalk.http.api.GroupedClientFilterFunction;
-import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpClientGroup;
-import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMetaData;
-import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.utils.RedirectingHttpClientGroup;
+import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpClientGroup;
+import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.utils.RedirectingStreamingHttpClientGroup;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.SslConfig;
@@ -61,8 +61,8 @@ import static io.servicetalk.transport.api.SslConfigBuilder.forClient;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A builder of {@link HttpClient} instances which have a capacity to call any server based on the parsed absolute-form
- * URL address information from each {@link HttpRequest}.
+ * A builder of {@link StreamingHttpClient} instances which have a capacity to call any server based on the parsed absolute-form
+ * URL address information from each {@link StreamingHttpRequest}.
  * <p>
  * It also provides a good set of default settings and configurations, which could be used by most users as-is or
  * could be overridden to address specific use cases.
@@ -92,24 +92,24 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     }
 
     @Override
-    public HttpClient build(final ExecutionContext executionContext) {
+    public StreamingHttpClient buildStreaming(final ExecutionContext executionContext) {
         requireNonNull(executionContext);
         final CompositeCloseable closeables = newCompositeCloseable();
-        // Tracks HttpClient dependencies for clean-up on exception during build
+        // Tracks StreamingHttpClient dependencies for clean-up on exception during buildStreaming
         final CompositeCloseable closeOnException = newCompositeCloseable();
         try {
             final ClientBuilderFactory clientBuilderFactory = new ClientBuilderFactory(builderTemplate,
                     sslConfigProvider, clientFilterFunction, hostHeaderTransformer);
-            HttpClientGroup<HostAndPort> clientGroup = closeOnException.prepend(clientGroupFilterFunction.apply(
-                    newHttpClientGroup((gk, md) -> clientBuilderFactory.apply(gk, md).build(executionContext))));
+            StreamingHttpClientGroup<HostAndPort> clientGroup = closeOnException.prepend(clientGroupFilterFunction.apply(
+                    newHttpClientGroup((gk, md) -> clientBuilderFactory.apply(gk, md).buildStreaming(executionContext))));
             final CacheableGroupKeyFactory groupKeyFactory = closeables.prepend(closeOnException.prepend(
                     new CacheableGroupKeyFactory(executionContext, sslConfigProvider)));
             clientGroup = maxRedirects <= 0 ? clientGroup :
-                    new RedirectingHttpClientGroup<>(clientGroup, groupKeyFactory, executionContext, maxRedirects);
-            final HttpClient client = closeables.prepend(closeOnException.prepend(
+                    new RedirectingStreamingHttpClientGroup<>(clientGroup, groupKeyFactory, executionContext, maxRedirects);
+            final StreamingHttpClient client = closeables.prepend(closeOnException.prepend(
                     clientGroup.asClient(groupKeyFactory, executionContext)));
 
-            return new HttpClientWithDependencies(client, toListenableAsyncCloseable(closeables));
+            return new StreamingHttpClientWithDependencies(client, toListenableAsyncCloseable(closeables));
         } catch (final Throwable t) {
             closeOnException.closeAsync().subscribe();
             throw t;
@@ -117,10 +117,10 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     }
 
     /**
-     * Returns a cached {@link GroupKey} or creates a new one based on {@link HttpRequest} information.
+     * Returns a cached {@link GroupKey} or creates a new one based on {@link StreamingHttpRequest} information.
      */
     private static final class CacheableGroupKeyFactory
-            implements Function<HttpRequest<HttpPayloadChunk>, GroupKey<HostAndPort>>, AsyncCloseable {
+            implements Function<StreamingHttpRequest<HttpPayloadChunk>, GroupKey<HostAndPort>>, AsyncCloseable {
 
         private final ConcurrentMap<String, GroupKey<HostAndPort>> groupKeyCache = new ConcurrentHashMap<>();
         private final ExecutionContext executionContext;
@@ -132,11 +132,11 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         }
 
         @Override
-        public GroupKey<HostAndPort> apply(final HttpRequest<HttpPayloadChunk> request) {
+        public GroupKey<HostAndPort> apply(final StreamingHttpRequest<HttpPayloadChunk> request) {
             final String host = request.getEffectiveHost();
             if (host == null) {
                 throw new IllegalArgumentException(
-                        "HttpRequest does not contain information about target server address." +
+                        "StreamingHttpRequest does not contain information about target server address." +
                                 " Request-target: " + request.getRequestTarget() +
                                 ", HOST header: " + request.getHeaders().get(HOST));
             }
@@ -185,7 +185,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                 final SslConfigProvider sslConfigProvider,
                 final GroupedClientFilterFunction<HostAndPort> clientFilterFunction,
                 @Nullable final Function<HostAndPort, CharSequence> hostHeaderTransformer) {
-            // Copy existing builder to prevent runtime changes after build() was invoked
+            // Copy existing builder to prevent runtime changes after buildStreaming() was invoked
             this.builderTemplate = builderTemplate.copy();
             this.sslConfigProvider = sslConfigProvider;
             this.clientFilterFunction = clientFilterFunction;
@@ -231,30 +231,30 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         }
     }
 
-    private static final class HttpClientWithDependencies extends HttpClient {
+    private static final class StreamingHttpClientWithDependencies extends StreamingHttpClient {
 
-        private final HttpClient httpClient;
+        private final StreamingHttpClient httpClient;
         private final ListenableAsyncCloseable closeable;
 
-        HttpClientWithDependencies(final HttpClient httpClient,
-                                   final ListenableAsyncCloseable closeable) {
+        StreamingHttpClientWithDependencies(final StreamingHttpClient httpClient,
+                                            final ListenableAsyncCloseable closeable) {
             this.httpClient = requireNonNull(httpClient);
             this.closeable = requireNonNull(closeable);
         }
 
         @Override
-        public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
+        public Single<StreamingHttpResponse<HttpPayloadChunk>> request(final StreamingHttpRequest<HttpPayloadChunk> request) {
             return httpClient.request(request);
         }
 
         @Override
-        public Single<? extends ReservedHttpConnection> reserveConnection(final HttpRequest<HttpPayloadChunk> request) {
+        public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest<HttpPayloadChunk> request) {
             return httpClient.reserveConnection(request);
         }
 
         @Override
-        public Single<? extends UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
-                final HttpRequest<HttpPayloadChunk> request) {
+        public Single<? extends UpgradableStreamingHttpResponse<HttpPayloadChunk>> upgradeConnection(
+                final StreamingHttpRequest<HttpPayloadChunk> request) {
             return httpClient.upgradeConnection(request);
         }
 
@@ -401,7 +401,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> setLoadBalancerFactory(
-            final LoadBalancerFactory<InetSocketAddress, HttpConnection> loadBalancerFactory) {
+            final LoadBalancerFactory<InetSocketAddress, StreamingHttpConnection> loadBalancerFactory) {
         builderTemplate.setLoadBalancerFactory(loadBalancerFactory);
         return this;
     }

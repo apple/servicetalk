@@ -20,7 +20,7 @@ import io.servicetalk.http.api.ConnectionFilterFunction;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.client.internal.ReservableRequestConcurrencyControllers.newController;
-import static io.servicetalk.http.api.HttpConnection.SettingKey.MAX_CONCURRENCY;
+import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.netty.DefaultHttpConnectionBuilder.buildForPipelined;
 import static java.util.Objects.requireNonNull;
 
@@ -37,10 +37,10 @@ final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLB
     }
 
     @Override
-    Single<LoadBalancedHttpConnection> newConnection(final ResolvedAddress resolvedAddress,
-                                                     final ConnectionFilterFunction connectionFilterFunction) {
+    Single<LoadBalancedStreamingHttpConnection> newConnection(final ResolvedAddress resolvedAddress,
+                                                              final ConnectionFilterFunction connectionFilterFunction) {
         return buildForPipelined(executionContext, resolvedAddress, config, connectionFilterFunction)
-                .map(filteredConnection -> new LoadBalancedHttpConnection(filteredConnection,
+                .map(filteredConnection -> new LoadBalancedStreamingHttpConnection(filteredConnection,
                         newController(filteredConnection.getSettingStream(MAX_CONCURRENCY),
                                    filteredConnection.onClose(),
                                    config.getMaxPipelinedRequests())));

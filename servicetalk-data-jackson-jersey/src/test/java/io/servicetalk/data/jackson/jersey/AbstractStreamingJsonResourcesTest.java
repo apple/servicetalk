@@ -18,7 +18,7 @@ package io.servicetalk.data.jackson.jersey;
 import io.servicetalk.data.jackson.jersey.resources.PublisherJsonResources;
 import io.servicetalk.data.jackson.jersey.resources.SingleJsonResources;
 import io.servicetalk.http.api.HttpResponseStatus;
-import io.servicetalk.http.router.jersey.AbstractJerseyHttpServiceTest;
+import io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest;
 
 import org.junit.Test;
 
@@ -34,7 +34,7 @@ import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static java.util.Arrays.asList;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 
-public abstract class AbstractStreamingJsonResourcesTest extends AbstractJerseyHttpServiceTest {
+public abstract class AbstractStreamingJsonResourcesTest extends AbstractJerseyStreamingHttpServiceTest {
     public static class TestApplication extends Application {
         @Override
         public Set<Class<?>> getClasses() {

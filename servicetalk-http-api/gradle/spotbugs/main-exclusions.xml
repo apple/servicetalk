@@ -41,22 +41,14 @@
   <!-- Return type is designed such that each type must override the method specifically to override the return type -->
   <Match>
     <Or>
-      <Class name="io.servicetalk.http.api.BlockingHttpClientToHttpClient$BlockingToUpgradableHttpResponse"/>
-      <Class name="io.servicetalk.http.api.BlockingHttpClientToHttpClient$BlockingToUpgradableHttpResponse"/>
-      <Class name="io.servicetalk.http.api.BlockingHttpClientToHttpClient$BlockingUpgradableHttpResponseConverter"/>
-      <Class name="io.servicetalk.http.api.BlockingHttpClientToHttpClient$BlockingUpgradableHttpResponseConverter"/>
-      <Class name="io.servicetalk.http.api.HttpClientToBlockingHttpClient$UpgradableHttpResponseToBlocking"/>
-      <Class name="io.servicetalk.http.api.HttpClientToBlockingHttpClient$UpgradableHttpResponseToBlocking"/>
-      <Class name="io.servicetalk.http.api.HttpClientToBlockingHttpClient$UpgradableHttpResponseToBlockingConverter"/>
-      <Class name="io.servicetalk.http.api.HttpClientToBlockingHttpClient$UpgradableHttpResponseToBlockingConverter"/>
-      <Class name="io.servicetalk.http.api.AggregatedHttpClientToHttpClient$AggregatedToUpgradableHttpResponse"/>
-      <Class name="io.servicetalk.http.api.AggregatedHttpClientToHttpClient$AggregatedToUpgradableHttpResponse"/>
-      <Class name="io.servicetalk.http.api.AggregatedHttpClientToHttpClient$AggregatedToUpgradableHttpResponseConverter"/>
-      <Class name="io.servicetalk.http.api.AggregatedHttpClientToHttpClient$AggregatedToUpgradableHttpResponseConverter"/>
-      <Class name="io.servicetalk.http.api.HttpClientToAggregatedHttpClient$UpgradableHttpResponseToAggregated"/>
-      <Class name="io.servicetalk.http.api.HttpClientToAggregatedHttpClient$UpgradableHttpResponseToAggregated"/>
-      <Class name="io.servicetalk.http.api.HttpClientToAggregatedHttpClient$UpgradablePayloadResponse"/>
-      <Class name="io.servicetalk.http.api.HttpClientToAggregatedHttpClient$UpgradablePayloadResponse"/>
+      <Class name="io.servicetalk.http.api.BlockingStreamingHttpClientToStreamingHttpClient$BlockingToUpgradableStreamingHttpResponse"/>
+      <Class name="io.servicetalk.http.api.BlockingStreamingHttpClientToStreamingHttpClient$BlockingUpgradableHttpResponseConverter"/>
+      <Class name="io.servicetalk.http.api.BlockingStreamingHttpClientToStreamingHttpClient$BlockingUpgradableHttpResponseConverter"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient$UpgradableHttpResponseToBlockingStreaming"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient$UpgradableHttpResponseToBlockingConverter"/>
+      <Class name="io.servicetalk.http.api.HttpClientToStreamingHttpClient$UpgradableHttpResponseToUpgradableStreamingHttpResponse"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpClientToHttpClient$UpgradableStreamingHttpResponseToUpgradableHttpResponse"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpClientToHttpClient$UpgradablePayloadResponse"/>
     </Or>
     <Or>
       <Method name="setStatus"/>

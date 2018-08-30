@@ -20,8 +20,8 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpService;
 
 import org.junit.Test;
 
@@ -56,30 +56,30 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
     @Test
     public void testFallback() {
-        final HttpService service = new HttpPredicateRouterBuilder()
+        final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
-                .build();
+                .buildStreaming();
 
         assertSame(fallbackResponse, service.handle(ctx, request));
     }
 
     @Test
     public void testDefaultFallback() throws Exception {
-        final HttpService service = new HttpPredicateRouterBuilder()
-                .build();
+        final StreamingHttpService service = new HttpPredicateRouterBuilder()
+                .buildStreaming();
 
-        final Single<HttpResponse<HttpPayloadChunk>> responseSingle = service.handle(ctx, request);
-        final HttpResponse<HttpPayloadChunk> response = awaitIndefinitely(responseSingle);
+        final Single<StreamingHttpResponse<HttpPayloadChunk>> responseSingle = service.handle(ctx, request);
+        final StreamingHttpResponse<HttpPayloadChunk> response = awaitIndefinitely(responseSingle);
         assert response != null;
         assertEquals(404, response.getStatus().getCode());
     }
 
     @Test
     public void testWhenMethod() {
-        final HttpService service = new HttpPredicateRouterBuilder()
+        final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenMethod(POST).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
-                .build();
+                .buildStreaming();
 
         when(request.getMethod()).thenReturn(POST);
         assertSame(responseA, service.handle(ctx, request));
@@ -90,10 +90,10 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
     @Test
     public void testWhenMethodIsOneOf() {
-        final HttpService service = new HttpPredicateRouterBuilder()
+        final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenMethodIsOneOf(POST, PUT).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
-                .build();
+                .buildStreaming();
 
         when(request.getMethod()).thenReturn(POST);
         assertSame(responseA, service.handle(ctx, request));
@@ -107,10 +107,10 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
     @Test
     public void testWhenPathEquals() {
-        final HttpService service = new HttpPredicateRouterBuilder()
+        final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenPathEquals("/abc").thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
-                .build();
+                .buildStreaming();
 
         when(request.getPath()).thenReturn("/abc");
         assertSame(responseA, service.handle(ctx, request));
@@ -121,10 +121,10 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
     @Test
     public void testWhenPathIsOneOf() {
-        final HttpService service = new HttpPredicateRouterBuilder()
+        final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenPathIsOneOf("/abc", "/def").thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
-                .build();
+                .buildStreaming();
 
         when(request.getPath()).thenReturn("/abc");
         assertSame(responseA, service.handle(ctx, request));
@@ -138,10 +138,10 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
     @Test
     public void testWhenPathStartsWith() {
-        final HttpService service = new HttpPredicateRouterBuilder()
+        final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenPathStartsWith("/abc").thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
-                .build();
+                .buildStreaming();
 
         when(request.getPath()).thenReturn("/abc");
         assertSame(responseA, service.handle(ctx, request));
@@ -155,10 +155,10 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
     @Test
     public void testWhenPathMatches() {
-        final HttpService service = new HttpPredicateRouterBuilder()
+        final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenPathMatches(".*abc").thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
-                .build();
+                .buildStreaming();
 
         when(request.getPath()).thenReturn("/abc");
         assertSame(responseA, service.handle(ctx, request));
@@ -175,10 +175,10 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
     @Test
     public void testWhenPathMatchesPattern() {
-        final HttpService service = new HttpPredicateRouterBuilder()
+        final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenPathMatches(Pattern.compile(".*ABC", CASE_INSENSITIVE)).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
-                .build();
+                .buildStreaming();
 
         when(request.getPath()).thenReturn("/abc");
         assertSame(responseA, service.handle(ctx, request));
@@ -192,10 +192,10 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
     @Test
     public void testWhenIsSsl() {
-        final HttpService service = new HttpPredicateRouterBuilder()
+        final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenIsSsl().thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
-                .build();
+                .buildStreaming();
 
         when(ctx.getSslSession()).thenReturn(mock(SSLSession.class));
         assertSame(responseA, service.handle(ctx, request));
@@ -206,10 +206,10 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
     @Test
     public void testWhenIsNotSsl() {
-        final HttpService service = new HttpPredicateRouterBuilder()
+        final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenIsNotSsl().thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
-                .build();
+                .buildStreaming();
 
         when(ctx.getSslSession()).thenReturn(null);
         assertSame(responseA, service.handle(ctx, request));
@@ -220,10 +220,10 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
 
     @Test
     public void testWhenPredicate() {
-        final HttpService service = new HttpPredicateRouterBuilder()
+        final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .when(req -> req.getVersion() == HTTP_1_1).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
-                .build();
+                .buildStreaming();
 
         assertSame(responseA, service.handle(ctx, request));
 
@@ -235,10 +235,10 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
     public void testWhenBiPredicate() {
         final SocketAddress addr1 = mock(SocketAddress.class);
         final SocketAddress addr2 = mock(SocketAddress.class);
-        final HttpService service = new HttpPredicateRouterBuilder()
+        final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .when((ctx, req) -> ctx.getRemoteAddress() == addr1).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
-                .build();
+                .buildStreaming();
 
         when(ctx.getRemoteAddress()).thenReturn(addr1);
         assertSame(responseA, service.handle(ctx, request));
@@ -253,11 +253,11 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
         when(serviceB.closeAsync()).thenReturn(completableB);
         when(serviceC.closeAsync()).thenReturn(completableC);
 
-        final HttpService service = new HttpPredicateRouterBuilder()
+        final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenMethod(GET).thenRouteTo(serviceA)
                 .whenMethod(POST).thenRouteTo(serviceB)
                 .when((ctx, req) -> true).thenRouteTo(serviceC)
-                .build();
+                .buildStreaming();
 
         await(service.closeAsync(), 10, SECONDS);
 
@@ -280,11 +280,11 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
         when(serviceB.closeAsync()).thenReturn(completableB);
         when(serviceC.closeAsync()).thenReturn(completableC);
 
-        final HttpService service = new HttpPredicateRouterBuilder()
+        final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .whenMethod(GET).thenRouteTo(serviceA)
                 .whenMethod(POST).thenRouteTo(serviceB)
                 .when((ctx, req) -> true).thenRouteTo(serviceC)
-                .build();
+                .buildStreaming();
 
         try {
             final Completable completable = service.closeAsync();

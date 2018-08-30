@@ -17,9 +17,9 @@ package io.servicetalk.examples.http.service.composition.backends;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.examples.http.service.composition.pojo.User;
-import io.servicetalk.http.api.AggregatedHttpRequest;
-import io.servicetalk.http.api.AggregatedHttpResponse;
-import io.servicetalk.http.api.AggregatedHttpService;
+import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpSerializer;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
@@ -28,7 +28,7 @@ import io.servicetalk.transport.api.ConnectionContext;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.AggregatedHttpResponses.newResponse;
+import static io.servicetalk.http.api.HttpResponses.newResponse;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static java.util.concurrent.ThreadLocalRandom.current;
@@ -36,7 +36,7 @@ import static java.util.concurrent.ThreadLocalRandom.current;
 /**
  * A service that returns {@link User} for an entity.
  */
-final class UserBackend extends AggregatedHttpService {
+final class UserBackend extends HttpService {
 
     private static final String USER_ID_QP_NAME = "userId";
     private final HttpSerializer serializer;
@@ -46,8 +46,8 @@ final class UserBackend extends AggregatedHttpService {
     }
 
     @Override
-    public Single<AggregatedHttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                                   final AggregatedHttpRequest<HttpPayloadChunk> request) {
+    public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
+                                                         final HttpRequest<HttpPayloadChunk> request) {
         final String userId = request.parseQuery().get(USER_ID_QP_NAME);
         if (userId == null) {
             return success(newResponse(BAD_REQUEST));
@@ -58,11 +58,11 @@ final class UserBackend extends AggregatedHttpService {
         return success(serializer.serialize(newResponse(OK, user), ctx.getExecutionContext().getBufferAllocator()));
     }
 
-    static AggregatedHttpService newUserService(HttpSerializer serializer) {
+    static HttpService newUserService(HttpSerializer serializer) {
         HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
         return routerBuilder.whenPathStartsWith("/user")
                 .thenRouteTo(new UserBackend(serializer))
-                .buildAggregated();
+                .build();
     }
 
     private String createRandomString(int size) {

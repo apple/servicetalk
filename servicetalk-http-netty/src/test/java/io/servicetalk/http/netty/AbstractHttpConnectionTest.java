@@ -18,12 +18,12 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
-import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.LastHttpPayloadChunk;
+import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
@@ -49,9 +49,9 @@ import static io.servicetalk.http.api.HttpPayloadChunks.newLastPayloadChunk;
 import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
-import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.http.api.HttpResponseMetaDataFactory.newResponseMetaData;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -61,7 +61,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * This tests the common functionality in {@link AbstractHttpConnection}.
+ * This tests the common functionality in {@link AbstractStreamingHttpConnection}.
  */
 public final class AbstractHttpConnectionTest {
 
@@ -75,12 +75,12 @@ public final class AbstractHttpConnectionTest {
     // Use Function to mock connection req/resp
     private Function<Publisher<Object>, Publisher<Object>> reqResp;
 
-    private HttpConnection http;
+    private StreamingHttpConnection http;
     private HttpClientConfig config = new HttpClientConfig(new TcpClientConfig(true));
 
-    private class MockHttpConnection extends AbstractHttpConnection<Connection<Object, Object>> {
-        protected MockHttpConnection(final Connection<Object, Object> connection,
-                                     final ReadOnlyHttpClientConfig config) {
+    private class MockStreamingHttpConnection extends AbstractStreamingHttpConnection<Connection<Object, Object>> {
+        protected MockStreamingHttpConnection(final Connection<Object, Object> connection,
+                                              final ReadOnlyHttpClientConfig config) {
             super(connection, never(), config, ctx);
         }
 
@@ -95,12 +95,12 @@ public final class AbstractHttpConnectionTest {
     public void setup() {
         reqResp = mock(Function.class);
         config.setMaxPipelinedRequests(101);
-        http = new MockHttpConnection(mock(Connection.class), config.asReadOnly());
+        http = new MockStreamingHttpConnection(mock(Connection.class), config.asReadOnly());
     }
 
     @Test
     public void shouldEmitMaxConcurrencyInSettingStream() throws ExecutionException, InterruptedException {
-        Integer max = awaitIndefinitely(http.getSettingStream(HttpConnection.SettingKey.MAX_CONCURRENCY).first());
+        Integer max = awaitIndefinitely(http.getSettingStream(StreamingHttpConnection.SettingKey.MAX_CONCURRENCY).first());
         assertThat(max, equalTo(101));
     }
 
@@ -114,7 +114,7 @@ public final class AbstractHttpConnectionTest {
         LastHttpPayloadChunk chunk3 = newLastPayloadChunk(DEFAULT_ALLOCATOR.fromAscii("payload"),
                 INSTANCE.newEmptyTrailers());
 
-        HttpRequest<HttpPayloadChunk> req = newRequest(GET, "/foo", from(chunk1, chunk2, chunk3));
+        StreamingHttpRequest<HttpPayloadChunk> req = newRequest(GET, "/foo", from(chunk1, chunk2, chunk3));
 
         HttpResponseMetaData respMeta = newResponseMetaData(HTTP_1_1, OK,
                 INSTANCE.newHeaders().add(CONTENT_TYPE, TEXT_PLAIN));
@@ -123,9 +123,9 @@ public final class AbstractHttpConnectionTest {
         ArgumentCaptor<Publisher<Object>> reqFlatCaptor = ArgumentCaptor.forClass(Publisher.class);
         when(reqResp.apply(reqFlatCaptor.capture())).thenReturn(respFlat);
 
-        Single<HttpResponse<HttpPayloadChunk>> responseSingle = http.request(req);
+        Single<StreamingHttpResponse<HttpPayloadChunk>> responseSingle = http.request(req);
 
-        HttpResponse<HttpPayloadChunk> resp = awaitIndefinitelyNonNull(responseSingle);
+        StreamingHttpResponse<HttpPayloadChunk> resp = awaitIndefinitelyNonNull(responseSingle);
 
         assertThat(awaitIndefinitely(reqFlatCaptor.getValue()), contains(req, chunk1, chunk2, chunk3));
 
@@ -144,7 +144,7 @@ public final class AbstractHttpConnectionTest {
         HttpPayloadChunk chunk1 = newPayloadChunk(DEFAULT_ALLOCATOR.fromAscii("test"));
         HttpPayloadChunk chunk2 = newPayloadChunk(DEFAULT_ALLOCATOR.fromAscii("payload"));
 
-        HttpRequest<HttpPayloadChunk> req = newRequest(GET, "/foo", from(chunk1, chunk2)); // NO chunk3 here!
+        StreamingHttpRequest<HttpPayloadChunk> req = newRequest(GET, "/foo", from(chunk1, chunk2)); // NO chunk3 here!
 
         HttpResponseMetaData respMeta = newResponseMetaData(HTTP_1_1, OK,
                 INSTANCE.newHeaders().add(CONTENT_TYPE, TEXT_PLAIN));
@@ -156,9 +156,9 @@ public final class AbstractHttpConnectionTest {
         ArgumentCaptor<Publisher<Object>> reqFlatCaptor = ArgumentCaptor.forClass(Publisher.class);
         when(reqResp.apply(reqFlatCaptor.capture())).thenReturn(respFlat);
 
-        Single<HttpResponse<HttpPayloadChunk>> responseSingle = http.request(req);
+        Single<StreamingHttpResponse<HttpPayloadChunk>> responseSingle = http.request(req);
 
-        HttpResponse<HttpPayloadChunk> resp = awaitIndefinitelyNonNull(responseSingle);
+        StreamingHttpResponse<HttpPayloadChunk> resp = awaitIndefinitelyNonNull(responseSingle);
 
         List<Object> objects = awaitIndefinitelyNonNull(reqFlatCaptor.getValue());
         assertThat(objects.subList(0, 3), contains(req, chunk1, chunk2)); // User provided chunks

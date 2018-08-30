@@ -19,7 +19,7 @@ import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
-import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.transport.api.HostAndPort;
 
 import org.junit.Test;
@@ -66,9 +66,9 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
         ServiceDiscoverer<HostAndPort, InetSocketAddress> disco = mock(ServiceDiscoverer.class);
         when(disco.discover(any())).thenReturn(sdPub);
         int port = ((InetSocketAddress) serverContext.getListenAddress()).getPort();
-        HttpClient requester = HttpClients.forSingleAddress("localhost", port)
+        StreamingHttpClient requester = HttpClients.forSingleAddress("localhost", port)
                 .setServiceDiscoverer(disco)
-                .build(CTX);
+                .buildStreaming(CTX);
         makeRequestValidateResponseAndClose(requester);
     }
 }

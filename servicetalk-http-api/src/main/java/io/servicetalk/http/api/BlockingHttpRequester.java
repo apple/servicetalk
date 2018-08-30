@@ -18,7 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.transport.api.ExecutionContext;
 
 /**
- * The equivalent of {@link HttpRequester} but with synchronous/blocking APIs instead of asynchronous APIs.
+ * The equivalent of {@link HttpRequester} with synchronous/blocking APIs instead of asynchronous APIs.
  */
 public abstract class BlockingHttpRequester implements AutoCloseable {
     /**
@@ -28,8 +28,7 @@ public abstract class BlockingHttpRequester implements AutoCloseable {
      * @return The response.
      * @throws Exception if an exception occurs during the request processing.
      */
-    public abstract BlockingHttpResponse<HttpPayloadChunk> request(BlockingHttpRequest<HttpPayloadChunk> request)
-            throws Exception;
+    public abstract HttpResponse<HttpPayloadChunk> request(HttpRequest<HttpPayloadChunk> request) throws Exception;
 
     /**
      * Get the {@link ExecutionContext} used during construction of this object.
@@ -42,39 +41,43 @@ public abstract class BlockingHttpRequester implements AutoCloseable {
     public abstract ExecutionContext getExecutionContext();
 
     /**
+     * Convert this {@link BlockingHttpRequester} to the {@link StreamingHttpRequester} API.
+     * <p>
+     * Note that the resulting {@link StreamingHttpRequester} may still be subject to any blocking, in memory
+     * aggregation, and other behavior as this {@link BlockingStreamingHttpRequester}.
+     *
+     * @return a {@link StreamingHttpRequester} representation of this {@link BlockingStreamingHttpRequester}.
+     */
+    public final StreamingHttpRequester asStreamingRequester() {
+        return asStreamingRequesterInternal();
+    }
+
+    /**
      * Convert this {@link BlockingHttpRequester} to the {@link HttpRequester} API.
      * <p>
-     * Note that the resulting {@link HttpRequester} may still be subject to any blocking, in memory aggregation, and
-     * other behavior as this {@link BlockingHttpRequester}.
+     * Note that the resulting {@link HttpRequester} may still be subject to any blocking, in memory
+     * aggregation, and other behavior as this {@link BlockingStreamingHttpRequester}.
      *
-     * @return a {@link HttpRequester} representation of this {@link BlockingHttpRequester}.
+     * @return a {@link HttpRequester} representation of this {@link BlockingStreamingHttpRequester}.
      */
     public final HttpRequester asRequester() {
         return asRequesterInternal();
     }
 
     /**
-     * Convert this {@link BlockingHttpRequester} to the {@link AggregatedHttpRequester} API.
+     * Convert this {@link BlockingHttpRequester} to the {@link BlockingStreamingHttpRequester} API.
      * <p>
-     * Note that the resulting {@link AggregatedHttpRequester} may still be subject to any blocking, in memory
-     * aggregation, and other behavior as this {@link BlockingHttpRequester}.
+     * Note that the resulting {@link BlockingStreamingHttpRequester} may still be subject to in memory
+     * aggregation and other behavior as this {@link BlockingStreamingHttpRequester}.
      *
-     * @return a {@link AggregatedHttpRequester} representation of this {@link BlockingHttpRequester}.
+     * @return a {@link BlockingStreamingHttpRequester} representation of this {@link BlockingStreamingHttpRequester}.
      */
-    public final AggregatedHttpRequester asAggregatedRequester() {
-        return asRequester().asAggregatedRequester();
+    public final BlockingStreamingHttpRequester asBlockingStreamingRequester() {
+        return asStreamingRequester().asBlockingStreamingRequester();
     }
 
-    /**
-     * Convert this {@link BlockingHttpRequester} to the {@link BlockingAggregatedHttpRequester} API.
-     * <p>
-     * Note that the resulting {@link BlockingAggregatedHttpRequester} may still be subject to in memory
-     * aggregation and other behavior as this {@link BlockingHttpRequester}.
-     *
-     * @return a {@link BlockingAggregatedHttpRequester} representation of this {@link BlockingHttpRequester}.
-     */
-    public final BlockingAggregatedHttpRequester asBlockingAggregatedRequester() {
-        return asRequester().asBlockingAggregatedRequester();
+    StreamingHttpRequester asStreamingRequesterInternal() {
+        return new BlockingHttpRequesterToStreamingHttpRequester(this);
     }
 
     HttpRequester asRequesterInternal() {

@@ -15,50 +15,51 @@
  */
 package io.servicetalk.examples.http.service.composition;
 
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.examples.http.service.composition.pojo.FullRecommendation;
 import io.servicetalk.examples.http.service.composition.pojo.Metadata;
 import io.servicetalk.examples.http.service.composition.pojo.Rating;
 import io.servicetalk.examples.http.service.composition.pojo.Recommendation;
 import io.servicetalk.examples.http.service.composition.pojo.User;
-import io.servicetalk.http.api.AggregatedHttpClient;
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequest;
-import io.servicetalk.http.api.HttpRequests;
 import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.HttpSerializer;
 import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpSerializer;
+import io.servicetalk.serialization.api.TypeHolder;
 import io.servicetalk.transport.api.ConnectionContext;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.ArrayList;
+import java.util.List;
 
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.examples.http.service.composition.AsyncUtil.zip;
-import static io.servicetalk.http.api.AggregatedHttpRequests.newRequest;
+import static io.servicetalk.http.api.HttpRequests.newRequest;
+import static io.servicetalk.http.api.HttpResponses.newResponse;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
-import static io.servicetalk.http.api.HttpResponses.newResponse;
+import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 
 /**
- * This service provides an API that fetches recommendations in parallel and responds with a stream of
- * {@link FullRecommendation} objects as JSON.
+ * This service provides an API that fetches recommendations in parallel but provides an aggregated JSON array as a
+ * response.
  */
 final class GatewayService extends HttpService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(GatewayService.class);
+    private static final TypeHolder<List<Recommendation>> typeOfRecommendation = new TypeHolder<List<Recommendation>>(){};
 
     private static final String USER_ID_QP_NAME = "userId";
 
     private final HttpClient recommendationsClient;
-    private final AggregatedHttpClient metadataClient;
-    private final AggregatedHttpClient ratingsClient;
-    private final AggregatedHttpClient userClient;
+    private final HttpClient metadataClient;
+    private final HttpClient ratingsClient;
+    private final HttpClient userClient;
     private final HttpSerializer serializer;
 
-    GatewayService(final HttpClient recommendationsClient, final AggregatedHttpClient metadataClient,
-                   final AggregatedHttpClient ratingsClient, final AggregatedHttpClient userClient,
+    GatewayService(final HttpClient recommendationsClient, final HttpClient metadataClient,
+                   final HttpClient ratingsClient, final HttpClient userClient,
                    HttpSerializer serializer) {
         this.recommendationsClient = recommendationsClient;
         this.metadataClient = metadataClient;
@@ -75,38 +76,44 @@ final class GatewayService extends HttpService {
             return success(newResponse(BAD_REQUEST));
         }
 
-        return recommendationsClient.request(HttpRequests.newRequest(GET, "/recommendations/stream?userId=" + userId))
-                // Post validation we get an HttpResponse with the correct status code but a payload of Buffer.
-                // So, now we transform it into a HttpResponse<HttpPayloadChunk> with the correct JSON in it.
-                .map(bufferResponse -> serializer.deserialize(bufferResponse, Recommendation.class))
-                .map(recommendationResponse -> recommendationResponse.transformPayloadBody(payload -> payload.flatMapSingle(recommendation -> {
-                        final Single<Metadata> metadata = metadataClient.request(newRequest(GET, "/metadata?entityId=" + recommendation.getEntityId()))
-                                // Since HTTP payload is a buffer, we deserialize into Metadata.
-                                .map(response -> serializer.deserialize(response, Metadata.class).getPayloadBody());
+        return recommendationsClient.request(newRequest(GET, "/recommendations/aggregated?userId=" + userId))
+                // Since HTTP payload is a buffer, we deserialize into List<Recommendation>>.
+                .map(response -> serializer.deserialize(response, typeOfRecommendation).getPayloadBody())
+                // Recommendations are a List and we want to query details for each recommendation in parallel.
+                // Turning the List into a Publisher helps us use relevant operators to do so.
+                .flatMapPublisher(Publisher::from)
+                .flatMapSingle(recommendation -> {
+                    Single<Metadata> metadata = metadataClient.request(newRequest(GET, "/metadata?entityId=" + recommendation.getEntityId()))
+                            // Since HTTP payload is a buffer, we deserialize into Metadata.
+                            .map(response -> serializer.deserialize(response, Metadata.class).getPayloadBody());
 
-                        final Single<User> user = userClient.request(newRequest(GET, "/user?userId=" + recommendation.getEntityId()))
-                                // Since HTTP payload is a buffer, we deserialize into User.
-                                .map(response -> serializer.deserialize(response, User.class).getPayloadBody());
+                    Single<User> user = userClient.request(newRequest(GET, "/user?userId=" + recommendation.getEntityId()))
+                            // Since HTTP payload is a buffer, we deserialize into User.
+                            .map(response -> serializer.deserialize(response, User.class).getPayloadBody());
 
-                        final Single<Rating> rating = ratingsClient.request(newRequest(GET, "/rating?entityId=" + recommendation.getEntityId()))
-                                // Since HTTP payload is a buffer, we deserialize into Rating.
-                                .map(response -> serializer.deserialize(response, Rating.class).getPayloadBody())
-                                // We consider ratings to be a non-critical data and hence we substitute the response
-                                // with a static "unavailable" rating when the rating service is unavailable or provides
-                                // a bad response. This is typically referred to as a "fallback".
-                                .onErrorResume(cause -> {
-                                    LOGGER.error("Error querying ratings service. Ignoring and providing a fallback.", cause);
-                                    return success(new Rating(recommendation.getEntityId(), -1));
-                                });
+                    Single<Rating> rating = ratingsClient.request(newRequest(GET, "/rating?entityId=" + recommendation.getEntityId()))
+                            // Since HTTP payload is a buffer, we deserialize into Rating.
+                            .map(response -> serializer.deserialize(response, Rating.class).getPayloadBody())
+                            // We consider ratings to be a non-critical data and hence we substitute the response
+                            // with a static "unavailable" rating when the rating service is unavailable or provides
+                            // a bad response. This is typically referred to as a "fallback".
+                            .onErrorResume(cause -> success(new Rating(recommendation.getEntityId(), -1)));
 
-                        // The below asynchronously queries metadata, user and rating backends and zips them into a single
-                        // FullRecommendation instance.
-                        // This helps us query multiple recommendations in parallel hence achieving better throughput as
-                        // opposed to querying recommendation sequentially using the blocking API.
-                        return zip(metadata, user, rating, FullRecommendation::new);
-                    })))
-                    // Serialize each FullRecommendation in a JSON object.
-                    .map(fullRecommendationResponse -> serializer.serialize(fullRecommendationResponse,
-                            ctx.getExecutionContext().getBufferAllocator(), FullRecommendation.class));
+                    // The below asynchronously queries metadata, user and rating backends and zips them into a single
+                    // FullRecommendation instance.
+                    // This helps us query multiple recommendations in parallel hence achieving better throughput as
+                    // opposed to querying recommendation sequentially using the blocking API.
+                    return zip(metadata, user, rating, FullRecommendation::new);
+                })
+                // FullRecommendation objects are generated asynchronously and we are responding with a single JSON
+                // array. Thus, we reduce the asynchronously generated FullRecommendation objects into a single
+                // List which is be converted to a single JSON array.
+                .reduce(ArrayList::new, (list, fullRecommendation) -> {
+                    list.add(fullRecommendation);
+                    return list;
+                })
+                // Convert the payload to a FullHttpResponse.
+                .map(allRecosJson -> serializer.serialize(newResponse(OK, allRecosJson),
+                        ctx.getExecutionContext().getBufferAllocator()));
     }
 }

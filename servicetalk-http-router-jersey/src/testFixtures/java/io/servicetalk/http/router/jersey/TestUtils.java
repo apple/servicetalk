@@ -19,7 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponse;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.just;
@@ -39,7 +39,7 @@ public final class TestUtils {
         // no instances
     }
 
-    public static String getContentAsString(final HttpResponse<HttpPayloadChunk> res) {
+    public static String getContentAsString(final StreamingHttpResponse<HttpPayloadChunk> res) {
         return getContentAsString(res.getPayloadBody());
     }
 

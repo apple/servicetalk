@@ -20,8 +20,8 @@ import io.servicetalk.concurrent.api.DeliberateException;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpHeaderValues;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.router.jersey.resources.AsynchronousResources;
 import io.servicetalk.http.router.jersey.resources.SynchronousResources;
 
@@ -59,7 +59,7 @@ import static net.javacrumbs.jsonunit.JsonMatchers.jsonPartEquals;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assume.assumeThat;
 
-public class ExceptionMapperTest extends AbstractJerseyHttpServiceTest {
+public class ExceptionMapperTest extends AbstractJerseyStreamingHttpServiceTest {
     private static final String EXCEPTION_RESPONSE_TYPE_HEADER = "X-EXCEPTION-RESPONSE-TYPE";
     private static final HttpResponseStatus STATUS_555 = getResponseStatus(555, EMPTY_BUFFER);
 
@@ -207,7 +207,7 @@ public class ExceptionMapperTest extends AbstractJerseyHttpServiceTest {
                 expectedContentType, DeliberateException.class);
     }
 
-    private void sendAndAssertResponse(final HttpRequest<HttpPayloadChunk> req,
+    private void sendAndAssertResponse(final StreamingHttpRequest<HttpPayloadChunk> req,
                                        final ExceptionResponseType ert,
                                        final CharSequence expectedContentType,
                                        final Class<? extends Throwable> expectedExceptionClass) {

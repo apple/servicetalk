@@ -27,9 +27,9 @@ import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.LastHttpPayloadChunk;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
@@ -82,7 +82,7 @@ import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpRequestMethods.POST;
-import static io.servicetalk.http.api.HttpRequests.newRequest;
+import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.lang.Boolean.TRUE;
@@ -428,7 +428,7 @@ public class HttpRequestEncoderTest {
             ((SocketChannel) serverChannel).config().setSoLinger(0);
             serverChannel.close(); // Close and send RST concurrently with client write
 
-            HttpRequest<?> request = newRequest(POST, "/closeme", empty());
+            StreamingHttpRequest<?> request = newRequest(POST, "/closeme", empty());
             HttpPayloadChunk lastChunk = newLastPayloadChunk(DEFAULT_ALLOCATOR.fromAscii("Bye"),
                     INSTANCE.newEmptyTrailers());
 

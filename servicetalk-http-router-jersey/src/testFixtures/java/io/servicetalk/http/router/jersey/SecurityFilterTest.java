@@ -36,7 +36,7 @@ import static java.util.Arrays.asList;
 import static javax.ws.rs.Priorities.AUTHENTICATION;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 
-public class SecurityFilterTest extends AbstractJerseyHttpServiceTest {
+public class SecurityFilterTest extends AbstractJerseyStreamingHttpServiceTest {
     @Provider
     @Priority(AUTHENTICATION)
     public static class TestSecurityFilter implements ContainerRequestFilter {

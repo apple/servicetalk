@@ -15,14 +15,14 @@
  */
 package io.servicetalk.http.router.predicate.dsl;
 
-import io.servicetalk.http.api.AggregatedHttpService;
-import io.servicetalk.http.api.BlockingAggregatedHttpService;
 import io.servicetalk.http.api.BlockingHttpService;
+import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpCookie;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.function.BiPredicate;
@@ -134,63 +134,63 @@ public interface RouteContinuation {
     RouteContinuation andIsNotSsl();
 
     /**
-     * Extends the current route such that it matches {@link HttpRequest}s with a user-specified {@code predicate}.
+     * Extends the current route such that it matches {@link StreamingHttpRequest}s with a user-specified {@code predicate}.
      *
      * @param predicate the predicate to evaluate against requests.
      * @return {@link RouteContinuation} for the next steps of building a route.
      */
-    RouteContinuation and(Predicate<HttpRequest<HttpPayloadChunk>> predicate);
+    RouteContinuation and(Predicate<StreamingHttpRequest<HttpPayloadChunk>> predicate);
 
     /**
-     * Extends the current route such that it matches {@link HttpRequest} and {@link ConnectionContext} with a
+     * Extends the current route such that it matches {@link StreamingHttpRequest} and {@link ConnectionContext} with a
      * user-specified {@code predicate}.
      *
      * @param predicate the predicate to evaluate against the request and connection context.
      * @return {@link RouteContinuation} for the next steps of building a route.
      */
-    RouteContinuation and(BiPredicate<ConnectionContext, HttpRequest<HttpPayloadChunk>> predicate);
+    RouteContinuation and(BiPredicate<ConnectionContext, StreamingHttpRequest<HttpPayloadChunk>> predicate);
 
     /**
-     * Completes the route by specifying the {@link HttpService} to route requests to that match the previously
+     * Completes the route by specifying the {@link StreamingHttpService} to route requests to that match the previously
      * specified criteria. Each call to {@code thenRouteTo} resets the criteria, prior to building the next route.
+     *
+     * @param service the {@link StreamingHttpService} to route requests to.
+     * @return {@link RouteStarter} for building another route.
+     */
+    RouteStarter thenRouteTo(StreamingHttpService service);
+
+    /**
+     * Completes the route by specifying the {@link HttpService} to route requests to that match the
+     * previously specified criteria. Each call to {@code thenRouteTo} resets the criteria, prior to building the next
+     * route.
      *
      * @param service the {@link HttpService} to route requests to.
      * @return {@link RouteStarter} for building another route.
      */
-    RouteStarter thenRouteTo(HttpService service);
-
-    /**
-     * Completes the route by specifying the {@link AggregatedHttpService} to route requests to that match the
-     * previously specified criteria. Each call to {@code thenRouteTo} resets the criteria, prior to building the next
-     * route.
-     *
-     * @param service the {@link AggregatedHttpService} to route requests to.
-     * @return {@link RouteStarter} for building another route.
-     */
-    default RouteStarter thenRouteTo(AggregatedHttpService service) {
-        return thenRouteTo(service.asService());
+    default RouteStarter thenRouteTo(HttpService service) {
+        return thenRouteTo(service.asStreamingService());
     }
 
     /**
-     * Completes the route by specifying the {@link BlockingAggregatedHttpService} to route requests to that match the
+     * Completes the route by specifying the {@link BlockingHttpService} to route requests to that match the
      * previously specified criteria. Each call to {@code thenRouteTo} resets the criteria, prior to building the next
      * route.
-     *
-     * @param service the {@link BlockingAggregatedHttpService} to route requests to.
-     * @return {@link RouteStarter} for building another route.
-     */
-    default RouteStarter thenRouteTo(BlockingAggregatedHttpService service) {
-        return thenRouteTo(service.asService());
-    }
-
-    /**
-     * Completes the route by specifying the {@link BlockingHttpService} to route requests to that match the previously
-     * specified criteria. Each call to {@code thenRouteTo} resets the criteria, prior to building the next route.
      *
      * @param service the {@link BlockingHttpService} to route requests to.
      * @return {@link RouteStarter} for building another route.
      */
     default RouteStarter thenRouteTo(BlockingHttpService service) {
-        return thenRouteTo(service.asService());
+        return thenRouteTo(service.asStreamingService());
+    }
+
+    /**
+     * Completes the route by specifying the {@link BlockingStreamingHttpService} to route requests to that match the previously
+     * specified criteria. Each call to {@code thenRouteTo} resets the criteria, prior to building the next route.
+     *
+     * @param service the {@link BlockingStreamingHttpService} to route requests to.
+     * @return {@link RouteStarter} for building another route.
+     */
+    default RouteStarter thenRouteTo(BlockingStreamingHttpService service) {
+        return thenRouteTo(service.asStreamingService());
     }
 }

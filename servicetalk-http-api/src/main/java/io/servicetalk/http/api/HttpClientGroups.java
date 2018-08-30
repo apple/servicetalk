@@ -20,7 +20,7 @@ import io.servicetalk.client.api.GroupKey;
 import java.util.function.BiFunction;
 
 /**
- * Factory methods for creating {@link HttpClientGroup}s.
+ * Factory methods for creating {@link StreamingHttpClientGroup}s.
  */
 public final class HttpClientGroups {
 
@@ -29,15 +29,15 @@ public final class HttpClientGroups {
     }
 
     /**
-     * Creates an {@link HttpClientGroup} instance which will use provided client factory function
-     * to build inner {@link HttpClient}s.
+     * Creates an {@link StreamingHttpClientGroup} instance which will use provided client factory function
+     * to buildStreaming inner {@link StreamingHttpClient}s.
      *
-     * @param clientFactory A factory to create a {@link HttpClient} for the passed {@link GroupKey}.
-     * @param <UnresolvedAddress> The address type used to create new {@link HttpClient}s.
-     * @return A new {@link HttpClientGroup}.
+     * @param clientFactory A factory to create a {@link StreamingHttpClient} for the passed {@link GroupKey}.
+     * @param <UnresolvedAddress> The address type used to create new {@link StreamingHttpClient}s.
+     * @return A new {@link StreamingHttpClientGroup}.
      */
-    public static <UnresolvedAddress> HttpClientGroup<UnresolvedAddress> newHttpClientGroup(
-            final BiFunction<GroupKey<UnresolvedAddress>, HttpRequestMetaData, HttpClient> clientFactory) {
-        return new DefaultHttpClientGroup<>(clientFactory);
+    public static <UnresolvedAddress> StreamingHttpClientGroup<UnresolvedAddress> newHttpClientGroup(
+            final BiFunction<GroupKey<UnresolvedAddress>, HttpRequestMetaData, StreamingHttpClient> clientFactory) {
+        return new DefaultStreamingHttpClientGroup<>(clientFactory);
     }
 }

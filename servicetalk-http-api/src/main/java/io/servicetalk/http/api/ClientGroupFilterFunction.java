@@ -16,17 +16,17 @@
 package io.servicetalk.http.api;
 
 /**
- * Function to filter an {@link HttpClientGroup}.
+ * Function to filter an {@link StreamingHttpClientGroup}.
  * @param <U> the type of address before resolution (unresolved address)
  */
 @FunctionalInterface
 public interface ClientGroupFilterFunction<U> {
     /**
-     * Function that allows to filter an {@link HttpClientGroup}.
-     * @param group the {@link HttpClientGroup} to filter
-     * @return the filtered {@link HttpClientGroup}
+     * Function that allows to filter an {@link StreamingHttpClientGroup}.
+     * @param group the {@link StreamingHttpClientGroup} to filter
+     * @return the filtered {@link StreamingHttpClientGroup}
      */
-    HttpClientGroup<U> apply(HttpClientGroup<U> group);
+    StreamingHttpClientGroup<U> apply(StreamingHttpClientGroup<U> group);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -49,9 +49,9 @@ public interface ClientGroupFilterFunction<U> {
     }
 
     /**
-     * Returns a function that always returns its input {@link HttpClientGroup}.
+     * Returns a function that always returns its input {@link StreamingHttpClientGroup}.
      * @param <U> the type of address before resolution (unresolved address)
-     * @return a function that always returns its input {@link HttpClientGroup}.
+     * @return a function that always returns its input {@link StreamingHttpClientGroup}.
      */
     static <U> ClientGroupFilterFunction<U> identity() {
         return group -> group;

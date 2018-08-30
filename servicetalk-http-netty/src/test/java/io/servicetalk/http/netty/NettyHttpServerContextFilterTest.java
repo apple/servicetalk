@@ -20,8 +20,8 @@ import io.servicetalk.concurrent.api.DeliberateException;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
-import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ContextFilter;
 
@@ -44,11 +44,11 @@ import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
-import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.IMMEDIATE;
-import static io.servicetalk.http.netty.TestService.SVC_ECHO;
+import static io.servicetalk.http.netty.TestServiceStreaming.SVC_ECHO;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.anyOf;
@@ -137,10 +137,10 @@ public class NettyHttpServerContextFilterTest extends AbstractNettyHttpServerTes
             // Send a request, and wait for the response.
             // We do this to ensure that the server has had a chance to execute code if the connection was accepted.
             // This is necessary for the delayed tests to see the correct state of the acceptedConnection flag.
-            final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_ECHO,
+            final StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_ECHO,
                     getChunkPublisherFromStrings("hello"));
             request.getHeaders().set(CONTENT_LENGTH, "5");
-            final HttpResponse<HttpPayloadChunk> response = makeRequest(request);
+            final StreamingHttpResponse<HttpPayloadChunk> response = makeRequest(request);
             assertResponse(response, HTTP_1_1, OK, singletonList("hello"));
             if (!filterMode.expectAccept) {
                 throw new AssertionError("Expected filter to reject connection");

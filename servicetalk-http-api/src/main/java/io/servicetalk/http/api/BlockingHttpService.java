@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.function.BiFunction;
@@ -28,12 +29,11 @@ public abstract class BlockingHttpService implements AutoCloseable {
      *
      * @param ctx Context of the service.
      * @param request to handle.
-     * @return a {@link BlockingHttpResponse} which represents the HTTP response.
+     * @return {@link Single} of HTTP response.
      * @throws Exception If an exception occurs during request processing.
      */
-    public abstract BlockingHttpResponse<HttpPayloadChunk> handle(ConnectionContext ctx,
-                                                                  BlockingHttpRequest<HttpPayloadChunk> request)
-            throws Exception;
+    public abstract HttpResponse<HttpPayloadChunk> handle(
+            ConnectionContext ctx, HttpRequest<HttpPayloadChunk> request) throws Exception;
 
     @Override
     public void close() throws Exception {
@@ -41,10 +41,22 @@ public abstract class BlockingHttpService implements AutoCloseable {
     }
 
     /**
-     * Convert this {@link BlockingHttpService} to the {@link HttpService} asynchronous API.
+     * Convert this {@link BlockingHttpService} to the {@link StreamingHttpService} API.
      * <p>
-     * Note that the resulting {@link HttpService} may still be subject to any blocking, in memory aggregation, and
-     * other behavior as this {@link BlockingHttpService}.
+     * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
+     * filters are implemented using the {@link StreamingHttpService} asynchronous API for maximum portability.
+     *
+     * @return a {@link StreamingHttpService} representation of this {@link BlockingHttpService}.
+     */
+    public final StreamingHttpService asStreamingService() {
+        return asStreamingServiceInternal();
+    }
+
+    /**
+     * Convert this {@link BlockingHttpService} to the {@link HttpService} API.
+     * <p>
+     * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
+     * filters are implemented using the {@link StreamingHttpService} asynchronous API for maximum portability.
      *
      * @return a {@link HttpService} representation of this {@link BlockingHttpService}.
      */
@@ -53,53 +65,38 @@ public abstract class BlockingHttpService implements AutoCloseable {
     }
 
     /**
-     * Convert this {@link BlockingHttpService} to the {@link AggregatedHttpService} asynchronous API.
+     * Convert this {@link BlockingHttpService} to the {@link BlockingStreamingHttpService} API.
      * <p>
-     * Note that the resulting {@link AggregatedHttpService} may still be subject to any blocking, in memory
-     * aggregation, and other behavior as this {@link BlockingHttpService}.
+     * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
+     * filters are implemented using the {@link StreamingHttpService} asynchronous API for maximum portability.
      *
-     * @return a {@link AggregatedHttpService} representation of this {@link BlockingHttpService}.
+     * @return a {@link BlockingStreamingHttpService} representation of this {@link BlockingHttpService}.
      */
-    public final AggregatedHttpService asAggregatedService() {
-        return asService().asAggregatedService();
+    public final BlockingStreamingHttpService asBlockingStreamingService() {
+        return asStreamingService().asBlockingStreamingService();
     }
 
     /**
-     * Convert this {@link BlockingHttpService} to the {@link BlockingAggregatedHttpService} asynchronous API.
-     * <p>
-     * Note that the resulting {@link BlockingAggregatedHttpService} may still be subject to any blocking, in memory
-     * aggregation, and other behavior as this {@link BlockingHttpService}.
-     *
-     * @return a {@link BlockingAggregatedHttpService} representation of this {@link BlockingHttpService}.
-     */
-    public final BlockingAggregatedHttpService asBlockingAggregatedService() {
-        return asService().asBlockingAggregatedService();
-    }
-
-    /**
-     * Create a new {@link BlockingHttpService} from a {@link BiFunction}.
-     *
-     * @param handleFunc Provides the functionality for the {@link #handle(ConnectionContext, BlockingHttpRequest)}
+     * Create a new {@link StreamingHttpService} from a {@link BiFunction}.
+     * @param handleFunc Provides the functionality for the {@link #handle(ConnectionContext, HttpRequest)}
      * method.
      * @return a new {@link BlockingHttpService}.
      */
-    public static BlockingHttpService fromBlocking(BiFunction<ConnectionContext,
-                                                   BlockingHttpRequest<HttpPayloadChunk>,
-                                                       BlockingHttpResponse<HttpPayloadChunk>> handleFunc) {
+    public static BlockingHttpService from(BiFunction<ConnectionContext, HttpRequest<HttpPayloadChunk>,
+                                                                HttpResponse<HttpPayloadChunk>> handleFunc) {
         return new BlockingHttpService() {
             @Override
-            public BlockingHttpResponse<HttpPayloadChunk> handle(final ConnectionContext ctx,
-                                                                 final BlockingHttpRequest<HttpPayloadChunk> request) {
+            public HttpResponse<HttpPayloadChunk> handle(final ConnectionContext ctx,
+                                                         final HttpRequest<HttpPayloadChunk> request) {
                 return handleFunc.apply(ctx, request);
             }
         };
     }
 
-    /**
-     * Provides a means to override the behavior of {@link #asService()} for internal classes.
-     *
-     * @return a {@link HttpService} representation of this {@link BlockingHttpService}.
-     */
+    StreamingHttpService asStreamingServiceInternal() {
+        return new BlockingHttpServiceToStreamingHttpService(this);
+    }
+
     HttpService asServiceInternal() {
         return new BlockingHttpServiceToHttpService(this);
     }

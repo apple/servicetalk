@@ -19,12 +19,12 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.http.api.ConnectionFilterFunction;
-import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpClientBuilder;
-import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
-import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpRequest;
 
 import java.net.SocketOption;
 import java.util.function.Function;
@@ -33,7 +33,7 @@ import java.util.function.UnaryOperator;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 
 /**
- * A builder for instances of {@link HttpClient}.
+ * A builder for instances of {@link StreamingHttpClient}.
  *
  * @param <U> the type of address before resolution (unresolved address)
  * @param <R> the type of address after resolution (resolved address)
@@ -42,8 +42,8 @@ import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.glo
 interface BaseHttpClientBuilder<U, R, BuilderType extends BaseHttpClientBuilder> extends HttpClientBuilder {
 
     @Override
-    default HttpClient build() {
-        return build(globalExecutionContext());
+    default StreamingHttpClient buildStreaming() {
+        return buildStreaming(globalExecutionContext());
     }
 
     /**
@@ -82,18 +82,18 @@ interface BaseHttpClientBuilder<U, R, BuilderType extends BaseHttpClientBuilder>
     BuilderType setHeadersFactory(HttpHeadersFactory headersFactory);
 
     /**
-     * Set the maximum size of the initial HTTP line for created {@link HttpClient}.
+     * Set the maximum size of the initial HTTP line for created {@link StreamingHttpClient}.
      *
-     * @param maxInitialLineLength The {@link HttpClient} will throw TooLongFrameException if the initial HTTP
+     * @param maxInitialLineLength The {@link StreamingHttpClient} will throw TooLongFrameException if the initial HTTP
      * line exceeds this length.
      * @return {@code this}.
      */
     BuilderType setMaxInitialLineLength(int maxInitialLineLength);
 
     /**
-     * Set the maximum total size of HTTP headers, which could be send be created {@link HttpClient}.
+     * Set the maximum total size of HTTP headers, which could be send be created {@link StreamingHttpClient}.
      *
-     * @param maxHeaderSize The {@link HttpClient} will throw TooLongFrameException if the total size of all HTTP
+     * @param maxHeaderSize The {@link StreamingHttpClient} will throw TooLongFrameException if the total size of all HTTP
      * headers exceeds this length.
      * @return {@code this}.
      */
@@ -129,9 +129,9 @@ interface BaseHttpClientBuilder<U, R, BuilderType extends BaseHttpClientBuilder>
     BuilderType setMaxPipelinedRequests(int maxPipelinedRequests);
 
     /**
-     * Appends the filter to the chain of filters used to decorate the {@link HttpConnection} created by this builder.
+     * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this builder.
      * <p>
-     * Filtering allows you to wrap a {@link HttpConnection} and modify behavior during request/response processing
+     * Filtering allows you to wrap a {@link StreamingHttpConnection} and modify behavior during request/response processing
      * Some potential candidates for filtering include logging, metrics, and decorating responses.
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
@@ -142,13 +142,13 @@ interface BaseHttpClientBuilder<U, R, BuilderType extends BaseHttpClientBuilder>
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; connection
      * </pre>
-     * @param function {@link UnaryOperator} to decorate a {@link HttpConnection} for the purpose of filtering.
+     * @param function {@link UnaryOperator} to decorate a {@link StreamingHttpConnection} for the purpose of filtering.
      * @return {@code this}
      */
     BuilderType appendConnectionFilter(ConnectionFilterFunction function);
 
     /**
-     * Disable automatically setting {@code Host} headers by inferring from the address or {@link HttpRequest}.
+     * Disable automatically setting {@code Host} headers by inferring from the address or {@link StreamingHttpRequest}.
      * <p>
      * This setting disables the default filter such that no {@code Host} header will be manipulated.
      * @return {@code this}
@@ -158,7 +158,7 @@ interface BaseHttpClientBuilder<U, R, BuilderType extends BaseHttpClientBuilder>
     BuilderType disableHostHeaderFallback();
 
     /**
-     * Disables automatically delaying {@link HttpRequest}s until the {@link LoadBalancer} is ready.
+     * Disables automatically delaying {@link StreamingHttpRequest}s until the {@link LoadBalancer} is ready.
      *
      * @return {@code this}
      */
@@ -168,7 +168,7 @@ interface BaseHttpClientBuilder<U, R, BuilderType extends BaseHttpClientBuilder>
      * Set a {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
      * @param serviceDiscoverer The {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
      * Lifecycle of the provided {@link ServiceDiscoverer} is managed externally and it should be
-     * {@link ServiceDiscoverer#closeAsync() closed} after all built {@link HttpClient}s will be closed and this
+     * {@link ServiceDiscoverer#closeAsync() closed} after all built {@link StreamingHttpClient}s will be closed and this
      * {@link ServiceDiscoverer} is no longer needed.
      * @return {@code this}.
      */
@@ -180,5 +180,5 @@ interface BaseHttpClientBuilder<U, R, BuilderType extends BaseHttpClientBuilder>
      * @param loadBalancerFactory The {@link LoadBalancerFactory} which generates {@link LoadBalancer} objects.
      * @return {@code this}.
      */
-    BuilderType setLoadBalancerFactory(LoadBalancerFactory<R, HttpConnection> loadBalancerFactory);
+    BuilderType setLoadBalancerFactory(LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
 }

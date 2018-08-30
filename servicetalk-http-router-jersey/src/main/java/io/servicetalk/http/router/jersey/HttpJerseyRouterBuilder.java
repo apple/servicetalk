@@ -18,8 +18,8 @@ package io.servicetalk.http.router.jersey;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
-import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.io.InputStream;
@@ -31,17 +31,17 @@ import static io.servicetalk.http.utils.HttpRequestUriUtils.getBaseRequestUri;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Builds an {@link HttpService}{@code <}{@link HttpPayloadChunk}{@code >} which routes requests
+ * Builds an {@link StreamingHttpService}{@code <}{@link HttpPayloadChunk}{@code >} which routes requests
  * to JAX-RS annotated classes, using Jersey as the routing engine.
  * eg.
  * <pre>{@code
- * final HttpService router = new HttpJerseyRouterBuilder()
- *     .build(application);
+ * final StreamingHttpService router = new HttpJerseyRouterBuilder()
+ *     .buildStreaming(application);
  * }</pre>
  */
 public final class HttpJerseyRouterBuilder {
     private int publisherInputStreamQueueCapacity = 16;
-    private BiFunction<ConnectionContext, HttpRequest<HttpPayloadChunk>, String> baseUriFunction =
+    private BiFunction<ConnectionContext, StreamingHttpRequest<HttpPayloadChunk>, String> baseUriFunction =
             (ctx, req) -> getBaseRequestUri(ctx, req, false);
     private Function<String, Executor> executorFactory = __ -> null;
 
@@ -62,16 +62,16 @@ public final class HttpJerseyRouterBuilder {
     }
 
     /**
-     * Set the function used to compute the base URI for incoming {@link HttpRequest}s.
+     * Set the function used to compute the base URI for incoming {@link StreamingHttpRequest}s.
      * <b>The computed base URI must have {@code /} as path, and no query nor fragment.</b>
      *
      * @param baseUriFunction a {@link BiFunction} that computes a base URI {@link String}
-     * for the provided {@link ConnectionContext} and {@link HttpRequest}.
+     * for the provided {@link ConnectionContext} and {@link StreamingHttpRequest}.
      * @return this
      * @see <a href="https://tools.ietf.org/html/rfc3986#section-3">URI Syntax Components</a>
      */
     public HttpJerseyRouterBuilder setBaseUriFunction(
-            final BiFunction<ConnectionContext, HttpRequest<HttpPayloadChunk>, String> baseUriFunction) {
+            final BiFunction<ConnectionContext, StreamingHttpRequest<HttpPayloadChunk>, String> baseUriFunction) {
 
         this.baseUriFunction = requireNonNull(baseUriFunction);
         return this;
@@ -92,24 +92,24 @@ public final class HttpJerseyRouterBuilder {
     }
 
     /**
-     * Build the {@link HttpService} for the specified JAX-RS {@link Application}.
+     * Build the {@link StreamingHttpService} for the specified JAX-RS {@link Application}.
      *
      * @param application the {@link Application} to route requests to.
-     * @return the {@link HttpService}.
+     * @return the {@link StreamingHttpService}.
      */
-    public HttpService build(final Application application) {
-        return new DefaultJerseyHttpRouter(application, publisherInputStreamQueueCapacity, baseUriFunction,
+    public StreamingHttpService build(final Application application) {
+        return new DefaultJerseyStreamingHttpRouter(application, publisherInputStreamQueueCapacity, baseUriFunction,
                 executorFactory);
     }
 
     /**
-     * Build the {@link HttpService} for the specified JAX-RS {@link Application} class.
+     * Build the {@link StreamingHttpService} for the specified JAX-RS {@link Application} class.
      *
      * @param applicationClass the {@link Application} class to instantiate and route requests to.
-     * @return the {@link HttpService}.
+     * @return the {@link StreamingHttpService}.
      */
-    public HttpService build(final Class<? extends Application> applicationClass) {
-        return new DefaultJerseyHttpRouter(applicationClass, publisherInputStreamQueueCapacity, baseUriFunction,
+    public StreamingHttpService build(final Class<? extends Application> applicationClass) {
+        return new DefaultJerseyStreamingHttpRouter(applicationClass, publisherInputStreamQueueCapacity, baseUriFunction,
                 executorFactory);
     }
 }

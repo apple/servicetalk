@@ -15,8 +15,8 @@
  */
 package io.servicetalk.http.router.predicate;
 
-import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMethod;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.Iterator;
@@ -35,35 +35,35 @@ final class Predicates {
         // static helper class
     }
 
-    static <I> BiPredicate<ConnectionContext, HttpRequest<I>> method(final HttpRequestMethod method) {
+    static <I> BiPredicate<ConnectionContext, StreamingHttpRequest<I>> method(final HttpRequestMethod method) {
         requireNonNull(method);
         return (ctx, req) -> req.getMethod().equals(method);
     }
 
-    static <I> BiPredicate<ConnectionContext, HttpRequest<I>> methodIsOneOf(final HttpRequestMethod... methods) {
+    static <I> BiPredicate<ConnectionContext, StreamingHttpRequest<I>> methodIsOneOf(final HttpRequestMethod... methods) {
         return orBiPredicates(Stream.of(methods).map(Predicates::<I>method).collect(toList()));
     }
 
-    static <I> BiPredicate<ConnectionContext, HttpRequest<I>> pathEquals(final String path) {
+    static <I> BiPredicate<ConnectionContext, StreamingHttpRequest<I>> pathEquals(final String path) {
         requireNonNull(path);
         return (ctx, req) -> req.getPath().equals(path);
     }
 
-    static <I> BiPredicate<ConnectionContext, HttpRequest<I>> pathIsOneOf(final String... paths) {
+    static <I> BiPredicate<ConnectionContext, StreamingHttpRequest<I>> pathIsOneOf(final String... paths) {
         return orBiPredicates(Stream.of(paths).map(Predicates::<I>pathEquals).collect(toList()));
     }
 
-    static <I> BiPredicate<ConnectionContext, HttpRequest<I>> pathStartsWith(final String pathPrefix) {
+    static <I> BiPredicate<ConnectionContext, StreamingHttpRequest<I>> pathStartsWith(final String pathPrefix) {
         requireNonNull(pathPrefix);
         return (ctx, req) -> req.getPath().startsWith(pathPrefix);
     }
 
-    static <I> BiPredicate<ConnectionContext, HttpRequest<I>> pathRegex(final String regex) {
+    static <I> BiPredicate<ConnectionContext, StreamingHttpRequest<I>> pathRegex(final String regex) {
         final Predicate<CharSequence> regexPredicate = regex(regex);
         return (ctx, req) -> regexPredicate.test(req.getPath());
     }
 
-    static <I> BiPredicate<ConnectionContext, HttpRequest<I>> pathRegex(final Pattern regex) {
+    static <I> BiPredicate<ConnectionContext, StreamingHttpRequest<I>> pathRegex(final Pattern regex) {
         final Predicate<CharSequence> regexPredicate = regex(regex);
         return (ctx, req) -> regexPredicate.test(req.getPath());
     }

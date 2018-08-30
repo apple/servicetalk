@@ -22,14 +22,14 @@ import javax.annotation.Nullable;
  */
 public interface HttpRequestMetaData extends HttpMetaData {
     /**
-     * Returns the {@link HttpRequestMethod} of this {@link HttpRequest}.
+     * Returns the {@link HttpRequestMethod} of this {@link StreamingHttpRequest}.
      *
-     * @return The {@link HttpRequestMethod} of this {@link HttpRequest}
+     * @return The {@link HttpRequestMethod} of this {@link StreamingHttpRequest}
      */
     HttpRequestMethod getMethod();
 
     /**
-     * Set the {@link HttpRequestMethod} of this {@link HttpRequest}.
+     * Set the {@link HttpRequestMethod} of this {@link StreamingHttpRequest}.
      *
      * @param method the {@link HttpRequestMethod} to set.
      * @return {@code this}.
