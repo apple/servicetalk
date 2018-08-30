@@ -23,7 +23,7 @@ import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.redis.api.BlockingPubSubRedisConnection;
 import io.servicetalk.redis.api.BlockingRedisCommander;
 import io.servicetalk.redis.api.BlockingTransactedRedisCommander;
-import io.servicetalk.redis.api.DeferredValue;
+import io.servicetalk.redis.api.Deferred;
 import io.servicetalk.redis.api.PubSubRedisMessage;
 import io.servicetalk.redis.api.RedisException;
 import io.servicetalk.redis.api.RedisProtocolSupport;
@@ -242,10 +242,10 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
     @Test
     public void transactionExec() throws Exception {
         BlockingTransactedRedisCommander tcc = commandClient.multi();
-        DeferredValue<Long> value1 = tcc.del(key("a-key"));
-        DeferredValue<String> value2 = tcc.set(key("a-key"), "a-value3");
-        DeferredValue<String> value3 = tcc.ping("in-transac");
-        DeferredValue<String> value4 = tcc.get(key("a-key"));
+        Deferred<Long> value1 = tcc.del(key("a-key"));
+        Deferred<String> value2 = tcc.set(key("a-key"), "a-value3");
+        Deferred<String> value3 = tcc.ping("in-transac");
+        Deferred<String> value4 = tcc.get(key("a-key"));
         tcc.exec();
         assertThat(value1.get(), is(1L));
         assertThat(value2.get(), is("OK"));
@@ -266,8 +266,8 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
     public void transactionPartialFailure() throws Exception {
         BlockingTransactedRedisCommander tcc = commandClient.multi();
 
-        final DeferredValue<String> r1 = tcc.set(key("ptf"), "foo");
-        final DeferredValue<String> r2 = tcc.lpop(key("ptf"));
+        final Deferred<String> r1 = tcc.set(key("ptf"), "foo");
+        final Deferred<String> r2 = tcc.lpop(key("ptf"));
 
         tcc.exec();
 

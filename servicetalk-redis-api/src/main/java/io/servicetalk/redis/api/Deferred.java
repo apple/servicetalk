@@ -22,17 +22,15 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Represents a value that will be set after some operation completes. If the operation completes with an exception,
- * that exception will be propogated through {@code DeferredValue}.
+ * that exception will be propogated through {@code Deferred}.
  *
  * @param <T> the type of the value.
  */
-public final class DeferredValue<T> {
+public final class Deferred<T> {
     private static final Object UNSET = new Object();
 
     @Nullable
     private volatile Object value = UNSET;
-    @Nullable
-    private volatile Throwable cause;
 
     void onSuccess(@Nullable T value) {
         synchronized (this) {
@@ -43,7 +41,7 @@ public final class DeferredValue<T> {
 
     void onError(Throwable cause) {
         synchronized (this) {
-            this.cause = requireNonNull(cause);
+            this.value = requireNonNull(cause);
             this.notifyAll();
         }
     }
@@ -59,12 +57,12 @@ public final class DeferredValue<T> {
     @SuppressWarnings("unchecked")
     public T get() {
         if (value != UNSET) {
+            if (value instanceof Throwable) {
+                // value is never set back to null once it's been set to non-null, but
+                // requireNonNull to satisfy static analysis warnings.
+                throwException((Throwable) requireNonNull(value));
+            }
             return (T) value;
-        }
-        if (cause != null) {
-            // cause is never set back to null once it's been set to non-null, but
-            // requireNonNull to satisfy static analysis warnings.
-            throwException(requireNonNull(cause));
         }
         throw new IllegalStateException("Not yet set");
     }
@@ -73,7 +71,7 @@ public final class DeferredValue<T> {
     @Nullable
     <T2> T2 blockingGet() {
         synchronized (this) {
-            while (value == UNSET && cause == null) {
+            while (value == UNSET) {
                 try {
                     this.wait();
                 } catch (InterruptedException e) {
