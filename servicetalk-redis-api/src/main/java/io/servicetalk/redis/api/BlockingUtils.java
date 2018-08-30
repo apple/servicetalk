@@ -16,13 +16,13 @@
 package io.servicetalk.redis.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
-import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
 
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.defer;
@@ -74,27 +74,9 @@ final class BlockingUtils {
         return source.toIterable();
     }
 
-    static <T> Deferred singleToDeferredValue(Single<T> single) {
-        final Deferred<T> deferred = new Deferred<>();
-
-        single.subscribe(new io.servicetalk.concurrent.Single.Subscriber<T>() {
-            @Override
-            public void onSubscribe(final Cancellable cancellable) {
-                // nothing to do
-            }
-
-            @Override
-            public void onSuccess(@Nullable final T result) {
-                deferred.onSuccess(result);
-            }
-
-            @Override
-            public void onError(final Throwable t) {
-                deferred.onError(t);
-            }
-        });
-
-        return deferred;
+    // This is needed to be type-safe in the commanders.
+    static <T> Future<T> singleToFuture(Single<T> single) {
+        return single.toFuture();
     }
 
     static Completable blockingToCompletable(RunnableCheckedException r) {
@@ -141,6 +123,16 @@ final class BlockingUtils {
                 subscriber.onSuccess(response);
             }
         };
+    }
+
+    static <T> Single<T> futureToSingle(SupplierCheckedException<Future<T>> supplier) {
+        Future<T> future;
+        try {
+            future = supplier.get();
+        } catch (Exception e) {
+            return Single.error(e);
+        }
+        return Single.fromFuture(future);
     }
 
     static <T> Publisher<T> blockingToPublisher(SupplierCheckedException<BlockingIterable<T>> supplier) {

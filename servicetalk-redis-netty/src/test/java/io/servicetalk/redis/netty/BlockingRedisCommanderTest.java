@@ -23,7 +23,6 @@ import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.redis.api.BlockingPubSubRedisConnection;
 import io.servicetalk.redis.api.BlockingRedisCommander;
 import io.servicetalk.redis.api.BlockingTransactedRedisCommander;
-import io.servicetalk.redis.api.Deferred;
 import io.servicetalk.redis.api.PubSubRedisMessage;
 import io.servicetalk.redis.api.RedisException;
 import io.servicetalk.redis.api.RedisProtocolSupport;
@@ -41,6 +40,8 @@ import org.junit.Test;
 import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.stream.IntStream;
 
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
@@ -72,6 +73,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.nullValue;
@@ -242,10 +244,10 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
     @Test
     public void transactionExec() throws Exception {
         BlockingTransactedRedisCommander tcc = commandClient.multi();
-        Deferred<Long> value1 = tcc.del(key("a-key"));
-        Deferred<String> value2 = tcc.set(key("a-key"), "a-value3");
-        Deferred<String> value3 = tcc.ping("in-transac");
-        Deferred<String> value4 = tcc.get(key("a-key"));
+        Future<Long> value1 = tcc.del(key("a-key"));
+        Future<String> value2 = tcc.set(key("a-key"), "a-value3");
+        Future<String> value3 = tcc.ping("in-transac");
+        Future<String> value4 = tcc.get(key("a-key"));
         tcc.exec();
         assertThat(value1.get(), is(1L));
         assertThat(value2.get(), is("OK"));
@@ -266,15 +268,16 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
     public void transactionPartialFailure() throws Exception {
         BlockingTransactedRedisCommander tcc = commandClient.multi();
 
-        final Deferred<String> r1 = tcc.set(key("ptf"), "foo");
-        final Deferred<String> r2 = tcc.lpop(key("ptf"));
+        final Future<String> r1 = tcc.set(key("ptf"), "foo");
+        final Future<String> r2 = tcc.lpop(key("ptf"));
 
         tcc.exec();
 
         assertThat(r1.get(), is("OK"));
 
-        thrown.expect(RedisException.class);
-        thrown.expectMessage("WRONGTYPE");
+        thrown.expect(ExecutionException.class);
+        thrown.expectCause(instanceOf(RedisException.class));
+        thrown.expectCause(hasProperty("message", startsWith("WRONGTYPE")));
         r2.get();
     }
 
@@ -283,8 +286,9 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
         BlockingTransactedRedisCommander tcc = commandClient.multi();
         tcc.close();
 
-        thrown.expect(ClosedChannelException.class);
-        getEventually(() -> tcc.ping());
+        thrown.expect(ExecutionException.class);
+        thrown.expectCause(instanceOf(ClosedChannelException.class));
+        tcc.ping().get();
     }
 
     @Test

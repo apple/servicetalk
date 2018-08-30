@@ -18,7 +18,6 @@ package io.servicetalk.redis.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.redis.api.Deferred;
 
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
@@ -29,7 +28,6 @@ import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 
-import java.util.concurrent.Callable;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
@@ -88,17 +86,5 @@ public abstract class BaseRedisClientTest {
                         .appendText("}");
             }
         };
-    }
-
-    @Nullable
-    protected <T> T getEventually(final Callable<Deferred<T>> callable) throws Exception {
-        final Deferred<T> deferred = callable.call();
-        while (true) {
-            try {
-                return deferred.get();
-            } catch (IllegalStateException e) {
-                Thread.sleep(10);
-            }
-        }
     }
 }
