@@ -23,7 +23,8 @@ import javax.annotation.Nullable;
 
 /**
  * Redis transacted command client that uses {@link String} for keys and data. This API is provided for convenience for
- * a more familiar sequential programming model.
+ * a more familiar sequential programming model. Command methods return a {@link Future} that completes with the result
+ * of the command after {@link #exec}, or with an exception after {@link #discard}.
  */
 @Generated({})
 public abstract class BlockingTransactedRedisCommander implements AutoCloseable {
@@ -864,7 +865,8 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
     public abstract Future<Long> del(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys) throws Exception;
 
     /**
-     * Discard all commands issued after MULTI.
+     * Discard all commands issued after MULTI. This completes the {@link Future}s returned by the command methods with
+     * a {@link TransactionAbortedException}.
      *
      * @return a {@link String} result
      * @throws Exception if an exception occurs during the request processing.
@@ -985,7 +987,8 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
                                              Collection<? extends CharSequence> args) throws Exception;
 
     /**
-     * Execute all commands issued after MULTI.
+     * Execute all commands issued after MULTI. This completes the {@link Future}s returned by the command methods with
+     * the corresponding value as returned by the {@code EXEC}.
      *
      * @throws Exception if an exception occurs during the request processing.
      */

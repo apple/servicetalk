@@ -16,7 +16,6 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.hamcrest.BaseMatcher;
@@ -39,8 +38,6 @@ public abstract class BaseRedisClientTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
-    @Rule
-    public MockedSingleListenerRule<Object> singleListenerRule = new MockedSingleListenerRule<>();
 
     @Nullable
     private static RedisTestEnvironment env;

@@ -24,10 +24,10 @@ import javax.annotation.Generated;
 import javax.annotation.Nullable;
 
 /**
- * Redis command client that uses {@link Buffer} for keys and data.
+ * Redis command client that uses {@link Buffer} for keys and data. This API is provided for convenience for a more
+ * familiar sequential programming model.
  * <p>
- * Note that Redis Simple String responses are always returned as {@link String}. This API is provided for convenience
- * for a more familiar sequential programming model.
+ * Note that Redis Simple String responses are always returned as {@link String}.
  */
 @Generated({})
 public abstract class BlockingBufferRedisCommander implements AutoCloseable {

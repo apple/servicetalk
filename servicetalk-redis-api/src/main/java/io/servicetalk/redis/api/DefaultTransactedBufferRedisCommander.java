@@ -60,8 +60,7 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     private <T> Single<T> enqueueForExecute(final Single<String> queued) {
         return queued.doBeforeSubscribe(cancellable -> {
             if (transactionCompleted) {
-                throw new RedisClientException(Single.class.getSimpleName() +
-                            " cannot be subscribed to after the transaction has completed.");
+                throw new TransactionCompletedException();
             }
         }).flatMap(status -> {
             if (status.equals("QUEUED")) {
@@ -1234,8 +1233,10 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DISCARD, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DISCARD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Single<String> result = queued.doAfterFinally(() -> {
-            transactionCompleted = true;
+        Single<String> result = queued.doAfterSubscribe(__ -> transactionCompleted = true).doBeforeSuccess(list -> {
+            for (CompletableFuture future : futures) {
+                future.completeExceptionally(new TransactionAbortedException());
+            }
         });
         return releaseAfterDone ? result.doBeforeFinally(reservedCnx::releaseAsync) : result;
     }

@@ -29,6 +29,8 @@ import io.servicetalk.redis.api.RedisProtocolSupport.ExpireDuration;
 import io.servicetalk.redis.api.RedisProtocolSupport.FieldValue;
 import io.servicetalk.redis.api.RedisProtocolSupport.LongitudeLatitudeMember;
 import io.servicetalk.redis.api.TransactedRedisCommander;
+import io.servicetalk.redis.api.TransactionAbortedException;
+import io.servicetalk.redis.api.TransactionCompletedException;
 import io.servicetalk.redis.netty.SubscribedRedisClientTest.AccumulatingSubscriber;
 
 import org.hamcrest.Matcher;
@@ -276,8 +278,7 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         Single<String> single = tcc.ping("in-transac");
         awaitIndefinitely(tcc.exec());
 
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("Single cannot be subscribed to after the transaction has completed.");
+        thrown.expect(TransactionCompletedException.class);
         awaitIndefinitely(single);
     }
 
@@ -287,8 +288,7 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         Single<String> single = tcc.ping("in-transac");
         awaitIndefinitely(tcc.discard());
 
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("Single cannot be subscribed to after the transaction has completed.");
+        thrown.expect(TransactionCompletedException.class);
         awaitIndefinitely(single);
     }
 
@@ -296,11 +296,12 @@ public class RedisCommanderTest extends BaseRedisClientTest {
     public void transactionDiscard() throws Exception {
         final TransactedRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
 
-        Single<String> result = tcc.ping("in-transac");
-        singleListenerRule.listen(result);
-        tcc.discard();
+        Future<String> future = tcc.ping("in-transac").toFuture();
+        tcc.discard().toFuture().get();
 
-        singleListenerRule.verifyNoEmissions();
+        thrown.expect(ExecutionException.class);
+        thrown.expectCause(instanceOf(TransactionAbortedException.class));
+        future.get();
     }
 
     @Test

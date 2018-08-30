@@ -33,6 +33,7 @@ import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Overflow
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Set;
 import io.servicetalk.redis.api.RedisProtocolSupport.BufferLongitudeLatitudeMember;
 import io.servicetalk.redis.api.RedisProtocolSupport.ExpireDuration;
+import io.servicetalk.redis.api.TransactionAbortedException;
 
 import org.hamcrest.Matcher;
 import org.junit.Before;
@@ -270,10 +271,14 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
     @Test
     public void transactionDiscard() throws Exception {
         BlockingTransactedBufferRedisCommander tcc = commandClient.multi();
-        tcc.ping(buf("in-transac"));
+        Future<Buffer> future = tcc.ping(buf("in-transac"));
         final String result = tcc.discard();
 
         assertThat(result, is("OK"));
+
+        thrown.expect(ExecutionException.class);
+        thrown.expectCause(instanceOf(TransactionAbortedException.class));
+        future.get();
     }
 
     @Test

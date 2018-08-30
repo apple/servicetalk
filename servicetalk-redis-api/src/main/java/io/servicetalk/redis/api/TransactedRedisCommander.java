@@ -25,7 +25,8 @@ import javax.annotation.Generated;
 import javax.annotation.Nullable;
 
 /**
- * Redis transacted command client that uses {@link String} for keys and data.
+ * Redis transacted command client that uses {@link String} for keys and data. Command methods return a {@link Single}
+ * that completes with the result of the command after {@link #exec}, or with an error after {@link #discard}.
  */
 @Generated({})
 public abstract class TransactedRedisCommander implements AsyncCloseable {
@@ -800,7 +801,8 @@ public abstract class TransactedRedisCommander implements AsyncCloseable {
     public abstract Single<Long> del(@RedisProtocolSupport.Key Collection<? extends CharSequence> keys);
 
     /**
-     * Discard all commands issued after MULTI.
+     * Discard all commands issued after MULTI. This completes the {@link Single}s returned by the command methods with
+     * a {@link TransactionAbortedException}.
      *
      * @return a {@link Single} result
      */
@@ -912,7 +914,8 @@ public abstract class TransactedRedisCommander implements AsyncCloseable {
                                              Collection<? extends CharSequence> args);
 
     /**
-     * Execute all commands issued after MULTI.
+     * Execute all commands issued after MULTI. This completes the {@link Single}s returned by the command methods with
+     * the corresponding value as returned by the {@code EXEC}.
      *
      * @return a {@link Completable} result
      */

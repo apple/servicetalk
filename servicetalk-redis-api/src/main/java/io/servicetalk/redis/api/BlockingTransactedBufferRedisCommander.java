@@ -24,10 +24,11 @@ import javax.annotation.Generated;
 import javax.annotation.Nullable;
 
 /**
- * Redis transacted command client that uses {@link Buffer} for keys and data.
+ * Redis transacted command client that uses {@link Buffer} for keys and data. This API is provided for convenience for
+ * a more familiar sequential programming model. Command methods return a {@link Future} that completes with the result
+ * of the command after {@link #exec}, or with an exception after {@link #discard}.
  * <p>
- * Note that Redis Simple String responses are always returned as {@link String}. This API is provided for convenience
- * for a more familiar sequential programming model.
+ * Note that Redis Simple String responses are always returned as {@link String}.
  */
 @Generated({})
 public abstract class BlockingTransactedBufferRedisCommander implements AutoCloseable {
@@ -864,7 +865,8 @@ public abstract class BlockingTransactedBufferRedisCommander implements AutoClos
     public abstract Future<Long> del(@RedisProtocolSupport.Key Collection<Buffer> keys) throws Exception;
 
     /**
-     * Discard all commands issued after MULTI.
+     * Discard all commands issued after MULTI. This completes the {@link Future}s returned by the command methods with
+     * a {@link TransactionAbortedException}.
      *
      * @return a {@link String} result
      * @throws Exception if an exception occurs during the request processing.
@@ -983,7 +985,8 @@ public abstract class BlockingTransactedBufferRedisCommander implements AutoClos
                                              Collection<Buffer> args) throws Exception;
 
     /**
-     * Execute all commands issued after MULTI.
+     * Execute all commands issued after MULTI. This completes the {@link Future}s returned by the command methods with
+     * the corresponding value as returned by the {@code EXEC}.
      *
      * @throws Exception if an exception occurs during the request processing.
      */

@@ -29,6 +29,8 @@ import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Set;
 import io.servicetalk.redis.api.RedisProtocolSupport.BufferLongitudeLatitudeMember;
 import io.servicetalk.redis.api.RedisProtocolSupport.ExpireDuration;
 import io.servicetalk.redis.api.TransactedBufferRedisCommander;
+import io.servicetalk.redis.api.TransactionAbortedException;
+import io.servicetalk.redis.api.TransactionCompletedException;
 import io.servicetalk.redis.netty.SubscribedRedisClientTest.AccumulatingSubscriber;
 
 import org.hamcrest.Matcher;
@@ -276,8 +278,7 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         Single<Buffer> single = tcc.ping(buf("in-transac"));
         awaitIndefinitely(tcc.exec());
 
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("Single cannot be subscribed to after the transaction has completed.");
+        thrown.expect(TransactionCompletedException.class);
         awaitIndefinitely(single);
     }
 
@@ -287,8 +288,7 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         Single<Buffer> single = tcc.ping(buf("in-transac"));
         awaitIndefinitely(tcc.discard());
 
-        thrown.expect(RuntimeException.class);
-        thrown.expectMessage("Single cannot be subscribed to after the transaction has completed.");
+        thrown.expect(TransactionCompletedException.class);
         awaitIndefinitely(single);
     }
 
@@ -296,11 +296,12 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
     public void transactionDiscard() throws Exception {
         final TransactedBufferRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
 
-        Single<Buffer> result = tcc.ping(buf("in-transac"));
-        singleListenerRule.listen(result);
-        tcc.discard();
+        Future<Buffer> future = tcc.ping(buf("in-transac")).toFuture();
+        tcc.discard().toFuture().get();
 
-        singleListenerRule.verifyNoEmissions();
+        thrown.expect(ExecutionException.class);
+        thrown.expectCause(instanceOf(TransactionAbortedException.class));
+        future.get();
     }
 
     @Test
