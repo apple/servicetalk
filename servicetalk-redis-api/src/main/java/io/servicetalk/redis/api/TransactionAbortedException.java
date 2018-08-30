@@ -20,11 +20,12 @@ package io.servicetalk.redis.api;
  * being executed.
  */
 public final class TransactionAbortedException extends TransactionCompletedException {
+    private static final long serialVersionUID = 2625374006820886896L;
 
     /**
      * Instantiates a new {@link TransactionAbortedException}.
      */
-    public TransactionAbortedException() {
+    TransactionAbortedException() {
         super("Transaction was aborted by discard()");
     }
 }

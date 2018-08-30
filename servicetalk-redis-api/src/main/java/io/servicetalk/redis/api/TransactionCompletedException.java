@@ -15,21 +15,18 @@
  */
 package io.servicetalk.redis.api;
 
-import io.servicetalk.concurrent.api.Single;
-
 /**
  * Indicates that a transaction was completed (via {@link TransactedRedisCommander#discard()} or
  * {@link TransactedRedisCommander#exec()}, preventing a command from being executed.
  */
 public class TransactionCompletedException extends RedisClientException {
+    private static final long serialVersionUID = 5345239529654058948L;
 
     /**
      * Instantiates a new {@link TransactionCompletedException}.
+     *
+     * @param message the message containing the details of the error.
      */
-    public TransactionCompletedException() {
-        super(Single.class.getSimpleName() + " cannot be subscribed to after the transaction has completed.");
-    }
-
     TransactionCompletedException(final String message) {
         super(message);
     }

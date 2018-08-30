@@ -60,7 +60,8 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     private <T> Single<T> enqueueForExecute(final Single<String> queued) {
         return queued.doBeforeSubscribe(cancellable -> {
             if (transactionCompleted) {
-                throw new TransactionCompletedException();
+                throw new TransactionCompletedException(Single.class.getSimpleName() +
+                            " cannot be subscribed to after the transaction has completed.");
             }
         }).flatMap(status -> {
             if (status.equals("QUEUED")) {
