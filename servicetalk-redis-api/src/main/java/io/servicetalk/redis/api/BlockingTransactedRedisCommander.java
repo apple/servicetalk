@@ -988,7 +988,7 @@ public abstract class BlockingTransactedRedisCommander implements AutoCloseable 
 
     /**
      * Execute all commands issued after MULTI. This completes the {@link Future}s returned by the command methods with
-     * the corresponding value as returned by the {@code EXEC}.
+     * the corresponding value as returned by the EXEC.
      *
      * @throws Exception if an exception occurs during the request processing.
      */

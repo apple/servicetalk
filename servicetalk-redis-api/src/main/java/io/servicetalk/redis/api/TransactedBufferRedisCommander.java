@@ -906,7 +906,7 @@ public abstract class TransactedBufferRedisCommander implements AsyncCloseable {
 
     /**
      * Execute all commands issued after MULTI. This completes the {@link Single}s returned by the command methods with
-     * the corresponding value as returned by the {@code EXEC}.
+     * the corresponding value as returned by the EXEC.
      *
      * @return a {@link Completable} result
      */
