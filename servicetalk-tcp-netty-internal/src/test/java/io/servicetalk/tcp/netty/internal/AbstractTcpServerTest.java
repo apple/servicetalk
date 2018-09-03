@@ -40,7 +40,6 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
-import static io.servicetalk.transport.netty.internal.FlushStrategy.defaultFlushStrategy;
 
 public abstract class AbstractTcpServerTest {
 
@@ -58,7 +57,7 @@ public abstract class AbstractTcpServerTest {
 
     private ContextFilter contextFilter = ACCEPT_ALL;
     private Function<Connection<Buffer, Buffer>, Completable> service =
-            conn -> conn.write(conn.read(), defaultFlushStrategy());
+            conn -> conn.write(conn.read());
     ServerContext serverContext;
     int serverPort;
     TcpClient client;

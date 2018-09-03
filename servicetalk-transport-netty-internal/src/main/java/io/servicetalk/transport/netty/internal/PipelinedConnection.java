@@ -24,6 +24,8 @@ import io.servicetalk.transport.netty.internal.Connection.RequestNSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import static io.servicetalk.transport.netty.internal.FlushStrategy.defaultFlushStrategy;
+
 /**
  * Contract for using a {@link Connection} to make pipelined requests, typically for a client. <p>
  *     Pipelining allows to have concurrent requests processed on the server but still deliver responses in order.
@@ -87,6 +89,18 @@ public interface PipelinedConnection<Req, Resp> extends ConnectionContext {
      * @return Response {@link Publisher} for this request.
      */
     Publisher<Resp> request(Single<Req> request, Supplier<Predicate<Resp>> terminalMsgPredicateSupplier);
+
+    /**
+     * Send request(s) produced by a {@link Publisher} on this connection.
+     * <p>
+     *     Use {@link #request(Publisher, Supplier, FlushStrategy)} to override the predicate used to mark the end of response.
+     *
+     * @param request {@link Publisher} producing the request(s) to write.
+     * @return Response {@link Publisher} for this request.
+     */
+    default Publisher<Resp> request(Publisher<Req> request) {
+        return request(request, defaultFlushStrategy());
+    }
 
     /**
      * Send request(s) produced by a {@link Publisher} on this connection.

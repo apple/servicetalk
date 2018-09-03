@@ -28,7 +28,6 @@ import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.LastHttpPayloadChunk;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.CloseHandler;
-import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.channel.Channel;
@@ -149,6 +148,6 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
     }
 
     private Completable writeResponse(final Publisher<Object> responseObjectPublisher) {
-        return write(responseObjectPublisher, FlushStrategy.flushOnEach());
+        return write(responseObjectPublisher);
     }
 }

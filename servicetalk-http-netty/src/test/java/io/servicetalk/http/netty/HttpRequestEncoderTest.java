@@ -84,7 +84,6 @@ import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
-import static io.servicetalk.transport.netty.internal.FlushStrategy.defaultFlushStrategy;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.lang.Boolean.TRUE;
 import static java.lang.Integer.toHexString;
@@ -434,7 +433,7 @@ public class HttpRequestEncoderTest {
                     INSTANCE.newEmptyTrailers());
 
             awaitIndefinitely(serverCloseTrigger);
-            Completable write = conn.write(from(request, lastChunk), defaultFlushStrategy());
+            Completable write = conn.write(from(request, lastChunk));
 
             try {
                 awaitIndefinitely(write);

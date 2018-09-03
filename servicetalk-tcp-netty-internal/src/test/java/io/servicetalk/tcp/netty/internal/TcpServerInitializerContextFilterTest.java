@@ -42,7 +42,6 @@ import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
-import static io.servicetalk.transport.netty.internal.FlushStrategy.flushOnEach;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
@@ -100,7 +99,7 @@ public class TcpServerInitializerContextFilterTest extends AbstractTcpServerTest
         setSslEnabled(enableSsl);
         setService(conn -> {
             acceptedConnection = true;
-            return conn.write(conn.read(), flushOnEach());
+            return conn.write(conn.read());
         });
         if (enableSsl) {
             setContextFilter(ctx -> {

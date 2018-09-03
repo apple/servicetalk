@@ -19,8 +19,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.Connection;
 
-import static io.servicetalk.transport.netty.internal.FlushStrategy.flushOnEach;
-
 final class NonPipelinedHttpConnection extends AbstractHttpConnection<Connection<Object, Object>> {
 
     NonPipelinedHttpConnection(Connection<Object, Object> connection, ReadOnlyHttpClientConfig config,
@@ -30,7 +28,6 @@ final class NonPipelinedHttpConnection extends AbstractHttpConnection<Connection
 
     @Override
     protected Publisher<Object> writeAndRead(final Publisher<Object> requestStream) {
-        // TODO flush strategy needs to be configurable
-        return connection.write(requestStream, flushOnEach()).andThen(connection.read());
+        return connection.write(requestStream).andThen(connection.read());
     }
 }

@@ -109,7 +109,7 @@ public class NettyConnectionTest {
 
     @Test
     public void testWritePublisher() {
-        writeListener.listen(conn.write(from(newBuffer("Hello1"), newBuffer("Hello2")), defaultFlushStrategy()))
+        writeListener.listen(conn.write(from(newBuffer("Hello1"), newBuffer("Hello2"))))
                 .verifyCompletion();
         pollChannelAndVerifyWrites("Hello1", "Hello2");
     }
@@ -137,26 +137,26 @@ public class NettyConnectionTest {
 
     @Test
     public void testConcurrentWritePubAndPub() {
-        writeListener.listen(conn.write(Publisher.never(), defaultFlushStrategy())).verifyNoEmissions();
-        secondWriteListener.listen(conn.write(Publisher.never(), defaultFlushStrategy())).verifyFailure(IllegalStateException.class);
+        writeListener.listen(conn.write(Publisher.never())).verifyNoEmissions();
+        secondWriteListener.listen(conn.write(Publisher.never())).verifyFailure(IllegalStateException.class);
     }
 
     @Test
     public void testConcurrentWritePubAndSingle() {
-        writeListener.listen(conn.write(Publisher.never(), defaultFlushStrategy())).verifyNoEmissions();
+        writeListener.listen(conn.write(Publisher.never())).verifyNoEmissions();
         secondWriteListener.listen(conn.writeAndFlush(Single.never())).verifyFailure(IllegalStateException.class);
     }
 
     @Test
     public void testConcurrentWritePubAndItem() {
-        writeListener.listen(conn.write(Publisher.never(), defaultFlushStrategy())).verifyNoEmissions();
+        writeListener.listen(conn.write(Publisher.never())).verifyNoEmissions();
         secondWriteListener.listen(conn.writeAndFlush(newBuffer("Hello"))).verifyFailure(IllegalStateException.class);
     }
 
     @Test
     public void testConcurrentWriteSingleAndPub() {
         writeListener.listen(conn.writeAndFlush(Single.never())).verifyNoEmissions();
-        secondWriteListener.listen(conn.write(Publisher.never(), defaultFlushStrategy())).verifyFailure(IllegalStateException.class);
+        secondWriteListener.listen(conn.write(Publisher.never())).verifyFailure(IllegalStateException.class);
     }
 
     @Test
@@ -255,7 +255,7 @@ public class NettyConnectionTest {
 
     @Test
     public void testWriteActiveWithPublisher() {
-        writeListener.listen(conn.write(publisher, defaultFlushStrategy()));
+        writeListener.listen(conn.write(publisher));
         assertThat("Unexpected write active state.", conn.isWriteActive(), is(true));
         publisher.sendItems(newBuffer("Hello")).onComplete();
         writeListener.verifyCompletion();
@@ -265,7 +265,7 @@ public class NettyConnectionTest {
 
     @Test
     public void testPublisherErrorFailsWrite() {
-        writeListener.listen(conn.write(Publisher.error(DELIBERATE_EXCEPTION), defaultFlushStrategy()))
+        writeListener.listen(conn.write(Publisher.error(DELIBERATE_EXCEPTION)))
                 .verifyFailure(DELIBERATE_EXCEPTION);
     }
 
