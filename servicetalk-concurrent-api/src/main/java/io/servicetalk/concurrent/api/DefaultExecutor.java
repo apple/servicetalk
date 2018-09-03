@@ -50,7 +50,8 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
      * scheduler thread is usually ok. In cases, when it is not, one can always override the executor with a custom scheduler.
      */
     private static final ScheduledExecutorService SINGLE_THREADED_SCHEDULER =
-            newSingleThreadScheduledExecutor(new DefaultThreadFactory("servicetalk-global-scheduler", true, NORM_PRIORITY));
+            newSingleThreadScheduledExecutor(new DefaultThreadFactory("servicetalk-global-scheduler-",
+                    true, NORM_PRIORITY));
     /**
      * Schedulers are only used to generate a tick and do not execute any user code. This means they will never run any
      * blocking code and hence it does not matter whether we use the interruptOnCancel as sent by the user upon creation in the scheduler.
