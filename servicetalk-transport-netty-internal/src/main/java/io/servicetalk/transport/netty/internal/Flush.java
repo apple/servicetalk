@@ -15,18 +15,15 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.transport.netty.internal.FlushStrategyHolder.FlushSignals;
+import io.servicetalk.transport.netty.internal.FlushStrategy.WriteEventsListener;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelOutboundInvoker;
 import io.netty.util.concurrent.EventExecutor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import javax.annotation.Nullable;
-
+import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -39,39 +36,50 @@ final class Flush {
     }
 
     /**
-     * Composes flush signals from {@code flushSignals} into {@code source}.
-     * Returned {@link Publisher} will take care of flushing the channel whenever any item is emitted from {@code flushSignals}.
+     * Apply the passed {@link FlushStrategy} to the passed {@link Publisher} such that the passed {@link Channel} is
+     * flushed according to the {@link FlushStrategy}.
      *
      * @param channel Channel to flush.
      * @param source Original source.
-     * @param flushSignals {@link Publisher} that emits an item whenever it wishes to flush the channel.
+     * @param flushStrategy {@link FlushStrategy} to apply.
      * @param <T> Type of elements emitted by {@code source}.
-     * @return {@link Publisher} that forwards all items from {@code source} and flushes the channel whenever any item is emitted from {@code flushSignals}.
+     * @return {@link Publisher} that forwards all items from {@code source} and flushes the channel as directed by
+     * {@link FlushStrategy}.
      */
-    static <T> Publisher<T> composeFlushes(Channel channel, Publisher<T> source, FlushSignals flushSignals) {
-        return source.liftSynchronous(subscriber -> new FlushSubscriber<>(flushSignals, subscriber, channel));
+    static <T> Publisher<T> composeFlushes(Channel channel, Publisher<T> source, FlushStrategy flushStrategy) {
+        requireNonNull(channel);
+        requireNonNull(flushStrategy);
+        return source.liftSynchronous(subscriber -> new FlushSubscriber<>(flushStrategy, subscriber, channel));
     }
 
-    private static final class FlushSubscriber<T> implements Subscriber<T>, Runnable {
-        private final FlushSignals flushSignals;
-        private final Subscriber<? super T> subscriber;
-        private final ChannelOutboundInvoker channel;
+    private static final class FlushSubscriber<T> implements Subscriber<T> {
         private final EventExecutor eventLoop;
-        @Nullable
-        private Cancellable flushCancellable;
+        private final Subscriber<? super T> subscriber;
+        private final WriteEventsListener writeEventsListener;
         private volatile boolean enqueueFlush;
 
-        FlushSubscriber(FlushSignals flushSignals, Subscriber<? super T> subscriber, Channel channel) {
-            this.flushSignals = requireNonNull(flushSignals);
-            this.subscriber = requireNonNull(subscriber);
-            this.channel = requireNonNull(channel);
+        FlushSubscriber(FlushStrategy flushStrategy, Subscriber<? super T> subscriber, Channel channel) {
             this.eventLoop = requireNonNull(channel.eventLoop());
+            this.subscriber = requireNonNull(subscriber);
+            this.writeEventsListener = flushStrategy.apply(() -> {
+                if (enqueueFlush) {
+                    eventLoop.execute(channel::flush);
+                } else {
+                    channel.flush();
+                }
+            });
         }
 
         @Override
         public void onSubscribe(Subscription subscription) {
-            Cancellable flushCancellable = flushSignals.listen(this);
-            this.flushCancellable = flushCancellable;
+            try {
+                writeEventsListener.writeStarted();
+            } catch (Throwable t) {
+                subscription.cancel();
+                subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
+                subscriber.onError(t);
+                return;
+            }
             subscriber.onSubscribe(new Subscription() {
                 @Override
                 public void request(long n) {
@@ -81,7 +89,7 @@ final class Flush {
                 @Override
                 public void cancel() {
                     subscription.cancel();
-                    flushCancellable.cancel();
+                    writeEventsListener.writeCancelled();
                 }
             });
         }
@@ -97,30 +105,28 @@ final class Flush {
                 enqueueFlush = true;
             }
             subscriber.onNext(t);
+            writeEventsListener.itemWritten();
         }
 
         @Override
         public void onError(Throwable t) {
-            assert flushCancellable != null : "onError called without onSubscribe.";
-            flushCancellable.cancel();
+            try {
+                writeEventsListener.writeTerminated();
+            } catch (Throwable t1) {
+                t.addSuppressed(t1);
+            }
             subscriber.onError(t);
         }
 
         @Override
         public void onComplete() {
-            assert flushCancellable != null : "onComplete called without onSubscribe.";
-            flushCancellable.cancel();
-            subscriber.onComplete();
-        }
-
-        @Override
-        public void run() {
-            // FlushSignal listener.
-            if (enqueueFlush) {
-                eventLoop.execute(channel::flush);
-            } else {
-                channel.flush();
+            try {
+                writeEventsListener.writeTerminated();
+            } catch (Throwable t) {
+                subscriber.onError(t);
+                return;
             }
+            subscriber.onComplete();
         }
     }
 }

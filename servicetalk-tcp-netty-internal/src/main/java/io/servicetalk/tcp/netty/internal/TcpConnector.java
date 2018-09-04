@@ -56,8 +56,9 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
 import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.DefaultNettyConnectionContext.newContext;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
-import static io.servicetalk.transport.netty.internal.NettyConnectionContext.newContext;
+import static io.servicetalk.transport.netty.internal.FlushStrategy.defaultFlushStrategy;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
@@ -172,7 +173,7 @@ public final class TcpConnector<Read, Write> {
                         // Create ExecutionContext with selected IO thread
                         context = newContext(new DefaultExecutionContext(executionContext.bufferAllocator(),
                                         ioExecutorThread, executionContext.executor()),
-                                channel, channelInitializer, checkForRefCountedTrapper);
+                                channel, channelInitializer, checkForRefCountedTrapper, defaultFlushStrategy());
                         readHandler = channel.pipeline().get(AbstractChannelReadHandler.class);
                     } catch (Throwable cause) {
                         channel.close();
@@ -194,7 +195,7 @@ public final class TcpConnector<Read, Write> {
                                     final Connection<Read, Write> connection;
                                     try {
                                         connection = new NettyConnection<>(channel, context, newPublisher, predicate,
-                                                closeHandler);
+                                                closeHandler, config.getFlushStrategy());
                                     } catch (Throwable cause) {
                                         channel.close();
                                         subscriber.onError(cause);

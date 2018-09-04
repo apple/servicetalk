@@ -87,7 +87,7 @@ public class PipelinedHttpConnectionTest {
         readPublisher2 = new TestPublisher<>();
         writePublisher1 = new TestPublisher<>();
         writePublisher2 = new TestPublisher<>();
-        when(connection.write(any(), any())).then(inv -> {
+        when(connection.write(any())).then(inv -> {
             Publisher<Object> publisher = inv.getArgument(0);
             return publisher.ignoreElements(); // simulate write consuming all
         });
@@ -117,7 +117,7 @@ public class PipelinedHttpConnectionTest {
     public void http11RequestShouldCompleteSuccessfully() {
         reset(connection); // Simplified mocking
         when(connection.executionContext()).thenReturn(ctx);
-        when(connection.write(any(), any())).thenReturn(completed());
+        when(connection.write(any())).thenReturn(completed());
         when(connection.read()).thenReturn(Publisher.from(reqRespFactory.ok(), emptyLastChunk));
         Single<StreamingHttpResponse> request = pipe.request(
                 reqRespFactory.get("/Foo"));

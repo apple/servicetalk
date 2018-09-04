@@ -15,21 +15,31 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-final class FlushOnEach implements FlushStrategy {
+import io.servicetalk.transport.netty.internal.FlushStrategy.WriteEventsListener;
 
-    static final FlushOnEach FLUSH_ON_EACH = new FlushOnEach();
+/**
+ * A noop {@link WriteEventsListener} that by default does nothing for all method. This can be used to selectively
+ * implement relevant methods.
+ */
+abstract class NoOpWriteEventsListener implements WriteEventsListener {
 
-    private FlushOnEach() {
-        // No instances.
+    @Override
+    public void writeStarted() {
+        // No op
     }
 
     @Override
-    public WriteEventsListener apply(final FlushSender sender) {
-        return new NoOpWriteEventsListener() {
-            @Override
-            public void itemWritten() {
-                sender.flush();
-            }
-        };
+    public void itemWritten() {
+        // No op
+    }
+
+    @Override
+    public void writeTerminated() {
+        // No op
+    }
+
+    @Override
+    public void writeCancelled() {
+        // No op
     }
 }

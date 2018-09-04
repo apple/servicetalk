@@ -17,7 +17,6 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.Publisher;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,9 +33,7 @@ import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cache
 import static io.servicetalk.transport.netty.internal.FlushStrategyAndVerifier.batchFlush;
 import static io.servicetalk.transport.netty.internal.FlushStrategyAndVerifier.flushBeforeEnd;
 import static io.servicetalk.transport.netty.internal.FlushStrategyAndVerifier.flushOnEach;
-import static io.servicetalk.transport.netty.internal.FlushStrategyAndVerifier.flushOnReadComplete;
 
-@Ignore("TODO: Re-enable once we can create an offloading Publisher")
 @RunWith(Parameterized.class)
 public class FlushWithExecutorTest extends AbstractFlushTest {
 
@@ -57,14 +54,13 @@ public class FlushWithExecutorTest extends AbstractFlushTest {
         params.add(flushOnEach());
         params.add(flushBeforeEnd(data.length));
         params.add(batchFlush(2));
-        params.add(flushOnReadComplete());
         return params;
     }
 
     @Test
     public void testFlushBeforeEnd() throws ExecutionException, InterruptedException {
-        Publisher<String> source = from(contextRule.executor(), data).map(String::valueOf);
-        Publisher<String> flushSource = setup(flushStrategyAndVerifier.getFlushStrategy().apply(source));
+        Publisher<String> source = from(data).map(String::valueOf).publishAndSubscribeOn(contextRule.executor());
+        Publisher<String> flushSource = setup(source, flushStrategyAndVerifier.getFlushStrategy());
         awaitIndefinitely(flushSource);
         int index = 0;
         for (String datum : data) {
@@ -74,6 +70,5 @@ public class FlushWithExecutorTest extends AbstractFlushTest {
                 verifyFlush();
             }
         }
-        verifyFlushSignalListenerRemoved();
     }
 }

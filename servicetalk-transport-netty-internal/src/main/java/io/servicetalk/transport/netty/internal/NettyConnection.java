@@ -15,6 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Completable.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
@@ -36,8 +37,8 @@ import org.slf4j.LoggerFactory;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
@@ -70,20 +71,20 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
             unknownStackTrace(new ClosedChannelException(), NettyConnection.class, "failIfWriteActive(..)");
     private static final AtomicReferenceFieldUpdater<NettyConnection, WritableListener> writableListenerUpdater =
             newUpdater(NettyConnection.class, WritableListener.class, "writableListener");
+    private static final AtomicReferenceFieldUpdater<NettyConnection, FlushStrategy> flushStrategyUpdater =
+            newUpdater(NettyConnection.class, FlushStrategy.class, "flushStrategy");
     private volatile WritableListener writableListener = PLACE_HOLDER_WRITABLE_LISTENER;
 
-    private volatile boolean readInProgress;
-    @Nullable
-    private volatile ReadAwareFlushStrategyHolder<Write> readAwareFlushStrategyHolder;
-
-    private final BooleanSupplier readInProgressSupplier = () -> readInProgress;
     private final Channel channel;
     private final ConnectionContext context;
     private final Publisher<Read> read;
     private final TerminalPredicate<Read> terminalMsgPredicate;
     private final CloseHandler closeHandler;
+    private final ConnectionEventPublisher eventPublisher;
+
     @Nullable
     private final CompletableProcessor onClosing;
+    private volatile FlushStrategy flushStrategy;
 
     /**
      * Potentially contains more information when a protocol or channel level close event was observed.
@@ -99,23 +100,12 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
      * @param channel Netty channel which represents the connection.
      * @param context The ServiceTalk entity which represents the connection.
      * @param read {@link Publisher} which emits all data read from the underlying channel.
+     * @param flushStrategy {@link FlushStrategy} for this connection.
      */
     @SuppressWarnings("unchecked")
-    public NettyConnection(Channel channel, ConnectionContext context, Publisher<Read> read) {
-        this(channel, context, read, PIPELINE_UNSUPPORTED_PREDICATE, NOOP_CLOSE_HANDLER);
-    }
-
-    /**
-     * Create a new instance.
-     *
-     * @param channel Netty channel which represents the connection.
-     * @param context The ServiceTalk entity which represents the connection.
-     * @param read {@link Publisher} which emits all data read from the underlying channel.
-     * @param terminalMsgPredicate {@link TerminalPredicate} to detect end of a <i>response</i>.
-     */
     public NettyConnection(Channel channel, ConnectionContext context, Publisher<Read> read,
-                           TerminalPredicate<Read> terminalMsgPredicate) {
-        this(channel, context, read, terminalMsgPredicate, NOOP_CLOSE_HANDLER);
+                           FlushStrategy flushStrategy) {
+        this(channel, context, read, PIPELINE_UNSUPPORTED_PREDICATE, NOOP_CLOSE_HANDLER, flushStrategy);
     }
 
     /**
@@ -126,15 +116,17 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
      * @param read {@link Publisher} which emits all data read from the underlying channel.
      * @param terminalMsgPredicate {@link TerminalPredicate} to detect end of a <i>response</i>.
      * @param closeHandler handles connection closure and half-closure.
+     * @param flushStrategy {@link FlushStrategy} for this connection.
      */
     public NettyConnection(Channel channel, ConnectionContext context, Publisher<Read> read,
-                           TerminalPredicate<Read> terminalMsgPredicate,
-                           CloseHandler closeHandler) {
+                           TerminalPredicate<Read> terminalMsgPredicate, CloseHandler closeHandler,
+                           FlushStrategy flushStrategy) {
         this.channel = requireNonNull(channel);
         this.context = requireNonNull(context);
         this.read = read.onErrorResume(this::enrichErrorPublisher);
         this.terminalMsgPredicate = requireNonNull(terminalMsgPredicate);
         this.closeHandler = requireNonNull(closeHandler);
+        this.flushStrategy = flushStrategy;
         if (closeHandler != NOOP_CLOSE_HANDLER) {
             onClosing = new CompletableProcessor();
             closeHandler.registerEventHandler(channel, evt -> { // Called from EventLoop only!
@@ -154,11 +146,14 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
         } else {
             onClosing = null;
         }
+        eventPublisher = new ConnectionEventPublisher(channel);
         channel.pipeline().addLast(new ChannelInboundHandler() {
             @Override
             public void channelWritabilityChanged(ChannelHandlerContext ctx) {
                 if (ctx.channel().isWritable()) {
                     writableListener.channelWritable();
+                } else if (NettyConnection.this.flushStrategy.flushOnWriteBufferFull()) {
+                    channel.flush();
                 }
             }
 
@@ -177,19 +172,12 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
 
             @Override
             public void channelRead(ChannelHandlerContext ctx, Object msg) {
-                if (!readInProgress) {
-                    readInProgress = true;
-                }
                 release(msg);
             }
 
             @Override
             public void channelReadComplete(ChannelHandlerContext ctx) {
-                readInProgress = false;
-                ReadAwareFlushStrategyHolder<Write> holder = NettyConnection.this.readAwareFlushStrategyHolder;
-                if (holder != null) {
-                    holder.readComplete();
-                }
+                eventPublisher.publishReadComplete();
             }
 
             @Override
@@ -217,6 +205,7 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
             @Override
             public void channelInactive(ChannelHandlerContext ctx) {
                 writableListener.channelClosed(CLOSED_CHANNEL_INACTIVE);
+                eventPublisher.close();
             }
         });
     }
@@ -234,7 +223,6 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
     }
 
     private void cleanupOnWriteTerminated() {
-        readAwareFlushStrategyHolder = null;
         writableListener = PLACE_HOLDER_WRITABLE_LISTENER;
     }
 
@@ -249,29 +237,19 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
     }
 
     @Override
-    public Completable write(Publisher<Write> write, FlushStrategy flushStrategy) {
-        return write(write, flushStrategy, RequestNSupplier::newDefaultSupplier);
+    public Completable write(Publisher<Write> write) {
+        return write(write, RequestNSupplier::newDefaultSupplier);
     }
 
     @Override
-    public Completable write(Publisher<Write> write, FlushStrategy flushStrategy, Supplier<RequestNSupplier> requestNSupplierFactory) {
-        return write(flushStrategy.apply(requireNonNull(write)), requestNSupplierFactory);
-    }
-
-    private Completable write(FlushStrategyHolder<Write> writeWithFlush, Supplier<RequestNSupplier> requestNSupplierFactory) {
+    public Completable write(Publisher<Write> write, Supplier<RequestNSupplier> requestNSupplierFactory) {
         return cleanupStateWhenDone(new Completable() {
             @Override
             protected void handleSubscribe(Subscriber completableSubscriber) {
                 WriteStreamSubscriber subscriber = new WriteStreamSubscriber(channel, requestNSupplierFactory.get(),
                         completableSubscriber, closeHandler);
                 if (failIfWriteActive(subscriber, completableSubscriber)) {
-                    if (writeWithFlush instanceof ReadAwareFlushStrategyHolder) {
-                        ReadAwareFlushStrategyHolder<Write> holder = (ReadAwareFlushStrategyHolder<Write>) writeWithFlush;
-                        holder.setReadInProgressSupplier(readInProgressSupplier);
-                        readAwareFlushStrategyHolder = holder;
-                    }
-                    composeFlushes(channel, writeWithFlush.getSource(), writeWithFlush.getFlushSignals())
-                            .subscribe(subscriber);
+                    composeFlushes(channel, write, flushStrategy).subscribe(subscriber);
                 }
             }
         }).onErrorResume(this::enrichErrorCompletable);
@@ -391,6 +369,17 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
         subscriber.onSubscribe(IGNORE_CANCEL);
         subscriber.onError(new IllegalStateException("A write is already active on this connection."));
         return false;
+    }
+
+    @Override
+    public Cancellable updateFlushStrategy(final UnaryOperator<FlushStrategy> strategyProvider) {
+        FlushStrategy old = flushStrategyUpdater.getAndUpdate(this, strategyProvider);
+        return () -> updateFlushStrategy(__ -> old);
+    }
+
+    @Override
+    public Publisher<ConnectionEvent> getConnectionEvents() {
+        return eventPublisher;
     }
 
     interface WritableListener {

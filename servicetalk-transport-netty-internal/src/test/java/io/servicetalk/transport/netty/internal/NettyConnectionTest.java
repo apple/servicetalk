@@ -17,6 +17,7 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.MockedCompletableListenerRule;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
@@ -40,14 +41,17 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_OUTBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.FlushStrategy.batchFlush;
 import static io.servicetalk.transport.netty.internal.FlushStrategy.defaultFlushStrategy;
-import static io.servicetalk.transport.netty.internal.FlushStrategy.flushBeforeEnd;
-import static io.servicetalk.transport.netty.internal.FlushStrategy.flushOnEach;
-import static io.servicetalk.transport.netty.internal.ReadAwareFlushStrategyHolder.flushOnReadComplete;
+import static io.servicetalk.transport.netty.internal.FlushStrategy.flushOnEnd;
+import static io.servicetalk.transport.netty.internal.FlushStrategy.flushWith;
+import static io.servicetalk.transport.netty.internal.NettyConnectionContext.ConnectionEvent.ReadComplete;
 import static java.lang.Integer.MAX_VALUE;
 import static java.nio.charset.Charset.defaultCharset;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -103,7 +107,8 @@ public class NettyConnectionTest {
         when(requestNSupplier.getRequestNFor(anyLong())).then(invocation1 -> (long) requestNext);
         terminalPredicate = new Connection.TerminalPredicate<>(o -> false);
         readPublisher = new TestPublisher<Buffer>().sendOnSubscribe();
-        conn = new NettyConnection<>(channel, context, readPublisher, terminalPredicate, closeHandler);
+        conn = new NettyConnection<>(channel, context, readPublisher, terminalPredicate, closeHandler,
+                defaultFlushStrategy());
         publisher = new TestPublisher<Buffer>().sendOnSubscribe();
     }
 
@@ -277,7 +282,7 @@ public class NettyConnectionTest {
     @Test
     public void testPublisherWithPredictor() {
         requestNext = 1;
-        writeListener.listen(conn.write(publisher, defaultFlushStrategy(), () -> requestNSupplier));
+        writeListener.listen(conn.write(publisher, () -> requestNSupplier));
         requestNext = 0;
         Buffer hello1 = newBuffer("Hello1");
         Buffer hello2 = newBuffer("Hello2");
@@ -295,7 +300,8 @@ public class NettyConnectionTest {
 
     @Test
     public void testFlushOnReadComplete() {
-        writeListener.listen(conn.write(publisher, flushOnReadComplete(10)));
+        conn.updateFlushStrategy(old -> flushWith(conn.getConnectionEvents().filter(evt -> evt == ReadComplete)));
+        writeListener.listen(conn.write(publisher));
         channel.pipeline().fireChannelRead("ReadingMessage");
         publisher.sendItems(newBuffer("Hello"));
         pollChannelAndVerifyWrites();
@@ -303,6 +309,30 @@ public class NettyConnectionTest {
         pollChannelAndVerifyWrites("Hello");
         publisher.onComplete();
         writeListener.verifyCompletion();
+    }
+
+    @Test
+    public void testUpdateFlushStrategy() {
+        writeListener.listen(conn.write(just(newBuffer("Hello"))));
+        writeListener.verifyCompletion();
+        pollChannelAndVerifyWrites("Hello"); // Flush on each (default)
+
+        writeListener.reset();
+        Cancellable c = conn.updateFlushStrategy(old -> batchFlush(2, never()));
+        writeListener.listen(conn.write(publisher));
+        publisher.sendItems(newBuffer("Hello1"));
+        pollChannelAndVerifyWrites(); // No flush
+        publisher.sendItems(newBuffer("Hello2"));
+        pollChannelAndVerifyWrites("Hello1", "Hello2"); // Batch flush of 2
+        publisher.onComplete();
+        writeListener.verifyCompletion();
+
+        c.cancel();
+
+        writeListener.reset();
+        writeListener.listen(conn.write(just(newBuffer("Hello3"))));
+        writeListener.verifyCompletion();
+        pollChannelAndVerifyWrites("Hello3"); // Reverted to flush on each
     }
 
     @Test
@@ -314,7 +344,8 @@ public class NettyConnectionTest {
 
     @Test
     public void testCloseAsync() {
-        writeListener.listen(conn.write(publisher, flushBeforeEnd()));
+        conn.updateFlushStrategy(fs -> flushOnEnd());
+        writeListener.listen(conn.write(publisher));
         Buffer hello1 = newBuffer("Hello1");
         Buffer hello2 = newBuffer("Hello2");
         publisher.sendItems(hello1);
@@ -407,7 +438,7 @@ public class NettyConnectionTest {
         setupWithCloseHandler(closeHandler);
         closeHandler.channelClosedOutbound(channel.pipeline().firstContext());
         assertThat(channel.isActive(), is(false));
-        writeListener.listen(conn.write(publisher, flushOnEach()));
+        writeListener.listen(conn.write(publisher));
 
         ArgumentCaptor<Throwable> exCaptor = ArgumentCaptor.forClass(Throwable.class);
         subscriberRule.subscribe(conn.read());
@@ -440,7 +471,7 @@ public class NettyConnectionTest {
     @Test
     public void testNoErrorEnrichmentWithoutCloseHandlerOnError() {
         channel.close().syncUninterruptibly();
-        writeListener.listen(conn.write(publisher, flushOnEach()));
+        writeListener.listen(conn.write(publisher));
 
         ArgumentCaptor<Throwable> exCaptor = ArgumentCaptor.forClass(Throwable.class);
         writeListener.verifyFailure(exCaptor);

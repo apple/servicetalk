@@ -26,6 +26,7 @@ import io.servicetalk.transport.netty.internal.AbstractContextFilterAwareChannel
 import io.servicetalk.transport.netty.internal.BufferHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.Connection;
+import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -112,7 +113,7 @@ public class TcpServer {
                                              final ExecutionContext executionContext) {
         return (channel, context) -> {
             channel.pipeline().addLast(new BufferHandler(executionContext.bufferAllocator()));
-            channel.pipeline().addLast(new TcpServerChannelReadHandler(context, service));
+            channel.pipeline().addLast(new TcpServerChannelReadHandler(context, service, config.getFlushStrategy()));
             return context;
         };
     }
@@ -133,20 +134,22 @@ public class TcpServer {
 
         private final ConnectionContext context;
         private final Function<Connection<Buffer, Buffer>, Completable> service;
+        private final FlushStrategy flushStrategy;
         @Nullable
         private Connection<Buffer, Buffer> conn;
 
         TcpServerChannelReadHandler(final ConnectionContext context,
-                                    final Function<Connection<Buffer, Buffer>, Completable> service) {
+                                    final Function<Connection<Buffer, Buffer>, Completable> service,
+                                    final FlushStrategy flushStrategy) {
             super(buffer -> false, NOOP_CLOSE_HANDLER);
             this.context = context;
             this.service = service;
+            this.flushStrategy = flushStrategy;
         }
 
         @Override
         protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Buffer> newPublisher) {
-            conn = new NettyConnection<>(ctx.channel(), context,
-                    newPublisher);
+            conn = new NettyConnection<>(ctx.channel(), context, newPublisher, flushStrategy);
         }
 
         @Override

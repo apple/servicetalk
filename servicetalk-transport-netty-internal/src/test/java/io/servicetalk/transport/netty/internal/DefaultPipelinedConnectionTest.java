@@ -32,6 +32,7 @@ import org.mockito.stubbing.Answer;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.FlushStrategy.defaultFlushStrategy;
 import static java.lang.Integer.MAX_VALUE;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -72,14 +73,15 @@ public class DefaultPipelinedConnectionTest {
         writePublisher2 = new TestPublisher<>();
         writePublisher2.sendOnSubscribe();
         when(requestNSupplier.getRequestNFor(anyLong())).then(invocation1 -> requestNext);
-        connection = new NettyConnection<>(channel, context, readPublisher, new Connection.TerminalPredicate<>(integer -> true));
+        connection = new NettyConnection<>(channel, context, readPublisher,
+                new Connection.TerminalPredicate<>(integer -> true), NOOP_CLOSE_HANDLER, defaultFlushStrategy());
         requester = new DefaultPipelinedConnection<>(connection, MAX_PENDING_REQUESTS);
     }
 
     @Test
     public void testSequencing() {
-        readSubscriber.subscribe(requester.request(writePublisher1, defaultFlushStrategy())).request(1);
-        secondReadSubscriber.subscribe(requester.request(writePublisher2, defaultFlushStrategy())).request(1);
+        readSubscriber.subscribe(requester.request(writePublisher1)).request(1);
+        secondReadSubscriber.subscribe(requester.request(writePublisher2)).request(1);
         writePublisher1.verifySubscribed();
         readPublisher.verifyNotSubscribed();
         writePublisher2.verifyNotSubscribed();
@@ -109,15 +111,15 @@ public class DefaultPipelinedConnectionTest {
 
     @Test
     public void testPublisherWrite() {
-        readSubscriber.subscribe(requester.request(just(1), defaultFlushStrategy())).request(1);
+        readSubscriber.subscribe(requester.request(just(1))).request(1);
         readPublisher.onComplete();
         readSubscriber.verifySuccess();
     }
 
     @Test
     public void testPipelinedRequests() {
-        readSubscriber.subscribe(requester.request(writePublisher1, defaultFlushStrategy())).request(1);
-        secondReadSubscriber.subscribe(requester.request(writePublisher2, defaultFlushStrategy())).request(1);
+        readSubscriber.subscribe(requester.request(writePublisher1)).request(1);
+        secondReadSubscriber.subscribe(requester.request(writePublisher2)).request(1);
         writePublisher1.verifySubscribed().sendItems(1).onComplete();
         readPublisher.onComplete();
         readSubscriber.verifySuccess();
@@ -128,8 +130,8 @@ public class DefaultPipelinedConnectionTest {
 
     @Test
     public void testWriteCancelAndThenWrite() {
-        readSubscriber.subscribe(requester.request(writePublisher1, defaultFlushStrategy())).request(1);
-        secondReadSubscriber.subscribe(requester.request(writePublisher2, defaultFlushStrategy())).request(1);
+        readSubscriber.subscribe(requester.request(writePublisher1)).request(1);
+        secondReadSubscriber.subscribe(requester.request(writePublisher2)).request(1);
         readSubscriber.cancel();
         writePublisher1.verifyCancelled();
         writePublisher2.verifySubscribed().sendItems(1).onComplete();
@@ -139,8 +141,8 @@ public class DefaultPipelinedConnectionTest {
 
     @Test
     public void testReadCancelAndThenWrite() {
-        readSubscriber.subscribe(requester.request(writePublisher1, defaultFlushStrategy())).request(1);
-        secondReadSubscriber.subscribe(requester.request(writePublisher2, defaultFlushStrategy())).request(1);
+        readSubscriber.subscribe(requester.request(writePublisher1)).request(1);
+        secondReadSubscriber.subscribe(requester.request(writePublisher2)).request(1);
         writePublisher1.verifySubscribed().sendItems(1).onComplete();
         readSubscriber.cancel();
         writePublisher2.verifySubscribed().sendItems(1).onComplete();

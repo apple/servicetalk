@@ -29,17 +29,15 @@ import static org.mockito.Mockito.when;
 
 abstract class AbstractFlushTest {
 
-    FlushStrategyHolder.FlushSignals flushSignals;
     Channel channel;
     private InOrder verifier;
 
-    Publisher<String> setup(FlushStrategyHolder<String> flushStrategyHolder) {
+    Publisher<String> setup(Publisher<String> source, FlushStrategy strategy) {
         channel = mock(Channel.class);
         EventLoop eventLoop = mock(EventLoop.class);
         when(eventLoop.inEventLoop()).thenReturn(true);
         when(channel.eventLoop()).thenReturn(eventLoop);
-        flushSignals = flushStrategyHolder.getFlushSignals();
-        Publisher<String> flushedStream = composeFlushes(channel, flushStrategyHolder.getSource(), flushSignals)
+        Publisher<String> flushedStream = composeFlushes(channel, source, strategy)
                 .doBeforeNext(s -> channel.write(s));
         verifier = inOrder(channel);
         return flushedStream;
@@ -59,9 +57,5 @@ abstract class AbstractFlushTest {
 
     void verifyFlush() {
         verifier.verify(channel).flush();
-    }
-
-    void verifyFlushSignalListenerRemoved() {
-        flushSignals.listen(() -> { }).cancel(); // verifies the completableSubscriber was removed.
     }
 }

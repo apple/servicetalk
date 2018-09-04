@@ -18,6 +18,7 @@ package io.servicetalk.tcp.netty.internal;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
+import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import io.netty.handler.ssl.SslContext;
@@ -143,6 +144,18 @@ public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
      */
     public TcpServerConfig disableWireLogging() {
         wireLoggingInitializer = null;
+        return this;
+    }
+
+
+    /**
+     * Sets {@link FlushStrategy} to use for all connections accepted by this server.
+     *
+     * @param flushStrategy {@link FlushStrategy} to use for all connections accepted by this server.
+     * @return {@code this}.
+     */
+    public TcpServerConfig setFlushStrategy(FlushStrategy flushStrategy) {
+        this.flushStrategy = flushStrategy;
         return this;
     }
 

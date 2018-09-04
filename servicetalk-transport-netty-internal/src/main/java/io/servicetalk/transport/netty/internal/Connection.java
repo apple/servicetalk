@@ -19,7 +19,6 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -28,7 +27,6 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import static io.servicetalk.transport.netty.internal.FlushStrategy.defaultFlushStrategy;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
@@ -38,7 +36,7 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
  * @param <Read> Type of objects read from this connection.
  * @param <Write> Type of objects written to this connection.
  */
-public interface Connection<Read, Write> extends ConnectionContext {
+public interface Connection<Read, Write> extends NettyConnectionContext {
     /**
      * Returns a {@link Completable} that notifies when the connection has begun its closing sequence.
      *
@@ -77,31 +75,12 @@ public interface Connection<Read, Write> extends ConnectionContext {
      *     <li>Successfully when {@link Publisher} completes and all items emitted are written successfully.</li>
      * </ul>
      */
-    default Completable write(Publisher<Write> write) {
-        return write(write, defaultFlushStrategy());
-    }
+    Completable write(Publisher<Write> write);
 
     /**
      * Writes all elements emitted by the passed {@link Publisher} on this connection.
      *
      * @param write {@link Publisher}, all objects emitted from which are written on this connection.
-     * @param flushStrategy {@link FlushStrategy} to apply for the writes.
-     *
-     * @return {@link Completable} that terminates as follows:
-     * <ul>
-     *     <li>With an error, if any item emitted can not be written successfully on the connection.</li>
-     *     <li>With an error, if {@link Publisher} emits an error.</li>
-     *     <li>With an error, if there is a already an active write on this connection.</li>
-     *     <li>Successfully when {@link Publisher} completes and all items emitted are written successfully.</li>
-     * </ul>
-     */
-    Completable write(Publisher<Write> write, FlushStrategy flushStrategy);
-
-    /**
-     * Writes all elements emitted by the passed {@link Publisher} on this connection.
-     *
-     * @param write {@link Publisher}, all objects emitted from which are written on this connection.
-     * @param flushStrategy {@link FlushStrategy} to apply for the writes.
      * @param requestNSupplierFactory A {@link Supplier} of {@link RequestNSupplier} for this write.
      *
      * @return {@link Completable} that terminates as follows:
@@ -112,7 +91,7 @@ public interface Connection<Read, Write> extends ConnectionContext {
      *     <li>Successfully when {@link Publisher} completes and all items emitted are written successfully.</li>
      * </ul>
      */
-    Completable write(Publisher<Write> write, FlushStrategy flushStrategy, Supplier<RequestNSupplier> requestNSupplierFactory);
+    Completable write(Publisher<Write> write, Supplier<RequestNSupplier> requestNSupplierFactory);
 
     /**
      * Write and flushes the object emitted by the passed {@link Single} on this connection.

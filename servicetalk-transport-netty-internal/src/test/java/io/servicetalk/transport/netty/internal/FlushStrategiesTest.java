@@ -15,40 +15,38 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.transport.netty.internal.FlushStrategy.FlushSender;
+import io.servicetalk.transport.netty.internal.FlushStrategy.WriteEventsListener;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.transport.netty.internal.FlushStrategy.flushOnEach;
+import static io.servicetalk.transport.netty.internal.FlushStrategy.flushOnEnd;
+import static io.servicetalk.transport.netty.internal.FlushStrategy.flushWith;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class FlushStrategiesTest {
 
-    @Rule
-    public final MockedSubscriberRule<String> sourceSub = new MockedSubscriberRule<>();
-
-    private Runnable flushListener;
+    private FlushSender flushSender;
     private TestPublisher<String> durationSource;
-    private TestPublisher<String> source;
+    private WriteEventsListener listener;
 
     @Before
     public void setUp() {
-        flushListener = mock(Runnable.class);
+        flushSender = mock(FlushSender.class);
         durationSource = new TestPublisher<String>().sendOnSubscribe();
-        source = new TestPublisher<String>().sendOnSubscribe();
     }
 
     @Test
     public void testFlushOnEach() {
-        setupForEach();
-        source.sendItems("Hello1", "Hello2");
-
-        sourceSub.verifyItems("Hello1", "Hello2");
+        setupFor(flushOnEach());
+        listener.itemWritten();
+        listener.itemWritten();
         verifyFlush(2);
     }
 
@@ -73,17 +71,23 @@ public class FlushStrategiesTest {
     }
 
     @Test
+    public void testBatchFlushWriteCancel() {
+        setupForBatch(5);
+        testBatch(5, 2);
+        listener.writeCancelled();
+        durationSource.verifyCancelled();
+    }
+
+    @Test
     public void testSourceEmitErrorForFlushOnEach() {
-        setupForEach();
-        source.fail();
-        sourceSub.verifyFailure(DELIBERATE_EXCEPTION);
+        setupFor(flushOnEach());
+        listener.writeTerminated();
     }
 
     @Test
     public void testSourceEmitErrorForBatchFlush() {
         setupForBatch(2);
-        source.fail();
-        sourceSub.verifyFailure(DELIBERATE_EXCEPTION);
+        listener.writeTerminated();
         durationSource.verifyCancelled();
     }
 
@@ -91,11 +95,9 @@ public class FlushStrategiesTest {
     public void testDurationComplete() {
         setupForBatch(2);
         durationSource.onComplete();
-        source.sendItems("Hello1");
-        sourceSub.verifyItems("Hello1");
-        verifyZeroInteractions(flushListener);
-        source.onComplete();
-        sourceSub.verifySuccess();
+        listener.itemWritten();
+        verifyZeroInteractions(flushSender);
+        listener.writeTerminated();
         verifyFlush(1);
     }
 
@@ -103,80 +105,77 @@ public class FlushStrategiesTest {
     public void testDurationEmitError() {
         setupForBatch(2);
         durationSource.fail();
-        sourceSub.verifyFailure(DELIBERATE_EXCEPTION);
-        source.verifyCancelled();
+        verifyZeroInteractions(flushSender);
+        listener.itemWritten();
+        listener.itemWritten();
+        verify(flushSender).flush();
     }
 
     @Test
     public void testDurationEmitErrorPostComplete() {
         setupForBatch(2);
-        source.onComplete();
+        listener.writeTerminated();
         durationSource.failIfSubscriberActive();
-        sourceSub.verifySuccess();
-        source.verifyNotCancelled();
+        verifyZeroInteractions(flushSender);
     }
 
     @Test
     public void testDurationCompletePostComplete() {
         setupForBatch(2);
-        source.onComplete();
+        listener.itemWritten();
+        listener.writeTerminated();
         durationSource.completeIfSubscriberActive();
-        sourceSub.verifySuccess();
-        source.verifyNotCancelled();
+        verify(flushSender).flush();
     }
 
     @Test
-    public void testFlushBeforeEndComplete() {
-        setupForEnd();
-        source.onNext("Hello1");
+    public void testFlushOnEndComplete() {
+        setupFor(flushOnEnd());
+        listener.itemWritten();
         verifyFlush(0);
-        source.onComplete();
+        listener.writeTerminated();
         verifyFlush(1);
     }
 
     @Test
-    public void testFlushBeforeEndFailure() {
-        setupForEnd();
-        source.onNext("Hello1");
+    public void testFlushWith() {
+        setupFor(flushWith(durationSource));
+        listener.itemWritten();
         verifyFlush(0);
-        source.fail();
+        durationSource.verifySubscribed().sendItems("1");
         verifyFlush(1);
+        listener.writeTerminated();
+        durationSource.verifyCancelled();
     }
 
-    private void setupForEach() {
-        setupFor(FlushStrategy.<String>flushOnEach().apply(source));
+    @Test
+    public void testFlushWithWriteCancelCancelsSource() {
+        setupFor(flushWith(durationSource));
+        listener.writeCancelled();
+        durationSource.verifyCancelled();
+    }
+
+    private void setupFor(FlushStrategy strategy) {
+        listener = strategy.apply(flushSender);
+        listener.writeStarted();
     }
 
     private void setupForBatch(int batchSize) {
-        setupFor(FlushStrategy.<String>batchFlush(batchSize, durationSource.map(s -> 1L)).apply(source));
-    }
-
-    private void setupForEnd() {
-        setupFor(FlushStrategy.<String>flushBeforeEnd().apply(source));
-    }
-
-    private void setupFor(FlushStrategyHolder<String> strategy) {
-        sourceSub.subscribe(strategy.getSource()).request(Long.MAX_VALUE);
-        strategy.getFlushSignals().listen(flushListener);
+        setupFor(FlushStrategy.batchFlush(batchSize, durationSource.map(s -> 1L)));
     }
 
     private void testBatch(int batchSize, int sendItemCount) {
-        String[] items = new String[sendItemCount];
         for (int i = 0; i < sendItemCount; i++) {
-            items[i] = "Hello" + i;
+            listener.itemWritten();
         }
-        source.sendItems(items);
-
-        sourceSub.verifyItems(items);
-
         verifyFlush(sendItemCount / batchSize);
     }
 
     private void verifyFlush(int flushCount) {
         if (flushCount > 0) {
-            Mockito.verify(flushListener, Mockito.times(flushCount)).run();
+            Mockito.verify(flushSender, Mockito.times(flushCount)).flush();
         } else {
-            verifyZeroInteractions(flushListener);
+            verifyZeroInteractions(flushSender);
         }
     }
 }

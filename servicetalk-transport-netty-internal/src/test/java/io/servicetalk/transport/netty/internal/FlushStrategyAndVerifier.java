@@ -38,18 +38,13 @@ final class FlushStrategyAndVerifier {
     }
 
     static FlushStrategyAndVerifier flushBeforeEnd(int dataLength) {
-        return new FlushStrategyAndVerifier("flush-before-end", FlushStrategy.flushBeforeEnd(),
+        return new FlushStrategyAndVerifier("flush-before-end", FlushStrategy.flushOnEnd(),
                 index -> index == dataLength);
     }
 
     static FlushStrategyAndVerifier batchFlush(int batchSize) {
         return new FlushStrategyAndVerifier("batch-flush", FlushStrategy.batchFlush(batchSize, never()),
                 index -> (index + 1) % (batchSize + 1) == 0);
-    }
-
-    static FlushStrategyAndVerifier flushOnReadComplete() {
-        return new FlushStrategyAndVerifier("on-read-complete",
-                ReadAwareFlushStrategyHolder.flushOnReadComplete(1), index -> (index + 1) % 2 == 0);
     }
 
     FlushStrategy getFlushStrategy() {

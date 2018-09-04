@@ -16,6 +16,7 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
+import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import io.netty.channel.ChannelOption;
@@ -29,10 +30,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.transport.netty.internal.FlushStrategy.defaultFlushStrategy;
 import static java.util.Collections.unmodifiableMap;
 
 /**
- Read only view of {@link TcpServerConfig}.
+ * Read only view of {@link TcpServerConfig}.
  */
 public class ReadOnlyTcpServerConfig {
 
@@ -48,6 +50,7 @@ public class ReadOnlyTcpServerConfig {
     protected DomainNameMapping<SslContext> mappings;
     @Nullable
     protected WireLoggingInitializer wireLoggingInitializer;
+    protected FlushStrategy flushStrategy = defaultFlushStrategy();
 
     /**
      * New instance.
@@ -80,6 +83,7 @@ public class ReadOnlyTcpServerConfig {
         }
 
         wireLoggingInitializer = from.wireLoggingInitializer;
+        flushStrategy = from.flushStrategy;
     }
 
     /**
@@ -143,5 +147,13 @@ public class ReadOnlyTcpServerConfig {
     @Nullable
     public WireLoggingInitializer getWireLoggingInitializer() {
         return wireLoggingInitializer;
+    }
+
+    /**
+     * Returns the {@link FlushStrategy} for this client.
+     * @return {@link FlushStrategy} for this client.
+     */
+    public FlushStrategy getFlushStrategy() {
+        return flushStrategy;
     }
 }

@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.netty.internal.Connection.RequestNSupplier;
 
 import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
@@ -30,6 +31,7 @@ import java.net.SocketAddress;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
@@ -102,24 +104,24 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
     }
 
     @Override
-    public Publisher<Resp> request(Publisher<Req> request, FlushStrategy flushStrategy) {
-        return writeOrQueue(connection.write(request, flushStrategy), null);
+    public Publisher<Resp> request(Publisher<Req> request) {
+        return writeOrQueue(connection.write(request), null);
     }
 
     @Override
-    public Publisher<Resp> request(Publisher<Req> request, Supplier<Predicate<Resp>> terminalMsgPredicateSupplier, FlushStrategy flushStrategy) {
-        return writeOrQueue(connection.write(request, flushStrategy), terminalMsgPredicateSupplier);
+    public Publisher<Resp> request(Supplier<Predicate<Resp>> terminalMsgPredicateSupplier, Publisher<Req> request) {
+        return writeOrQueue(connection.write(request), terminalMsgPredicateSupplier);
     }
 
     @Override
-    public Publisher<Resp> request(Publisher<Req> request, FlushStrategy flushStrategy, Supplier<Connection.RequestNSupplier> requestNSupplierFactory) {
-        return writeOrQueue(connection.write(request, flushStrategy, requestNSupplierFactory), null);
+    public Publisher<Resp> request(Publisher<Req> request, Supplier<RequestNSupplier> requestNSupplierFactory) {
+        return writeOrQueue(connection.write(request, requestNSupplierFactory), null);
     }
 
     @Override
-    public Publisher<Resp> request(Publisher<Req> request, FlushStrategy flushStrategy, Supplier<Connection.RequestNSupplier> requestNSupplierFactory,
+    public Publisher<Resp> request(Publisher<Req> request, Supplier<RequestNSupplier> requestNSupplierFactory,
                                    Supplier<Predicate<Resp>> terminalMsgPredicateSupplier) {
-        return writeOrQueue(connection.write(request, flushStrategy, requestNSupplierFactory), terminalMsgPredicateSupplier);
+        return writeOrQueue(connection.write(request, requestNSupplierFactory), terminalMsgPredicateSupplier);
     }
 
     private Publisher<Resp> requestWithWriter(Writer writer, @Nullable Supplier<Predicate<Resp>> terminalMsgPredicateSupplier) {
@@ -199,6 +201,16 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
     @Override
     public String toString() {
         return DefaultPipelinedConnection.class.getSimpleName() + "(" + connection + ")";
+    }
+
+    @Override
+    public Cancellable updateFlushStrategy(final UnaryOperator<FlushStrategy> strategyProvider) {
+        return connection.updateFlushStrategy(strategyProvider);
+    }
+
+    @Override
+    public Publisher<ConnectionEvent> getConnectionEvents() {
+        return connection.getConnectionEvents();
     }
 
     private static final class WriteQueue<Resp> extends SequentialTaskQueue<Task<Resp>> {

@@ -15,11 +15,11 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-final class FlushOnEach implements FlushStrategy {
+final class FlushOnEnd implements FlushStrategy {
 
-    static final FlushOnEach FLUSH_ON_EACH = new FlushOnEach();
+    static final FlushOnEnd FLUSH_ON_END = new FlushOnEnd();
 
-    private FlushOnEach() {
+    private FlushOnEnd() {
         // No instances.
     }
 
@@ -27,7 +27,7 @@ final class FlushOnEach implements FlushStrategy {
     public WriteEventsListener apply(final FlushSender sender) {
         return new NoOpWriteEventsListener() {
             @Override
-            public void itemWritten() {
+            public void writeTerminated() {
                 sender.flush();
             }
         };

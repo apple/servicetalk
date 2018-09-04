@@ -15,121 +15,58 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
 
-import io.netty.channel.Channel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.reactivestreams.Subscriber;
 
-import java.net.SocketAddress;
-import javax.annotation.Nullable;
-import javax.net.ssl.SSLSession;
-
-import static java.util.Objects.requireNonNull;
+import java.util.function.UnaryOperator;
 
 /**
- * {@link ConnectionContext} using a netty {@link Channel}.
+ * A specialized {@link ConnectionContext} for netty based transports.
  */
-public final class NettyConnectionContext implements ConnectionContext {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(NettyConnectionContext.class);
-
-    private final ExecutionContext executionContext;
-    private final Channel channel;
-    private final NettyChannelListenableAsyncCloseable close;
-    @Nullable
-    private volatile SSLSession sslSession;
+public interface NettyConnectionContext extends ConnectionContext {
 
     /**
-     * New instance.
+     * Updates {@link FlushStrategy} associated with this connection. Updated {@link FlushStrategy} will be used in any
+     * subsequent writes on this connection.
      *
-     * @param executionContext {@link ExecutionContext} for this connection.
-     * @param channel {@link Channel} for this connection.
+     * @param strategyProvider {@link UnaryOperator} that given the current {@link FlushStrategy}, returns the
+     * {@link FlushStrategy} to be updated. This {@link UnaryOperator} <em>MAY</em> be invoked multiple times for a
+     * single call to this method.
+     *
+     * @return A {@link Cancellable} that will cancel this update and revert the {@link FlushStrategy} for this
+     * connection to a default value.
      */
-    private NettyConnectionContext(ExecutionContext executionContext, Channel channel) {
-        this.executionContext = requireNonNull(executionContext);
-        this.channel = requireNonNull(channel);
-        close = new NettyChannelListenableAsyncCloseable(channel, executionContext.executor());
-    }
-
-    @Override
-    public SocketAddress localAddress() {
-        return channel.localAddress();
-    }
-
-    @Override
-    public SocketAddress remoteAddress() {
-        return channel.remoteAddress();
-    }
-
-    @Override
-    @Nullable
-    public SSLSession sslSession() {
-        return sslSession;
-    }
-
-    @Override
-    public ExecutionContext executionContext() {
-        return executionContext;
-    }
+    Cancellable updateFlushStrategy(UnaryOperator<FlushStrategy> strategyProvider);
 
     /**
-     * Creates a new {@link NettyConnectionContext} by initializing the passed {@code channel} using the
-     * {@code initializer}.
+     * Returns a {@link Publisher} that emits various {@link ConnectionEvent}s happening on this connection.
+     * <p>
+     *     <b>All methods of a {@link Subscriber} to this {@link Publisher} will be invoked on the event loop.
+     *     Presence of blocking operations within these methods will negatively impact responsiveness of that event
+     *     loop.</b>
      *
-     * @param executionContext {@link ExecutionContext} for this connection.
-     * @param channel for the newly created {@link NettyConnectionContext}.
-     * @param initializer to initialize the channel.
-     * @return New {@link ConnectionContext} for the channel.
+     * <h2>Flow control</h2>
+     * Typically consuming {@link ConnectionEvent}s from the returned {@link Publisher} is not expected to be flow
+     * controlled (i.e. there should always be sufficient demand). However, if there is not enough demand to
+     * publishReadComplete generated {@link ConnectionEvent}s, they will be dropped.
+     *
+     * @return {@link Publisher} that emits various {@link ConnectionEvent}s happening on this connection.
      */
-    public static ConnectionContext newContext(ExecutionContext executionContext, Channel channel,
-                                               ChannelInitializer initializer) {
-        return newContext(executionContext, channel, initializer, true);
-    }
+    Publisher<ConnectionEvent> getConnectionEvents();
 
     /**
-     * Creates a new {@link NettyConnectionContext} by initializing the passed {@code channel} using the
-     * {@code initializer}.
-     *
-     * @param executionContext {@link ExecutionContext} for this connection.
-     * @param channel for the newly created {@link NettyConnectionContext}.
-     * @param initializer to initialize the channel.
-     * @param checkForRefCountedTrapper Whether to log a warning if a {@link RefCountedTrapper} is not found in the
-     * pipeline.
-     * @return New {@link ConnectionContext} for the channel.
+     * Events happening on a connection.
      */
-    public static ConnectionContext newContext(ExecutionContext executionContext, Channel channel,
-                                               ChannelInitializer initializer, boolean checkForRefCountedTrapper) {
-        ConnectionContext context = new NettyConnectionContext(executionContext, channel);
-        context = initializer.init(channel, context);
-        if (checkForRefCountedTrapper) {
-            RefCountedTrapper refCountedTrapper = channel.pipeline().get(RefCountedTrapper.class);
-            if (refCountedTrapper == null) {
-                LOGGER.warn("No handler of type {} found in the pipeline, this may leak ref-counted objects out of netty pipeline.",
-                        RefCountedTrapper.class.getName());
-            }
-        }
-        return context;
-    }
-
-    void setSslSession(SSLSession session) {
-        sslSession = session;
-    }
-
-    @Override
-    public Completable onClose() {
-        return close.onClose();
-    }
-
-    @Override
-    public Completable closeAsync() {
-        return close.closeAsync();
-    }
-
-    @Override
-    public Completable closeAsyncGracefully() {
-        return close.closeAsyncGracefully();
-    }
+    enum ConnectionEvent {
+        /**
+         * A batch of read has now completed on this connection.<p>
+         * This does <b>not</b> indicate liveness of the connection or whether there will be any more reads done on
+         * this connection. If reads are done in batches, this event indicates, that such a batch has now ended.
+         * One may see zero or more occurrences of this event on any connection.
+         */
+        ReadComplete,
+   }
 }
