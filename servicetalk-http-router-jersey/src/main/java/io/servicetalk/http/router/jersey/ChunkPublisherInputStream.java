@@ -23,7 +23,6 @@ import io.servicetalk.http.api.HttpPayloadChunk;
 
 import org.glassfish.jersey.message.internal.EntityInputStream;
 
-import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.function.BiFunction;
@@ -43,7 +42,7 @@ import static org.glassfish.jersey.message.internal.ReaderInterceptorExecutor.cl
  * between {@link ChunkPublisherInputStream#read()}, {@link ChunkPublisherInputStream#read(byte[], int, int)}
  * and {@link ChunkPublisherInputStream#getChunkPublisher()}.
  */
-public final class ChunkPublisherInputStream extends FilterInputStream {
+public final class ChunkPublisherInputStream extends InputStream {
     private static final InputStream EMPTY_INPUT_STREAM = new InputStream() {
         @Override
         public int read() {
@@ -51,6 +50,7 @@ public final class ChunkPublisherInputStream extends FilterInputStream {
         }
     };
 
+    private InputStream inputStream;
     private Publisher<HttpPayloadChunk> publisher;
     private final int queueCapacity;
 
@@ -61,7 +61,7 @@ public final class ChunkPublisherInputStream extends FilterInputStream {
      * @param queueCapacity the capacity hint for the intermediary queue that stores items.
      */
     ChunkPublisherInputStream(final Publisher<HttpPayloadChunk> publisher, final int queueCapacity) {
-        super(EMPTY_INPUT_STREAM);
+        inputStream = EMPTY_INPUT_STREAM;
         this.publisher = requireNonNull(publisher);
         this.queueCapacity = queueCapacity;
     }
@@ -69,13 +69,13 @@ public final class ChunkPublisherInputStream extends FilterInputStream {
     @Override
     public int read() throws IOException {
         publisherToInputStream();
-        return in.read();
+        return inputStream.read();
     }
 
     @Override
     public int read(final byte[] b, final int off, final int len) throws IOException {
         publisherToInputStream();
-        return in.read(b, off, len);
+        return inputStream.read(b, off, len);
     }
 
     /**
@@ -86,7 +86,7 @@ public final class ChunkPublisherInputStream extends FilterInputStream {
     void offloadSourcePublisher(final Executor executor) {
         requireNonNull(executor);
 
-        if (in == EMPTY_INPUT_STREAM) {
+        if (inputStream == EMPTY_INPUT_STREAM) {
             publisher = publisher.publishOn(executor);
         } else if (executor != immediate()) {
             throw new IllegalStateException("Can't offload source publisher because it is consumed via InputStream");
@@ -100,15 +100,15 @@ public final class ChunkPublisherInputStream extends FilterInputStream {
      * @throws IllegalStateException in case reading the stream has started
      */
     private Publisher<HttpPayloadChunk> getChunkPublisher() {
-        if (in != EMPTY_INPUT_STREAM) {
+        if (inputStream != EMPTY_INPUT_STREAM) {
             throw new IllegalStateException("Publisher is being consumed via InputStream");
         }
         return publisher;
     }
 
     private void publisherToInputStream() {
-        if (in == EMPTY_INPUT_STREAM) {
-            in = publisher.toInputStream(ChunkPublisherInputStream::getBytes, queueCapacity);
+        if (inputStream == EMPTY_INPUT_STREAM) {
+            inputStream = publisher.toInputStream(ChunkPublisherInputStream::getBytes, queueCapacity);
         }
     }
 
