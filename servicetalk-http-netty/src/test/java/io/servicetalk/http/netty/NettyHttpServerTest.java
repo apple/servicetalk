@@ -418,7 +418,10 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
 
     @Test
     public void testErrorBeforeRead() throws Exception {
+        ignoreTestWhen(IMMEDIATE, IMMEDIATE);
+        ignoreTestWhen(IMMEDIATE, CACHED);
         ignoreTestWhen(CACHED, IMMEDIATE);
+        ignoreTestWhen(CACHED, CACHED);
 
         final HttpRequest<HttpPayloadChunk> request = newRequest(GET, SVC_ERROR_BEFORE_READ,
                 getChunkPublisherFromStrings("Goodbye", "cruel", "world!"));
