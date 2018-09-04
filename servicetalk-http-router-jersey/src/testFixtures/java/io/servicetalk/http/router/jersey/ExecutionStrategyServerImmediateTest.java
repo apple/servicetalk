@@ -28,13 +28,15 @@ import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 public class ExecutionStrategyServerImmediateTest extends AbstractExecutionStrategyTest {
     @ClassRule
     public static final ExecutionContextRule IMMEDIATE_SERVER_CTX = new ExecutionContextRule(() -> DEFAULT_ALLOCATOR,
-            () -> createIoExecutor(new IoThreadFactory("st-server-io")),
+            () -> createIoExecutor(new IoThreadFactory("stserverio")),
             Executors::immediate);
 
     public ExecutionStrategyServerImmediateTest(final String path,
+                                                final String routerExecutorSupplierId,
+                                                final String methodExecutorSupplierId,
                                                 final ExpectedExecutor expectedExecutor,
-                                                final TestMode testMode) {
-        super(path, expectedExecutor, testMode);
+                                                final TestMode testMode) throws Exception {
+        super(path, routerExecutorSupplierId, methodExecutorSupplierId, expectedExecutor, testMode);
     }
 
     @Override

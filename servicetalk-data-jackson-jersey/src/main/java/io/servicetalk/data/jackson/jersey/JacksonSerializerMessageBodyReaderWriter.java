@@ -28,6 +28,7 @@ import io.servicetalk.serialization.api.DefaultSerializer;
 import io.servicetalk.serialization.api.SerializationException;
 import io.servicetalk.serialization.api.Serializer;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import org.glassfish.jersey.internal.util.collection.Ref;
 
@@ -53,7 +54,7 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Providers;
 
-import static io.servicetalk.http.router.jersey.internal.ChunkPublisherInputStream.handleEntityStream;
+import static io.servicetalk.http.router.jersey.ChunkPublisherInputStream.handleEntityStream;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseChunkPublisher;
 import static javax.ws.rs.Priorities.ENTITY_CODER;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
@@ -70,6 +71,8 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
 
     private static final Object NOTHING_DESERIALIZED = new Object();
 
+    // We can not use `@Context ConnectionContext` directly because we would not see the latest version
+    // in case it has been rebound as part of offloading.
     @Context
     private Provider<Ref<ConnectionContext>> ctxRefProvider;
 
@@ -94,7 +97,8 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
                            final InputStream entityStream) throws WebApplicationException {
 
         final Serializer ser = getSerializer(mediaType);
-        final BufferAllocator allocator = ctxRefProvider.get().get().getExecutionContext().getBufferAllocator();
+        final ExecutionContext executionContext = ctxRefProvider.get().get().getExecutionContext();
+        final BufferAllocator allocator = executionContext.getBufferAllocator();
 
         if (Single.class.isAssignableFrom(type)) {
             return handleEntityStream(entityStream, allocator,
@@ -109,26 +113,6 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
         return handleEntityStream(entityStream, allocator,
                 (p, a) -> deserialize(p.map(HttpPayloadChunk::getContent), ser, type),
                 (is, a) -> deserialize(toBufferPublisher(is, a), ser, type));
-    }
-
-    private static Object deserialize(final Publisher<Buffer> bufferPublisher, final Serializer ser,
-                                      final Class<Object> type) {
-
-        final Object result;
-
-        try (BlockingIterator<Object> i = ser.deserialize(bufferPublisher.toIterable(), type).iterator()) {
-            result = !i.hasNext() ? NOTHING_DESERIALIZED : i.next();
-        } catch (final SerializationException se) {
-            throw se; // handled by the exception mapper
-        } catch (final Exception e) {
-            throw new InternalServerErrorException(e);
-        }
-
-        if (result == NOTHING_DESERIALIZED) {
-            throw new BadRequestException("No deserializable JSON content");
-        }
-
-        return result;
     }
 
     @Override
@@ -178,6 +162,26 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
 
     private static Publisher<Buffer> toBufferPublisher(final InputStream is, final BufferAllocator a) {
         return Publisher.from(() -> new InputStreamIterator(is)).map(a::wrap);
+    }
+
+    private static Object deserialize(final Publisher<Buffer> bufferPublisher, final Serializer ser,
+                                      final Class<Object> type) {
+
+        final Object result;
+
+        try (BlockingIterator<Object> i = ser.deserialize(bufferPublisher.toIterable(), type).iterator()) {
+            result = !i.hasNext() ? NOTHING_DESERIALIZED : i.next();
+        } catch (final SerializationException se) {
+            throw se; // handled by the exception mapper
+        } catch (final Exception e) {
+            throw new InternalServerErrorException(e);
+        }
+
+        if (result == NOTHING_DESERIALIZED) {
+            throw new BadRequestException("No deserializable JSON content");
+        }
+
+        return result;
     }
 
     private static boolean isSupportedMediaType(final MediaType mediaType) {

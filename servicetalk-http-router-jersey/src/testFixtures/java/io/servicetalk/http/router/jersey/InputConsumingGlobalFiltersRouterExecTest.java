@@ -15,46 +15,61 @@
  */
 package io.servicetalk.http.router.jersey;
 
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.http.router.jersey.resources.AsynchronousResourcesRouterExec;
+import io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.ResourceRouterExecIdStrategy;
 import io.servicetalk.http.router.jersey.resources.SynchronousResourcesRouterExec;
 
 import org.junit.ClassRule;
+import org.junit.Test;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import javax.ws.rs.core.Application;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
+import static io.servicetalk.http.api.HttpResponseStatuses.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.router.jersey.ExecutionStrategy.DEFAULT_EXECUTOR_ID;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.Arrays.asList;
 
-public class InterceptorsRouterExecTest extends AbstractFilterInterceptorTest {
+public class InputConsumingGlobalFiltersRouterExecTest extends AbstractFilterInterceptorTest {
     @ClassRule
-    public static final ExecutorRule ROUTER_EXEC = new ExecutorRule(() ->
+    public static final ExecutorRule TEST_EXEC = new ExecutorRule(() ->
             newCachedThreadExecutor(new DefaultThreadFactory("rtr-", true, NORM_PRIORITY)));
 
     public static class TestApplication extends Application {
         @Override
         public Set<Class<?>> getClasses() {
             return new HashSet<>(asList(
-                    TestGlobalInterceptor.class,
+                    TestInputConsumingGlobalFilter.class,
                     SynchronousResourcesRouterExec.class,
-                    AsynchronousResourcesRouterExec.class
+                    AsynchronousResourcesRouterExec.class,
+                    ResourceRouterExecIdStrategy.class
             ));
         }
     }
 
     @Override
     protected HttpJerseyRouterBuilder configureBuilder(final HttpJerseyRouterBuilder builder) {
-        return super.configureBuilder(builder)
-                .setExecutorFactory(id -> DEFAULT_EXECUTOR_ID.equals(id) ? ROUTER_EXEC.getExecutor() : null);
+        Map<String, Executor> executors = new HashMap<>();
+        executors.put(DEFAULT_EXECUTOR_ID, immediate());
+        executors.put("test", TEST_EXEC.getExecutor());
+        return super.configureBuilder(builder).setExecutorFactory(executors::get);
     }
 
     @Override
     protected Application getApplication() {
         return new TestApplication();
+    }
+
+    @Test
+    public void offloadingToExecutorFails() {
+        sendAndAssertResponse(get("/rsc-rtr-exec-id/subrsc-default"), INTERNAL_SERVER_ERROR, null, "");
     }
 }

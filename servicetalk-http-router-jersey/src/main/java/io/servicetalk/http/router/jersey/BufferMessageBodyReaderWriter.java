@@ -41,7 +41,7 @@ import javax.ws.rs.ext.MessageBodyWriter;
 
 import static io.servicetalk.http.api.HttpPayloadChunks.aggregateChunks;
 import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
-import static io.servicetalk.http.router.jersey.internal.ChunkPublisherInputStream.handleEntityStream;
+import static io.servicetalk.http.router.jersey.ChunkPublisherInputStream.handleEntityStream;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseChunkPublisher;
 import static javax.ws.rs.Priorities.ENTITY_CODER;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
@@ -54,6 +54,8 @@ import static javax.ws.rs.core.MediaType.WILDCARD;
 @Priority(ENTITY_CODER)
 @Produces(WILDCARD)
 final class BufferMessageBodyReaderWriter implements MessageBodyReader<Buffer>, MessageBodyWriter<Buffer> {
+    // We can not use `@Context ConnectionContext` directly because we would not see the latest version
+    // in case it has been rebound as part of offloading.
     @Context
     protected Provider<Ref<ConnectionContext>> ctxRefProvider;
 

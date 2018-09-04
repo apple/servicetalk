@@ -17,8 +17,10 @@ package io.servicetalk.http.router.jersey;
 
 public class ExecutionStrategyTest extends AbstractExecutionStrategyTest {
     public ExecutionStrategyTest(final String path,
+                                 final String routerExecutorSupplierId,
+                                 final String methodExecutorSupplierId,
                                  final ExpectedExecutor expectedExecutor,
-                                 final TestMode testMode) {
-        super(path, expectedExecutor, testMode);
+                                 final TestMode testMode) throws Exception {
+        super(path, routerExecutorSupplierId, methodExecutorSupplierId, expectedExecutor, testMode);
     }
 }

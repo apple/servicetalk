@@ -28,7 +28,6 @@ import static org.glassfish.jersey.internal.spi.AutoDiscoverable.DEFAULT_PRIORIT
  * {@link AutoDiscoverable} registering {@link ServiceTalkJacksonSerializerFeature} if the feature is not already
  * registered.
  */
-
 @Priority(DEFAULT_PRIORITY)
 public final class ServiceTalkJacksonSerializerAutoDiscoverable implements AutoDiscoverable {
     @Override

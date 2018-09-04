@@ -18,7 +18,7 @@ package io.servicetalk.http.router.jersey;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpConnection;
+import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequest;
@@ -27,8 +27,8 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpResponseStatuses;
 import io.servicetalk.http.api.HttpService;
-import io.servicetalk.http.netty.DefaultHttpConnectionBuilder;
 import io.servicetalk.http.netty.DefaultHttpServerStarter;
+import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.IoThreadFactory;
@@ -36,7 +36,6 @@ import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
 import org.hamcrest.Matcher;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -72,6 +71,7 @@ import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.http.api.HttpRequestMethods.PUT;
 import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.http.router.jersey.TestUtils.getContentAsString;
+import static io.servicetalk.transport.api.HostAndPort.of;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -91,35 +91,28 @@ public abstract class AbstractJerseyHttpServiceTest {
 
     @ClassRule
     public static final ExecutionContextRule SERVER_CTX = new ExecutionContextRule(() -> DEFAULT_ALLOCATOR,
-            () -> createIoExecutor(new IoThreadFactory("st-server-io")),
-            () -> newCachedThreadExecutor(new DefaultThreadFactory("st-server-", true, NORM_PRIORITY)));
-    @ClassRule
-    public static final ExecutionContextRule CLIENT_CTX = new ExecutionContextRule(() -> DEFAULT_ALLOCATOR,
-            () -> createIoExecutor(new IoThreadFactory("st-client-io")),
-            () -> newCachedThreadExecutor(new DefaultThreadFactory("st-client-", true, NORM_PRIORITY)));
+            () -> createIoExecutor(new IoThreadFactory("stserverio")),
+            () -> newCachedThreadExecutor(new DefaultThreadFactory("stserver-", true, NORM_PRIORITY)));
 
-    @Nullable
-    private static ServerContext serverContext;
-    @Nullable
-    private static Boolean streamingJsonEnabled;
-
-    private HttpConnection clientConnection;
+    private ServerContext serverContext;
+    private boolean streamingJsonEnabled;
+    private HttpClient httpClient;
 
     @Before
-    public final void initServerAndClient() throws Exception {
-        if (serverContext == null) {
-            final HttpService router = configureBuilder(new HttpJerseyRouterBuilder()).build(getApplication());
-            final Configuration config = ((DefaultJerseyHttpRouter) router).getConfiguration();
-            streamingJsonEnabled = getValue(config.getProperties(), config.getRuntimeType(), JSON_FEATURE, "",
-                    String.class).toLowerCase().contains("servicetalk");
+    public final void initServer() throws Exception {
+        final HttpService router = configureBuilder(new HttpJerseyRouterBuilder()).build(getApplication());
+        final Configuration config = ((DefaultJerseyHttpRouter) router).getConfiguration();
+        streamingJsonEnabled = getValue(config.getProperties(), config.getRuntimeType(), JSON_FEATURE, "",
+                String.class).toLowerCase().contains("servicetalk");
 
-            serverContext = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
-                    .start(getServerExecutionContext(), new InetSocketAddress(0), router));
-        }
+        serverContext = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
+                .start(getServerExecutionContext(), new InetSocketAddress(0), router));
+    }
 
-        clientConnection = awaitIndefinitelyNonNull(
-                new DefaultHttpConnectionBuilder<InetSocketAddress>()
-                        .build(CLIENT_CTX, (InetSocketAddress) serverContext.getListenAddress()));
+    @Before
+    public final void initClient() {
+        InetSocketAddress serverAddress = (InetSocketAddress) serverContext.getListenAddress();
+        httpClient = HttpClients.forSingleAddress(of(serverAddress)).build();
     }
 
     protected HttpJerseyRouterBuilder configureBuilder(final HttpJerseyRouterBuilder builder) {
@@ -131,28 +124,22 @@ public abstract class AbstractJerseyHttpServiceTest {
     }
 
     @After
-    public final void closeClientConnection() throws Exception {
-        awaitIndefinitely(clientConnection.closeAsync());
+    public final void closeClient() throws Exception {
+        awaitIndefinitely(httpClient.closeAsync());
     }
 
-    @AfterClass
-    public static void closeServer() throws Exception {
-        if (serverContext != null) {
-            awaitIndefinitely(serverContext.closeAsync());
-            serverContext = null;
-            streamingJsonEnabled = null;
-        }
+    @After
+    public final void closeServer() throws Exception {
+        awaitIndefinitely(serverContext.closeAsync());
     }
 
     protected abstract Application getApplication();
 
     protected String host() {
-        assert serverContext != null : "serverContext can't be null";
         return "localhost:" + ((InetSocketAddress) serverContext.getListenAddress()).getPort();
     }
 
     protected boolean isStreamingJsonEnabled() {
-        assert streamingJsonEnabled != null : "streamingJsonEnabled can't be null";
         return streamingJsonEnabled;
     }
 
@@ -208,7 +195,7 @@ public abstract class AbstractJerseyHttpServiceTest {
     }
 
     protected Function<String, Integer> getJsonResponseContentLengthExtractor() {
-        return streamingJsonEnabled ? __ -> null : String::length;
+        return isStreamingJsonEnabled() ? __ -> null : String::length;
     }
 
     protected HttpResponse<HttpPayloadChunk> sendAndAssertNoResponse(final HttpRequest<HttpPayloadChunk> req,
@@ -317,9 +304,11 @@ public abstract class AbstractJerseyHttpServiceTest {
                                                                final HttpResponseStatus expectedStatus,
                                                                final int timeout,
                                                                final TimeUnit unit) {
-        try {
 
-            final HttpResponse<HttpPayloadChunk> res = awaitNonNull(clientConnection.request(req), timeout, unit);
+        assert httpClient != null : "clientConnection can't be null";
+
+        try {
+            final HttpResponse<HttpPayloadChunk> res = awaitNonNull(httpClient.request(req), timeout, unit);
 
             assertThat(res.getVersion(), is(expectedHttpVersion));
             final HttpResponseStatus status = res.getStatus();

@@ -28,6 +28,7 @@ import org.glassfish.jersey.message.internal.OutboundMessageContext;
 import org.glassfish.jersey.process.internal.RequestContext;
 import org.glassfish.jersey.process.internal.RequestScope;
 import org.glassfish.jersey.server.AsyncContext;
+import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.ContainerResponse;
 import org.glassfish.jersey.server.internal.process.Endpoint;
 import org.glassfish.jersey.server.internal.process.RequestProcessingContext;
@@ -53,6 +54,7 @@ import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.router.jersey.ExecutionStrategyUtils.getResourceExecutor;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRequestChunkPublisherInputStream;
+import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseExecutorOffloader;
 import static java.lang.Integer.MAX_VALUE;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 import static javax.ws.rs.core.Response.noContent;
@@ -160,12 +162,18 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
                 throw new IllegalStateException("Failed to suspend request processing");
             }
 
-            callOriginalEndpoint(requestProcessingCtx)
+            Single<Response> objectSingle = callOriginalEndpoint(requestProcessingCtx)
                     .flatMap(this::handleContainerResponse)
                     .doBeforeFinally(() -> uriRoutingContext.setEndpoint(originalEndpoint))
                     .doAfterError(asyncContext::resume)
-                    .doAfterCancel(asyncContext::cancel)
-                    .subscribe(asyncContext::resume);
+                    .doAfterCancel(asyncContext::cancel);
+
+            if (execOverrideCnxCtx != null) {
+                objectSingle.subscribeOn(execOverrideCnxCtx.getExecutionContext().getExecutor())
+                        .subscribe(asyncContext::resume);
+            } else {
+                objectSingle.subscribe(asyncContext::resume);
+            }
 
             // Return null on current thread since response will be delivered asynchronously
             return null;
@@ -174,15 +182,15 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
         private Single<ContainerResponse> callOriginalEndpoint(final RequestProcessingContext requestProcessingCtx) {
             if (execOverrideCnxCtx != null) {
                 final RequestContext requestContext = requestScope.referenceCurrent();
-
+                final ContainerRequest request = requestProcessingCtx.request();
                 final Executor executor = execOverrideCnxCtx.getExecutionContext().getExecutor();
 
                 return executor.submit(() -> {
                     execOverrideCnxCtx.activate();
                     return requestScope.runInScope(requestContext,
                             () -> {
-                                getRequestChunkPublisherInputStream(requestProcessingCtx.request())
-                                        .offloadSourcePublisher(executor);
+                                getRequestChunkPublisherInputStream(request).offloadSourcePublisher(executor);
+                                setResponseExecutorOffloader(executor, request);
 
                                 return originalEndpoint.apply(requestProcessingCtx);
                             });

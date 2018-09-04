@@ -28,7 +28,7 @@ import static org.glassfish.jersey.internal.spi.AutoDiscoverable.DEFAULT_PRIORIT
  * {@link AutoDiscoverable} registering {@link ServiceTalkFeature} if the feature is not already registered.
  */
 @Priority(DEFAULT_PRIORITY)
-public class ServiceTalkAutoDiscoverable implements AutoDiscoverable {
+public final class ServiceTalkAutoDiscoverable implements AutoDiscoverable {
     @Override
     public void configure(final FeatureContext context) {
         if (!context.getConfiguration().isRegistered(ServiceTalkFeature.class)) {

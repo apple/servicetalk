@@ -20,11 +20,14 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.router.jersey.internal.InputStreamIterator;
 import io.servicetalk.http.router.jersey.resources.AsynchronousResources;
 import io.servicetalk.http.router.jersey.resources.SynchronousResources;
 
 import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FilterInputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
@@ -69,8 +72,7 @@ public abstract class AbstractFilterInterceptorTest extends AbstractJerseyHttpSe
 
         @SuppressWarnings("unchecked")
         @Override
-        public void filter(final ContainerRequestContext requestCtx,
-                           final ContainerResponseContext responseCtx) {
+        public void filter(final ContainerRequestContext requestCtx, final ContainerResponseContext responseCtx) {
             // ContainerResponseFilter allows replacing the entity altogether so we can optimize
             // for cases when the resource has returned a Publisher, while making sure we correctly carry the
             // generic type of the entity so the correct response body writer will be used
@@ -107,7 +109,27 @@ public abstract class AbstractFilterInterceptorTest extends AbstractJerseyHttpSe
 
     @Priority(ENTITY_CODER)
     @Provider
-    public static class TestInterceptor implements ReaderInterceptor, WriterInterceptor {
+    public static class TestInputConsumingGlobalFilter extends TestGlobalFilter {
+        @Override
+        public void filter(final ContainerRequestContext requestCtx) {
+            // Simulate an ill-behaved filter that consumes the all request content beforehand
+            // instead of modifying it in a streaming fashion (as done in super)
+            final ByteArrayOutputStream out = new ByteArrayOutputStream();
+            new InputStreamIterator(new UpperCaseInputStream(requestCtx.getEntityStream()))
+                    .forEachRemaining(bytes -> {
+                        try {
+                            out.write(bytes);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+            requestCtx.setEntityStream(new ByteArrayInputStream(out.toByteArray()));
+        }
+    }
+
+    @Priority(ENTITY_CODER)
+    @Provider
+    public static class TestGlobalInterceptor implements ReaderInterceptor, WriterInterceptor {
         @Override
         public Object aroundReadFrom(final ReaderInterceptorContext readerInterceptorCtx) throws IOException {
             final InputStream old = readerInterceptorCtx.getInputStream();

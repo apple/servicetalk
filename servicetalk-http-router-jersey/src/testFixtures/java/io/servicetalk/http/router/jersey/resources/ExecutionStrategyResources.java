@@ -313,9 +313,10 @@ public final class ExecutionStrategyResources {
             final Thread resourceMethodThread = currentThread();
 
             return content
-                    .doOnRequest(__ -> requireFromSameExecutorAs(resourceMethodThread))
+                    .doOnNext(__ -> requireFromSameExecutorAs(resourceMethodThread))
                     .first()
-                    .flatMapPublisher(__ -> bufferSingle.flatMapPublisher(buf -> Publisher.from(newPayloadChunk(buf))));
+                    .flatMapPublisher(__ -> bufferSingle.flatMapPublisher(buf -> Publisher.from(newPayloadChunk(buf))))
+                    .doOnRequest(__ -> requireFromSameExecutorAs(resourceMethodThread));
         }
 
         private static Map<String, String> getThreadingInfo(final ConnectionContext ctx,

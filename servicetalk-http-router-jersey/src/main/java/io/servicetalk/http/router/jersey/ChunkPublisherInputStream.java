@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.router.jersey.internal;
+package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
@@ -22,8 +22,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
 
 import org.glassfish.jersey.message.internal.EntityInputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -31,20 +29,21 @@ import java.io.InputStream;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static java.util.Objects.requireNonNull;
 import static org.glassfish.jersey.message.internal.ReaderInterceptorExecutor.closeableInputStream;
 
 /**
  * An {@link InputStream} built around a {@link Publisher Publisher&lt;HttpPayloadChunk&gt;}, which can either be read
- * OIO style or provide its wrapped {@link Publisher}. This allows us to provide JAX-RS with an `InputStream` and also
- * short-circuit its usage when our code can directly deal with the {@link Publisher Publisher&lt;HttpPayloadChunk&gt;}.
+ * OIO style or provide its wrapped {@link Publisher}. This allows us to provide JAX-RS with an {@link InputStream}
+ * and also short-circuit its usage when our code can directly deal with
+ * the {@link Publisher Publisher&lt;HttpPayloadChunk&gt;} it wraps.
  * <p>
  * Not threadsafe and intended to be used internally only, where no concurrency occurs
  * between {@link ChunkPublisherInputStream#read()}, {@link ChunkPublisherInputStream#read(byte[], int, int)}
  * and {@link ChunkPublisherInputStream#getChunkPublisher()}.
  */
-public class ChunkPublisherInputStream extends FilterInputStream {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ChunkPublisherInputStream.class);
+public final class ChunkPublisherInputStream extends FilterInputStream {
     private static final InputStream EMPTY_INPUT_STREAM = new InputStream() {
         @Override
         public int read() {
@@ -61,38 +60,10 @@ public class ChunkPublisherInputStream extends FilterInputStream {
      * @param publisher the {@link Publisher Publisher&lt;HttpPayloadChunk&gt;} to read from.
      * @param queueCapacity the capacity hint for the intermediary queue that stores items.
      */
-    public ChunkPublisherInputStream(final Publisher<HttpPayloadChunk> publisher, final int queueCapacity) {
+    ChunkPublisherInputStream(final Publisher<HttpPayloadChunk> publisher, final int queueCapacity) {
         super(EMPTY_INPUT_STREAM);
         this.publisher = requireNonNull(publisher);
         this.queueCapacity = queueCapacity;
-    }
-
-    /**
-     * Gets the wrapped {@link Publisher Publisher&lt;HttpPayloadChunk&gt;} if reading this stream hasn't started.
-     *
-     * @return the wrapped {@link Publisher Publisher&lt;HttpPayloadChunk&gt;}
-     * @throws IllegalStateException in case reading the stream has started
-     */
-    public Publisher<HttpPayloadChunk> getChunkPublisher() {
-        if (in != EMPTY_INPUT_STREAM) {
-            throw new IllegalStateException("Publisher is being consumed via InputStream");
-        }
-        return publisher;
-    }
-
-    /**
-     * Offload operations on the wrapped {@link Publisher Publisher&lt;HttpPayloadChunk&gt;} to the designated executor.
-     *
-     * @param executor the {@link Executor} to offload to.
-     */
-    public void offloadSourcePublisher(final Executor executor) {
-        requireNonNull(executor);
-
-        if (in == EMPTY_INPUT_STREAM) {
-            publisher = publisher.publishOn(executor).subscribeOn(executor);
-        } else {
-            LOGGER.warn("Can't offload source publisher because it has already been converted to input stream");
-        }
     }
 
     @Override
@@ -105,6 +76,40 @@ public class ChunkPublisherInputStream extends FilterInputStream {
     public int read(final byte[] b, final int off, final int len) throws IOException {
         publisherToInputStream();
         return in.read(b, off, len);
+    }
+
+    /**
+     * Offload operations on the wrapped {@link Publisher Publisher&lt;HttpPayloadChunk&gt;} to the designated executor.
+     *
+     * @param executor the {@link Executor} to offload to.
+     */
+    void offloadSourcePublisher(final Executor executor) {
+        requireNonNull(executor);
+
+        if (in == EMPTY_INPUT_STREAM) {
+            publisher = publisher.publishOn(executor);
+        } else if (executor != immediate()) {
+            throw new IllegalStateException("Can't offload source publisher because it is consumed via InputStream");
+        }
+    }
+
+    /**
+     * Gets the wrapped {@link Publisher Publisher&lt;HttpPayloadChunk&gt;} if reading this stream hasn't started.
+     *
+     * @return the wrapped {@link Publisher Publisher&lt;HttpPayloadChunk&gt;}
+     * @throws IllegalStateException in case reading the stream has started
+     */
+    private Publisher<HttpPayloadChunk> getChunkPublisher() {
+        if (in != EMPTY_INPUT_STREAM) {
+            throw new IllegalStateException("Publisher is being consumed via InputStream");
+        }
+        return publisher;
+    }
+
+    private void publisherToInputStream() {
+        if (in == EMPTY_INPUT_STREAM) {
+            in = publisher.toInputStream(ChunkPublisherInputStream::getBytes, queueCapacity);
+        }
     }
 
     /**
@@ -140,12 +145,6 @@ public class ChunkPublisherInputStream extends FilterInputStream {
         }
 
         return inputStreamHandler.apply(wrappedStream, allocator);
-    }
-
-    private void publisherToInputStream() {
-        if (in == EMPTY_INPUT_STREAM) {
-            in = publisher.toInputStream(ChunkPublisherInputStream::getBytes, queueCapacity);
-        }
     }
 
     @Nullable

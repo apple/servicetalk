@@ -24,12 +24,12 @@ import javax.ws.rs.core.Application;
 
 import static java.util.Arrays.asList;
 
-public class InterceptorsTest extends AbstractFilterInterceptorTest {
+public class InputConsumingGlobalFiltersTest extends AbstractFilterInterceptorTest {
     public static class TestApplication extends Application {
         @Override
         public Set<Class<?>> getClasses() {
             return new HashSet<>(asList(
-                    TestGlobalInterceptor.class,
+                    TestInputConsumingGlobalFilter.class,
                     SynchronousResources.class,
                     AsynchronousResources.class
             ));

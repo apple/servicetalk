@@ -50,6 +50,7 @@ import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
 import static io.servicetalk.http.api.HttpResponses.newResponse;
 import static io.servicetalk.http.router.jersey.CharSequenceUtils.asCharSequence;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getResponseChunkPublisher;
+import static io.servicetalk.http.router.jersey.internal.RequestProperties.getResponseExecutorOffloader;
 import static java.util.Arrays.stream;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
@@ -187,7 +188,12 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         final HttpResponse<HttpPayloadChunk> response;
         final HttpResponseStatus status = getStatus(containerResponse);
         if (content != null && !isHeadRequest()) {
-            response = newResponse(protocolVersion, status, content);
+            final Executor executor = getResponseExecutorOffloader(request);
+            if (executor != null) {
+                response = newResponse(protocolVersion, status, content.subscribeOn(executor));
+            } else {
+                response = newResponse(protocolVersion, status, content);
+            }
         } else {
             response = newResponse(protocolVersion, status);
         }

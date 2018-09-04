@@ -31,6 +31,9 @@ import static org.glassfish.jersey.internal.util.PropertiesHelper.getPropertyNam
  */
 public final class ServiceTalkJacksonSerializerFeature implements Feature {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServiceTalkJacksonSerializerFeature.class);
+    // Only one JSON Feature can be registered per Jersey ApplicationHandler, so using simple name will not be a
+    // cause of conflict even if several different shaded versions of ServiceTalk are in use, as each of them will
+    // be registered to a different ApplicationHandler.
     private static final String ST_JSON_FEATURE = ServiceTalkJacksonSerializerFeature.class.getSimpleName();
 
     @Override

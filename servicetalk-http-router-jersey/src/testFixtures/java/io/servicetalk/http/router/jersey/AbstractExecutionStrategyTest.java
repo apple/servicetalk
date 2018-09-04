@@ -17,6 +17,7 @@ package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.ResourceDefaultStrategy;
 import io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.ResourceRouterExecIdStrategy;
@@ -38,14 +39,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import javax.ws.rs.core.Application;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static io.servicetalk.http.router.jersey.AbstractExecutionStrategyTest.ExpectedExecutor.METHOD;
 import static io.servicetalk.http.router.jersey.AbstractExecutionStrategyTest.ExpectedExecutor.ROUTER;
 import static io.servicetalk.http.router.jersey.AbstractExecutionStrategyTest.ExpectedExecutor.SERVER;
-import static io.servicetalk.http.router.jersey.AbstractExecutionStrategyTest.ExpectedExecutor.TEST;
 import static io.servicetalk.http.router.jersey.AbstractExecutionStrategyTest.TestMode.GET;
 import static io.servicetalk.http.router.jersey.AbstractExecutionStrategyTest.TestMode.GET_NEVER_CHUNKED;
 import static io.servicetalk.http.router.jersey.AbstractExecutionStrategyTest.TestMode.POST;
@@ -63,12 +66,12 @@ import static org.hamcrest.Matchers.startsWith;
 @RunWith(Parameterized.class)
 public abstract class AbstractExecutionStrategyTest extends AbstractJerseyHttpServiceTest {
     @ClassRule
-    public static final ExecutorRule ROUTER_EXEC = new ExecutorRule(() ->
-            newCachedThreadExecutor(new DefaultThreadFactory("rtr-", true, NORM_PRIORITY)));
+    public static final ExecutorRule EXEC1 = new ExecutorRule(() ->
+            newCachedThreadExecutor(new DefaultThreadFactory("exec1-", true, NORM_PRIORITY)));
 
     @ClassRule
-    public static final ExecutorRule TEST_EXEC = new ExecutorRule(() ->
-            newCachedThreadExecutor(new DefaultThreadFactory("test-", true, NORM_PRIORITY)));
+    public static final ExecutorRule EXEC2 = new ExecutorRule(() ->
+            newCachedThreadExecutor(new DefaultThreadFactory("exec2-", true, NORM_PRIORITY)));
 
     public static class TestApplication extends Application {
         @Override
@@ -84,7 +87,7 @@ public abstract class AbstractExecutionStrategyTest extends AbstractJerseyHttpSe
     }
 
     protected enum ExpectedExecutor {
-        SERVER, ROUTER, TEST
+        SERVER, ROUTER, METHOD
     }
 
     protected enum TestMode {
@@ -95,10 +98,10 @@ public abstract class AbstractExecutionStrategyTest extends AbstractJerseyHttpSe
 
     static {
         ROOT_PATHS_EXPECTED_EXECS = new HashMap<>();
-        ROOT_PATHS_EXPECTED_EXECS.put("/rsc-default", new ExpectedExecutor[]{SERVER, SERVER, ROUTER, TEST});
-        ROOT_PATHS_EXPECTED_EXECS.put("/rsc-srvr-exec", new ExpectedExecutor[]{SERVER, SERVER, ROUTER, TEST});
-        ROOT_PATHS_EXPECTED_EXECS.put("/rsc-rtr-exec", new ExpectedExecutor[]{ROUTER, SERVER, ROUTER, TEST});
-        ROOT_PATHS_EXPECTED_EXECS.put("/rsc-rtr-exec-id", new ExpectedExecutor[]{TEST, SERVER, ROUTER, TEST});
+        ROOT_PATHS_EXPECTED_EXECS.put("/rsc-default", new ExpectedExecutor[]{SERVER, SERVER, ROUTER, METHOD});
+        ROOT_PATHS_EXPECTED_EXECS.put("/rsc-srvr-exec", new ExpectedExecutor[]{SERVER, SERVER, ROUTER, METHOD});
+        ROOT_PATHS_EXPECTED_EXECS.put("/rsc-rtr-exec", new ExpectedExecutor[]{ROUTER, SERVER, ROUTER, METHOD});
+        ROOT_PATHS_EXPECTED_EXECS.put("/rsc-rtr-exec-id", new ExpectedExecutor[]{METHOD, SERVER, ROUTER, METHOD});
     }
 
     private static final String[] SUB_PATHS =
@@ -116,33 +119,64 @@ public abstract class AbstractExecutionStrategyTest extends AbstractJerseyHttpSe
         SUB_SUB_PATH_TEST_MODES.put("-publisher-mapped", POST_CHUNKED);
     }
 
-    private final String path;
-    private final ExpectedExecutor expectedExecutor;
-    private final TestMode testMode;
+    private static final Map<String, Supplier<Executor>> EXEC_SUPPLIERS;
 
-    protected AbstractExecutionStrategyTest(final String path,
-                                            final ExpectedExecutor expectedExecutor,
-                                            final TestMode testMode) {
-        this.path = path;
-        this.expectedExecutor = expectedExecutor;
-        this.testMode = testMode;
+    static {
+        EXEC_SUPPLIERS = new HashMap<>();
+        EXEC_SUPPLIERS.put("server", SERVER_CTX::getExecutor);
+        EXEC_SUPPLIERS.put("immediate", Executors::immediate);
+        EXEC_SUPPLIERS.put("exec1", EXEC1::getExecutor);
+        EXEC_SUPPLIERS.put("exec2", EXEC2::getExecutor);
     }
 
-    @Parameters(name = "{0}")
+    private final String path;
+    private final Executor routerExecutor;
+    private final Executor methodExecutor;
+    private final ExpectedExecutor expectedExecutor;
+    private final TestMode testMode;
+    private final Matcher<String> serverThreadNameMatcher;
+    private final Matcher<String> routerThreadNameMatcher;
+    private final Matcher<String> methodThreadNameMatcher;
+
+    protected AbstractExecutionStrategyTest(final String path,
+                                            final String routerExecutorSupplierId,
+                                            final String methodExecutorSupplierId,
+                                            final ExpectedExecutor expectedExecutor,
+                                            final TestMode testMode) throws Exception {
+        this.path = path;
+        this.routerExecutor = EXEC_SUPPLIERS.get(routerExecutorSupplierId).get();
+        this.methodExecutor = EXEC_SUPPLIERS.get(methodExecutorSupplierId).get();
+        this.expectedExecutor = expectedExecutor;
+        this.testMode = testMode;
+
+        // Create thread name matchers for the different executors at play in this test
+        serverThreadNameMatcher = createExecutorMatcher(getServerExecutionContext().getExecutor());
+        routerThreadNameMatcher = createExecutorMatcher(routerExecutor);
+        methodThreadNameMatcher = createExecutorMatcher(methodExecutor);
+    }
+
+    @Parameters(name = "{0} (r: {1}, m: {2})")
     public static Collection<Object[]> data() {
         // We try different variants to exercise various code paths that are sensitive to request/response entities
         final List<Object[]> data = new ArrayList<>();
-        ROOT_PATHS_EXPECTED_EXECS.forEach((rootPath, expectedExecutors) -> {
-            for (int i = 0; i < SUB_PATHS.length; i++) {
-                final int j = i;
-                SUB_SUB_PATH_TEST_MODES.forEach((subSubPath, testMode) ->
-                        data.add(new Object[]{
-                                rootPath + SUB_PATHS[j] + subSubPath,
-                                expectedExecutors[j],
-                                testMode,
-                        }));
+
+        for (String routerExecutorSupplierId : new String[]{"exec1", "immediate"}) {
+            for (String methodExecutorSupplierId : EXEC_SUPPLIERS.keySet()) {
+                ROOT_PATHS_EXPECTED_EXECS.forEach((rootPath, expectedExecutors) -> {
+                    for (int i = 0; i < SUB_PATHS.length; i++) {
+                        final int j = i;
+                        SUB_SUB_PATH_TEST_MODES.forEach((subSubPath, testMode) ->
+                                data.add(new Object[]{
+                                        rootPath + SUB_PATHS[j] + subSubPath,
+                                        routerExecutorSupplierId,
+                                        methodExecutorSupplierId,
+                                        expectedExecutors[j],
+                                        testMode,
+                                }));
+                    }
+                });
             }
-        });
+        }
 
         return data;
     }
@@ -150,8 +184,8 @@ public abstract class AbstractExecutionStrategyTest extends AbstractJerseyHttpSe
     @Override
     protected HttpJerseyRouterBuilder configureBuilder(final HttpJerseyRouterBuilder builder) {
         final Map<String, Executor> executors = new HashMap<>(2);
-        executors.put(DEFAULT_EXECUTOR_ID, ROUTER_EXEC.getExecutor());
-        executors.put("test", TEST_EXEC.getExecutor());
+        executors.put(DEFAULT_EXECUTOR_ID, routerExecutor);
+        executors.put("test", methodExecutor);
 
         return super.configureBuilder(builder).setExecutorFactory(executors::get);
     }
@@ -193,18 +227,26 @@ public abstract class AbstractExecutionStrategyTest extends AbstractJerseyHttpSe
     private Matcher<String> getExecutorMatcher(final ExpectedExecutor expectedExecutor) {
         switch (expectedExecutor) {
             case SERVER:
-                return hasRunOn(startsWith("st-server-"), getServerExecutionContext().getExecutor());
+                return serverThreadNameMatcher;
             case ROUTER:
-                return hasRunOn(startsWith("rtr-"), ROUTER_EXEC.getExecutor());
-            case TEST:
-                return hasRunOn(startsWith("test-"), TEST_EXEC.getExecutor());
+                return routerThreadNameMatcher;
+            case METHOD:
+                return methodThreadNameMatcher;
             default:
                 throw new IllegalArgumentException(expectedExecutor.toString());
         }
     }
 
-    private static Matcher<String> hasRunOn(final Matcher<String> threadNameMatcher, final Executor exec) {
-        return both(JsonMatchers.<String>jsonPartMatches(THREAD_NAME, threadNameMatcher))
+    private static Matcher<String> createExecutorMatcher(final Executor exec) throws Exception {
+        if (exec.equals(immediate())) {
+            return jsonPartMatches(EXEC_NAME, is(exec.toString()));
+        }
+
+        final String threadName = exec.submit(() -> Thread.currentThread().getName()).toFuture().get();
+        final int i = threadName.indexOf('-');
+
+        return both(JsonMatchers.<String>jsonPartMatches(THREAD_NAME,
+                (i > 0 ? startsWith(threadName.substring(0, i)) : is(threadName))))
                 .and(jsonPartMatches(EXEC_NAME, is(exec.toString())));
     }
 }

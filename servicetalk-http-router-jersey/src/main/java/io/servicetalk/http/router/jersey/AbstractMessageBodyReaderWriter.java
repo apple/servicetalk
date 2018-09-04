@@ -42,7 +42,7 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
 import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
-import static io.servicetalk.http.router.jersey.internal.ChunkPublisherInputStream.handleEntityStream;
+import static io.servicetalk.http.router.jersey.ChunkPublisherInputStream.handleEntityStream;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseChunkPublisher;
 import static javax.ws.rs.Priorities.ENTITY_CODER;
 import static javax.ws.rs.core.MediaType.WILDCARD;
@@ -56,6 +56,8 @@ abstract class AbstractMessageBodyReaderWriter<Source, T, SourceOfT, WrappedSour
     private final Class<Source> sourceClass;
     private final Class<T> contentClass;
 
+    // We can not use `@Context ConnectionContext` directly because we would not see the latest version
+    // in case it has been rebound as part of offloading.
     @Context
     protected Provider<Ref<ConnectionContext>> ctxRefProvider;
 

@@ -23,19 +23,23 @@ import org.junit.runners.Suite.SuiteClasses;
 @SuiteClasses({
         // Support
         CharSequenceUtilTest.class,
+
         // Core JAX-RS features
         SynchronousResourceTest.class,
         AsynchronousResourceTest.class,
         ExceptionMapperTest.class,
         GlobalFiltersTest.class,
+        InputConsumingGlobalFiltersTest.class,
         InterceptorsTest.class,
         SecurityFilterTest.class,
+
         // Execution strategy tests
         AsynchronousResourceRouterExecTest.class,
         ExecutionStrategyConfigurationFailuresTest.class,
         ExecutionStrategyServerImmediateTest.class,
         ExecutionStrategyTest.class,
         GlobalFiltersRouterExecTest.class,
+        InputConsumingGlobalFiltersRouterExecTest.class,
         InterceptorsRouterExecTest.class,
         SynchronousResourceRouterExecTest.class
 })
