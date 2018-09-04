@@ -22,4 +22,5 @@
   <suppress checks="JavadocMethod" files=".*[\\/]src[\\/]jmh[\\/].*"/>
   <suppress checks="JavadocPackage" files=".*[\\/]src[\\/]jmh[\\/].*"/>
   <suppress checks="JavadocType" files=".*[\\/]src[\\/]jmh[\\/].*"/>
+  <suppress checks="VisibilityModifier" files=".*[\\/]src[\\/]jmh[\\/].*"/>
 </suppressions>

@@ -26,47 +26,23 @@ buildscript {
   }
 }
 
-plugins {
-  id "me.champeau.gradle.jmh" version "0.4.7"
-}
-
 apply plugin: "servicetalk-library"
-apply plugin: "me.champeau.gradle.jmh"
 
 dependencies {
   implementation "io.servicetalk:servicetalk-bom-internal:0.1.0-SNAPSHOT"
 
-  compile "io.servicetalk:servicetalk-concurrent-context:0.1.0-SNAPSHOT"
-  compile "io.servicetalk:servicetalk-concurrent-api-internal:0.1.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-concurrent-api:0.1.0-SNAPSHOT"
 
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-concurrent-api:0.1.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-concurrent-internal:0.1.0-SNAPSHOT"
+  implementation "org.slf4j:slf4j-api"
 
-  testImplementation "io.servicetalk:servicetalk-concurrent-internal:0.1.0-SNAPSHOT"
-  testImplementation "io.servicetalk:servicetalk-concurrent-api-internal:0.1.0-SNAPSHOT"
+  testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:0.1.0-SNAPSHOT"
   testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:0.1.0-SNAPSHOT"
   testImplementation "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
   testImplementation "junit:junit"
   testImplementation "org.hamcrest:hamcrest-library"
-}
-
-tasks.checkstyleJmh {
-  it.dependsOn checkstyleConfig
-  tasks.checkstyle.dependsOn it
-}
-
-tasks.pmdJmh {
-  tasks.pmd.dependsOn it
-}
-
-tasks.spotbugsJmh {
-  tasks.spotbugs.dependsOn it
-}
-
-jmh {
-  include = ".*Benchmark"
-//  iterations = 5
-  jmhVersion = "$jmhVersion"
-  jvmArgsPrepend = "-Dio.netty.maxDirectMemory=9223372036854775807"
-  // jvmArgsPrepend = "-XX:+UnlockCommercialFeatures -XX:+FlightRecorder"
+  testImplementation "org.mockito:mockito-core"
 }

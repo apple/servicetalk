@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Single.Subscriber;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.internal.ConnectableOutputStream;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpProtocolVersion;
@@ -44,6 +45,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
+import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
 import static io.servicetalk.http.api.HttpResponses.newResponse;
 import static io.servicetalk.http.router.jersey.CharSequenceUtils.asCharSequence;
@@ -63,7 +65,6 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
                                     PREFER_DIRECT_RO_ALLOCATOR.fromAscii(s.getReasonPhrase())))));
 
     private static final int UNKNOWN_RESPONSE_LENGTH = -1;
-    private static final int EMPTY_RESPONSE = 0;
 
     private final ContainerRequest request;
     private final HttpProtocolVersion protocolVersion;
@@ -103,9 +104,10 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
             sendResponse(contentLength, null, responseContext);
             return null;
         } else {
-            final DummyChunkPublisherOutputStream bpos = new DummyChunkPublisherOutputStream(allocator);
-            sendResponse(contentLength, bpos.getChunkPublisher(), responseContext);
-            return bpos;
+            final ConnectableOutputStream os = new ConnectableOutputStream();
+            sendResponse(contentLength, os.connect().map(bytes ->
+                    newPayloadChunk(allocator.wrap(bytes))), responseContext);
+            return os;
         }
 
         // TODO send flush signal when supported

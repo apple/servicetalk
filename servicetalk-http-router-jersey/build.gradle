@@ -37,6 +37,7 @@ dependencies {
 
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-concurrent-api-internal:0.1.0-SNAPSHOT"
   implementation "io.servicetalk:servicetalk-concurrent-internal:0.1.0-SNAPSHOT"
   implementation "io.servicetalk:servicetalk-data-jackson:0.1.0-SNAPSHOT"
   implementation "io.servicetalk:servicetalk-http-utils:0.1.0-SNAPSHOT"
