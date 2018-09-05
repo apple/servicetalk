@@ -22,13 +22,11 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
 
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.Publisher.error;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static java.lang.Thread.currentThread;
 
@@ -48,35 +46,34 @@ final class BlockingUtils {
         T get() throws Exception;
     }
 
-    static void blockingInvocation(final Completable source) throws Exception {
+    static void blockingInvocation(final Completable source) {
         // It is assumed that users will always apply timeouts at another layer. So we don't
         // apply any explicit timeout here and just wait forever.
         try {
-            awaitIndefinitely(source);
+            source.toFuture().get();
         } catch (final ExecutionException e) {
             throwException(e.getCause());
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Nullable
-    static <T> T blockingInvocation(final Single<T> source) throws Exception {
+    static <T> T blockingInvocation(final Single<T> source) {
         // It is assumed that users will always apply timeouts at another layer. So we don't
         // apply any explicit timeout here and just wait forever.
         try {
-            return awaitIndefinitely(source);
+            return source.toFuture().get();
         } catch (final ExecutionException e) {
             throwException(e.getCause());
             return uncheckedCast(); // Used to fool the compiler, but actually should never be invoked at runtime.
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
     static <T> BlockingIterable<T> blockingInvocation(final Publisher<T> source) throws Exception {
         return source.toIterable();
-    }
-
-    // This is needed to be type-safe in the commanders.
-    static <T> Future<T> singleToFuture(Single<T> single) {
-        return single.toFuture();
     }
 
     static Completable blockingToCompletable(RunnableCheckedException r) {
@@ -123,16 +120,6 @@ final class BlockingUtils {
                 subscriber.onSuccess(response);
             }
         };
-    }
-
-    static <T> Single<T> futureToSingle(SupplierCheckedException<Future<T>> supplier) {
-        Future<T> future;
-        try {
-            future = supplier.get();
-        } catch (Exception e) {
-            return Single.error(e);
-        }
-        return Single.fromFuture(future);
     }
 
     static <T> Publisher<T> blockingToPublisher(SupplierCheckedException<BlockingIterable<T>> supplier) {

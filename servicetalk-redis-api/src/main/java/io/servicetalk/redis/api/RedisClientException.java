@@ -29,4 +29,14 @@ public class RedisClientException extends RuntimeException {
     public RedisClientException(final String message) {
         super(message);
     }
+
+    /**
+     * Instantiates a new {@link RedisClientException}.
+     *
+     * @param message the message containing the details of the error.
+     * @param cause the cause of the exception.
+     */
+    public RedisClientException(final String message, final Throwable cause) {
+        super(message, cause);
+    }
 }

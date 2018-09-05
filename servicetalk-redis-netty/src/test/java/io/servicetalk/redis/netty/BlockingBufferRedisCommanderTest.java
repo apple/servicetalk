@@ -25,6 +25,7 @@ import io.servicetalk.redis.api.BlockingBufferRedisCommander;
 import io.servicetalk.redis.api.BlockingPubSubBufferRedisConnection;
 import io.servicetalk.redis.api.BlockingTransactedBufferRedisCommander;
 import io.servicetalk.redis.api.PubSubRedisMessage;
+import io.servicetalk.redis.api.RedisClientException;
 import io.servicetalk.redis.api.RedisException;
 import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Get;
@@ -303,9 +304,9 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
         BlockingTransactedBufferRedisCommander tcc = commandClient.multi();
         tcc.close();
 
-        thrown.expect(ExecutionException.class);
+        thrown.expect(RedisClientException.class);
         thrown.expectCause(instanceOf(ClosedChannelException.class));
-        tcc.ping().get();
+        tcc.ping();
     }
 
     @Test

@@ -15,9 +15,9 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.api.PubSubRedisConnection;
 import io.servicetalk.redis.api.PubSubRedisMessage;
+import io.servicetalk.redis.api.RedisClientException;
 import io.servicetalk.redis.api.RedisCommander;
 import io.servicetalk.redis.api.RedisException;
 import io.servicetalk.redis.api.RedisProtocolSupport;
@@ -30,7 +30,6 @@ import io.servicetalk.redis.api.RedisProtocolSupport.FieldValue;
 import io.servicetalk.redis.api.RedisProtocolSupport.LongitudeLatitudeMember;
 import io.servicetalk.redis.api.TransactedRedisCommander;
 import io.servicetalk.redis.api.TransactionAbortedException;
-import io.servicetalk.redis.api.TransactionCompletedException;
 import io.servicetalk.redis.netty.SubscribedRedisClientTest.AccumulatingSubscriber;
 
 import org.hamcrest.Matcher;
@@ -261,10 +260,10 @@ public class RedisCommanderTest extends BaseRedisClientTest {
     @Test
     public void transactionExec() throws Exception {
         final TransactedRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
-        Future<Long> value1 = tcc.del(key("a-key")).toFuture();
-        Future<String> value2 = tcc.set(key("a-key"), "a-value3").toFuture();
-        Future<String> value3 = tcc.ping("in-transac").toFuture();
-        Future<String> value4 = tcc.get(key("a-key")).toFuture();
+        Future<Long> value1 = tcc.del(key("a-key"));
+        Future<String> value2 = tcc.set(key("a-key"), "a-value3");
+        Future<String> value3 = tcc.ping("in-transac");
+        Future<String> value4 = tcc.get(key("a-key"));
         awaitIndefinitely(tcc.exec());
         assertThat(value1.get(), is(1L));
         assertThat(value2.get(), is("OK"));
@@ -273,30 +272,10 @@ public class RedisCommanderTest extends BaseRedisClientTest {
     }
 
     @Test
-    public void transactionSubscribeAfterExec() throws Exception {
-        final TransactedRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
-        Single<String> single = tcc.ping("in-transac");
-        awaitIndefinitely(tcc.exec());
-
-        thrown.expect(TransactionCompletedException.class);
-        awaitIndefinitely(single);
-    }
-
-    @Test
-    public void transactionSubscribeAfterDiscard() throws Exception {
-        final TransactedRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
-        Single<String> single = tcc.ping("in-transac");
-        awaitIndefinitely(tcc.discard());
-
-        thrown.expect(TransactionCompletedException.class);
-        awaitIndefinitely(single);
-    }
-
-    @Test
     public void transactionDiscard() throws Exception {
         final TransactedRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
 
-        Future<String> future = tcc.ping("in-transac").toFuture();
+        Future<String> future = tcc.ping("in-transac");
         tcc.discard().toFuture().get();
 
         thrown.expect(ExecutionException.class);
@@ -308,8 +287,8 @@ public class RedisCommanderTest extends BaseRedisClientTest {
     public void transactionPartialFailure() throws Exception {
         final TransactedRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
 
-        Future<String> r1 = tcc.set(key("ptf"), "foo").toFuture();
-        Future<String> r2 = tcc.lpop(key("ptf")).toFuture();
+        Future<String> r1 = tcc.set(key("ptf"), "foo");
+        Future<String> r2 = tcc.lpop(key("ptf"));
 
         awaitIndefinitely(tcc.exec());
 
@@ -323,10 +302,14 @@ public class RedisCommanderTest extends BaseRedisClientTest {
 
     @Test
     public void transactionCloseAsync() throws Exception {
-        thrown.expect(ExecutionException.class);
+        final TransactedRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
+
+        tcc.closeAsync().toFuture().get();
+
+        thrown.expect(RedisClientException.class);
         thrown.expectCause(is(instanceOf(ClosedChannelException.class)));
 
-        awaitIndefinitely(commandClient.multi().flatMap(tcc -> tcc.closeAsync().andThen(tcc.ping())));
+        tcc.ping();
     }
 
     @Test

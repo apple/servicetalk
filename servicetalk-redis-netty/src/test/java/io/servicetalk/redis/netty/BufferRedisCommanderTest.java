@@ -16,10 +16,10 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.api.BufferRedisCommander;
 import io.servicetalk.redis.api.PubSubBufferRedisConnection;
 import io.servicetalk.redis.api.PubSubRedisMessage;
+import io.servicetalk.redis.api.RedisClientException;
 import io.servicetalk.redis.api.RedisException;
 import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Get;
@@ -30,7 +30,6 @@ import io.servicetalk.redis.api.RedisProtocolSupport.BufferLongitudeLatitudeMemb
 import io.servicetalk.redis.api.RedisProtocolSupport.ExpireDuration;
 import io.servicetalk.redis.api.TransactedBufferRedisCommander;
 import io.servicetalk.redis.api.TransactionAbortedException;
-import io.servicetalk.redis.api.TransactionCompletedException;
 import io.servicetalk.redis.netty.SubscribedRedisClientTest.AccumulatingSubscriber;
 
 import org.hamcrest.Matcher;
@@ -261,10 +260,10 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
     @Test
     public void transactionExec() throws Exception {
         final TransactedBufferRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
-        Future<Long> value1 = tcc.del(key("a-key")).toFuture();
-        Future<String> value2 = tcc.set(key("a-key"), buf("a-value3")).toFuture();
-        Future<Buffer> value3 = tcc.ping(buf("in-transac")).toFuture();
-        Future<Buffer> value4 = tcc.get(key("a-key")).toFuture();
+        Future<Long> value1 = tcc.del(key("a-key"));
+        Future<String> value2 = tcc.set(key("a-key"), buf("a-value3"));
+        Future<Buffer> value3 = tcc.ping(buf("in-transac"));
+        Future<Buffer> value4 = tcc.get(key("a-key"));
         awaitIndefinitely(tcc.exec());
         assertThat(value1.get(), is(1L));
         assertThat(value2.get(), is("OK"));
@@ -273,30 +272,10 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
     }
 
     @Test
-    public void transactionSubscribeAfterExec() throws Exception {
-        final TransactedBufferRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
-        Single<Buffer> single = tcc.ping(buf("in-transac"));
-        awaitIndefinitely(tcc.exec());
-
-        thrown.expect(TransactionCompletedException.class);
-        awaitIndefinitely(single);
-    }
-
-    @Test
-    public void transactionSubscribeAfterDiscard() throws Exception {
-        final TransactedBufferRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
-        Single<Buffer> single = tcc.ping(buf("in-transac"));
-        awaitIndefinitely(tcc.discard());
-
-        thrown.expect(TransactionCompletedException.class);
-        awaitIndefinitely(single);
-    }
-
-    @Test
     public void transactionDiscard() throws Exception {
         final TransactedBufferRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
 
-        Future<Buffer> future = tcc.ping(buf("in-transac")).toFuture();
+        Future<Buffer> future = tcc.ping(buf("in-transac"));
         tcc.discard().toFuture().get();
 
         thrown.expect(ExecutionException.class);
@@ -308,8 +287,8 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
     public void transactionPartialFailure() throws Exception {
         final TransactedBufferRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
 
-        Future<String> r1 = tcc.set(key("ptf"), buf("foo")).toFuture();
-        Future<Buffer> r2 = tcc.lpop(key("ptf")).toFuture();
+        Future<String> r1 = tcc.set(key("ptf"), buf("foo"));
+        Future<Buffer> r2 = tcc.lpop(key("ptf"));
 
         awaitIndefinitely(tcc.exec());
 
@@ -323,10 +302,13 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
 
     @Test
     public void transactionCloseAsync() throws Exception {
-        thrown.expect(ExecutionException.class);
-        thrown.expectCause(is(instanceOf(ClosedChannelException.class)));
+        final TransactedBufferRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
 
-        awaitIndefinitely(commandClient.multi().flatMap(tcc -> tcc.closeAsync().andThen(tcc.ping())));
+        tcc.closeAsync().toFuture().get();
+
+        thrown.expect(RedisClientException.class);
+        thrown.expectCause(is(instanceOf(ClosedChannelException.class)));
+        tcc.ping();
     }
 
     @Test
