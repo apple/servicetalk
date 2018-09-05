@@ -31,7 +31,7 @@ import static io.servicetalk.concurrent.internal.PlatformDependent.newUnboundedL
 /**
  * A {@link Single} which is also a {@link Subscriber}. State of this {@link Single} can be modified by using the
  * {@link Subscriber} methods which is forwarded to all existing or subsequent {@link Subscriber}s.
- * @param <T> THe type of result of the {@link Single}.
+ * @param <T> The type of result of the {@link Single}.
  */
 public final class SingleProcessor<T> extends Single<T> implements Single.Processor<T, T> {
     private static final AtomicReferenceFieldUpdater<SingleProcessor, Object> terminalSignalUpdater =

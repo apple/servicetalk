@@ -15,90 +15,172 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.internal.SingleProcessor;
+import io.servicetalk.http.api.HttpSerializerUtils.HttpBuffersAndTrailersOperator;
+import io.servicetalk.http.api.HttpSerializerUtils.HttpObjectsAndTrailersOperator;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
+import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Publisher.empty;
+import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.http.api.HttpSerializerUtils.aggregatePayloadAndTrailers;
 import static java.util.Objects.requireNonNull;
 
-/**
- * Default implementation of {@link StreamingHttpRequest}.
- *
- * @param <I> The type of payload of the request.
- */
-final class DefaultStreamingHttpRequest<I> extends DefaultHttpRequestMetaData implements StreamingHttpRequest<I> {
+class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implements StreamingHttpRequest {
+    final Publisher<P> payloadBody;
+    final BufferAllocator allocator;
+    final Single<HttpHeaders> trailersSingle;
 
-    private final Publisher<I> payloadBody;
+    DefaultStreamingHttpRequest(final HttpRequestMethod method, final String requestTarget,
+                                final HttpProtocolVersion version, final HttpHeaders headers,
+                                final BufferAllocator allocator, final HttpHeaders initialTrailers) {
+        this(method, requestTarget, version, headers, allocator, empty(), success(initialTrailers));
+    }
 
     /**
      * Create a new instance.
-     *
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param version the {@link HttpProtocolVersion} of the request.
-     * @param payloadBody a {@link Publisher} of the payload body of the request.
-     * @param headers the {@link HttpHeaders} of the request.
+     * @param method The {@link HttpRequestMethod}.
+     * @param requestTarget The request-target.
+     * @param version The {@link HttpProtocolVersion}.
+     * @param headers The initial {@link HttpHeaders}.
+     * @param allocator The {@link BufferAllocator} to use for serialization (if required).
+     * @param payloadBody A {@link Publisher} that provide only the payload body. The trailers <strong>must</strong>
+     * not be included, and instead are represented by {@code trailersSingle}.
+     * @param trailersSingle The {@link Single} <strong>must</strong> support multiple subscribes, and it is assumed to
+     * provide the original data if re-used over transformation operations.
      */
-    DefaultStreamingHttpRequest(final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
-                                final Publisher<I> payloadBody, final HttpHeaders headers) {
+    DefaultStreamingHttpRequest(final HttpRequestMethod method, final String requestTarget,
+                                final HttpProtocolVersion version, final HttpHeaders headers,
+                                final BufferAllocator allocator, final Publisher<P> payloadBody,
+                                final Single<HttpHeaders> trailersSingle) {
         super(method, requestTarget, version, headers);
+        this.allocator = requireNonNull(allocator);
         this.payloadBody = requireNonNull(payloadBody);
+        this.trailersSingle = requireNonNull(trailersSingle);
     }
 
-    private DefaultStreamingHttpRequest(final DefaultStreamingHttpRequest<?> request, final Publisher<I> payloadBody) {
-        super(request);
-        this.payloadBody = requireNonNull(payloadBody);
+    DefaultStreamingHttpRequest(final DefaultHttpRequestMetaData oldRequest,
+                                final BufferAllocator allocator,
+                                final Publisher<P> payloadBody,
+                                final Single<HttpHeaders> trailersSingle) {
+        super(oldRequest);
+        this.allocator = allocator;
+        this.payloadBody = payloadBody;
+        this.trailersSingle = trailersSingle;
     }
 
     @Override
-    public DefaultStreamingHttpRequest<I> setVersion(final HttpProtocolVersion version) {
+    public final StreamingHttpRequest setVersion(final HttpProtocolVersion version) {
         super.setVersion(version);
         return this;
     }
 
     @Override
-    public DefaultStreamingHttpRequest<I> setMethod(final HttpRequestMethod method) {
+    public final StreamingHttpRequest setMethod(final HttpRequestMethod method) {
         super.setMethod(method);
         return this;
     }
 
     @Override
-    public DefaultStreamingHttpRequest<I> setRequestTarget(final String requestTarget) {
+    public final StreamingHttpRequest setRequestTarget(final String requestTarget) {
         super.setRequestTarget(requestTarget);
         return this;
     }
 
     @Override
-    public DefaultStreamingHttpRequest<I> setPath(final String path) {
+    public final StreamingHttpRequest setPath(final String path) {
         super.setPath(path);
         return this;
     }
 
     @Override
-    public DefaultStreamingHttpRequest<I> setRawPath(final String path) {
+    public final StreamingHttpRequest setRawPath(final String path) {
         super.setRawPath(path);
         return this;
     }
 
     @Override
-    public DefaultStreamingHttpRequest<I> setRawQuery(final String query) {
+    public final StreamingHttpRequest setRawQuery(final String query) {
         super.setRawQuery(query);
         return this;
     }
 
     @Override
-    public Publisher<I> getPayloadBody() {
-        return payloadBody;
+    public final <T> Publisher<T> getPayloadBody(HttpDeserializer<T> deserializer) {
+        return deserializer.deserialize(getHeaders(), payloadBody);
     }
 
     @Override
-    public <R> StreamingHttpRequest<R> transformPayloadBody(final Function<Publisher<I>, Publisher<R>> transformer) {
-        return new DefaultStreamingHttpRequest<>(this, transformer.apply(payloadBody));
+    public final Publisher<Object> getPayloadBodyAndTrailers() {
+        return payloadBody
+                .map(payload -> (Object) payload) // down cast to Object
+                .concatWith(trailersSingle);
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public final <T> StreamingHttpRequest transformPayloadBody(Function<Publisher<Buffer>, Publisher<T>> transformer,
+                                                               HttpSerializer<T> serializer) {
+        return new BufferStreamingHttpRequest(this, allocator,
+                serializer.serialize(getHeaders(), transformer.apply(getPayloadBody()), allocator),
+                trailersSingle);
+    }
+
+    @Override
+    public final StreamingHttpRequest transformPayloadBody(UnaryOperator<Publisher<Buffer>> transformer) {
+        return new BufferStreamingHttpRequest(this, allocator, transformer.apply(getPayloadBody()), trailersSingle);
+    }
+
+    @Override
+    public final StreamingHttpRequest transformRawPayloadBody(UnaryOperator<Publisher<?>> transformer) {
+        return new DefaultStreamingHttpRequest<>(this, allocator, transformer.apply(payloadBody), trailersSingle);
+    }
+
+    @Override
+    public final <T> StreamingHttpRequest transform(Supplier<T> stateSupplier,
+                                                    BiFunction<Buffer, T, Buffer> transformer,
+                                                    BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
+        final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
+        return new BufferStreamingHttpRequest(this, allocator, getPayloadBody()
+                .liftSynchronous(new HttpBuffersAndTrailersOperator<>(stateSupplier, transformer,
+                        trailersTransformer, trailersSingle, outTrailersSingle)),
+                outTrailersSingle);
+    }
+
+    @Override
+    public final <T> StreamingHttpRequest transformRaw(Supplier<T> stateSupplier,
+                                                       BiFunction<Object, T, ?> transformer,
+                                                       BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
+        final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
+        return new DefaultStreamingHttpRequest<>(this, allocator, payloadBody
+                .liftSynchronous(new HttpObjectsAndTrailersOperator<>(stateSupplier, transformer,
+                        trailersTransformer, trailersSingle, outTrailersSingle)),
+                outTrailersSingle);
+    }
+
+    @Override
+    public final Single<HttpRequest> toRequest() {
+        return aggregatePayloadAndTrailers(getPayloadBodyAndTrailers(), allocator).map(pair -> {
+             assert pair.trailers != null;
+             return new BufferHttpRequest(getMethod(), getRequestTarget(), getVersion(), getHeaders(), pair.trailers,
+                     pair.compositeBuffer, allocator);
+        });
+    }
+
+    @Override
+    public BlockingStreamingHttpRequest toBlockingStreamingRequest() {
+        return new DefaultBlockingStreamingHttpRequest<>(this, allocator, payloadBody.toIterable(), trailersSingle);
+    }
+
+    @Override
+    public boolean equals(@Nullable final Object o) {
         if (this == o) {
             return true;
         }

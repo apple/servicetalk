@@ -67,6 +67,10 @@ public interface BlockingIterator<T> extends CloseableIterator<T> {
     @Nullable
     T next(long timeout, TimeUnit unit) throws TimeoutException;
 
+    @Nullable
+    @Override
+    T next();
+
     /**
      * This method is used to communicate that you are no longer interested in consuming data.
      * This provides a "best effort" notification to the producer of data that you are no longer interested in data

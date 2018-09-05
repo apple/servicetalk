@@ -313,7 +313,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @return A {@link Single} that emits the result of {@code next} {@link Single}, after this {@link Completable}
      * has terminated successfully.
      */
-    public final <T> Single<T> andThen(Single<T> next) {
+    public final <T> Single<T> andThen(Single<? extends T> next) {
         return new CompletableAndThenSingle<>(this, next, executor);
     }
 
@@ -336,7 +336,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @return A {@link Publisher} that emits all items emitted from {@code next} {@link Publisher}, after this
      * {@link Completable} has terminated successfully.
      */
-    public final <T> Publisher<T> andThen(Publisher<T> next) {
+    public final <T> Publisher<T> andThen(Publisher<? extends T> next) {
         return toSingle().flatMapPublisher(aVoid -> next);
     }
 

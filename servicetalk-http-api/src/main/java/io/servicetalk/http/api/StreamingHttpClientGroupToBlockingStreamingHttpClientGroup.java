@@ -23,11 +23,11 @@ import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.StreamingHttpRequests.fromBlockingRequest;
 import static java.util.Objects.requireNonNull;
 
-final class StremaingHttpClientGroupToBlockingStreamingHttpClientGroup<UnresolvedAddress> extends
+final class StreamingHttpClientGroupToBlockingStreamingHttpClientGroup<UnresolvedAddress> extends
                                                                  BlockingStreamingHttpClientGroup<UnresolvedAddress> {
     private final StreamingHttpClientGroup<UnresolvedAddress> clientGroup;
 
-    StremaingHttpClientGroupToBlockingStreamingHttpClientGroup(StreamingHttpClientGroup<UnresolvedAddress> clientGroup) {
+    StreamingHttpClientGroupToBlockingStreamingHttpClientGroup(StreamingHttpClientGroup<UnresolvedAddress> clientGroup) {
         this.clientGroup = requireNonNull(clientGroup);
     }
 
@@ -37,7 +37,7 @@ final class StremaingHttpClientGroupToBlockingStreamingHttpClientGroup<Unresolve
             throws Exception {
         // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
-        return new DefaultBlockingHttpResponse<>(
+        return new DefaultBlockingStreamingHttpResponse<>(
                 blockingInvocation(clientGroup.request(key, fromBlockingRequest(request))));
     }
 

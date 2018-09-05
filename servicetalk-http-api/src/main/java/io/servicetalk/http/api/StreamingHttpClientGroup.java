@@ -25,12 +25,13 @@ import io.servicetalk.transport.api.ExecutionContext;
 import java.util.function.Function;
 
 /**
- * Logically this interface provides a <pre>{@code Map<GroupKey, StreamingHttpClient>}</pre>, and also the ability to
- * create new {@link StreamingHttpClient} objects if none yet exist.
+ * The equivalent of {@link HttpClientGroup} but that accepts {@link StreamingHttpRequest} and returns
+ * {@link StreamingHttpResponse}.
  *
  * @param <UnresolvedAddress> The address type used to create new {@link StreamingHttpClient}s.
  */
-public abstract class StreamingHttpClientGroup<UnresolvedAddress> implements ListenableAsyncCloseable {
+public abstract class StreamingHttpClientGroup<UnresolvedAddress> implements
+                                                              StreamingHttpRequestFactory, ListenableAsyncCloseable {
     /**
      * Locate or create a client and delegate to {@link StreamingHttpClient#request(StreamingHttpRequest)}.
      *
@@ -40,8 +41,8 @@ public abstract class StreamingHttpClientGroup<UnresolvedAddress> implements Lis
      * @return The received {@link StreamingHttpResponse}.
      * @see StreamingHttpClient#request(StreamingHttpRequest)
      */
-    public abstract Single<StreamingHttpResponse<HttpPayloadChunk>> request(
-            GroupKey<UnresolvedAddress> key, StreamingHttpRequest<HttpPayloadChunk> request);
+    public abstract Single<StreamingHttpResponse> request(
+            GroupKey<UnresolvedAddress> key, StreamingHttpRequest request);
 
     /**
      * Locate or create a client and delegate to {@link StreamingHttpClient#reserveConnection(StreamingHttpRequest)}.
@@ -54,7 +55,7 @@ public abstract class StreamingHttpClientGroup<UnresolvedAddress> implements Lis
      * @see StreamingHttpClient#reserveConnection(StreamingHttpRequest)
      */
     public abstract Single<? extends ReservedStreamingHttpConnection> reserveConnection(
-            GroupKey<UnresolvedAddress> key, StreamingHttpRequest<HttpPayloadChunk> request);
+            GroupKey<UnresolvedAddress> key, StreamingHttpRequest request);
 
     /**
      * Locate or create a client and delegate to {@link StreamingHttpClient#upgradeConnection(StreamingHttpRequest)}.
@@ -67,8 +68,8 @@ public abstract class StreamingHttpClientGroup<UnresolvedAddress> implements Lis
      * {@link StreamingHttpConnection} used for the upgrade.
      * @see StreamingHttpClient#upgradeConnection(StreamingHttpRequest)
      */
-    public abstract Single<? extends UpgradableStreamingHttpResponse<HttpPayloadChunk>> upgradeConnection(
-            GroupKey<UnresolvedAddress> key, StreamingHttpRequest<HttpPayloadChunk> request);
+    public abstract Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(
+            GroupKey<UnresolvedAddress> key, StreamingHttpRequest request);
 
     /**
      * Convert this {@link StreamingHttpClientGroup} to the {@link StreamingHttpClient} API. This can simplify the
@@ -84,7 +85,7 @@ public abstract class StreamingHttpClientGroup<UnresolvedAddress> implements Lis
      * {@link StreamingHttpClient#getExecutionContext()}.
      * @return A {@link StreamingHttpClient}, which is backed by this {@link StreamingHttpClientGroup}.
      */
-    public final StreamingHttpClient asClient(final Function<StreamingHttpRequest<HttpPayloadChunk>,
+    public final StreamingHttpClient asClient(final Function<StreamingHttpRequest,
                                                     GroupKey<UnresolvedAddress>> requestToGroupKeyFunc,
                                               final ExecutionContext executionContext) {
         return new StremaingHttpClientGroupToStreamingHttpClient<>(this, requestToGroupKeyFunc, executionContext);
@@ -128,7 +129,7 @@ public abstract class StreamingHttpClientGroup<UnresolvedAddress> implements Lis
     }
 
     BlockingStreamingHttpClientGroup<UnresolvedAddress> asBlockingStreamingClientGroupInternal() {
-        return new StremaingHttpClientGroupToBlockingStreamingHttpClientGroup<>(this);
+        return new StreamingHttpClientGroupToBlockingStreamingHttpClientGroup<>(this);
     }
 
     BlockingHttpClientGroup<UnresolvedAddress> asBlockingClientGroupInternal() {

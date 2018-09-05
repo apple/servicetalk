@@ -62,8 +62,8 @@ final class BlockingStreamingHttpClientGroupToStreamingHttpClientGroup<Unresolve
 
     @Override
     public Completable onClose() {
-        if (blockingClientGroup instanceof StremaingHttpClientGroupToBlockingStreamingHttpClientGroup) {
-            return ((StremaingHttpClientGroupToBlockingStreamingHttpClientGroup<?>) blockingClientGroup).onClose();
+        if (blockingClientGroup instanceof StreamingHttpClientGroupToBlockingStreamingHttpClientGroup) {
+            return ((StreamingHttpClientGroupToBlockingStreamingHttpClientGroup<?>) blockingClientGroup).onClose();
         }
 
         return error(new UnsupportedOperationException("unsupported type: " + blockingClientGroup.getClass()));

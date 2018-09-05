@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -25,23 +26,25 @@ import io.servicetalk.http.api.StreamingHttpClientToBlockingHttpClient.ReservedS
 import io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient.ReservedStreamingHttpConnectionToBlockingStreaming;
 import io.servicetalk.http.api.StreamingHttpClientToHttpClient.ReservedStreamingHttpConnectionToReservedHttpConnection;
 
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 
 /**
- * Provides a means to issue requests against HTTP service. The implementation is free to maintain a collection of
- * {@link StreamingHttpConnection} instances and distribute calls to {@link #request(StreamingHttpRequest)} amongst this
- * collection.
+ * The equivalent of {@link HttpClient} but that accepts {@link StreamingHttpRequest} and returns
+ * {@link StreamingHttpResponse}
  */
 public abstract class StreamingHttpClient extends StreamingHttpRequester {
     /**
-     * Reserve a {@link StreamingHttpConnection} for handling the provided {@link StreamingHttpRequest}
-     * but <b>does not execute it</b>!
+     * Reserve a {@link StreamingHttpConnection} for handling the provided {@link StreamingHttpRequest} but <b>does not
+     * execute it</b>!
      * @param request Allows the underlying layers to know what {@link StreamingHttpConnection}s are valid to reserve.
      * For example this may provide some insight into shard or other info.
      * @return a {@link ReservedStreamingHttpConnection}.
      */
-    public abstract Single<? extends ReservedStreamingHttpConnection> reserveConnection(
-            StreamingHttpRequest<HttpPayloadChunk> request);
+    public abstract Single<? extends ReservedStreamingHttpConnection> reserveConnection(StreamingHttpRequest request);
 
     /**
      * Attempt a <a href="https://tools.ietf.org/html/rfc7230.html#section-6.7">protocol upgrade</a>.
@@ -54,8 +57,7 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
      * @return An object that provides the {@link StreamingHttpResponse} for the upgrade attempt and also contains the
      * {@link StreamingHttpConnection} used for the upgrade.
      */
-    public abstract Single<? extends UpgradableStreamingHttpResponse<HttpPayloadChunk>> upgradeConnection(
-            StreamingHttpRequest<HttpPayloadChunk> request);
+    public abstract Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(StreamingHttpRequest request);
 
     /**
      * Convert this {@link StreamingHttpClient} to the {@link HttpClient} API.
@@ -173,9 +175,8 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
      * A special type of response returned by upgrade requests {@link #upgradeConnection(StreamingHttpRequest)}. This
      * object allows the upgrade code to inform the HTTP implementation if the {@link StreamingHttpConnection} can
      * continue using the HTTP protocol or not.
-     * @param <T> The type of data in the {@link StreamingHttpResponse}.
      */
-    public interface UpgradableStreamingHttpResponse<T> extends StreamingHttpResponse<T> {
+    public interface UpgradableStreamingHttpResponse extends StreamingHttpResponse {
         /**
          * Called by the code responsible for processing the upgrade response.
          * <p>
@@ -202,12 +203,33 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
         ReservedStreamingHttpConnection getHttpConnection(boolean releaseReturnsToClient);
 
         @Override
-        <R> UpgradableStreamingHttpResponse<R> transformPayloadBody(Function<Publisher<T>, Publisher<R>> transformer);
+        default <T> UpgradableStreamingHttpResponse transformPayloadBody(
+                Publisher<T> payloadBody, HttpSerializer<T> serializer) {
+            // Ignore content of original Publisher (payloadBody). Merge means the resulting publisher will not complete
+            // until the previous payload body and the serialization both complete.
+            return transformPayloadBody(old -> old.ignoreElements().merge(payloadBody), serializer);
+        }
 
         @Override
-        UpgradableStreamingHttpResponse<T> setVersion(HttpProtocolVersion version);
+        <T> UpgradableStreamingHttpResponse transformPayloadBody(Function<Publisher<Buffer>, Publisher<T>> f,
+                                                                 HttpSerializer<T> serializer);
 
         @Override
-        UpgradableStreamingHttpResponse<T> setStatus(HttpResponseStatus status);
+        UpgradableStreamingHttpResponse transformPayloadBody(UnaryOperator<Publisher<Buffer>> transformer);
+
+        @Override
+        <T> UpgradableStreamingHttpResponse transform(Supplier<T> stateSupplier,
+                                                      BiFunction<Buffer, T, Buffer> transformer,
+                                                      BiConsumer<T, HttpHeaders> trailersConsumer);
+
+        @Override
+        <T> UpgradableStreamingHttpResponse transform(Supplier<T> stateSupplier,
+                                                      BiFunction<Object, T, Object> transformer);
+
+        @Override
+        UpgradableStreamingHttpResponse setVersion(HttpProtocolVersion version);
+
+        @Override
+        UpgradableStreamingHttpResponse setStatus(HttpResponseStatus status);
     }
 }

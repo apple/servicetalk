@@ -27,7 +27,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.http.api.DefaultHttpRequest.from;
+import static io.servicetalk.http.api.BufferHttpRequest.from;
 import static io.servicetalk.http.api.HttpPayloadChunks.newLastPayloadChunk;
 import static java.util.Objects.requireNonNull;
 
@@ -58,7 +58,7 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
     public Single<StreamingHttpResponse<HttpPayloadChunk>> request(
             final StreamingHttpRequest<HttpPayloadChunk> request) {
         return from(request, client.getExecutionContext().getBufferAllocator())
-                .flatMap(client::request).map(DefaultHttpResponse::toHttpResponse);
+                .flatMap(client::request).map(BufferHttpResponse::toHttpResponse);
     }
 
     @Override
@@ -112,7 +112,7 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
         public Single<StreamingHttpResponse<HttpPayloadChunk>> request(
                 final StreamingHttpRequest<HttpPayloadChunk> request) {
             return from(request, reservedConnection.getExecutionContext().getBufferAllocator())
-                    .flatMap(reservedConnection::request).map(DefaultHttpResponse::toHttpResponse);
+                    .flatMap(reservedConnection::request).map(BufferHttpResponse::toHttpResponse);
         }
 
         @Override

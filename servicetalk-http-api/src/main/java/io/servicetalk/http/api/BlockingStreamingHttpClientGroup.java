@@ -20,11 +20,12 @@ import io.servicetalk.http.api.BlockingStreamingHttpClient.ReservedBlockingStrea
 import io.servicetalk.http.api.BlockingStreamingHttpClient.UpgradableBlockingStreamingHttpResponse;
 
 /**
- * The equivalent of {@link StreamingHttpClientGroup} but with synchronous/blocking APIs instead of asynchronous APIs.
+ * The equivalent of {@link HttpClientGroup} but with synchronous/blocking APIs instead of asynchronous APIs.
  *
  * @param <UnresolvedAddress> The address type used to create new {@link BlockingStreamingHttpClient}s.
  */
-public abstract class BlockingStreamingHttpClientGroup<UnresolvedAddress> implements AutoCloseable {
+public abstract class BlockingStreamingHttpClientGroup<UnresolvedAddress> implements
+                                                          BlockingStreamingHttpRequestFactory, AutoCloseable {
     /**
      * Locate or create a client and delegate to
      * {@link BlockingStreamingHttpClient#request(BlockingStreamingHttpRequest)}.
@@ -36,8 +37,8 @@ public abstract class BlockingStreamingHttpClientGroup<UnresolvedAddress> implem
      * @throws Exception if an exception occurs during the request processing.
      * @see BlockingStreamingHttpClient#request(BlockingStreamingHttpRequest)
      */
-    public abstract BlockingStreamingHttpResponse<HttpPayloadChunk> request(
-            GroupKey<UnresolvedAddress> key, BlockingStreamingHttpRequest<HttpPayloadChunk> request) throws Exception;
+    public abstract BlockingStreamingHttpResponse request(
+            GroupKey<UnresolvedAddress> key, BlockingStreamingHttpRequest request) throws Exception;
 
     /**
      * Locate or create a client and delegate to
@@ -52,7 +53,7 @@ public abstract class BlockingStreamingHttpClientGroup<UnresolvedAddress> implem
      * @see BlockingStreamingHttpClient#reserveConnection(BlockingStreamingHttpRequest)
      */
     public abstract ReservedBlockingStreamingHttpConnection reserveConnection(
-            GroupKey<UnresolvedAddress> key, BlockingStreamingHttpRequest<HttpPayloadChunk> request) throws Exception;
+            GroupKey<UnresolvedAddress> key, BlockingStreamingHttpRequest request) throws Exception;
 
     /**
      * Locate or create a client and delegate to
@@ -67,8 +68,8 @@ public abstract class BlockingStreamingHttpClientGroup<UnresolvedAddress> implem
      * @throws Exception if a exception occurs during the reservation process.
      * @see BlockingStreamingHttpClient#upgradeConnection(BlockingStreamingHttpRequest)
      */
-    public abstract UpgradableBlockingStreamingHttpResponse<HttpPayloadChunk> upgradeConnection(
-            GroupKey<UnresolvedAddress> key, BlockingStreamingHttpRequest<HttpPayloadChunk> request) throws Exception;
+    public abstract UpgradableBlockingStreamingHttpResponse upgradeConnection(
+            GroupKey<UnresolvedAddress> key, BlockingStreamingHttpRequest request) throws Exception;
 
     /**
      * Convert this {@link BlockingStreamingHttpClientGroup} to the {@link StreamingHttpClientGroup} API.

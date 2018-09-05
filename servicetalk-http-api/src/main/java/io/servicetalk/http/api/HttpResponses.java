@@ -273,7 +273,7 @@ public final class HttpResponses {
                                                              final Buffer payloadBody,
                                                              final HttpHeaders headers,
                                                              final HttpHeaders trailers) {
-        return new DefaultHttpResponse<>(new DefaultHttpResponseMetaData(status, version, headers),
+        return new BufferHttpResponse<>(new DefaultHttpResponseMetaData(status, version, headers),
                 newPayloadChunk(payloadBody), trailers);
     }
 
@@ -293,7 +293,7 @@ public final class HttpResponses {
                                                   final T payloadBody,
                                                   final HttpHeaders headers,
                                                   final HttpHeaders trailers) {
-        return new DefaultHttpResponse<>(new DefaultHttpResponseMetaData(status, version, headers),
+        return new BufferHttpResponse<>(new DefaultHttpResponseMetaData(status, version, headers),
                 payloadBody, trailers);
     }
 }

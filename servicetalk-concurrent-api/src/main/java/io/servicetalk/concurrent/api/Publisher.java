@@ -110,7 +110,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/map.html">ReactiveX map operator.</a>
      */
-    public final <R> Publisher<R> map(Function<T, R> mapper) {
+    public final <R> Publisher<R> map(Function<? super T, ? extends R> mapper) {
         return new MapPublisher<>(this, mapper, executor);
     }
 
@@ -645,7 +645,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
      */
-    public final Publisher<T> concatWith(Publisher<T> next) {
+    public final Publisher<T> concatWith(Publisher<? extends T> next) {
         return new ConcatPublisher<>(this, next, executor);
     }
 
@@ -667,7 +667,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
      */
-    public final Publisher<T> concatWith(Single<T> next) {
+    public final Publisher<T> concatWith(Single<? extends T> next) {
         return new ConcatPublisher<>(this, next.toPublisher(), executor);
     }
 
@@ -1694,7 +1694,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Publisher}.
      * @see #liftAsynchronous(PublisherOperator)
      */
-    public final <R> Publisher<R> liftSynchronous(PublisherOperator<T, R> operator) {
+    public final <R> Publisher<R> liftSynchronous(PublisherOperator<? super T, ? extends R> operator) {
         return new LiftSynchronousPublisherOperator<>(this, operator, executor);
     }
 
@@ -1730,7 +1730,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Publisher}.
      * @see #liftSynchronous(PublisherOperator)
      */
-    public final <R> Publisher<R> liftAsynchronous(PublisherOperator<T, R> operator) {
+    public final <R> Publisher<R> liftAsynchronous(PublisherOperator<? super T, ? extends R> operator) {
         return new LiftAsynchronousPublisherOperator<>(this, operator, executor);
     }
 

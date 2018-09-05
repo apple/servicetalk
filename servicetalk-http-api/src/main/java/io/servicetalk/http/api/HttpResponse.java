@@ -15,34 +15,90 @@
  */
 package io.servicetalk.http.api;
 
-import java.util.function.Function;
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.CloseableIterable;
 
 /**
- * An HTTP response. Note that the entire payload will be in memory.
- *
- * @param <T> Type of payload.
+ * An HTTP response. The payload is represented as a single {@link Object}.
  */
-public interface HttpResponse<T> extends HttpResponseMetaData, LastHttpMetaData {
+public interface HttpResponse extends HttpResponseMetaData {
     /**
-     * The <a href="https://tools.ietf.org/html/rfc7230.html#section-3.3">HTTP Payload Body</a>.
-     *
-     * @return The <a href="https://tools.ietf.org/html/rfc7230.html#section-3.3">HTTP Payload Body</a> of this
-     * response.
+     * Get the underlying payload as a {@link Buffer}.
+     * @return The {@link Buffer} representation of the underlying payload.
      */
-    T getPayloadBody();
+    default Buffer getPayloadBody() {
+        return HttpSerializerUtils.getPayloadBody(this);
+    }
 
     /**
-     * To modify the {@link #getPayloadBody()} of the request and preserving the containing request object.
-     *
-     * @param transformer {@link Function} which converts the payload body to another type.
-     * @param <R> Type of the resulting payload body.
-     * @return New {@link HttpResponse} with the altered {@link #getPayloadBody()}.
+     * Get and deserialize the payload body.
+     * @param deserializer The function that deserializes the underlying {@link Object}.
+     * @param <T> The resulting type of the deserialization operation.
+     * @return The results of the deserialization operation.
      */
-    <R> HttpResponse<R> transformPayloadBody(Function<T, R> transformer);
+    <T> T getPayloadBody(HttpDeserializer<T> deserializer);
+
+    /**
+     * Get the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
+     * @return the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
+     */
+    HttpHeaders getTrailers();
+
+    /**
+     * Set the underlying payload.
+     * @param payloadBody the underlying payload.
+     * @return {@code this}.
+     */
+    HttpResponse setPayloadBody(Buffer payloadBody);
+
+    /**
+     * Set the underlying payload to be the results of serialization of {@code pojo}.
+     * @param pojo The object to serialize.
+     * @param serializer The {@link HttpSerializer} which converts {@code pojo} into bytes.
+     * @param <T> The of object to serialize.
+     * @return {@code this}.
+     */
+    <T> HttpResponse setPayloadBody(T pojo, HttpSerializer<T> serializer);
+
+    /**
+     * Set the underlying payload to be the results of serialization of {@code pojo}.
+     * <p>
+     * Note this method will consume the {@link Iterable} in a blocking fashion! If the results are not already
+     * available in memory this method will block.
+     * @param pojos An {@link Iterable} which provides the objects to serialize.
+     * @param serializer The {@link HttpSerializer} which converts {@code pojo} into bytes.
+     * @param <T> The type of object to serialize.
+     * @return A {@link HttpResponse} with the new serialized payload body.
+     */
+    <T> HttpResponse setPayloadBody(Iterable<T> pojos, HttpSerializer<T> serializer);
+
+    /**
+     * Set the underlying payload to be the results of serialization of {@code pojo}.
+     * <p>
+     * Note this method will consume the {@link CloseableIterable} in a blocking fashion! If the results are not already
+     * available in memory this method will block.
+     * @param pojos An {@link CloseableIterable} which provides the objects to serialize.
+     * @param serializer The {@link HttpSerializer} which converts {@code pojo} into bytes.
+     * @param <T> The type of object to serialize.
+     * @return A {@link HttpResponse} with the new serialized payload body.
+     */
+    <T> HttpResponse setPayloadBody(CloseableIterable<T> pojos, HttpSerializer<T> serializer);
+
+    /**
+     * Translate this {@link HttpResponse} to a {@link StreamingHttpResponse}.
+     * @return a {@link StreamingHttpResponse} representation of this {@link HttpResponse}.
+     */
+    StreamingHttpResponse toStreamingResponse();
+
+    /**
+     * Translate this {@link HttpResponse} to a {@link BlockingStreamingHttpResponse}.
+     * @return a {@link BlockingStreamingHttpResponse} representation of this {@link HttpResponse}.
+     */
+    BlockingStreamingHttpResponse toBlockingStreamingResponse();
 
     @Override
-    HttpResponse<T> setVersion(HttpProtocolVersion version);
+    HttpResponse setVersion(HttpProtocolVersion version);
 
     @Override
-    HttpResponse<T> setStatus(HttpResponseStatus status);
+    HttpResponse setStatus(HttpResponseStatus status);
 }

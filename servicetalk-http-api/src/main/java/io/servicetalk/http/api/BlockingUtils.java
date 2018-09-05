@@ -24,10 +24,10 @@ import java.util.concurrent.ExecutionException;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
-import static io.servicetalk.http.api.DefaultHttpRequest.from;
-import static io.servicetalk.http.api.DefaultHttpRequest.toHttpRequest;
-import static io.servicetalk.http.api.DefaultHttpResponse.from;
-import static io.servicetalk.http.api.DefaultHttpResponse.toHttpResponse;
+import static io.servicetalk.http.api.BufferHttpRequest.from;
+import static io.servicetalk.http.api.BufferHttpRequest.toHttpRequest;
+import static io.servicetalk.http.api.BufferHttpResponse.from;
+import static io.servicetalk.http.api.BufferHttpResponse.toHttpResponse;
 import static io.servicetalk.http.api.StreamingHttpRequests.fromBlockingRequest;
 import static io.servicetalk.http.api.StreamingHttpResponses.fromBlockingResponse;
 import static java.lang.Thread.currentThread;
@@ -99,7 +99,7 @@ final class BlockingUtils {
             throws Exception {
         // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
-        return new DefaultBlockingHttpResponse<>(blockingInvocation(requester.request(fromBlockingRequest(request))));
+        return new DefaultBlockingStreamingHttpResponse<>(blockingInvocation(requester.request(fromBlockingRequest(request))));
     }
 
     static Single<StreamingHttpResponse<HttpPayloadChunk>> request(final BlockingHttpRequester requester,

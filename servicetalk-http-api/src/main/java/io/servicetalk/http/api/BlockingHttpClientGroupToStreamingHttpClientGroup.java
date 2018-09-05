@@ -23,8 +23,8 @@ import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnecti
 import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
-import static io.servicetalk.http.api.DefaultHttpRequest.from;
-import static io.servicetalk.http.api.DefaultHttpResponse.toHttpResponse;
+import static io.servicetalk.http.api.BufferHttpRequest.from;
+import static io.servicetalk.http.api.BufferHttpResponse.toHttpResponse;
 import static io.servicetalk.http.api.HttpClientToStreamingHttpClient.UpgradableHttpResponseToUpgradableStreamingHttpResponse.newUpgradeResponse;
 import static java.util.Objects.requireNonNull;
 

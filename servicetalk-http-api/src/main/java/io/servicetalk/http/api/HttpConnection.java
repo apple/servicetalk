@@ -22,8 +22,7 @@ import io.servicetalk.transport.api.ConnectionContext;
 import org.reactivestreams.Subscriber;
 
 /**
- * The equivalent of {@link StreamingHttpConnection} but that accepts {@link HttpRequest} and returns
- * {@link HttpResponse}.
+ * Represents a single fixed connection to a HTTP server.
  */
 public abstract class HttpConnection extends HttpRequester {
     /**
