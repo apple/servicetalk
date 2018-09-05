@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.function.BiFunction;
 
@@ -32,8 +31,7 @@ public abstract class BlockingHttpService implements AutoCloseable {
      * @return {@link Single} of HTTP response.
      * @throws Exception If an exception occurs during request processing.
      */
-    public abstract HttpResponse<HttpPayloadChunk> handle(
-            ConnectionContext ctx, HttpRequest<HttpPayloadChunk> request) throws Exception;
+    public abstract HttpResponse handle(HttpServiceContext ctx, HttpRequest request) throws Exception;
 
     @Override
     public void close() throws Exception {
@@ -78,16 +76,14 @@ public abstract class BlockingHttpService implements AutoCloseable {
 
     /**
      * Create a new {@link StreamingHttpService} from a {@link BiFunction}.
-     * @param handleFunc Provides the functionality for the {@link #handle(ConnectionContext, HttpRequest)}
+     * @param handleFunc Provides the functionality for the {@link #handle(HttpServiceContext, HttpRequest)}
      * method.
      * @return a new {@link BlockingHttpService}.
      */
-    public static BlockingHttpService from(BiFunction<ConnectionContext, HttpRequest<HttpPayloadChunk>,
-                                                                HttpResponse<HttpPayloadChunk>> handleFunc) {
+    public static BlockingHttpService from(BiFunction<HttpServiceContext, HttpRequest, HttpResponse> handleFunc) {
         return new BlockingHttpService() {
             @Override
-            public HttpResponse<HttpPayloadChunk> handle(final ConnectionContext ctx,
-                                                         final HttpRequest<HttpPayloadChunk> request) {
+            public HttpResponse handle(final HttpServiceContext ctx, final HttpRequest request) {
                 return handleFunc.apply(ctx, request);
             }
         };

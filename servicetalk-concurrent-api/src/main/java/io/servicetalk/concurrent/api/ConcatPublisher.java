@@ -26,9 +26,9 @@ import static java.util.Objects.requireNonNull;
  * @param <T> Type of items emitted by this {@link Publisher}.
  */
 final class ConcatPublisher<T> extends AbstractAsynchronousPublisherOperator<T, T> {
-    private final Publisher<T> next;
+    private final Publisher<? extends T> next;
 
-    ConcatPublisher(Publisher<T> original, Publisher<T> next, Executor executor) {
+    ConcatPublisher(Publisher<T> original, Publisher<? extends T> next, Executor executor) {
         super(original, executor);
         this.next = requireNonNull(next);
     }
@@ -40,12 +40,12 @@ final class ConcatPublisher<T> extends AbstractAsynchronousPublisherOperator<T, 
 
     private static final class ConcatSubscriber<T> implements Subscriber<T> {
         private final Subscriber<? super T> target;
-        private Publisher<T> next;
+        private final Publisher<? extends T> next;
         private final SequentialSubscription subscription = new SequentialSubscription();
         // Volatile for visibility across subscribes, there is no concurrent access of this field.
         private volatile boolean nextSubscribed;
 
-        ConcatSubscriber(Subscriber<? super T> target, Publisher<T> next) {
+        ConcatSubscriber(Subscriber<? super T> target, Publisher<? extends T> next) {
             this.target = target;
             this.next = requireNonNull(next);
         }

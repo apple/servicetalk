@@ -206,7 +206,7 @@ public final class BlockingStreamingHttpResponses {
                                                                     final HttpResponseStatus status,
                                                                     final Publisher<O> payloadBody,
                                                                     final HttpHeaders headers) {
-        return new DefaultBlockingHttpResponse<>(
+        return new DefaultBlockingStreamingHttpResponse<>(
                 StreamingHttpResponses.newResponse(version, status, payloadBody, headers));
     }
 }

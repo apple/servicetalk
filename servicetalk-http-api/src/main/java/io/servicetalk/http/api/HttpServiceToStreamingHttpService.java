@@ -31,8 +31,8 @@ final class HttpServiceToStreamingHttpService extends StreamingHttpService {
     @Override
     public Single<StreamingHttpResponse<HttpPayloadChunk>> handle(
             final ConnectionContext ctx, final StreamingHttpRequest<HttpPayloadChunk> request) {
-        return DefaultHttpRequest.from(request, ctx.getExecutionContext().getBufferAllocator()).flatMap(fullRequest ->
-                aggregatedService.handle(ctx, fullRequest).map(DefaultHttpResponse::toHttpResponse));
+        return BufferHttpRequest.from(request, ctx.getExecutionContext().getBufferAllocator()).flatMap(fullRequest ->
+                aggregatedService.handle(ctx, fullRequest).map(BufferHttpResponse::toHttpResponse));
     }
 
     @Override

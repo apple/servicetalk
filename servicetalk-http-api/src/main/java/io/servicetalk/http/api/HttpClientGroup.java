@@ -25,12 +25,12 @@ import io.servicetalk.transport.api.ExecutionContext;
 import java.util.function.Function;
 
 /**
- * The equivalent of {@link StreamingHttpClientGroup} but that accepts {@link HttpRequest} and returns
- * {@link HttpResponse}.
+ * Logically this interface provides a Map&lt;{@link GroupKey}, {@link HttpClient}&gt;, and also the ability to
+ * create new {@link HttpClient} objects if none yet exist.
  *
  * @param <UnresolvedAddress> The address type used to create new {@link HttpClient}s.
  */
-public abstract class HttpClientGroup<UnresolvedAddress> implements ListenableAsyncCloseable {
+public abstract class HttpClientGroup<UnresolvedAddress> implements HttpRequestFactory, ListenableAsyncCloseable {
     /**
      * Locate or create a client and delegate to {@link HttpClient#request(HttpRequest)}.
      *
@@ -40,8 +40,7 @@ public abstract class HttpClientGroup<UnresolvedAddress> implements ListenableAs
      * @return The received {@link HttpResponse}.
      * @see HttpClient#request(HttpRequest)
      */
-    public abstract Single<HttpResponse<HttpPayloadChunk>> request(GroupKey<UnresolvedAddress> key,
-                                                                   HttpRequest<HttpPayloadChunk> request);
+    public abstract Single<HttpResponse> request(GroupKey<UnresolvedAddress> key, HttpRequest request);
 
     /**
      * Locate or create a client and delegate to {@link HttpClient#reserveConnection(HttpRequest)}.
@@ -54,7 +53,7 @@ public abstract class HttpClientGroup<UnresolvedAddress> implements ListenableAs
      * @see HttpClient#reserveConnection(HttpRequest)
      */
     public abstract Single<? extends ReservedHttpConnection> reserveConnection(
-            GroupKey<UnresolvedAddress> key, HttpRequest<HttpPayloadChunk> request);
+            GroupKey<UnresolvedAddress> key, HttpRequest request);
 
     /**
      * Locate or create a client and delegate to {@link HttpClient#upgradeConnection(HttpRequest)}.
@@ -67,8 +66,8 @@ public abstract class HttpClientGroup<UnresolvedAddress> implements ListenableAs
      * {@link StreamingHttpConnection} used for the upgrade.
      * @see HttpClient#upgradeConnection(HttpRequest)
      */
-    public abstract Single<? extends UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
-            GroupKey<UnresolvedAddress> key, HttpRequest<HttpPayloadChunk> request);
+    public abstract Single<? extends UpgradableHttpResponse> upgradeConnection(
+            GroupKey<UnresolvedAddress> key, HttpRequest request);
 
     /**
      * Convert this {@link HttpClientGroup} to the {@link HttpRequester} API. This can simplify the
@@ -84,7 +83,7 @@ public abstract class HttpClientGroup<UnresolvedAddress> implements ListenableAs
      * {@link HttpRequester#getExecutionContext()}.
      * @return A {@link HttpRequester}, which is backed by this {@link HttpClientGroup}.
      */
-    public final HttpRequester asRequester(final Function<HttpRequest<HttpPayloadChunk>,
+    public final HttpRequester asRequester(final Function<HttpRequest,
                                                     GroupKey<UnresolvedAddress>> requestToGroupKeyFunc,
                                            final ExecutionContext executionContext) {
         return new HttpClientGroupToHttpRequester<>(this, requestToGroupKeyFunc, executionContext);

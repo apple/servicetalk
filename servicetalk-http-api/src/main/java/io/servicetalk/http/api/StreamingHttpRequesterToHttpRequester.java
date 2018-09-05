@@ -19,8 +19,8 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import static io.servicetalk.http.api.DefaultHttpRequest.toHttpRequest;
-import static io.servicetalk.http.api.DefaultHttpResponse.from;
+import static io.servicetalk.http.api.BufferHttpRequest.toHttpRequest;
+import static io.servicetalk.http.api.BufferHttpResponse.from;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpRequesterToHttpRequester extends HttpRequester {

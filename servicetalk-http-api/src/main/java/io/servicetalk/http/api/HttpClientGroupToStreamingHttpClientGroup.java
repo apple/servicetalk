@@ -23,7 +23,7 @@ import io.servicetalk.http.api.HttpClientToStreamingHttpClient.UpgradableHttpRes
 import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient.UpgradableStreamingHttpResponse;
 
-import static io.servicetalk.http.api.DefaultHttpRequest.from;
+import static io.servicetalk.http.api.BufferHttpRequest.from;
 import static java.util.Objects.requireNonNull;
 
 final class HttpClientGroupToStreamingHttpClientGroup<UnresolvedAddress> extends
@@ -39,7 +39,7 @@ final class HttpClientGroupToStreamingHttpClientGroup<UnresolvedAddress> extends
             final GroupKey<UnresolvedAddress> key, final StreamingHttpRequest<HttpPayloadChunk> request) {
         return from(request, key.getExecutionContext().getBufferAllocator()).flatMap(aggregatedRequest ->
                         group.request(key, aggregatedRequest))
-                .map(DefaultHttpResponse::toHttpResponse);
+                .map(BufferHttpResponse::toHttpResponse);
     }
 
     @Override

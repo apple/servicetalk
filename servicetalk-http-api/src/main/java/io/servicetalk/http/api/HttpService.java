@@ -18,7 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.function.BiFunction;
 
@@ -33,8 +32,7 @@ public abstract class HttpService implements AsyncCloseable {
      * @param request to handle.
      * @return {@link Single} of HTTP response.
      */
-    public abstract Single<HttpResponse<HttpPayloadChunk>> handle(
-            ConnectionContext ctx, HttpRequest<HttpPayloadChunk> request);
+    public abstract Single<HttpResponse> handle(HttpServiceContext ctx, HttpRequest request);
 
     /**
      * Closes this {@link HttpService} asynchronously.
@@ -76,15 +74,13 @@ public abstract class HttpService implements AsyncCloseable {
     /**
      * Create a new {@link HttpService} from a {@link BiFunction}.
      *
-     * @param handleFunc Provides the functionality for the {@link #handle(ConnectionContext, HttpRequest)} method.
+     * @param handleFunc Provides the functionality for the {@link #handle(HttpServiceContext, HttpRequest)} method.
      * @return a new {@link HttpService}.
      */
-    public static HttpService from(BiFunction<ConnectionContext, HttpRequest<HttpPayloadChunk>,
-                                                Single<HttpResponse<HttpPayloadChunk>>> handleFunc) {
+    public static HttpService from(BiFunction<HttpServiceContext, HttpRequest, Single<HttpResponse>> handleFunc) {
         return new HttpService() {
             @Override
-            public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                                 final HttpRequest<HttpPayloadChunk> request) {
+            public Single<HttpResponse> handle(final HttpServiceContext ctx, final HttpRequest request) {
                 return handleFunc.apply(ctx, request);
             }
         };

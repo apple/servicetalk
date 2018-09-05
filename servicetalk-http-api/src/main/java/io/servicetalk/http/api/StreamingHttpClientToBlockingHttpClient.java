@@ -24,7 +24,7 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
-import static io.servicetalk.http.api.DefaultHttpRequest.toHttpRequest;
+import static io.servicetalk.http.api.BufferHttpRequest.toHttpRequest;
 import static io.servicetalk.http.api.StreamingHttpClientToHttpClient.doUpgradeConnection;
 import static java.util.Objects.requireNonNull;
 

@@ -15,162 +15,169 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.internal.SingleProcessor;
+import io.servicetalk.http.api.HttpSerializerUtils.HttpBuffersAndTrailersIterable;
+import io.servicetalk.http.api.HttpSerializerUtils.HttpObjectsAndTrailersIterable;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.internal.Iterables.emptyBlockingIterable;
 import static java.util.Objects.requireNonNull;
 
-/**
- * Default implementation of {@link BlockingStreamingHttpRequest}.
- *
- * @param <I> The type of payload of the request.
- */
-final class DefaultBlockingStreamingHttpRequest<I> implements BlockingStreamingHttpRequest<I> {
-    private final BlockingIterable<I> payloadIterable;
-    private final StreamingHttpRequest<?> httpRequest;
+class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implements
+                                                                                BlockingStreamingHttpRequest {
+    final BlockingIterable<P> payloadBody;
+    final BufferAllocator allocator;
+    final Single<HttpHeaders> trailersSingle;
 
-    DefaultBlockingStreamingHttpRequest(final StreamingHttpRequest<I> httpRequest) {
-        payloadIterable = httpRequest.getPayloadBody().toIterable();
-        this.httpRequest = httpRequest;
+    DefaultBlockingStreamingHttpRequest(final HttpRequestMethod method, final String requestTarget,
+                                        final HttpProtocolVersion version, final HttpHeaders headers,
+                                        final BufferAllocator allocator, final HttpHeaders initialTrailers) {
+        this(method, requestTarget, version, headers, allocator, emptyBlockingIterable(),
+                success(initialTrailers));
     }
 
-    private DefaultBlockingStreamingHttpRequest(final DefaultBlockingStreamingHttpRequest<?> httpRequest,
-                                                final BlockingIterable<I> payloadIterable) {
-        this.httpRequest = httpRequest.httpRequest;
-        this.payloadIterable = requireNonNull(payloadIterable);
+    /**
+     * Create a new instance.
+     * @param method The {@link HttpRequestMethod}.
+     * @param requestTarget The request-target.
+     * @param version The {@link HttpProtocolVersion}.
+     * @param headers The initial {@link HttpHeaders}.
+     * @param allocator The {@link BufferAllocator} to use for serialization (if required).
+     * @param payloadBody A {@link BlockingIterable} that provide only the payload body. The trailers
+     * <strong>must</strong> not be included, and instead are represented by {@code trailersSingle}.
+     * @param trailersSingle The {@link Single} <strong>must</strong> support multiple subscribes, and it is assumed to
+     * provide the original data if re-used over transformation operations.
+     */
+    DefaultBlockingStreamingHttpRequest(final HttpRequestMethod method, final String requestTarget,
+                                        final HttpProtocolVersion version, final HttpHeaders headers,
+                                        final BufferAllocator allocator, final BlockingIterable<P> payloadBody,
+                                        final Single<HttpHeaders> trailersSingle) {
+        super(method, requestTarget, version, headers);
+        this.allocator = requireNonNull(allocator);
+        this.payloadBody = requireNonNull(payloadBody);
+        this.trailersSingle = requireNonNull(trailersSingle);
     }
 
-    @Nullable
+    DefaultBlockingStreamingHttpRequest(final DefaultHttpRequestMetaData oldRequest,
+                                        final BufferAllocator allocator,
+                                        final BlockingIterable<P> payloadBody,
+                                        final Single<HttpHeaders> trailersSingle) {
+        super(oldRequest);
+        this.allocator = allocator;
+        this.payloadBody = payloadBody;
+        this.trailersSingle = trailersSingle;
+    }
+
     @Override
-    public String getScheme() {
-        return httpRequest.getScheme();
-    }
-
-    @Nullable
-    @Override
-    public String getUserInfo() {
-        return httpRequest.getUserInfo();
-    }
-
-    @Nullable
-    @Override
-    public String getHost() {
-        return httpRequest.getHost();
-    }
-
-    @Override
-    public int getPort() {
-        return httpRequest.getPort();
-    }
-
-    @Override
-    public BlockingStreamingHttpRequest<I> setRawPath(final String path) {
-        httpRequest.setRawPath(path);
+    public final BlockingStreamingHttpRequest setVersion(final HttpProtocolVersion version) {
+        super.setVersion(version);
         return this;
     }
 
     @Override
-    public BlockingStreamingHttpRequest<I> setPath(final String path) {
-        httpRequest.setPath(path);
+    public final BlockingStreamingHttpRequest setMethod(final HttpRequestMethod method) {
+        super.setMethod(method);
         return this;
     }
 
     @Override
-    public HttpQuery parseQuery() {
-        return httpRequest.parseQuery();
-    }
-
-    @Override
-    public String getRawQuery() {
-        return httpRequest.getRawQuery();
-    }
-
-    @Override
-    public BlockingStreamingHttpRequest<I> setRawQuery(final String query) {
-        httpRequest.setRawQuery(query);
-        return this;
-    }
-
-    @Nullable
-    @Override
-    public String getEffectiveHost() {
-        return httpRequest.getEffectiveHost();
-    }
-
-    @Override
-    public int getEffectivePort() {
-        return httpRequest.getEffectivePort();
-    }
-
-    @Override
-    public HttpProtocolVersion getVersion() {
-        return httpRequest.getVersion();
-    }
-
-    @Override
-    public BlockingStreamingHttpRequest<I> setVersion(final HttpProtocolVersion version) {
-        httpRequest.setVersion(version);
+    public final BlockingStreamingHttpRequest setRequestTarget(final String requestTarget) {
+        super.setRequestTarget(requestTarget);
         return this;
     }
 
     @Override
-    public HttpHeaders getHeaders() {
-        return httpRequest.getHeaders();
-    }
-
-    @Override
-    public String toString(final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> headerFilter) {
-        return httpRequest.toString(headerFilter);
-    }
-
-    @Override
-    public HttpRequestMethod getMethod() {
-        return httpRequest.getMethod();
-    }
-
-    @Override
-    public BlockingStreamingHttpRequest<I> setMethod(final HttpRequestMethod method) {
-        httpRequest.setMethod(method);
+    public final BlockingStreamingHttpRequest setPath(final String path) {
+        super.setPath(path);
         return this;
     }
 
     @Override
-    public String getRequestTarget() {
-        return httpRequest.getRequestTarget();
-    }
-
-    @Override
-    public BlockingStreamingHttpRequest<I> setRequestTarget(final String requestTarget) {
-        httpRequest.setRequestTarget(requestTarget);
+    public final BlockingStreamingHttpRequest setRawPath(final String path) {
+        super.setRawPath(path);
         return this;
     }
 
     @Override
-    public String getRawPath() {
-        return httpRequest.getRawPath();
+    public final BlockingStreamingHttpRequest setRawQuery(final String query) {
+        super.setRawQuery(query);
+        return this;
     }
 
     @Override
-    public String getPath() {
-        return httpRequest.getPath();
+    public final <T> BlockingIterable<T> getPayloadBody(final HttpDeserializer<T> deserializer) {
+        return deserializer.deserialize(getHeaders(), payloadBody);
     }
 
     @Override
-    public BlockingIterable<I> getPayloadBody() {
-        return payloadIterable;
+    public final <T> BlockingStreamingHttpRequest transformPayloadBody(
+            final Function<BlockingIterable<Buffer>, BlockingIterable<T>> transformer,
+            final HttpSerializer<T> serializer) {
+        return new BufferBlockingStreamingHttpRequest(this, allocator,
+                serializer.serialize(getHeaders(), transformer.apply(getPayloadBody()), allocator),
+                trailersSingle);
     }
 
     @Override
-    public <R> BlockingStreamingHttpRequest<R> transformPayloadBody(
-            final Function<BlockingIterable<I>, BlockingIterable<R>> transformer) {
-        return new DefaultBlockingStreamingHttpRequest<>(this, transformer.apply(payloadIterable));
+    public final BlockingStreamingHttpRequest transformPayloadBody(
+            final UnaryOperator<BlockingIterable<Buffer>> transformer) {
+        return new BufferBlockingStreamingHttpRequest(this, allocator, transformer.apply(getPayloadBody()),
+                trailersSingle);
     }
 
     @Override
-    public boolean equals(final Object o) {
+    public final BlockingStreamingHttpRequest transformRawPayloadBody(
+            final UnaryOperator<BlockingIterable<?>> transformer) {
+        return new DefaultBlockingStreamingHttpRequest<>(this, allocator, transformer.apply(payloadBody),
+                trailersSingle);
+    }
+
+    @Override
+    public final <T> BlockingStreamingHttpRequest transform(final Supplier<T> stateSupplier,
+                                                            final BiFunction<Buffer, T, Buffer> transformer,
+                                                            final BiFunction<T, HttpHeaders, HttpHeaders> trailersTrans) {
+        final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
+        return new BufferBlockingStreamingHttpRequest(this, allocator,
+                new HttpBuffersAndTrailersIterable<>(getPayloadBody(), stateSupplier,
+                        transformer, trailersTrans, trailersSingle, outTrailersSingle),
+                outTrailersSingle);
+    }
+
+    @Override
+    public final <T> BlockingStreamingHttpRequest transformRaw(final Supplier<T> stateSupplier,
+                                                         final BiFunction<Object, T, ?> transformer,
+                                                         final BiFunction<T, HttpHeaders, HttpHeaders> trailersTrans) {
+        final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
+        return new DefaultBlockingStreamingHttpRequest<>(this, allocator,
+                new HttpObjectsAndTrailersIterable<>(payloadBody, stateSupplier,
+                        transformer, trailersTrans, trailersSingle, outTrailersSingle),
+                outTrailersSingle);
+    }
+
+    @Override
+    public final Single<HttpRequest> toRequest() {
+        return toStreamingRequest().toRequest();
+    }
+
+    @Override
+    public StreamingHttpRequest toStreamingRequest() {
+        return new DefaultStreamingHttpRequest<>(getMethod(), getRequestTarget(), getVersion(), getHeaders(), allocator,
+                from(payloadBody), trailersSingle);
+    }
+
+    @Override
+    public boolean equals(@Nullable final Object o) {
         if (this == o) {
             return true;
         }
@@ -183,11 +190,11 @@ final class DefaultBlockingStreamingHttpRequest<I> implements BlockingStreamingH
 
         final DefaultBlockingStreamingHttpRequest<?> that = (DefaultBlockingStreamingHttpRequest<?>) o;
 
-        return payloadIterable.equals(that.payloadIterable);
+        return payloadBody.equals(that.payloadBody);
     }
 
     @Override
     public int hashCode() {
-        return 31 * super.hashCode() + payloadIterable.hashCode();
+        return 31 * super.hashCode() + payloadBody.hashCode();
     }
 }

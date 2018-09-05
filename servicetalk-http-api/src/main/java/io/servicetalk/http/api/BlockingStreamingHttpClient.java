@@ -15,13 +15,18 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.http.api.BlockingHttpClient.ReservedBlockingHttpConnection;
 import io.servicetalk.http.api.BlockingStreamingHttpClientToStreamingHttpClient.BlockingToReservedStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 
 /**
  * The equivalent of {@link StreamingHttpClient} but with synchronous/blocking APIs instead of asynchronous APIs.
@@ -38,7 +43,7 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
      * @see StreamingHttpClient#reserveConnection(StreamingHttpRequest)
      */
     public abstract ReservedBlockingStreamingHttpConnection reserveConnection(
-            BlockingStreamingHttpRequest<HttpPayloadChunk> request) throws Exception;
+            BlockingStreamingHttpRequest request) throws Exception;
 
     /**
      * Attempt a <a href="https://tools.ietf.org/html/rfc7230.html#section-6.7">protocol upgrade</a>.
@@ -54,8 +59,8 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
      * @throws Exception if a exception occurs during the upgrade process.
      * @see StreamingHttpClient#upgradeConnection(StreamingHttpRequest)
      */
-    public abstract UpgradableBlockingStreamingHttpResponse<HttpPayloadChunk> upgradeConnection(
-            BlockingStreamingHttpRequest<HttpPayloadChunk> request) throws Exception;
+    public abstract UpgradableBlockingStreamingHttpResponse upgradeConnection(
+            BlockingStreamingHttpRequest request) throws Exception;
 
     /**
      * Convert this {@link BlockingStreamingHttpClient} to the {@link StreamingHttpClient} API.
@@ -162,10 +167,9 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
      * A special type of response returned by upgrade requests {@link #upgradeConnection(BlockingStreamingHttpRequest)}.
      * This object allows the upgrade code to inform the HTTP implementation if the {@link HttpConnection} can
      * continue using the HTTP protocol or not.
-     * @param <T> The type of data in the {@link BlockingStreamingHttpResponse}.
      * @see StreamingHttpClient.UpgradableStreamingHttpResponse
      */
-    public interface UpgradableBlockingStreamingHttpResponse<T> extends BlockingStreamingHttpResponse<T> {
+    public interface UpgradableBlockingStreamingHttpResponse extends BlockingStreamingHttpResponse {
         /**
          * Called by the code responsible for processing the upgrade response.
          * <p>
@@ -194,13 +198,37 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
         ReservedBlockingStreamingHttpConnection getHttpConnection(boolean releaseReturnsToClient);
 
         @Override
-        <R> UpgradableBlockingStreamingHttpResponse<R> transformPayloadBody(Function<BlockingIterable<T>,
-                                                                            BlockingIterable<R>> transformer);
+        default <T> UpgradableBlockingStreamingHttpResponse transformPayloadBody(BlockingIterable<T> payloadBody,
+                                                                                 HttpSerializer<T> serializer) {
+            // Ignore content of original Publisher (payloadBody). Merge means the resulting publisher will not complete
+            // until the previous payload body and the serialization both complete.
+            return transformPayloadBody(old -> {
+                old.forEach(buffer -> { });
+                return payloadBody;
+            }, serializer);
+        }
 
         @Override
-        UpgradableBlockingStreamingHttpResponse<T> setVersion(HttpProtocolVersion version);
+        <T> UpgradableBlockingStreamingHttpResponse transformPayloadBody(
+                Function<BlockingIterable<Buffer>, BlockingIterable<T>> f, HttpSerializer<T> serializer);
 
         @Override
-        UpgradableBlockingStreamingHttpResponse<T> setStatus(HttpResponseStatus status);
+        UpgradableBlockingStreamingHttpResponse transformPayloadBody(
+                UnaryOperator<BlockingIterable<Buffer>> transformer);
+
+        @Override
+        <T> UpgradableBlockingStreamingHttpResponse transform(Supplier<T> stateSupplier,
+                                                              BiFunction<Buffer, T, Buffer> transformer,
+                                                              BiConsumer<T, HttpHeaders> trailersConsumer);
+
+        @Override
+        <T> UpgradableBlockingStreamingHttpResponse transform(Supplier<T> stateSupplier,
+                                                              BiFunction<Object, T, Object> transformer);
+
+        @Override
+        UpgradableBlockingStreamingHttpResponse setVersion(HttpProtocolVersion version);
+
+        @Override
+        UpgradableBlockingStreamingHttpResponse setStatus(HttpResponseStatus status);
     }
 }

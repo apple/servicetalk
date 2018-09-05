@@ -165,7 +165,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return New {@link Publisher} that switches to the {@link Publisher} returned by {@code next} after this
      * {@link Single} completes successfully.
      */
-    public final <R> Publisher<R> flatMapPublisher(Function<T, Publisher<R>> next) {
+    public final <R> Publisher<R> flatMapPublisher(Function<T, Publisher<? extends R>> next) {
         return new SingleFlatMapPublisher<>(this, next, executor);
     }
 
@@ -371,7 +371,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return New {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits
      * result of {@code next} {@link Single}.
      */
-    public final Publisher<T> concatWith(Single<T> next) {
+    public final Publisher<T> concatWith(Single<? extends T> next) {
         return toPublisher().concatWith(next.toPublisher());
     }
 
@@ -415,7 +415,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return New {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits
      * all elements from {@code next} {@link Publisher}.
      */
-    public final Publisher<T> concatWith(Publisher<T> next) {
+    public final Publisher<T> concatWith(Publisher<? extends T> next) {
         return toPublisher().concatWith(next);
     }
 
@@ -899,7 +899,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Single}.
      * @see #liftAsynchronous(SingleOperator)
      */
-    public final <R> Single<R> liftSynchronous(SingleOperator<T, R> operator) {
+    public final <R> Single<R> liftSynchronous(SingleOperator<? super T, ? extends R> operator) {
         return new LiftSynchronousSingleOperator<>(this, operator, executor);
     }
 
@@ -934,7 +934,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * argument will be used to wrap the {@link Subscriber} before subscribing to this {@link Single}.
      * @see #liftSynchronous(SingleOperator)
      */
-    public final <R> Single<R> liftAsynchronous(SingleOperator<T, R> operator) {
+    public final <R> Single<R> liftAsynchronous(SingleOperator<? super T, ? extends R> operator) {
         return new LiftAsynchronousSingleOperator<>(this, operator, executor);
     }
 

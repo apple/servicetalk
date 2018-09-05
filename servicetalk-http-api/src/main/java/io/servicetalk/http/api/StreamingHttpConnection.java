@@ -23,7 +23,8 @@ import org.reactivestreams.Subscriber;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Represents a single fixed connection to a HTTP server.
+ * The equivalent of {@link HttpConnection} but that accepts {@link StreamingHttpRequest} and returns
+ * {@link StreamingHttpResponse}.
  */
 public abstract class StreamingHttpConnection extends StreamingHttpRequester {
     /**

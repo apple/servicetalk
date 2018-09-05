@@ -20,7 +20,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 /**
  * The equivalent of {@link HttpRequester} with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public abstract class BlockingHttpRequester implements AutoCloseable {
+public abstract class BlockingHttpRequester implements HttpRequestFactory, AutoCloseable {
     /**
      * Send a {@code request}.
      *
@@ -28,7 +28,7 @@ public abstract class BlockingHttpRequester implements AutoCloseable {
      * @return The response.
      * @throws Exception if an exception occurs during the request processing.
      */
-    public abstract HttpResponse<HttpPayloadChunk> request(HttpRequest<HttpPayloadChunk> request) throws Exception;
+    public abstract HttpResponse request(HttpRequest request) throws Exception;
 
     /**
      * Get the {@link ExecutionContext} used during construction of this object.

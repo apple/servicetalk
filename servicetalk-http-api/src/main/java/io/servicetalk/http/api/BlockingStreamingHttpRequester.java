@@ -20,7 +20,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 /**
  * The equivalent of {@link StreamingHttpRequester} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public abstract class BlockingStreamingHttpRequester implements AutoCloseable {
+public abstract class BlockingStreamingHttpRequester implements BlockingStreamingHttpRequestFactory, AutoCloseable {
     /**
      * Send a {@code request}.
      *
@@ -28,8 +28,7 @@ public abstract class BlockingStreamingHttpRequester implements AutoCloseable {
      * @return The response.
      * @throws Exception if an exception occurs during the request processing.
      */
-    public abstract BlockingStreamingHttpResponse<HttpPayloadChunk> request(
-            BlockingStreamingHttpRequest<HttpPayloadChunk> request) throws Exception;
+    public abstract BlockingStreamingHttpResponse request(BlockingStreamingHttpRequest request) throws Exception;
 
     /**
      * Get the {@link ExecutionContext} used during construction of this object.
@@ -44,8 +43,8 @@ public abstract class BlockingStreamingHttpRequester implements AutoCloseable {
     /**
      * Convert this {@link BlockingStreamingHttpRequester} to the {@link StreamingHttpRequester} API.
      * <p>
-     * Note that the resulting {@link StreamingHttpRequester} may still be subject to any blocking, in memory aggregation, and
-     * other behavior as this {@link BlockingStreamingHttpRequester}.
+     * Note that the resulting {@link StreamingHttpRequester} may still be subject to any blocking, in memory
+     * aggregation, and other behavior as this {@link BlockingStreamingHttpRequester}.
      *
      * @return a {@link StreamingHttpRequester} representation of this {@link BlockingStreamingHttpRequester}.
      */
