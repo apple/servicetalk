@@ -46,6 +46,7 @@ import static io.servicetalk.http.router.jersey.internal.RequestProperties.setRe
 import static javax.ws.rs.Priorities.ENTITY_CODER;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
 import static javax.ws.rs.core.MediaType.WILDCARD;
+import static org.glassfish.jersey.message.internal.ReaderWriter.BUFFER_SIZE;
 
 /**
  * A combined {@link MessageBodyReader} / {@link MessageBodyWriter} that allows bypassing Java IO streams
@@ -84,7 +85,8 @@ final class BufferMessageBodyReaderWriter implements MessageBodyReader<Buffer>, 
                     final int contentLength = requestCtxProvider.get().getLength();
                     Buffer buf = contentLength == -1 ? a.newBuffer() : a.newBuffer(contentLength);
                     try {
-                        int written = buf.writeBytesUntilEndStream(is, 1024);
+                        // Configured via the org.glassfish.jersey.message.MessageProperties#IO_BUFFER_SIZE property
+                        int written = buf.writeBytesUntilEndStream(is, BUFFER_SIZE);
                         if (contentLength > 0 && written != contentLength) {
                             throw new BadRequestException("Not enough bytes for content-length: " + contentLength
                                     + ", only got: " + written);

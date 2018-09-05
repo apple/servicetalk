@@ -22,13 +22,15 @@ import java.util.NoSuchElementException;
 
 import static java.lang.System.arraycopy;
 import static java.util.Objects.requireNonNull;
+import static org.glassfish.jersey.message.internal.ReaderWriter.BUFFER_SIZE;
 
 /**
  * An {@link Iterator Iterator&lt;byte[]&gt;} that wraps an {@link InputStream}.
  */
 public final class InputStreamIterator implements Iterator<byte[]> {
     private final InputStream is;
-    private final byte[] buffer = new byte[4096];
+    // Configured via the org.glassfish.jersey.message.MessageProperties#IO_BUFFER_SIZE property
+    private final byte[] buffer = new byte[BUFFER_SIZE];
     private int nextAvailable;
 
     /**
