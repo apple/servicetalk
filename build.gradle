@@ -112,6 +112,10 @@ task quality {
     ['servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
 }
 
+task bintrayUpload {
+  dependsOn findTasks(':bintrayUpload', ['servicetalk-benchmarks', 'servicetalk-examples'])
+}
+
 // Override behavior for existing tasks:
 
 task publish(overwrite: true) {

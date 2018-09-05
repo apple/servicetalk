@@ -120,7 +120,7 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
             repo = "servicetalk"
             name = project.name
             licenses = ["Apache-2.0"]
-            vcsUrl = "https://github.com/servicetalk/${project.name}.git"
+            vcsUrl = "https://github.com/servicetalk/servicetalk.git"
           }
           override = true
           publish = true
@@ -133,17 +133,7 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
         }
       }
 
-      def versionString = project.version.toString()
-
-      // compatibility with apple's CI system
-      if (System.getenv("apple")) {
-        // TODO: remove before open sourcing
-        if (!versionString.endsWith("-apple")) {
-          version += "-apple"
-        }
-      }
-
-      if (!project.hasProperty("releaseBuild") && !versionString.endsWith("-SNAPSHOT")) {
+      if (!project.hasProperty("releaseBuild") && !project.version.toString().endsWith("-SNAPSHOT")) {
         project.version += "-SNAPSHOT"
       }
 

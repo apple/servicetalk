@@ -15,7 +15,7 @@
  */
 plugins {
   id "com.github.hierynomus.license" version "0.14.0"
-  id "com.jfrog.bintray" version "1.7.3"
+  id "com.jfrog.bintray" version "1.8.4"
 }
 
 apply plugin: "groovy"
@@ -34,7 +34,7 @@ dependencies {
   compile "org.asciidoctor:asciidoctor-gradle-plugin:1.5.7"
   compile "gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.14.0"
   compile "gradle.plugin.com.github.spotbugs:spotbugs-gradle-plugin:1.6.2"
-  compile "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3"
+  compile "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4"
 }
 
 license {
@@ -105,7 +105,7 @@ if (System.getenv("BINTRAY_USER") && System.getenv("BINTRAY_KEY")) {
           repo = "servicetalk"
           name = project.name
           licenses = ["Apache-2.0"]
-          vcsUrl = "https://github.com/servicetalk/${project.name}.git"
+          vcsUrl = "https://github.com/servicetalk/servicetalk.git"
       }
       override = true
       publish = true
@@ -128,15 +128,7 @@ idea {
   }
 }
 
-def versionString = version.toString()
-
-if (System.getenv("apple")) {
-  if (!versionString.endsWith("-apple")) {
-    version += "-apple"
-  }
-}
-
-if (!hasProperty('releaseBuild') && !versionString.endsWith("-SNAPSHOT")) {
+if (!hasProperty('releaseBuild') && !version.toString().endsWith("-SNAPSHOT")) {
   version += "-SNAPSHOT"
 }
 
