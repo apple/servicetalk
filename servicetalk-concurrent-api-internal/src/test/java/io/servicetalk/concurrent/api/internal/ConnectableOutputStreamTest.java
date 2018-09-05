@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntBinaryOperator;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
-import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Runtime.getRuntime;
@@ -479,8 +478,8 @@ public class ConnectableOutputStreamTest {
         final long seed = r.nextLong();  // capture seed to have repeatable tests
         r.setSeed(seed);
 
-        // 20% of heap, seems to leave enough room for all the intermediary buffers floating around
-        final int dataSize = (int) min(getRuntime().maxMemory() * 0.20, MAX_VALUE);
+        // 3% of heap or max of 100 MiB
+        final int dataSize = (int) min(getRuntime().maxMemory() * 0.03, 100 * 1024 * 1024);
         LOGGER.info("Test seed = {} – data size = {}", seed, dataSize);
 
         final AtomicReference<Throwable> error = new AtomicReference<>();
