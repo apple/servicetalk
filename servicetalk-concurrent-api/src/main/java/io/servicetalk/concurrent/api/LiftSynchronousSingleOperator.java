@@ -15,15 +15,13 @@
  */
 package io.servicetalk.concurrent.api;
 
-import java.util.function.Function;
-
 import static java.util.Objects.requireNonNull;
 
 final class LiftSynchronousSingleOperator<T, R> extends AbstractSynchronousSingleOperator<T, R> {
-    private final Function<Subscriber<? super R>, Subscriber<? super T>> customOperator;
+    private final SingleOperator<? super T, ? extends R> customOperator;
 
     LiftSynchronousSingleOperator(Single<T> original,
-                                  Function<Subscriber<? super R>, Subscriber<? super T>> customOperator,
+                                  SingleOperator<? super T, ? extends R> customOperator,
                                   Executor executor) {
         super(original, executor);
         this.customOperator = requireNonNull(customOperator);

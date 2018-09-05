@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.internal.ConcurrentUtils.drainSingleConsumerQueueDelayThrow;
 import static io.servicetalk.concurrent.internal.PlatformDependent.newUnboundedLinkedMpscQueue;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 
@@ -101,6 +102,6 @@ public final class CompletableProcessor extends Completable implements Processor
     }
 
     private void notifyListeners(TerminalNotification terminalSignal) {
-        ConcurrentUtils.drainSingleConsumerQueueDelayThrow(subscribers, terminalSignal::terminate, drainingTheQueueUpdater, this);
+        drainSingleConsumerQueueDelayThrow(subscribers, terminalSignal::terminate, drainingTheQueueUpdater, this);
     }
 }

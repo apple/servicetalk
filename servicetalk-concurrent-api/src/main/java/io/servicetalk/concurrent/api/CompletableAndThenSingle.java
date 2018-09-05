@@ -30,9 +30,9 @@ import static java.util.Objects.requireNonNull;
  */
 final class CompletableAndThenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     private final Completable original;
-    private final Single<T> next;
+    private final Single<? extends T> next;
 
-    CompletableAndThenSingle(Completable original, Single<T> next, Executor executor) {
+    CompletableAndThenSingle(Completable original, Single<? extends T> next, Executor executor) {
         super(executor);
         this.original = requireNonNull(original);
         this.next = requireNonNull(next);
@@ -63,11 +63,11 @@ final class CompletableAndThenSingle<T> extends AbstractNoHandleSubscribeSingle<
 
     private static final class AndThenSubscriber<T> implements Subscriber<T>, Completable.Subscriber {
         private final Subscriber<? super T> target;
-        private final Single<T> next;
+        private final Single<? extends T> next;
         @Nullable
         private volatile SequentialCancellable sequentialCancellable;
 
-        AndThenSubscriber(Subscriber<? super T> target, Single<T> next) {
+        AndThenSubscriber(Subscriber<? super T> target, Single<? extends T> next) {
             this.target = target;
             this.next = next;
         }

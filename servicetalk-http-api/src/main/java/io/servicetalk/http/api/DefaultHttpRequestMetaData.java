@@ -102,24 +102,24 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
     @Nullable
     @Override
-    public String getScheme() {
+    public final String getScheme() {
         return lazyParseRequestTarget().getScheme();
     }
 
     @Nullable
     @Override
-    public String getUserInfo() {
+    public final String getUserInfo() {
         return lazyParseRequestTarget().getUserInfo();
     }
 
     @Nullable
     @Override
-    public String getHost() {
+    public final String getHost() {
         return lazyParseRequestTarget().getHost();
     }
 
     @Override
-    public int getPort() {
+    public final int getPort() {
         return lazyParseRequestTarget().getExplicitPort();
     }
 
@@ -176,13 +176,13 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
     @Nullable
     @Override
-    public String getEffectiveHost() {
+    public final String getEffectiveHost() {
         lazyParseEffectiveRequest();
         return effectiveRequestHost;
     }
 
     @Override
-    public int getEffectivePort() {
+    public final int getEffectivePort() {
         lazyParseEffectiveRequest();
         return effectiveRequestPort;
     }

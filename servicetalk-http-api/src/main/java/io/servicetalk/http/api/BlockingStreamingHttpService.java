@@ -15,8 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.transport.api.ConnectionContext;
-
 import java.util.function.BiFunction;
 
 /**
@@ -31,8 +29,8 @@ public abstract class BlockingStreamingHttpService implements AutoCloseable {
      * @return a {@link BlockingStreamingHttpResponse} which represents the HTTP response.
      * @throws Exception If an exception occurs during request processing.
      */
-    public abstract BlockingStreamingHttpResponse<HttpPayloadChunk> handle(
-            ConnectionContext ctx, BlockingStreamingHttpRequest<HttpPayloadChunk> request) throws Exception;
+    public abstract BlockingStreamingHttpResponse handle(
+            BlockingStreamingHttpServiceContext ctx, BlockingStreamingHttpRequest request) throws Exception;
 
     @Override
     public void close() throws Exception {
@@ -79,16 +77,16 @@ public abstract class BlockingStreamingHttpService implements AutoCloseable {
      * Create a new {@link BlockingStreamingHttpService} from a {@link BiFunction}.
      *
      * @param handleFunc Provides the functionality for the
-     * {@link #handle(ConnectionContext, BlockingStreamingHttpRequest)} method.
+     * {@link #handle(BlockingStreamingHttpServiceContext, BlockingStreamingHttpRequest)} method.
      * @return a new {@link BlockingStreamingHttpService}.
      */
     public static BlockingStreamingHttpService from(
-        BiFunction<ConnectionContext, BlockingStreamingHttpRequest<HttpPayloadChunk>,
-                BlockingStreamingHttpResponse<HttpPayloadChunk>> handleFunc) {
+            BiFunction<BlockingStreamingHttpServiceContext, BlockingStreamingHttpRequest,
+                    BlockingStreamingHttpResponse> handleFunc) {
         return new BlockingStreamingHttpService() {
             @Override
-            public BlockingStreamingHttpResponse<HttpPayloadChunk> handle(
-                    final ConnectionContext ctx, final BlockingStreamingHttpRequest<HttpPayloadChunk> request) {
+            public BlockingStreamingHttpResponse handle(
+                    final BlockingStreamingHttpServiceContext ctx, final BlockingStreamingHttpRequest request) {
                 return handleFunc.apply(ctx, request);
             }
         };

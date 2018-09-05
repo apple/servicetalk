@@ -15,45 +15,102 @@
  */
 package io.servicetalk.http.api;
 
-import java.util.function.Function;
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.CloseableIterable;
 
 /**
- * An HTTP request. Note that the entire payload will be in memory.
- *
- * @param <T> Type of payload.
+ * An HTTP request. The payload is represented as a single {@link Object}.
  */
-public interface HttpRequest<T> extends HttpRequestMetaData, LastHttpMetaData {
+public interface HttpRequest extends HttpRequestMetaData {
     /**
-     * The <a href="https://tools.ietf.org/html/rfc7230.html#section-3.3">HTTP Payload Body</a>.
-     *
-     * @return The <a href="https://tools.ietf.org/html/rfc7230.html#section-3.3">HTTP Payload Body</a> of this request.
+     * Get the underlying payload as a {@link Buffer}.
+     * @return The {@link Buffer} representation of the underlying payload.
      */
-    T getPayloadBody();
+    default Buffer getPayloadBody() {
+        return HttpSerializerUtils.getPayloadBody(this);
+    }
 
     /**
-     * To modify the {@link #getPayloadBody()} of the request and preserving the containing request object.
-     *
-     * @param transformer {@link Function} which converts the payload body to another type.
-     * @param <R> Type of the resulting payload body.
-     * @return New {@link HttpRequest} with the altered {@link #getPayloadBody()}.
+     * Get and deserialize the payload body.
+     * @param deserializer The function that deserializes the underlying {@link Object}.
+     * @param <T> The resulting type of the deserialization operation.
+     * @return The results of the deserialization operation.
      */
-    <R> HttpRequest<R> transformPayloadBody(Function<T, R> transformer);
+    <T> T getPayloadBody(HttpDeserializer<T> deserializer);
+
+    /**
+     * Get the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
+     * @return the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
+     */
+    HttpHeaders getTrailers();
+
+    /**
+     * Set the underlying payload.
+     * @param payloadBody the underlying payload.
+     * @return A {@link HttpRequest} with the new serialized payload body.
+     */
+    HttpRequest setPayloadBody(Buffer payloadBody);
+
+    /**
+     * Set the underlying payload to be the results of serialization of {@code pojo}.
+     * @param pojo The object to serialize.
+     * @param serializer The {@link HttpSerializer} which converts {@code pojo} into bytes.
+     * @param <T> The type of object to serialize.
+     * @return A {@link HttpRequest} with the new serialized payload body.
+     */
+    <T> HttpRequest setPayloadBody(T pojo, HttpSerializer<T> serializer);
+
+    /**
+     * Set the underlying payload to be the results of serialization of {@code pojo}.
+     * <p>
+     * Note this method will consume the {@link Iterable} in a blocking fashion! If the results are not already
+     * available in memory this method will block.
+     * @param pojos An {@link Iterable} which provides the objects to serialize.
+     * @param serializer The {@link HttpSerializer} which converts {@code pojo} into bytes.
+     * @param <T> The type of object to serialize.
+     * @return A {@link HttpRequest} with the new serialized payload body.
+     */
+    <T> HttpRequest setPayloadBody(Iterable<T> pojos, HttpSerializer<T> serializer);
+
+    /**
+     * Set the underlying payload to be the results of serialization of {@code pojo}.
+     * <p>
+     * Note this method will consume the {@link CloseableIterable} in a blocking fashion! If the results are not already
+     * available in memory this method will block.
+     * @param pojos An {@link CloseableIterable} which provides the objects to serialize.
+     * @param serializer The {@link HttpSerializer} which converts {@code pojo} into bytes.
+     * @param <T> The type of object to serialize.
+     * @return A {@link HttpRequest} with the new serialized payload body.
+     */
+    <T> HttpRequest setPayloadBody(CloseableIterable<T> pojos, HttpSerializer<T> serializer);
+
+    /**
+     * Translate this {@link HttpRequest} to a {@link StreamingHttpRequest}.
+     * @return a {@link StreamingHttpRequest} representation of this {@link HttpRequest}.
+     */
+    StreamingHttpRequest toStreamingRequest();
+
+    /**
+     * Translate this {@link HttpRequest} to a {@link BlockingStreamingHttpRequest}.
+     * @return a {@link BlockingStreamingHttpRequest} representation of this {@link HttpRequest}.
+     */
+    BlockingStreamingHttpRequest toBlockingStreamingRequest();
 
     @Override
-    HttpRequest<T> setRawPath(String path);
+    HttpRequest setRawPath(String path);
 
     @Override
-    HttpRequest<T> setPath(String path);
+    HttpRequest setPath(String path);
 
     @Override
-    HttpRequest<T> setRawQuery(String query);
+    HttpRequest setRawQuery(String query);
 
     @Override
-    HttpRequest<T> setVersion(HttpProtocolVersion version);
+    HttpRequest setVersion(HttpProtocolVersion version);
 
     @Override
-    HttpRequest<T> setMethod(HttpRequestMethod method);
+    HttpRequest setMethod(HttpRequestMethod method);
 
     @Override
-    HttpRequest<T> setRequestTarget(String requestTarget);
+    HttpRequest setRequestTarget(String requestTarget);
 }

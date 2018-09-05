@@ -35,8 +35,7 @@ public abstract class BlockingHttpClient extends BlockingHttpRequester {
      * @throws Exception if a exception occurs during the reservation process.
      * @see StreamingHttpClient#reserveConnection(StreamingHttpRequest)
      */
-    public abstract ReservedBlockingHttpConnection reserveConnection(HttpRequest<HttpPayloadChunk> request)
-            throws Exception;
+    public abstract ReservedBlockingHttpConnection reserveConnection(HttpRequest request) throws Exception;
 
     /**
      * Attempt a <a href="https://tools.ietf.org/html/rfc7230.html#section-6.7">protocol upgrade</a>.
@@ -52,8 +51,7 @@ public abstract class BlockingHttpClient extends BlockingHttpRequester {
      * @throws Exception if a exception occurs during the upgrade process.
      * @see StreamingHttpClient#upgradeConnection(StreamingHttpRequest)
      */
-    public abstract UpgradableHttpResponse<HttpPayloadChunk> upgradeConnection(HttpRequest<HttpPayloadChunk> request)
-            throws Exception;
+    public abstract UpgradableHttpResponse upgradeConnection(HttpRequest request) throws Exception;
 
     /**
      * Convert this {@link BlockingHttpClient} to the {@link StreamingHttpClient} API.

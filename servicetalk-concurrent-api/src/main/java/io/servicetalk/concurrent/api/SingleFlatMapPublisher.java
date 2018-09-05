@@ -31,9 +31,9 @@ import static java.util.Objects.requireNonNull;
  */
 final class SingleFlatMapPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R> {
     private final Single<T> original;
-    private final Function<T, Publisher<R>> nextFactory;
+    private final Function<T, Publisher<? extends R>> nextFactory;
 
-    SingleFlatMapPublisher(Single<T> original, Function<T, Publisher<R>> nextFactory, Executor executor) {
+    SingleFlatMapPublisher(Single<T> original, Function<T, Publisher<? extends R>> nextFactory, Executor executor) {
         super(executor);
         this.original = requireNonNull(original);
         this.nextFactory = requireNonNull(nextFactory);
@@ -46,12 +46,12 @@ final class SingleFlatMapPublisher<T, R> extends AbstractNoHandleSubscribePublis
 
     private static final class SubscriberImpl<T, R> implements Single.Subscriber<T>, org.reactivestreams.Subscriber<R> {
         private final Subscriber<? super R> subscriber;
-        private final Function<T, Publisher<R>> nextFactory;
+        private final Function<T, Publisher<? extends R>> nextFactory;
         private final SignalOffloader signalOffloader;
         @Nullable
         private volatile SequentialSubscription sequentialSubscription;
 
-        SubscriberImpl(Subscriber<? super R> subscriber, Function<T, Publisher<R>> nextFactory,
+        SubscriberImpl(Subscriber<? super R> subscriber, Function<T, Publisher<? extends R>> nextFactory,
                        final SignalOffloader signalOffloader) {
             this.subscriber = subscriber;
             this.nextFactory = requireNonNull(nextFactory);
@@ -89,7 +89,7 @@ final class SingleFlatMapPublisher<T, R> extends AbstractNoHandleSubscribePublis
 
         @Override
         public void onSuccess(@Nullable T result) {
-            final Publisher<R> next;
+            final Publisher<? extends R> next;
             try {
                 next = requireNonNull(nextFactory.apply(result));
             } catch (Throwable cause) {
@@ -100,7 +100,7 @@ final class SingleFlatMapPublisher<T, R> extends AbstractNoHandleSubscribePublis
             // a new source which may have different threading semantics, we explicitly offload signals going down to
             // the original subscriber. If we do not do this and next source does not support blocking operations,
             // whereas original subscriber does, we will violate threading assumptions.
-            next.subscribe(signalOffloader.offloadSubscriber((Subscriber<R>) this));
+            next.subscribe((Subscriber<? super R>) signalOffloader.offloadSubscriber((Subscriber<R>) this));
         }
 
         @Override

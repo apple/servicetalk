@@ -22,8 +22,8 @@ import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
 import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
 import io.servicetalk.http.api.StreamingHttpClientToHttpClient.ReservedStreamingHttpConnectionToReservedHttpConnection;
 
-import static io.servicetalk.http.api.DefaultHttpRequest.toHttpRequest;
-import static io.servicetalk.http.api.DefaultHttpResponse.from;
+import static io.servicetalk.http.api.BufferHttpRequest.toHttpRequest;
+import static io.servicetalk.http.api.BufferHttpResponse.from;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpClientGroupToHttpClientGroup<UnresolvedAddress> extends

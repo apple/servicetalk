@@ -33,8 +33,7 @@ public abstract class StreamingHttpService implements AsyncCloseable {
      * @param request to handle.
      * @return {@link Single} of HTTP response.
      */
-    public abstract Single<StreamingHttpResponse<HttpPayloadChunk>> handle(
-            ConnectionContext ctx, StreamingHttpRequest<HttpPayloadChunk> request);
+    public abstract Single<StreamingHttpResponse> handle(StreamingHttpServiceContext ctx, StreamingHttpRequest request);
 
     /**
      * Closes this {@link StreamingHttpService} asynchronously.
@@ -79,17 +78,16 @@ public abstract class StreamingHttpService implements AsyncCloseable {
 
     /**
      * Create a new {@link StreamingHttpService} from a {@link BiFunction}.
-     * @param handleFunc Provides the functionality for the {@link #handle(ConnectionContext, StreamingHttpRequest)}
-     * method.
+     * @param handleFunc Provides the functionality for the
+     * {@link #handle(StreamingHttpServiceContext, StreamingHttpRequest)} method.
      * @return a new {@link StreamingHttpService}.
      */
     public static StreamingHttpService from(
-            BiFunction<ConnectionContext, StreamingHttpRequest<HttpPayloadChunk>,
-                                    Single<StreamingHttpResponse<HttpPayloadChunk>>> handleFunc) {
+            BiFunction<StreamingHttpServiceContext, StreamingHttpRequest, Single<StreamingHttpResponse>> handleFunc) {
         return new StreamingHttpService() {
             @Override
-            public Single<StreamingHttpResponse<HttpPayloadChunk>> handle(
-                    final ConnectionContext ctx, final StreamingHttpRequest<HttpPayloadChunk> request) {
+            public Single<StreamingHttpResponse> handle(
+                    final StreamingHttpServiceContext ctx, final StreamingHttpRequest request) {
                 return handleFunc.apply(ctx, request);
             }
         };

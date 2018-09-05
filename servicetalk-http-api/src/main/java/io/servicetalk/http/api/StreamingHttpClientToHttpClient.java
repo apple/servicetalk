@@ -26,8 +26,8 @@ import io.servicetalk.transport.api.ExecutionContext;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import static io.servicetalk.http.api.DefaultHttpRequest.toHttpRequest;
-import static io.servicetalk.http.api.DefaultHttpResponse.from;
+import static io.servicetalk.http.api.BufferHttpRequest.toHttpRequest;
+import static io.servicetalk.http.api.BufferHttpResponse.from;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpClientToHttpClient extends HttpClient {

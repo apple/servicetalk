@@ -20,17 +20,16 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
 /**
- * The equivalent of {@link StreamingHttpRequester} but that accepts {@link HttpRequest} and returns
- * {@link HttpResponse}.
+ * Provides a means to make a HTTP request.
  */
-public abstract class HttpRequester implements ListenableAsyncCloseable {
+public abstract class HttpRequester implements HttpRequestFactory, ListenableAsyncCloseable {
     /**
      * Send a {@code request}.
      *
      * @param request the request to send.
      * @return The response.
      */
-    public abstract Single<HttpResponse<HttpPayloadChunk>> request(HttpRequest<HttpPayloadChunk> request);
+    public abstract Single<HttpResponse> request(HttpRequest request);
 
     /**
      * Get the {@link ExecutionContext} used during construction of this object.

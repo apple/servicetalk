@@ -17,15 +17,13 @@ package io.servicetalk.concurrent.api;
 
 import org.reactivestreams.Subscriber;
 
-import java.util.function.Function;
-
 import static java.util.Objects.requireNonNull;
 
 final class LiftSynchronousPublisherOperator<T, R> extends AbstractSynchronousPublisherOperator<T, R> {
-    private final Function<Subscriber<? super R>, Subscriber<? super T>> customOperator;
+    private final PublisherOperator<? super T, ? extends R> customOperator;
 
     LiftSynchronousPublisherOperator(Publisher<T> original,
-                                     Function<Subscriber<? super R>, Subscriber<? super T>> customOperator,
+                                     PublisherOperator<? super T, ? extends R> customOperator,
                                      Executor executor) {
         super(original, executor);
         this.customOperator = requireNonNull(customOperator);

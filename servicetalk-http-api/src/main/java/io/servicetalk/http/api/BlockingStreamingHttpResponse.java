@@ -15,48 +15,141 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
 
 import org.reactivestreams.Subscriber;
 
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 
 /**
- * The equivalent of {@link StreamingHttpResponse} but with synchronous/blocking APIs instead of asynchronous APIs.
- *
- * @param <T> Type of payload.
+ * The equivalent of {@link HttpResponse} but provides the payload as a {@link BlockingIterable}.
  */
-public interface BlockingStreamingHttpResponse<T> extends HttpResponseMetaData {
-    @Override
-    BlockingStreamingHttpResponse<T> setVersion(HttpProtocolVersion version);
-
-    @Override
-    BlockingStreamingHttpResponse<T> setStatus(HttpResponseStatus status);
+public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
+    /**
+     * Get the underlying payload as a {@link Publisher} of {@link Buffer}s.
+     * @return The {@link Publisher} of {@link Buffer} representation of the underlying
+     */
+    default BlockingIterable<Buffer> getPayloadBody() {
+        return HttpSerializerUtils.getPayloadBody(this);
+    }
 
     /**
-     * The <a href="https://tools.ietf.org/html/rfc7230.html#section-3.3">HTTP Payload Body</a>.
+     * Get and deserialize the payload body.
+     * @param deserializer The function that deserializes the underlying {@link BlockingIterable}.
+     * @param <T> The resulting type of the deserialization operation.
+     * @return The results of the deserialization operation.
+     */
+    <T> BlockingIterable<T> getPayloadBody(HttpDeserializer<T> deserializer);
+
+    /**
+     * Transform the underlying payload body with the result of serialization.
      * <p>
-     * By default the returned {@link Iterable} only supports a single call to {@link Iterable#iterator()}. This is
-     * because the payload is typically not all available in memory at any given time. If you need multiple calls to
-     * {@link Iterable#iterator()} you should add support for caching data in memory and enable multiple
-     * {@link Publisher#subscribe(Subscriber)} calls. See the
-     * <a href="http://reactivex.io/documentation/operators/replay.html">Replay Operator</a> and
-     * {@link Publisher#multicast(int) Multicast Operator} for more details.
-     *
-     * @return {@link Iterable} that emits the
-     * <a href="https://tools.ietf.org/html/rfc7230.html#section-3.3">HTTP Payload Body</a> of this request.
+     * Note this method has the following caveats:
+     * <ul>
+     *     <li>back pressure on the existing payload body will not be respected!</li>
+     *     <li>The new payload body {@link BlockingIterable} may not complete until the existing payload body
+     *     completes!</li>
+     * </ul>
+     * It is preferred to serialize the content during {@link BlockingStreamingHttpResponse} creation to avoid this
+     * ambiguity.
+     * @param payloadBody The new payload body, prior to serialization.
+     * @param serializer Used to serialize the payload body.
+     * @param <T> The type of objects to serialize.
+     * @return A {@link BlockingStreamingHttpResponse} with the new serialized payload body.
      */
-    // TODO(scott): add a link in the javadoc to ServiceTalk replay operator and synchronous equivalent tools.
-    BlockingIterable<T> getPayloadBody();
+    default <T> BlockingStreamingHttpResponse transformPayloadBody(BlockingIterable<T> payloadBody,
+                                                                   HttpSerializer<T> serializer) {
+        // Ignore content of original Publisher (payloadBody). Due to the blocking APIs we will consume the payload in
+        // a blocking fashion, this default behavior can be overriden via the method overload and may change to be in
+        // parallel later.
+        return transformPayloadBody(old -> {
+            old.forEach(buffer -> { });
+            return payloadBody;
+        }, serializer);
+    }
 
     /**
-     * To modify the {@link #getPayloadBody()} of the response and preserving the containing response object.
-     *
-     * @param transformer {@link Function} which converts the payload body to another type.
-     * @param <R> Type of the resulting payload body.
-     * @return New {@link BlockingStreamingHttpResponse} with the altered {@link #getPayloadBody()}.
+     * Transform the underlying payload body with the result of serialization.
+     * @param transformer A {@link Function} which take as a parameter the existing payload body
+     * {@link BlockingIterable} and returns the new payload body {@link BlockingIterable} prior to serialization. It is
+     * assumed the existing payload body {@link BlockingIterable} will be transformed/consumed or else no more responses
+     * may be processed.
+     * @param serializer Used to serialize the payload body.
+     * @param <T> The type of objects to serialize.
+     * @return A {@link BlockingStreamingHttpResponse} with the new serialized payload body.
      */
-    <R> BlockingStreamingHttpResponse<R> transformPayloadBody(
-            Function<BlockingIterable<T>, BlockingIterable<R>> transformer);
+    <T> BlockingStreamingHttpResponse transformPayloadBody(
+            Function<BlockingIterable<Buffer>, BlockingIterable<T>> transformer, HttpSerializer<T> serializer);
+
+    /**
+     * Transform the underlying payload body in the form of {@link Buffer}s.
+     * @param transformer A {@link Function} which take as a parameter the existing payload body
+     * {@link BlockingIterable} and returns the new payload body {@link BlockingIterable}. It is assumed the existing
+     * payload body {@link BlockingIterable} will be transformed/consumed or else no more responses may be processed.
+     * @return A {@link BlockingStreamingHttpResponse} with the new payload body.
+     */
+    BlockingStreamingHttpResponse transformPayloadBody(UnaryOperator<BlockingIterable<Buffer>> transformer);
+
+    /**
+     * Transform the underlying payload body in the form of {@link Object}s.
+     * @param transformer A {@link Function} which take as a parameter the existing payload body
+     * {@link BlockingIterable} and returns the new payload body {@link BlockingIterable}. It is assumed the existing
+     * payload body {@link BlockingIterable} will be transformed/consumed or else no more responses may be processed.
+     * @return A {@link BlockingStreamingHttpResponse} with the new payload body.
+     */
+    BlockingStreamingHttpResponse transformRawPayloadBody(UnaryOperator<BlockingIterable<?>> transformer);
+
+    /**
+     * Transform the underlying payload body in the form of {@link Buffer}s with access to the trailers.
+     * @param stateSupplier Create a new state {@link Object} that will be provided to the {@code transformer} on each
+     * invocation. The state will be persistent for each {@link Subscriber} of the underlying payload body.
+     * @param transformer Responsible for transforming each {@link Buffer} of the payload body.
+     * @param trailersTransformer Invoked after all payload has been consumed with the state and the trailers. The
+     * return value of this {@link BiFunction} will be the trailers for the {@link BlockingStreamingHttpResponse}.
+     * @param <T> The type of state used during the transformation.
+     * @return A {@link BlockingStreamingHttpResponse} with the new payload body.
+     */
+    <T> BlockingStreamingHttpResponse transform(Supplier<T> stateSupplier,
+                                                BiFunction<Buffer, T, Buffer> transformer,
+                                                BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer);
+
+    /**
+     * Transform the underlying payload body in the form of {@link Object}s with access to the trailers.
+     * @param stateSupplier Create a new state {@link Object} that will be provided to the {@code transformer} on each
+     * invocation. The state will be persistent for each {@link Subscriber} of the underlying payload body.
+     * @param transformer Responsible for transforming each {@link Object} of the payload body.
+     * @param trailersTransformer Invoked after all payload has been consumed with the state and the trailers. The
+     * return value of this {@link BiFunction} will be the trailers for the {@link BlockingStreamingHttpResponse}.
+     * @param <T> The type of state used during the transformation.
+     * @return A {@link BlockingStreamingHttpResponse} with the new payload body.
+     */
+    <T> BlockingStreamingHttpResponse transformRaw(Supplier<T> stateSupplier,
+                                                   BiFunction<Object, T, ?> transformer,
+                                                   BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer);
+
+    /**
+     * Translate this {@link BlockingStreamingHttpResponse} to a {@link HttpResponse}.
+     * @return a {@link Single} that completes with a {@link HttpResponse} representation of this
+     * {@link BlockingStreamingHttpResponse}.
+     */
+    Single<HttpResponse> toResponse();
+
+    /**
+     * Translate this {@link BlockingStreamingHttpResponse} to a {@link StreamingHttpResponse}.
+     * @return a {@link StreamingHttpResponse} representation of this {@link BlockingStreamingHttpResponse}.
+     */
+    StreamingHttpResponse toStreamingResponse();
+
+    @Override
+    BlockingStreamingHttpResponse setVersion(HttpProtocolVersion version);
+
+    @Override
+    BlockingStreamingHttpResponse setStatus(HttpResponseStatus status);
 }

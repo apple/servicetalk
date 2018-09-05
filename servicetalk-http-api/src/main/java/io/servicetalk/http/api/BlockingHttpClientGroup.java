@@ -24,7 +24,7 @@ import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
  *
  * @param <UnresolvedAddress> The address type used to create new {@link BlockingHttpClient}s.
  */
-public abstract class BlockingHttpClientGroup<UnresolvedAddress> implements AutoCloseable {
+public abstract class BlockingHttpClientGroup<UnresolvedAddress> implements HttpRequestFactory, AutoCloseable {
     /**
      * Locate or create a client and delegate to {@link BlockingHttpClient#request(HttpRequest)}.
      *
@@ -35,8 +35,7 @@ public abstract class BlockingHttpClientGroup<UnresolvedAddress> implements Auto
      * @throws Exception if an exception occurs during the request processing.
      * @see BlockingHttpClient#request(HttpRequest)
      */
-    public abstract HttpResponse<HttpPayloadChunk> request(
-            GroupKey<UnresolvedAddress> key, HttpRequest<HttpPayloadChunk> request) throws Exception;
+    public abstract HttpResponse request(GroupKey<UnresolvedAddress> key, HttpRequest request) throws Exception;
 
     /**
      * Locate or create a client and delegate to
@@ -52,7 +51,7 @@ public abstract class BlockingHttpClientGroup<UnresolvedAddress> implements Auto
      * @see BlockingHttpClient#reserveConnection(HttpRequest)
      */
     public abstract ReservedBlockingHttpConnection reserveConnection(
-            GroupKey<UnresolvedAddress> key, HttpRequest<HttpPayloadChunk> request) throws Exception;
+            GroupKey<UnresolvedAddress> key, HttpRequest request) throws Exception;
 
     /**
      * Locate or create a client and delegate to
@@ -67,8 +66,8 @@ public abstract class BlockingHttpClientGroup<UnresolvedAddress> implements Auto
      * @throws Exception if a exception occurs during the reservation process.
      * @see BlockingHttpClient#upgradeConnection(HttpRequest)
      */
-    public abstract UpgradableHttpResponse<HttpPayloadChunk> upgradeConnection(
-            GroupKey<UnresolvedAddress> key, HttpRequest<HttpPayloadChunk> request) throws Exception;
+    public abstract UpgradableHttpResponse upgradeConnection(
+            GroupKey<UnresolvedAddress> key, HttpRequest request) throws Exception;
 
     /**
      * Convert this {@link BlockingHttpClientGroup} to the {@link StreamingHttpClientGroup} API.

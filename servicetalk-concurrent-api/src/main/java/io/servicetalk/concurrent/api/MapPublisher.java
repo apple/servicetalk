@@ -29,9 +29,9 @@ import static java.util.Objects.requireNonNull;
  * @param <T> Type of items emitted by source {@link Publisher}
  */
 final class MapPublisher<R, T> extends AbstractSynchronousPublisherOperator<T, R> {
-    private final Function<T, R> mapper;
+    private final Function<? super T, ? extends R> mapper;
 
-    MapPublisher(Publisher<T> source, Function<T, R> mapper, Executor executor) {
+    MapPublisher(Publisher<T> source, Function<? super T, ? extends R> mapper, Executor executor) {
         super(source, executor);
         this.mapper = requireNonNull(mapper);
     }

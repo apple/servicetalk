@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient.ReservedBlockingHttpConnection;
@@ -24,24 +25,19 @@ import io.servicetalk.http.api.HttpClientToStreamingHttpClient.ReservedHttpConne
 import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient.UpgradableStreamingHttpResponse;
 
-import java.util.function.Function;
-
 /**
- * The equivalent of {@link StreamingHttpClient} but that accepts {@link HttpRequest} and returns
- * {@link HttpResponse}.
+ * Provides a means to issue requests against HTTP service. The implementation is free to maintain a collection of
+ * {@link HttpConnection} instances and distribute calls to {@link #request(HttpRequest)} amongst this collection.
  */
 public abstract class HttpClient extends HttpRequester {
     /**
-     * Reserve a {@link HttpConnection} for handling the provided {@link HttpRequest}
-     * but <b>does not execute it</b>!
+     * Reserve a {@link HttpConnection} for handling the provided {@link HttpRequest} but <b>does not execute it</b>!
      *
      * @param request Allows the underlying layers to know what {@link HttpConnection}s are valid to reserve.
      * For example this may provide some insight into shard or other info.
      * @return a {@link Single} that provides the {@link ReservedHttpConnection} upon completion.
-     * @see StreamingHttpClient#reserveConnection(StreamingHttpRequest)
      */
-    public abstract Single<? extends ReservedHttpConnection> reserveConnection(
-            HttpRequest<HttpPayloadChunk> request);
+    public abstract Single<? extends ReservedHttpConnection> reserveConnection(HttpRequest request);
 
     /**
      * Attempt a <a href="https://tools.ietf.org/html/rfc7230.html#section-6.7">protocol upgrade</a>.
@@ -54,10 +50,8 @@ public abstract class HttpClient extends HttpRequester {
      * @param request the request which initiates the upgrade.
      * @return An object that provides the {@link UpgradableHttpResponse} for the upgrade attempt and also
      * contains the {@link HttpConnection} used for the upgrade.
-     * @see StreamingHttpClient#upgradeConnection(StreamingHttpRequest)
      */
-    public abstract Single<? extends UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
-            HttpRequest<HttpPayloadChunk> request);
+    public abstract Single<? extends UpgradableHttpResponse> upgradeConnection(HttpRequest request);
 
     /**
      * Convert this {@link HttpClient} to the {@link StreamingHttpClient} API.
@@ -153,10 +147,9 @@ public abstract class HttpClient extends HttpRequester {
      * A special type of response returned by upgrade requests {@link #upgradeConnection(HttpRequest)}. This object
      * allows the upgrade code to inform the HTTP implementation if the {@link HttpConnection} can continue
      * using the HTTP protocol or not.
-     * @param <T> The type of data in the {@link StreamingHttpResponse}.
      * @see UpgradableStreamingHttpResponse
      */
-    public interface UpgradableHttpResponse<T> extends HttpResponse<T> {
+    public interface UpgradableHttpResponse extends HttpResponse {
         /**
          * Called by the code responsible for processing the upgrade response.
          * <p>
@@ -184,12 +177,15 @@ public abstract class HttpClient extends HttpRequester {
         ReservedHttpConnection getHttpConnection(boolean releaseReturnsToClient);
 
         @Override
-        <R> UpgradableHttpResponse<R> transformPayloadBody(Function<T, R> transformer);
+        UpgradableHttpResponse setPayloadBody(Buffer payloadBody);
 
         @Override
-        UpgradableHttpResponse<T> setVersion(HttpProtocolVersion version);
+        <T> HttpResponse setPayloadBody(T pojo, HttpSerializer<T> serializer);
 
         @Override
-        UpgradableHttpResponse<T> setStatus(HttpResponseStatus status);
+        UpgradableHttpResponse setVersion(HttpProtocolVersion version);
+
+        @Override
+        UpgradableHttpResponse setStatus(HttpResponseStatus status);
     }
 }
