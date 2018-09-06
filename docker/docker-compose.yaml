@@ -39,25 +39,14 @@ services:
     networks: [test-net]
     command: bash -c "redis-server --port 6379 & redis-server --port 6378 --requirepass password"
 
-  test:
-    depends_on: [java]
-    image: java:latest
-    environment:
-      - CI=true
-    command: /bin/bash -cl "./gradlew clean build"
-    volumes:
-      - ~/.ssh:/root/.ssh
-      - ~/.gradle${EXECUTOR_NUMBER}:/root/.gradle
-      - ..:/code
-    working_dir: /code
-    networks: [test-net]
-
   test-redis-2:
     depends_on: [java, redis-2]
     image: java:latest
     environment:
-      - CI=true
-    command: /bin/bash -cl "REDIS_HOST=redis-3 REDIS_PORT=6379 REDIS_AUTH_PORT=6378 ./gradlew clean test"
+      - REDIS_HOST=redis-2
+      - REDIS_PORT=6379
+      - REDIS_AUTH_PORT=6378
+    command: bash -cl "./gradlew clean test"
     volumes:
       - ~/.ssh:/root/.ssh
       - ~/.gradle${EXECUTOR_NUMBER}:/root/.gradle
@@ -69,8 +58,10 @@ services:
     depends_on: [java, redis-3]
     image: java:latest
     environment:
-      - CI=true
-    command: /bin/bash -cl "REDIS_HOST=redis-3 REDIS_PORT=6379 REDIS_AUTH_PORT=6378 ./gradlew clean test"
+      - REDIS_HOST=redis-3
+      - REDIS_PORT=6379
+      - REDIS_AUTH_PORT=6378
+    command: bash -cl "./gradlew clean test"
     volumes:
       - ~/.ssh:/root/.ssh
       - ~/.gradle${EXECUTOR_NUMBER}:/root/.gradle
@@ -78,12 +69,14 @@ services:
     working_dir: /code
     networks: [test-net]
 
-  test-redis-4:
+  pull-request-build:
     depends_on: [java, redis-4]
     image: java:latest
     environment:
-      - CI=true
-    command: /bin/bash -cl "REDIS_HOST=redis-4 REDIS_PORT=6379 REDIS_AUTH_PORT=6378 ./gradlew clean test"
+      - REDIS_HOST=redis-4
+      - REDIS_PORT=6379
+      - REDIS_AUTH_PORT=6378
+    command: bash -cl "./gradlew clean build"
     volumes:
       - ~/.ssh:/root/.ssh
       - ~/.gradle${EXECUTOR_NUMBER}:/root/.gradle
@@ -92,28 +85,38 @@ services:
     networks: [test-net]
 
   publish-snapshot:
-    depends_on: [java]
+    depends_on: [java, redis-4]
     image: java:latest
     environment:
-      - CI=true
-    command: /bin/bash -cl "BINTRAY_USER=$BINTRAY_USER BINTRAY_KEY=$BINTRAY_KEY ./gradlew clean test bintrayUpload"
+      - REDIS_HOST=redis-4
+      - REDIS_PORT=6379
+      - REDIS_AUTH_PORT=6378
+      - BINTRAY_USER
+      - BINTRAY_KEY
+    command: bash -cl "./gradlew clean check bintrayUpload"
     volumes:
       - ~/.ssh:/root/.ssh
       - ~/.gradle${EXECUTOR_NUMBER}:/root/.gradle
       - ..:/code
     working_dir: /code
+    networks: [test-net]
 
   publish-release:
-    depends_on: [java]
+    depends_on: [java, redis-4]
     image: java:latest
     environment:
-      - CI=true
-    command: /bin/bash -cl "BINTRAY_USER=$BINTRAY_USER BINTRAY_KEY=$BINTRAY_KEY ./gradlew clean test bintrayUpload -PreleaseBuild=true"
+      - REDIS_HOST=redis-4
+      - REDIS_PORT=6379
+      - REDIS_AUTH_PORT=6378
+      - BINTRAY_USER
+      - BINTRAY_KEY
+    command: bash -cl "./gradlew clean check bintrayUpload -PreleaseBuild=true"
     volumes:
       - ~/.ssh:/root/.ssh
       - ~/.gradle${EXECUTOR_NUMBER}:/root/.gradle
       - ..:/code
     working_dir: /code
+    networks: [test-net]
 
 networks:
   test-net:
