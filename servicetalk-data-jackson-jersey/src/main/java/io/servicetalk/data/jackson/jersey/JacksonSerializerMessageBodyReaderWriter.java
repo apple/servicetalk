@@ -23,7 +23,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpPayloadChunks;
-import io.servicetalk.http.router.jersey.internal.InputStreamIterator;
 import io.servicetalk.serialization.api.DefaultSerializer;
 import io.servicetalk.serialization.api.SerializationException;
 import io.servicetalk.serialization.api.Serializer;
@@ -161,7 +160,7 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
     }
 
     private static Publisher<Buffer> toBufferPublisher(final InputStream is, final BufferAllocator a) {
-        return Publisher.from(() -> new InputStreamIterator(is)).map(a::wrap);
+        return Publisher.from(is).map(a::wrap);
     }
 
     private static Object deserialize(final Publisher<Buffer> bufferPublisher, final Serializer ser,

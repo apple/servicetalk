@@ -20,19 +20,17 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.router.jersey.internal.InputStreamIterator;
 import io.servicetalk.http.router.jersey.resources.AsynchronousResources;
 import io.servicetalk.http.router.jersey.resources.SynchronousResources;
 
 import org.junit.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.FilterInputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Collection;
 import java.util.Map;
 import javax.annotation.Priority;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -55,6 +53,7 @@ import static io.servicetalk.http.api.HttpResponseStatuses.NON_AUTHORITATIVE_INF
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.router.jersey.AbstractMessageBodyReaderWriter.isSourceOfType;
 import static java.lang.Character.toUpperCase;
+import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 import static javax.ws.rs.Priorities.ENTITY_CODER;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
@@ -114,16 +113,13 @@ public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStream
         public void filter(final ContainerRequestContext requestCtx) {
             // Simulate an ill-behaved filter that consumes the all request content beforehand
             // instead of modifying it in a streaming fashion (as done in super)
-            final ByteArrayOutputStream out = new ByteArrayOutputStream();
-            new InputStreamIterator(new UpperCaseInputStream(requestCtx.getEntityStream()))
-                    .forEachRemaining(bytes -> {
-                        try {
-                            out.write(bytes);
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
-            requestCtx.setEntityStream(new ByteArrayInputStream(out.toByteArray()));
+            try {
+                Collection<byte[]> collection = Publisher.from(new UpperCaseInputStream(
+                        requestCtx.getEntityStream())).toFuture().get();
+                requestCtx.setEntityStream(Publisher.from(collection).toInputStream(identity()));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

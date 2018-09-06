@@ -18,7 +18,6 @@ package io.servicetalk.http.router.jersey;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.router.jersey.internal.InputStreamIterator;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.glassfish.jersey.internal.util.collection.Ref;
@@ -88,8 +87,7 @@ abstract class AbstractMessageBodyReaderWriter<Source, T, SourceOfT, WrappedSour
         return handleEntityStream(entityStream, allocator, bodyFunction,
                 (is, a) -> bodyFunction
                         .andThen(sourceFunction)
-                        .apply(Publisher.from(() -> new InputStreamIterator(is))
-                                .map(bytes -> newPayloadChunk(a.wrap(bytes))), a));
+                        .apply(Publisher.from(is).map(bytes -> newPayloadChunk(a.wrap(bytes))), a));
     }
 
     @Override
