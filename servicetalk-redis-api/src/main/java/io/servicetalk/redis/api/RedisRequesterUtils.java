@@ -107,7 +107,7 @@ final class RedisRequesterUtils {
                 @Override
                 public void onComplete() {
                     if (error != null) {
-                        singleSubscriber.onError(new RedisException(error));
+                        singleSubscriber.onError(new RedisServerException(error));
                     } else if (totalMessages != null) {
                         singleSubscriber.onSuccess((R) totalMessages.toString());
                     } else {
@@ -192,7 +192,7 @@ final class RedisRequesterUtils {
                     if (error == null) {
                         singleSubscriber.onSuccess((R) aggregator);
                     } else {
-                        singleSubscriber.onError(new RedisException(error));
+                        singleSubscriber.onError(new RedisServerException(error));
                     }
                 }
 
@@ -253,7 +253,7 @@ final class RedisRequesterUtils {
                     if (error == null) {
                         singleSubscriber.onSuccess((R) answer);
                     } else {
-                        singleSubscriber.onError(new RedisException(error));
+                        singleSubscriber.onError(new RedisServerException(error));
                     }
                 }
             });
@@ -275,7 +275,7 @@ final class RedisRequesterUtils {
         protected void handleSubscribe(final Subscriber<? super R> subscriber) {
             requester.request(request).subscribe(new AggregatingSubscriber<R>(subscriber) {
                 @Nullable
-                private RedisException redisError;
+                private RedisServerException redisError;
                 @Nullable
                 private Deque<AggregateState> depths;
                 @Nullable
@@ -315,7 +315,7 @@ final class RedisRequesterUtils {
                         if (depths == null || depths.isEmpty()) {
                             if (result == null) {
                                 if (redisData instanceof RedisData.Error) {
-                                    redisError = new RedisException((RedisData.Error) redisData);
+                                    redisError = new RedisServerException((RedisData.Error) redisData);
                                 } else if (!(redisData instanceof RedisData.Null)) {
                                     throw new IllegalArgumentException("unexpected data: " + redisData);
                                 }
@@ -381,7 +381,7 @@ final class RedisRequesterUtils {
                         return null;
                     }
                     if (redisData instanceof RedisData.Error) {
-                        return new RedisException((RedisData.Error) redisData);
+                        return new RedisServerException((RedisData.Error) redisData);
                     }
                     throw new IllegalArgumentException("unsupported type: " + redisData);
                 }

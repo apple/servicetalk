@@ -19,13 +19,13 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
+import io.servicetalk.redis.api.CoercionException;
 import io.servicetalk.redis.api.PubSubRedisMessage.ChannelPubSubRedisMessage;
 import io.servicetalk.redis.api.PubSubRedisMessage.PatternPubSubRedisMessage;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.api.RedisData.CompleteRedisData;
 import io.servicetalk.redis.api.RedisData.SimpleString;
-import io.servicetalk.redis.internal.CoercionException;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;

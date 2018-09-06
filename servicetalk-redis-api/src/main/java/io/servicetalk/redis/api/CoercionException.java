@@ -16,17 +16,17 @@
 package io.servicetalk.redis.api;
 
 /**
- * An exception that represents an error reported by the Redis server.
+ * Exception throws when a data type can not be converted to an intended type.
  */
-public class RedisException extends RuntimeException {
-    private static final long serialVersionUID = 1971082412459546322L;
+public final class CoercionException extends RedisClientException {
+    private static final long serialVersionUID = 3800561374199643550L;
 
     /**
-     * Instantiates a new {@link RedisException}.
-     *
-     * @param data the {@link RedisData.Error} instance containing the details of the error.
+     * New instance.
+     * @param source Data.
+     * @param type Intended type.
      */
-    public RedisException(final RedisData.Error data) {
-        super(data.getCharSequenceValue().toString());
+    public CoercionException(final Object source, final Class<?> type) {
+        super("Failed to coerce: " + source + " to: " + type);
     }
 }

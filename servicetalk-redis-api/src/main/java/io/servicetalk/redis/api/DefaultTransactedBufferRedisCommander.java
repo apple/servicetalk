@@ -47,7 +47,7 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     private final boolean releaseAfterDone;
 
-    private volatile boolean transactionCompleted;
+    private boolean transactionCompleted;
 
     private final List<CompletableFuture> futures;
 
@@ -60,14 +60,13 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
 
     @Nonnull
     private <T> Future<T> enqueueForExecute(final Single<String> queued) {
+        if (transactionCompleted) {
+            throw new TransactionCompletedException(
+                        Single.class.getSimpleName() + " cannot be subscribed to after the transaction has completed.");
+        }
         final String status;
         try {
-            status = queued.doBeforeSubscribe(cancellable -> {
-                if (transactionCompleted) {
-                    throw new TransactionCompletedException(Single.class.getSimpleName() +
-                                " cannot be subscribed to after the transaction has completed.");
-                }
-            }).toFuture().get();
+            status = queued.toFuture().get();
         } catch (InterruptedException e) {
             throw new RedisClientException("Exception enqueuing command", e);
         } catch (ExecutionException e) {

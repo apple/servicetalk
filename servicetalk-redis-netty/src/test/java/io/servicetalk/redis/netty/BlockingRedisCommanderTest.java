@@ -25,7 +25,6 @@ import io.servicetalk.redis.api.BlockingRedisCommander;
 import io.servicetalk.redis.api.BlockingTransactedRedisCommander;
 import io.servicetalk.redis.api.PubSubRedisMessage;
 import io.servicetalk.redis.api.RedisClientException;
-import io.servicetalk.redis.api.RedisException;
 import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Get;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Incrby;
@@ -33,6 +32,7 @@ import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Overflow
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Set;
 import io.servicetalk.redis.api.RedisProtocolSupport.ExpireDuration;
 import io.servicetalk.redis.api.RedisProtocolSupport.LongitudeLatitudeMember;
+import io.servicetalk.redis.api.RedisServerException;
 import io.servicetalk.redis.api.TransactionAbortedException;
 
 import org.hamcrest.Matcher;
@@ -282,7 +282,7 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
         assertThat(r1.get(), is("OK"));
 
         thrown.expect(ExecutionException.class);
-        thrown.expectCause(instanceOf(RedisException.class));
+        thrown.expectCause(instanceOf(RedisServerException.class));
         thrown.expectCause(hasProperty("message", startsWith("WRONGTYPE")));
         r2.get();
     }

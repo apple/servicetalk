@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.internal.PlatformDependent;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.redis.api.RedisCommander;
 import io.servicetalk.redis.api.RedisConnection;
-import io.servicetalk.redis.api.RedisException;
+import io.servicetalk.redis.api.RedisServerException;
 import io.servicetalk.redis.utils.RedisAuthConnectionFactory;
 import io.servicetalk.redis.utils.RedisAuthorizationException;
 import io.servicetalk.transport.api.DefaultExecutionContext;
@@ -83,7 +83,7 @@ public class RedisAuthConnectionFactoryConnectionTest {
                 fail();
             } catch (Exception e) {
                 assertThat(e.getCause(), is(instanceOf(RedisAuthorizationException.class)));
-                assertThat(e.getCause().getCause(), is(instanceOf(RedisException.class)));
+                assertThat(e.getCause().getCause(), is(instanceOf(RedisServerException.class)));
             }
         });
     }

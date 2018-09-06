@@ -20,7 +20,6 @@ import io.servicetalk.redis.api.BufferRedisCommander;
 import io.servicetalk.redis.api.PubSubBufferRedisConnection;
 import io.servicetalk.redis.api.PubSubRedisMessage;
 import io.servicetalk.redis.api.RedisClientException;
-import io.servicetalk.redis.api.RedisException;
 import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Get;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Incrby;
@@ -28,6 +27,7 @@ import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Overflow
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Set;
 import io.servicetalk.redis.api.RedisProtocolSupport.BufferLongitudeLatitudeMember;
 import io.servicetalk.redis.api.RedisProtocolSupport.ExpireDuration;
+import io.servicetalk.redis.api.RedisServerException;
 import io.servicetalk.redis.api.TransactedBufferRedisCommander;
 import io.servicetalk.redis.api.TransactionAbortedException;
 import io.servicetalk.redis.netty.SubscribedRedisClientTest.AccumulatingSubscriber;
@@ -252,7 +252,7 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
             awaitIndefinitely(commandClient.eval(buf("bad"), 0L, emptyList(), emptyList()));
             fail("Expected ExecutionException");
         } catch (final ExecutionException ee) {
-            assertThat(ee.getCause(), is(instanceOf(RedisException.class)));
+            assertThat(ee.getCause(), is(instanceOf(RedisServerException.class)));
             assertThat(awaitIndefinitely(commandClient.ping()), is("PONG"));
         }
     }
@@ -295,7 +295,7 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         assertThat(r1.get(), is("OK"));
 
         thrown.expect(ExecutionException.class);
-        thrown.expectCause(is(instanceOf(RedisException.class)));
+        thrown.expectCause(is(instanceOf(RedisServerException.class)));
         thrown.expectCause(hasProperty("message", startsWith("WRONGTYPE")));
         r2.get();
     }
