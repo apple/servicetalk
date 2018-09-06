@@ -36,8 +36,8 @@ buildscript {
 // by module dependencies using the appropriate configuration.
 // Note that this workaround may not be required in the future, as the composite
 // build feature evolves and improves in Gradle.
-gradle.includedBuilds.each {
-  def config = it.configuredBuild.rootProject.configurations.findByName('testImplementation')
+ext.replaceTestFixtures = { includedBuild, name ->
+  def config = includedBuild.configuredBuild.rootProject.configurations.findByName(name)
   if (config) {
     config.dependencies.findAll { it.name.endsWith TEST_FIXTURES_DEPENDENCY_SUFFIX }.each {
       def projectDependency =
@@ -50,6 +50,10 @@ gradle.includedBuilds.each {
       config.dependencies.remove(it)
     }
   }
+}
+gradle.includedBuilds.each {
+  replaceTestFixtures(it, 'testImplementation')
+  replaceTestFixtures(it, 'testFixturesImplementation')
 }
 
 project.configure(project) {
