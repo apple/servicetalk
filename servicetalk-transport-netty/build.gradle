@@ -22,23 +22,23 @@ buildscript {
   }
 
   dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.1.1"
+    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.2.0-SNAPSHOT"
   }
 }
 
 apply plugin: "servicetalk-library"
 
 dependencies {
-  implementation "io.servicetalk:servicetalk-bom-internal:0.1.1"
+  implementation "io.servicetalk:servicetalk-bom-internal:0.2.0-SNAPSHOT"
 
-  api "io.servicetalk:servicetalk-concurrent-api:0.1.1"
-  api "io.servicetalk:servicetalk-transport-api:0.1.1"
+  api "io.servicetalk:servicetalk-concurrent-api:0.2.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-transport-api:0.2.0-SNAPSHOT"
 
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.netty:netty-common"
   implementation group: "io.netty", name: "netty-transport-native-epoll", classifier: "linux-x86_64"
   implementation group: "io.netty", name: "netty-transport-native-kqueue", classifier: "osx-x86_64"
-  implementation "io.servicetalk:servicetalk-annotations:0.1.1"
-  implementation "io.servicetalk:servicetalk-concurrent-internal:0.1.1"
-  implementation "io.servicetalk:servicetalk-transport-netty-internal:0.1.1"
+  implementation "io.servicetalk:servicetalk-annotations:0.2.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-concurrent-internal:0.2.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-transport-netty-internal:0.2.0-SNAPSHOT"
 }

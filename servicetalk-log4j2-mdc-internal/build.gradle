@@ -22,23 +22,23 @@ buildscript {
   }
 
   dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.1.1"
+    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.2.0-SNAPSHOT"
   }
 }
 
 apply plugin: "servicetalk-library"
 
 dependencies {
-  implementation "io.servicetalk:servicetalk-bom-internal:0.1.1"
+  implementation "io.servicetalk:servicetalk-bom-internal:0.2.0-SNAPSHOT"
 
   api "org.apache.logging.log4j:log4j-core"
 
   implementation "com.google.code.findbugs:jsr305"
-  implementation "io.servicetalk:servicetalk-annotations:0.1.1"
-  implementation "io.servicetalk:servicetalk-concurrent-context:0.1.1"
-  implementation "io.servicetalk:servicetalk-concurrent-internal:0.1.1"
+  implementation "io.servicetalk:servicetalk-annotations:0.2.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-concurrent-context:0.2.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-concurrent-internal:0.2.0-SNAPSHOT"
 
-  testImplementation "io.servicetalk:servicetalk-test-resources:0.1.1"
+  testImplementation "io.servicetalk:servicetalk-test-resources:0.2.0-SNAPSHOT"
   testImplementation "junit:junit"
   testImplementation "org.slf4j:slf4j-api"
 }
