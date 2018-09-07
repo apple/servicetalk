@@ -23,34 +23,34 @@ buildscript {
   }
 
   dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.1.0-SNAPSHOT"
+    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.1.1"
   }
 }
 
 apply plugin: "servicetalk-library"
 
 dependencies {
-  implementation "io.servicetalk:servicetalk-bom-internal:0.1.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-bom-internal:0.1.1"
 
   implementation "com.google.code.findbugs:jsr305"
-  implementation "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
-  implementation "io.servicetalk:servicetalk-buffer-netty:0.1.0-SNAPSHOT"
-  implementation "io.servicetalk:servicetalk-concurrent-internal:0.1.0-SNAPSHOT"
-  implementation "io.servicetalk:servicetalk-data-jackson:0.1.0-SNAPSHOT"
-  implementation "io.servicetalk:servicetalk-http-api:0.1.0-SNAPSHOT"
-  implementation "io.servicetalk:servicetalk-http-router-jersey:0.1.0-SNAPSHOT"
-  implementation "io.servicetalk:servicetalk-http-utils:0.1.0-SNAPSHOT"
-  implementation "io.servicetalk:servicetalk-transport-netty:0.1.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-annotations:0.1.1"
+  implementation "io.servicetalk:servicetalk-buffer-netty:0.1.1"
+  implementation "io.servicetalk:servicetalk-concurrent-internal:0.1.1"
+  implementation "io.servicetalk:servicetalk-data-jackson:0.1.1"
+  implementation "io.servicetalk:servicetalk-http-api:0.1.1"
+  implementation "io.servicetalk:servicetalk-http-router-jersey:0.1.1"
+  implementation "io.servicetalk:servicetalk-http-utils:0.1.1"
+  implementation "io.servicetalk:servicetalk-transport-netty:0.1.1"
   implementation "org.glassfish.jersey.core:jersey-common:$jerseyVersion"
   implementation "org.slf4j:slf4j-api"
 
-  testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:0.1.0-SNAPSHOT"
-  testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:0.1.0-SNAPSHOT"
-  testImplementation "io.servicetalk:servicetalk-http-netty:0.1.0-SNAPSHOT"
-  testImplementation "io.servicetalk:servicetalk-http-router-jersey-testFixtures:0.1.0-SNAPSHOT"
-  testImplementation "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
-  testImplementation "io.servicetalk:servicetalk-transport-netty-internal:0.1.0-SNAPSHOT"
-  testImplementation "io.servicetalk:servicetalk-transport-netty-internal-testFixtures:0.1.0-SNAPSHOT"
+  testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:0.1.1"
+  testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:0.1.1"
+  testImplementation "io.servicetalk:servicetalk-http-netty:0.1.1"
+  testImplementation "io.servicetalk:servicetalk-http-router-jersey-testFixtures:0.1.1"
+  testImplementation "io.servicetalk:servicetalk-test-resources:0.1.1"
+  testImplementation "io.servicetalk:servicetalk-transport-netty-internal:0.1.1"
+  testImplementation "io.servicetalk:servicetalk-transport-netty-internal-testFixtures:0.1.1"
   testImplementation "junit:junit"
   testImplementation "net.javacrumbs.json-unit:json-unit:$jsonUnitVersion"
   testImplementation "org.glassfish.jersey.inject:jersey-hk2:$jerseyVersion"

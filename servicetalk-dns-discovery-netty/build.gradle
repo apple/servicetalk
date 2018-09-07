@@ -22,32 +22,32 @@ buildscript {
   }
 
   dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.1.0-SNAPSHOT"
+    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.1.1"
   }
 }
 
 apply plugin: "servicetalk-library"
 
 dependencies {
-  implementation "io.servicetalk:servicetalk-bom-internal:0.1.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-bom-internal:0.1.1"
 
-  api "io.servicetalk:servicetalk-client-api:0.1.0-SNAPSHOT"
-  api "io.servicetalk:servicetalk-concurrent-api:0.1.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-client-api:0.1.1"
+  api "io.servicetalk:servicetalk-concurrent-api:0.1.1"
 
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.netty:netty-resolver-dns"
-  implementation "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
-  implementation "io.servicetalk:servicetalk-client-internal:0.1.0-SNAPSHOT"
-  implementation "io.servicetalk:servicetalk-concurrent-internal:0.1.0-SNAPSHOT"
-  implementation "io.servicetalk:servicetalk-transport-netty:0.1.0-SNAPSHOT"
-  implementation "io.servicetalk:servicetalk-transport-netty-internal:0.1.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-annotations:0.1.1"
+  implementation "io.servicetalk:servicetalk-client-internal:0.1.1"
+  implementation "io.servicetalk:servicetalk-concurrent-internal:0.1.1"
+  implementation "io.servicetalk:servicetalk-transport-netty:0.1.1"
+  implementation "io.servicetalk:servicetalk-transport-netty-internal:0.1.1"
   implementation "org.slf4j:slf4j-api"
 
   testImplementation "commons-lang:commons-lang"
-  testImplementation "io.servicetalk:servicetalk-client-internal-testFixtures:0.1.0-SNAPSHOT"
-  testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:0.1.0-SNAPSHOT"
-  testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:0.1.0-SNAPSHOT"
-  testImplementation "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
+  testImplementation "io.servicetalk:servicetalk-client-internal-testFixtures:0.1.1"
+  testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:0.1.1"
+  testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:0.1.1"
+  testImplementation "io.servicetalk:servicetalk-test-resources:0.1.1"
   testImplementation "junit:junit"
   testImplementation "org.apache.directory.server:apacheds-protocol-dns"
   testImplementation "org.hamcrest:hamcrest-library"

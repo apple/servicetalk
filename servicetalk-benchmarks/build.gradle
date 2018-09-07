@@ -22,7 +22,7 @@ buildscript {
   }
 
   dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.1.0-SNAPSHOT"
+    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.1.1"
   }
 }
 
@@ -34,18 +34,18 @@ apply plugin: "servicetalk-library"
 apply plugin: "me.champeau.gradle.jmh"
 
 dependencies {
-  implementation "io.servicetalk:servicetalk-bom-internal:0.1.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-bom-internal:0.1.1"
 
-  compile "io.servicetalk:servicetalk-concurrent-context:0.1.0-SNAPSHOT"
-  compile "io.servicetalk:servicetalk-concurrent-api-internal:0.1.0-SNAPSHOT"
+  compile "io.servicetalk:servicetalk-concurrent-context:0.1.1"
+  compile "io.servicetalk:servicetalk-concurrent-api-internal:0.1.1"
 
   implementation "com.google.code.findbugs:jsr305"
-  implementation "io.servicetalk:servicetalk-annotations:0.1.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-annotations:0.1.1"
 
-  testImplementation "io.servicetalk:servicetalk-concurrent-internal:0.1.0-SNAPSHOT"
-  testImplementation "io.servicetalk:servicetalk-concurrent-api-internal:0.1.0-SNAPSHOT"
-  testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:0.1.0-SNAPSHOT"
-  testImplementation "io.servicetalk:servicetalk-test-resources:0.1.0-SNAPSHOT"
+  testImplementation "io.servicetalk:servicetalk-concurrent-internal:0.1.1"
+  testImplementation "io.servicetalk:servicetalk-concurrent-api-internal:0.1.1"
+  testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:0.1.1"
+  testImplementation "io.servicetalk:servicetalk-test-resources:0.1.1"
   testImplementation "junit:junit"
   testImplementation "org.hamcrest:hamcrest-library"
 }
