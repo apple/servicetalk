@@ -30,6 +30,7 @@ import io.servicetalk.redis.api.RedisProtocolSupport.ExpireDuration;
 import io.servicetalk.redis.api.RedisServerException;
 import io.servicetalk.redis.api.TransactedBufferRedisCommander;
 import io.servicetalk.redis.api.TransactionAbortedException;
+import io.servicetalk.redis.api.TransactionCompletedException;
 import io.servicetalk.redis.netty.SubscribedRedisClientTest.AccumulatingSubscriber;
 
 import org.hamcrest.Matcher;
@@ -281,6 +282,24 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         thrown.expect(ExecutionException.class);
         thrown.expectCause(instanceOf(TransactionAbortedException.class));
         future.get();
+    }
+
+    @Test
+    public void transactionCommandAfterExec() throws Exception {
+        final TransactedBufferRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
+        awaitIndefinitely(tcc.exec());
+
+        thrown.expect(TransactionCompletedException.class);
+        tcc.ping(buf("in-transac"));
+    }
+
+    @Test
+    public void transactionCommandAfterDiscard() throws Exception {
+        final TransactedBufferRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
+        awaitIndefinitely(tcc.discard());
+
+        thrown.expect(TransactionCompletedException.class);
+        tcc.ping(buf("in-transac"));
     }
 
     @Test
