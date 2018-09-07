@@ -1167,6 +1167,36 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
     }
 
     /**
+     * Convert from a {@link Future} to a {@link Completable} via {@link Future#get()}.
+     * <p>
+     * Note that because {@link Future} only presents blocking APIs to extract the result, so the process of getting the
+     * results will block. The caller of {@link #subscribe(Subscriber)} is responsible for offloading if necessary, and
+     * also offloading if {@link Cancellable#cancel()} will be called if this operation may block.
+     * <p>
+     * To apply a timeout see {@link #timeout(long, TimeUnit)} and related methods.
+     * @param future The {@link Future} to convert.
+     * @return A {@link Completable} that derives results from {@link Future}.
+     * @see #timeout(long, TimeUnit)
+     */
+    public static Completable fromFuture(Future<?> future) {
+        return Single.fromFuture(future).toCompletable();
+    }
+
+    /**
+     * Convert from a {@link CompletionStage} to a {@link Completable}.
+     * <p>
+     * A best effort is made to propagate {@link Cancellable#cancel()} to the {@link CompletionStage}. Cancellation for
+     * {@link CompletionStage} implementations will result in exceptional completion and invoke user
+     * callbacks. If there is any blocking code involved in the cancellation process (including invoking user callbacks)
+     * you should investigate if using an {@link Executor} is appropriate.
+     * @param stage The {@link CompletionStage} to convert.
+     * @return A {@link Completable} that derives results from {@link CompletionStage}.
+     */
+    public static Completable fromStage(CompletionStage<?> stage) {
+        return Single.fromStage(stage).toCompletable();
+    }
+
+    /**
      * Add a plugin that will be invoked on each {@link #subscribe(Subscriber)} call. This can be used for visibility or
      * to extend functionality to all {@link Subscriber}s which pass through {@link #subscribe(Subscriber)}.
      * @param subscribePlugin the plugin that will be invoked on each {@link #subscribe(Subscriber)} call.
