@@ -25,7 +25,7 @@ apply plugin: "idea"
 
 dependencies {
   // `servicetalk-bom` brings consistent version of ServiceTalk modules.
-  implementation "io.servicetalk:servicetalk-bom:0.1.1"
+  implementation "io.servicetalk:servicetalk-bom:0.2.0-SNAPSHOT"
 
   // If you use 3-party dependencies in your application, you have to specify it as an explicit dependency,
   // including group id, artifact id and version.
@@ -58,5 +58,5 @@ dependencies {
   // internally are not resolved correctly. Explicitly using bom-internal here allows the resolution to succeed.
   // - On the other hand, when examples is built as a standalone project, the bom-internal dependency is useless and
   // has no effect: transitive 3rd-party dependencies are correctly resolved for each ServiceTalk dependency.
-  implementation "io.servicetalk:servicetalk-bom-internal:0.1.1"
+  implementation "io.servicetalk:servicetalk-bom-internal:0.2.0-SNAPSHOT"
 }

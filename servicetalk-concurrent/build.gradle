@@ -22,16 +22,16 @@ buildscript {
   }
 
   dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.1.1"
+    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.2.0-SNAPSHOT"
   }
 }
 
 apply plugin: "servicetalk-library"
 
 dependencies {
-  implementation "io.servicetalk:servicetalk-bom-internal:0.1.1"
+  implementation "io.servicetalk:servicetalk-bom-internal:0.2.0-SNAPSHOT"
 
   implementation "com.google.code.findbugs:jsr305"
-  implementation "io.servicetalk:servicetalk-annotations:0.1.1"
+  implementation "io.servicetalk:servicetalk-annotations:0.2.0-SNAPSHOT"
   implementation "org.reactivestreams:reactive-streams"
 }
