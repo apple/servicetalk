@@ -17,6 +17,7 @@ package io.servicetalk.redis.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.redis.api.BufferRedisCommander;
+import io.servicetalk.redis.api.IllegalTransactionStateException;
 import io.servicetalk.redis.api.PubSubBufferRedisConnection;
 import io.servicetalk.redis.api.PubSubRedisMessage;
 import io.servicetalk.redis.api.RedisClientException;
@@ -30,7 +31,6 @@ import io.servicetalk.redis.api.RedisProtocolSupport.ExpireDuration;
 import io.servicetalk.redis.api.RedisServerException;
 import io.servicetalk.redis.api.TransactedBufferRedisCommander;
 import io.servicetalk.redis.api.TransactionAbortedException;
-import io.servicetalk.redis.api.TransactionCompletedException;
 import io.servicetalk.redis.netty.SubscribedRedisClientTest.AccumulatingSubscriber;
 
 import org.hamcrest.Matcher;
@@ -289,7 +289,7 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         final TransactedBufferRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
         awaitIndefinitely(tcc.exec());
 
-        thrown.expect(TransactionCompletedException.class);
+        thrown.expect(IllegalTransactionStateException.class);
         tcc.ping(buf("in-transac"));
     }
 
@@ -298,7 +298,7 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         final TransactedBufferRedisCommander tcc = awaitIndefinitelyNonNull(commandClient.multi());
         awaitIndefinitely(tcc.discard());
 
-        thrown.expect(TransactionCompletedException.class);
+        thrown.expect(IllegalTransactionStateException.class);
         tcc.ping(buf("in-transac"));
     }
 

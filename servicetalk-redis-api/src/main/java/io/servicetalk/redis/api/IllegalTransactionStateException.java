@@ -19,15 +19,15 @@ package io.servicetalk.redis.api;
  * Indicates that a transaction was completed (via {@link TransactedRedisCommander#discard()} or
  * {@link TransactedRedisCommander#exec()}, preventing a command from being executed.
  */
-public class TransactionCompletedException extends RedisClientException {
+public class IllegalTransactionStateException extends RedisClientException {
     private static final long serialVersionUID = 5345239529654058948L;
 
     /**
-     * Instantiates a new {@link TransactionCompletedException}.
+     * Instantiates a new {@link IllegalTransactionStateException}.
      *
      * @param message the message containing the details of the error.
      */
-    TransactionCompletedException(final String message) {
+    IllegalTransactionStateException(final String message) {
         super(message);
     }
 }

@@ -61,7 +61,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     @Nonnull
     private <T> Future<T> enqueueForExecute(final Single<String> queued) {
         if (transactionCompleted) {
-            throw new TransactionCompletedException(
+            throw new IllegalTransactionStateException(
                         Single.class.getSimpleName() + " cannot be subscribed to after the transaction has completed.");
         }
         final String status;
