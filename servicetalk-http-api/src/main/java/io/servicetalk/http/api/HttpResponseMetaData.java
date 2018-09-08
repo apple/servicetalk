@@ -22,14 +22,14 @@ package io.servicetalk.http.api;
  */
 public interface HttpResponseMetaData extends HttpMetaData {
     /**
-     * Returns the status of this {@link HttpResponse}.
+     * Returns the status of this {@link StreamingHttpResponse}.
      *
-     * @return The {@link HttpResponseStatus} of this {@link HttpResponse}
+     * @return The {@link HttpResponseStatus} of this {@link StreamingHttpResponse}
      */
     HttpResponseStatus getStatus();
 
     /**
-     * Set the status of this {@link HttpResponse}.
+     * Set the status of this {@link StreamingHttpResponse}.
      *
      * @param status The {@link HttpResponseStatus} to set.
      * @return {@code this}.

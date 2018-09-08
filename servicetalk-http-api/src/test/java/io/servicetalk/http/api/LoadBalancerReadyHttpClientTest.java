@@ -22,8 +22,8 @@ import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
-import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
+import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpClient.UpgradableStreamingHttpResponse;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -43,9 +43,9 @@ import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
-import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.api.HttpResponses.newResponse;
+import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
+import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -61,11 +61,11 @@ public class LoadBalancerReadyHttpClientTest {
     public final PublisherRule<Object> loadBalancerPublisher = new PublisherRule<>();
 
     @Mock
-    private HttpClient mockClient;
+    private StreamingHttpClient mockClient;
     @Mock
-    private ReservedHttpConnection mockReservedConnection;
+    private ReservedStreamingHttpConnection mockReservedConnection;
     @Mock
-    private UpgradableHttpResponse mockUpgradeResponse;
+    private UpgradableStreamingHttpResponse mockUpgradeResponse;
 
     @Before
     public void setup() {
@@ -110,11 +110,11 @@ public class LoadBalancerReadyHttpClientTest {
         verifyOnInitializedFailedFailsAction(filter -> filter.upgradeConnection(newDummyRequest()));
     }
 
-    private void verifyOnInitializedFailedFailsAction(Function<HttpClient,
+    private void verifyOnInitializedFailedFailsAction(Function<StreamingHttpClient,
             Single<?>> action) throws InterruptedException {
         TestPublisher<Object> loadBalancerPublisher = new TestPublisher<>();
-        LoadBalancerReadyHttpClient filter =
-                new LoadBalancerReadyHttpClient(1, loadBalancerPublisher, mockClient);
+        LoadBalancerReadyStreamingHttpClient filter =
+                new LoadBalancerReadyStreamingHttpClient(1, loadBalancerPublisher, mockClient);
         CountDownLatch latch = new CountDownLatch(2);
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
         action.apply(filter).subscribe(new Subscriber<Object>() {
@@ -144,10 +144,10 @@ public class LoadBalancerReadyHttpClientTest {
         assertThat(causeRef.get(), is(DELIBERATE_EXCEPTION));
     }
 
-    private void verifyActionIsDelayedUntilAfterInitialized(Function<HttpClient, Single<?>> action)
+    private void verifyActionIsDelayedUntilAfterInitialized(Function<StreamingHttpClient, Single<?>> action)
             throws InterruptedException {
-        LoadBalancerReadyHttpClient filter =
-                new LoadBalancerReadyHttpClient(1, loadBalancerPublisher.getPublisher(), mockClient);
+        LoadBalancerReadyStreamingHttpClient filter =
+                new LoadBalancerReadyStreamingHttpClient(1, loadBalancerPublisher.getPublisher(), mockClient);
         CountDownLatch latch = new CountDownLatch(1);
         action.apply(filter).subscribe(resp -> latch.countDown());
 
@@ -158,7 +158,7 @@ public class LoadBalancerReadyHttpClientTest {
         latch.await();
     }
 
-    private static HttpRequest<HttpPayloadChunk> newDummyRequest() {
+    private static StreamingHttpRequest<HttpPayloadChunk> newDummyRequest() {
         return newRequest(GET, "/noop");
     }
 

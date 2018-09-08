@@ -20,8 +20,8 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpRequestMethod;
-import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.LastHttpPayloadChunk;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpServerInitializer;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -58,7 +58,7 @@ final class NettyHttpServer {
 
     static Single<ServerContext> bind(final ExecutionContext executionContext, final ReadOnlyHttpServerConfig config,
                                       final SocketAddress address, final ContextFilter contextFilter,
-                                      final HttpService service) {
+                                      final StreamingHttpService service) {
         final TcpServerInitializer initializer = new TcpServerInitializer(executionContext, config.getTcpConfig());
 
         final ChannelInitializer channelInitializer = new TcpServerChannelInitializer(config.getTcpConfig(),
@@ -70,7 +70,7 @@ final class NettyHttpServer {
     }
 
     private static ChannelInitializer getChannelInitializer(final ReadOnlyHttpServerConfig config,
-                                                            final HttpService service) {
+                                                            final StreamingHttpService service) {
         return (channel, context) -> {
             final CloseHandler closeHandler = forPipelinedRequestResponse(false);
             Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(2);
@@ -88,7 +88,7 @@ final class NettyHttpServer {
         private final ServerContext delegate;
         private final ListenableAsyncCloseable asyncCloseable;
 
-        NettyHttpServerContext(final ServerContext delegate, final HttpService service) {
+        NettyHttpServerContext(final ServerContext delegate, final StreamingHttpService service) {
             this.delegate = delegate;
             asyncCloseable = toListenableAsyncCloseable(newCompositeCloseable().appendAll(service, delegate));
         }
@@ -118,12 +118,12 @@ final class NettyHttpServer {
             implements ConnectionHolderChannelHandler<Object, Object> {
         private final CloseHandler closeHandler;
         private final ConnectionContext context;
-        private final HttpService service;
+        private final StreamingHttpService service;
         @Nullable
         private NettyHttpServerConnection connection;
 
         HttpChannelReadHandler(final CloseHandler closeHandler,
-                               final ConnectionContext context, final HttpService service) {
+                               final ConnectionContext context, final StreamingHttpService service) {
             super(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE);
             this.closeHandler = closeHandler;
             this.context = context;

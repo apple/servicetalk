@@ -64,7 +64,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 
 @RunWith(Parameterized.class)
-public abstract class AbstractExecutionStrategyTest extends AbstractJerseyHttpServiceTest {
+public abstract class AbstractExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest {
     @ClassRule
     public static final ExecutorRule EXEC1 = new ExecutorRule(() ->
             newCachedThreadExecutor(new DefaultThreadFactory("exec1-", true, NORM_PRIORITY)));

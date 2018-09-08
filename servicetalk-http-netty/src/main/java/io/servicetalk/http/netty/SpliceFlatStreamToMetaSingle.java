@@ -36,9 +36,9 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * This class is responsible for splicing a {@link Publisher}&lt;{@link Object}&gt; with a common {@code Payload}
- * into a {@code Data}&lt;{@code Payload}&gt; eg. {@code HttpResponse}&lt;{@code HttpPayloadChunk}&gt;.
+ * into a {@code Data}&lt;{@code Payload}&gt; eg. {@code StreamingHttpResponse}&lt;{@code HttpPayloadChunk}&gt;.
  *
- * @param <Data> type of container, eg. {@code HttpResponse}&lt;{@code HttpPayloadChunk}&gt;
+ * @param <Data> type of container, eg. {@code StreamingHttpResponse}&lt;{@code HttpPayloadChunk}&gt;
  * @param <MetaData> type of meta-data in front of the stream of {@code Payload}, eg. {@code HttpResponseMetaData}
  * @param <Payload> type of payload inside the {@code Data}, eg. {@code HttpPayloadChunk}
  */
@@ -50,7 +50,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
     /**
      * Operator splicing a {@link Publisher}&lt;{@link Object}&gt; with a common {@code Payload} and {@code
      * MetaData} header as first element into a {@code Data}&lt;{@code Payload}&gt; eg. {@code
-     * HttpResponse}&lt;{@code HttpPayloadChunk}&gt;.
+     * StreamingHttpResponse}&lt;{@code HttpPayloadChunk}&gt;.
      *
      * @param original the stream of {@link Object}s to splice in a {@code Data}&lt;{@code Payload}&gt;
      * @param packer function to pack the {@link Publisher}&lt;{@code Payload}&gt; and {@code MetaData} into a
@@ -71,7 +71,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
      *
      * @param data object containing a {@link Publisher}&lt;{@code Payload}&gt;
      * @param unpack function to unpack the {@link Publisher}&lt;{@code Payload}&gt; from the container
-     * @param <Data> type of container, eg. {@code HttpResponse}&lt;{@code HttpPayloadChunk}&gt;
+     * @param <Data> type of container, eg. {@code StreamingHttpResponse}&lt;{@code HttpPayloadChunk}&gt;
      * @param <Payload> type of payload inside the {@code Data}, eg. {@code HttpPayloadChunk}
      * @return a flattened {@link Publisher}&lt;{@link Object}&gt;
      */

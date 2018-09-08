@@ -24,38 +24,39 @@ import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static java.util.Objects.requireNonNull;
 
 final class BlockingHttpRequesterToHttpRequester extends HttpRequester {
-    private final BlockingHttpRequester blockingHttpRequester;
+    private final BlockingHttpRequester requester;
 
-    BlockingHttpRequesterToHttpRequester(BlockingHttpRequester blockingHttpRequester) {
-        this.blockingHttpRequester = requireNonNull(blockingHttpRequester);
+    BlockingHttpRequesterToHttpRequester(BlockingHttpRequester requester) {
+        this.requester = requireNonNull(requester);
     }
 
     @Override
-    public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
-        return BlockingUtils.request(blockingHttpRequester, request);
+    public Single<HttpResponse<HttpPayloadChunk>> request(
+            final HttpRequest<HttpPayloadChunk> request) {
+        return BlockingUtils.request(requester, request);
     }
 
     @Override
     public ExecutionContext getExecutionContext() {
-        return blockingHttpRequester.getExecutionContext();
+        return requester.getExecutionContext();
     }
 
     @Override
     public Completable onClose() {
-        if (blockingHttpRequester instanceof HttpRequesterToBlockingHttpRequester) {
-            return ((HttpRequesterToBlockingHttpRequester) blockingHttpRequester).onClose();
+        if (requester instanceof HttpRequesterToBlockingHttpRequester) {
+            return ((HttpRequesterToBlockingHttpRequester) requester).onClose();
         }
 
-        return error(new UnsupportedOperationException("unsupported type: " + blockingHttpRequester.getClass()));
+        return error(new UnsupportedOperationException("unsupported type: " + requester.getClass()));
     }
 
     @Override
     public Completable closeAsync() {
-        return blockingToCompletable(blockingHttpRequester::close);
+        return blockingToCompletable(requester::close);
     }
 
     @Override
     BlockingHttpRequester asBlockingRequesterInternal() {
-        return blockingHttpRequester;
+        return requester;
     }
 }

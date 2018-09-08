@@ -17,9 +17,9 @@ package io.servicetalk.examples.http.service.composition.backends;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.examples.http.service.composition.pojo.Rating;
-import io.servicetalk.http.api.AggregatedHttpRequest;
-import io.servicetalk.http.api.AggregatedHttpResponse;
-import io.servicetalk.http.api.AggregatedHttpService;
+import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpSerializer;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
@@ -28,14 +28,14 @@ import io.servicetalk.transport.api.ConnectionContext;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.AggregatedHttpResponses.newResponse;
+import static io.servicetalk.http.api.HttpResponses.newResponse;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 
 /**
  * A service that returns {@link Rating}s for an entity.
  */
-final class RatingBackend extends AggregatedHttpService {
+final class RatingBackend extends HttpService {
 
     private static final String ENTITY_ID_QP_NAME = "entityId";
     private final HttpSerializer serializer;
@@ -45,8 +45,8 @@ final class RatingBackend extends AggregatedHttpService {
     }
 
     @Override
-    public Single<AggregatedHttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                                   final AggregatedHttpRequest<HttpPayloadChunk> request) {
+    public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
+                                                         final HttpRequest<HttpPayloadChunk> request) {
         final String entityId = request.parseQuery().get(ENTITY_ID_QP_NAME);
         if (entityId == null) {
             return success(newResponse(BAD_REQUEST));
@@ -57,10 +57,10 @@ final class RatingBackend extends AggregatedHttpService {
         return success(serializer.serialize(newResponse(OK, rating), ctx.getExecutionContext().getBufferAllocator()));
     }
 
-    static AggregatedHttpService newRatingService(HttpSerializer serializer) {
+    static HttpService newRatingService(HttpSerializer serializer) {
         HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
         return routerBuilder.whenPathStartsWith("/rating")
                 .thenRouteTo(new RatingBackend(serializer))
-                .buildAggregated();
+                .build();
     }
 }

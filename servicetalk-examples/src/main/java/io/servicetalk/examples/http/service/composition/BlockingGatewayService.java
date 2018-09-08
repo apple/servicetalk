@@ -20,10 +20,10 @@ import io.servicetalk.examples.http.service.composition.pojo.Metadata;
 import io.servicetalk.examples.http.service.composition.pojo.Rating;
 import io.servicetalk.examples.http.service.composition.pojo.Recommendation;
 import io.servicetalk.examples.http.service.composition.pojo.User;
-import io.servicetalk.http.api.AggregatedHttpRequest;
-import io.servicetalk.http.api.AggregatedHttpResponse;
-import io.servicetalk.http.api.BlockingAggregatedHttpClient;
-import io.servicetalk.http.api.BlockingAggregatedHttpService;
+import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpSerializer;
 import io.servicetalk.serialization.api.TypeHolder;
@@ -35,8 +35,8 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.servicetalk.http.api.AggregatedHttpRequests.newRequest;
-import static io.servicetalk.http.api.AggregatedHttpResponses.newResponse;
+import static io.servicetalk.http.api.HttpRequests.newRequest;
+import static io.servicetalk.http.api.HttpResponses.newResponse;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
@@ -45,7 +45,7 @@ import static io.servicetalk.http.api.HttpResponseStatuses.OK;
  * This service provides an API that fetches recommendations serially using blocking APIs. Returned response is a single
  * JSON array containing all {@link FullRecommendation}s.
  */
-final class BlockingGatewayService extends BlockingAggregatedHttpService {
+final class BlockingGatewayService extends BlockingHttpService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BlockingGatewayService.class);
 
@@ -56,15 +56,15 @@ final class BlockingGatewayService extends BlockingAggregatedHttpService {
 
     // Currently we do not have an aggregated Blocking Client variant in ServiceTalk. So, we use the HttpPayloadChunk
     // variant.
-    private final BlockingAggregatedHttpClient recommendationClient;
-    private final BlockingAggregatedHttpClient metadataClient;
-    private final BlockingAggregatedHttpClient ratingClient;
-    private final BlockingAggregatedHttpClient userClient;
+    private final BlockingHttpClient recommendationClient;
+    private final BlockingHttpClient metadataClient;
+    private final BlockingHttpClient ratingClient;
+    private final BlockingHttpClient userClient;
 
-    public BlockingGatewayService(final BlockingAggregatedHttpClient recommendationClient,
-                                  final BlockingAggregatedHttpClient metadataClient,
-                                  final BlockingAggregatedHttpClient ratingClient,
-                                  final BlockingAggregatedHttpClient userClient,
+    public BlockingGatewayService(final BlockingHttpClient recommendationClient,
+                                  final BlockingHttpClient metadataClient,
+                                  final BlockingHttpClient ratingClient,
+                                  final BlockingHttpClient userClient,
                                   final HttpSerializer serializer) {
         this.recommendationClient = recommendationClient;
         this.metadataClient = metadataClient;
@@ -74,8 +74,8 @@ final class BlockingGatewayService extends BlockingAggregatedHttpService {
     }
 
     @Override
-    public AggregatedHttpResponse<HttpPayloadChunk> handle(final ConnectionContext ctx,
-                                                           final AggregatedHttpRequest<HttpPayloadChunk> request)
+    public HttpResponse<HttpPayloadChunk> handle(final ConnectionContext ctx,
+                                                 final HttpRequest<HttpPayloadChunk> request)
             throws Exception {
         final String userId = request.parseQuery().get(USER_ID_QP_NAME);
         if (userId == null) {

@@ -21,12 +21,12 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
-import io.servicetalk.http.api.HttpRequester;
-import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpResponseStatuses;
-import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequester;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
@@ -54,7 +54,6 @@ import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethods.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpRequestMethods.OPTIONS;
-import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.http.api.HttpResponseStatuses.ACCEPTED;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_GATEWAY;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
@@ -67,8 +66,9 @@ import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponseStatuses.PERMANENT_REDIRECT;
 import static io.servicetalk.http.api.HttpResponseStatuses.SEE_OTHER;
 import static io.servicetalk.http.api.HttpResponseStatuses.UNAUTHORIZED;
-import static io.servicetalk.http.api.HttpResponses.newResponse;
-import static io.servicetalk.http.api.HttpService.fromAsync;
+import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
+import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
+import static io.servicetalk.http.api.StreamingHttpService.from;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -87,23 +87,23 @@ public class MultiAddressUrlHttpClientTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     @Rule
-    public final MockedSingleListenerRule<HttpResponse<HttpPayloadChunk>> listener = new MockedSingleListenerRule<>();
+    public final MockedSingleListenerRule<StreamingHttpResponse<HttpPayloadChunk>> listener = new MockedSingleListenerRule<>();
 
     private static CompositeCloseable afterClassCloseables;
-    private static HttpService httpService;
+    private static StreamingHttpService httpService;
     private static ServerContext serverCtx;
     private static int serverPort;
     private static String hostHeader;
-    private static HttpRequester requester;
+    private static StreamingHttpRequester requester;
 
     @BeforeClass
     public static void beforeClass() throws Exception {
         afterClassCloseables = newCompositeCloseable();
 
-        requester = afterClassCloseables.append(HttpClients.forMultiAddressUrl().build(CTX));
+        requester = afterClassCloseables.append(HttpClients.forMultiAddressUrl().buildStreaming(CTX));
 
         final HttpHeaders httpHeaders = DefaultHttpHeadersFactory.INSTANCE.newHeaders().set(CONTENT_LENGTH, ZERO);
-        httpService = fromAsync((ctx, request) -> {
+        httpService = from((ctx, request) -> {
             if (request.getVersion() == HTTP_1_1 && !request.getHeaders().contains(HOST)) {
                 return success(newResponse(BAD_REQUEST, httpHeaders));
             }
@@ -113,7 +113,7 @@ public class MultiAddressUrlHttpClientTest {
             }
             try {
                 HttpResponseStatuses status = HttpResponseStatuses.valueOf(request.getPath().substring(1));
-                final HttpResponse<HttpPayloadChunk> response = newResponse(status, httpHeaders);
+                final StreamingHttpResponse<HttpPayloadChunk> response = newResponse(status, httpHeaders);
                 final CharSequence locationHeader = request.getHeaders().get(X_REQUESTED_LOCATION);
                 if (locationHeader != null) {
                     response.getHeaders().set(LOCATION, locationHeader);
@@ -135,14 +135,14 @@ public class MultiAddressUrlHttpClientTest {
 
     @Test
     public void requestWithRelativeFormRequestTargetWithHostHeader() throws Exception {
-        HttpRequest<HttpPayloadChunk> request = newRequest(GET, "/OK?param=value");
+        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/OK?param=value");
         request.getHeaders().set(HOST, hostHeader);
         requestAndValidate(request, OK);
     }
 
     @Test
     public void requestWithRelativeFormRequestTargetWithoutHostHeader() {
-        HttpRequest<HttpPayloadChunk> request = newRequest(GET, "/OK?param=value");
+        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/OK?param=value");
         // no host header set
         listener.listen(requester.request(request))
                 .verifyFailure(IllegalArgumentException.class);
@@ -151,21 +151,21 @@ public class MultiAddressUrlHttpClientTest {
     @Test(expected = ExecutionException.class)
     @Ignore("LoadBalancerReadySubscriber will never complete for a wrong host") // FIXME: remove @Ignore annotation
     public void requestWithRelativeFormRequestTargetWithInvalidHostInHeader() throws Exception {
-        HttpRequest<HttpPayloadChunk> request = newRequest(GET, "/OK?param=value");
+        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/OK?param=value");
         request.getHeaders().set(HOST, "invalid.:" + serverPort);
         awaitIndefinitely(requester.request(request));
     }
 
     @Test(expected = ExecutionException.class)
     public void requestWithRelativeFormRequestTargetWithWrongPortInHeader() throws Exception {
-        HttpRequest<HttpPayloadChunk> request = newRequest(GET, "/OK?param=value");
+        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/OK?param=value");
         request.getHeaders().set(HOST, format("%s:%d", HOSTNAME, serverPort + 1));
         awaitIndefinitely(requester.request(request));
     }
 
     @Test
     public void requestWithAbsoluteFormRequestTargetWithHostHeader() throws Exception {
-        HttpRequest<HttpPayloadChunk> request =
+        StreamingHttpRequest<HttpPayloadChunk> request =
                 newRequest(GET, format("http://%s/OK?param=value#tag", hostHeader));
         request.getHeaders().set(HOST, "invalid.:8080");    // value in the HOST header should be ignored
         requestAndValidate(request, OK);
@@ -173,7 +173,7 @@ public class MultiAddressUrlHttpClientTest {
 
     @Test
     public void requestWithAbsoluteFormRequestTargetWithoutHostHeader() throws Exception {
-        HttpRequest<HttpPayloadChunk> request =
+        StreamingHttpRequest<HttpPayloadChunk> request =
                 newRequest(GET, format("http://%s/OK?param=value#tag", hostHeader));
         requestAndValidate(request, OK);
     }
@@ -181,21 +181,21 @@ public class MultiAddressUrlHttpClientTest {
     @Test(expected = ExecutionException.class)
     @Ignore("LoadBalancerReadySubscriber will never complete for a wrong host") // FIXME: remove @Ignore annotation
     public void requestWithAbsoluteFormRequestTargetWithInvalidHost() throws Exception {
-        HttpRequest<HttpPayloadChunk> request = newRequest(GET,
+        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET,
                 format("http://invalid.:%d/OK?param=value#tag", serverPort));
         awaitIndefinitely(requester.request(request));
     }
 
     @Test(expected = ExecutionException.class)
     public void requestWithAbsoluteFormRequestTargetWithWrongPort() throws Exception {
-        HttpRequest<HttpPayloadChunk> request = newRequest(GET,
+        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET,
                 format("http://%s:%d/OK?param=value#tag", HOSTNAME, serverPort + 1));
         awaitIndefinitely(requester.request(request));
     }
 
     @Test
     public void requestWithIncorrectPortInAbsoluteFormRequestTarget() {
-        HttpRequest<HttpPayloadChunk> request =
+        StreamingHttpRequest<HttpPayloadChunk> request =
                 newRequest(GET, format("http://%s:-1/OK?param=value#tag", HOSTNAME));
         listener.listen(requester.request(request))
                 .verifyFailure(IllegalArgumentException.class);
@@ -203,21 +203,21 @@ public class MultiAddressUrlHttpClientTest {
 
     @Test
     public void requestWithAuthorityFormRequestTargetWithHostHeader() throws Exception {
-        HttpRequest<HttpPayloadChunk> request = newRequest(CONNECT, hostHeader);
+        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(CONNECT, hostHeader);
         request.getHeaders().set(HOST, hostHeader);
         requestAndValidate(request, OK);
     }
 
     @Test
     public void requestWithAsteriskFormRequestTargetWithHostHeader() throws Exception {
-        HttpRequest<HttpPayloadChunk> request = newRequest(OPTIONS, "*");
+        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(OPTIONS, "*");
         request.getHeaders().set(HOST, hostHeader);
         requestAndValidate(request, OK);
     }
 
     @Test
     public void requestWithAsteriskFormRequestTargetWithoutHostHeader() {
-        HttpRequest<HttpPayloadChunk> request = newRequest(OPTIONS, "*");
+        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(OPTIONS, "*");
         // no host header set
         listener.listen(requester.request(request))
                 .verifyFailure(IllegalArgumentException.class);
@@ -225,7 +225,7 @@ public class MultiAddressUrlHttpClientTest {
 
     @Test
     public void requestWithRedirect() throws Exception {
-        HttpRequest<HttpPayloadChunk> request = newRequest(GET, "/MOVED_PERMANENTLY");
+        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/MOVED_PERMANENTLY");
         request.getHeaders().set(HOST, hostHeader);
         request.getHeaders().set(X_REQUESTED_LOCATION, "/OK");  // Location for redirect
         requestAndValidate(request, OK);
@@ -250,18 +250,18 @@ public class MultiAddressUrlHttpClientTest {
     }
 
     private static void makeGetRequestAndValidate(ServerContext serverCtx, HttpResponseStatus status) throws Exception {
-        final HttpRequest<HttpPayloadChunk> request =
+        final StreamingHttpRequest<HttpPayloadChunk> request =
                 newRequest(GET, format("http:/%s/%s?param=value#tag", serverCtx.getListenAddress(), status));
         requestAndValidate(request, status);
     }
 
-    private static void requestAndValidate(HttpRequest<HttpPayloadChunk> request,
+    private static void requestAndValidate(StreamingHttpRequest<HttpPayloadChunk> request,
                                            HttpResponseStatus expectedStatus) throws Exception {
-        HttpResponse<HttpPayloadChunk> response = awaitIndefinitelyNonNull(requester.request(request));
+        StreamingHttpResponse<HttpPayloadChunk> response = awaitIndefinitelyNonNull(requester.request(request));
         assertThat(response.getStatus(), is(expectedStatus));
     }
 
-    private static ServerContext startNewLocalServer(final HttpService httpService,
+    private static ServerContext startNewLocalServer(final StreamingHttpService httpService,
                                                      final CompositeCloseable closeables) throws Exception {
         return closeables.append(awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
                 .start(CTX, new InetSocketAddress(HOSTNAME, 0), httpService)));

@@ -15,14 +15,14 @@
  */
 package io.servicetalk.http.router.predicate.dsl;
 
-import io.servicetalk.http.api.AggregatedHttpService;
-import io.servicetalk.http.api.BlockingAggregatedHttpService;
 import io.servicetalk.http.api.BlockingHttpService;
+import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpCookie;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.function.BiPredicate;
@@ -131,45 +131,36 @@ public interface RouteStarter {
     RouteContinuation whenIsNotSsl();
 
     /**
-     * Begin a route that matches {@link HttpRequest}s with a user-specified {@code predicate}.
+     * Begin a route that matches {@link StreamingHttpRequest}s with a user-specified {@code predicate}.
      *
      * @param predicate the predicate to evaluate against requests.
      * @return {@link RouteContinuation} for the next steps of building a route.
      */
-    RouteContinuation when(Predicate<HttpRequest<HttpPayloadChunk>> predicate);
+    RouteContinuation when(Predicate<StreamingHttpRequest<HttpPayloadChunk>> predicate);
 
     /**
-     * Begin a route that matches {@link HttpRequest} and {@link ConnectionContext} with a user-specified
+     * Begin a route that matches {@link StreamingHttpRequest} and {@link ConnectionContext} with a user-specified
      * {@code predicate}.
      *
      * @param predicate the predicate to evaluate against the request and connection context.
      * @return {@link RouteContinuation} for the next steps of building a route.
      */
-    RouteContinuation when(BiPredicate<ConnectionContext, HttpRequest<HttpPayloadChunk>> predicate);
+    RouteContinuation when(BiPredicate<ConnectionContext, StreamingHttpRequest<HttpPayloadChunk>> predicate);
+
+    /**
+     * Builds the {@link StreamingHttpService} that performs the configured routing.
+     *
+     * @return the router {@link StreamingHttpService}.
+     */
+    StreamingHttpService buildStreaming();
 
     /**
      * Builds the {@link HttpService} that performs the configured routing.
      *
      * @return the router {@link HttpService}.
      */
-    HttpService build();
-
-    /**
-     * Builds the {@link AggregatedHttpService} that performs the configured routing.
-     *
-     * @return the router {@link AggregatedHttpService}.
-     */
-    default AggregatedHttpService buildAggregated() {
-        return build().asAggregatedService();
-    }
-
-    /**
-     * Builds the {@link BlockingAggregatedHttpService} that performs the configured routing.
-     *
-     * @return the router {@link BlockingAggregatedHttpService}.
-     */
-    default BlockingAggregatedHttpService buildBlockingAggregated() {
-        return build().asBlockingAggregatedService();
+    default HttpService build() {
+        return buildStreaming().asService();
     }
 
     /**
@@ -178,6 +169,15 @@ public interface RouteStarter {
      * @return the router {@link BlockingHttpService}.
      */
     default BlockingHttpService buildBlocking() {
-        return build().asBlockingService();
+        return buildStreaming().asBlockingService();
+    }
+
+    /**
+     * Builds the {@link BlockingStreamingHttpService} that performs the configured routing.
+     *
+     * @return the router {@link BlockingStreamingHttpService}.
+     */
+    default BlockingStreamingHttpService buildBlockingStreaming() {
+        return buildStreaming().asBlockingStreamingService();
     }
 }

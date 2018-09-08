@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.router.jersey.ExecutionStrategy;
 import io.servicetalk.serialization.api.DefaultSerializer;
 import io.servicetalk.serialization.api.Serializer;
@@ -73,7 +73,7 @@ public final class ExecutionStrategyResources {
         private ConnectionContext ctx;
 
         @Context
-        private HttpRequest<HttpPayloadChunk> req;
+        private StreamingHttpRequest<HttpPayloadChunk> req;
 
         @Context
         private UriInfo uriInfo;
@@ -320,7 +320,7 @@ public final class ExecutionStrategyResources {
         }
 
         private static Map<String, String> getThreadingInfo(final ConnectionContext ctx,
-                                                            final HttpRequest<HttpPayloadChunk> req,
+                                                            final StreamingHttpRequest<HttpPayloadChunk> req,
                                                             final UriInfo uriInfo) {
             // Use the opportunity to assert that other context objects are valid
             if (!req.getPath().equals('/' + uriInfo.getPath())) {

@@ -17,9 +17,9 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
-import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpHeaderNames;
-import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.HostAndPort;
 
 import java.net.InetSocketAddress;
@@ -27,7 +27,7 @@ import java.net.InetSocketAddress;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.forUnknownHostAndPort;
 
 /**
- * Factory methods for building {@link HttpClient} instances.
+ * Factory methods for building {@link StreamingHttpClient} instances.
  */
 public final class HttpClients {
 
@@ -41,7 +41,7 @@ public final class HttpClients {
      * with default {@link LoadBalancer} and DNS {@link ServiceDiscoverer}.
      * <p>
      * When a <a href="https://tools.ietf.org/html/rfc3986#section-4.2">relative URL</a> is passed in the {@link
-     * HttpRequest#setRequestTarget(String)} this client requires a {@link HttpHeaderNames#HOST} present in order to
+     * StreamingHttpRequest#setRequestTarget(String)} this client requires a {@link HttpHeaderNames#HOST} present in order to
      * infer the remote address.
      * @return new builder with default configuration
      */

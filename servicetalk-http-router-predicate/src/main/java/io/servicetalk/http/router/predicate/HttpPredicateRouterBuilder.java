@@ -17,9 +17,9 @@ package io.servicetalk.http.router.predicate;
 
 import io.servicetalk.http.api.HttpCookie;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMethod;
-import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.router.predicate.dsl.CookieMatcher;
 import io.servicetalk.http.router.predicate.dsl.RouteContinuation;
 import io.servicetalk.http.router.predicate.dsl.RouteStarter;
@@ -45,16 +45,16 @@ import static io.servicetalk.http.router.predicate.Predicates.regex;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Builds an {@link HttpService} which routes requests to a number of other {@link HttpService}s based on user
+ * Builds an {@link StreamingHttpService} which routes requests to a number of other {@link StreamingHttpService}s based on user
  * specified criteria.
  *
  * eg.
  * <pre>{@code
- * final HttpService<HttpChunk, HttpChunk> router = new HttpPredicateRouterBuilder<HttpChunk, HttpChunk>()
+ * final StreamingHttpService<HttpChunk, HttpChunk> router = new HttpPredicateRouterBuilder<HttpChunk, HttpChunk>()
  *     .whenMethod(GET).andPathStartsWith("/a/").thenRouteTo(serviceA)
  *     .whenMethod(GET).andPathStartsWith("/b/").thenRouteTo(serviceB)
  *     .whenMethod(POST).thenRouteTo(serviceC)
- *     .build();
+ *     .buildStreaming();
  * }</pre>
  * <p>
  * If no routes match, a default service is used, which returns a 404 response.
@@ -63,7 +63,7 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
 
     private final List<PredicateServicePair> predicateServicePairs = new ArrayList<>();
     @Nullable
-    private BiPredicate<ConnectionContext, HttpRequest<HttpPayloadChunk>> predicate;
+    private BiPredicate<ConnectionContext, StreamingHttpRequest<HttpPayloadChunk>> predicate;
     private final RouteContinuationImpl continuation = new RouteContinuationImpl();
 
     @Override
@@ -139,24 +139,24 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
     }
 
     @Override
-    public RouteContinuation when(final Predicate<HttpRequest<HttpPayloadChunk>> predicate) {
+    public RouteContinuation when(final Predicate<StreamingHttpRequest<HttpPayloadChunk>> predicate) {
         requireNonNull(predicate);
         andPredicate((ctx, req) -> predicate.test(req));
         return continuation;
     }
 
     @Override
-    public RouteContinuation when(final BiPredicate<ConnectionContext, HttpRequest<HttpPayloadChunk>> predicate) {
+    public RouteContinuation when(final BiPredicate<ConnectionContext, StreamingHttpRequest<HttpPayloadChunk>> predicate) {
         andPredicate(requireNonNull(predicate));
         return continuation;
     }
 
     @Override
-    public HttpService build() {
-        return new InOrderRouter(DefaultFallbackService.instance(), predicateServicePairs);
+    public StreamingHttpService buildStreaming() {
+        return new InOrderRouter(DefaultFallbackServiceStreaming.instance(), predicateServicePairs);
     }
 
-    private void andPredicate(final BiPredicate<ConnectionContext, HttpRequest<HttpPayloadChunk>> newPredicate) {
+    private void andPredicate(final BiPredicate<ConnectionContext, StreamingHttpRequest<HttpPayloadChunk>> newPredicate) {
         if (predicate == null) {
             predicate = newPredicate;
         } else {
@@ -227,17 +227,17 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
         }
 
         @Override
-        public RouteContinuation and(final Predicate<HttpRequest<HttpPayloadChunk>> predicate) {
+        public RouteContinuation and(final Predicate<StreamingHttpRequest<HttpPayloadChunk>> predicate) {
             return when(predicate);
         }
 
         @Override
-        public RouteContinuation and(final BiPredicate<ConnectionContext, HttpRequest<HttpPayloadChunk>> predicate) {
+        public RouteContinuation and(final BiPredicate<ConnectionContext, StreamingHttpRequest<HttpPayloadChunk>> predicate) {
             return when(predicate);
         }
 
         @Override
-        public RouteStarter thenRouteTo(final HttpService service) {
+        public RouteStarter thenRouteTo(final StreamingHttpService service) {
             assert predicate != null;
             predicateServicePairs.add(new PredicateServicePair(predicate, service));
             predicate = null;
@@ -246,9 +246,9 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
     }
 
     private class CookieMatcherImpl implements CookieMatcher {
-        private final Function<HttpRequest<HttpPayloadChunk>, Iterator<? extends HttpCookie>> itemsSource;
+        private final Function<StreamingHttpRequest<HttpPayloadChunk>, Iterator<? extends HttpCookie>> itemsSource;
 
-        CookieMatcherImpl(final Function<HttpRequest<HttpPayloadChunk>, Iterator<? extends HttpCookie>> itemsSource) {
+        CookieMatcherImpl(final Function<StreamingHttpRequest<HttpPayloadChunk>, Iterator<? extends HttpCookie>> itemsSource) {
             this.itemsSource = itemsSource;
         }
 
@@ -277,9 +277,9 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
     }
 
     private class StringMultiValueMatcherImpl implements StringMultiValueMatcher {
-        private final Function<HttpRequest<HttpPayloadChunk>, Iterator<? extends CharSequence>> itemsSource;
+        private final Function<StreamingHttpRequest<HttpPayloadChunk>, Iterator<? extends CharSequence>> itemsSource;
 
-        StringMultiValueMatcherImpl(final Function<HttpRequest<HttpPayloadChunk>,
+        StringMultiValueMatcherImpl(final Function<StreamingHttpRequest<HttpPayloadChunk>,
                 Iterator<? extends CharSequence>> itemsSource) {
             this.itemsSource = itemsSource;
         }

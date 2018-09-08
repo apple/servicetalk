@@ -20,10 +20,10 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.LastHttpPayloadChunk;
+import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.netty.internal.Connection;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
@@ -39,9 +39,9 @@ import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersions.newProtocolVersion;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
-import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.api.HttpResponses.newResponse;
+import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
+import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.http.netty.EmptyLastHttpPayloadChunk.INSTANCE;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static org.mockito.ArgumentMatchers.any;
@@ -61,19 +61,19 @@ public class PipelinedHttpConnectionTest {
     private final Connection<Object, Object> connection = mock(Connection.class);
 
     @Rule
-    public final MockedSubscriberRule<HttpResponse<HttpPayloadChunk>> dataSubscriber1 = new MockedSubscriberRule<>();
+    public final MockedSubscriberRule<StreamingHttpResponse<HttpPayloadChunk>> dataSubscriber1 = new MockedSubscriberRule<>();
     @Rule
-    public final MockedSubscriberRule<HttpResponse<HttpPayloadChunk>> dataSubscriber2 = new MockedSubscriberRule<>();
+    public final MockedSubscriberRule<StreamingHttpResponse<HttpPayloadChunk>> dataSubscriber2 = new MockedSubscriberRule<>();
 
     private TestPublisher<Object> readPublisher1;
     private TestPublisher<Object> readPublisher2;
     private TestPublisher<HttpPayloadChunk> writePublisher1;
     private TestPublisher<HttpPayloadChunk> writePublisher2;
 
-    private HttpConnection pipe;
+    private StreamingHttpConnection pipe;
 
     private final LastHttpPayloadChunk emptyLastChunk = INSTANCE;
-    private HttpResponse<HttpPayloadChunk> mockResp;
+    private StreamingHttpResponse<HttpPayloadChunk> mockResp;
 
     @SuppressWarnings("unchecked")
     @Before
@@ -96,19 +96,19 @@ public class PipelinedHttpConnectionTest {
         readPublisher2.sendOnSubscribe();
         writePublisher1.sendOnSubscribe();
         writePublisher2.sendOnSubscribe();
-        pipe = new PipelinedHttpConnection(connection, config.asReadOnly(), ctx);
+        pipe = new PipelinedStreamingHttpConnection(connection, config.asReadOnly(), ctx);
     }
 
     @Test
     public void http09RequestShouldReturnOnError() {
-        Single<HttpResponse<HttpPayloadChunk>> request = pipe.request(
+        Single<StreamingHttpResponse<HttpPayloadChunk>> request = pipe.request(
                 newRequest(newProtocolVersion(0, 9), GET, "/Foo"));
         dataSubscriber1.subscribe(request).request(1).verifyFailure(IllegalArgumentException.class);
     }
 
     @Test
     public void http10RequestShouldReturnOnError() {
-        Single<HttpResponse<HttpPayloadChunk>> request = pipe.request(newRequest(HTTP_1_0, GET, "/Foo"));
+        Single<StreamingHttpResponse<HttpPayloadChunk>> request = pipe.request(newRequest(HTTP_1_0, GET, "/Foo"));
         dataSubscriber1.subscribe(request).request(1).verifyFailure(IllegalArgumentException.class);
     }
 
@@ -119,7 +119,7 @@ public class PipelinedHttpConnectionTest {
         when(connection.getExecutionContext()).thenReturn(ctx);
         when(connection.write(any(), any())).thenReturn(completed());
         when(connection.read()).thenReturn(Publisher.from(newResponse(OK), emptyLastChunk));
-        Single<HttpResponse<HttpPayloadChunk>> request = pipe.request(
+        Single<StreamingHttpResponse<HttpPayloadChunk>> request = pipe.request(
                 newRequest(HTTP_1_1, GET, "/Foo"));
         dataSubscriber1.subscribe(request).request(1).verifySuccess();
     }

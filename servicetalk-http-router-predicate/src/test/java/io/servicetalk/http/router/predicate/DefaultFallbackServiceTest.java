@@ -17,9 +17,9 @@ package io.servicetalk.http.router.predicate;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
-import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -50,7 +50,7 @@ public class DefaultFallbackServiceTest {
     @Mock
     private ExecutionContext executionCtx;
     @Mock
-    private HttpRequest<HttpPayloadChunk> request;
+    private StreamingHttpRequest<HttpPayloadChunk> request;
 
     @Before
     public void setUp() {
@@ -61,11 +61,11 @@ public class DefaultFallbackServiceTest {
 
     @Test
     public void testDefaultFallbackService() throws Exception {
-        final HttpService fixture = DefaultFallbackService.instance();
+        final StreamingHttpService fixture = DefaultFallbackServiceStreaming.instance();
 
-        final Single<HttpResponse<HttpPayloadChunk>> responseSingle = fixture.handle(ctx, request);
+        final Single<StreamingHttpResponse<HttpPayloadChunk>> responseSingle = fixture.handle(ctx, request);
 
-        final HttpResponse<HttpPayloadChunk> response = awaitIndefinitely(responseSingle);
+        final StreamingHttpResponse<HttpPayloadChunk> response = awaitIndefinitely(responseSingle);
         assert response != null;
         assertEquals(HTTP_1_1, response.getVersion());
         assertEquals(NOT_FOUND, response.getStatus());

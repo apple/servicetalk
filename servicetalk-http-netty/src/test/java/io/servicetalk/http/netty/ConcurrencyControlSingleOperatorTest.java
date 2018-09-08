@@ -22,7 +22,7 @@ import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponse;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,7 +39,7 @@ import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEP
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.api.HttpResponses.newResponse;
+import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -62,7 +62,7 @@ public class ConcurrencyControlSingleOperatorTest {
         final RequestConcurrencyController controller = mock(RequestConcurrencyController.class);
         ConcurrencyControlSingleOperator helper = new ConcurrencyControlSingleOperator(controller);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
-        Single.<HttpResponse<HttpPayloadChunk>>success(null).liftSynchronous(helper).subscribe(subscriber);
+        Single.<StreamingHttpResponse<HttpPayloadChunk>>success(null).liftSynchronous(helper).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
         verify(controller).requestFinished();
 
@@ -72,11 +72,11 @@ public class ConcurrencyControlSingleOperatorTest {
 
     @Test
     public void duplicateOnSuccess() {
-        AtomicReference<Single.Subscriber<? super HttpResponse<HttpPayloadChunk>>> subRef = new AtomicReference<>();
+        AtomicReference<Single.Subscriber<? super StreamingHttpResponse<HttpPayloadChunk>>> subRef = new AtomicReference<>();
 
-        Single<HttpResponse<HttpPayloadChunk>> original = new Single<HttpResponse<HttpPayloadChunk>>() {
+        Single<StreamingHttpResponse<HttpPayloadChunk>> original = new Single<StreamingHttpResponse<HttpPayloadChunk>>() {
             @Override
-            protected void handleSubscribe(final Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber) {
+            protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse<HttpPayloadChunk>> subscriber) {
                 subRef.set(subscriber);
                 subscriber.onSubscribe(IGNORE_CANCEL);
             }
@@ -89,15 +89,15 @@ public class ConcurrencyControlSingleOperatorTest {
         assertThat("Original Single not subscribed.", subRef.get(), is(notNullValue()));
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
-        final HttpResponse<HttpPayloadChunk> response = newResponse(OK);
+        final StreamingHttpResponse<HttpPayloadChunk> response = newResponse(OK);
         subRef.get().onSuccess(response);
-        final HttpResponse<HttpPayloadChunk> received = subscriber.verifyResponseReceived();
+        final StreamingHttpResponse<HttpPayloadChunk> received = subscriber.verifyResponseReceived();
         verifyZeroInteractions(controller);
 
-        final HttpResponse<HttpPayloadChunk> response2 = newResponse(OK);
+        final StreamingHttpResponse<HttpPayloadChunk> response2 = newResponse(OK);
 
         subRef.get().onSuccess(response2);
-        final HttpResponse<HttpPayloadChunk> received2 = subscriber.verifyResponseReceived();
+        final StreamingHttpResponse<HttpPayloadChunk> received2 = subscriber.verifyResponseReceived();
         // Old response should be preserved.
         assertThat("Duplicate response received.", received2, is(received));
         verifyZeroInteractions(controller);
@@ -105,7 +105,7 @@ public class ConcurrencyControlSingleOperatorTest {
 
     @Test
     public void cancelBeforeOnSuccess() throws ExecutionException, InterruptedException {
-        TestSingle<HttpResponse<HttpPayloadChunk>> responseSingle = new TestSingle<>(true);
+        TestSingle<StreamingHttpResponse<HttpPayloadChunk>> responseSingle = new TestSingle<>(true);
         final RequestConcurrencyController controller = mock(RequestConcurrencyController.class);
         ConcurrencyControlSingleOperator operator = new ConcurrencyControlSingleOperator(controller);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
@@ -116,7 +116,7 @@ public class ConcurrencyControlSingleOperatorTest {
         verify(controller).requestFinished();
         responseSingle.verifyCancelled();
 
-        final HttpResponse<HttpPayloadChunk> response = newResponse(OK);
+        final StreamingHttpResponse<HttpPayloadChunk> response = newResponse(OK);
         responseSingle.onSuccess(response);
 
         subscriber.verifyResponseReceived();
@@ -129,7 +129,7 @@ public class ConcurrencyControlSingleOperatorTest {
 
     @Test
     public void cancelBeforeOnError() {
-        TestSingle<HttpResponse<HttpPayloadChunk>> responseSingle = new TestSingle<>(true);
+        TestSingle<StreamingHttpResponse<HttpPayloadChunk>> responseSingle = new TestSingle<>(true);
         final RequestConcurrencyController controller = mock(RequestConcurrencyController.class);
         ConcurrencyControlSingleOperator operator = new ConcurrencyControlSingleOperator(controller);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
@@ -147,14 +147,14 @@ public class ConcurrencyControlSingleOperatorTest {
 
     @Test
     public void cancelAfterOnSuccess() {
-        TestSingle<HttpResponse<HttpPayloadChunk>> responseSingle = new TestSingle<>(true);
+        TestSingle<StreamingHttpResponse<HttpPayloadChunk>> responseSingle = new TestSingle<>(true);
         final RequestConcurrencyController controller = mock(RequestConcurrencyController.class);
         ConcurrencyControlSingleOperator operator = new ConcurrencyControlSingleOperator(controller);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
         responseSingle.liftSynchronous(operator).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
-        final HttpResponse<HttpPayloadChunk> response = newResponse(OK, never());
+        final StreamingHttpResponse<HttpPayloadChunk> response = newResponse(OK, never());
         responseSingle.onSuccess(response);
 
         verifyZeroInteractions(controller);
@@ -169,7 +169,7 @@ public class ConcurrencyControlSingleOperatorTest {
 
     @Test
     public void cancelAfterOnError() {
-        TestSingle<HttpResponse<HttpPayloadChunk>> responseSingle = new TestSingle<>(true);
+        TestSingle<StreamingHttpResponse<HttpPayloadChunk>> responseSingle = new TestSingle<>(true);
         final RequestConcurrencyController controller = mock(RequestConcurrencyController.class);
         ConcurrencyControlSingleOperator operator = new ConcurrencyControlSingleOperator(controller);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
@@ -191,14 +191,14 @@ public class ConcurrencyControlSingleOperatorTest {
     public void payloadComplete() {
         TestPublisher<HttpPayloadChunk> payload = new TestPublisher<>();
         payload.sendOnSubscribe();
-        TestSingle<HttpResponse<HttpPayloadChunk>> responseSingle = new TestSingle<>(true);
+        TestSingle<StreamingHttpResponse<HttpPayloadChunk>> responseSingle = new TestSingle<>(true);
         final RequestConcurrencyController controller = mock(RequestConcurrencyController.class);
         ConcurrencyControlSingleOperator operator = new ConcurrencyControlSingleOperator(controller);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
         responseSingle.liftSynchronous(operator).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
-        final HttpResponse<HttpPayloadChunk> response = newResponse(OK, payload);
+        final StreamingHttpResponse<HttpPayloadChunk> response = newResponse(OK, payload);
         responseSingle.onSuccess(response);
 
         verifyZeroInteractions(controller);
@@ -214,11 +214,11 @@ public class ConcurrencyControlSingleOperatorTest {
         verify(controller).requestFinished();
     }
 
-    private static final class ResponseSubscriber implements Single.Subscriber<HttpResponse<HttpPayloadChunk>> {
+    private static final class ResponseSubscriber implements Single.Subscriber<StreamingHttpResponse<HttpPayloadChunk>> {
 
         Cancellable cancellable;
         @Nullable
-        private HttpResponse<HttpPayloadChunk> response;
+        private StreamingHttpResponse<HttpPayloadChunk> response;
         private boolean responseReceived;
         Throwable error;
 
@@ -228,7 +228,7 @@ public class ConcurrencyControlSingleOperatorTest {
         }
 
         @Override
-        public void onSuccess(@Nullable final HttpResponse<HttpPayloadChunk> result) {
+        public void onSuccess(@Nullable final StreamingHttpResponse<HttpPayloadChunk> result) {
             responseReceived = true;
             this.response = result;
         }
@@ -244,7 +244,7 @@ public class ConcurrencyControlSingleOperatorTest {
         }
 
         @Nullable
-        HttpResponse<HttpPayloadChunk> verifyResponseReceived() {
+        StreamingHttpResponse<HttpPayloadChunk> verifyResponseReceived() {
             assertThat("Response not received.", responseReceived, is(true));
             assertThat("Unexpected response.", response, is(notNullValue()));
             return response;

@@ -16,8 +16,10 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
-import io.servicetalk.http.api.HttpConnection.SettingKey;
+import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
+
+import org.reactivestreams.Subscriber;
 
 /**
  * The equivalent of {@link HttpConnection} but with synchronous/blocking APIs instead of asynchronous APIs.
@@ -32,7 +34,7 @@ public abstract class BlockingHttpConnection extends BlockingHttpRequester {
 
     /**
      * Returns a {@link BlockingIterable} that gives the current value of the setting as well as subsequent changes to
-     * the setting value.
+     * the setting value as long as the {@link Subscriber} has expressed enough demand.
      *
      * @param settingKey Name of the setting to fetch.
      * @param <T> Type of the setting value.
@@ -41,10 +43,22 @@ public abstract class BlockingHttpConnection extends BlockingHttpRequester {
     public abstract <T> BlockingIterable<T> getSettingIterable(SettingKey<T> settingKey);
 
     /**
+     * Convert this {@link BlockingHttpConnection} to the {@link StreamingHttpConnection} API.
+     * <p>
+     * Note that the resulting {@link StreamingHttpConnection} may still be subject to any blocking, in memory
+     * aggregation, and other behavior as this {@link BlockingHttpConnection}.
+     *
+     * @return a {@link StreamingHttpConnection} representation of this {@link BlockingHttpConnection}.
+     */
+    public final StreamingHttpConnection asStreamingConnection() {
+        return asStreamingConnectionInternal();
+    }
+
+    /**
      * Convert this {@link BlockingHttpConnection} to the {@link HttpConnection} API.
      * <p>
-     * Note that the resulting {@link HttpConnection} may still be subject to any blocking, in memory aggregation, and
-     * other behavior as this {@link BlockingHttpConnection}.
+     * Note that the resulting {@link HttpConnection} may still be subject to any blocking, in memory
+     * aggregation, and other behavior as this {@link BlockingHttpConnection}.
      *
      * @return a {@link HttpConnection} representation of this {@link BlockingHttpConnection}.
      */
@@ -53,27 +67,19 @@ public abstract class BlockingHttpConnection extends BlockingHttpRequester {
     }
 
     /**
-     * Convert this {@link BlockingHttpConnection} to the {@link AggregatedHttpConnection} API.
+     * Convert this {@link BlockingHttpConnection} to the {@link BlockingStreamingHttpConnection} API.
      * <p>
-     * Note that the resulting {@link AggregatedHttpConnection} may still be subject to any blocking, in memory
-     * aggregation, and other behavior as this {@link BlockingHttpConnection}.
-     *
-     * @return a {@link AggregatedHttpConnection} representation of this {@link BlockingHttpConnection}.
-     */
-    public final AggregatedHttpConnection asAggregatedConnection() {
-        return asConnection().asAggregatedConnection();
-    }
-
-    /**
-     * Convert this {@link BlockingHttpConnection} to the {@link BlockingAggregatedHttpConnection} API.
-     * <p>
-     * Note that the resulting {@link BlockingAggregatedHttpConnection} may still be subject to in memory
+     * Note that the resulting {@link BlockingStreamingHttpConnection} may still be subject to in memory
      * aggregation and other behavior as this {@link BlockingHttpConnection}.
      *
-     * @return a {@link BlockingAggregatedHttpConnection} representation of this {@link BlockingHttpConnection}.
+     * @return a {@link BlockingStreamingHttpConnection} representation of this {@link BlockingHttpConnection}.
      */
-    public final BlockingAggregatedHttpConnection asBlockingAggregatedConnection() {
-        return asConnection().asBlockingAggregatedConnection();
+    public final BlockingStreamingHttpConnection asBlockingStreamingConnection() {
+        return asStreamingConnection().asBlockingStreamingConnection();
+    }
+
+    StreamingHttpConnection asStreamingConnectionInternal() {
+        return new BlockingHttpConnectionToStreamingHttpConnection(this);
     }
 
     HttpConnection asConnectionInternal() {

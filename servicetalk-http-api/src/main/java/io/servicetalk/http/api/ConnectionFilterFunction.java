@@ -16,16 +16,16 @@
 package io.servicetalk.http.api;
 
 /**
- * Function to filter an {@link HttpConnection}.
+ * Function to filter an {@link StreamingHttpConnection}.
  */
 @FunctionalInterface
 public interface ConnectionFilterFunction {
     /**
-     * Function that allows to filter an {@link HttpConnection}.
-     * @param connection the {@link HttpConnection} to filter
-     * @return the filtered {@link HttpConnection}
+     * Function that allows to filter an {@link StreamingHttpConnection}.
+     * @param connection the {@link StreamingHttpConnection} to filter
+     * @return the filtered {@link StreamingHttpConnection}
      */
-    HttpConnection apply(HttpConnection connection);
+    StreamingHttpConnection apply(StreamingHttpConnection connection);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -49,9 +49,9 @@ public interface ConnectionFilterFunction {
     }
 
     /**
-     * Returns a function that always returns its input {@link HttpConnection}.
+     * Returns a function that always returns its input {@link StreamingHttpConnection}.
      *
-     * @return a function that always returns its input {@link HttpConnection}.
+     * @return a function that always returns its input {@link StreamingHttpConnection}.
      */
     static ConnectionFilterFunction identity() {
         return connection -> connection;

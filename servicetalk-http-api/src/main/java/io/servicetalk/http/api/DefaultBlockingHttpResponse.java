@@ -23,15 +23,15 @@ import java.util.function.Function;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Default implementation of {@link BlockingHttpResponse}.
+ * Default implementation of {@link BlockingStreamingHttpResponse}.
  *
  * @param <O> The type of payload of the response.
  */
-final class DefaultBlockingHttpResponse<O> implements BlockingHttpResponse<O> {
+final class DefaultBlockingHttpResponse<O> implements BlockingStreamingHttpResponse<O> {
     private final BlockingIterable<O> payloadIterable;
-    private final HttpResponse<?> httpResponse;
+    private final StreamingHttpResponse<?> httpResponse;
 
-    DefaultBlockingHttpResponse(final HttpResponse<O> httpResponse) {
+    DefaultBlockingHttpResponse(final StreamingHttpResponse<O> httpResponse) {
         this.payloadIterable = httpResponse.getPayloadBody().toIterable();
         this.httpResponse = httpResponse;
     }
@@ -48,7 +48,7 @@ final class DefaultBlockingHttpResponse<O> implements BlockingHttpResponse<O> {
     }
 
     @Override
-    public BlockingHttpResponse<O> setVersion(final HttpProtocolVersion version) {
+    public BlockingStreamingHttpResponse<O> setVersion(final HttpProtocolVersion version) {
         httpResponse.setVersion(version);
         return this;
     }
@@ -69,7 +69,7 @@ final class DefaultBlockingHttpResponse<O> implements BlockingHttpResponse<O> {
     }
 
     @Override
-    public BlockingHttpResponse<O> setStatus(final HttpResponseStatus status) {
+    public BlockingStreamingHttpResponse<O> setStatus(final HttpResponseStatus status) {
         httpResponse.setStatus(status);
         return this;
     }
@@ -80,7 +80,7 @@ final class DefaultBlockingHttpResponse<O> implements BlockingHttpResponse<O> {
     }
 
     @Override
-    public <R> BlockingHttpResponse<R> transformPayloadBody(final Function<BlockingIterable<O>,
+    public <R> BlockingStreamingHttpResponse<R> transformPayloadBody(final Function<BlockingIterable<O>,
                                                                            BlockingIterable<R>> transformer) {
         return new DefaultBlockingHttpResponse<>(this, transformer.apply(payloadIterable));
     }

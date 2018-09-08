@@ -17,12 +17,12 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.ConnectionFilterFunction;
-import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpConnectionBuilder;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.LastHttpPayloadChunk;
+import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
@@ -66,42 +66,42 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
     }
 
     @Override
-    public Single<HttpConnection> build(final ExecutionContext executionContext,
-                                        final ResolvedAddress resolvedAddress) {
+    public Single<StreamingHttpConnection> buildStreaming(final ExecutionContext executionContext,
+                                                          final ResolvedAddress resolvedAddress) {
         ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
         return (roConfig.getMaxPipelinedRequests() == 1 ?
                   buildForNonPipelined(executionContext, resolvedAddress, roConfig, connectionFilterFunction) :
                   buildForPipelined(executionContext, resolvedAddress, roConfig, connectionFilterFunction))
-                        .map(filteredConnection -> new HttpConnectionConcurrentRequestsFilter(filteredConnection,
+                        .map(filteredConnection -> new StreamingHttpConnectionConcurrentRequestsFilter(filteredConnection,
                                 roConfig.getMaxPipelinedRequests()));
     }
 
     @Override
-    public Single<HttpConnection> build(final ResolvedAddress resolvedAddress) {
-        return build(globalExecutionContext(), resolvedAddress);
+    public Single<StreamingHttpConnection> buildStreaming(final ResolvedAddress resolvedAddress) {
+        return buildStreaming(globalExecutionContext(), resolvedAddress);
     }
 
-    static <ResolvedAddress> Single<HttpConnection> buildForPipelined(
+    static <ResolvedAddress> Single<StreamingHttpConnection> buildForPipelined(
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
             final ConnectionFilterFunction connectionFilterFunction) {
-        return build(executionContext, resolvedAddress, roConfig, conn ->
-                connectionFilterFunction.apply(new PipelinedHttpConnection(conn, roConfig, executionContext)));
+        return buildStreaming(executionContext, resolvedAddress, roConfig, conn ->
+                connectionFilterFunction.apply(new PipelinedStreamingHttpConnection(conn, roConfig, executionContext)));
     }
 
-    static <ResolvedAddress> Single<HttpConnection> buildForNonPipelined(
+    static <ResolvedAddress> Single<StreamingHttpConnection> buildForNonPipelined(
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
             final ConnectionFilterFunction connectionFilterFunction) {
-        return build(executionContext, resolvedAddress, roConfig, conn ->
-                connectionFilterFunction.apply(new NonPipelinedHttpConnection(conn, roConfig, executionContext)));
+        return buildStreaming(executionContext, resolvedAddress, roConfig, conn ->
+                connectionFilterFunction.apply(new NonPipelinedStreamingHttpConnection(conn, roConfig, executionContext)));
     }
 
-    private static <ResolvedAddress> Single<HttpConnection> build(
+    private static <ResolvedAddress> Single<StreamingHttpConnection> buildStreaming(
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
-            final Function<Connection<Object, Object>, HttpConnection> mapper) {
-        return new Single<HttpConnection>() {
+            final Function<Connection<Object, Object>, StreamingHttpConnection> mapper) {
+        return new Single<StreamingHttpConnection>() {
             @Override
             protected void handleSubscribe(
-                    Subscriber<? super HttpConnection> subscriber) {
+                    Subscriber<? super StreamingHttpConnection> subscriber) {
 
                 final CloseHandler closeHandler = forPipelinedRequestResponse(true);
                 final ChannelInitializer initializer = new TcpClientChannelInitializer(roConfig.getTcpClientConfig())
@@ -177,9 +177,9 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
     }
 
     /**
-     * Set the maximum size of the initial HTTP line for created {@link HttpClient}.
+     * Set the maximum size of the initial HTTP line for created {@link StreamingHttpClient}.
      *
-     * @param maxInitialLineLength The {@link HttpClient} will throw TooLongFrameException if the initial HTTP
+     * @param maxInitialLineLength The {@link StreamingHttpClient} will throw TooLongFrameException if the initial HTTP
      * line exceeds this length.
      * @return {@code this}.
      */
@@ -189,9 +189,9 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
     }
 
     /**
-     * Set the maximum total size of HTTP headers, which could be send be created {@link HttpClient}.
+     * Set the maximum total size of HTTP headers, which could be send be created {@link StreamingHttpClient}.
      *
-     * @param maxHeaderSize The {@link HttpClient} will throw TooLongFrameException if the total size of all HTTP
+     * @param maxHeaderSize The {@link StreamingHttpClient} will throw TooLongFrameException if the total size of all HTTP
      * headers exceeds this length.
      * @return {@code this}.
      */
@@ -241,12 +241,12 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
     }
 
     /**
-     * Set the filter that is used to decorate {@link HttpConnection} created by this builder.
+     * Set the filter that is used to decorate {@link StreamingHttpConnection} created by this builder.
      * <p>
-     * Note this method will be used to decorate the result of {@link #build(ExecutionContext, Object)} before it is
+     * Note this method will be used to decorate the result of {@link #buildStreaming(ExecutionContext, Object)} before it is
      * returned to the user.
      *
-     * @param function decorates a {@link HttpConnection} for the purpose of filtering
+     * @param function decorates a {@link StreamingHttpConnection} for the purpose of filtering
      * @return {@code this}
      */
     public DefaultHttpConnectionBuilder<ResolvedAddress> setConnectionFilterFunction(

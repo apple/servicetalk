@@ -17,7 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.http.api.HttpConnection.SettingKey;
+import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -42,7 +42,7 @@ final class HttpConnectionToBlockingHttpConnection extends BlockingHttpConnectio
     }
 
     @Override
-    public BlockingHttpResponse<HttpPayloadChunk> request(final BlockingHttpRequest<HttpPayloadChunk> request)
+    public HttpResponse<HttpPayloadChunk> request(final HttpRequest<HttpPayloadChunk> request)
             throws Exception {
         return BlockingUtils.request(connection, request);
     }
@@ -57,12 +57,12 @@ final class HttpConnectionToBlockingHttpConnection extends BlockingHttpConnectio
         blockingInvocation(connection.closeAsync());
     }
 
-    Completable onClose() {
-        return connection.onClose();
-    }
-
     @Override
     HttpConnection asConnectionInternal() {
         return connection;
+    }
+
+    Completable onClose() {
+        return connection.onClose();
     }
 }

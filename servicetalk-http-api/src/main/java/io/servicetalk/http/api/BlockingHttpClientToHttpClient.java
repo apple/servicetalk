@@ -18,14 +18,10 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.BlockingHttpClient.BlockingReservedHttpConnection;
-import io.servicetalk.http.api.BlockingHttpClient.BlockingUpgradableHttpResponse;
-import io.servicetalk.http.api.HttpClientToBlockingHttpClient.ReservedHttpConnectionToBlocking;
+import io.servicetalk.http.api.BlockingHttpClient.ReservedBlockingHttpConnection;
+import io.servicetalk.http.api.HttpClientToBlockingHttpClient.ReservedHttpConnectionToReservedBlockingHttpConnection;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
-
-import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.Publisher.from;
@@ -34,168 +30,105 @@ import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
 import static java.util.Objects.requireNonNull;
 
 final class BlockingHttpClientToHttpClient extends HttpClient {
-    private final BlockingHttpClient blockingClient;
+    private final BlockingHttpClient client;
 
-    BlockingHttpClientToHttpClient(BlockingHttpClient blockingClient) {
-        this.blockingClient = requireNonNull(blockingClient);
+    BlockingHttpClientToHttpClient(BlockingHttpClient client) {
+        this.client = requireNonNull(client);
     }
 
     @Override
-    public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
-        return BlockingUtils.request(blockingClient, request);
-    }
-
-    @Override
-    public Single<? extends ReservedHttpConnection> reserveConnection(final HttpRequest<HttpPayloadChunk> request) {
-        return blockingToSingle(() -> new BlockingToReservedHttpConnection(
-                    blockingClient.reserveConnection(new DefaultBlockingHttpRequest<>(request))));
+    public Single<? extends ReservedHttpConnection> reserveConnection(
+            final HttpRequest<HttpPayloadChunk> request) {
+        return blockingToSingle(() -> new ReservedBlockingHttpConnectionToReservedHttpConnection(
+                client.reserveConnection(request)));
     }
 
     @Override
     public Single<? extends UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
             final HttpRequest<HttpPayloadChunk> request) {
-        return blockingToSingle(() -> {
-            BlockingUpgradableHttpResponse<HttpPayloadChunk> upgradeResponse =
-                    blockingClient.upgradeConnection(new DefaultBlockingHttpRequest<>(request));
-            return new BlockingToUpgradableHttpResponse<>(upgradeResponse, from(upgradeResponse.getPayloadBody()));
-        });
+        return blockingToSingle(() -> client.upgradeConnection(request));
+    }
+
+    @Override
+    public Single<HttpResponse<HttpPayloadChunk>> request(
+            final HttpRequest<HttpPayloadChunk> request) {
+        return BlockingUtils.request(client, request);
     }
 
     @Override
     public ExecutionContext getExecutionContext() {
-        return blockingClient.getExecutionContext();
+        return client.getExecutionContext();
     }
 
     @Override
     public Completable onClose() {
-        if (blockingClient instanceof HttpClientToBlockingHttpClient) {
-            return ((HttpClientToBlockingHttpClient) blockingClient).onClose();
+        if (client instanceof HttpClientToBlockingHttpClient) {
+            return ((HttpClientToBlockingHttpClient) client).onClose();
         }
 
-        return error(new UnsupportedOperationException("unsupported type: " + blockingClient.getClass()));
+        return error(new UnsupportedOperationException("unsupported type: " + client.getClass()));
     }
 
     @Override
     public Completable closeAsync() {
-        return blockingToCompletable(blockingClient::close);
+        return blockingToCompletable(client::close);
     }
 
     @Override
     BlockingHttpClient asBlockingClientInternal() {
-        return blockingClient;
+        return client;
     }
 
-    static final class BlockingToReservedHttpConnection extends ReservedHttpConnection {
-        private final BlockingReservedHttpConnection blockingReservedConnection;
+    static final class ReservedBlockingHttpConnectionToReservedHttpConnection extends ReservedHttpConnection {
+        private final ReservedBlockingHttpConnection connection;
 
-        BlockingToReservedHttpConnection(BlockingReservedHttpConnection blockingReservedConnection) {
-            this.blockingReservedConnection = requireNonNull(blockingReservedConnection);
+        ReservedBlockingHttpConnectionToReservedHttpConnection(ReservedBlockingHttpConnection connection) {
+            this.connection = requireNonNull(connection);
         }
 
         @Override
         public Completable releaseAsync() {
-            return blockingToCompletable(blockingReservedConnection::release);
+            return blockingToCompletable(connection::release);
         }
 
         @Override
         public ConnectionContext getConnectionContext() {
-            return blockingReservedConnection.getConnectionContext();
+            return connection.getConnectionContext();
         }
 
         @Override
-        public <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
-            return from(blockingReservedConnection.getSettingIterable(settingKey));
+        public <T> Publisher<T> getSettingStream(final StreamingHttpConnection.SettingKey<T> settingKey) {
+            return from(connection.getSettingIterable(settingKey));
         }
 
         @Override
-        public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
-            return BlockingUtils.request(blockingReservedConnection, request);
+        public Single<HttpResponse<HttpPayloadChunk>> request(
+                final HttpRequest<HttpPayloadChunk> request) {
+            return BlockingUtils.request(connection, request);
         }
 
         @Override
         public ExecutionContext getExecutionContext() {
-            return blockingReservedConnection.getExecutionContext();
+            return connection.getExecutionContext();
         }
 
         @Override
         public Completable onClose() {
-            if (blockingReservedConnection instanceof ReservedHttpConnectionToBlocking) {
-                return ((ReservedHttpConnectionToBlocking) blockingReservedConnection).onClose();
+            if (connection instanceof ReservedHttpConnectionToReservedBlockingHttpConnection) {
+                return ((ReservedHttpConnectionToReservedBlockingHttpConnection) connection).onClose();
             }
 
-            return error(new UnsupportedOperationException("unsupported type: " +
-                    blockingReservedConnection.getClass()));
+            return error(new UnsupportedOperationException("unsupported type: " + connection.getClass()));
         }
 
         @Override
         public Completable closeAsync() {
-            return blockingToCompletable(blockingReservedConnection::close);
+            return blockingToCompletable(connection::close);
         }
 
         @Override
-        BlockingReservedHttpConnection asBlockingConnectionInternal() {
-            return blockingReservedConnection;
-        }
-    }
-
-    static final class BlockingToUpgradableHttpResponse<T> implements UpgradableHttpResponse<T> {
-        private final BlockingUpgradableHttpResponse<?> upgradeResponse;
-        private final Publisher<T> payloadBody;
-
-        BlockingToUpgradableHttpResponse(BlockingUpgradableHttpResponse<?> upgradeResponse,
-                                         Publisher<T> payloadBody) {
-            this.upgradeResponse = requireNonNull(upgradeResponse);
-            this.payloadBody = requireNonNull(payloadBody);
-        }
-
-        @Override
-        public ReservedHttpConnection getHttpConnection(final boolean releaseReturnsToClient) {
-            return new BlockingToReservedHttpConnection(
-                    upgradeResponse.getHttpConnection(releaseReturnsToClient));
-        }
-
-        @Override
-        public HttpProtocolVersion getVersion() {
-            return upgradeResponse.getVersion();
-        }
-
-        @Override
-        public BlockingToUpgradableHttpResponse<T> setVersion(final HttpProtocolVersion version) {
-            upgradeResponse.setVersion(version);
-            return this;
-        }
-
-        @Override
-        public HttpHeaders getHeaders() {
-            return upgradeResponse.getHeaders();
-        }
-
-        @Override
-        public String toString(final BiFunction<? super CharSequence, ? super CharSequence, CharSequence>
-                                               headerFilter) {
-            return upgradeResponse.toString(headerFilter);
-        }
-
-        @Override
-        public HttpResponseStatus getStatus() {
-            return upgradeResponse.getStatus();
-        }
-
-        @Override
-        public BlockingToUpgradableHttpResponse<T> setStatus(final HttpResponseStatus status) {
-            upgradeResponse.setStatus(status);
-            return this;
-        }
-
-        @Override
-        public Publisher<T> getPayloadBody() {
-            return payloadBody;
-        }
-
-        @Override
-        public <R> BlockingToUpgradableHttpResponse<R> transformPayloadBody(
-                final Function<Publisher<T>, Publisher<R>> transformer) {
-            return new BlockingToUpgradableHttpResponse<>(upgradeResponse, transformer.apply(payloadBody));
+        ReservedBlockingHttpConnection asBlockingConnectionInternal() {
+            return connection;
         }
     }
 }

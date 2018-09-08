@@ -18,18 +18,37 @@ package io.servicetalk.http.api;
 import io.servicetalk.transport.api.ExecutionContext;
 
 /**
- * A builder of {@link HttpClient} objects.
+ * A builder of {@link StreamingHttpClient} objects.
  */
 public interface HttpClientBuilder {
 
     /**
+     * Build a new {@link StreamingHttpClient}.
+     *
+     * @param executionContext {@link ExecutionContext} used for {@link StreamingHttpClient#getExecutionContext()} and to buildStreaming
+     * new {@link StreamingHttpConnection}s.
+     * @return A new {@link StreamingHttpClient}
+     */
+    StreamingHttpClient buildStreaming(ExecutionContext executionContext);
+
+    /**
+     * Build a new {@link StreamingHttpClient}, using a default {@link ExecutionContext}.
+     *
+     * @return A new {@link StreamingHttpClient}
+     * @see #buildStreaming(ExecutionContext)
+     */
+    StreamingHttpClient buildStreaming();
+
+    /**
      * Build a new {@link HttpClient}.
      *
-     * @param executionContext {@link ExecutionContext} used for {@link HttpClient#getExecutionContext()} and to build
-     * new {@link HttpConnection}s.
+     * @param executionContext {@link ExecutionContext} used for {@link HttpClient#getExecutionContext()} and
+     * to buildStreaming new {@link StreamingHttpConnection}s.
      * @return A new {@link HttpClient}
      */
-    HttpClient build(ExecutionContext executionContext);
+    default HttpClient build(ExecutionContext executionContext) {
+        return buildStreaming(executionContext).asClient();
+    }
 
     /**
      * Build a new {@link HttpClient}, using a default {@link ExecutionContext}.
@@ -37,27 +56,28 @@ public interface HttpClientBuilder {
      * @return A new {@link HttpClient}
      * @see #build(ExecutionContext)
      */
-    HttpClient build();
-
-    /**
-     * Build a new {@link AggregatedHttpClient}.
-     *
-     * @param executionContext {@link ExecutionContext} used for {@link AggregatedHttpClient#getExecutionContext()} and
-     * to build new {@link HttpConnection}s.
-     * @return A new {@link AggregatedHttpClient}
-     */
-    default AggregatedHttpClient buildAggregated(ExecutionContext executionContext) {
-        return build(executionContext).asAggregatedClient();
+    default HttpClient build() {
+        return buildStreaming().asClient();
     }
 
     /**
-     * Build a new {@link AggregatedHttpClient}, using a default {@link ExecutionContext}.
+     * Create a new {@link BlockingStreamingHttpClient}.
      *
-     * @return A new {@link AggregatedHttpClient}
-     * @see #buildAggregated(ExecutionContext)
+     * @param executionContext {@link ExecutionContext} when building {@link BlockingStreamingHttpConnection}s.
+     * @return {@link BlockingStreamingHttpClient}
      */
-    default AggregatedHttpClient buildAggregated() {
-        return build().asAggregatedClient();
+    default BlockingStreamingHttpClient buildBlockingStreaming(ExecutionContext executionContext) {
+        return buildStreaming(executionContext).asBlockingStreamingClient();
+    }
+
+    /**
+     * Create a new {@link BlockingStreamingHttpClient}, using a default {@link ExecutionContext}.
+     *
+     * @return {@link BlockingStreamingHttpClient}
+     * @see #buildBlockingStreaming(ExecutionContext)
+     */
+    default BlockingStreamingHttpClient buildBlockingStreaming() {
+        return buildStreaming().asBlockingStreamingClient();
     }
 
     /**
@@ -67,7 +87,7 @@ public interface HttpClientBuilder {
      * @return {@link BlockingHttpClient}
      */
     default BlockingHttpClient buildBlocking(ExecutionContext executionContext) {
-        return build(executionContext).asBlockingClient();
+        return buildStreaming(executionContext).asBlockingClient();
     }
 
     /**
@@ -77,26 +97,6 @@ public interface HttpClientBuilder {
      * @see #buildBlocking(ExecutionContext)
      */
     default BlockingHttpClient buildBlocking() {
-        return build().asBlockingClient();
-    }
-
-    /**
-     * Create a new {@link BlockingAggregatedHttpClient}.
-     *
-     * @param executionContext {@link ExecutionContext} when building {@link BlockingAggregatedHttpConnection}s.
-     * @return {@link BlockingAggregatedHttpClient}
-     */
-    default BlockingAggregatedHttpClient buildBlockingAggregated(ExecutionContext executionContext) {
-        return build(executionContext).asBlockingAggregatedClient();
-    }
-
-    /**
-     * Create a new {@link BlockingAggregatedHttpClient}, using a default {@link ExecutionContext}.
-     *
-     * @return {@link BlockingAggregatedHttpClient}
-     * @see #buildBlockingAggregated(ExecutionContext)
-     */
-    default BlockingAggregatedHttpClient buildBlockingAggregated() {
-        return build().asBlockingAggregatedClient();
+        return buildStreaming().asBlockingClient();
     }
 }

@@ -17,14 +17,14 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.BlockingHttpClient;
-import io.servicetalk.http.api.BlockingHttpRequests;
+import io.servicetalk.http.api.BlockingStreamingHttpClient;
+import io.servicetalk.http.api.BlockingStreamingHttpRequests;
 import io.servicetalk.http.api.ClientFilterFunction;
-import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMethods;
-import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
@@ -45,7 +45,7 @@ import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.http.api.ClientFilterFunction.from;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.api.HttpResponses.newResponse;
+import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -56,7 +56,7 @@ public class ClientFilterFunctionTest {
     private ExecutionContext executionContext;
     private SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder;
     @Nullable
-    private BlockingHttpClient client;
+    private BlockingStreamingHttpClient client;
     private ClientFilterFunction mockClientFilter;
     private ClientFilterFunction filter1;
     private ClientFilterFunction filter2;
@@ -68,17 +68,17 @@ public class ClientFilterFunctionTest {
         executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR, createIoExecutor(), immediate());
         builder = HttpClients.forSingleAddress("localhost", 0);
         mockClientFilter = from(httpClient ->
-                new DelegatingHttpClient(httpClient, request -> success(newResponse(OK))));
+                new DelegatingStreamingHttpClient(httpClient, request -> success(newResponse(OK))));
 
-        filter1 = from(httpClient -> new DelegatingHttpClient(httpClient, request -> {
+        filter1 = from(httpClient -> new DelegatingStreamingHttpClient(httpClient, request -> {
             filterOrder.add(1);
             return httpClient.request(request);
         }));
-        filter2 = from(httpClient -> new DelegatingHttpClient(httpClient, request -> {
+        filter2 = from(httpClient -> new DelegatingStreamingHttpClient(httpClient, request -> {
             filterOrder.add(2);
             return httpClient.request(request);
         }));
-        filter3 = from(httpClient -> new DelegatingHttpClient(httpClient, request -> {
+        filter3 = from(httpClient -> new DelegatingStreamingHttpClient(httpClient, request -> {
             filterOrder.add(3);
             return httpClient.request(request);
         }));
@@ -103,32 +103,32 @@ public class ClientFilterFunctionTest {
     }
 
     private void buildClientAndSendRequest() throws Exception {
-        client = builder.buildBlocking(executionContext);
-        client.request(BlockingHttpRequests.newRequest(HttpRequestMethods.GET, "/"));
+        client = builder.buildBlockingStreaming(executionContext);
+        client.request(BlockingStreamingHttpRequests.newRequest(HttpRequestMethods.GET, "/"));
     }
 
-    private static final class DelegatingHttpClient extends HttpClient {
+    private static final class DelegatingStreamingHttpClient extends StreamingHttpClient {
 
-        private final HttpClient httpClient;
-        private final Function<HttpRequest<HttpPayloadChunk>, Single<HttpResponse<HttpPayloadChunk>>> requester;
+        private final StreamingHttpClient httpClient;
+        private final Function<StreamingHttpRequest<HttpPayloadChunk>, Single<StreamingHttpResponse<HttpPayloadChunk>>> requester;
 
-        DelegatingHttpClient(final HttpClient httpClient, Function<HttpRequest<HttpPayloadChunk>, Single<HttpResponse<HttpPayloadChunk>>> requester) {
+        DelegatingStreamingHttpClient(final StreamingHttpClient httpClient, Function<StreamingHttpRequest<HttpPayloadChunk>, Single<StreamingHttpResponse<HttpPayloadChunk>>> requester) {
             this.httpClient = httpClient;
             this.requester = requester;
         }
 
         @Override
-        public Single<? extends ReservedHttpConnection> reserveConnection(final HttpRequest<HttpPayloadChunk> request) {
+        public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest<HttpPayloadChunk> request) {
             return httpClient.reserveConnection(request);
         }
 
         @Override
-        public Single<? extends UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(final HttpRequest<HttpPayloadChunk> request) {
+        public Single<? extends UpgradableStreamingHttpResponse<HttpPayloadChunk>> upgradeConnection(final StreamingHttpRequest<HttpPayloadChunk> request) {
             return httpClient.upgradeConnection(request);
         }
 
         @Override
-        public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
+        public Single<StreamingHttpResponse<HttpPayloadChunk>> request(final StreamingHttpRequest<HttpPayloadChunk> request) {
             return requester.apply(request);
         }
 

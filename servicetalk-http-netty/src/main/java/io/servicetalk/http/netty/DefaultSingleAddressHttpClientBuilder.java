@@ -24,10 +24,10 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.ClientFilterFunction;
 import io.servicetalk.http.api.ConnectionFilterFunction;
-import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpHeadersFactory;
-import io.servicetalk.http.api.LoadBalancerReadyHttpClient;
+import io.servicetalk.http.api.LoadBalancerReadyStreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
@@ -45,7 +45,7 @@ import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFa
 import static java.util.Objects.requireNonNull;
 
 /**
- * A builder of {@link HttpClient} instances which call a single server based on the provided address.
+ * A builder of {@link StreamingHttpClient} instances which call a single server based on the provided address.
  * <p>
  * It also provides a good set of default settings and configurations, which could be used by most users as-is or
  * could be overridden to address specific use cases.
@@ -55,15 +55,15 @@ import static java.util.Objects.requireNonNull;
  */
 final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddressHttpClientBuilder<U, R> {
 
-    // Allows creating builders with an unknown address until build time, eg. MultiAddressUrlHttpClientBuilder
+    // Allows creating builders with an unknown address until buildStreaming time, eg. MultiAddressUrlHttpClientBuilder
     private static final HostAndPort UNKNOWN = HostAndPort.of("unknown.invalid", -1);
 
     private static final ClientFilterFunction LB_READY_FILTER =
-            (client, lbEvents) -> new LoadBalancerReadyHttpClient(4, lbEvents, client);
+            (client, lbEvents) -> new LoadBalancerReadyStreamingHttpClient(4, lbEvents, client);
 
     private final U address;
     private final HttpClientConfig config;
-    private LoadBalancerFactory<R, HttpConnection> loadBalancerFactory;
+    private LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory;
     private ServiceDiscoverer<U, R> serviceDiscoverer;
     private Function<U, ClientFilterFunction> hostHeaderFilterFunction =
             DefaultSingleAddressHttpClientBuilder::defaultHostClientFilterFactory;
@@ -80,7 +80,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     private DefaultSingleAddressHttpClientBuilder(
-            final LoadBalancerFactory<R, HttpConnection> loadBalancerFactory,
+            final LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory,
             final ServiceDiscoverer<U, R> serviceDiscoverer,
             final U address,
             final DefaultSingleAddressHttpClientBuilder<U, R> from) {
@@ -113,30 +113,30 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     @SuppressWarnings("unchecked")
     @Override
-    public HttpClient build(final ExecutionContext exec) {
+    public StreamingHttpClient buildStreaming(final ExecutionContext exec) {
         requireNonNull(exec);
-        assert UNKNOWN != address : "Attempted to build with an unknown address";
+        assert UNKNOWN != address : "Attempted to buildStreaming with an unknown address";
         final ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
-        // Track resources that potentially need to be closed when an exception is thrown during build
+        // Track resources that potentially need to be closed when an exception is thrown during buildStreaming
         final CompositeCloseable closeOnException = newCompositeCloseable();
         try {
             Publisher<Event<R>> sdEvents = serviceDiscoverer.discover(address);
 
             // closed by the LoadBalancer
-            ConnectionFactory<R, LoadBalancedHttpConnection> connectionFactory =
+            ConnectionFactory<R, LoadBalancedStreamingHttpConnection> connectionFactory =
                     closeOnException.prepend(roConfig.getMaxPipelinedRequests() == 1 ?
                             new NonPipelinedLBHttpConnectionFactory<>(roConfig, exec, connectionFilterFunction) :
                             new PipelinedLBHttpConnectionFactory<>(roConfig, exec, connectionFilterFunction));
 
-            LoadBalancer<? extends HttpConnection> lbfUntypedForCast = closeOnException.prepend(
+            LoadBalancer<? extends StreamingHttpConnection> lbfUntypedForCast = closeOnException.prepend(
                      loadBalancerFactory.newLoadBalancer(sdEvents, connectionFactory));
-            LoadBalancer<LoadBalancedHttpConnection> lb = (LoadBalancer<LoadBalancedHttpConnection>) lbfUntypedForCast;
+            LoadBalancer<LoadBalancedStreamingHttpConnection> lb = (LoadBalancer<LoadBalancedStreamingHttpConnection>) lbfUntypedForCast;
 
             final ClientFilterFunction hostHeaderFilter = hostHeaderFilterFunction.apply(address);
             final ClientFilterFunction clientFilters =
                     clientFilterFunction.append(hostHeaderFilter).append(lbReadyFilter);
 
-            return clientFilters.apply(closeOnException.prepend(new DefaultHttpClient(exec, lb)), lb.getEventStream());
+            return clientFilters.apply(closeOnException.prepend(new DefaultStreamingHttpClient(exec, lb)), lb.getEventStream());
         } catch (final Throwable t) {
             closeOnException.closeAsync().subscribe();
             throw t;
@@ -245,7 +245,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> setLoadBalancerFactory(
-            final LoadBalancerFactory<R, HttpConnection> loadBalancerFactory) {
+            final LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory) {
         this.loadBalancerFactory = requireNonNull(loadBalancerFactory);
         return this;
     }

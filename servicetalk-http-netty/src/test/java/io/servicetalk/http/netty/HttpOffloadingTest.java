@@ -20,12 +20,12 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
-import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
@@ -55,12 +55,12 @@ import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
-import static io.servicetalk.http.api.HttpConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
-import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.api.HttpResponses.newResponse;
+import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
+import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
+import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static java.lang.Long.MAX_VALUE;
@@ -84,19 +84,19 @@ public class HttpOffloadingTest {
     @ClassRule
     public static final ExecutionContextRule SERVER_CTX = cached(new IoThreadFactory(IO_EXECUTOR_NAME_PREFIX));
 
-    private HttpConnection httpConnection;
+    private StreamingHttpConnection httpConnection;
     private Thread testThread;
     private Queue<Throwable> errors;
     private CountDownLatch terminated;
     private ConnectionContext connectionContext;
     private ServerContext serverContext;
-    private OffloadingVerifyingService service;
-    private HttpClient client;
+    private OffloadingVerifyingServiceStreaming service;
+    private StreamingHttpClient client;
 
     @Before
     public void beforeTest() throws Exception {
         final InetSocketAddress bindAddress = new InetSocketAddress(LOOPBACK_ADDRESS, 0);
-        service = new OffloadingVerifyingService();
+        service = new OffloadingVerifyingServiceStreaming();
         serverContext = awaitIndefinitelyNonNull(
                 new DefaultHttpServerStarter().start(SERVER_CTX, bindAddress, service));
 
@@ -106,7 +106,7 @@ public class HttpOffloadingTest {
         errors = new ConcurrentLinkedQueue<>();
         terminated = new CountDownLatch(1);
         client = forSingleAddress(HostAndPort.of(LOOPBACK_ADDRESS.getHostName(), socketAddress.getPort()))
-                .build(CLIENT_CTX);
+                .buildStreaming(CLIENT_CTX);
         httpConnection = awaitIndefinitelyNonNull(client.reserveConnection(newRequest(GET, "/")));
         connectionContext = httpConnection.getConnectionContext();
     }
@@ -127,8 +127,8 @@ public class HttpOffloadingTest {
                                         + currentThread().getName()));
                             }
                         });
-        final Single<HttpResponse<HttpPayloadChunk>> resp = httpConnection.request(newRequest(GET, "/", reqPayload));
-        resp.subscribe(new Single.Subscriber<HttpResponse<HttpPayloadChunk>>() {
+        final Single<StreamingHttpResponse<HttpPayloadChunk>> resp = httpConnection.request(newRequest(GET, "/", reqPayload));
+        resp.subscribe(new Single.Subscriber<StreamingHttpResponse<HttpPayloadChunk>>() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
                 if (inEventLoopOrTestThread().test(currentThread())) {
@@ -138,7 +138,7 @@ public class HttpOffloadingTest {
             }
 
             @Override
-            public void onSuccess(@Nullable final HttpResponse<HttpPayloadChunk> result) {
+            public void onSuccess(@Nullable final StreamingHttpResponse<HttpPayloadChunk> result) {
                 if (inEventLoopOrTestThread().test(currentThread())) {
                     errors.add(new AssertionError("Client response single: onSuccess not offloaded. Thread: "
                             + currentThread().getName()));
@@ -174,7 +174,7 @@ public class HttpOffloadingTest {
     @Test
     public void reserveConnectionIsOffloaded() throws Exception {
         client.reserveConnection(newRequest(GET, "/")).doAfterFinally(terminated::countDown)
-                .subscribe(new Single.Subscriber<HttpClient.ReservedHttpConnection>() {
+                .subscribe(new Single.Subscriber<StreamingHttpClient.ReservedStreamingHttpConnection>() {
                     @Override
                     public void onSubscribe(final Cancellable cancellable) {
                         if (inEventLoopOrTestThread().test(currentThread())) {
@@ -184,7 +184,7 @@ public class HttpOffloadingTest {
                     }
 
                     @Override
-                    public void onSuccess(@Nullable final HttpClient.ReservedHttpConnection result) {
+                    public void onSuccess(@Nullable final StreamingHttpClient.ReservedStreamingHttpConnection result) {
                         if (result == null) {
                             errors.add(new AssertionError("Reserved connection is null."));
                             return;
@@ -338,13 +338,13 @@ public class HttpOffloadingTest {
         });
     }
 
-    private final class OffloadingVerifyingService extends HttpService {
+    private final class OffloadingVerifyingServiceStreaming extends StreamingHttpService {
 
         private final Collection<Throwable> errors = new ConcurrentLinkedQueue<>();
 
         @Override
-        public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                             final HttpRequest<HttpPayloadChunk> request) {
+        public Single<StreamingHttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
+                                                                      final StreamingHttpRequest<HttpPayloadChunk> request) {
             if (inEventLoopOrTestThread().test(currentThread())) {
                 errors.add(new AssertionError("Request: " + request + " received on the eventloop."));
             }

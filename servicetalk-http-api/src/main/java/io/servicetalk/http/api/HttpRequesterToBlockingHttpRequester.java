@@ -29,7 +29,7 @@ final class HttpRequesterToBlockingHttpRequester extends BlockingHttpRequester {
     }
 
     @Override
-    public BlockingHttpResponse<HttpPayloadChunk> request(final BlockingHttpRequest<HttpPayloadChunk> request)
+    public HttpResponse<HttpPayloadChunk> request(final HttpRequest<HttpPayloadChunk> request)
             throws Exception {
         return BlockingUtils.request(requester, request);
     }
@@ -44,12 +44,12 @@ final class HttpRequesterToBlockingHttpRequester extends BlockingHttpRequester {
         blockingInvocation(requester.closeAsync());
     }
 
-    Completable onClose() {
-        return requester.onClose();
-    }
-
     @Override
     HttpRequester asRequesterInternal() {
         return requester;
+    }
+
+    Completable onClose() {
+        return requester.onClose();
     }
 }

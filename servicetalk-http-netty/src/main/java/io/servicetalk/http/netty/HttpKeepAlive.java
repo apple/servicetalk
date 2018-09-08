@@ -17,7 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponse;
 
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderValues.CLOSE;
@@ -59,7 +59,7 @@ enum HttpKeepAlive {
         return getResponseKeepAlive(metaData).shouldCloseConnection;
     }
 
-    void addConnectionHeaderIfNecessary(final HttpResponse<HttpPayloadChunk> response) {
+    void addConnectionHeaderIfNecessary(final StreamingHttpResponse<HttpPayloadChunk> response) {
         if (shouldAddConnectionHeader) {
             if (shouldCloseConnection) {
                 response.getHeaders().set(CONNECTION, CLOSE);

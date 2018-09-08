@@ -24,7 +24,7 @@ import io.servicetalk.http.api.ConnectionFilterFunction;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 
 abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
-        implements ConnectionFactory<ResolvedAddress, LoadBalancedHttpConnection> {
+        implements ConnectionFactory<ResolvedAddress, LoadBalancedStreamingHttpConnection> {
     private final ConnectionFilterFunction connectionFilterFunction;
     private final ListenableAsyncCloseable close = emptyAsyncCloseable();
 
@@ -32,11 +32,11 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
         this.connectionFilterFunction = connectionFilterFunction;
     }
 
-    abstract Single<LoadBalancedHttpConnection> newConnection(ResolvedAddress address,
-                                                              ConnectionFilterFunction connectionFilterFunction);
+    abstract Single<LoadBalancedStreamingHttpConnection> newConnection(ResolvedAddress address,
+                                                                       ConnectionFilterFunction connectionFilterFunction);
 
     @Override
-    public final Single<LoadBalancedHttpConnection> newConnection(ResolvedAddress address) {
+    public final Single<LoadBalancedStreamingHttpConnection> newConnection(ResolvedAddress address) {
         return newConnection(address, connectionFilterFunction);
     }
 

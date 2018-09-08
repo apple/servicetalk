@@ -18,13 +18,13 @@ package io.servicetalk.http.utils;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
-import io.servicetalk.http.api.HttpClientGroup;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMethod;
-import io.servicetalk.http.api.HttpRequester;
-import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.StreamingHttpClientGroup;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequester;
+import io.servicetalk.http.api.StreamingHttpResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,34 +40,34 @@ import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpRequestMethods.HEAD;
 import static io.servicetalk.http.api.HttpRequestMethods.OPTIONS;
 import static io.servicetalk.http.api.HttpRequestMethods.TRACE;
-import static io.servicetalk.http.api.HttpRequests.newRequest;
+import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static java.util.Objects.requireNonNull;
 
 /**
- * An operator, which implements redirect logic for {@link HttpClientGroup}.
+ * An operator, which implements redirect logic for {@link StreamingHttpClientGroup}.
  */
-final class RedirectSingle extends Single<HttpResponse<HttpPayloadChunk>> {
+final class RedirectSingle extends Single<StreamingHttpResponse<HttpPayloadChunk>> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RedirectSingle.class);
 
-    private final Single<HttpResponse<HttpPayloadChunk>> originalResponse;
-    private final HttpRequest<HttpPayloadChunk> originalRequest;
+    private final Single<StreamingHttpResponse<HttpPayloadChunk>> originalResponse;
+    private final StreamingHttpRequest<HttpPayloadChunk> originalRequest;
     private final int maxRedirects;
-    private final HttpRequester requester;
+    private final StreamingHttpRequester requester;
 
     /**
-     * Create a new {@link Single}<{@link HttpResponse}> which will be able to handle redirects.
+     * Create a new {@link Single}<{@link StreamingHttpResponse}> which will be able to handle redirects.
      *
-     * @param originalResponse The original {@link Single}<{@link HttpResponse}> for which redirect should be applied.
-     * @param originalRequest The original {@link HttpRequest} which was sent.
+     * @param originalResponse The original {@link Single}<{@link StreamingHttpResponse}> for which redirect should be applied.
+     * @param originalRequest The original {@link StreamingHttpRequest} which was sent.
      * @param maxRedirects The maximum number of follow up redirects.
-     * @param requester The {@link HttpRequester} to send redirected requests, must be backed by
-     * {@link HttpClientGroup}.
+     * @param requester The {@link StreamingHttpRequester} to send redirected requests, must be backed by
+     * {@link StreamingHttpClientGroup}.
      */
-    RedirectSingle(final Single<HttpResponse<HttpPayloadChunk>> originalResponse,
-                   final HttpRequest<HttpPayloadChunk> originalRequest,
+    RedirectSingle(final Single<StreamingHttpResponse<HttpPayloadChunk>> originalResponse,
+                   final StreamingHttpRequest<HttpPayloadChunk> originalRequest,
                    final int maxRedirects,
-                   final HttpRequester requester) {
+                   final StreamingHttpRequester requester) {
         this.originalResponse = requireNonNull(originalResponse);
         this.originalRequest = requireNonNull(originalRequest);
         this.maxRedirects = maxRedirects;
@@ -75,27 +75,27 @@ final class RedirectSingle extends Single<HttpResponse<HttpPayloadChunk>> {
     }
 
     @Override
-    protected void handleSubscribe(final Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber) {
+    protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse<HttpPayloadChunk>> subscriber) {
         originalResponse.subscribe(new RedirectSubscriber(subscriber, this, originalRequest));
     }
 
-    private static final class RedirectSubscriber implements Subscriber<HttpResponse<HttpPayloadChunk>> {
+    private static final class RedirectSubscriber implements Subscriber<StreamingHttpResponse<HttpPayloadChunk>> {
 
-        private final Subscriber<? super HttpResponse<HttpPayloadChunk>> target;
+        private final Subscriber<? super StreamingHttpResponse<HttpPayloadChunk>> target;
         private final RedirectSingle redirectSingle;
-        private final HttpRequest<HttpPayloadChunk> request;
+        private final StreamingHttpRequest<HttpPayloadChunk> request;
         private final int redirectCount;
         private final SequentialCancellable sequentialCancellable;
 
-        RedirectSubscriber(final Subscriber<? super HttpResponse<HttpPayloadChunk>> target,
+        RedirectSubscriber(final Subscriber<? super StreamingHttpResponse<HttpPayloadChunk>> target,
                            final RedirectSingle redirectSingle,
-                           final HttpRequest<HttpPayloadChunk> request) {
+                           final StreamingHttpRequest<HttpPayloadChunk> request) {
             this(target, redirectSingle, request, 0, new SequentialCancellable());
         }
 
-        RedirectSubscriber(final Subscriber<? super HttpResponse<HttpPayloadChunk>> target,
+        RedirectSubscriber(final Subscriber<? super StreamingHttpResponse<HttpPayloadChunk>> target,
                            final RedirectSingle redirectSingle,
-                           final HttpRequest<HttpPayloadChunk> request,
+                           final StreamingHttpRequest<HttpPayloadChunk> request,
                            final int redirectCount,
                            final SequentialCancellable sequentialCancellable) {
             this.target = target;
@@ -114,13 +114,13 @@ final class RedirectSingle extends Single<HttpResponse<HttpPayloadChunk>> {
         }
 
         @Override
-        public void onSuccess(@Nullable final HttpResponse<HttpPayloadChunk> result) {
+        public void onSuccess(@Nullable final StreamingHttpResponse<HttpPayloadChunk> result) {
             if (result == null || !shouldRedirect(redirectCount + 1, result, request.getMethod())) {
                 target.onSuccess(result);
                 return;
             }
 
-            final HttpRequest<HttpPayloadChunk> newRequest;
+            final StreamingHttpRequest<HttpPayloadChunk> newRequest;
             try {
                 newRequest = prepareRedirectRequest(request, result);
             } catch (final Throwable cause) {
@@ -142,7 +142,7 @@ final class RedirectSingle extends Single<HttpResponse<HttpPayloadChunk>> {
             target.onError(t);
         }
 
-        private boolean shouldRedirect(final int redirectCount, final HttpResponse<HttpPayloadChunk> response,
+        private boolean shouldRedirect(final int redirectCount, final StreamingHttpResponse<HttpPayloadChunk> response,
                                        final HttpRequestMethod originalMethod) {
             final int statusCode = response.getStatus().getCode();
 
@@ -193,13 +193,13 @@ final class RedirectSingle extends Single<HttpResponse<HttpPayloadChunk>> {
             }
         }
 
-        private static HttpRequest<HttpPayloadChunk> prepareRedirectRequest(final HttpRequest<HttpPayloadChunk> request,
-                                                                        final HttpResponse<HttpPayloadChunk> response) {
+        private static StreamingHttpRequest<HttpPayloadChunk> prepareRedirectRequest(final StreamingHttpRequest<HttpPayloadChunk> request,
+                                                                                     final StreamingHttpResponse<HttpPayloadChunk> response) {
             final HttpRequestMethod method = defineRedirectMethod(request.getMethod());
             final CharSequence locationHeader = response.getHeaders().get(LOCATION);
             assert locationHeader != null;
 
-            final HttpRequest<HttpPayloadChunk> redirectRequest =
+            final StreamingHttpRequest<HttpPayloadChunk> redirectRequest =
                     newRequest(request.getVersion(), method, locationHeader.toString());
 
             final HttpHeaders headers = redirectRequest.getHeaders();

@@ -54,50 +54,50 @@ public final class DefaultHttpSerializer implements HttpSerializer {
     }
 
     @Override
-    public <T> AggregatedHttpRequest<HttpPayloadChunk> serialize(final AggregatedHttpRequest<T> request,
-                                                                 final BufferAllocator allocator) {
+    public <T> HttpRequest<HttpPayloadChunk> serialize(final HttpRequest<T> request,
+                                                       final BufferAllocator allocator) {
         addContentType.accept(request);
         return request.transformPayloadBody(payload ->
                 newPayloadChunk(serializer.serialize(payload, allocator)));
     }
 
     @Override
-    public <T> AggregatedHttpRequest<HttpPayloadChunk> serialize(final AggregatedHttpRequest<T> request,
-                                                                 final BufferAllocator allocator,
-                                                                 final int bytesEstimate) {
+    public <T> HttpRequest<HttpPayloadChunk> serialize(final HttpRequest<T> request,
+                                                       final BufferAllocator allocator,
+                                                       final int bytesEstimate) {
         addContentType.accept(request);
         return request.transformPayloadBody(payload ->
                 newPayloadChunk(serializer.serialize(payload, allocator, bytesEstimate)));
     }
 
     @Override
-    public <T> AggregatedHttpResponse<HttpPayloadChunk> serialize(final AggregatedHttpResponse<T> response,
-                                                                  final BufferAllocator allocator) {
+    public <T> HttpResponse<HttpPayloadChunk> serialize(final HttpResponse<T> response,
+                                                        final BufferAllocator allocator) {
         addContentType.accept(response);
         return response.transformPayloadBody(payload ->
                 newPayloadChunk(serializer.serialize(payload, allocator)));
     }
 
     @Override
-    public <T> AggregatedHttpResponse<HttpPayloadChunk> serialize(final AggregatedHttpResponse<T> response,
-                                                                  final BufferAllocator allocator,
-                                                                  final int bytesEstimate) {
+    public <T> HttpResponse<HttpPayloadChunk> serialize(final HttpResponse<T> response,
+                                                        final BufferAllocator allocator,
+                                                        final int bytesEstimate) {
         addContentType.accept(response);
         return response.transformPayloadBody(payload ->
                 newPayloadChunk(serializer.serialize(payload, allocator, bytesEstimate)));
     }
 
     @Override
-    public <T> HttpRequest<HttpPayloadChunk> serialize(final HttpRequest<T> request, final BufferAllocator allocator,
-                                                       final Class<T> type) {
+    public <T> StreamingHttpRequest<HttpPayloadChunk> serialize(final StreamingHttpRequest<T> request, final BufferAllocator allocator,
+                                                                final Class<T> type) {
         addContentType.accept(request);
         return request.transformPayloadBody(payload ->
                 serializer.serialize(payload, allocator, type).map(HttpPayloadChunks::newPayloadChunk));
     }
 
     @Override
-    public <T> HttpRequest<HttpPayloadChunk> serialize(final HttpRequest<T> request, final BufferAllocator allocator,
-                                                       final TypeHolder<T> typeHolder) {
+    public <T> StreamingHttpRequest<HttpPayloadChunk> serialize(final StreamingHttpRequest<T> request, final BufferAllocator allocator,
+                                                                final TypeHolder<T> typeHolder) {
         addContentType.accept(request);
         return request.transformPayloadBody(payload ->
                 serializer.serialize(payload, allocator, typeHolder)
@@ -105,9 +105,9 @@ public final class DefaultHttpSerializer implements HttpSerializer {
     }
 
     @Override
-    public <T> HttpRequest<HttpPayloadChunk> serialize(final HttpRequest<T> request, final BufferAllocator allocator,
-                                                       final Class<T> type,
-                                                       final IntUnaryOperator bytesEstimator) {
+    public <T> StreamingHttpRequest<HttpPayloadChunk> serialize(final StreamingHttpRequest<T> request, final BufferAllocator allocator,
+                                                                final Class<T> type,
+                                                                final IntUnaryOperator bytesEstimator) {
         addContentType.accept(request);
         return request.transformPayloadBody(payload ->
                 serializer.serialize(payload, allocator, type, bytesEstimator)
@@ -115,9 +115,9 @@ public final class DefaultHttpSerializer implements HttpSerializer {
     }
 
     @Override
-    public <T> HttpRequest<HttpPayloadChunk> serialize(final HttpRequest<T> request, final BufferAllocator allocator,
-                                                       final TypeHolder<T> typeHolder,
-                                                       final IntUnaryOperator bytesEstimator) {
+    public <T> StreamingHttpRequest<HttpPayloadChunk> serialize(final StreamingHttpRequest<T> request, final BufferAllocator allocator,
+                                                                final TypeHolder<T> typeHolder,
+                                                                final IntUnaryOperator bytesEstimator) {
         addContentType.accept(request);
         return request.transformPayloadBody(payload ->
                 serializer.serialize(payload, allocator, typeHolder, bytesEstimator)
@@ -125,16 +125,16 @@ public final class DefaultHttpSerializer implements HttpSerializer {
     }
 
     @Override
-    public <T> HttpResponse<HttpPayloadChunk> serialize(final HttpResponse<T> response, final BufferAllocator allocator,
-                                                        final Class<T> type) {
+    public <T> StreamingHttpResponse<HttpPayloadChunk> serialize(final StreamingHttpResponse<T> response, final BufferAllocator allocator,
+                                                                 final Class<T> type) {
         addContentType.accept(response);
         return response.transformPayloadBody(payload -> serializer.serialize(payload, allocator, type)
                         .map(HttpPayloadChunks::newPayloadChunk));
     }
 
     @Override
-    public <T> HttpResponse<HttpPayloadChunk> serialize(final HttpResponse<T> response, final BufferAllocator allocator,
-                                                        final TypeHolder<T> typeHolder) {
+    public <T> StreamingHttpResponse<HttpPayloadChunk> serialize(final StreamingHttpResponse<T> response, final BufferAllocator allocator,
+                                                                 final TypeHolder<T> typeHolder) {
         addContentType.accept(response);
         return response.transformPayloadBody(payload ->
                 serializer.serialize(payload, allocator, typeHolder)
@@ -142,9 +142,9 @@ public final class DefaultHttpSerializer implements HttpSerializer {
     }
 
     @Override
-    public <T> HttpResponse<HttpPayloadChunk> serialize(final HttpResponse<T> response, final BufferAllocator allocator,
-                                                        final Class<T> type,
-                                                        final IntUnaryOperator bytesEstimator) {
+    public <T> StreamingHttpResponse<HttpPayloadChunk> serialize(final StreamingHttpResponse<T> response, final BufferAllocator allocator,
+                                                                 final Class<T> type,
+                                                                 final IntUnaryOperator bytesEstimator) {
         addContentType.accept(response);
         return response.transformPayloadBody(payload ->
                 serializer.serialize(payload, allocator, type, bytesEstimator)
@@ -152,9 +152,9 @@ public final class DefaultHttpSerializer implements HttpSerializer {
     }
 
     @Override
-    public <T> HttpResponse<HttpPayloadChunk> serialize(final HttpResponse<T> response, final BufferAllocator allocator,
-                                                        final TypeHolder<T> typeHolder,
-                                                        final IntUnaryOperator bytesEstimator) {
+    public <T> StreamingHttpResponse<HttpPayloadChunk> serialize(final StreamingHttpResponse<T> response, final BufferAllocator allocator,
+                                                                 final TypeHolder<T> typeHolder,
+                                                                 final IntUnaryOperator bytesEstimator) {
         addContentType.accept(response);
         return response.transformPayloadBody(payload ->
                 serializer.serialize(payload, allocator, typeHolder, bytesEstimator)
@@ -162,35 +162,35 @@ public final class DefaultHttpSerializer implements HttpSerializer {
     }
 
     @Override
-    public <T> BlockingHttpRequest<HttpPayloadChunk> serialize(final BlockingHttpRequest<T> request,
-                                                               final BufferAllocator allocator, final Class<T> type) {
+    public <T> BlockingStreamingHttpRequest<HttpPayloadChunk> serialize(final BlockingStreamingHttpRequest<T> request,
+                                                                        final BufferAllocator allocator, final Class<T> type) {
         addContentType.accept(request);
         return request.transformPayloadBody(payload ->
                 toPayloadChunkIterable(serializer.serialize(payload, allocator, type)));
     }
 
     @Override
-    public <T> BlockingHttpRequest<HttpPayloadChunk> serialize(final BlockingHttpRequest<T> request,
-                                                               final BufferAllocator allocator,
-                                                               final TypeHolder<T> typeHolder) {
+    public <T> BlockingStreamingHttpRequest<HttpPayloadChunk> serialize(final BlockingStreamingHttpRequest<T> request,
+                                                                        final BufferAllocator allocator,
+                                                                        final TypeHolder<T> typeHolder) {
         addContentType.accept(request);
         return request.transformPayloadBody(payload ->
                 toPayloadChunkIterable(serializer.serialize(payload, allocator, typeHolder)));
     }
 
     @Override
-    public <T> BlockingHttpRequest<HttpPayloadChunk> serialize(final BlockingHttpRequest<T> request,
-                                                               final BufferAllocator allocator, final Class<T> type,
-                                                               final IntUnaryOperator bytesEstimator) {
+    public <T> BlockingStreamingHttpRequest<HttpPayloadChunk> serialize(final BlockingStreamingHttpRequest<T> request,
+                                                                        final BufferAllocator allocator, final Class<T> type,
+                                                                        final IntUnaryOperator bytesEstimator) {
         addContentType.accept(request);
         return request.transformPayloadBody(payload ->
                 toPayloadChunkIterable(serializer.serialize(payload, allocator, type, bytesEstimator)));
     }
 
     @Override
-    public <T> BlockingHttpRequest<HttpPayloadChunk> serialize(final BlockingHttpRequest<T> request,
-                                                               final BufferAllocator allocator, final TypeHolder<T> typeHolder,
-                                                               final IntUnaryOperator bytesEstimator) {
+    public <T> BlockingStreamingHttpRequest<HttpPayloadChunk> serialize(final BlockingStreamingHttpRequest<T> request,
+                                                                        final BufferAllocator allocator, final TypeHolder<T> typeHolder,
+                                                                        final IntUnaryOperator bytesEstimator) {
         addContentType.accept(request);
         return request.transformPayloadBody(payload ->
                 toPayloadChunkIterable(serializer.serialize(payload, allocator, typeHolder, bytesEstimator
@@ -198,36 +198,36 @@ public final class DefaultHttpSerializer implements HttpSerializer {
     }
 
     @Override
-    public <T> BlockingHttpResponse<HttpPayloadChunk> serialize(final BlockingHttpResponse<T> response,
-                                                                final BufferAllocator allocator, final Class<T> type) {
+    public <T> BlockingStreamingHttpResponse<HttpPayloadChunk> serialize(final BlockingStreamingHttpResponse<T> response,
+                                                                         final BufferAllocator allocator, final Class<T> type) {
         addContentType.accept(response);
         return response.transformPayloadBody(payload ->
                 toPayloadChunkIterable(serializer.serialize(payload, allocator, type)));
     }
 
     @Override
-    public <T> BlockingHttpResponse<HttpPayloadChunk> serialize(final BlockingHttpResponse<T> response,
-                                                                final BufferAllocator allocator,
-                                                                final TypeHolder<T> typeHolder) {
+    public <T> BlockingStreamingHttpResponse<HttpPayloadChunk> serialize(final BlockingStreamingHttpResponse<T> response,
+                                                                         final BufferAllocator allocator,
+                                                                         final TypeHolder<T> typeHolder) {
         addContentType.accept(response);
         return response.transformPayloadBody(payload ->
                 toPayloadChunkIterable(serializer.serialize(payload, allocator, typeHolder)));
     }
 
     @Override
-    public <T> BlockingHttpResponse<HttpPayloadChunk> serialize(final BlockingHttpResponse<T> response,
-                                                                final BufferAllocator allocator, final Class<T> type,
-                                                                final IntUnaryOperator bytesEstimator) {
+    public <T> BlockingStreamingHttpResponse<HttpPayloadChunk> serialize(final BlockingStreamingHttpResponse<T> response,
+                                                                         final BufferAllocator allocator, final Class<T> type,
+                                                                         final IntUnaryOperator bytesEstimator) {
         addContentType.accept(response);
         return response.transformPayloadBody(payload ->
                 toPayloadChunkIterable(serializer.serialize(payload, allocator, type, bytesEstimator)));
     }
 
     @Override
-    public <T> BlockingHttpResponse<HttpPayloadChunk> serialize(final BlockingHttpResponse<T> response,
-                                                                final BufferAllocator allocator,
-                                                                final TypeHolder<T> typeHolder,
-                                                                final IntUnaryOperator bytesEstimator) {
+    public <T> BlockingStreamingHttpResponse<HttpPayloadChunk> serialize(final BlockingStreamingHttpResponse<T> response,
+                                                                         final BufferAllocator allocator,
+                                                                         final TypeHolder<T> typeHolder,
+                                                                         final IntUnaryOperator bytesEstimator) {
         addContentType.accept(response);
         return response.transformPayloadBody(payload ->
                 toPayloadChunkIterable(serializer.serialize(payload, allocator, typeHolder, bytesEstimator
@@ -235,93 +235,93 @@ public final class DefaultHttpSerializer implements HttpSerializer {
     }
 
     @Override
-    public <T> AggregatedHttpRequest<T> deserialize(final AggregatedHttpRequest<HttpPayloadChunk> request,
-                                                    final Class<T> type) {
+    public <T> HttpRequest<T> deserialize(final HttpRequest<HttpPayloadChunk> request,
+                                          final Class<T> type) {
         checkContentType(request);
         return request.transformPayloadBody(chunk ->
                 serializer.deserializeAggregatedSingle(request.getPayloadBody().getContent(), type));
     }
 
     @Override
-    public <T> AggregatedHttpRequest<T> deserialize(final AggregatedHttpRequest<HttpPayloadChunk> request,
-                                                    final TypeHolder<T> typeHolder) {
+    public <T> HttpRequest<T> deserialize(final HttpRequest<HttpPayloadChunk> request,
+                                          final TypeHolder<T> typeHolder) {
         checkContentType(request);
         return request.transformPayloadBody(chunk ->
                 serializer.deserializeAggregatedSingle(request.getPayloadBody().getContent(), typeHolder));
     }
 
     @Override
-    public <T> AggregatedHttpResponse<T> deserialize(final AggregatedHttpResponse<HttpPayloadChunk> response,
-                                                     final Class<T> type) {
+    public <T> HttpResponse<T> deserialize(final HttpResponse<HttpPayloadChunk> response,
+                                           final Class<T> type) {
         checkContentType(response);
         return response.transformPayloadBody(chunk ->
                 serializer.deserializeAggregatedSingle(response.getPayloadBody().getContent(), type));
     }
 
     @Override
-    public <T> AggregatedHttpResponse<T> deserialize(final AggregatedHttpResponse<HttpPayloadChunk> response,
-                                                     final TypeHolder<T> typeHolder) {
+    public <T> HttpResponse<T> deserialize(final HttpResponse<HttpPayloadChunk> response,
+                                           final TypeHolder<T> typeHolder) {
         checkContentType(response);
         return response.transformPayloadBody(chunk ->
                 serializer.deserializeAggregatedSingle(response.getPayloadBody().getContent(), typeHolder));
     }
 
     @Override
-    public <T> HttpRequest<T> deserialize(final HttpRequest<HttpPayloadChunk> request, final Class<T> type) {
+    public <T> StreamingHttpRequest<T> deserialize(final StreamingHttpRequest<HttpPayloadChunk> request, final Class<T> type) {
         checkContentType(request);
         return request.transformPayloadBody(payload ->
                 serializer.deserialize(payload.map(HttpPayloadChunk::getContent), type));
     }
 
     @Override
-    public <T> HttpRequest<T> deserialize(final HttpRequest<HttpPayloadChunk> request, final TypeHolder<T> typeHolder) {
+    public <T> StreamingHttpRequest<T> deserialize(final StreamingHttpRequest<HttpPayloadChunk> request, final TypeHolder<T> typeHolder) {
         checkContentType(request);
         return request.transformPayloadBody(payload ->
                 serializer.deserialize(payload.map(HttpPayloadChunk::getContent), typeHolder));
     }
 
     @Override
-    public <T> HttpResponse<T> deserialize(final HttpResponse<HttpPayloadChunk> response, final Class<T> type) {
+    public <T> StreamingHttpResponse<T> deserialize(final StreamingHttpResponse<HttpPayloadChunk> response, final Class<T> type) {
         checkContentType(response);
         return response.transformPayloadBody(payload ->
                 serializer.deserialize(payload.map(HttpPayloadChunk::getContent), type));
     }
 
     @Override
-    public <T> HttpResponse<T> deserialize(final HttpResponse<HttpPayloadChunk> response,
-                                           final TypeHolder<T> typeHolder) {
+    public <T> StreamingHttpResponse<T> deserialize(final StreamingHttpResponse<HttpPayloadChunk> response,
+                                                    final TypeHolder<T> typeHolder) {
         checkContentType(response);
         return response.transformPayloadBody(payload ->
                 serializer.deserialize(payload.map(HttpPayloadChunk::getContent), typeHolder));
     }
 
     @Override
-    public <T> BlockingHttpRequest<T> deserialize(final BlockingHttpRequest<HttpPayloadChunk> request,
-                                                  final Class<T> type) {
+    public <T> BlockingStreamingHttpRequest<T> deserialize(final BlockingStreamingHttpRequest<HttpPayloadChunk> request,
+                                                           final Class<T> type) {
         checkContentType(request);
         return request.transformPayloadBody(payload ->
                 serializer.deserialize(toBufferIterable(request.getPayloadBody()), type));
     }
 
     @Override
-    public <T> BlockingHttpRequest<T> deserialize(final BlockingHttpRequest<HttpPayloadChunk> request,
-                                                  final TypeHolder<T> typeHolder) {
+    public <T> BlockingStreamingHttpRequest<T> deserialize(final BlockingStreamingHttpRequest<HttpPayloadChunk> request,
+                                                           final TypeHolder<T> typeHolder) {
         checkContentType(request);
         return request.transformPayloadBody(payload ->
                 serializer.deserialize(toBufferIterable(request.getPayloadBody()), typeHolder));
     }
 
     @Override
-    public <T> BlockingHttpResponse<T> deserialize(final BlockingHttpResponse<HttpPayloadChunk> response,
-                                                   final Class<T> type) {
+    public <T> BlockingStreamingHttpResponse<T> deserialize(final BlockingStreamingHttpResponse<HttpPayloadChunk> response,
+                                                            final Class<T> type) {
         checkContentType(response);
         return response.transformPayloadBody(payload ->
                 serializer.deserialize(toBufferIterable(response.getPayloadBody()), type));
     }
 
     @Override
-    public <T> BlockingHttpResponse<T> deserialize(final BlockingHttpResponse<HttpPayloadChunk> response,
-                                                   final TypeHolder<T> typeHolder) {
+    public <T> BlockingStreamingHttpResponse<T> deserialize(final BlockingStreamingHttpResponse<HttpPayloadChunk> response,
+                                                            final TypeHolder<T> typeHolder) {
         checkContentType(response);
         return response.transformPayloadBody(payload ->
                 serializer.deserialize(toBufferIterable(response.getPayloadBody()), typeHolder));

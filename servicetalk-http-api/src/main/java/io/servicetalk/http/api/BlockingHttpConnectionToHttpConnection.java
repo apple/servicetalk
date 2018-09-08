@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -27,48 +28,49 @@ import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static java.util.Objects.requireNonNull;
 
 final class BlockingHttpConnectionToHttpConnection extends HttpConnection {
-    private final BlockingHttpConnection blockingConnection;
+    private final BlockingHttpConnection connection;
 
-    BlockingHttpConnectionToHttpConnection(BlockingHttpConnection blockingConnection) {
-        this.blockingConnection = requireNonNull(blockingConnection);
+    BlockingHttpConnectionToHttpConnection(BlockingHttpConnection connection) {
+        this.connection = requireNonNull(connection);
     }
 
     @Override
     public ConnectionContext getConnectionContext() {
-        return blockingConnection.getConnectionContext();
+        return connection.getConnectionContext();
     }
 
     @Override
     public <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
-        return from(blockingConnection.getSettingIterable(settingKey));
+        return from(connection.getSettingIterable(settingKey));
     }
 
     @Override
-    public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
-        return BlockingUtils.request(blockingConnection, request);
+    public Single<HttpResponse<HttpPayloadChunk>> request(
+            final HttpRequest<HttpPayloadChunk> request) {
+        return BlockingUtils.request(connection, request);
     }
 
     @Override
     public ExecutionContext getExecutionContext() {
-        return blockingConnection.getExecutionContext();
+        return connection.getExecutionContext();
     }
 
     @Override
     public Completable onClose() {
-        if (blockingConnection instanceof HttpConnectionToBlockingHttpConnection) {
-            return ((HttpConnectionToBlockingHttpConnection) blockingConnection).onClose();
+        if (connection instanceof HttpConnectionToBlockingHttpConnection) {
+            return ((HttpConnectionToBlockingHttpConnection) connection).onClose();
         }
 
-        return error(new UnsupportedOperationException("unsupported type: " + blockingConnection.getClass()));
+        return error(new UnsupportedOperationException("unsupported type: " + connection.getClass()));
     }
 
     @Override
     public Completable closeAsync() {
-        return blockingToCompletable(blockingConnection::close);
+        return blockingToCompletable(connection::close);
     }
 
     @Override
     BlockingHttpConnection asBlockingConnectionInternal() {
-        return blockingConnection;
+        return connection;
     }
 }

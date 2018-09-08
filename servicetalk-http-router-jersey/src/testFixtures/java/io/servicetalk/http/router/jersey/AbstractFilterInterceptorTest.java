@@ -19,7 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.router.jersey.internal.InputStreamIterator;
 import io.servicetalk.http.router.jersey.resources.AsynchronousResources;
 import io.servicetalk.http.router.jersey.resources.SynchronousResources;
@@ -61,7 +61,7 @@ import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-public abstract class AbstractFilterInterceptorTest extends AbstractJerseyHttpServiceTest {
+public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStreamingHttpServiceTest {
     @Priority(ENTITY_CODER)
     @Provider
     public static class TestGlobalFilter implements ContainerRequestFilter, ContainerResponseFilter {
@@ -260,7 +260,7 @@ public abstract class AbstractFilterInterceptorTest extends AbstractJerseyHttpSe
     public void bufferResources() {
         sendAndAssertResponse(get(SynchronousResources.PATH + "/text-buffer"), OK, TEXT_PLAIN, "D0NE");
 
-        final HttpResponse<HttpPayloadChunk> res =
+        final StreamingHttpResponse<HttpPayloadChunk> res =
                 sendAndAssertResponse(withHeader(get(SynchronousResources.PATH + "/text-buffer-response"), "hdr",
                         "bar"), NON_AUTHORITATIVE_INFORMATION, TEXT_PLAIN, "D0NE");
         assertThat(res.getHeaders().get("X-Test"), is(newAsciiString("bar")));

@@ -16,7 +16,7 @@
 package io.servicetalk.data.jackson.jersey;
 
 import io.servicetalk.data.jackson.jersey.resources.JsonMicroformatResources;
-import io.servicetalk.http.router.jersey.AbstractJerseyHttpServiceTest;
+import io.servicetalk.http.router.jersey.AbstractJerseyStreamingHttpServiceTest;
 
 import org.junit.Test;
 
@@ -33,7 +33,7 @@ import static io.servicetalk.http.api.HttpResponseStatuses.UNSUPPORTED_MEDIA_TYP
 import static java.util.Collections.singleton;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 
-public class JsonMicroformatResourcesTest extends AbstractJerseyHttpServiceTest {
+public class JsonMicroformatResourcesTest extends AbstractJerseyStreamingHttpServiceTest {
     public static class TestApplication extends Application {
         @Override
         public Set<Class<?>> getClasses() {

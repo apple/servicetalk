@@ -18,10 +18,10 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.MaxRequestLimitExceededException;
 import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequestMethods;
-import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpResponse;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,11 +37,11 @@ import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.EmptyHttpHeaders.INSTANCE;
-import static io.servicetalk.http.api.HttpConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpPayloadChunks.newLastPayloadChunk;
-import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.api.HttpResponses.newResponse;
+import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
+import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
+import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -62,7 +62,7 @@ public class HttpConnectionConcurrentRequestsFilterTest {
 
     @Test
     public void decrementWaitsUntilResponsePayloadIsComplete() throws ExecutionException, InterruptedException {
-        HttpConnection mockConnection = Mockito.mock(HttpConnection.class);
+        StreamingHttpConnection mockConnection = Mockito.mock(StreamingHttpConnection.class);
         when(mockConnection.onClose()).thenReturn(never());
         when(mockConnection.getSettingStream(eq(MAX_CONCURRENCY))).thenReturn(just(2));
         when(mockConnection.request(any())).thenReturn(
@@ -70,9 +70,9 @@ public class HttpConnectionConcurrentRequestsFilterTest {
                 success(newResponse(OK, response2Publisher.getPublisher())),
                 success(newResponse(OK, response3Publisher.getPublisher()))
         );
-        HttpConnection limitedConnection =
-                new HttpConnectionConcurrentRequestsFilter(mockConnection, 2);
-        HttpResponse<HttpPayloadChunk> resp1 = awaitIndefinitelyNonNull(
+        StreamingHttpConnection limitedConnection =
+                new StreamingHttpConnectionConcurrentRequestsFilter(mockConnection, 2);
+        StreamingHttpResponse<HttpPayloadChunk> resp1 = awaitIndefinitelyNonNull(
                 limitedConnection.request(newRequest(HttpRequestMethods.GET, "/foo")));
         awaitIndefinitelyNonNull(limitedConnection.request(newRequest(HttpRequestMethods.GET, "/bar")));
         try {

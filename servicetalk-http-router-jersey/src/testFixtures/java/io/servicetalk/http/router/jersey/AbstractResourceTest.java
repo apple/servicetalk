@@ -16,7 +16,7 @@
 package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.router.jersey.resources.AsynchronousResources;
 import io.servicetalk.http.router.jersey.resources.SynchronousResources;
 
@@ -63,7 +63,7 @@ import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
-public abstract class AbstractResourceTest extends AbstractJerseyHttpServiceTest {
+public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpServiceTest {
     @NameBinding
     @Target({ElementType.TYPE, ElementType.METHOD})
     @Retention(value = RetentionPolicy.RUNTIME)
@@ -141,7 +141,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyHttpServiceTest
 
     @Test
     public void implicitOptions() {
-        final HttpResponse<HttpPayloadChunk> res = sendAndAssertResponse(options("/text"),
+        final StreamingHttpResponse<HttpPayloadChunk> res = sendAndAssertResponse(options("/text"),
                 OK, newAsciiString("application/vnd.sun.wadl+xml"), not(isEmptyString()), String::length);
 
         assertThat(res.getHeaders().get(ALLOW).toString().split(","),
@@ -181,7 +181,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyHttpServiceTest
 
     @Test
     public void getTextResponse() {
-        final HttpResponse<HttpPayloadChunk> res = sendAndAssertResponse(withHeader(get("/text-response"), "hdr",
+        final StreamingHttpResponse<HttpPayloadChunk> res = sendAndAssertResponse(withHeader(get("/text-response"), "hdr",
                 "bar"), NO_CONTENT, null, isEmptyString(), __ -> null);
         assertThat(res.getHeaders().get("X-Test"), is(newAsciiString("bar")));
     }
@@ -194,7 +194,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyHttpServiceTest
 
     @Test
     public void filtered() {
-        HttpResponse<HttpPayloadChunk> res = sendAndAssertResponse(post("/filtered", "foo1", TEXT_PLAIN),
+        StreamingHttpResponse<HttpPayloadChunk> res = sendAndAssertResponse(post("/filtered", "foo1", TEXT_PLAIN),
                 OK, TEXT_PLAIN, "GOT: foo1");
         assertThat(res.getHeaders().get("X-Foo-Prop"), is(newAsciiString("barProp")));
 
@@ -217,7 +217,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyHttpServiceTest
 
     @Test
     public void putJsonResponse() {
-        final HttpResponse<HttpPayloadChunk> res =
+        final StreamingHttpResponse<HttpPayloadChunk> res =
                 sendAndAssertResponse(put("/json-response", "{\"key\":\"val1\"}", APPLICATION_JSON), ACCEPTED,
                         APPLICATION_JSON, jsonStringEquals("{\"key\":\"val1\",\"foo\":\"bar2\"}"),
                         getJsonResponseContentLengthExtractor());
@@ -231,7 +231,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyHttpServiceTest
 
     @Test
     public void getTextBufferResponse() {
-        final HttpResponse<HttpPayloadChunk> res = sendAndAssertResponse(withHeader(get("/text-buffer-response"), "hdr",
+        final StreamingHttpResponse<HttpPayloadChunk> res = sendAndAssertResponse(withHeader(get("/text-buffer-response"), "hdr",
                 "bar"), NON_AUTHORITATIVE_INFORMATION, TEXT_PLAIN, "DONE");
         assertThat(res.getHeaders().get("X-Test"), is(newAsciiString("bar")));
     }

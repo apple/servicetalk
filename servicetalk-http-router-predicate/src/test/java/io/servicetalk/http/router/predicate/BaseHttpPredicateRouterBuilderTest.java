@@ -20,9 +20,9 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpQuery;
-import io.servicetalk.http.api.HttpRequest;
-import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -53,19 +53,19 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
 
     @Mock
-    HttpService serviceA, serviceB, serviceC, serviceD, serviceE, fallbackService;
+    StreamingHttpService serviceA, serviceB, serviceC, serviceD, serviceE, fallbackService;
     @Mock
     ConnectionContext ctx;
     @Mock
     ExecutionContext executionCtx;
     @Mock
-    HttpRequest<HttpPayloadChunk> request;
+    StreamingHttpRequest<HttpPayloadChunk> request;
     @Mock
     HttpHeaders headers;
     @Mock
     HttpQuery query;
     @Mock
-    Single<HttpResponse<HttpPayloadChunk>> responseA, responseB, responseC, responseD, responseE, fallbackResponse;
+    Single<StreamingHttpResponse<HttpPayloadChunk>> responseA, responseB, responseC, responseD, responseE, fallbackResponse;
 
     @Before
     public void setUp() {

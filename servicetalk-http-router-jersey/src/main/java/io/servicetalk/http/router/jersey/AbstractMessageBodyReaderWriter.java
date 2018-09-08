@@ -82,7 +82,7 @@ abstract class AbstractMessageBodyReaderWriter<Source, T, SourceOfT, WrappedSour
                              final Function<SourceOfT, WrappedSourceOfT> sourceFunction)
             throws WebApplicationException {
 
-        // The original ChunkPublisherInputStream has been replaced via a filter/interceptor so we need to build
+        // The original ChunkPublisherInputStream has been replaced via a filter/interceptor so we need to buildStreaming
         // a new RS source from the actual input stream
         final BufferAllocator allocator = ctxRefProvider.get().get().getExecutionContext().getBufferAllocator();
         return handleEntityStream(entityStream, allocator, bodyFunction,

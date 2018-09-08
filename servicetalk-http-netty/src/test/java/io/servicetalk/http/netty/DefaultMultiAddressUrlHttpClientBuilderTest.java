@@ -17,10 +17,10 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.AggregatedHttpRequester;
-import io.servicetalk.http.api.BlockingAggregatedHttpRequester;
 import io.servicetalk.http.api.BlockingHttpRequester;
+import io.servicetalk.http.api.BlockingStreamingHttpRequester;
 import io.servicetalk.http.api.HttpRequester;
+import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
@@ -48,32 +48,32 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
 
     @Test
     public void buildWithDefaults() throws Exception {
-        HttpRequester newRequester = HttpClients.forMultiAddressUrl()
-                .build(CTX);
+        StreamingHttpRequester newRequester = HttpClients.forMultiAddressUrl()
+                .buildStreaming(CTX);
         assertNotNull(newRequester);
         awaitIndefinitely(newRequester.closeAsync());
     }
 
     @Test
     public void buildAggregatedWithDefaults() throws Exception {
-        AggregatedHttpRequester newAggregatedRequester = HttpClients.forMultiAddressUrl()
-                .buildAggregated(CTX);
+        HttpRequester newAggregatedRequester = HttpClients.forMultiAddressUrl()
+                .build(CTX);
         assertNotNull(newAggregatedRequester);
         awaitIndefinitely(newAggregatedRequester.closeAsync());
     }
 
     @Test
     public void buildBlockingWithDefaults() throws Exception {
-        BlockingHttpRequester newBlockingRequester = HttpClients.forMultiAddressUrl()
-                .buildBlocking(CTX);
+        BlockingStreamingHttpRequester newBlockingRequester = HttpClients.forMultiAddressUrl()
+                .buildBlockingStreaming(CTX);
         assertNotNull(newBlockingRequester);
         newBlockingRequester.close();
     }
 
     @Test
     public void buildBlockingAggregatedWithDefaults() throws Exception {
-        BlockingAggregatedHttpRequester newBlockingAggregatedRequester = HttpClients.forMultiAddressUrl()
-                .buildBlockingAggregated(CTX);
+        BlockingHttpRequester newBlockingAggregatedRequester = HttpClients.forMultiAddressUrl()
+                .buildBlocking(CTX);
         assertNotNull(newBlockingAggregatedRequester);
         newBlockingAggregatedRequester.close();
     }
@@ -82,7 +82,7 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
     @SuppressWarnings("unchecked")
     public void buildWithProvidedServiceDiscoverer() throws Exception {
         ServiceDiscoverer<HostAndPort, InetSocketAddress> mockedServiceDiscoverer = mock(ServiceDiscoverer.class);
-        HttpRequester newRequester = HttpClients.forMultiAddressUrl().setServiceDiscoverer(mockedServiceDiscoverer).build(CTX);
+        StreamingHttpRequester newRequester = HttpClients.forMultiAddressUrl().setServiceDiscoverer(mockedServiceDiscoverer).buildStreaming(CTX);
         awaitIndefinitely(newRequester.closeAsync());
         verify(mockedServiceDiscoverer, never()).closeAsync();
     }
