@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 
 import org.reactivestreams.Subscription;
 
@@ -253,8 +254,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
                             newSubscriber.onError((Throwable) maybeSubscriber);
                         } else {
                             // Existing subscriber or terminal event consumed by other subscriber (COMPLETED_DELIVERED)
-                            newSubscriber.onError(new IllegalStateException("Duplicate Subscribers are not allowed. " +
-                                    "Existing: " + maybeSubscriber + ", new: " + newSubscriber));
+                            newSubscriber.onError(new DuplicateSubscribeException(maybeSubscriber, newSubscriber));
                         }
                     }
                 }

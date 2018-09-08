@@ -13,20 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.client.api;
+package io.servicetalk.concurrent.internal;
 
 /**
- * Exception raised when more concurrent requests have been issued on a connection than is allowed.
+ * Used in scenarios where a subscribe to an asynchronous source is attempted, but no "real" subscription is
+ * established. In other words the subscribe operation was rejected.
  */
-public class MaxRequestLimitExceededException extends RetryableException {
-    private static final long serialVersionUID = 9114515334374632438L;
-
+public class RejectedSubscribeException extends RuntimeException implements RejectedSubscribeError {
     /**
-     * New instance.
-     *
-     * @param message The exception message.
+     * Create a new instance.
+     * @param message Description of the error.
      */
-    public MaxRequestLimitExceededException(String message) {
+    public RejectedSubscribeException(String message) {
         super(message);
     }
 }

@@ -18,6 +18,7 @@ package io.servicetalk.redis.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.internal.RejectedSubscribeException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 import io.servicetalk.redis.api.PubSubRedisMessage.ChannelPubSubRedisMessage;
 import io.servicetalk.redis.api.PubSubRedisMessage.PatternPubSubRedisMessage;
@@ -265,7 +266,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         final AccumulatingSubscriber<RedisData> messages3Subscriber = new AccumulatingSubscriber<RedisData>().subscribe(messages3);
 
         assertThat(messages3Subscriber.awaitTerminal(DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
-        assertThat(messages3Subscriber.getTerminal().getCause(), is(instanceOf(IllegalStateException.class)));
+        assertThat(messages3Subscriber.getTerminal().getCause(), is(instanceOf(RejectedSubscribeException.class)));
 
         // Publish another test message
         publishTestMessage("test-channel-404");

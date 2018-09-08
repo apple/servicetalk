@@ -16,6 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import io.netty.channel.Channel;
@@ -250,7 +251,7 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
     private void subscribe0(Subscriber<? super T> subscriber) {
         if (this.subscriber != null) {
             subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-            subscriber.onError(new IllegalStateException("Only one subscriber allowed for channel reads."));
+            subscriber.onError(new DuplicateSubscribeException(this.subscriber, subscriber));
         } else {
             this.subscriber = subscriber;
             requestCount = 0; /*Don't pollute requested count between subscribers */

@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.GroupedPublisher.QueueSizeProvider;
 import io.servicetalk.concurrent.api.MulticastUtils.IndividualMulticastSubscriber;
 import io.servicetalk.concurrent.api.MulticastUtils.SpscQueue;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
+import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
 import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
@@ -425,15 +426,16 @@ abstract class AbstractPublisherGroupBy<Key, T>
                 @Override
                 protected void handleSubscribe(Subscriber<? super T> subscriber) {
                     requireNonNull(subscriber);
+                    final Subscriber<? super T> target = GroupSink.this.target;
                     if (target != null) {
                         subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-                        subscriber.onError(new IllegalStateException("Only one subscriber allowed for each group " + key));
+                        subscriber.onError(new DuplicateSubscribeException(target, subscriber));
                         return;
                     }
                     // We have to call onSubscribe before we set groupSinkTarget, because otherwise we may deliver data to the
                     // Subscriber before we call onSubscribe.
                     subscriber.onSubscribe(GroupSink.this);
-                    target = subscriber;
+                    GroupSink.this.target = subscriber;
                     SpscQueue<T> subscriberQueue = subscriberQueue(); // We must read this after we set the subscriber and call onSubscribe.
                     if (subscriberQueue != null) {
                         drainPendingFromExternal(subscriberQueue, subscriber);

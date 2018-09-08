@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -183,7 +184,7 @@ public class NettyChannelPublisherTest {
         org.reactivestreams.Subscriber<Integer> sub2 = mock(org.reactivestreams.Subscriber.class);
         publisher.subscribe(sub2);
         verify(sub2).onSubscribe(any(Subscription.class));
-        verify(sub2).onError(any(IllegalStateException.class));
+        verify(sub2).onError(any(DuplicateSubscribeException.class));
         verifyNoMoreInteractions(sub2);
 
         nextItemTerminal = true;

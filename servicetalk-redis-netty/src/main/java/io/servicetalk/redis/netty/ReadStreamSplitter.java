@@ -21,7 +21,8 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.GroupedPublisher;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
-import io.servicetalk.concurrent.internal.QueueFullException;
+import io.servicetalk.concurrent.internal.QueueFullAndRejectedSubscribeException;
+import io.servicetalk.concurrent.internal.RejectedSubscribeException;
 import io.servicetalk.concurrent.internal.ScalarValueSubscription;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
@@ -61,6 +62,7 @@ import static io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChann
 import static io.servicetalk.redis.netty.SubscribedChannelReadStream.PubSubChannelMessage.MessageType.SUBSCRIBE_ACK;
 import static io.servicetalk.redis.netty.TerminalMessagePredicates.ZERO;
 import static io.servicetalk.redis.netty.TerminalMessagePredicates.forCommand;
+import static java.lang.Integer.MAX_VALUE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
@@ -145,13 +147,14 @@ final class ReadStreamSplitter {
                         predicate.remove(cmdPredicate);
                     }
                     subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-                    subscriber.onError(new QueueFullException("subscribers-queue", Integer.MAX_VALUE));
+                    subscriber.onError(new QueueFullAndRejectedSubscribeException("subscribers-queue", MAX_VALUE));
                     return;
                 }
                 if (state == STATE_TERMINATED) {
                     if (subscribers.remove(subscriber)) {
                         subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-                        subscriber.onError(new IllegalStateException("Connection read stream has already terminated."));
+                        subscriber.onError(new RejectedSubscribeException(
+                                "Connection read stream has already terminated."));
                     }
                     return;
                 }
@@ -233,10 +236,11 @@ final class ReadStreamSplitter {
             public void onComplete() {
                 int oldState = stateUpdater.getAndSet(ReadStreamSplitter.this, STATE_TERMINATED);
                 if (oldState != STATE_TERMINATED) {
-                    IllegalStateException cause = null;
+                    RejectedSubscribeException cause = null;
                     for (;;) {
                         if (cause == null) {
-                            cause = new IllegalStateException("Read stream completed with write commands pending.");
+                            cause = new RejectedSubscribeException(
+                                    "Read stream completed with write commands pending.");
                         }
                         Subscriber<? super PubSubChannelMessage> next = subscribers.poll();
                         if (next == null) {
@@ -393,7 +397,7 @@ final class ReadStreamSplitter {
                 throw new IllegalStateException("Duplicate subscribe ack received for channel: " + channelStr + " but no subscriber found.");
             }
             duplicate.onSubscribe(EMPTY_SUBSCRIPTION);
-            duplicate.onError(new IllegalStateException("A subscription to channel " + channelStr + " already exists."));
+            duplicate.onError(new RejectedSubscribeException("A subscription to channel " + channelStr + " already exists."));
         }
 
         private void handleNonSubscribeCommand(PubSubChannelMessage pubSubChannelMessage, KeyType keyType) {

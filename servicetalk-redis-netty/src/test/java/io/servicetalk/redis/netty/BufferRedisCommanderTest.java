@@ -16,6 +16,7 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.internal.RejectedSubscribeException;
 import io.servicetalk.redis.api.BufferRedisCommander;
 import io.servicetalk.redis.api.IllegalTransactionStateException;
 import io.servicetalk.redis.api.PubSubBufferRedisConnection;
@@ -369,7 +370,7 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         final AccumulatingSubscriber<PubSubRedisMessage> subscriber3 =
                 new AccumulatingSubscriber<PubSubRedisMessage>().subscribe(pubSubClient3.getMessages());
         assertThat(subscriber3.awaitTerminal(DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
-        assertThat(subscriber3.getTerminal().getCause(), is(instanceOf(IllegalStateException.class)));
+        assertThat(subscriber3.getTerminal().getCause(), is(instanceOf(RejectedSubscribeException.class)));
 
         // Publish another test message
         publishTestMessage(key("channel-202"));

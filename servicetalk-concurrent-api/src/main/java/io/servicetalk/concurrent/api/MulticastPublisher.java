@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.MulticastUtils.IndividualMulticastSubscribe
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.QueueFullException;
+import io.servicetalk.concurrent.internal.RejectedSubscribeException;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
@@ -115,7 +116,8 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
             final int subscriberCount = this.subscriberCount;
             if (subscriberCount == subscribers.length() || subscriberCount < 0) {
                 subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-                subscriber.onError(new IllegalStateException("Only " + subscribers.length() + " subscribers are allowed!"));
+                subscriber.onError(new RejectedSubscribeException("Only " + subscribers.length() +
+                        " subscribers are allowed!"));
                 break;
             }
 
@@ -162,7 +164,8 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
             }
             if (!offerNext(t)) {
                 terminatedPrematurely = true;
-                subscription.cancel(); // Cancel subscription but not mark state as cancelled since we still need to drain the groups.
+                // Cancel subscription but not mark state as cancelled since we still need to drain the groups.
+                subscription.cancel();
                 offerTerminal(TerminalNotification.error(new QueueFullException("global", maxQueueSize)));
             }
         } else {
@@ -305,7 +308,8 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
         }
     }
 
-    private static final class MulticastSubscriber<T> extends IndividualMulticastSubscriber<T> implements Subscriber<T> {
+    private static final class MulticastSubscriber<T> extends IndividualMulticastSubscriber<T>
+            implements Subscriber<T> {
         private static final Logger LOGGER = LoggerFactory.getLogger(MulticastSubscriber.class);
 
         private final MulticastPublisher<T> source;

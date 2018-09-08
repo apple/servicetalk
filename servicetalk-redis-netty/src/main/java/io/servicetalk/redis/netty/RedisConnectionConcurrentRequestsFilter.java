@@ -16,7 +16,7 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.client.api.LoadBalancer;
-import io.servicetalk.client.api.MaxRequestLimitExceededException;
+import io.servicetalk.client.internal.MaxRequestLimitExceededRejectedSubscribeException;
 import io.servicetalk.client.internal.RequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -74,8 +74,8 @@ final class RedisConnectionConcurrentRequestsFilter extends RedisConnection {
                     next.request(request).doBeforeFinally(limiter::requestFinished).subscribe(subscriber);
                 } else {
                     subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-                    subscriber.onError(new MaxRequestLimitExceededException("Max concurrent requests saturated for: " +
-                            RedisConnectionConcurrentRequestsFilter.this));
+                    subscriber.onError(new MaxRequestLimitExceededRejectedSubscribeException(
+                            "Max concurrent requests saturated for: " + RedisConnectionConcurrentRequestsFilter.this));
                 }
             }
         };

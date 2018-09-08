@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 
 import org.reactivestreams.Subscriber;
@@ -384,7 +385,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
 
         @Override
         protected void handleSubscribe(final Subscriber<? super T> subscriber) {
-            if (this.subscriber == null) {
+            Subscriber<? super T> thisSubscriber = this.subscriber;
+            if (thisSubscriber == null) {
                 this.subscriber = subscriber;
                 subscriber.onSubscribe(new Subscription() {
                     @Override
@@ -440,7 +442,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                 });
             } else {
                 subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-                subscriber.onError(new IllegalStateException("only a single subscriber is supported"));
+                subscriber.onError(new DuplicateSubscribeException(thisSubscriber, subscriber));
             }
         }
 

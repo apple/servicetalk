@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
@@ -298,7 +299,7 @@ final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<String, Ine
         private void initializeSubscriber0(org.reactivestreams.Subscriber<? super Event<InetAddress>> subscriber) {
             if (this.subscriber != null) {
                 subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-                subscriber.onError(new IllegalStateException("a subscriber already exists"));
+                subscriber.onError(new DuplicateSubscribeException(this.subscriber, subscriber));
                 return;
             }
             if (closed) {

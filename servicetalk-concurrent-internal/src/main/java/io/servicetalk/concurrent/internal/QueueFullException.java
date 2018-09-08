@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.internal;
 /**
  * Exception indicating a bounded queue is full.
  */
-public final class QueueFullException extends RuntimeException {
+public class QueueFullException extends RuntimeException {
     private static final long serialVersionUID = 7206036429195573500L;
 
     /**
