@@ -101,7 +101,6 @@ public class DefaultDnsServiceDiscovererTest {
 
     @Test
     public void testRetry() throws Exception {
-        assumeThat("Ignored flaky test", parseBoolean(System.getenv("CI")), is(FALSE));
         AtomicInteger retryStrategyCalledCount = new AtomicInteger();
         ServiceDiscoverer<String, InetAddress> retryingDiscoverer = buildServiceDiscoverer((retryCount, cause) -> {
             retryStrategyCalledCount.incrementAndGet();
@@ -122,7 +121,6 @@ public class DefaultDnsServiceDiscovererTest {
 
     @Test
     public void unknownHostDiscover() throws InterruptedException {
-        assumeThat("Ignored flaky test", parseBoolean(System.getenv("CI")), is(FALSE));
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
         Publisher<Event<InetAddress>> publisher = discoverer.discover("unknown.com");

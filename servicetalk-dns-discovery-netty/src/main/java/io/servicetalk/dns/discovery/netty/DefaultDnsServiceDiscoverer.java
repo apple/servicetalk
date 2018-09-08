@@ -32,6 +32,7 @@ import io.netty.resolver.ResolvedAddressTypes;
 import io.netty.resolver.dns.DnsNameResolver;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
@@ -365,7 +366,7 @@ final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<String, Ine
                     if (addressFuture.isDone()) {
                         handleResolveDone(addressFuture);
                     } else {
-                        addressFuture.addListener(future -> handleResolveDone((Future<List<InetAddress>>) future));
+                        addressFuture.addListener((FutureListener<List<InetAddress>>) this::handleResolveDone);
                     }
                 }
 
