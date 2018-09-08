@@ -33,6 +33,8 @@ import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.channel.Channel;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,16 +95,31 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
                     // Cancellation is assumed to close the connection, or be ignored if this Subscriber has already
                     // terminated. That means we don't need to trigger the processor as completed because we don't care
                     // about processing more requests.
-                    payload -> payload.doOnComplete(processor::onComplete)
-                                      .doOnError(t -> {
-                                          // After the response payload has terminated, we attempt to subscribe to the
-                                          // request payload and drain/discard the content (in case the user forgets
-                                          // to consume the stream). However this means we may introduce a duplicate
-                                          // subscribe and this doesn't mean the request content has not terminated.
-                                          if (!(t instanceof RejectedSubscribeError)) {
-                                              processor.onComplete();
-                                          }
-                                      }));
+                    payload -> payload.doAfterSubscriber(() -> new Subscriber<HttpPayloadChunk>() {
+                        @Override
+                        public void onSubscribe(final Subscription s) {
+                        }
+
+                        @Override
+                        public void onNext(final HttpPayloadChunk httpPayloadChunk) {
+                        }
+
+                        @Override
+                        public void onError(final Throwable t) {
+                            // After the response payload has terminated, we attempt to subscribe to the request payload
+                            // and drain/discard the content (in case the user forgets to consume the stream). However
+                            // this means we may introduce a duplicate subscribe and this doesn't mean the request
+                            // content has not terminated.
+                            if (!(t instanceof RejectedSubscribeError)) {
+                                processor.onComplete();
+                            }
+                        }
+
+                        @Override
+                        public void onComplete() {
+                            processor.onComplete();
+                        }
+                    }));
             final Completable drainRequestPayloadBody = request2.getPayloadBody().ignoreElements()
                     // ignore error about duplicate subscriptions, we are forcing a subscription here and the user
                     // may also subscribe, so it is OK if we fail here.
