@@ -31,7 +31,7 @@ import static io.servicetalk.redis.api.BlockingUtils.blockingToSingle;
 
 @Generated({})
 @SuppressWarnings("unchecked")
-final class BlockingTransactedBufferRedisCommanderToTransactedBufferRedisCommander extends TransactedBufferRedisCommander {
+final class BlockingTransactedBufferRedisCommanderToTransactedBufferRedisCommander extends AbstractTransactedBufferRedisCommander {
 
     private final BlockingTransactedBufferRedisCommander reservedCnx;
 

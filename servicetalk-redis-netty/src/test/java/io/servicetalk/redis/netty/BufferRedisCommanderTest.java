@@ -37,7 +37,6 @@ import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -325,9 +324,9 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
 
         tcc.closeAsync().toFuture().get();
 
-        thrown.expect(RedisClientException.class);
-        thrown.expectCause(is(instanceOf(ClosedChannelException.class)));
-        tcc.ping();
+        thrown.expect(ExecutionException.class);
+        thrown.expectCause(is(instanceOf(RedisClientException.class)));
+        tcc.ping().get();
     }
 
     @Test

@@ -21,14 +21,10 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.internal.RedisUtils;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import javax.annotation.Generated;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.redis.api.RedisRequests.addRequestArgument;
@@ -41,43 +37,16 @@ import static java.util.Objects.requireNonNull;
 
 @Generated({})
 @SuppressWarnings("unchecked")
-final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
+final class DefaultTransactedRedisCommander extends AbstractTransactedRedisCommander {
 
     private final RedisClient.ReservedRedisConnection reservedCnx;
 
     private final boolean releaseAfterDone;
 
-    private boolean transactionCompleted;
-
-    private final List<CompletableFuture> futures;
-
     DefaultTransactedRedisCommander(final RedisClient.ReservedRedisConnection reservedCnx,
                 final boolean releaseAfterDone) {
         this.reservedCnx = requireNonNull(reservedCnx);
         this.releaseAfterDone = releaseAfterDone;
-        this.futures = new ArrayList<>();
-    }
-
-    @Nonnull
-    private <T> Future<T> enqueueForExecute(final Single<String> queued) {
-        if (transactionCompleted) {
-            throw new IllegalTransactionStateException(
-                        Single.class.getSimpleName() + " cannot be subscribed to after the transaction has completed.");
-        }
-        final String status;
-        try {
-            status = queued.toFuture().get();
-        } catch (InterruptedException e) {
-            throw new RedisClientException("Exception enqueuing command", e);
-        } catch (ExecutionException e) {
-            throw new RedisClientException("Exception enqueuing command", e.getCause() != null ? e.getCause() : e);
-        }
-        if ("QUEUED".equals(status)) {
-            final CompletableFuture<T> future = new CompletableFuture<>();
-            futures.add(future);
-            return future;
-        }
-        throw new RedisClientException("Read '" + status + "' but expected 'QUEUED'");
     }
 
     @Override
@@ -1248,11 +1217,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DISCARD, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DISCARD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Single<String> result = queued.doAfterSubscribe(__ -> transactionCompleted = true).doBeforeSuccess(list -> {
-            for (CompletableFuture future : futures) {
-                future.completeExceptionally(new TransactionAbortedException());
-            }
-        });
+        final Single<String> result = new DiscardSingle(this, queued);
         return releaseAfterDone ? result.doBeforeFinally(reservedCnx::releaseAsync) : result;
     }
 
@@ -1431,18 +1396,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXEC, cb);
         final Single<List<Object>> queued = (Single) reservedCnx.request(request,
                     RedisUtils.ListWithBuffersCoercedToCharSequences.class);
-        Completable result = queued.doAfterSubscribe(__ -> transactionCompleted = true).doBeforeSuccess(list -> {
-            int index = 0;
-            for (Object obj : list) {
-                CompletableFuture future = futures.get(index);
-                if (obj instanceof Throwable) {
-                    future.completeExceptionally((Throwable) obj);
-                } else {
-                    future.complete(obj);
-                }
-                index++;
-            }
-        }).ignoreResult();
+        final Completable result = new ExecCompletable(this, queued);
         return releaseAfterDone ? result.doBeforeFinally(reservedCnx::releaseAsync) : result;
     }
 

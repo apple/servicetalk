@@ -40,7 +40,6 @@ import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -247,10 +246,22 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
     @Test
     public void transactionExec() throws Exception {
         BlockingTransactedRedisCommander tcc = commandClient.multi();
+        System.err.println("Calling del");
         Future<Long> value1 = tcc.del(key("a-key"));
+        // Thread.sleep(1000);
+
+        System.err.println("Calling set");
         Future<String> value2 = tcc.set(key("a-key"), "a-value3");
+        // Thread.sleep(1000);
+
+        System.err.println("Calling ping");
         Future<String> value3 = tcc.ping("in-transac");
+        // Thread.sleep(1000);
+
+        System.err.println("Calling get");
         Future<String> value4 = tcc.get(key("a-key"));
+        // Thread.sleep(1000);
+
         tcc.exec();
         assertThat(value1.get(), is(1L));
         assertThat(value2.get(), is("OK"));
@@ -311,9 +322,9 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
         BlockingTransactedRedisCommander tcc = commandClient.multi();
         tcc.close();
 
-        thrown.expect(RedisClientException.class);
-        thrown.expectCause(instanceOf(ClosedChannelException.class));
-        tcc.ping();
+        thrown.expect(ExecutionException.class);
+        thrown.expectCause(instanceOf(RedisClientException.class));
+        tcc.ping().get();
     }
 
     @Test

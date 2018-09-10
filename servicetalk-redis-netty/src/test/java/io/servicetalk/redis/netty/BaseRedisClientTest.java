@@ -44,6 +44,7 @@ public abstract class BaseRedisClientTest {
 
     @BeforeClass
     public static void startClient() throws Exception {
+        // env = new RedisTestEnvironment(Executors.newCachedThreadExecutor());
         env = new RedisTestEnvironment(immediate());
     }
 
