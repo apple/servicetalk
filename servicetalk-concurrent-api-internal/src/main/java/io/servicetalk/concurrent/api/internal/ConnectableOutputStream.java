@@ -257,8 +257,8 @@ public final class ConnectableOutputStream extends OutputStream {
         flush();
         for (;;) {
             final Object currentState = state;
-            if (currentState == TERMINAL_SENT || currentState == CLOSED || currentState == CANCEL_AFTER_EMIT ||
-                    currentState instanceof Throwable) {
+            if (currentState == TERMINAL_SENT || currentState == CLOSED || currentState == CLOSE_ON_SUB ||
+                    currentState == CANCEL_AFTER_EMIT || currentState instanceof Throwable) {
                 // Subscriber already terminated or terminating
                 return;
             }
