@@ -99,6 +99,14 @@ public class ConnectableOutputStreamTest {
     }
 
     @Test
+    public void closeShouldBeIdempotentWhenNotSubscribed() throws IOException {
+        cos.connect();
+        cos.write(1);
+        cos.close();
+        cos.close(); // should be idempotent
+    }
+
+    @Test
     public void multipleConnectWithInvalidRequestnShouldFailConnect() throws Exception {
         @SuppressWarnings("unchecked")
         CountDownLatch onSubscribe = new CountDownLatch(1);
