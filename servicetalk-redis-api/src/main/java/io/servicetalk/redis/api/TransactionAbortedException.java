@@ -19,7 +19,7 @@ package io.servicetalk.redis.api;
  * Indicates that a transaction was aborted via {@link TransactedRedisCommander#discard()}, preventing a command from
  * being executed.
  */
-public final class TransactionAbortedException extends IllegalTransactionStateException {
+public final class TransactionAbortedException extends RedisClientException {
     private static final long serialVersionUID = 2625374006820886896L;
 
     /**
