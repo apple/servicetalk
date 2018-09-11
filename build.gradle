@@ -26,8 +26,8 @@ buildscript {
   }
 
   dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.2.0-SNAPSHOT"
-  }
+    // The plugin is brought in via composite build inclusion, so no need to specify a version.
+    classpath "io.servicetalk:servicetalk-gradle-plugin-internal"  }
 }
 
 // Composite builds do not correctly substitute test fixtures dependencies
