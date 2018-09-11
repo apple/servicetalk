@@ -20,13 +20,19 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.SingleProcessor;
+import io.servicetalk.redis.api.CommanderUtils.DiscardSingle;
+import io.servicetalk.redis.api.CommanderUtils.ExecCompletable;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Generated;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.redis.api.CommanderUtils.enqueueForExecute;
 import static io.servicetalk.redis.api.RedisRequests.addRequestArgument;
 import static io.servicetalk.redis.api.RedisRequests.addRequestBufferArguments;
 import static io.servicetalk.redis.api.RedisRequests.addRequestLongArguments;
@@ -37,11 +43,19 @@ import static java.util.Objects.requireNonNull;
 
 @Generated({})
 @SuppressWarnings("unchecked")
-final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBufferRedisCommander {
+final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisCommander {
+
+    private static final AtomicIntegerFieldUpdater<DefaultTransactedBufferRedisCommander> stateUpdater = AtomicIntegerFieldUpdater
+                .newUpdater(DefaultTransactedBufferRedisCommander.class, "state");
 
     private final RedisClient.ReservedRedisConnection reservedCnx;
 
     private final boolean releaseAfterDone;
+
+    @SuppressWarnings("unused")
+    private volatile int state;
+
+    private final List<SingleProcessor> singles = new ArrayList<>();
 
     DefaultTransactedBufferRedisCommander(final RedisClient.ReservedRedisConnection reservedCnx,
                 final boolean releaseAfterDone) {
@@ -71,7 +85,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.APPEND, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -85,7 +99,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(password, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.AUTH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -97,7 +111,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BGREWRITEAOF, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BGREWRITEAOF, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -109,7 +123,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BGSAVE, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BGSAVE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -123,7 +137,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITCOUNT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -150,7 +164,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITCOUNT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -167,7 +181,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         cb.addBuffer(cbOps);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITFIELD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<Long>> result = enqueueForExecute(queued);
+        Future<List<Long>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -186,7 +200,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITOP, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -208,7 +222,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITOP, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -232,7 +246,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITOP, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -252,7 +266,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITOP, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -267,7 +281,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(bit, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITPOS, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -295,7 +309,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BITPOS, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -311,7 +325,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(timeout, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BLPOP, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -327,7 +341,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(timeout, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BRPOP, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -345,7 +359,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(timeout, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BRPOPLPUSH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -361,7 +375,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(timeout, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BZPOPMAX, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -377,7 +391,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(timeout, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.BZPOPMIN, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -418,7 +432,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -431,7 +445,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
                     RedisProtocolSupport.SubCommand.LIST, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -444,7 +458,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
                     RedisProtocolSupport.SubCommand.GETNAME, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -458,7 +472,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(timeout, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -473,7 +487,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(replyMode, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -488,7 +502,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(connectionName, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLIENT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -502,7 +516,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(slot, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -517,7 +531,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(slot2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -533,7 +547,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(slot3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -549,7 +563,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestLongArguments(slots, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -564,7 +578,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(nodeId, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -578,7 +592,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(slot, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -592,7 +606,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(slot, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -607,7 +621,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(slot2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -623,7 +637,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(slot3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -639,7 +653,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestLongArguments(slots, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -652,7 +666,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
                     RedisProtocolSupport.SubCommand.FAILOVER, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -671,7 +685,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -686,7 +700,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(nodeId, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -701,7 +715,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(count, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -714,7 +728,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
                     RedisProtocolSupport.SubCommand.INFO, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -729,7 +743,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -745,7 +759,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(port, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -758,7 +772,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
                     RedisProtocolSupport.SubCommand.NODES, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -773,7 +787,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(nodeId, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -786,7 +800,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
                     RedisProtocolSupport.SubCommand.RESET, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -805,7 +819,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -818,7 +832,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
                     RedisProtocolSupport.SubCommand.SAVECONFIG, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -832,7 +846,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(configEpoch, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -849,7 +863,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(subcommand, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -873,7 +887,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -888,7 +902,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(nodeId, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -901,7 +915,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
                     RedisProtocolSupport.SubCommand.SLOTS, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CLUSTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -913,7 +927,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.COMMAND, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -926,7 +940,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
                     RedisProtocolSupport.SubCommand.COUNT, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -939,7 +953,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
                     RedisProtocolSupport.SubCommand.GETKEYS, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -954,7 +968,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(commandName, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -971,7 +985,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(commandName2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -991,7 +1005,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(commandName3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1007,7 +1021,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(commandNames, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.COMMAND, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1022,7 +1036,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(parameter, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CONFIG, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1035,7 +1049,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
                     RedisProtocolSupport.SubCommand.REWRITE, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CONFIG, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1052,7 +1066,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CONFIG, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1065,7 +1079,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
                     RedisProtocolSupport.SubCommand.RESETSTAT, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.CONFIG, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1077,7 +1091,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DBSIZE, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DBSIZE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1092,7 +1106,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEBUG, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1105,7 +1119,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
                     RedisProtocolSupport.SubCommand.SEGFAULT, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEBUG, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1119,7 +1133,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DECR, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1134,7 +1148,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(decrement, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DECRBY, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1148,7 +1162,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEL, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1164,7 +1178,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEL, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1183,7 +1197,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEL, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1198,7 +1212,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DEL, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1210,7 +1224,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DISCARD, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DISCARD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        final Single<String> result = new DiscardSingle(this, queued);
+        final Single<String> result = new DiscardSingle<>(this, queued, singles, stateUpdater);
         return releaseAfterDone ? result.doBeforeFinally(reservedCnx::releaseAsync) : result;
     }
 
@@ -1224,7 +1238,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.DUMP, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1238,7 +1252,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(message, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ECHO, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1260,7 +1274,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(args, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVAL, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1283,7 +1297,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(args, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVAL, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1306,7 +1320,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(args, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVAL, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1329,7 +1343,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(args, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVALSHA, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1352,7 +1366,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(args, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVALSHA, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1375,7 +1389,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(args, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EVALSHA, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1387,7 +1401,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EXEC, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXEC, cb);
         final Single<List<Object>> queued = (Single) reservedCnx.request(request, List.class);
-        final Completable result = new ExecCompletable(this, queued);
+        final Completable result = new ExecCompletable<>(this, queued, singles, stateUpdater);
         return releaseAfterDone ? result.doBeforeFinally(reservedCnx::releaseAsync) : result;
     }
 
@@ -1401,7 +1415,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXISTS, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1418,7 +1432,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXISTS, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1437,7 +1451,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXISTS, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1452,7 +1466,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXISTS, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1467,7 +1481,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(seconds, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXPIRE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1482,7 +1496,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(timestamp, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.EXPIREAT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1494,7 +1508,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.FLUSHALL, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.FLUSHALL, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1512,7 +1526,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.FLUSHALL, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1524,7 +1538,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.FLUSHDB, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.FLUSHDB, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1542,7 +1556,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.FLUSHDB, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1561,7 +1575,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1585,7 +1599,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1614,7 +1628,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1632,7 +1646,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestTupleArguments(longitudeLatitudeMembers, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1651,7 +1665,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEODIST, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Double> result = enqueueForExecute(queued);
+        Future<Double> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1676,7 +1690,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEODIST, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Double> result = enqueueForExecute(queued);
+        Future<Double> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1692,7 +1706,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOHASH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1711,7 +1725,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOHASH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1732,7 +1746,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOHASH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1749,7 +1763,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(members, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOHASH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1765,7 +1779,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOPOS, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1784,7 +1798,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOPOS, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1805,7 +1819,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOPOS, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1822,7 +1836,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(members, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEOPOS, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1843,7 +1857,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(unit, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEORADIUS, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1916,7 +1930,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEORADIUS, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -1938,7 +1952,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(unit, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEORADIUSBYMEMBER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2012,7 +2026,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GEORADIUSBYMEMBER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2026,7 +2040,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2041,7 +2055,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(offset, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GETBIT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2057,7 +2071,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(end, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GETRANGE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2073,7 +2087,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.GETSET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2089,7 +2103,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(field, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HDEL, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2107,7 +2121,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(field2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HDEL, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2128,7 +2142,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(field3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HDEL, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2145,7 +2159,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(fields, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HDEL, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2161,7 +2175,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(field, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HEXISTS, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2177,7 +2191,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(field, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HGET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2191,7 +2205,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HGETALL, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2208,7 +2222,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(increment, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HINCRBY, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2226,7 +2240,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(increment, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HINCRBYFLOAT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Double> result = enqueueForExecute(queued);
+        Future<Double> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2240,7 +2254,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HKEYS, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2254,7 +2268,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HLEN, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2270,7 +2284,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(field, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2289,7 +2303,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(field2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2310,7 +2324,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(field3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2327,7 +2341,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(fields, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMGET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2345,7 +2359,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMSET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2368,7 +2382,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMSET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2395,7 +2409,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMSET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2413,7 +2427,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestTupleArguments(fieldValues, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HMSET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2428,7 +2442,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(cursor, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSCAN, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2458,7 +2472,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSCAN, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2476,7 +2490,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2494,7 +2508,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSETNX, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2510,7 +2524,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(field, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HSTRLEN, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2524,7 +2538,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.HVALS, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2538,7 +2552,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.INCR, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2553,7 +2567,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(increment, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.INCRBY, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2568,7 +2582,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(increment, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.INCRBYFLOAT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Double> result = enqueueForExecute(queued);
+        Future<Double> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2580,7 +2594,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.INFO, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.INFO, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2598,7 +2612,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.INFO, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2612,7 +2626,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(pattern, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.KEYS, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2624,7 +2638,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LASTSAVE, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LASTSAVE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2639,7 +2653,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(index, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LINDEX, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2660,7 +2674,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LINSERT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2674,7 +2688,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LLEN, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2688,7 +2702,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPOP, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2704,7 +2718,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2722,7 +2736,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2743,7 +2757,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2760,7 +2774,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(values, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2776,7 +2790,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LPUSHX, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2792,7 +2806,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(stop, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LRANGE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2809,7 +2823,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LREM, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2826,7 +2840,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LSET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2842,7 +2856,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(stop, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.LTRIM, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2855,7 +2869,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
                     RedisProtocolSupport.SubCommand.DOCTOR, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2868,7 +2882,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
                     RedisProtocolSupport.SubCommand.HELP, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2881,7 +2895,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
                     RedisProtocolSupport.SubCommand.MALLOC_STATS, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2894,7 +2908,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
                     RedisProtocolSupport.SubCommand.PURGE, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2907,7 +2921,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
                     RedisProtocolSupport.SubCommand.STATS, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2922,7 +2936,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2944,7 +2958,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MEMORY, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2958,7 +2972,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2975,7 +2989,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -2995,7 +3009,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3010,7 +3024,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MGET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3025,7 +3039,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(db, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MOVE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3041,7 +3055,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3062,7 +3076,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3088,7 +3102,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3103,7 +3117,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestTupleArguments(keyValues, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3119,7 +3133,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSETNX, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3140,7 +3154,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSETNX, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3166,7 +3180,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSETNX, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3181,7 +3195,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestTupleArguments(keyValues, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.MSETNX, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3196,7 +3210,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3211,7 +3225,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3224,7 +3238,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
                     RedisProtocolSupport.SubCommand.HELP, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<String>> result = enqueueForExecute(queued);
+        Future<List<String>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3239,7 +3253,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3254,7 +3268,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.OBJECT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3268,7 +3282,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PERSIST, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3283,7 +3297,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(milliseconds, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PEXPIRE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3298,7 +3312,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(millisecondsTimestamp, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PEXPIREAT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3314,7 +3328,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(element, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3333,7 +3347,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(element2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3354,7 +3368,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(element3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3371,7 +3385,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(elements, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3385,7 +3399,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFCOUNT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3402,7 +3416,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFCOUNT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3422,7 +3436,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFCOUNT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3437,7 +3451,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFCOUNT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3454,7 +3468,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(sourcekey, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFMERGE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3474,7 +3488,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(sourcekey2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFMERGE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3497,7 +3511,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(sourcekey3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFMERGE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3515,7 +3529,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(sourcekeys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PFMERGE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3527,7 +3541,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PING, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PING, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3541,7 +3555,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(message, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PING, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3559,7 +3573,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PSETEX, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3573,7 +3587,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PTTL, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3589,7 +3603,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(message, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBLISH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3602,7 +3616,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
                     RedisProtocolSupport.SubCommand.CHANNELS, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<String>> result = enqueueForExecute(queued);
+        Future<List<String>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3621,7 +3635,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<String>> result = enqueueForExecute(queued);
+        Future<List<String>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3646,7 +3660,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<String>> result = enqueueForExecute(queued);
+        Future<List<String>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3678,7 +3692,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<String>> result = enqueueForExecute(queued);
+        Future<List<String>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3694,7 +3708,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(patterns, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<String>> result = enqueueForExecute(queued);
+        Future<List<String>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3707,7 +3721,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
                     RedisProtocolSupport.SubCommand.NUMSUB, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3726,7 +3740,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3751,7 +3765,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3783,7 +3797,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3799,7 +3813,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(channels, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3812,7 +3826,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
                     RedisProtocolSupport.SubCommand.NUMPAT, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.PUBSUB, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3824,7 +3838,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RANDOMKEY, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RANDOMKEY, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3836,7 +3850,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.READONLY, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.READONLY, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3848,7 +3862,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.READWRITE, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.READWRITE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3865,7 +3879,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(newkey, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RENAME, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3882,7 +3896,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(newkey, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RENAMENX, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3900,7 +3914,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(serializedValue, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RESTORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3925,7 +3939,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RESTORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3937,7 +3951,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ROLE, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ROLE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3951,7 +3965,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPOP, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3968,7 +3982,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(destination, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPOPLPUSH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -3984,7 +3998,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4002,7 +4016,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4023,7 +4037,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4040,7 +4054,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(values, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4056,7 +4070,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.RPUSHX, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4072,7 +4086,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4090,7 +4104,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4111,7 +4125,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4128,7 +4142,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(members, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4140,7 +4154,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SAVE, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SAVE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4153,7 +4167,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(cursor, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCAN, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4181,7 +4195,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCAN, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4195,7 +4209,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCARD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4210,7 +4224,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(mode, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4225,7 +4239,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(sha1, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4242,7 +4256,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(sha12, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4261,7 +4275,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(sha13, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4277,7 +4291,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(sha1s, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4290,7 +4304,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
                     RedisProtocolSupport.SubCommand.FLUSH, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4303,7 +4317,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
                     RedisProtocolSupport.SubCommand.KILL, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4318,7 +4332,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(script, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SCRIPT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4332,7 +4346,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(firstkey, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4353,7 +4367,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4381,7 +4395,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4416,7 +4430,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4434,7 +4448,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(otherkeys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFF, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4451,7 +4465,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(firstkey, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4475,7 +4489,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4506,7 +4520,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4544,7 +4558,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4565,7 +4579,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(otherkeys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SDIFFSTORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4578,7 +4592,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(index, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SELECT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4594,7 +4608,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4624,7 +4638,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SET, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4641,7 +4655,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SETBIT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4658,7 +4672,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SETEX, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4674,7 +4688,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SETNX, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4691,7 +4705,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SETRANGE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4703,7 +4717,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SHUTDOWN, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SHUTDOWN, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4721,7 +4735,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SHUTDOWN, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4735,7 +4749,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4752,7 +4766,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4772,7 +4786,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4787,7 +4801,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4804,7 +4818,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTERSTORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4824,7 +4838,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTERSTORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4847,7 +4861,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTERSTORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4865,7 +4879,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SINTERSTORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4881,7 +4895,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SISMEMBER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4897,7 +4911,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(port, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SLAVEOF, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4911,7 +4925,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(subcommand, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SLOWLOG, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4931,7 +4945,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SLOWLOG, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4945,7 +4959,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SMEMBERS, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4964,7 +4978,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SMOVE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -4978,7 +4992,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SORT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5024,7 +5038,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SORT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5042,7 +5056,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(storeDestination, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SORT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5091,7 +5105,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SORT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5105,7 +5119,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SPOP, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5125,7 +5139,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SPOP, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5139,7 +5153,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SRANDMEMBER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5154,7 +5168,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(count, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SRANDMEMBER, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<String>> result = enqueueForExecute(queued);
+        Future<List<String>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5170,7 +5184,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SREM, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5188,7 +5202,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SREM, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5209,7 +5223,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SREM, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5226,7 +5240,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(members, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SREM, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5241,7 +5255,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(cursor, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SSCAN, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5271,7 +5285,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SSCAN, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5285,7 +5299,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.STRLEN, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5299,7 +5313,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNION, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5316,7 +5330,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNION, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5336,7 +5350,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNION, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5351,7 +5365,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNION, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5368,7 +5382,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNIONSTORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5388,7 +5402,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNIONSTORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5411,7 +5425,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNIONSTORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5429,7 +5443,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SUNIONSTORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5443,7 +5457,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(index1, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.SWAPDB, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5455,7 +5469,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TIME, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.TIME, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5469,7 +5483,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.TOUCH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5486,7 +5500,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.TOUCH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5505,7 +5519,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.TOUCH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5520,7 +5534,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.TOUCH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5534,7 +5548,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.TTL, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5548,7 +5562,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.TYPE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5562,7 +5576,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNLINK, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5579,7 +5593,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNLINK, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5598,7 +5612,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNLINK, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5613,7 +5627,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNLINK, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5625,7 +5639,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.UNWATCH, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.UNWATCH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5639,7 +5653,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(timeout, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.WAIT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5653,7 +5667,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.WATCH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5670,7 +5684,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.WATCH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5690,7 +5704,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.WATCH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5705,7 +5719,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.WATCH, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<String> result = enqueueForExecute(queued);
+        Future<String> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5726,7 +5740,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5751,7 +5765,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5781,7 +5795,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(value3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5801,7 +5815,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestTupleArguments(fieldValues, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Buffer> result = enqueueForExecute(queued);
+        Future<Buffer> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5815,7 +5829,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XLEN, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5831,7 +5845,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(group, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XPENDING, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5873,7 +5887,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XPENDING, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5892,7 +5906,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(end, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XRANGE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5918,7 +5932,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XRANGE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5938,7 +5952,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(ids, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREAD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5973,7 +5987,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(ids, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREAD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -5996,7 +6010,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(ids, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREADGROUP, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6034,7 +6048,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(ids, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREADGROUP, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6053,7 +6067,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(start, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREVRANGE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6079,7 +6093,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.XREVRANGE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6097,7 +6111,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestTupleArguments(scoreMembers, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6129,7 +6143,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6164,7 +6178,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6203,7 +6217,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6235,7 +6249,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestTupleArguments(scoreMembers, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6254,7 +6268,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestTupleArguments(scoreMembers, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Double> result = enqueueForExecute(queued);
+        Future<Double> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6287,7 +6301,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Double> result = enqueueForExecute(queued);
+        Future<Double> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6323,7 +6337,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Double> result = enqueueForExecute(queued);
+        Future<Double> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6363,7 +6377,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Double> result = enqueueForExecute(queued);
+        Future<Double> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6396,7 +6410,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestTupleArguments(scoreMembers, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZADD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Double> result = enqueueForExecute(queued);
+        Future<Double> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6410,7 +6424,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZCARD, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6426,7 +6440,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(max, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZCOUNT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6444,7 +6458,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZINCRBY, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Double> result = enqueueForExecute(queued);
+        Future<Double> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6463,7 +6477,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZINTERSTORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6493,7 +6507,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZINTERSTORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6511,7 +6525,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(max, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZLEXCOUNT, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6525,7 +6539,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZPOPMAX, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6545,7 +6559,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZPOPMAX, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6559,7 +6573,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(key, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZPOPMIN, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6579,7 +6593,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZPOPMIN, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6595,7 +6609,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(stop, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6618,7 +6632,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6637,7 +6651,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(max, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGEBYLEX, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6663,7 +6677,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGEBYLEX, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6681,7 +6695,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(max, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGEBYSCORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6713,7 +6727,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANGEBYSCORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6729,7 +6743,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZRANK, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6745,7 +6759,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREM, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6763,7 +6777,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member2, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREM, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6784,7 +6798,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member3, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREM, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6801,7 +6815,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(members, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREM, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6820,7 +6834,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(max, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREMRANGEBYLEX, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6837,7 +6851,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(stop, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREMRANGEBYRANK, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6855,7 +6869,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(max, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREMRANGEBYSCORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6872,7 +6886,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(stop, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6895,7 +6909,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6915,7 +6929,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(min, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGEBYLEX, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6942,7 +6956,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGEBYLEX, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6960,7 +6974,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(min, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGEBYSCORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -6992,7 +7006,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANGEBYSCORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -7008,7 +7022,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZREVRANK, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -7023,7 +7037,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(cursor, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZSCAN, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -7053,7 +7067,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZSCAN, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<List<T>> result = enqueueForExecute(queued);
+        Future<List<T>> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -7069,7 +7083,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestArgument(member, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZSCORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Double> result = enqueueForExecute(queued);
+        Future<Double> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -7088,7 +7102,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         addRequestBufferArguments(keys, null, cb, allocator);
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZUNIONSTORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 
@@ -7118,7 +7132,7 @@ final class DefaultTransactedBufferRedisCommander extends AbstractTransactedBuff
         }
         final RedisRequest request = newRequest(RedisProtocolSupport.Command.ZUNIONSTORE, cb);
         final Single<String> queued = reservedCnx.request(request, String.class);
-        Future<Long> result = enqueueForExecute(queued);
+        Future<Long> result = enqueueForExecute(state, singles, queued);
         return result;
     }
 }

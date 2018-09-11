@@ -21,12 +21,18 @@ import io.servicetalk.concurrent.api.SingleProcessor;
 
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nonnull;
 
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.redis.api.RedisData.QUEUED;
 import static java.util.Objects.requireNonNull;
 
 final class CommanderUtils {
+
+    static final int STATE_PENDING = 0;
+    static final int STATE_EXECED = 1;
+    static final int STATE_DISCARDED = 2;
 
     public static final CharSequence QUEUED_RESP = QUEUED.getValue();
 
@@ -35,9 +41,9 @@ final class CommanderUtils {
     }
 
     @Nonnull
-    static <T> Future<T> enqueueForExecute(final boolean transactionCompleted, final List<SingleProcessor> singles,
+    static <T> Future<T> enqueueForExecute(final int state, final List<SingleProcessor> singles,
                                            final Single<String> queued) {
-        if (transactionCompleted) {
+        if (state != STATE_PENDING) {
             throw new IllegalTransactionStateException(
                     Single.class.getSimpleName() + " cannot be subscribed to after the transaction has completed.");
         }
@@ -77,5 +83,57 @@ final class CommanderUtils {
     @SuppressWarnings("unchecked")
     private static void onSuccessUnchecked(final Object obj, final SingleProcessor single) {
         single.onSuccess(obj);
+    }
+
+    static class DiscardSingle<T> extends Single<String> {
+
+        private final T commander;
+        private final Single<String> queued;
+        private final List<SingleProcessor> singles;
+        @SuppressWarnings("AtomicFieldUpdaterNotStaticFinal")
+        private final AtomicIntegerFieldUpdater<T> stateUpdater;
+
+        DiscardSingle(final T commander, final Single<String> queued, final List<SingleProcessor> singles, final AtomicIntegerFieldUpdater<T> stateUpdater) {
+            this.commander = commander;
+            this.queued = queued;
+            this.singles = singles;
+            this.stateUpdater = stateUpdater;
+        }
+
+        @Override
+        protected void handleSubscribe(final Subscriber<? super String> subscriber) {
+            if (!stateUpdater.compareAndSet(commander, STATE_PENDING, STATE_DISCARDED)) {
+                subscriber.onSubscribe(IGNORE_CANCEL);
+                subscriber.onError(new IllegalStateException("Only one subscriber allowed."));
+                return;
+            }
+            abortSingles(queued, singles).subscribe(subscriber);
+        }
+    }
+
+    static class ExecCompletable<T> extends Completable {
+
+        private final T commander;
+        private final Single<List<Object>> queued;
+        private final List<SingleProcessor> singles;
+        @SuppressWarnings("AtomicFieldUpdaterNotStaticFinal")
+        private final AtomicIntegerFieldUpdater<T> stateUpdater;
+
+        ExecCompletable(final T commander, final Single<List<Object>> queued, final List<SingleProcessor> singles, final AtomicIntegerFieldUpdater<T> stateUpdater) {
+            this.commander = commander;
+            this.queued = queued;
+            this.singles = singles;
+            this.stateUpdater = stateUpdater;
+        }
+
+        @Override
+        protected void handleSubscribe(final Subscriber subscriber) {
+            if (!stateUpdater.compareAndSet(commander, STATE_PENDING, STATE_EXECED)) {
+                subscriber.onSubscribe(IGNORE_CANCEL);
+                subscriber.onError(new IllegalStateException("Only one subscriber allowed."));
+                return;
+            }
+            completeSingles(queued, singles).subscribe(subscriber);
+        }
     }
 }
