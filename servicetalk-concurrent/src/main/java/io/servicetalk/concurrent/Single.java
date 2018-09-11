@@ -66,4 +66,13 @@ public interface Single<T> {
          */
         void onError(Throwable t);
     }
+
+    /**
+     * An entity that is both {@link Single} and {@link Subscriber}.
+     * This is same as {@link org.reactivestreams.Processor} but for {@link Single}s.
+     * @param <T> The type of {@link Subscriber}.
+     * @param <R> The type of {@link Single}.
+     */
+    interface Processor<T, R> extends Single<R>, Subscriber<T> {
+    }
 }
