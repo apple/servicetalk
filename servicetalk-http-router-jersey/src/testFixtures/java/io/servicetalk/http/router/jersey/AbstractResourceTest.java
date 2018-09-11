@@ -26,7 +26,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 import javax.ws.rs.NameBinding;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -55,7 +54,6 @@ import static javax.ws.rs.core.HttpHeaders.ALLOW;
 import static javax.ws.rs.core.Response.status;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonStringEquals;
-import static org.glassfish.jersey.message.internal.CommittingOutputStream.DEFAULT_BUFFER_SIZE;
 import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyString;
@@ -169,7 +167,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpSe
         sendAndAssertResponse(post("/text", "foo", TEXT_PLAIN), OK, TEXT_PLAIN, "GOT: foo");
 
         // Large payload that goes above Jersey's default buffer size
-        final CharSequence payload = newLargePayload();
+        final CharSequence payload = TestUtils.newLargePayload();
         sendAndAssertResponse(post("/text", payload, TEXT_PLAIN), OK, TEXT_PLAIN, is("GOT: " + payload), __ -> null);
     }
 
@@ -241,7 +239,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpSe
         sendAndAssertResponse(post("/text-buffer", "foo", TEXT_PLAIN), OK, TEXT_PLAIN, "GOT: foo");
 
         // Large payload that goes above Jersey's default buffer size
-        final CharSequence payload = newLargePayload();
+        final CharSequence payload = TestUtils.newLargePayload();
         sendAndAssertResponse(post("/text-buffer", payload, TEXT_PLAIN), OK, TEXT_PLAIN, "GOT: " + payload);
     }
 
@@ -282,15 +280,5 @@ public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpSe
 
         // Missing mandatory field
         sendAndAssertStatusOnly(post("/json-pojoin-pojoout", "{\"foo\":\"bar\"}", APPLICATION_JSON), BAD_REQUEST);
-    }
-
-    protected static CharSequence newLargePayload() {
-        final int size = 2 * DEFAULT_BUFFER_SIZE;
-        final StringBuilder sb = new StringBuilder(size);
-        final Random rnd = new Random();
-        for (int i = 0; i < size; i++) {
-            sb.append((char) ('A' + rnd.nextInt(26)));
-        }
-        return sb;
     }
 }

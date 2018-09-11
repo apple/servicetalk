@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.router.jersey;
 
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
@@ -54,6 +55,7 @@ import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.router.jersey.ExecutionStrategyUtils.getResourceExecutor;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRequestBufferPublisherInputStream;
+import static io.servicetalk.http.router.jersey.internal.RequestProperties.setRequestCancellable;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseExecutorOffloader;
 import static java.lang.Integer.MAX_VALUE;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
@@ -168,12 +170,14 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
                     .doAfterError(asyncContext::resume)
                     .doAfterCancel(asyncContext::cancel);
 
+            final Cancellable cancellable;
             if (execOverrideCnxCtx != null) {
-                objectSingle.subscribeOn(execOverrideCnxCtx.executionContext().executor())
+                cancellable = objectSingle.subscribeOn(execOverrideCnxCtx.executionContext().executor())
                         .subscribe(asyncContext::resume);
             } else {
-                objectSingle.subscribe(asyncContext::resume);
+                cancellable = objectSingle.subscribe(asyncContext::resume);
             }
+            setRequestCancellable(cancellable, requestProcessingCtx.request());
 
             // Return null on current thread since response will be delivered asynchronously
             return null;

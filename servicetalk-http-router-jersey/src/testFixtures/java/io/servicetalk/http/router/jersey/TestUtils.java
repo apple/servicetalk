@@ -19,8 +19,11 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
+import java.util.Random;
+
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.glassfish.jersey.message.internal.CommittingOutputStream.DEFAULT_BUFFER_SIZE;
 
 public final class TestUtils {
     public static final class ContentReadException extends RuntimeException {
@@ -33,6 +36,16 @@ public final class TestUtils {
 
     private TestUtils() {
         // no instances
+    }
+
+    public static CharSequence newLargePayload() {
+        final int size = 2 * DEFAULT_BUFFER_SIZE;
+        final StringBuilder sb = new StringBuilder(size);
+        final Random rnd = new Random();
+        for (int i = 0; i < size; i++) {
+            sb.append((char) ('A' + rnd.nextInt(26)));
+        }
+        return sb;
     }
 
     public static String getContentAsString(final StreamingHttpResponse res) {

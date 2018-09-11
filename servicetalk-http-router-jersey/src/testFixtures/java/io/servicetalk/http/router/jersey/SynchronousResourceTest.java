@@ -93,7 +93,7 @@ public class SynchronousResourceTest extends AbstractResourceTest {
         sendAndAssertResponse(post("/text-oio-streams", "bar4", TEXT_PLAIN), OK, TEXT_PLAIN, "GOT: bar4");
 
         // Large payload that goes above Jersey's default buffer size
-        final CharSequence payload = newLargePayload();
+        final CharSequence payload = TestUtils.newLargePayload();
         sendAndAssertResponse(post("/text-oio-streams", payload, TEXT_PLAIN), OK, TEXT_PLAIN,
                 is("GOT: " + payload), __ -> null);
     }

@@ -32,7 +32,10 @@ import org.glassfish.jersey.server.ContainerException;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.ContainerResponse;
 import org.glassfish.jersey.server.spi.ContainerResponseWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -58,6 +61,8 @@ import static java.util.stream.Collectors.toMap;
 import static javax.ws.rs.HttpMethod.HEAD;
 
 final class DefaultContainerResponseWriter implements ContainerResponseWriter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultContainerResponseWriter.class);
+
     private static final Map<Status, HttpResponseStatus> RESPONSE_STATUSES =
             unmodifiableMap(stream(Status.values())
                     .collect(toMap(identity(),
@@ -77,6 +82,9 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
 
     @Nullable
     private volatile Runnable suspendedTimeoutRunnable;
+
+    @Nullable
+    private volatile ConnectableOutputStream connectableOutputStream;
 
     DefaultContainerResponseWriter(final ContainerRequest request,
                                    final HttpProtocolVersion protocolVersion,
@@ -108,12 +116,13 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
             sendResponse(contentLength, os.connect().map(bytes ->
                             serviceCtx.executionContext().bufferAllocator().wrap(bytes)),
                     responseContext);
+            connectableOutputStream = os;
             return os;
         }
     }
 
     @Override
-    public boolean suspend(final long timeOut, final TimeUnit timeUnit, final TimeoutHandler timeoutHandler) {
+    public boolean suspend(final long timeOut, final TimeUnit timeUnit, @Nullable final TimeoutHandler timeoutHandler) {
         // This timeoutHandler is not the one provided by users but a Jersey wrapper
         // that catches any throwable and converts them into error responses,
         // thus it is safe to use this runnable in doAfterComplete (below).
@@ -121,7 +130,11 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         // the response has resumed, it will actually be a NOOP.
         // So there's no strong requirement for cancelling timer on commit/failure (below)
         // besides cleaning up our resources.
-        final Runnable r = () -> timeoutHandler.onTimeout(this);
+        final Runnable r = () -> {
+            if (timeoutHandler != null) {
+                timeoutHandler.onTimeout(this);
+            }
+        };
 
         suspendedTimeoutRunnable = r;
         scheduleSuspendedTimer(timeOut, timeUnit, r);
@@ -135,7 +148,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
             throw new IllegalStateException("Request is not suspended");
         }
 
-        cancelSuspendedTimer();
+        cancelSuspendedTimer(false);
         scheduleSuspendedTimer(timeOut, timeUnit, r);
     }
 
@@ -150,17 +163,38 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     @Override
     public void commit() {
         suspendedTimeoutRunnable = null;
-        cancelSuspendedTimer();
+        cancelSuspendedTimer(false);
     }
 
     @Override
     public void failure(final Throwable error) {
         suspendedTimeoutRunnable = null;
-        cancelSuspendedTimer();
+        cancelSuspendedTimer(false);
         responseSubscriber.onError(error);
     }
 
-    void cancelSuspendedTimer() {
+    void cancel() {
+        cancelSuspendedTimer(true);
+        final ConnectableOutputStream os = connectableOutputStream;
+        if (os != null) {
+            try {
+                os.close();
+            } catch (final IOException e) {
+                LOGGER.debug("Failed to close output stream during cancel", e);
+            }
+        }
+    }
+
+    private void cancelSuspendedTimer(final boolean executeSuspendedTimeoutRunnable) {
+        // We executeSuspendedTimeoutRunnable in the case the cancellation is not part of a proactive resource cleanup
+        // done in the background but instead when cancellation comes from the server.
+        if (executeSuspendedTimeoutRunnable) {
+            final Runnable r = suspendedTimeoutRunnable;
+            if (r != null) {
+                r.run();
+            }
+        }
+
         final Cancellable c = suspendedTimerCancellable;
         if (c != null) {
             c.cancel();

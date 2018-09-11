@@ -33,7 +33,10 @@ import org.glassfish.jersey.internal.util.collection.Ref;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.spi.Container;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.URI;
 import java.security.Principal;
 import java.util.function.BiFunction;
@@ -50,11 +53,13 @@ import static io.servicetalk.http.router.jersey.CharSequenceUtils.ensureNoLeadin
 import static io.servicetalk.http.router.jersey.Context.CONNECTION_CONTEXT_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.HTTP_REQUEST_REF_TYPE;
 import static io.servicetalk.http.router.jersey.ExecutionStrategyUtils.validateExecutorConfiguration;
+import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRequestCancellable;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.initRequestProperties;
 import static java.util.Objects.requireNonNull;
 import static org.glassfish.jersey.server.internal.ContainerUtils.encodeUnsafeCharacters;
 
 final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultJerseyStreamingHttpRouter.class);
 
     private static final SecurityContext UNAUTHENTICATED_SECURITY_CONTEXT = new SecurityContext() {
         @Nullable
@@ -216,7 +221,20 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
             injectionManager.<Ref<StreamingHttpRequest>>getInstance(HTTP_REQUEST_REF_TYPE).set(req);
         });
 
-        delayedCancellable.setDelayedCancellable(responseWriter::cancelSuspendedTimer);
+        delayedCancellable.setDelayedCancellable(() -> {
+            // Cancel any internally created request-handling subscription
+            getRequestCancellable(containerRequest).cancel();
+
+            // Close inbound entity stream
+            try {
+                entityStream.close();
+            } catch (final IOException e) {
+                LOGGER.debug("Failed to close input stream during cancel", e);
+            }
+
+            // Cancel all resources associated with the response
+            responseWriter.cancel();
+        });
 
         applicationHandler.handle(containerRequest);
     }

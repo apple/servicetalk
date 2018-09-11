@@ -33,6 +33,9 @@ import org.junit.runners.Suite.SuiteClasses;
         InterceptorsTest.class,
         SecurityFilterTest.class,
 
+        // RS features
+        CancellationTest.class,
+
         // Execution strategy tests
         AsynchronousResourceRouterExecTest.class,
         ExecutionStrategyConfigurationFailuresTest.class,
