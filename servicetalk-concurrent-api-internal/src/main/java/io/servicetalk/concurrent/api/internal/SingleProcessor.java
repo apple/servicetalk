@@ -50,7 +50,7 @@ public final class SingleProcessor<T> extends Single<T> implements Single.Proces
     @Override
     protected void handleSubscribe(final Subscriber<? super T> subscriber) {
         // We must subscribe before adding subscriber the the queue. Otherwise it is possible that this
-        // Completable has been terminated and the subscriber may be notified before onSubscribe is called.
+        // Single has been terminated and the subscriber may be notified before onSubscribe is called.
         subscriber.onSubscribe(() -> {
             // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of these
             // references.
