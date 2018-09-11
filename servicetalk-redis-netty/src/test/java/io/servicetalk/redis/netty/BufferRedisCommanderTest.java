@@ -20,7 +20,6 @@ import io.servicetalk.redis.api.BufferRedisCommander;
 import io.servicetalk.redis.api.IllegalTransactionStateException;
 import io.servicetalk.redis.api.PubSubBufferRedisConnection;
 import io.servicetalk.redis.api.PubSubRedisMessage;
-import io.servicetalk.redis.api.RedisClientException;
 import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Get;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Incrby;
@@ -37,6 +36,7 @@ import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -325,7 +325,7 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         tcc.closeAsync().toFuture().get();
 
         thrown.expect(ExecutionException.class);
-        thrown.expectCause(is(instanceOf(RedisClientException.class)));
+        thrown.expectCause(is(instanceOf(ClosedChannelException.class)));
         tcc.ping().get();
     }
 

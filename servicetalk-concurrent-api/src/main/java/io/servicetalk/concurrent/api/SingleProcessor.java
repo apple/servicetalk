@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Single.Subscriber;
-import io.servicetalk.concurrent.internal.ConcurrentUtils;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import java.util.Queue;
@@ -25,6 +24,9 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.internal.ConcurrentUtils.CONCURRENT_EMITTING;
+import static io.servicetalk.concurrent.internal.ConcurrentUtils.CONCURRENT_IDLE;
+import static io.servicetalk.concurrent.internal.ConcurrentUtils.drainSingleConsumerQueueDelayThrow;
 import static io.servicetalk.concurrent.internal.PlatformDependent.newUnboundedLinkedMpscQueue;
 
 /**
@@ -40,7 +42,7 @@ public final class SingleProcessor<T> extends Single<T> implements Subscriber<T>
     private static final AtomicIntegerFieldUpdater<SingleProcessor> drainingTheQueueUpdater =
             AtomicIntegerFieldUpdater.newUpdater(SingleProcessor.class, "drainingTheQueue");
 
-    private final Queue<Subscriber> subscribers = newUnboundedLinkedMpscQueue();
+    private final Queue<Subscriber<? super T>> subscribers = newUnboundedLinkedMpscQueue();
     @SuppressWarnings("unused")
     @Nullable
     private volatile Object terminalSignal;
@@ -48,18 +50,19 @@ public final class SingleProcessor<T> extends Single<T> implements Subscriber<T>
     private volatile int drainingTheQueue;
 
     @Override
-    protected void handleSubscribe(Subscriber subscriber) {
+    protected void handleSubscribe(Subscriber<? super T> subscriber) {
         // We must subscribe before adding subscriber the the queue. Otherwise it is possible that this
         // Single has been terminated and the subscriber may be notified before onSubscribe is called.
         subscriber.onSubscribe(() -> {
-            // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of these references.
-            if (!drainingTheQueueUpdater.compareAndSet(this, ConcurrentUtils.CONCURRENT_IDLE, ConcurrentUtils.CONCURRENT_EMITTING)) {
+            // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of these
+            // references.
+            if (!drainingTheQueueUpdater.compareAndSet(this, CONCURRENT_IDLE, CONCURRENT_EMITTING)) {
                 return;
             }
             try {
                 subscribers.remove(subscriber);
             } finally {
-                drainingTheQueueUpdater.set(this, ConcurrentUtils.CONCURRENT_IDLE);
+                drainingTheQueueUpdater.set(this, CONCURRENT_IDLE);
             }
             // Because we held the lock we need to check if any terminal event has occurred in the mean time,
             // and if so notify subscribers.
@@ -76,7 +79,8 @@ public final class SingleProcessor<T> extends Single<T> implements Subscriber<T>
                 notifyListeners(terminalSignal);
             }
         } else {
-            sendSignal(subscriber, TerminalNotification.error(new RuntimeException("queue " + subscribers + " unexpectedly rejected offer.")));
+            sendSignal(subscriber, TerminalNotification.error(
+                    new RuntimeException("queue " + subscribers + " unexpectedly rejected offer.")));
         }
     }
 
@@ -102,17 +106,18 @@ public final class SingleProcessor<T> extends Single<T> implements Subscriber<T>
     }
 
     private void notifyListeners(@Nullable Object terminalSignal) {
-        ConcurrentUtils.drainSingleConsumerQueueDelayThrow(subscribers, subscriber -> sendSignal(subscriber, terminalSignal), drainingTheQueueUpdater, this);
+        drainSingleConsumerQueueDelayThrow(subscribers, subscriber -> sendSignal(subscriber, terminalSignal),
+                drainingTheQueueUpdater, this);
     }
 
     @SuppressWarnings("unchecked")
-    private void sendSignal(final Subscriber subscriber, @Nullable final Object signal) {
+    private void sendSignal(final Subscriber<? super T> subscriber, @Nullable final Object signal) {
         if (signal instanceof TerminalNotification) {
             final Throwable cause = ((TerminalNotification) signal).getCause();
             assert cause != null;
             subscriber.onError(cause);
         } else {
-            subscriber.onSuccess(signal);
+            subscriber.onSuccess((T) signal);
         }
     }
 }

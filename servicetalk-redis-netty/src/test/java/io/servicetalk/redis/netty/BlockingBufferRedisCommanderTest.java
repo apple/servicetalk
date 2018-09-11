@@ -26,7 +26,6 @@ import io.servicetalk.redis.api.BlockingPubSubBufferRedisConnection;
 import io.servicetalk.redis.api.BlockingTransactedBufferRedisCommander;
 import io.servicetalk.redis.api.IllegalTransactionStateException;
 import io.servicetalk.redis.api.PubSubRedisMessage;
-import io.servicetalk.redis.api.RedisClientException;
 import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Get;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Incrby;
@@ -41,6 +40,7 @@ import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -323,7 +323,7 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
         tcc.close();
 
         thrown.expect(ExecutionException.class);
-        thrown.expectCause(instanceOf(RedisClientException.class));
+        thrown.expectCause(instanceOf(ClosedChannelException.class));
         tcc.ping().get();
     }
 

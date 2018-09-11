@@ -23,9 +23,12 @@ import java.util.List;
 import java.util.concurrent.Future;
 import javax.annotation.Nonnull;
 
+import static io.servicetalk.redis.api.RedisData.QUEUED;
 import static java.util.Objects.requireNonNull;
 
 final class CommanderUtils {
+
+    public static final CharSequence QUEUED_RESP = QUEUED.getValue();
 
     private CommanderUtils() {
         // no instances
@@ -38,10 +41,8 @@ final class CommanderUtils {
             throw new IllegalTransactionStateException(
                     Single.class.getSimpleName() + " cannot be subscribed to after the transaction has completed.");
         }
-        return queued.onErrorResume(t -> Single.error(new RedisClientException("Exception enqueuing command",
-                t.getCause() != null ? t.getCause() : t)))
-                .flatMap(status -> {
-                    if ("QUEUED".equals(status)) {
+        return queued.flatMap(status -> {
+            if (QUEUED_RESP.equals(status)) {
                         final SingleProcessor<T> single = new SingleProcessor<>();
                         singles.add(single);
                         return single;
@@ -74,7 +75,7 @@ final class CommanderUtils {
     }
 
     @SuppressWarnings("unchecked")
-    static void onSuccessUnchecked(final Object obj, final SingleProcessor single) {
+    private static void onSuccessUnchecked(final Object obj, final SingleProcessor single) {
         single.onSuccess(obj);
     }
 }

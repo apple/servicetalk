@@ -19,7 +19,7 @@ package io.servicetalk.redis.api;
  * Indicates that a transaction was completed (via {@link TransactedRedisCommander#discard()} or
  * {@link TransactedRedisCommander#exec()}, preventing a command from being executed.
  */
-public class IllegalTransactionStateException extends RedisClientException {
+public final class IllegalTransactionStateException extends RedisClientException {
     private static final long serialVersionUID = 5345239529654058948L;
 
     /**

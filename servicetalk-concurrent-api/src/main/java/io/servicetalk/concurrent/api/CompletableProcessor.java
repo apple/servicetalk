@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Completable.Processor;
-import io.servicetalk.concurrent.internal.ConcurrentUtils;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import java.util.Queue;
@@ -25,12 +24,15 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.internal.ConcurrentUtils.CONCURRENT_EMITTING;
+import static io.servicetalk.concurrent.internal.ConcurrentUtils.CONCURRENT_IDLE;
+import static io.servicetalk.concurrent.internal.ConcurrentUtils.drainSingleConsumerQueueDelayThrow;
 import static io.servicetalk.concurrent.internal.PlatformDependent.newUnboundedLinkedMpscQueue;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 
 /**
- * A {@link Completable} which is also a {@link Subscriber}. State of this {@link Completable} can be modified by using the
- * {@link Subscriber} methods which is forwarded to all existing or subsequent {@link Subscriber}s.
+ * A {@link Completable} which is also a {@link Subscriber}. State of this {@link Completable} can be modified by using
+ * the {@link Subscriber} methods which is forwarded to all existing or subsequent {@link Subscriber}s.
  */
 public final class CompletableProcessor extends Completable implements Processor {
 
@@ -51,14 +53,15 @@ public final class CompletableProcessor extends Completable implements Processor
         // We must subscribe before adding subscriber the the queue. Otherwise it is possible that this
         // Completable has been terminated and the subscriber may be notified before onSubscribe is called.
         subscriber.onSubscribe(() -> {
-            // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of these references.
-            if (!drainingTheQueueUpdater.compareAndSet(this, ConcurrentUtils.CONCURRENT_IDLE, ConcurrentUtils.CONCURRENT_EMITTING)) {
+            // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of these
+            // references.
+            if (!drainingTheQueueUpdater.compareAndSet(this, CONCURRENT_IDLE, CONCURRENT_EMITTING)) {
                 return;
             }
             try {
                 subscribers.remove(subscriber);
             } finally {
-                drainingTheQueueUpdater.set(this, ConcurrentUtils.CONCURRENT_IDLE);
+                drainingTheQueueUpdater.set(this, CONCURRENT_IDLE);
             }
             // Because we held the lock we need to check if any terminal event has occurred in the mean time,
             // and if so notify subscribers.
@@ -75,7 +78,8 @@ public final class CompletableProcessor extends Completable implements Processor
                 notifyListeners(terminalSignal);
             }
         } else {
-            TerminalNotification.error(new RuntimeException("queue " + subscribers + " unexpectedly rejected offer.")).terminate(subscriber);
+            TerminalNotification.error(new RuntimeException("queue " + subscribers + " unexpectedly rejected offer."))
+                    .terminate(subscriber);
         }
     }
 
@@ -101,6 +105,6 @@ public final class CompletableProcessor extends Completable implements Processor
     }
 
     private void notifyListeners(TerminalNotification terminalSignal) {
-        ConcurrentUtils.drainSingleConsumerQueueDelayThrow(subscribers, terminalSignal::terminate, drainingTheQueueUpdater, this);
+        drainSingleConsumerQueueDelayThrow(subscribers, terminalSignal::terminate, drainingTheQueueUpdater, this);
     }
 }
