@@ -180,7 +180,7 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       pluginManager.apply("com.github.spotbugs")
 
       checkstyle {
-        toolVersion = "8.10.1"
+        toolVersion = "8.12"
         configDir = file("$buildDir/checkstyle")
       }
 
@@ -211,7 +211,7 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       }
 
       pmd {
-        toolVersion = "6.4.0"
+        toolVersion = "6.7.0"
         sourceSets = [sourceSets.main, sourceSets.test]
         ruleSets = []
         ruleSetConfig = resources.text.fromString(getClass().getResourceAsStream("pmd/basic.xml").text)
@@ -242,7 +242,7 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       }
 
       spotbugs {
-        toolVersion = "3.1.1"
+        toolVersion = "3.1.6"
         sourceSets = [sourceSets.main]
 
         // Apply the test exclusions to test fixtures, by making them the default.
