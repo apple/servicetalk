@@ -43,7 +43,7 @@ services:
     depends_on: [java, redis-2]
     image: java:latest
     environment:
-      - CI=true
+      - CI
       - REDIS_HOST=redis-2
       - REDIS_PORT=6379
       - REDIS_AUTH_PORT=6378
@@ -59,7 +59,7 @@ services:
     depends_on: [java, redis-3]
     image: java:latest
     environment:
-      - CI=true
+      - CI
       - REDIS_HOST=redis-3
       - REDIS_PORT=6379
       - REDIS_AUTH_PORT=6378
@@ -75,7 +75,7 @@ services:
     depends_on: [java, redis-4]
     image: java:latest
     environment:
-      - CI=true
+      - CI
       - REDIS_HOST=redis-4
       - REDIS_PORT=6379
       - REDIS_AUTH_PORT=6378
@@ -91,7 +91,7 @@ services:
     depends_on: [java, redis-4]
     image: java:latest
     environment:
-      - CI=true
+      - CI
       - REDIS_HOST=redis-4
       - REDIS_PORT=6379
       - REDIS_AUTH_PORT=6378
@@ -109,7 +109,7 @@ services:
     depends_on: [java, redis-4]
     image: java:latest
     environment:
-      - CI=true
+      - CI
       - REDIS_HOST=redis-4
       - REDIS_PORT=6379
       - REDIS_AUTH_PORT=6378
