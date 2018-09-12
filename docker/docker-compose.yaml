@@ -97,7 +97,7 @@ services:
       - REDIS_AUTH_PORT=6378
       - BINTRAY_USER
       - BINTRAY_KEY
-    command: bash -cl "./gradlew clean check bintrayUpload"
+    command: bash -cl "./gradlew clean check && ./gradlew bintrayUpload"
     volumes:
       - ~/.ssh:/root/.ssh
       - ~/.gradle${EXECUTOR_NUMBER}:/root/.gradle
@@ -115,7 +115,7 @@ services:
       - REDIS_AUTH_PORT=6378
       - BINTRAY_USER
       - BINTRAY_KEY
-    command: bash -cl "./gradlew clean check bintrayUpload -PreleaseBuild=true"
+    command: bash -cl "./gradlew clean check && ./gradlew bintrayUpload -PreleaseBuild=true"
     volumes:
       - ~/.ssh:/root/.ssh
       - ~/.gradle${EXECUTOR_NUMBER}:/root/.gradle
