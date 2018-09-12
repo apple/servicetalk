@@ -26,7 +26,6 @@ import javax.annotation.Nonnull;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.redis.api.RedisData.QUEUED;
-import static java.util.Objects.requireNonNull;
 
 final class CommanderUtils {
 
@@ -34,48 +33,57 @@ final class CommanderUtils {
     static final int STATE_EXECED = 1;
     static final int STATE_DISCARDED = 2;
 
-    public static final CharSequence QUEUED_RESP = QUEUED.getValue();
+    private static final String QUEUED_RESP = QUEUED.getValue().toString();
 
     private CommanderUtils() {
         // no instances
     }
 
     @Nonnull
-    static <T> Future<T> enqueueForExecute(final int state, final List<SingleProcessor> singles,
+    static <T> Future<T> enqueueForExecute(final int state, final List<SingleProcessor<?>> singles,
                                            final Single<String> queued) {
         if (state != STATE_PENDING) {
             throw new IllegalTransactionStateException(
                     Single.class.getSimpleName() + " cannot be subscribed to after the transaction has completed.");
         }
-        return queued.flatMap(status -> {
-            if (QUEUED_RESP.equals(status)) {
-                        final SingleProcessor<T> single = new SingleProcessor<>();
-                        singles.add(single);
-                        return single;
-                    }
-                    return Single.error(new RedisClientException("Read '" + status + "' but expected 'QUEUED'"));
-                }).toFuture();
+        // singles is always a field from a Commander, so this is safe.
+        //noinspection SynchronizationOnLocalVariableOrMethodParameter
+        synchronized (singles) {
+            final SingleProcessor<T> single = new SingleProcessor<>();
+            singles.add(single);
+            return queued.flatMap(status -> {
+                if (QUEUED_RESP.equals(status)) {
+                    return single;
+                }
+                return Single.error(new RedisClientException("Read '" + status + "' but expected 'QUEUED'"));
+            }).toFuture();
+        }
     }
 
-    static Single<String> abortSingles(final Single<String> result, final List<SingleProcessor> singles) {
+    static Single<String> abortSingles(final Single<String> result, final List<SingleProcessor<?>> singles) {
         return result.doBeforeSuccess(list -> {
-            for (int i = 0; i < singles.size(); ++i) {
+            final int size = singles.size();
+            for (int i = 0; i < size; ++i) {
                 singles.get(i).onError(new TransactionAbortedException());
             }
         });
     }
 
-    static Completable completeSingles(final Single<List<Object>> result, final List<SingleProcessor> singles) {
+    static Completable completeSingles(final Single<List<Object>> result, final List<SingleProcessor<?>> singles) {
         return result.doBeforeSuccess(list -> {
-            int index = 0;
-            for (Object obj : requireNonNull(list)) {
-                SingleProcessor single = singles.get(index);
+            if (singles.size() != list.size()) {
+                throw new IllegalStateException("Result list size (" + list.size()
+                        + ") and SingleProcessor list size (" + singles.size() + ") did not match");
+            }
+            final int size = list.size();
+            for (int i = 0; i < size; ++i) {
+                Object obj = list.get(i);
+                SingleProcessor<?> single = singles.get(i);
                 if (obj instanceof Throwable) {
                     single.onError((Throwable) obj);
                 } else {
                     onSuccessUnchecked(obj, single);
                 }
-                index++;
             }
         }).ignoreResult();
     }
@@ -85,15 +93,16 @@ final class CommanderUtils {
         single.onSuccess(obj);
     }
 
-    static class DiscardSingle<T> extends Single<String> {
+    static final class DiscardSingle<T> extends Single<String> {
 
         private final T commander;
         private final Single<String> queued;
-        private final List<SingleProcessor> singles;
+        private final List<SingleProcessor<?>> singles;
         @SuppressWarnings("AtomicFieldUpdaterNotStaticFinal")
         private final AtomicIntegerFieldUpdater<T> stateUpdater;
 
-        DiscardSingle(final T commander, final Single<String> queued, final List<SingleProcessor> singles, final AtomicIntegerFieldUpdater<T> stateUpdater) {
+        DiscardSingle(final T commander, final Single<String> queued, final List<SingleProcessor<?>> singles,
+                      final AtomicIntegerFieldUpdater<T> stateUpdater) {
             this.commander = commander;
             this.queued = queued;
             this.singles = singles;
@@ -111,15 +120,16 @@ final class CommanderUtils {
         }
     }
 
-    static class ExecCompletable<T> extends Completable {
+    static final class ExecCompletable<T> extends Completable {
 
         private final T commander;
         private final Single<List<Object>> queued;
-        private final List<SingleProcessor> singles;
+        private final List<SingleProcessor<?>> singles;
         @SuppressWarnings("AtomicFieldUpdaterNotStaticFinal")
         private final AtomicIntegerFieldUpdater<T> stateUpdater;
 
-        ExecCompletable(final T commander, final Single<List<Object>> queued, final List<SingleProcessor> singles, final AtomicIntegerFieldUpdater<T> stateUpdater) {
+        ExecCompletable(final T commander, final Single<List<Object>> queued, final List<SingleProcessor<?>> singles,
+                        final AtomicIntegerFieldUpdater<T> stateUpdater) {
             this.commander = commander;
             this.queued = queued;
             this.singles = singles;

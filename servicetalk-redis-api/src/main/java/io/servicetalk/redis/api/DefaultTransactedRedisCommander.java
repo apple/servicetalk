@@ -55,7 +55,7 @@ final class DefaultTransactedRedisCommander extends TransactedRedisCommander {
     @SuppressWarnings("unused")
     private volatile int state;
 
-    private final List<SingleProcessor> singles = new ArrayList<>();
+    private final List<SingleProcessor<?>> singles = new ArrayList<>();
 
     DefaultTransactedRedisCommander(final RedisClient.ReservedRedisConnection reservedCnx,
                 final boolean releaseAfterDone) {
