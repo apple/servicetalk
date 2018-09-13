@@ -48,25 +48,20 @@ final class CommanderUtils {
             throw new IllegalTransactionStateException(
                     Single.class.getSimpleName() + " cannot be subscribed to after the transaction has completed.");
         }
-        // singles is always a field from a Commander, so this is safe.
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
-        synchronized (singles) {
-            final SingleProcessor<T> single = new SingleProcessor<>();
-            singles.add(single);
-            return queued.flatMap(status -> {
-                if (QUEUED_RESP.equals(status)) {
-                    return single;
-                }
-                return Single.error(new RedisClientException("Read '" + status + "' but expected 'QUEUED'"));
-            }).toFuture();
-        }
+        final SingleProcessor<T> single = new SingleProcessor<>();
+        singles.add(single);
+        return queued.flatMap(status -> {
+            if (QUEUED_RESP.equals(status)) {
+                return single;
+            }
+            return Single.error(new RedisClientException("Read '" + status + "' but expected 'QUEUED'"));
+        }).toFuture();
     }
 
     static Single<String> abortSingles(final Single<String> result, final List<SingleProcessor<?>> singles) {
         return result.doBeforeSuccess(list -> {
-            final int size = singles.size();
-            for (int i = 0; i < size; ++i) {
-                singles.get(i).onError(new TransactionAbortedException());
+            for (SingleProcessor<?> single : singles) {
+                single.onError(new TransactionAbortedException());
             }
         });
     }
