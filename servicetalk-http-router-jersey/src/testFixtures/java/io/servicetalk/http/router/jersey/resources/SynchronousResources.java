@@ -21,8 +21,6 @@ import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
-import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpPayloadChunks;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.router.jersey.AbstractResourceTest.TestFiltered;
 import io.servicetalk.http.router.jersey.TestPojo;
@@ -61,7 +59,6 @@ import javax.ws.rs.core.UriInfo;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.http.router.jersey.TestUtils.asChunkPublisher;
 import static io.servicetalk.http.router.jersey.TestUtils.getContentAsString;
 import static io.servicetalk.http.router.jersey.resources.SynchronousResources.PATH;
 import static java.lang.System.arraycopy;
@@ -137,7 +134,7 @@ public class SynchronousResources {
     @Produces(TEXT_PLAIN)
     @Path("/servicetalk-request")
     @GET
-    public String serviceTalkRequest(@Context final StreamingHttpRequest<HttpPayloadChunk> serviceTalkRequest) {
+    public String serviceTalkRequest(@Context final StreamingHttpRequest serviceTalkRequest) {
         return "GOT: " + serviceTalkRequest.getRequestTarget();
     }
 
@@ -256,15 +253,15 @@ public class SynchronousResources {
     @Produces(TEXT_PLAIN)
     @Path("/text-strin-pubout")
     @POST
-    public Publisher<HttpPayloadChunk> postTextStrInPubOut(final String requestContent) {
-        return asChunkPublisher("GOT: " + requestContent, ctx.getExecutionContext().getBufferAllocator());
+    public Publisher<Buffer> postTextStrInPubOut(final String requestContent) {
+        return just(ctx.getExecutionContext().getBufferAllocator().fromUtf8("GOT: " + requestContent));
     }
 
     @Consumes(TEXT_PLAIN)
     @Produces(TEXT_PLAIN)
     @Path("/text-pubin-strout")
     @POST
-    public String postTextPubInStrOut(final Publisher<HttpPayloadChunk> requestContent) {
+    public String postTextPubInStrOut(final Publisher<Buffer> requestContent) {
         return "GOT: " + getContentAsString(requestContent);
     }
 
@@ -272,8 +269,8 @@ public class SynchronousResources {
     @Produces(TEXT_PLAIN)
     @Path("/text-pubin-pubout")
     @POST
-    public Publisher<HttpPayloadChunk> postTextPubInPubOut(final Publisher<HttpPayloadChunk> requestContent) {
-        return asChunkPublisher("GOT: ", ctx.getExecutionContext().getBufferAllocator()).concatWith(requestContent);
+    public Publisher<Buffer> postTextPubInPubOut(final Publisher<Buffer> requestContent) {
+        return just(ctx.getExecutionContext().getBufferAllocator().fromAscii("GOT: ")).concatWith(requestContent);
     }
 
     @Produces(TEXT_PLAIN)
@@ -281,14 +278,14 @@ public class SynchronousResources {
     @GET
     public Response getTextPubResponse(@QueryParam("i") final int i) {
         final String contentString = "GOT: " + i;
-        final Publisher<HttpPayloadChunk> responseContent =
-                asChunkPublisher(contentString, ctx.getExecutionContext().getBufferAllocator());
+        final Publisher<Buffer> responseContent =
+                just(ctx.getExecutionContext().getBufferAllocator().fromAscii(contentString));
 
         return status(i)
                 // We know the content length so we set it, otherwise the response is chunked
                 .header(CONTENT_LENGTH, contentString.length())
-                // Wrap content Publisher to capture its generic type (i.e. HttpPayloadChunk)
-                .entity(new GenericEntity<Publisher<HttpPayloadChunk>>(responseContent) { })
+                // Wrap content Publisher to capture its generic type (i.e. Buffer)
+                .entity(new GenericEntity<Publisher<Buffer>>(responseContent) { })
                 .build();
     }
 
@@ -364,25 +361,24 @@ public class SynchronousResources {
     @Produces(APPLICATION_JSON)
     @Path("/json-mapin-pubout")
     @POST
-    public Publisher<HttpPayloadChunk> postJsonMapInPubOut(final Map<String, Object> requestContent) {
+    public Publisher<Buffer> postJsonMapInPubOut(final Map<String, Object> requestContent) {
         // Jersey's JacksonJsonProvider (thus blocking IO) is used for request deserialization
         // and ServiceTalk streaming serialization is used for the response
         final Map<String, Object> responseContent = new HashMap<>(requestContent);
         responseContent.put("foo", "bar3");
         return SERIALIZER.serialize(just(responseContent), ctx.getExecutionContext().getBufferAllocator(),
-                STRING_OBJECT_MAP_TYPE).map(HttpPayloadChunks::newPayloadChunk);
+                STRING_OBJECT_MAP_TYPE);
     }
 
     @Consumes(APPLICATION_JSON)
     @Produces(APPLICATION_JSON)
     @Path("/json-pubin-mapout")
     @POST
-    public Map<String, Object> postJsonPubInMapOut(final Publisher<HttpPayloadChunk> requestContent) {
+    public Map<String, Object> postJsonPubInMapOut(final Publisher<Buffer> requestContent) {
         // ServiceTalk streaming deserialization is used for the request
         // and Jersey's JacksonJsonProvider (thus blocking IO) is used for response serialization
         final Map<String, Object> requestData =
-                SERIALIZER.deserialize(requestContent.map(HttpPayloadChunk::getContent), STRING_OBJECT_MAP_TYPE)
-                        .toIterable().iterator().next();
+                SERIALIZER.deserialize(requestContent, STRING_OBJECT_MAP_TYPE).toIterable().iterator().next();
         final Map<String, Object> responseContent = new HashMap<>(requestData);
         responseContent.put("foo", "bar4");
         return responseContent;
@@ -392,18 +388,17 @@ public class SynchronousResources {
     @Produces(APPLICATION_JSON)
     @Path("/json-pubin-pubout")
     @POST
-    public Publisher<HttpPayloadChunk> postJsonPubInPubOut(final Publisher<HttpPayloadChunk> requestContent) {
+    public Publisher<Buffer> postJsonPubInPubOut(final Publisher<Buffer> requestContent) {
         // ServiceTalk streaming is used for both request deserialization and response serialization
         final Publisher<Map<String, Object>> response =
-                SERIALIZER.deserialize(requestContent.map(HttpPayloadChunk::getContent), STRING_OBJECT_MAP_TYPE)
+                SERIALIZER.deserialize(requestContent, STRING_OBJECT_MAP_TYPE)
                         .map(requestData -> {
                             final Map<String, Object> responseContent = new HashMap<>(requestData);
                             responseContent.put("foo", "bar5");
                             return responseContent;
                         });
 
-        return SERIALIZER.serialize(response, ctx.getExecutionContext().getBufferAllocator(), STRING_OBJECT_MAP_TYPE)
-                .map(HttpPayloadChunks::newPayloadChunk);
+        return SERIALIZER.serialize(response, ctx.getExecutionContext().getBufferAllocator(), STRING_OBJECT_MAP_TYPE);
     }
 
     @Consumes(APPLICATION_JSON)

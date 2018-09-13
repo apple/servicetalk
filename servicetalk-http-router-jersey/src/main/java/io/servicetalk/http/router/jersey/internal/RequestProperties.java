@@ -15,10 +15,10 @@
  */
 package io.servicetalk.http.router.jersey.internal;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.router.jersey.ChunkPublisherInputStream;
+import io.servicetalk.http.router.jersey.BufferPublisherInputStream;
 
 import javax.annotation.Nullable;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -30,11 +30,11 @@ import static java.util.Objects.requireNonNull;
  * Helper methods used internally for accessing ServiceTalk-specific request properties.
  */
 public final class RequestProperties {
-    private static final String REQUEST_CHUNK_PUBLISHER_IS =
-            new GenericType<ChunkPublisherInputStream>() { }.getType().getTypeName();
+    private static final String REQUEST_BUFFER_PUBLISHER_IS =
+            new GenericType<BufferPublisherInputStream>() { }.getType().getTypeName();
 
-    private static final String RESPONSE_CHUNK_PUBLISHER =
-            new GenericType<Publisher<HttpPayloadChunk>>() { }.getType().getTypeName();
+    private static final String RESPONSE_BUFFER_PUBLISHER =
+            new GenericType<Publisher<Buffer>>() { }.getType().getTypeName();
 
     private static final String RESPONSE_EXEC_OFFLOADER =
             new GenericType<Executor>() { }.getType().getTypeName();
@@ -46,47 +46,48 @@ public final class RequestProperties {
     /**
      * Initialize all request properties.
      *
-     * @param entityStream the {@link ChunkPublisherInputStream} associated with the request.
+     * @param entityStream the {@link BufferPublisherInputStream} associated with the request.
      * @param reqCtx the {@link ContainerRequestContext} for the request
      */
-    public static void initRequestProperties(final ChunkPublisherInputStream entityStream,
+    public static void initRequestProperties(final BufferPublisherInputStream entityStream,
                                              final ContainerRequestContext reqCtx) {
-        reqCtx.setProperty(REQUEST_CHUNK_PUBLISHER_IS, requireNonNull(entityStream));
-        reqCtx.setProperty(RESPONSE_CHUNK_PUBLISHER, null);
+        reqCtx.setProperty(REQUEST_BUFFER_PUBLISHER_IS, requireNonNull(entityStream));
+        reqCtx.setProperty(RESPONSE_BUFFER_PUBLISHER, null);
         reqCtx.setProperty(RESPONSE_EXEC_OFFLOADER, null);
     }
 
     /**
-     * Get the {@link ChunkPublisherInputStream} associated with the request.
+     * Get the {@link BufferPublisherInputStream} associated with the request.
      *
      * @param reqCtx the {@link ContainerRequestContext} for the request
-     * @return the {@link ChunkPublisherInputStream} associated with the request
+     * @return the {@link BufferPublisherInputStream} associated with the request
      */
-    public static ChunkPublisherInputStream getRequestChunkPublisherInputStream(final ContainerRequestContext reqCtx) {
-        return (ChunkPublisherInputStream) reqCtx.getProperty(REQUEST_CHUNK_PUBLISHER_IS);
+    public static BufferPublisherInputStream getRequestBufferPublisherInputStream(
+            final ContainerRequestContext reqCtx) {
+        return (BufferPublisherInputStream) reqCtx.getProperty(REQUEST_BUFFER_PUBLISHER_IS);
     }
 
     /**
-     * Get the response {@link Publisher Publisher&lt;HttpPayloadChunk&gt;}.
+     * Get the response {@link Publisher Publisher&lt;Buffer&gt;}.
      *
      * @param reqCtx the {@link ContainerRequestContext} for the request
-     * @return the response {@link Publisher Publisher&lt;HttpPayloadChunk&gt;} or {@code null} if none has been set.
+     * @return the response {@link Publisher Publisher&lt;Buffer&gt;} or {@code null} if none has been set.
      */
     @Nullable
     @SuppressWarnings("unchecked")
-    public static Publisher<HttpPayloadChunk> getResponseChunkPublisher(final ContainerRequestContext reqCtx) {
-        return (Publisher<HttpPayloadChunk>) reqCtx.getProperty(RESPONSE_CHUNK_PUBLISHER);
+    public static Publisher<Buffer> getResponseBufferPublisher(final ContainerRequestContext reqCtx) {
+        return (Publisher<Buffer>) reqCtx.getProperty(RESPONSE_BUFFER_PUBLISHER);
     }
 
     /**
-     * Set the response {@link Publisher Publisher&lt;HttpPayloadChunk&gt;}.
+     * Set the response {@link Publisher Publisher&lt;Buffer&gt;}.
      *
-     * @param chunkPublisher the response content {@link Publisher Publisher&lt;HttpPayloadChunk&gt;}
+     * @param bufferPublisher the response content {@link Publisher Publisher&lt;Buffer&gt;}
      * @param reqCtx the {@link ContainerRequestContext} for the request
      */
-    public static void setResponseChunkPublisher(final Publisher<HttpPayloadChunk> chunkPublisher,
-                                                 final ContainerRequestContext reqCtx) {
-        reqCtx.setProperty(RESPONSE_CHUNK_PUBLISHER, requireNonNull(chunkPublisher));
+    public static void setResponseBufferPublisher(final Publisher<Buffer> bufferPublisher,
+                                                  final ContainerRequestContext reqCtx) {
+        reqCtx.setProperty(RESPONSE_BUFFER_PUBLISHER, requireNonNull(bufferPublisher));
     }
 
     /**

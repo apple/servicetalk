@@ -16,6 +16,7 @@
 package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ConnectionContext;
 
@@ -39,10 +40,8 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
-import static io.servicetalk.http.api.HttpPayloadChunks.aggregateChunks;
-import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
-import static io.servicetalk.http.router.jersey.ChunkPublisherInputStream.handleEntityStream;
-import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseChunkPublisher;
+import static io.servicetalk.http.router.jersey.BufferPublisherInputStream.handleEntityStream;
+import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseBufferPublisher;
 import static javax.ws.rs.Priorities.ENTITY_CODER;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
 import static javax.ws.rs.core.MediaType.WILDCARD;
@@ -80,19 +79,24 @@ final class BufferMessageBodyReaderWriter implements MessageBodyReader<Buffer>, 
                            final InputStream entityStream) throws WebApplicationException {
 
         return handleEntityStream(entityStream, ctxRefProvider.get().get().getExecutionContext().getBufferAllocator(),
-                (p, a) -> aggregateChunks(p.toIterable(), a).getContent(),
+                (p, a) -> {
+                    // FIXME use Buffer aggregator helper when ready
+                    final CompositeBuffer cb = a.newCompositeBuffer();
+                    p.toIterable().forEach(cb::addBuffer);
+                    return cb;
+                },
                 (is, a) -> {
                     final int contentLength = requestCtxProvider.get().getLength();
-                    Buffer buf = contentLength == -1 ? a.newBuffer() : a.newBuffer(contentLength);
+                    final Buffer buf = contentLength == -1 ? a.newBuffer() : a.newBuffer(contentLength);
                     try {
                         // Configured via the org.glassfish.jersey.message.MessageProperties#IO_BUFFER_SIZE property
-                        int written = buf.writeBytesUntilEndStream(is, BUFFER_SIZE);
+                        final int written = buf.writeBytesUntilEndStream(is, BUFFER_SIZE);
                         if (contentLength > 0 && written != contentLength) {
                             throw new BadRequestException("Not enough bytes for content-length: " + contentLength
                                     + ", only got: " + written);
                         }
                         return buf;
-                    } catch (IOException e) {
+                    } catch (final IOException e) {
                         throw new InternalServerErrorException(e);
                     }
                 });
@@ -115,6 +119,6 @@ final class BufferMessageBodyReaderWriter implements MessageBodyReader<Buffer>, 
                         final MultivaluedMap<String, Object> httpHeaders,
                         final OutputStream entityStream) {
         httpHeaders.putSingle(CONTENT_LENGTH, buffer.getReadableBytes());
-        setResponseChunkPublisher(Publisher.from(newPayloadChunk(buffer)), requestCtxProvider.get());
+        setResponseBufferPublisher(Publisher.from(buffer), requestCtxProvider.get());
     }
 }

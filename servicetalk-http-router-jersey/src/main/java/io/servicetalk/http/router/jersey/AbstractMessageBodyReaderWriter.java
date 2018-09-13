@@ -15,9 +15,9 @@
  */
 package io.servicetalk.http.router.jersey;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.glassfish.jersey.internal.util.collection.Ref;
@@ -40,9 +40,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
-import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
-import static io.servicetalk.http.router.jersey.ChunkPublisherInputStream.handleEntityStream;
-import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseChunkPublisher;
+import static io.servicetalk.http.router.jersey.BufferPublisherInputStream.handleEntityStream;
+import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseBufferPublisher;
 import static javax.ws.rs.Priorities.ENTITY_CODER;
 import static javax.ws.rs.core.MediaType.WILDCARD;
 
@@ -77,17 +76,17 @@ abstract class AbstractMessageBodyReaderWriter<Source, T, SourceOfT, WrappedSour
     }
 
     final SourceOfT readFrom(final InputStream entityStream,
-                             final BiFunction<Publisher<HttpPayloadChunk>, BufferAllocator, SourceOfT> bodyFunction,
+                             final BiFunction<Publisher<Buffer>, BufferAllocator, SourceOfT> bodyFunction,
                              final Function<SourceOfT, WrappedSourceOfT> sourceFunction)
             throws WebApplicationException {
 
-        // The original ChunkPublisherInputStream has been replaced via a filter/interceptor so we need to buildStreaming
+        // The original BufferPublisherInputStream has been replaced via a filter/interceptor so we need to buildStreaming
         // a new RS source from the actual input stream
         final BufferAllocator allocator = ctxRefProvider.get().get().getExecutionContext().getBufferAllocator();
         return handleEntityStream(entityStream, allocator, bodyFunction,
                 (is, a) -> bodyFunction
                         .andThen(sourceFunction)
-                        .apply(Publisher.from(is).map(bytes -> newPayloadChunk(a.wrap(bytes))), a));
+                        .apply(Publisher.from(is).map(a::wrap), a));
     }
 
     @Override
@@ -98,10 +97,10 @@ abstract class AbstractMessageBodyReaderWriter<Source, T, SourceOfT, WrappedSour
         return isSupported(genericType);
     }
 
-    final void writeTo(final Publisher<HttpPayloadChunk> publisher) throws WebApplicationException {
+    final void writeTo(final Publisher<Buffer> publisher) throws WebApplicationException {
         // The response entity being a Publisher, we do not need to write it to the entity stream
         // but instead store it in request context to bypass the stream writing infrastructure.
-        setResponseChunkPublisher(publisher, requestCtxProvider.get());
+        setResponseBufferPublisher(publisher, requestCtxProvider.get());
     }
 
     private boolean isSupported(final Type entityType) {
