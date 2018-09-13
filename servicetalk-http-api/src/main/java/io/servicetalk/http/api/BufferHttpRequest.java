@@ -17,15 +17,11 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.buffer.api.CompositeBuffer;
-import io.servicetalk.concurrent.CloseableIterable;
-import io.servicetalk.concurrent.CloseableIterator;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Iterables.singletonBlockingIterable;
-import static java.lang.Integer.MAX_VALUE;
 import static java.util.Objects.requireNonNull;
 
 final class BufferHttpRequest extends DefaultHttpRequestMetaData implements HttpRequest {
@@ -80,37 +76,6 @@ final class BufferHttpRequest extends DefaultHttpRequestMetaData implements Http
     @Override
     public <T> HttpRequest setPayloadBody(final T pojo, final HttpSerializer<T> serializer) {
         return new BufferHttpRequest(this, allocator, trailers, serializer.serialize(getHeaders(), pojo, allocator));
-    }
-
-    @Override
-    public <T> HttpRequest setPayloadBody(final Iterable<T> pojos, final HttpSerializer<T> serializer) {
-        Iterable<Buffer> buffers = serializer.serialize(getHeaders(), pojos, allocator);
-        CompositeBuffer payloadBody = allocator.newCompositeBuffer(MAX_VALUE);
-        for (Buffer buffer : buffers) {
-            payloadBody.addBuffer(buffer);
-        }
-        return new BufferHttpRequest(this, allocator, trailers, payloadBody);
-    }
-
-    @Override
-    public <T> HttpRequest setPayloadBody(final CloseableIterable<T> pojos, final HttpSerializer<T> serializer) {
-        CloseableIterable<Buffer> buffers = serializer.serialize(getHeaders(), pojos, allocator);
-        CloseableIterator<Buffer> bufferItr = buffers.iterator();
-        final CompositeBuffer payloadBody;
-        try {
-            payloadBody = allocator.newCompositeBuffer(MAX_VALUE);
-            while (bufferItr.hasNext()) {
-                payloadBody.addBuffer(bufferItr.next());
-            }
-        } catch (Throwable cause) {
-            try {
-                bufferItr.close();
-            } catch (Exception e) {
-                cause.addSuppressed(e);
-            }
-            throw cause;
-        }
-        return new BufferHttpRequest(this, allocator, trailers, payloadBody);
     }
 
     @Override
