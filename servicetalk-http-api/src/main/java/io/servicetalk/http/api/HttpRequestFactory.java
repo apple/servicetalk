@@ -23,10 +23,10 @@ import static io.servicetalk.http.api.HttpRequestMethods.POST;
  */
 public interface HttpRequestFactory {
     /**
-     * Create a new {@link HttpRequestFactory}.
+     * Create a new {@link HttpRequest}.
      * @param method The {@link HttpRequestMethod}.
      * @param requestTarget The <a herf="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
-     * @return a new {@link HttpRequestFactory}.
+     * @return a new {@link HttpRequest}.
      */
     HttpRequest newRequest(HttpRequestMethod method, String requestTarget);
 

@@ -218,13 +218,17 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
         UpgradableStreamingHttpResponse transformPayloadBody(UnaryOperator<Publisher<Buffer>> transformer);
 
         @Override
-        <T> UpgradableStreamingHttpResponse transform(Supplier<T> stateSupplier,
-                                                      BiFunction<Buffer, T, Buffer> transformer,
-                                                      BiConsumer<T, HttpHeaders> trailersConsumer);
+        UpgradableStreamingHttpResponse transformRawPayloadBody(UnaryOperator<Publisher<?>> transformer);
 
         @Override
         <T> UpgradableStreamingHttpResponse transform(Supplier<T> stateSupplier,
-                                                      BiFunction<Object, T, Object> transformer);
+                                                      BiFunction<Buffer, T, Buffer> transformer,
+                                                      BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer);
+
+        @Override
+        <T> UpgradableStreamingHttpResponse transformRaw(Supplier<T> stateSupplier,
+                                                         BiFunction<Object, T, ?> transformer,
+                                                         BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer);
 
         @Override
         UpgradableStreamingHttpResponse setVersion(HttpProtocolVersion version);
