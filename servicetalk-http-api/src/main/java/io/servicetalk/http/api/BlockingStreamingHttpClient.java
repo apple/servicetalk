@@ -217,13 +217,17 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
                 UnaryOperator<BlockingIterable<Buffer>> transformer);
 
         @Override
-        <T> UpgradableBlockingStreamingHttpResponse transform(Supplier<T> stateSupplier,
-                                                              BiFunction<Buffer, T, Buffer> transformer,
-                                                              BiConsumer<T, HttpHeaders> trailersConsumer);
+        UpgradableBlockingStreamingHttpResponse transformRawPayloadBody(UnaryOperator<BlockingIterable<?>> transformer);
 
         @Override
         <T> UpgradableBlockingStreamingHttpResponse transform(Supplier<T> stateSupplier,
-                                                              BiFunction<Object, T, Object> transformer);
+                                                              BiFunction<Buffer, T, Buffer> transformer,
+                                                              BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer);
+
+        @Override
+        <T> UpgradableBlockingStreamingHttpResponse transformRaw(Supplier<T> stateSupplier,
+                                                                 BiFunction<Object, T, ?> transformer,
+                                                                 BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer);
 
         @Override
         UpgradableBlockingStreamingHttpResponse setVersion(HttpProtocolVersion version);
