@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.concurrent.CloseableIterable;
 
 /**
  * An HTTP response. The payload is represented as a single {@link Object}.
@@ -59,30 +58,6 @@ public interface HttpResponse extends HttpResponseMetaData {
      * @return {@code this}.
      */
     <T> HttpResponse setPayloadBody(T pojo, HttpSerializer<T> serializer);
-
-    /**
-     * Set the underlying payload to be the results of serialization of {@code pojo}.
-     * <p>
-     * Note this method will consume the {@link Iterable} in a blocking fashion! If the results are not already
-     * available in memory this method will block.
-     * @param pojos An {@link Iterable} which provides the objects to serialize.
-     * @param serializer The {@link HttpSerializer} which converts {@code pojo} into bytes.
-     * @param <T> The type of object to serialize.
-     * @return A {@link HttpResponse} with the new serialized payload body.
-     */
-    <T> HttpResponse setPayloadBody(Iterable<T> pojos, HttpSerializer<T> serializer);
-
-    /**
-     * Set the underlying payload to be the results of serialization of {@code pojo}.
-     * <p>
-     * Note this method will consume the {@link CloseableIterable} in a blocking fashion! If the results are not already
-     * available in memory this method will block.
-     * @param pojos An {@link CloseableIterable} which provides the objects to serialize.
-     * @param serializer The {@link HttpSerializer} which converts {@code pojo} into bytes.
-     * @param <T> The type of object to serialize.
-     * @return A {@link HttpResponse} with the new serialized payload body.
-     */
-    <T> HttpResponse setPayloadBody(CloseableIterable<T> pojos, HttpSerializer<T> serializer);
 
     /**
      * Translate this {@link HttpResponse} to a {@link StreamingHttpResponse}.
