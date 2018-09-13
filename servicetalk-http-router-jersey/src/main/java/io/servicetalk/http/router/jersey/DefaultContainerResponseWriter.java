@@ -46,7 +46,6 @@ import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
-import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.http.router.jersey.CharSequenceUtils.asCharSequence;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getResponseBufferPublisher;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getResponseExecutorOffloader;
@@ -187,7 +186,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
                     .setVersion(protocolVersion)
                     .transformPayloadBody(__ -> executor != null ? content.subscribeOn(executor) : content);
         } else {
-            response = newResponse(protocolVersion, status);
+            response = serviceCtx.newResponse(status).setVersion(protocolVersion);
         }
 
         final HttpHeaders headers = response.getHeaders();

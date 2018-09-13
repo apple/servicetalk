@@ -21,8 +21,6 @@ import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
-import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpPayloadChunks;
 import io.servicetalk.http.router.jersey.internal.InputStreamIterator;
 import io.servicetalk.serialization.api.DefaultSerializer;
 import io.servicetalk.serialization.api.SerializationException;
@@ -37,6 +35,7 @@ import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import javax.annotation.Nullable;
 import javax.annotation.Priority;
 import javax.inject.Provider;
 import javax.ws.rs.BadRequestException;
@@ -54,14 +53,14 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Providers;
 
-import static io.servicetalk.http.router.jersey.ChunkPublisherInputStream.handleEntityStream;
-import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseChunkPublisher;
+import static io.servicetalk.http.router.jersey.BufferPublisherInputStream.handleEntityStream;
+import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseBufferPublisher;
 import static javax.ws.rs.Priorities.ENTITY_CODER;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 import static javax.ws.rs.core.MediaType.WILDCARD;
 
 // Less priority than the *MessageBodyReaderWriters provided by the Jersey Router itself to avoid attempting
-// JSON (de)serialization of core types like Buffer or HttpPayloadChunk.
+// JSON (de)serialization of core types like Buffer.
 @Priority(ENTITY_CODER + 100)
 @Consumes(WILDCARD)
 @Produces(WILDCARD)
@@ -102,16 +101,16 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
 
         if (Single.class.isAssignableFrom(type)) {
             return handleEntityStream(entityStream, allocator,
-                    (p, a) -> ser.deserialize(p.map(HttpPayloadChunk::getContent), getSourceClass(genericType)).first(),
+                    (p, a) -> ser.deserialize(p, getSourceClass(genericType)).first(),
                     (is, a) -> ser.deserialize(toBufferPublisher(is, a), getSourceClass(genericType)).first());
         } else if (Publisher.class.isAssignableFrom(type)) {
             return handleEntityStream(entityStream, allocator,
-                    (p, a) -> ser.deserialize(p.map(HttpPayloadChunk::getContent), getSourceClass(genericType)),
+                    (p, a) -> ser.deserialize(p, getSourceClass(genericType)),
                     (is, a) -> ser.deserialize(toBufferPublisher(is, a), getSourceClass(genericType)));
         }
 
         return handleEntityStream(entityStream, allocator,
-                (p, a) -> deserialize(p.map(HttpPayloadChunk::getContent), ser, type),
+                (p, a) -> deserialize(p, ser, type),
                 (is, a) -> deserialize(toBufferPublisher(is, a), ser, type));
     }
 
@@ -130,19 +129,19 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
 
         final Publisher<Buffer> bufferPublisher;
         if (o instanceof Single) {
-            bufferPublisher = getResponseChunkPublisher(((Single) o).toPublisher(), genericType, mediaType);
+            bufferPublisher = getResponseBufferPublisher(((Single) o).toPublisher(), genericType, mediaType);
         } else if (o instanceof Publisher) {
-            bufferPublisher = getResponseChunkPublisher((Publisher) o, genericType, mediaType);
+            bufferPublisher = getResponseBufferPublisher((Publisher) o, genericType, mediaType);
         } else {
-            bufferPublisher = getResponseChunkPublisher(Publisher.from(o), o.getClass(), mediaType);
+            bufferPublisher = getResponseBufferPublisher(Publisher.from(o), o.getClass(), mediaType);
         }
 
-        setResponseChunkPublisher(bufferPublisher.map(HttpPayloadChunks::newPayloadChunk), requestCtxProvider.get());
+        setResponseBufferPublisher(bufferPublisher, requestCtxProvider.get());
     }
 
     @SuppressWarnings("unchecked")
-    private Publisher<Buffer> getResponseChunkPublisher(final Publisher publisher, final Type type,
-                                                        final MediaType mediaType) {
+    private Publisher<Buffer> getResponseBufferPublisher(final Publisher publisher, final Type type,
+                                                         final MediaType mediaType) {
         final BufferAllocator allocator = ctxRefProvider.get().get().getExecutionContext().getBufferAllocator();
         return getSerializer(mediaType).serialize(publisher, allocator,
                 type instanceof Class ? (Class) type : getSourceClass(type));
@@ -164,12 +163,13 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
         return Publisher.from(() -> new InputStreamIterator(is)).map(a::wrap);
     }
 
+    @Nullable
     private static Object deserialize(final Publisher<Buffer> bufferPublisher, final Serializer ser,
                                       final Class<Object> type) {
 
         final Object result;
 
-        try (BlockingIterator<Object> i = ser.deserialize(bufferPublisher.toIterable(), type).iterator()) {
+        try (final BlockingIterator<Object> i = ser.deserialize(bufferPublisher.toIterable(), type).iterator()) {
             result = !i.hasNext() ? NOTHING_DESERIALIZED : i.next();
         } catch (final SerializationException se) {
             throw se; // handled by the exception mapper
