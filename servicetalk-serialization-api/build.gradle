@@ -22,25 +22,25 @@ buildscript {
   }
 
   dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.2.0-SNAPSHOT"
+    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:$project.version"
   }
 }
 
 apply plugin: "servicetalk-library"
 
 dependencies {
-  implementation "io.servicetalk:servicetalk-bom-internal:0.2.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
 
-  api "io.servicetalk:servicetalk-buffer-api:0.2.0-SNAPSHOT"
-  api "io.servicetalk:servicetalk-concurrent-api:0.2.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-buffer-api:$project.version"
+  api "io.servicetalk:servicetalk-concurrent-api:$project.version"
 
   implementation "com.google.code.findbugs:jsr305"
-  implementation "io.servicetalk:servicetalk-annotations:0.2.0-SNAPSHOT"
-  implementation "io.servicetalk:servicetalk-concurrent-internal:0.2.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-annotations:$project.version"
+  implementation "io.servicetalk:servicetalk-concurrent-internal:$project.version"
 
-  testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:0.2.0-SNAPSHOT"
-  testImplementation "io.servicetalk:servicetalk-concurrent-internal:0.2.0-SNAPSHOT"
-  testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:0.2.0-SNAPSHOT"
+  testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:$project.version"
+  testImplementation "io.servicetalk:servicetalk-concurrent-internal:$project.version"
+  testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:$project.version"
   testImplementation "junit:junit"
   testImplementation "org.hamcrest:hamcrest-library"
   testImplementation "org.mockito:mockito-core"

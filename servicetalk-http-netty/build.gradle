@@ -22,36 +22,36 @@ buildscript {
   }
 
   dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.2.0-SNAPSHOT"
+    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:$project.version"
   }
 }
 
 apply plugin: "servicetalk-library"
 
 dependencies {
-  implementation "io.servicetalk:servicetalk-bom-internal:0.2.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
 
-  api "io.servicetalk:servicetalk-concurrent-api:0.2.0-SNAPSHOT"
-  api "io.servicetalk:servicetalk-http-api:0.2.0-SNAPSHOT"
+  api "io.servicetalk:servicetalk-concurrent-api:$project.version"
+  api "io.servicetalk:servicetalk-http-api:$project.version"
 
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.netty:netty-codec-http"
-  implementation "io.servicetalk:servicetalk-annotations:0.2.0-SNAPSHOT"
-  implementation "io.servicetalk:servicetalk-client-internal:0.2.0-SNAPSHOT"
-  implementation "io.servicetalk:servicetalk-concurrent-internal:0.2.0-SNAPSHOT"
-  implementation "io.servicetalk:servicetalk-dns-discovery-netty:0.2.0-SNAPSHOT"
-  implementation "io.servicetalk:servicetalk-http-utils:0.2.0-SNAPSHOT"
-  implementation "io.servicetalk:servicetalk-loadbalancer:0.2.0-SNAPSHOT"
-  implementation "io.servicetalk:servicetalk-tcp-netty-internal:0.2.0-SNAPSHOT"
-  implementation "io.servicetalk:servicetalk-transport-netty:0.2.0-SNAPSHOT"
-  implementation "io.servicetalk:servicetalk-transport-netty-internal:0.2.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-annotations:$project.version"
+  implementation "io.servicetalk:servicetalk-client-internal:$project.version"
+  implementation "io.servicetalk:servicetalk-concurrent-internal:$project.version"
+  implementation "io.servicetalk:servicetalk-dns-discovery-netty:$project.version"
+  implementation "io.servicetalk:servicetalk-http-utils:$project.version"
+  implementation "io.servicetalk:servicetalk-loadbalancer:$project.version"
+  implementation "io.servicetalk:servicetalk-tcp-netty-internal:$project.version"
+  implementation "io.servicetalk:servicetalk-transport-netty:$project.version"
+  implementation "io.servicetalk:servicetalk-transport-netty-internal:$project.version"
   implementation "org.slf4j:slf4j-api"
 
-  testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:0.2.0-SNAPSHOT"
-  testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:0.2.0-SNAPSHOT"
-  testImplementation "io.servicetalk:servicetalk-loadbalancer:0.2.0-SNAPSHOT"
-  testImplementation "io.servicetalk:servicetalk-test-resources:0.2.0-SNAPSHOT"
-  testImplementation "io.servicetalk:servicetalk-transport-netty-internal-testFixtures:0.2.0-SNAPSHOT"
+  testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:$project.version"
+  testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:$project.version"
+  testImplementation "io.servicetalk:servicetalk-loadbalancer:$project.version"
+  testImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
+  testImplementation "io.servicetalk:servicetalk-transport-netty-internal-testFixtures:$project.version"
   testImplementation "junit:junit"
   testImplementation "org.hamcrest:hamcrest-library"
   testImplementation "org.mockito:mockito-core"
