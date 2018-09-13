@@ -26,7 +26,6 @@ import io.servicetalk.http.api.StreamingHttpClientToBlockingHttpClient.ReservedS
 import io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient.ReservedStreamingHttpConnectionToBlockingStreaming;
 import io.servicetalk.http.api.StreamingHttpClientToHttpClient.ReservedStreamingHttpConnectionToReservedHttpConnection;
 
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -34,7 +33,7 @@ import java.util.function.UnaryOperator;
 
 /**
  * The equivalent of {@link HttpClient} but that accepts {@link StreamingHttpRequest} and returns
- * {@link StreamingHttpResponse}
+ * {@link StreamingHttpResponse}.
  */
 public abstract class StreamingHttpClient extends StreamingHttpRequester {
     /**

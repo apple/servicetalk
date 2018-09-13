@@ -16,20 +16,16 @@
 package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
-import static io.servicetalk.http.api.HttpPayloadChunks.aggregateChunks;
-import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public final class TestUtils {
     public static final class ContentReadException extends RuntimeException {
+        private static final long serialVersionUID = -1340168051096097707L;
+
         public ContentReadException(final String message, final Throwable cause) {
             super(message, cause);
         }
@@ -39,30 +35,16 @@ public final class TestUtils {
         // no instances
     }
 
-    public static String getContentAsString(final StreamingHttpResponse<HttpPayloadChunk> res) {
+    public static String getContentAsString(final StreamingHttpResponse res) {
         return getContentAsString(res.getPayloadBody());
     }
 
-    public static String getContentAsString(final Publisher<HttpPayloadChunk> content) {
+    public static String getContentAsString(final Publisher<Buffer> content) {
         try {
             return awaitIndefinitelyNonNull(
-                    aggregateChunks(content, DEFAULT_ALLOCATOR).map(c -> c.getContent().toString(UTF_8)));
+                    content.reduce(StringBuilder::new, (sb, b) -> sb.append(b.toString(UTF_8)))).toString();
         } catch (final Throwable t) {
             throw new ContentReadException("Failed to extract content from: " + content, t);
         }
-    }
-
-    public static Publisher<HttpPayloadChunk> asChunkPublisher(final String content,
-                                                               final BufferAllocator allocator) {
-        return asChunkPublisher(allocator.fromUtf8(content));
-    }
-
-    public static Publisher<HttpPayloadChunk> asChunkPublisher(final byte[] content,
-                                                               final BufferAllocator allocator) {
-        return asChunkPublisher(allocator.wrap(content));
-    }
-
-    private static Publisher<HttpPayloadChunk> asChunkPublisher(final Buffer content) {
-        return just(newPayloadChunk(content));
     }
 }

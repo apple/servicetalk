@@ -20,7 +20,6 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.router.jersey.AbstractResourceTest.TestFiltered;
 import io.servicetalk.http.router.jersey.TestPojo;
 
@@ -58,7 +57,7 @@ import javax.ws.rs.sse.SseBroadcaster;
 import javax.ws.rs.sse.SseEventSink;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.http.router.jersey.TestUtils.asChunkPublisher;
+import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.http.router.jersey.resources.AsynchronousResources.PATH;
 import static java.lang.System.arraycopy;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -246,14 +245,14 @@ public class AsynchronousResources extends AbstractAsynchronousResources {
     @GET
     public CompletionStage<Response> getTextPubResponse(@QueryParam("i") final int i) {
         final String contentString = "GOT: " + i;
-        final Publisher<HttpPayloadChunk> responseContent =
-                asChunkPublisher(contentString, ctx.getExecutionContext().getBufferAllocator());
+        final Publisher<Buffer> responseContent =
+                just(ctx.getExecutionContext().getBufferAllocator().fromAscii(contentString));
 
         return completedFuture(status(i)
                 // We know the content length so we set it, otherwise the response is chunked
                 .header(CONTENT_LENGTH, contentString.length())
-                // Wrap content Publisher to capture its generic type (i.e. HttpPayloadChunk)
-                .entity(new GenericEntity<Publisher<HttpPayloadChunk>>(responseContent) { })
+                // Wrap content Publisher to capture its generic type (i.e. Buffer)
+                .entity(new GenericEntity<Publisher<Buffer>>(responseContent) { })
                 .build());
     }
 

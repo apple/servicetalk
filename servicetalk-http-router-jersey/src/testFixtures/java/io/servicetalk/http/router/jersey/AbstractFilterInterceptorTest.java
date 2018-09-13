@@ -18,13 +18,14 @@ package io.servicetalk.http.router.jersey;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.router.jersey.resources.AsynchronousResources;
 import io.servicetalk.http.router.jersey.resources.SynchronousResources;
 
 import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.FilterInputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
@@ -75,11 +76,7 @@ public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStream
             // ContainerResponseFilter allows replacing the entity altogether so we can optimize
             // for cases when the resource has returned a Publisher, while making sure we correctly carry the
             // generic type of the entity so the correct response body writer will be used
-            if (isSourceOfType(responseCtx.getEntityType(), Publisher.class, HttpPayloadChunk.class)) {
-                final Publisher<HttpPayloadChunk> contentWith0 = ((Publisher<HttpPayloadChunk>) responseCtx.getEntity())
-                        .map(c -> c.replace(oTo0(c.getContent())));
-                responseCtx.setEntity(new GenericEntity<Publisher<HttpPayloadChunk>>(contentWith0) { });
-            } else if (isSourceOfType(responseCtx.getEntityType(), Publisher.class, Buffer.class)) {
+            if (isSourceOfType(responseCtx.getEntityType(), Publisher.class, Buffer.class)) {
                 final Publisher<Buffer> contentWith0 =
                         ((Publisher<Buffer>) responseCtx.getEntity()).map(AbstractFilterInterceptorTest::oTo0);
                 responseCtx.setEntity(new GenericEntity<Publisher<Buffer>>(contentWith0) { });
@@ -142,13 +139,7 @@ public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStream
         public void aroundWriteTo(final WriterInterceptorContext writerInterceptorCtx) throws IOException {
             // WriterInterceptor allows replacing the entity altogether so we can optimize
             // for cases when the resource has returned a Publisher
-            if (isSourceOfType(writerInterceptorCtx.getGenericType(), Publisher.class, HttpPayloadChunk.class)) {
-                final Publisher<HttpPayloadChunk> contentWith0 =
-                        ((Publisher<HttpPayloadChunk>) writerInterceptorCtx.getEntity())
-                                .map(c -> c.replace(oTo0(c.getContent())));
-                writerInterceptorCtx.setEntity(contentWith0);
-                writerInterceptorCtx.proceed();
-            } else if (isSourceOfType(writerInterceptorCtx.getGenericType(), Publisher.class, Buffer.class)) {
+            if (isSourceOfType(writerInterceptorCtx.getGenericType(), Publisher.class, Buffer.class)) {
                 final Publisher<Buffer> contentWith0 = ((Publisher<Buffer>) writerInterceptorCtx.getEntity())
                         .map(AbstractFilterInterceptorTest::oTo0);
                 writerInterceptorCtx.setEntity(contentWith0);
@@ -256,7 +247,7 @@ public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStream
     public void bufferResources() {
         sendAndAssertResponse(get(SynchronousResources.PATH + "/text-buffer"), OK, TEXT_PLAIN, "D0NE");
 
-        final StreamingHttpResponse<HttpPayloadChunk> res =
+        final StreamingHttpResponse res =
                 sendAndAssertResponse(withHeader(get(SynchronousResources.PATH + "/text-buffer-response"), "hdr",
                         "bar"), NON_AUTHORITATIVE_INFORMATION, TEXT_PLAIN, "D0NE");
         assertThat(res.getHeaders().get("X-Test"), is(newAsciiString("bar")));

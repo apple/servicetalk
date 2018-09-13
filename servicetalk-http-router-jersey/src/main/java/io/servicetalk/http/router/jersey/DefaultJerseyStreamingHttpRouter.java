@@ -20,10 +20,10 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.api.StreamingHttpServiceContext;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.glassfish.jersey.internal.MapPropertiesDelegate;
@@ -81,12 +81,12 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
 
     private final ApplicationHandler applicationHandler;
     private final int publisherInputStreamQueueCapacity;
-    private final BiFunction<ConnectionContext, StreamingHttpRequest<HttpPayloadChunk>, String> baseUriFunction;
+    private final BiFunction<ConnectionContext, StreamingHttpRequest, String> baseUriFunction;
     private final Container container;
 
     DefaultJerseyStreamingHttpRouter(final Application application,
                                      final int publisherInputStreamQueueCapacity,
-                                     final BiFunction<ConnectionContext, StreamingHttpRequest<HttpPayloadChunk>, String> baseUriFunction,
+                                     final BiFunction<ConnectionContext, StreamingHttpRequest, String> baseUriFunction,
                                      final Function<String, Executor> executorFactory) {
         this(new ApplicationHandler(application), publisherInputStreamQueueCapacity, baseUriFunction,
                 executorFactory);
@@ -94,7 +94,7 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
 
     DefaultJerseyStreamingHttpRouter(final Class<? extends Application> applicationClass,
                                      final int publisherInputStreamQueueCapacity,
-                                     final BiFunction<ConnectionContext, StreamingHttpRequest<HttpPayloadChunk>, String> baseUriFunction,
+                                     final BiFunction<ConnectionContext, StreamingHttpRequest, String> baseUriFunction,
                                      final Function<String, Executor> executorFactory) {
         this(new ApplicationHandler(applicationClass), publisherInputStreamQueueCapacity, baseUriFunction,
                 executorFactory);
@@ -102,8 +102,8 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
 
     private DefaultJerseyStreamingHttpRouter(final ApplicationHandler applicationHandler,
                                              final int publisherInputStreamQueueCapacity,
-                                             final BiFunction<ConnectionContext,
-                                            StreamingHttpRequest<HttpPayloadChunk>, String> baseUriFunction,
+                                             final BiFunction<ConnectionContext, StreamingHttpRequest,
+                                                     String> baseUriFunction,
                                              final Function<String, Executor> executorFactory) {
 
         if (!applicationHandler.getConfiguration().isEnabled(ServiceTalkFeature.class)) {
@@ -151,15 +151,15 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
     }
 
     @Override
-    public Single<StreamingHttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                                  final StreamingHttpRequest<HttpPayloadChunk> req) {
-        return new Single<StreamingHttpResponse<HttpPayloadChunk>>() {
+    public Single<StreamingHttpResponse> handle(final StreamingHttpServiceContext serviceCtx,
+                                                final StreamingHttpRequest req) {
+        return new Single<StreamingHttpResponse>() {
             @Override
-            protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse<HttpPayloadChunk>> subscriber) {
+            protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
                 final DelayedCancellable delayedCancellable = new DelayedCancellable();
                 subscriber.onSubscribe(delayedCancellable);
                 try {
-                    handle0(ctx, req, subscriber, delayedCancellable);
+                    handle0(serviceCtx, req, subscriber, delayedCancellable);
                 } catch (final Throwable t) {
                     subscriber.onError(t);
                 }
@@ -167,12 +167,12 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
         };
     }
 
-    private void handle0(final ConnectionContext ctx,
-                         final StreamingHttpRequest<HttpPayloadChunk> req,
-                         final Subscriber<? super StreamingHttpResponse<HttpPayloadChunk>> subscriber,
+    private void handle0(final StreamingHttpServiceContext serviceCtx, final StreamingHttpRequest req,
+                         final Subscriber<? super StreamingHttpResponse> subscriber,
                          final DelayedCancellable delayedCancellable) {
 
-        final CharSequence baseUri = baseUriFunction.apply(ctx, req);
+        final ConnectionContext cnxCtx = serviceCtx.getConnectionContext();
+        final CharSequence baseUri = baseUriFunction.apply(cnxCtx, req);
         final CharSequence path = ensureNoLeadingSlash(req.getRawPath());
 
         // Jersey needs URI-unsafe query chars to be encoded
@@ -199,20 +199,19 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
         req.getHeaders().forEach(h ->
                 containerRequest.getHeaders().add(h.getKey().toString(), h.getValue().toString()));
 
-        final ChunkPublisherInputStream entityStream = new ChunkPublisherInputStream(req.getPayloadBody(),
+        final BufferPublisherInputStream entityStream = new BufferPublisherInputStream(req.getPayloadBody(),
                 publisherInputStreamQueueCapacity);
         containerRequest.setEntityStream(entityStream);
         initRequestProperties(entityStream, containerRequest);
 
         final DefaultContainerResponseWriter responseWriter = new DefaultContainerResponseWriter(containerRequest,
-                req.getVersion(), ctx.getExecutionContext().getBufferAllocator(),
-                ctx.getExecutionContext().getExecutor(), subscriber);
+                req.getVersion(), serviceCtx, subscriber);
 
         containerRequest.setWriter(responseWriter);
 
         containerRequest.setRequestScopedInitializer(injectionManager -> {
-            injectionManager.<Ref<ConnectionContext>>getInstance(CONNECTION_CONTEXT_REF_TYPE).set(ctx);
-            injectionManager.<Ref<StreamingHttpRequest<HttpPayloadChunk>>>getInstance(HTTP_REQUEST_REF_TYPE).set(req);
+            injectionManager.<Ref<ConnectionContext>>getInstance(CONNECTION_CONTEXT_REF_TYPE).set(cnxCtx);
+            injectionManager.<Ref<StreamingHttpRequest>>getInstance(HTTP_REQUEST_REF_TYPE).set(req);
         });
 
         delayedCancellable.setDelayedCancellable(responseWriter::cancelSuspendedTimer);

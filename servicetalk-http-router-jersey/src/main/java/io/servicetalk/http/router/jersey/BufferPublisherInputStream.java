@@ -19,7 +19,6 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.http.api.HttpPayloadChunk;
 
 import org.glassfish.jersey.message.internal.EntityInputStream;
 
@@ -33,16 +32,16 @@ import static java.util.Objects.requireNonNull;
 import static org.glassfish.jersey.message.internal.ReaderInterceptorExecutor.closeableInputStream;
 
 /**
- * An {@link InputStream} built around a {@link Publisher Publisher&lt;HttpPayloadChunk&gt;}, which can either be read
+ * An {@link InputStream} built around a {@link Publisher Publisher&lt;Buffer&gt;}, which can either be read
  * OIO style or provide its wrapped {@link Publisher}. This allows us to provide JAX-RS with an {@link InputStream}
  * and also short-circuit its usage when our code can directly deal with
- * the {@link Publisher Publisher&lt;HttpPayloadChunk&gt;} it wraps.
+ * the {@link Publisher Publisher&lt;Buffer&gt;} it wraps.
  * <p>
  * Not threadsafe and intended to be used internally only, where no concurrency occurs
- * between {@link ChunkPublisherInputStream#read()}, {@link ChunkPublisherInputStream#read(byte[], int, int)}
- * and {@link ChunkPublisherInputStream#getChunkPublisher()}.
+ * between {@link BufferPublisherInputStream#read()}, {@link BufferPublisherInputStream#read(byte[], int, int)}
+ * and {@link BufferPublisherInputStream#getBufferPublisher()}.
  */
-public final class ChunkPublisherInputStream extends InputStream {
+public final class BufferPublisherInputStream extends InputStream {
     private static final InputStream EMPTY_INPUT_STREAM = new InputStream() {
         @Override
         public int read() {
@@ -51,16 +50,16 @@ public final class ChunkPublisherInputStream extends InputStream {
     };
 
     private InputStream inputStream;
-    private Publisher<HttpPayloadChunk> publisher;
+    private Publisher<Buffer> publisher;
     private final int queueCapacity;
 
     /**
-     * Creates a new {@link ChunkPublisherInputStream} instance.
+     * Creates a new {@link BufferPublisherInputStream} instance.
      *
-     * @param publisher the {@link Publisher Publisher&lt;HttpPayloadChunk&gt;} to read from.
+     * @param publisher the {@link Publisher Publisher&lt;Buffer&gt;} to read from.
      * @param queueCapacity the capacity hint for the intermediary queue that stores items.
      */
-    ChunkPublisherInputStream(final Publisher<HttpPayloadChunk> publisher, final int queueCapacity) {
+    BufferPublisherInputStream(final Publisher<Buffer> publisher, final int queueCapacity) {
         inputStream = EMPTY_INPUT_STREAM;
         this.publisher = requireNonNull(publisher);
         this.queueCapacity = queueCapacity;
@@ -79,7 +78,7 @@ public final class ChunkPublisherInputStream extends InputStream {
     }
 
     /**
-     * Offload operations on the wrapped {@link Publisher Publisher&lt;HttpPayloadChunk&gt;} to the designated executor.
+     * Offload operations on the wrapped {@link Publisher Publisher&lt;Buffer&gt;} to the designated executor.
      *
      * @param executor the {@link Executor} to offload to.
      */
@@ -94,12 +93,12 @@ public final class ChunkPublisherInputStream extends InputStream {
     }
 
     /**
-     * Gets the wrapped {@link Publisher Publisher&lt;HttpPayloadChunk&gt;} if reading this stream hasn't started.
+     * Gets the wrapped {@link Publisher Publisher&lt;Buffer&gt;} if reading this stream hasn't started.
      *
-     * @return the wrapped {@link Publisher Publisher&lt;HttpPayloadChunk&gt;}
+     * @return the wrapped {@link Publisher Publisher&lt;Buffer&gt;}
      * @throws IllegalStateException in case reading the stream has started
      */
-    private Publisher<HttpPayloadChunk> getChunkPublisher() {
+    private Publisher<Buffer> getBufferPublisher() {
         if (inputStream != EMPTY_INPUT_STREAM) {
             throw new IllegalStateException("Publisher is being consumed via InputStream");
         }
@@ -108,39 +107,39 @@ public final class ChunkPublisherInputStream extends InputStream {
 
     private void publisherToInputStream() {
         if (inputStream == EMPTY_INPUT_STREAM) {
-            inputStream = publisher.toInputStream(ChunkPublisherInputStream::getBytes, queueCapacity);
+            inputStream = publisher.toInputStream(BufferPublisherInputStream::getBytes, queueCapacity);
         }
     }
 
     /**
      * Helper method for dealing with a request entity {@link InputStream} that is potentially
-     * a {@link ChunkPublisherInputStream}.
+     * a {@link BufferPublisherInputStream}.
      *
      * @param entityStream the request entity {@link InputStream}
      * @param allocator the {@link BufferAllocator} to use
-     * @param chunkPublisherHandler a {@link BiFunction} that is called in case the entity {@link InputStream} is
-     * a {@link ChunkPublisherInputStream}
+     * @param bufferPublisherHandler a {@link BiFunction} that is called in case the entity {@link InputStream} is
+     * a {@link BufferPublisherInputStream}
      * @param inputStreamHandler a {@link BiFunction} that is called in case the entity {@link InputStream} is not
-     * a {@link ChunkPublisherInputStream}
+     * a {@link BufferPublisherInputStream}
      * @param <T> the type of data returned by the {@link BiFunction}s.
      * @return the data returned by one of the {@link BiFunction}.
      */
     public static <T> T handleEntityStream(final InputStream entityStream,
                                            final BufferAllocator allocator,
-                                           final BiFunction<Publisher<HttpPayloadChunk>,
-                                                   BufferAllocator, T> chunkPublisherHandler,
+                                           final BiFunction<Publisher<Buffer>,
+                                                   BufferAllocator, T> bufferPublisherHandler,
                                            final BiFunction<InputStream, BufferAllocator, T> inputStreamHandler) {
         requireNonNull(allocator);
-        requireNonNull(chunkPublisherHandler);
+        requireNonNull(bufferPublisherHandler);
         requireNonNull(inputStreamHandler);
 
         // Unwrap the entity stream created by Jersey to fetch the wrapped one
         final EntityInputStream eis = (EntityInputStream) closeableInputStream(requireNonNull(entityStream));
         final InputStream wrappedStream = eis.getWrappedStream();
 
-        if (wrappedStream instanceof ChunkPublisherInputStream) {
+        if (wrappedStream instanceof BufferPublisherInputStream) {
             // If the wrapped stream is built around a Publisher, provide it to the resource as-is
-            return chunkPublisherHandler.apply(((ChunkPublisherInputStream) wrappedStream).getChunkPublisher(),
+            return bufferPublisherHandler.apply(((BufferPublisherInputStream) wrappedStream).getBufferPublisher(),
                     allocator);
         }
 
@@ -148,8 +147,7 @@ public final class ChunkPublisherInputStream extends InputStream {
     }
 
     @Nullable
-    private static byte[] getBytes(final HttpPayloadChunk chunk) {
-        final Buffer content = chunk.getContent();
+    private static byte[] getBytes(final Buffer content) {
         final int readableBytes = content.getReadableBytes();
 
         if (readableBytes == 0) {

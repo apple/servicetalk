@@ -15,17 +15,17 @@
  */
 package io.servicetalk.http.router.jersey;
 
-import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Single.Subscriber;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.internal.ConnectableOutputStream;
 import io.servicetalk.http.api.HttpHeaders;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpServiceContext;
 
 import org.glassfish.jersey.server.ContainerException;
 import org.glassfish.jersey.server.ContainerRequest;
@@ -45,11 +45,10 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
-import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.http.router.jersey.CharSequenceUtils.asCharSequence;
-import static io.servicetalk.http.router.jersey.internal.RequestProperties.getResponseChunkPublisher;
+import static io.servicetalk.http.router.jersey.internal.RequestProperties.getResponseBufferPublisher;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getResponseExecutorOffloader;
 import static java.util.Arrays.stream;
 import static java.util.Collections.unmodifiableMap;
@@ -69,9 +68,8 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
 
     private final ContainerRequest request;
     private final HttpProtocolVersion protocolVersion;
-    private final BufferAllocator allocator;
-    private final Executor executor;
-    private final Subscriber<? super StreamingHttpResponse<HttpPayloadChunk>> responseSubscriber;
+    private final StreamingHttpServiceContext serviceCtx;
+    private final Subscriber<? super StreamingHttpResponse> responseSubscriber;
 
     @Nullable
     private volatile Cancellable suspendedTimerCancellable;
@@ -81,13 +79,11 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
 
     DefaultContainerResponseWriter(final ContainerRequest request,
                                    final HttpProtocolVersion protocolVersion,
-                                   final BufferAllocator allocator,
-                                   final Executor executor,
-                                   final Subscriber<? super StreamingHttpResponse<HttpPayloadChunk>> responseSubscriber) {
+                                   final StreamingHttpServiceContext serviceCtx,
+                                   final Subscriber<? super StreamingHttpResponse> responseSubscriber) {
         this.request = requireNonNull(request);
         this.protocolVersion = requireNonNull(protocolVersion);
-        this.allocator = requireNonNull(allocator);
-        this.executor = requireNonNull(executor);
+        this.serviceCtx = requireNonNull(serviceCtx);
         this.responseSubscriber = requireNonNull(responseSubscriber);
     }
 
@@ -96,10 +92,10 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     public OutputStream writeResponseStatusAndHeaders(final long contentLength, final ContainerResponse responseContext)
             throws ContainerException {
 
-        final Publisher<HttpPayloadChunk> chunkPublisher = getResponseChunkPublisher(request);
+        final Publisher<Buffer> content = getResponseBufferPublisher(request);
         // contentLength is >= 0 if the entity content length in bytes is known to Jersey, otherwise -1
-        if (chunkPublisher != null) {
-            sendResponse(UNKNOWN_RESPONSE_LENGTH, chunkPublisher, responseContext);
+        if (content != null) {
+            sendResponse(UNKNOWN_RESPONSE_LENGTH, content, responseContext);
             return null;
         } else if (contentLength == 0 || isHeadRequest()) {
             sendResponse(contentLength, null, responseContext);
@@ -107,11 +103,10 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         } else {
             final ConnectableOutputStream os = new ConnectableOutputStream();
             sendResponse(contentLength, os.connect().map(bytes ->
-                    newPayloadChunk(allocator.wrap(bytes))), responseContext);
+                            serviceCtx.getConnectionContext().getExecutionContext().getBufferAllocator().wrap(bytes)),
+                    responseContext);
             return os;
         }
-
-        // TODO send flush signal when supported
     }
 
     @Override
@@ -144,7 +139,8 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     private void scheduleSuspendedTimer(final long timeOut, final TimeUnit timeUnit, final Runnable r) {
         // timeOut<=0 means processing is suspended indefinitely: no need to actually schedule a task
         if (timeOut > 0) {
-            suspendedTimerCancellable = executor.schedule(r, timeOut, timeUnit);
+            suspendedTimerCancellable = serviceCtx.getConnectionContext().getExecutionContext().getExecutor()
+                    .schedule(r, timeOut, timeUnit);
         }
     }
 
@@ -152,8 +148,6 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     public void commit() {
         suspendedTimeoutRunnable = null;
         cancelSuspendedTimer();
-
-        // TODO send flush signal when supported
     }
 
     @Override
@@ -182,18 +176,16 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     }
 
     private void sendResponse(final long contentLength,
-                              @Nullable final Publisher<HttpPayloadChunk> content,
+                              @Nullable final Publisher<Buffer> content,
                               final ContainerResponse containerResponse) {
 
-        final StreamingHttpResponse<HttpPayloadChunk> response;
         final HttpResponseStatus status = getStatus(containerResponse);
+        final StreamingHttpResponse response;
         if (content != null && !isHeadRequest()) {
             final Executor executor = getResponseExecutorOffloader(request);
-            if (executor != null) {
-                response = newResponse(protocolVersion, status, content.subscribeOn(executor));
-            } else {
-                response = newResponse(protocolVersion, status, content);
-            }
+            response = serviceCtx.newResponse(status)
+                    .setVersion(protocolVersion)
+                    .transformPayloadBody(__ -> executor != null ? content.subscribeOn(executor) : content);
         } else {
             response = newResponse(protocolVersion, status);
         }
@@ -221,8 +213,8 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     private HttpResponseStatus getStatus(final ContainerResponse containerResponse) {
         final StatusType statusInfo = containerResponse.getStatusInfo();
         return statusInfo instanceof Status ? RESPONSE_STATUSES.get(statusInfo) :
-                getResponseStatus(statusInfo.getStatusCode(),
-                        allocator.fromAscii(statusInfo.getReasonPhrase()));
+                getResponseStatus(statusInfo.getStatusCode(), serviceCtx.getConnectionContext().getExecutionContext()
+                        .getBufferAllocator().fromAscii(statusInfo.getReasonPhrase()));
     }
 
     private boolean isHeadRequest() {
