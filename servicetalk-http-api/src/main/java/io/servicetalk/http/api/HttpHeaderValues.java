@@ -148,6 +148,10 @@ public final class HttpHeaderValues {
      */
     public static final CharSequence TEXT_PLAIN = newAsciiString("text/plain");
     /**
+     * {@code "text/plain"}
+     */
+    public static final CharSequence TEXT_PLAIN_UTF_8 = newAsciiString("text/plain; charset=UTF-8");
+    /**
      * {@code "trailers"}
      */
     public static final CharSequence TRAILERS = newAsciiString("trailers");

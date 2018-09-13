@@ -87,7 +87,8 @@ final class BufferHttpResponse extends DefaultHttpResponseMetaData implements Ht
 
     @Override
     public <T> HttpResponse setPayloadBody(final T pojo, final HttpSerializer<T> serializer) {
-        return new BufferHttpResponse(this, allocator, trailers, serializer.serialize(getHeaders(), pojo, allocator));
+        return new BufferHttpResponse(this, allocator, trailers, serializer.serialize(getHeaders(), pojo,
+                allocator));
     }
 
     @Override

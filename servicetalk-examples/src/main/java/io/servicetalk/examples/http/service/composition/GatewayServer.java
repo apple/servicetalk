@@ -18,7 +18,6 @@ package io.servicetalk.examples.http.service.composition;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.DefaultHttpSerializer;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.HttpSerializer;
 import io.servicetalk.http.api.StreamingHttpService;
