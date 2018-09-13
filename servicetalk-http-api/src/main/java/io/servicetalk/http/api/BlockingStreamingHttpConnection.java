@@ -24,6 +24,16 @@ import io.servicetalk.transport.api.ConnectionContext;
  */
 public abstract class BlockingStreamingHttpConnection extends BlockingStreamingHttpRequester {
     /**
+     * Create a new instance.
+     *
+     * @param requestFactory The {@link HttpRequestFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     */
+    protected BlockingStreamingHttpConnection(final BlockingStreamingHttpRequestFactory requestFactory) {
+        super(requestFactory);
+    }
+
+    /**
      * Get the {@link ConnectionContext}.
      *
      * @return the {@link ConnectionContext}.

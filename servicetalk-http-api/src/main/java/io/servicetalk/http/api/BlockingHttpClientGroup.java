@@ -19,12 +19,25 @@ import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.http.api.BlockingHttpClient.ReservedBlockingHttpConnection;
 import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * The equivalent of {@link HttpClientGroup} but with synchronous/blocking APIs instead of asynchronous APIs.
  *
  * @param <UnresolvedAddress> The address type used to create new {@link BlockingHttpClient}s.
  */
 public abstract class BlockingHttpClientGroup<UnresolvedAddress> implements HttpRequestFactory, AutoCloseable {
+    private final HttpRequestFactory requestFactory;
+
+    /**
+     * Create a new instance.
+     * @param requestFactory The {@link HttpRequestFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     */
+    protected BlockingHttpClientGroup(HttpRequestFactory requestFactory) {
+        this.requestFactory = requireNonNull(requestFactory);
+    }
+
     /**
      * Locate or create a client and delegate to {@link BlockingHttpClient#request(HttpRequest)}.
      *
@@ -68,6 +81,16 @@ public abstract class BlockingHttpClientGroup<UnresolvedAddress> implements Http
      */
     public abstract UpgradableHttpResponse upgradeConnection(
             GroupKey<UnresolvedAddress> key, HttpRequest request) throws Exception;
+
+    @Override
+    public final HttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
+        return requestFactory.newRequest(method, requestTarget);
+    }
+
+    @Override
+    public final HttpResponseFactory getHttpResponseFactory() {
+        return requestFactory.getHttpResponseFactory();
+    }
 
     /**
      * Convert this {@link BlockingHttpClientGroup} to the {@link StreamingHttpClientGroup} API.

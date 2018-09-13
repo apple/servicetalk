@@ -26,6 +26,16 @@ import org.reactivestreams.Subscriber;
  */
 public abstract class HttpConnection extends HttpRequester {
     /**
+     * Create a new instance.
+     *
+     * @param requestFactory The {@link HttpRequestFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     */
+    protected HttpConnection(final HttpRequestFactory requestFactory) {
+        super(requestFactory);
+    }
+
+    /**
      * Get the {@link ConnectionContext}.
      *
      * @return the {@link ConnectionContext}.

@@ -24,6 +24,8 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.Function;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * The equivalent of {@link HttpClientGroup} but that accepts {@link StreamingHttpRequest} and returns
  * {@link StreamingHttpResponse}.
@@ -32,6 +34,17 @@ import java.util.function.Function;
  */
 public abstract class StreamingHttpClientGroup<UnresolvedAddress> implements
                                                               StreamingHttpRequestFactory, ListenableAsyncCloseable {
+    private final StreamingHttpRequestFactory requestFactory;
+
+    /**
+     * Create a new instance.
+     * @param requestFactory The {@link StreamingHttpRequestFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     */
+    protected StreamingHttpClientGroup(StreamingHttpRequestFactory requestFactory) {
+        this.requestFactory = requireNonNull(requestFactory);
+    }
+
     /**
      * Locate or create a client and delegate to {@link StreamingHttpClient#request(StreamingHttpRequest)}.
      *
@@ -41,7 +54,7 @@ public abstract class StreamingHttpClientGroup<UnresolvedAddress> implements
      * @return The received {@link StreamingHttpResponse}.
      * @see StreamingHttpClient#request(StreamingHttpRequest)
      */
-    public abstract Single<StreamingHttpResponse> request(
+    public abstract Single<? extends StreamingHttpResponse> request(
             GroupKey<UnresolvedAddress> key, StreamingHttpRequest request);
 
     /**
@@ -71,6 +84,16 @@ public abstract class StreamingHttpClientGroup<UnresolvedAddress> implements
     public abstract Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(
             GroupKey<UnresolvedAddress> key, StreamingHttpRequest request);
 
+    @Override
+    public final StreamingHttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
+        return requestFactory.newRequest(method, requestTarget);
+    }
+
+    @Override
+    public final StreamingHttpResponseFactory getHttpResponseFactory() {
+        return requestFactory.getHttpResponseFactory();
+    }
+
     /**
      * Convert this {@link StreamingHttpClientGroup} to the {@link StreamingHttpClient} API. This can simplify the
      * request APIs and usage pattern of this {@link StreamingHttpClientGroup} assuming the address can be extracted
@@ -88,7 +111,7 @@ public abstract class StreamingHttpClientGroup<UnresolvedAddress> implements
     public final StreamingHttpClient asClient(final Function<StreamingHttpRequest,
                                                     GroupKey<UnresolvedAddress>> requestToGroupKeyFunc,
                                               final ExecutionContext executionContext) {
-        return new StremaingHttpClientGroupToStreamingHttpClient<>(this, requestToGroupKeyFunc, executionContext);
+        return new StreamingHttpClientGroupToStreamingHttpClient<>(this, requestToGroupKeyFunc, executionContext);
     }
 
     /**

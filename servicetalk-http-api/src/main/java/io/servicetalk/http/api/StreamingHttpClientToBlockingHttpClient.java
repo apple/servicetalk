@@ -24,7 +24,6 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
-import static io.servicetalk.http.api.BufferHttpRequest.toHttpRequest;
 import static io.servicetalk.http.api.StreamingHttpClientToHttpClient.doUpgradeConnection;
 import static java.util.Objects.requireNonNull;
 
@@ -32,25 +31,23 @@ final class StreamingHttpClientToBlockingHttpClient extends BlockingHttpClient {
     private final StreamingHttpClient client;
 
     StreamingHttpClientToBlockingHttpClient(StreamingHttpClient client) {
+        super(new StreamingHttpRequestFactoryToHttpRequestFactory(client));
         this.client = requireNonNull(client);
     }
 
     @Override
-    public ReservedBlockingHttpConnection reserveConnection(
-            final HttpRequest<HttpPayloadChunk> request) throws Exception {
-        return blockingInvocation(client.reserveConnection(toHttpRequest(request))
+    public ReservedBlockingHttpConnection reserveConnection(final HttpRequest request) throws Exception {
+        return blockingInvocation(client.reserveConnection(request.toStreamingRequest())
                 .map(ReservedStreamingHttpConnectionToBlocking::new));
     }
 
     @Override
-    public UpgradableHttpResponse<HttpPayloadChunk> upgradeConnection(
-            final HttpRequest<HttpPayloadChunk> request) throws Exception {
+    public UpgradableHttpResponse upgradeConnection(final HttpRequest request) throws Exception {
         return blockingInvocation(doUpgradeConnection(client, request));
     }
 
     @Override
-    public HttpResponse<HttpPayloadChunk> request(final HttpRequest<HttpPayloadChunk> request)
-            throws Exception {
+    public HttpResponse request(final HttpRequest request) throws Exception {
         return BlockingUtils.request(client, request);
     }
 
@@ -77,6 +74,7 @@ final class StreamingHttpClientToBlockingHttpClient extends BlockingHttpClient {
         private final ReservedStreamingHttpConnection connection;
 
         ReservedStreamingHttpConnectionToBlocking(ReservedStreamingHttpConnection connection) {
+            super(new StreamingHttpRequestFactoryToHttpRequestFactory(connection));
             this.connection = requireNonNull(connection);
         }
 
@@ -96,8 +94,7 @@ final class StreamingHttpClientToBlockingHttpClient extends BlockingHttpClient {
         }
 
         @Override
-        public HttpResponse<HttpPayloadChunk> request(final HttpRequest<HttpPayloadChunk> request)
-                throws Exception {
+        public HttpResponse request(final HttpRequest request) throws Exception {
             return BlockingUtils.request(connection, request);
         }
 

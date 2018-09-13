@@ -31,7 +31,6 @@ import org.reactivestreams.Subscription;
 
 import java.io.IOException;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -62,12 +61,12 @@ final class HttpSerializerUtils {
 
         @Override
         public BlockingIterable<Buffer> deserialize(final HttpHeaders headers, final BlockingIterable<?> payload) {
-            return new HttpBlockingStreamingBufferFilterIterable(payload);
+            return new HttpBufferFilterBlockingIterable(payload);
         }
 
         @Override
         public Publisher<Buffer> deserialize(final HttpHeaders headers, final Publisher<?> payload) {
-            return payload.liftSynchronous(new HttpStreamingBufferFilterOperator());
+            return payload.liftSynchronous(new HttpBufferFilterOperator());
         }
     };
 
@@ -95,10 +94,10 @@ final class HttpSerializerUtils {
         return response.getPayloadBody(BUFFER_DESERIALIZER);
     }
 
-    private static final class HttpBlockingStreamingBufferFilterIterable implements BlockingIterable<Buffer> {
+    private static final class HttpBufferFilterBlockingIterable implements BlockingIterable<Buffer> {
         private final BlockingIterable<?> original;
 
-        HttpBlockingStreamingBufferFilterIterable(final BlockingIterable<?> original) {
+        HttpBufferFilterBlockingIterable(final BlockingIterable<?> original) {
             this.original = original;
         }
 
@@ -113,7 +112,7 @@ final class HttpSerializerUtils {
             private Buffer nextBuffer;
 
             JustBufferBlockingIterator(BlockingIterator<?> iterator) {
-                this.iterator = Objects.requireNonNull(iterator);
+                this.iterator = requireNonNull(iterator);
             }
 
             @Override
@@ -437,29 +436,308 @@ final class HttpSerializerUtils {
      * This operator is a hack from a RS perspective and is necessary because of how our APIs decouple the payload
      * {@link Publisher} from the trailers {@link Single}. The hack part is because there is state maintained external
      * the {@link Subscriber} implementation, and so this can't be re-subscribed or repeated.
+     */
+    static final class HttpBufferTrailersSpliceOperator implements PublisherOperator<Object, Buffer> {
+        private final SingleProcessor<HttpHeaders> outTrailersSingle;
+
+        HttpBufferTrailersSpliceOperator(final SingleProcessor<HttpHeaders> outTrailersSingle) {
+            this.outTrailersSingle = requireNonNull(outTrailersSingle);
+        }
+
+        @Override
+        public Subscriber<? super Object> apply(final Subscriber<? super Buffer> subscriber) {
+            return new JustBufferSubscriber(subscriber, outTrailersSingle);
+        }
+
+        private static final class JustBufferSubscriber extends AbstractJustBufferSubscriber<Buffer> {
+            JustBufferSubscriber(final Subscriber<? super Buffer> target,
+                                 final SingleProcessor<HttpHeaders> outTrailersSingle) {
+                super(target, outTrailersSingle);
+            }
+
+            @Override
+            public void onNext(final Object o) {
+                if (o instanceof Buffer) {
+                    subscriber.onNext((Buffer) o);
+                } else if (!(o instanceof HttpHeaders)) {
+                    throw new UnsupportedHttpChunkException(o);
+                }
+                if (trailers != null) {
+                    throwDuplicateTrailersException(trailers, o);
+                }
+                trailers = (HttpHeaders) o;
+                // Trailers must be the last element on the stream, no need to interact with the Subscription.
+            }
+        }
+    }
+
+    static final class HttpObjectTrailersSpliceOperator implements PublisherOperator<Object, Object> {
+        private final SingleProcessor<HttpHeaders> outTrailersSingle;
+
+        HttpObjectTrailersSpliceOperator(final SingleProcessor<HttpHeaders> outTrailersSingle) {
+            this.outTrailersSingle = requireNonNull(outTrailersSingle);
+        }
+
+        @Override
+        public Subscriber<? super Object> apply(final Subscriber<? super Object> subscriber) {
+            return new JustBufferSubscriber(subscriber, outTrailersSingle);
+        }
+
+        private static final class JustBufferSubscriber extends AbstractJustBufferSubscriber<Object> {
+            JustBufferSubscriber(final Subscriber<? super Object> target,
+                                 final SingleProcessor<HttpHeaders> outTrailersSingle) {
+                super(target, outTrailersSingle);
+            }
+
+            @Override
+            public void onNext(final Object o) {
+                if (o instanceof HttpHeaders) {
+                    if (trailers != null) {
+                        throwDuplicateTrailersException(trailers, o);
+                    }
+                    trailers = (HttpHeaders) o;
+                    // Trailers must be the last element on the stream, no need to interact with the Subscription.
+                }
+                subscriber.onNext(o);
+            }
+        }
+    }
+
+    private static abstract class AbstractJustBufferSubscriber<T> implements Subscriber<Object> {
+        final Subscriber<? super T> subscriber;
+        final SingleProcessor<HttpHeaders> outTrailersSingle;
+        @Nullable
+        HttpHeaders trailers;
+
+        AbstractJustBufferSubscriber(final Subscriber<? super T> target,
+                                     final SingleProcessor<HttpHeaders> outTrailersSingle) {
+            this.subscriber = target;
+            this.outTrailersSingle = outTrailersSingle;
+        }
+
+        @Override
+        public final void onSubscribe(final Subscription s) {
+            subscriber.onSubscribe(s);
+        }
+
+        @Override
+        public final void onError(final Throwable t) {
+            try {
+                subscriber.onError(t);
+            } finally {
+                outTrailersSingle.onError(t);
+            }
+        }
+
+        @Override
+        public final void onComplete() {
+            try {
+                subscriber.onComplete();
+            } finally {
+                // Delay the completion of the trailers single until after the completion of the stream to provide
+                // a best effort sequencing. This ordering may break down if they sources are offloaded on different
+                // threads, but from this Operator's perspective we make a best effort.
+                if (trailers != null) {
+                    outTrailersSingle.onSuccess(trailers);
+                } else {
+                    outTrailersSingle.onError(newTrailersExpectedButNotSeenException());
+                }
+            }
+        }
+    }
+
+    static void throwDuplicateTrailersException(HttpHeaders trailers, Object o) {
+        throw new IllegalStateException("trailers already set to: " + trailers +
+                " but duplicate trailers seen: " + o);
+    }
+
+    static RuntimeException newTrailersExpectedButNotSeenException() {
+        return new IllegalStateException("trailers were expected, but not seen");
+    }
+
+    static final class HttpRawBuffersAndTrailersOperator<T> implements PublisherOperator<Object, Buffer> {
+        private final Supplier<T> stateSupplier;
+        private final BiFunction<Buffer, T, Buffer> transformer;
+        private final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer;
+        private final SingleProcessor<HttpHeaders> outTrailersSingle;
+
+        HttpRawBuffersAndTrailersOperator(final Supplier<T> stateSupplier,
+                                          final BiFunction<Buffer, T, Buffer> transformer,
+                                          final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer,
+                                          final SingleProcessor<HttpHeaders> outTrailersSingle) {
+            this.stateSupplier = requireNonNull(stateSupplier);
+            this.transformer = requireNonNull(transformer);
+            this.trailersTransformer = requireNonNull(trailersTransformer);
+            this.outTrailersSingle = requireNonNull(outTrailersSingle);
+        }
+
+        @Override
+        public Subscriber<? super Object> apply(final Subscriber<? super Buffer> subscriber) {
+            return new PayloadAndTrailersSubscriber<>(subscriber, stateSupplier.get(), transformer, trailersTransformer,
+                    outTrailersSingle);
+        }
+
+        private static final class PayloadAndTrailersSubscriber<T> implements Subscriber<Object> {
+            private final Subscriber<? super Buffer> subscriber;
+            @Nullable
+            private final T userState;
+            private final BiFunction<Buffer, T, Buffer> transformer;
+            private final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer;
+            private final SingleProcessor<HttpHeaders> outTrailersSingle;
+            @Nullable
+            private HttpHeaders trailers;
+
+            private PayloadAndTrailersSubscriber(final Subscriber<? super Buffer> subscriber,
+                                                 @Nullable final T userState,
+                                                 final BiFunction<Buffer, T, Buffer> transformer,
+                                                 final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer,
+                                                 final SingleProcessor<HttpHeaders> outTrailersSingle) {
+                this.subscriber = subscriber;
+                this.userState = userState;
+                this.transformer = transformer;
+                this.trailersTransformer = trailersTransformer;
+                this.outTrailersSingle = outTrailersSingle;
+            }
+
+            @Override
+            public void onSubscribe(final Subscription s) {
+                subscriber.onSubscribe(s);
+            }
+
+            @Override
+            public void onNext(final Object obj) {
+                if (obj instanceof Buffer) {
+                    subscriber.onNext(transformer.apply((Buffer) obj, userState));
+                } else if (!(obj instanceof HttpHeaders)) {
+                    throw new UnsupportedHttpChunkException(obj);
+                }
+                // Trailers must be the last element on the stream, no need to interact with the Subscription.
+                if (trailers != null) {
+                    throwDuplicateTrailersException(trailers, obj);
+                }
+                trailers = (HttpHeaders) obj;
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+                try {
+                    subscriber.onError(t);
+                } finally {
+                    outTrailersSingle.onError(t);
+                }
+            }
+
+            @Override
+            public void onComplete() {
+                completeOutTrailerSingle(userState, trailers, trailersTransformer, outTrailersSingle, subscriber);
+            }
+        }
+    }
+
+    static final class HttpRawObjectsAndTrailersOperator<T> implements PublisherOperator<Object, Object> {
+        private final Supplier<T> stateSupplier;
+        private final BiFunction<Object, T, ?> transformer;
+        private final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer;
+        private final SingleProcessor<HttpHeaders> outTrailersSingle;
+
+        HttpRawObjectsAndTrailersOperator(final Supplier<T> stateSupplier,
+                                          final BiFunction<Object, T, ?> transformer,
+                                          final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer,
+                                          final SingleProcessor<HttpHeaders> outTrailersSingle) {
+            this.stateSupplier = requireNonNull(stateSupplier);
+            this.transformer = requireNonNull(transformer);
+            this.trailersTransformer = requireNonNull(trailersTransformer);
+            this.outTrailersSingle = requireNonNull(outTrailersSingle);
+        }
+
+        @Override
+        public Subscriber<? super Object> apply(final Subscriber<? super Object> subscriber) {
+            return new PayloadAndTrailersSubscriber<>(subscriber, stateSupplier.get(), transformer, trailersTransformer,
+                    outTrailersSingle);
+        }
+
+        private static final class PayloadAndTrailersSubscriber<T> implements Subscriber<Object> {
+            private final Subscriber<? super Object> subscriber;
+            @Nullable
+            private final T userState;
+            private final BiFunction<Object, T, ?> transformer;
+            private final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer;
+            private final SingleProcessor<HttpHeaders> outTrailersSingle;
+            @Nullable
+            private HttpHeaders trailers;
+
+            private PayloadAndTrailersSubscriber(final Subscriber<? super Object> subscriber,
+                                                 @Nullable final T userState,
+                                                 final BiFunction<Object, T, ?> transformer,
+                                                 final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer,
+                                                 final SingleProcessor<HttpHeaders> outTrailersSingle) {
+                this.subscriber = subscriber;
+                this.userState = userState;
+                this.transformer = transformer;
+                this.trailersTransformer = trailersTransformer;
+                this.outTrailersSingle = outTrailersSingle;
+            }
+
+            @Override
+            public void onSubscribe(final Subscription s) {
+                subscriber.onSubscribe(s);
+            }
+
+            @Override
+            public void onNext(final Object obj) {
+                if (obj instanceof HttpHeaders) {
+                    if (trailers != null) {
+                        throwDuplicateTrailersException(trailers, obj);
+                    }
+                    this.trailers = (HttpHeaders) obj;
+                    // Trailers must be the last element on the stream, no need to interact with the Subscription.
+                }
+                subscriber.onNext(transformer.apply(obj, userState));
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+                try {
+                    subscriber.onError(t);
+                } finally {
+                    outTrailersSingle.onError(t);
+                }
+            }
+
+            @Override
+            public void onComplete() {
+                completeOutTrailerSingle(userState, trailers, trailersTransformer, outTrailersSingle, subscriber);
+            }
+        }
+    }
+
+    /**
+     * This operator is a hack from a RS perspective and is necessary because of how our APIs decouple the payload
+     * {@link Publisher} from the trailers {@link Single}. The hack part is because there is state maintained external
+     * the {@link Subscriber} implementation, and so this can't be re-subscribed or repeated.
      * <pre>{@code
      *         initial sources: P<Buffer>, Single<Headers>
      *         data stream:
-     *         T0, <T1, B>, <T2, B>, <T3, H> -> S<H>
-     *                |        |                  |
-     *                |        /                  /
-     *             V----------'   V--------------'
+     *         B, B, B, H
+     *            |     |
+     *            |     |
+     *            V     `--------V
      *         P<Buffer>, Single<Headers>
      * }</pre>
      * @param <T> The type of user state.
      */
-    static final class HttpBuffersAndTrailersOperator<T, I, O> implements PublisherOperator<I, O> {
+    static final class HttpPayloadAndTrailersFromSingleOperator<T, I, O> implements PublisherOperator<I, O> {
         private final Supplier<T> stateSupplier;
         private final BiFunction<I, T, O> transformer;
         private final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer;
         private final Single<HttpHeaders> inTrailersSingle;
         private final SingleProcessor<HttpHeaders> outTrailersSingle;
 
-        HttpBuffersAndTrailersOperator(final Supplier<T> stateSupplier,
-                                       final BiFunction<I, T, O> transformer,
-                                       final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer,
-                                       final Single<HttpHeaders> inTrailersSingle,
-                                       final SingleProcessor<HttpHeaders> outTrailersSingle) {
+        HttpPayloadAndTrailersFromSingleOperator(final Supplier<T> stateSupplier,
+                                                 final BiFunction<I, T, O> transformer,
+                                                 final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer,
+                                                 final Single<HttpHeaders> inTrailersSingle,
+                                                 final SingleProcessor<HttpHeaders> outTrailersSingle) {
             this.stateSupplier = requireNonNull(stateSupplier);
             this.transformer = requireNonNull(transformer);
             this.trailersTransformer = requireNonNull(trailersTransformer);
@@ -523,81 +801,6 @@ final class HttpSerializerUtils {
         }
     }
 
-    static final class HttpObjectsAndTrailersOperator<T> implements PublisherOperator<Object, Object> {
-        private final Supplier<T> stateSupplier;
-        private final BiFunction<Object, T, ?> transformer;
-        private final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer;
-        private final Single<HttpHeaders> inTrailersSingle;
-        private final SingleProcessor<HttpHeaders> outTrailersSingle;
-
-        HttpObjectsAndTrailersOperator(final Supplier<T> stateSupplier,
-                                       final BiFunction<Object, T, ?> transformer,
-                                       final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer,
-                                       final Single<HttpHeaders> inTrailersSingle,
-                                       final SingleProcessor<HttpHeaders> outTrailersSingle) {
-            this.stateSupplier = requireNonNull(stateSupplier);
-            this.transformer = requireNonNull(transformer);
-            this.trailersTransformer = requireNonNull(trailersTransformer);
-            this.inTrailersSingle = requireNonNull(inTrailersSingle);
-            this.outTrailersSingle = requireNonNull(outTrailersSingle);
-        }
-
-        @Override
-        public Subscriber<? super Object> apply(final Subscriber<? super Object> subscriber) {
-            return new PayloadAndTrailersSubscriber<>(subscriber, stateSupplier.get(), transformer, trailersTransformer,
-                    inTrailersSingle, outTrailersSingle);
-        }
-
-        private static final class PayloadAndTrailersSubscriber<T> implements Subscriber<Object> {
-            private final Subscriber<? super Object> subscriber;
-            @Nullable
-            private final T userState;
-            private final BiFunction<Object, T, ?> transformer;
-            private final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer;
-            private final Single<HttpHeaders> inTrailersSingle;
-            private final SingleProcessor<HttpHeaders> outTrailersSingle;
-
-            PayloadAndTrailersSubscriber(final Subscriber<? super Object> subscriber,
-                                         @Nullable final T userState,
-                                         final BiFunction<Object, T, ?> transformer,
-                                         final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer,
-                                         final Single<HttpHeaders> inTrailersSingle,
-                                         final SingleProcessor<HttpHeaders> outTrailersSingle) {
-                this.subscriber = subscriber;
-                this.userState = userState;
-                this.transformer = transformer;
-                this.trailersTransformer = trailersTransformer;
-                this.inTrailersSingle = inTrailersSingle;
-                this.outTrailersSingle = outTrailersSingle;
-            }
-
-            @Override
-            public void onSubscribe(final Subscription s) {
-                subscriber.onSubscribe(s);
-            }
-
-            @Override
-            public void onNext(final Object obj) {
-                subscriber.onNext(transformer.apply(obj, userState));
-            }
-
-            @Override
-            public void onError(final Throwable t) {
-                try {
-                    subscriber.onError(t);
-                } finally {
-                    outTrailersSingle.onError(t);
-                }
-            }
-
-            @Override
-            public void onComplete() {
-                completeOutTrailerSingle(userState, inTrailersSingle, trailersTransformer, outTrailersSingle,
-                        subscriber);
-            }
-        }
-    }
-
     static final class PayloadAndTrailers {
         final CompositeBuffer compositeBuffer;
         @Nullable
@@ -634,16 +837,9 @@ final class HttpSerializerUtils {
             }
 
             @Override
-            public void onSuccess(@Nullable final HttpHeaders result) {
-                final HttpHeaders outTrailers;
-                try {
-                    outTrailers = trailersTransformer.apply(userState, result);
-                    subscriber.onComplete();
-                } catch (Throwable cause) {
-                    outTrailersSingle.onError(cause);
-                    return;
-                }
-                outTrailersSingle.onSuccess(outTrailers);
+            public void onSuccess(@Nullable final HttpHeaders inHeaders) {
+                completeOutTrailerSingle(userState, inHeaders, trailersTransformer, outTrailersSingle, subscriber);
+
             }
 
             @Override
@@ -657,7 +853,30 @@ final class HttpSerializerUtils {
         });
     }
 
-    private static final class HttpStreamingBufferFilterOperator implements PublisherOperator<Object, Buffer> {
+    private static <T> void completeOutTrailerSingle(@Nullable T userState,@Nullable HttpHeaders inHeaders,
+                                                     BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer,
+                                                     SingleProcessor<HttpHeaders> outTrailersSingle,
+                                                     Subscriber<?> subscriber) {
+        if (inHeaders == null) {
+            try {
+                subscriber.onComplete();
+            } finally {
+                outTrailersSingle.onError(newTrailersExpectedButNotSeenException());
+            }
+        } else {
+            final HttpHeaders outTrailers;
+            try {
+                outTrailers = trailersTransformer.apply(userState, inHeaders);
+                subscriber.onComplete();
+            } catch (Throwable cause) {
+                outTrailersSingle.onError(cause);
+                return;
+            }
+            outTrailersSingle.onSuccess(outTrailers);
+        }
+    }
+
+    private static final class HttpBufferFilterOperator implements PublisherOperator<Object, Buffer> {
         @Override
         public Subscriber<? super Object> apply(final Subscriber<? super Buffer> subscriber) {
             return new JustBufferSubscriber(subscriber);

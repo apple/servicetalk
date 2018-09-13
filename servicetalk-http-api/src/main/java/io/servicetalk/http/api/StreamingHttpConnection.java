@@ -28,6 +28,16 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class StreamingHttpConnection extends StreamingHttpRequester {
     /**
+     * Create a new instance.
+     *
+     * @param requestFactory The {@link StreamingHttpRequestFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     */
+    protected StreamingHttpConnection(final StreamingHttpRequestFactory requestFactory) {
+        super(requestFactory);
+    }
+
+    /**
      * Get the {@link ConnectionContext}.
      * @return the {@link ConnectionContext}.
      */

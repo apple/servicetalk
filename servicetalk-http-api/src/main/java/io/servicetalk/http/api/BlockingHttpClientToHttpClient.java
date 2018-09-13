@@ -33,25 +33,23 @@ final class BlockingHttpClientToHttpClient extends HttpClient {
     private final BlockingHttpClient client;
 
     BlockingHttpClientToHttpClient(BlockingHttpClient client) {
+        super(client);
         this.client = requireNonNull(client);
     }
 
     @Override
-    public Single<? extends ReservedHttpConnection> reserveConnection(
-            final HttpRequest<HttpPayloadChunk> request) {
+    public Single<? extends ReservedHttpConnection> reserveConnection(final HttpRequest request) {
         return blockingToSingle(() -> new ReservedBlockingHttpConnectionToReservedHttpConnection(
                 client.reserveConnection(request)));
     }
 
     @Override
-    public Single<? extends UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
-            final HttpRequest<HttpPayloadChunk> request) {
+    public Single<? extends UpgradableHttpResponse> upgradeConnection(final HttpRequest request) {
         return blockingToSingle(() -> client.upgradeConnection(request));
     }
 
     @Override
-    public Single<HttpResponse<HttpPayloadChunk>> request(
-            final HttpRequest<HttpPayloadChunk> request) {
+    public Single<HttpResponse> request(final HttpRequest request) {
         return BlockingUtils.request(client, request);
     }
 
@@ -83,6 +81,7 @@ final class BlockingHttpClientToHttpClient extends HttpClient {
         private final ReservedBlockingHttpConnection connection;
 
         ReservedBlockingHttpConnectionToReservedHttpConnection(ReservedBlockingHttpConnection connection) {
+            super(connection);
             this.connection = requireNonNull(connection);
         }
 
@@ -102,8 +101,7 @@ final class BlockingHttpClientToHttpClient extends HttpClient {
         }
 
         @Override
-        public Single<HttpResponse<HttpPayloadChunk>> request(
-                final HttpRequest<HttpPayloadChunk> request) {
+        public Single<HttpResponse> request(final HttpRequest request) {
             return BlockingUtils.request(connection, request);
         }
 

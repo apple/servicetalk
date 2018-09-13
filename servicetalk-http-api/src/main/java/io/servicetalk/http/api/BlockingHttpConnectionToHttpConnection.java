@@ -31,6 +31,7 @@ final class BlockingHttpConnectionToHttpConnection extends HttpConnection {
     private final BlockingHttpConnection connection;
 
     BlockingHttpConnectionToHttpConnection(BlockingHttpConnection connection) {
+        super(connection);
         this.connection = requireNonNull(connection);
     }
 
@@ -45,8 +46,7 @@ final class BlockingHttpConnectionToHttpConnection extends HttpConnection {
     }
 
     @Override
-    public Single<HttpResponse<HttpPayloadChunk>> request(
-            final HttpRequest<HttpPayloadChunk> request) {
+    public Single<HttpResponse> request(final HttpRequest request) {
         return BlockingUtils.request(connection, request);
     }
 
