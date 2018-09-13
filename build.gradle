@@ -94,22 +94,22 @@ task build {
 
 task checkstyle {
   dependsOn findTasks(':checkstyle',
-    ['servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
+    ['servicetalk-bom', 'servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
 }
 
 task pmd {
   dependsOn findTasks(':pmd',
-    ['servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
+    ['servicetalk-bom', 'servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
 }
 
 task spotbugs {
   dependsOn findTasks(':spotbugs',
-    ['servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
+    ['servicetalk-bom', 'servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
 }
 
 task quality {
   dependsOn findTasks(':quality',
-    ['servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
+    ['servicetalk-bom', 'servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
 }
 
 task bintrayUpload {
@@ -119,7 +119,7 @@ task bintrayUpload {
 // Override behavior for existing tasks:
 
 task publish(overwrite: true) {
-  dependsOn findTasks(':publish', ['servicetalk-benchmarks'])
+  dependsOn findTasks(':publish', ['servicetalk-benchmarks', 'servicetalk-examples'])
 }
 
 task publishToMavenLocal(overwrite: true) {
