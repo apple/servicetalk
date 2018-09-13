@@ -232,12 +232,10 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       File spotbugsTestFixturesExclusionsFile = file("$rootDir/gradle/spotbugs/testFixtures-exclusions.xml")
 
       // This task defaults to XML reporting for CI, but humans like HTML
-      if (!System.getProperty("CI")) {
-        tasks.withType(com.github.spotbugs.SpotBugsTask) {
-          reports {
-            xml.enabled = false
-            html.enabled = true
-          }
+      tasks.withType(com.github.spotbugs.SpotBugsTask) {
+        reports {
+          xml.enabled = "true" == System.getenv("CI")
+          html.enabled = "true" != System.getenv("CI")
         }
       }
 
