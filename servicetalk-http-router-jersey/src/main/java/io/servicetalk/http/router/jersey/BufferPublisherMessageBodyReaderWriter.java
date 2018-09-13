@@ -17,8 +17,6 @@ package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpPayloadChunks;
 import io.servicetalk.http.router.jersey.SourceWrappers.PublisherSource;
 
 import java.io.InputStream;
@@ -49,7 +47,7 @@ final class BufferPublisherMessageBodyReaderWriter
                                       final MediaType mediaType,
                                       final MultivaluedMap<String, String> httpHeaders,
                                       final InputStream entityStream) throws WebApplicationException {
-        return readFrom(entityStream, (p, a) -> p.map(HttpPayloadChunk::getContent), PublisherSource::new);
+        return readFrom(entityStream, (p, a) -> p, PublisherSource::new);
     }
 
     @Override
@@ -60,6 +58,6 @@ final class BufferPublisherMessageBodyReaderWriter
                         final MediaType mediaType,
                         final MultivaluedMap<String, Object> httpHeaders,
                         final OutputStream entityStream) throws WebApplicationException {
-        writeTo(publisher.map(HttpPayloadChunks::newPayloadChunk));
+        writeTo(publisher);
     }
 }

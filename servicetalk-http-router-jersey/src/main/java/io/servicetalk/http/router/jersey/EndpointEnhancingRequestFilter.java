@@ -53,7 +53,7 @@ import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.router.jersey.ExecutionStrategyUtils.getResourceExecutor;
-import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRequestChunkPublisherInputStream;
+import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRequestBufferPublisherInputStream;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseExecutorOffloader;
 import static java.lang.Integer.MAX_VALUE;
 import static javax.ws.rs.core.Response.Status.NO_CONTENT;
@@ -162,7 +162,7 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
                 throw new IllegalStateException("Failed to suspend request processing");
             }
 
-            Single<Response> objectSingle = callOriginalEndpoint(requestProcessingCtx)
+            final Single<Response> objectSingle = callOriginalEndpoint(requestProcessingCtx)
                     .flatMap(this::handleContainerResponse)
                     .doBeforeFinally(() -> uriRoutingContext.setEndpoint(originalEndpoint))
                     .doAfterError(asyncContext::resume)
@@ -189,7 +189,7 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
                     execOverrideCnxCtx.activate();
                     return requestScope.runInScope(requestContext,
                             () -> {
-                                getRequestChunkPublisherInputStream(request).offloadSourcePublisher(executor);
+                                getRequestBufferPublisherInputStream(request).offloadSourcePublisher(executor);
                                 setResponseExecutorOffloader(executor, request);
 
                                 return originalEndpoint.apply(requestProcessingCtx);

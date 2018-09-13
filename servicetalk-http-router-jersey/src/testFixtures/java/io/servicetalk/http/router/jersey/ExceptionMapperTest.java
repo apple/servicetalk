@@ -19,7 +19,6 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.DeliberateException;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpHeaderValues;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.router.jersey.resources.AsynchronousResources;
@@ -207,7 +206,7 @@ public class ExceptionMapperTest extends AbstractJerseyStreamingHttpServiceTest 
                 expectedContentType, DeliberateException.class);
     }
 
-    private void sendAndAssertResponse(final StreamingHttpRequest<HttpPayloadChunk> req,
+    private void sendAndAssertResponse(final StreamingHttpRequest req,
                                        final ExceptionResponseType ert,
                                        final CharSequence expectedContentType,
                                        final Class<? extends Throwable> expectedExceptionClass) {

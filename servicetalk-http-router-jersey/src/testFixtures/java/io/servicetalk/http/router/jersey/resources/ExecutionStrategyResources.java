@@ -20,7 +20,6 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.router.jersey.ExecutionStrategy;
 import io.servicetalk.serialization.api.DefaultSerializer;
@@ -48,7 +47,6 @@ import javax.ws.rs.sse.SseEventSink;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static io.servicetalk.http.router.jersey.ExecutionStrategy.ExecutorSelector.ROUTER_EXECUTOR;
 import static io.servicetalk.http.router.jersey.ExecutionStrategy.ExecutorSelector.SERVER_EXECUTOR;
 import static java.lang.Thread.currentThread;
@@ -73,7 +71,7 @@ public final class ExecutionStrategyResources {
         private ConnectionContext ctx;
 
         @Context
-        private StreamingHttpRequest<HttpPayloadChunk> req;
+        private StreamingHttpRequest req;
 
         @Context
         private UriInfo uriInfo;
@@ -116,7 +114,7 @@ public final class ExecutionStrategyResources {
         @Consumes(APPLICATION_JSON)
         @POST
         @Path("/subrsc-default-publisher-mapped")
-        public Publisher<HttpPayloadChunk> subResourceDefaultPubMapped(final Publisher<HttpPayloadChunk> body) {
+        public Publisher<Buffer> subResourceDefaultPubMapped(final Publisher<Buffer> body) {
             return getThreadingInfoPublisherMapped(body);
         }
 
@@ -164,7 +162,7 @@ public final class ExecutionStrategyResources {
         @Consumes(APPLICATION_JSON)
         @POST
         @Path("/subrsc-srvr-exec-publisher-mapped")
-        public Publisher<HttpPayloadChunk> subResourceServerExecPubMapped(final Publisher<HttpPayloadChunk> body) {
+        public Publisher<Buffer> subResourceServerExecPubMapped(final Publisher<Buffer> body) {
             return getThreadingInfoPublisherMapped(body);
         }
 
@@ -212,7 +210,7 @@ public final class ExecutionStrategyResources {
         @Consumes(APPLICATION_JSON)
         @POST
         @Path("/subrsc-rtr-exec-publisher-mapped")
-        public Publisher<HttpPayloadChunk> subResourceRouterExecPubMapped(final Publisher<HttpPayloadChunk> body) {
+        public Publisher<Buffer> subResourceRouterExecPubMapped(final Publisher<Buffer> body) {
             return getThreadingInfoPublisherMapped(body);
         }
 
@@ -260,7 +258,7 @@ public final class ExecutionStrategyResources {
         @Consumes(APPLICATION_JSON)
         @POST
         @Path("/subrsc-rtr-exec-id-publisher-mapped")
-        public Publisher<HttpPayloadChunk> subResourceRouterExecIdPubMapped(final Publisher<HttpPayloadChunk> body) {
+        public Publisher<Buffer> subResourceRouterExecIdPubMapped(final Publisher<Buffer> body) {
             return getThreadingInfoPublisherMapped(body);
         }
 
@@ -306,7 +304,7 @@ public final class ExecutionStrategyResources {
                             ", but got: " + currentThread())));
         }
 
-        private Publisher<HttpPayloadChunk> getThreadingInfoPublisherMapped(final Publisher<HttpPayloadChunk> content) {
+        private Publisher<Buffer> getThreadingInfoPublisherMapped(final Publisher<Buffer> content) {
             // This single is deferred and will perform the resourceMethodThread comparison only when the response
             // publisher will be subscribed
             final Single<Buffer> bufferSingle = getThreadingInfoSingleBuffer();
@@ -315,12 +313,11 @@ public final class ExecutionStrategyResources {
             return content
                     .doOnNext(__ -> requireFromSameExecutorAs(resourceMethodThread))
                     .first()
-                    .flatMapPublisher(__ -> bufferSingle.flatMapPublisher(buf -> Publisher.from(newPayloadChunk(buf))))
+                    .flatMapPublisher(__ -> bufferSingle.flatMapPublisher(Publisher::just))
                     .doOnRequest(__ -> requireFromSameExecutorAs(resourceMethodThread));
         }
 
-        private static Map<String, String> getThreadingInfo(final ConnectionContext ctx,
-                                                            final StreamingHttpRequest<HttpPayloadChunk> req,
+        private static Map<String, String> getThreadingInfo(final ConnectionContext ctx, final StreamingHttpRequest req,
                                                             final UriInfo uriInfo) {
             // Use the opportunity to assert that other context objects are valid
             if (!req.getPath().equals('/' + uriInfo.getPath())) {

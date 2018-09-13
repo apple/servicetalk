@@ -16,9 +16,8 @@
 package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpPayloadChunks;
 import io.servicetalk.http.router.jersey.SourceWrappers.SingleSource;
 
 import java.io.InputStream;
@@ -30,8 +29,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
-
-import static io.servicetalk.http.api.HttpPayloadChunks.aggregateChunks;
 
 /**
  * A combined {@link MessageBodyReader} / {@link MessageBodyWriter} that allows bypassing Java IO streams
@@ -51,8 +48,9 @@ final class BufferSingleMessageBodyReaderWriter
                                    final MediaType mediaType,
                                    final MultivaluedMap<String, String> httpHeaders,
                                    final InputStream entityStream) throws WebApplicationException {
-        return readFrom(entityStream, (p, a) -> aggregateChunks(p, a)
-                .map(HttpPayloadChunk::getContent), SingleSource::new);
+        return readFrom(entityStream, (p, a) ->
+                // FIXME use Buffer aggregator helper when ready
+                p.reduce(a::newCompositeBuffer, (cb, b) -> ((CompositeBuffer) cb).addBuffer(b)), SingleSource::new);
     }
 
     @Override
@@ -63,6 +61,6 @@ final class BufferSingleMessageBodyReaderWriter
                         final MediaType mediaType,
                         final MultivaluedMap<String, Object> httpHeaders,
                         final OutputStream entityStream) throws WebApplicationException {
-        writeTo(single.toPublisher().map(HttpPayloadChunks::newPayloadChunk));
+        writeTo(single.toPublisher());
     }
 }

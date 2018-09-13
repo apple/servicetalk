@@ -18,7 +18,6 @@ package io.servicetalk.http.router.jersey;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseStatus;
@@ -62,7 +61,6 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
-import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpRequestMethods.HEAD;
@@ -100,17 +98,15 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
 
     @Before
     public final void initServerAndClient() throws Exception {
-        if (serverContext == null) {
-            final StreamingHttpService router = configureBuilder(new HttpJerseyRouterBuilder()).build(getApplication());
-            final Configuration config = ((DefaultJerseyStreamingHttpRouter) router).getConfiguration();
-            streamingJsonEnabled = getValue(config.getProperties(), config.getRuntimeType(), JSON_FEATURE, "",
-                    String.class).toLowerCase().contains("servicetalk");
+        final StreamingHttpService router = configureBuilder(new HttpJerseyRouterBuilder()).build(getApplication());
+        final Configuration config = ((DefaultJerseyStreamingHttpRouter) router).getConfiguration();
+        streamingJsonEnabled = getValue(config.getProperties(), config.getRuntimeType(), JSON_FEATURE, "",
+                String.class).toLowerCase().contains("servicetalk");
 
-            serverContext = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
-                    .start(getServerExecutionContext(), new InetSocketAddress(0), router));
-        }
+        serverContext = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
+                .start(getServerExecutionContext(), new InetSocketAddress(0), router));
 
-        InetSocketAddress serverAddress = (InetSocketAddress) serverContext.getListenAddress();
+        final InetSocketAddress serverAddress = (InetSocketAddress) serverContext.getListenAddress();
         httpClient = HttpClients.forSingleAddress(of(serverAddress)).buildStreaming();
     }
 
@@ -146,49 +142,49 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
         return path;
     }
 
-    protected StreamingHttpRequest<HttpPayloadChunk> options(final String path) {
+    protected StreamingHttpRequest options(final String path) {
         return noPayloadRequest(OPTIONS, path);
     }
 
-    protected StreamingHttpRequest<HttpPayloadChunk> head(final String path) {
+    protected StreamingHttpRequest head(final String path) {
         return noPayloadRequest(HEAD, path);
     }
 
-    protected StreamingHttpRequest<HttpPayloadChunk> get(final String path) {
+    protected StreamingHttpRequest get(final String path) {
         return noPayloadRequest(GET, path);
     }
 
-    protected StreamingHttpRequest<HttpPayloadChunk> post(final String path, final CharSequence payload,
-                                                          final CharSequence contentType) {
+    protected StreamingHttpRequest post(final String path, final CharSequence payload,
+                                        final CharSequence contentType) {
         return payloadRequest(POST, path, payload, contentType);
     }
 
-    protected StreamingHttpRequest<HttpPayloadChunk> put(final String path, final CharSequence payload,
-                                                         final CharSequence contentType) {
+    protected StreamingHttpRequest put(final String path, final CharSequence payload,
+                                       final CharSequence contentType) {
         return payloadRequest(PUT, path, payload, contentType);
     }
 
-    protected StreamingHttpRequest<HttpPayloadChunk> noPayloadRequest(final HttpRequestMethod method, final String path) {
-        final StreamingHttpRequest<HttpPayloadChunk> req = newRequest(method, testUri(path));
+    protected StreamingHttpRequest noPayloadRequest(final HttpRequestMethod method, final String path) {
+        final StreamingHttpRequest req = newRequest(method, testUri(path));
         req.getHeaders().set(HOST, host());
         return req;
     }
 
-    protected StreamingHttpRequest<HttpPayloadChunk> payloadRequest(final HttpRequestMethod method,
-                                                                    final String path,
-                                                                    final CharSequence payload,
-                                                                    final CharSequence contentType) {
+    protected StreamingHttpRequest payloadRequest(final HttpRequestMethod method,
+                                                  final String path,
+                                                  final CharSequence payload,
+                                                  final CharSequence contentType) {
         final Buffer content = DEFAULT_ALLOCATOR.fromUtf8(payload);
-        final StreamingHttpRequest<HttpPayloadChunk> req = newRequest(method, testUri(path), newPayloadChunk(content));
+        final StreamingHttpRequest req = newRequest(method, testUri(path), content);
         req.getHeaders().set(HOST, host());
         req.getHeaders().set(CONTENT_TYPE, contentType);
         req.getHeaders().set(CONTENT_LENGTH, Integer.toString(content.getReadableBytes()));
         return req;
     }
 
-    protected StreamingHttpRequest<HttpPayloadChunk> withHeader(final StreamingHttpRequest<HttpPayloadChunk> req,
-                                                                final String name,
-                                                                final String value) {
+    protected StreamingHttpRequest withHeader(final StreamingHttpRequest req,
+                                              final String name,
+                                              final String value) {
         req.getHeaders().set(name, value);
         return req;
     }
@@ -197,77 +193,77 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
         return isStreamingJsonEnabled() ? __ -> null : String::length;
     }
 
-    protected StreamingHttpResponse<HttpPayloadChunk> sendAndAssertNoResponse(final StreamingHttpRequest<HttpPayloadChunk> req,
-                                                                              final HttpResponseStatus expectedStatus) {
+    protected StreamingHttpResponse sendAndAssertNoResponse(final StreamingHttpRequest req,
+                                                            final HttpResponseStatus expectedStatus) {
         return sendAndAssertResponse(req, expectedStatus, null, "");
     }
 
-    protected StreamingHttpResponse<HttpPayloadChunk> sendAndAssertStatusOnly(final StreamingHttpRequest<HttpPayloadChunk> req,
-                                                                              final HttpResponseStatus expectedStatus) {
-        final StreamingHttpResponse<HttpPayloadChunk> res =
+    protected StreamingHttpResponse sendAndAssertStatusOnly(final StreamingHttpRequest req,
+                                                            final HttpResponseStatus expectedStatus) {
+        final StreamingHttpResponse res =
                 sendAndAssertStatus(req, HTTP_1_1, expectedStatus, DEFAULT_TIMEOUT_SECONDS, SECONDS);
         getContentAsString(res);
         return res;
     }
 
-    protected StreamingHttpResponse<HttpPayloadChunk> sendAndAssertResponse(final StreamingHttpRequest<HttpPayloadChunk> req,
-                                                                            final HttpResponseStatus expectedStatus,
-                                                                            @Nullable final CharSequence expectedContentType,
-                                                                            final String expectedContent) {
+    protected StreamingHttpResponse sendAndAssertResponse(final StreamingHttpRequest req,
+                                                          final HttpResponseStatus expectedStatus,
+                                                          @Nullable final CharSequence expectedContentType,
+                                                          final String expectedContent) {
         return sendAndAssertResponse(req, expectedStatus, expectedContentType, is(expectedContent),
                 __ -> expectedContent.length());
     }
 
-    protected StreamingHttpResponse<HttpPayloadChunk> sendAndAssertResponse(final StreamingHttpRequest<HttpPayloadChunk> req,
-                                                                            final HttpResponseStatus expectedStatus,
-                                                                            @Nullable final CharSequence expectedContentType,
-                                                                            final Matcher<String> contentMatcher,
-                                                                            final int expectedContentLength) {
+    protected StreamingHttpResponse sendAndAssertResponse(final StreamingHttpRequest req,
+                                                          final HttpResponseStatus expectedStatus,
+                                                          @Nullable final CharSequence expectedContentType,
+                                                          final Matcher<String> contentMatcher,
+                                                          final int expectedContentLength) {
         return sendAndAssertResponse(req, expectedStatus, expectedContentType, contentMatcher,
                 __ -> expectedContentLength);
     }
 
-    protected StreamingHttpResponse<HttpPayloadChunk> sendAndAssertResponse(final StreamingHttpRequest<HttpPayloadChunk> req,
-                                                                            final HttpResponseStatus expectedStatus,
-                                                                            @Nullable final CharSequence expectedContentType,
-                                                                            final Matcher<String> contentMatcher,
-                                                                            final Function<String,
-                                                                           Integer> expectedContentLengthExtractor) {
+    protected StreamingHttpResponse sendAndAssertResponse(final StreamingHttpRequest req,
+                                                          final HttpResponseStatus expectedStatus,
+                                                          @Nullable final CharSequence expectedContentType,
+                                                          final Matcher<String> contentMatcher,
+                                                          final Function<String,
+                                                                  Integer> expectedContentLengthExtractor) {
         return sendAndAssertResponse(req, HTTP_1_1, expectedStatus, expectedContentType, contentMatcher,
                 expectedContentLengthExtractor);
     }
 
-    protected StreamingHttpResponse<HttpPayloadChunk> sendAndAssertResponse(final StreamingHttpRequest<HttpPayloadChunk> req,
-                                                                            final HttpResponseStatuses expectedStatus,
-                                                                            final CharSequence expectedContentType,
-                                                                            final String expectedContent,
-                                                                            final int timeout,
-                                                                            final TimeUnit unit) {
+    protected StreamingHttpResponse sendAndAssertResponse(final StreamingHttpRequest req,
+                                                          final HttpResponseStatuses expectedStatus,
+                                                          final CharSequence expectedContentType,
+                                                          final String expectedContent,
+                                                          final int timeout,
+                                                          final TimeUnit unit) {
         return sendAndAssertResponse(req, HTTP_1_1, expectedStatus, expectedContentType, is(expectedContent),
                 __ -> expectedContent.length(), timeout, unit);
     }
 
-    protected StreamingHttpResponse<HttpPayloadChunk> sendAndAssertResponse(final StreamingHttpRequest<HttpPayloadChunk> req,
-                                                                            final HttpProtocolVersion expectedHttpVersion,
-                                                                            final HttpResponseStatus expectedStatus,
-                                                                            @Nullable final CharSequence expectedContentType,
-                                                                            final Matcher<String> contentMatcher,
-                                                                            final Function<String,
-                                                                           Integer> expectedContentLengthExtractor) {
+    protected StreamingHttpResponse sendAndAssertResponse(final StreamingHttpRequest req,
+                                                          final HttpProtocolVersion expectedHttpVersion,
+                                                          final HttpResponseStatus expectedStatus,
+                                                          @Nullable final CharSequence expectedContentType,
+                                                          final Matcher<String> contentMatcher,
+                                                          final Function<String,
+                                                                  Integer> expectedContentLengthExtractor) {
         return sendAndAssertResponse(req, expectedHttpVersion, expectedStatus, expectedContentType, contentMatcher,
                 expectedContentLengthExtractor, DEFAULT_TIMEOUT_SECONDS, SECONDS);
     }
 
-    private StreamingHttpResponse<HttpPayloadChunk> sendAndAssertResponse(final StreamingHttpRequest<HttpPayloadChunk> req,
-                                                                          final HttpProtocolVersion expectedHttpVersion,
-                                                                          final HttpResponseStatus expectedStatus,
-                                                                          @Nullable final CharSequence expectedContentType,
-                                                                          final Matcher<String> contentMatcher,
-                                                                          final Function<String,
-                                                                         Integer> expectedContentLengthExtractor,
-                                                                          final int timeout,
-                                                                          final TimeUnit unit) {
-        final StreamingHttpResponse<HttpPayloadChunk> res =
+    private StreamingHttpResponse sendAndAssertResponse(final StreamingHttpRequest req,
+                                                        final HttpProtocolVersion expectedHttpVersion,
+                                                        final HttpResponseStatus expectedStatus,
+                                                        @Nullable final CharSequence expectedContentType,
+                                                        final Matcher<String> contentMatcher,
+                                                        final Function<String,
+                                                                Integer> expectedContentLengthExtractor,
+                                                        final int timeout,
+                                                        final TimeUnit unit) {
+        final StreamingHttpResponse res =
                 sendAndAssertStatus(req, expectedHttpVersion, expectedStatus, timeout, unit);
 
         if (expectedContentType != null) {
@@ -298,16 +294,13 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
         return res;
     }
 
-    private StreamingHttpResponse<HttpPayloadChunk> sendAndAssertStatus(final StreamingHttpRequest<HttpPayloadChunk> req,
-                                                               final HttpProtocolVersion expectedHttpVersion,
-                                                               final HttpResponseStatus expectedStatus,
-                                                               final int timeout,
-                                                               final TimeUnit unit) {
-
-        assert httpClient != null;
-
+    private StreamingHttpResponse sendAndAssertStatus(final StreamingHttpRequest req,
+                                                      final HttpProtocolVersion expectedHttpVersion,
+                                                      final HttpResponseStatus expectedStatus,
+                                                      final int timeout,
+                                                      final TimeUnit unit) {
         try {
-            final StreamingHttpResponse<HttpPayloadChunk> res = awaitNonNull(httpClient.request(req), timeout, unit);
+            final StreamingHttpResponse res = awaitNonNull(httpClient.request(req), timeout, unit);
 
             assertThat(res.getVersion(), is(expectedHttpVersion));
             final HttpResponseStatus status = res.getStatus();

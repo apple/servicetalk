@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.router.jersey.AbstractResourceTest.TestFiltered;
 import io.servicetalk.http.router.jersey.TestPojo;
 import io.servicetalk.serialization.api.DefaultSerializer;
@@ -43,10 +42,10 @@ import javax.ws.rs.core.Response;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.router.jersey.TestUtils.asChunkPublisher;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
@@ -117,13 +116,13 @@ public abstract class AbstractAsynchronousResources {
         return ctx.getExecutionContext().getExecutor().timer(10, MILLISECONDS)
                 .andThen(defer(() -> {
                     final String contentString = "GOT: " + i;
-                    final Publisher<HttpPayloadChunk> responseContent = asChunkPublisher(contentString, allocator);
+                    final Publisher<Buffer> responseContent = just(allocator.fromAscii(contentString));
 
                     return success(status(i)
                             // We know the content length so we set it, otherwise the response is chunked
                             .header(CONTENT_LENGTH, contentString.length())
-                            // Wrap content Publisher to capture its generic type (i.e. HttpPayloadChunk)
-                            .entity(new GenericEntity<Publisher<HttpPayloadChunk>>(responseContent) { })
+                            // Wrap content Publisher to capture its generic type (i.e. Buffer)
+                            .entity(new GenericEntity<Publisher<Buffer>>(responseContent) { })
                             .build());
                 }));
     }
