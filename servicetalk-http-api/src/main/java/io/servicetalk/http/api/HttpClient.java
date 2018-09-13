@@ -158,13 +158,13 @@ public abstract class HttpClient extends HttpRequester {
          *
          * @param releaseReturnsToClient
          * <ul>
-         *     <li>{@code true} means the {@link StreamingHttpConnection} associated with the return value can be used by
+         *     <li>{@code true} means the {@link HttpConnection} associated with the return value can be used by
          *     this {@link HttpClient} when {@link ReservedHttpConnection#releaseAsync()} is called.
          *     This typically means the upgrade attempt was unsuccessful, but you can continue talking HTTP. However
          *     this may also be used if the upgrade was successful, but the upgrade protocol shares semantics that are
          *     similar enough to HTTP that the same {@link HttpClient} API can still be used
          *     (e.g. HTTP/2).</li>
-         *     <li>{@code false} means the {@link StreamingHttpConnection} associated with the return value can
+         *     <li>{@code false} means the {@link HttpConnection} associated with the return value can
          *     <strong>not</strong> be used by this {@link HttpClient} when
          *     {@link ReservedHttpConnection#releaseAsync()} is called. This typically means the upgrade
          *     attempt was successful and the semantics of the upgrade protocol are sufficiently different that the
