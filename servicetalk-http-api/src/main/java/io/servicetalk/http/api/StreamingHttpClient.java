@@ -21,22 +21,34 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient.ReservedBlockingHttpConnection;
 import io.servicetalk.http.api.BlockingStreamingHttpClient.ReservedBlockingStreamingHttpConnection;
+import io.servicetalk.http.api.BlockingStreamingHttpClient.UpgradableBlockingStreamingHttpResponse;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClientToBlockingHttpClient.ReservedStreamingHttpConnectionToBlocking;
 import io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient.ReservedStreamingHttpConnectionToBlockingStreaming;
 import io.servicetalk.http.api.StreamingHttpClientToHttpClient.ReservedStreamingHttpConnectionToReservedHttpConnection;
 
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+
+import static io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
 
 /**
  * The equivalent of {@link HttpClient} but that accepts {@link StreamingHttpRequest} and returns
  * {@link StreamingHttpResponse}
  */
 public abstract class StreamingHttpClient extends StreamingHttpRequester {
+    /**
+     * Create a new instance.
+     *
+     * @param requestFactory The {@link StreamingHttpRequestFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     */
+    protected StreamingHttpClient(final StreamingHttpRequestFactory requestFactory) {
+        super(requestFactory);
+    }
+
     /**
      * Reserve a {@link StreamingHttpConnection} for handling the provided {@link StreamingHttpRequest} but <b>does not
      * execute it</b>!
@@ -110,6 +122,16 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
      */
     public abstract static class ReservedStreamingHttpConnection extends StreamingHttpConnection {
         /**
+         * Create a new instance.
+         *
+         * @param requestFactory The {@link StreamingHttpRequestFactory} used to
+         * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+         */
+        protected ReservedStreamingHttpConnection(final StreamingHttpRequestFactory requestFactory) {
+            super(requestFactory);
+        }
+
+        /**
          * Releases this reserved {@link StreamingHttpConnection} to be used for subsequent requests.
          * This method must be idempotent, i.e. calling multiple times must not have side-effects.
          *
@@ -123,7 +145,7 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
          * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
          * filters are implemented using the {@link ReservedStreamingHttpConnection} asynchronous API for maximum
          * portability.
-         * @return a {@link HttpClient.ReservedHttpConnection} representation of this
+         * @return a {@link ReservedHttpConnection} representation of this
          * {@link ReservedStreamingHttpConnection}.
          */
         public final ReservedHttpConnection asReservedConnection() {
@@ -211,7 +233,7 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
         }
 
         @Override
-        <T> UpgradableStreamingHttpResponse transformPayloadBody(Function<Publisher<Buffer>, Publisher<T>> f,
+        <T> UpgradableStreamingHttpResponse transformPayloadBody(Function<Publisher<Buffer>, Publisher<T>> transformer,
                                                                  HttpSerializer<T> serializer);
 
         @Override
@@ -229,6 +251,12 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
         <T> UpgradableStreamingHttpResponse transformRaw(Supplier<T> stateSupplier,
                                                          BiFunction<Object, T, ?> transformer,
                                                          BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer);
+
+        @Override
+        Single<? extends UpgradableHttpResponse> toResponse();
+
+        @Override
+        UpgradableBlockingStreamingHttpResponse toBlockingStreamingResponse();
 
         @Override
         UpgradableStreamingHttpResponse setVersion(HttpProtocolVersion version);

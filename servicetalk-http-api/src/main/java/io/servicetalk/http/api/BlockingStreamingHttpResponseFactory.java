@@ -44,4 +44,10 @@ public interface BlockingStreamingHttpResponseFactory {
     default BlockingStreamingHttpResponse serverError() {
         return newResponse(INTERNAL_SERVER_ERROR);
     }
+
+    /**
+     * Get a {@link BlockingStreamingHttpRequestFactory}.
+     * @return a {@link BlockingStreamingHttpRequestFactory}.
+     */
+    BlockingStreamingHttpRequestFactory getHttpRequestFactory();
 }

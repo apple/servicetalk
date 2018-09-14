@@ -17,10 +17,23 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.transport.api.ExecutionContext;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * The equivalent of {@link StreamingHttpRequester} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
 public abstract class BlockingStreamingHttpRequester implements BlockingStreamingHttpRequestFactory, AutoCloseable {
+    private final BlockingStreamingHttpRequestFactory requestFactory;
+
+    /**
+     * Create a new instance.
+     * @param requestFactory The {@link HttpRequestFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     */
+    protected BlockingStreamingHttpRequester(BlockingStreamingHttpRequestFactory requestFactory) {
+        this.requestFactory = requireNonNull(requestFactory);
+    }
+
     /**
      * Send a {@code request}.
      *
@@ -39,6 +52,16 @@ public abstract class BlockingStreamingHttpRequester implements BlockingStreamin
      * @return the {@link ExecutionContext} used during construction of this object.
      */
     public abstract ExecutionContext getExecutionContext();
+
+    @Override
+    public final BlockingStreamingHttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
+        return requestFactory.newRequest(method, requestTarget);
+    }
+
+    @Override
+    public final BlockingStreamingHttpResponseFactory getHttpResponseFactory() {
+        return requestFactory.getHttpResponseFactory();
+    }
 
     /**
      * Convert this {@link BlockingStreamingHttpRequester} to the {@link StreamingHttpRequester} API.

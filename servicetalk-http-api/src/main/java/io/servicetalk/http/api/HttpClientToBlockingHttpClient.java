@@ -28,27 +28,25 @@ final class HttpClientToBlockingHttpClient extends BlockingHttpClient {
     private final HttpClient client;
 
     HttpClientToBlockingHttpClient(HttpClient client) {
+        super(client);
         this.client = requireNonNull(client);
     }
 
     @Override
-    public ReservedBlockingHttpConnection reserveConnection(
-            final HttpRequest<HttpPayloadChunk> request) throws Exception {
+    public ReservedBlockingHttpConnection reserveConnection(final HttpRequest request) throws Exception {
         return new ReservedHttpConnectionToReservedBlockingHttpConnection(
                 blockingInvocation(client.reserveConnection(request)));
     }
 
     @Override
-    public HttpClient.UpgradableHttpResponse<HttpPayloadChunk> upgradeConnection(
-            final HttpRequest<HttpPayloadChunk> request) throws Exception {
+    public HttpClient.UpgradableHttpResponse upgradeConnection(final HttpRequest request) throws Exception {
         // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter).
         // So we don't apply any explicit timeout here and just wait forever.
         return blockingInvocation(client.upgradeConnection(request));
     }
 
     @Override
-    public HttpResponse<HttpPayloadChunk> request(
-            final HttpRequest<HttpPayloadChunk> request) throws Exception {
+    public HttpResponse request(final HttpRequest request) throws Exception {
         return BlockingUtils.request(client, request);
     }
 
@@ -71,11 +69,11 @@ final class HttpClientToBlockingHttpClient extends BlockingHttpClient {
         return client.onClose();
     }
 
-    static final class ReservedHttpConnectionToReservedBlockingHttpConnection
-            extends ReservedBlockingHttpConnection {
+    static final class ReservedHttpConnectionToReservedBlockingHttpConnection extends ReservedBlockingHttpConnection {
         private final ReservedHttpConnection connection;
 
         ReservedHttpConnectionToReservedBlockingHttpConnection(ReservedHttpConnection connection) {
+            super(connection);
             this.connection = requireNonNull(connection);
         }
 
@@ -95,8 +93,7 @@ final class HttpClientToBlockingHttpClient extends BlockingHttpClient {
         }
 
         @Override
-        public HttpResponse<HttpPayloadChunk> request(
-                final HttpRequest<HttpPayloadChunk> request) throws Exception {
+        public HttpResponse request(final HttpRequest request) throws Exception {
             return BlockingUtils.request(connection, request);
         }
 

@@ -44,4 +44,10 @@ public interface HttpResponseFactory {
     default HttpResponse serverError() {
         return newResponse(INTERNAL_SERVER_ERROR);
     }
+
+    /**
+     * Get a {@link HttpRequestFactory}.
+     * @return a {@link HttpRequestFactory}.
+     */
+    HttpRequestFactory getHttpRequestFactory();
 }

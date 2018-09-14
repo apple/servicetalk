@@ -17,12 +17,14 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient.ReservedBlockingHttpConnection;
 import io.servicetalk.http.api.BlockingStreamingHttpClientToStreamingHttpClient.BlockingToReservedStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
+import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
 import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpClient.UpgradableStreamingHttpResponse;
 
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -32,6 +34,16 @@ import java.util.function.UnaryOperator;
  * The equivalent of {@link StreamingHttpClient} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
 public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpRequester {
+    /**
+     * Create a new instance.
+     *
+     * @param requestFactory The {@link HttpRequestFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     */
+    protected BlockingStreamingHttpClient(final BlockingStreamingHttpRequestFactory requestFactory) {
+        super(requestFactory);
+    }
+
     /**
      * Reserve a {@link BlockingStreamingHttpConnection} for handling the provided {@link BlockingStreamingHttpRequest}
      * but <b>does not execute it</b>!
@@ -109,6 +121,16 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
      */
     public abstract static class ReservedBlockingStreamingHttpConnection extends BlockingStreamingHttpConnection {
         /**
+         * Create a new instance.
+         *
+         * @param requestFactory The {@link HttpRequestFactory} used to
+         * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+         */
+        protected ReservedBlockingStreamingHttpConnection(final BlockingStreamingHttpRequestFactory requestFactory) {
+            super(requestFactory);
+        }
+
+        /**
          * Releases this reserved {@link BlockingStreamingHttpConnection} to be used for subsequent requests.
          * This method must be idempotent, i.e. calling multiple times must not have side-effects.
          *
@@ -167,7 +189,7 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
      * A special type of response returned by upgrade requests {@link #upgradeConnection(BlockingStreamingHttpRequest)}.
      * This object allows the upgrade code to inform the HTTP implementation if the {@link HttpConnection} can
      * continue using the HTTP protocol or not.
-     * @see StreamingHttpClient.UpgradableStreamingHttpResponse
+     * @see UpgradableStreamingHttpResponse
      */
     public interface UpgradableBlockingStreamingHttpResponse extends BlockingStreamingHttpResponse {
         /**
@@ -210,7 +232,7 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
 
         @Override
         <T> UpgradableBlockingStreamingHttpResponse transformPayloadBody(
-                Function<BlockingIterable<Buffer>, BlockingIterable<T>> f, HttpSerializer<T> serializer);
+                Function<BlockingIterable<Buffer>, BlockingIterable<T>> transformer, HttpSerializer<T> serializer);
 
         @Override
         UpgradableBlockingStreamingHttpResponse transformPayloadBody(
@@ -220,14 +242,20 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
         UpgradableBlockingStreamingHttpResponse transformRawPayloadBody(UnaryOperator<BlockingIterable<?>> transformer);
 
         @Override
-        <T> UpgradableBlockingStreamingHttpResponse transform(Supplier<T> stateSupplier,
-                                                              BiFunction<Buffer, T, Buffer> transformer,
-                                                              BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer);
+        <T> UpgradableBlockingStreamingHttpResponse transform(
+                Supplier<T> stateSupplier, BiFunction<Buffer, T, Buffer> transformer,
+                BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer);
 
         @Override
-        <T> UpgradableBlockingStreamingHttpResponse transformRaw(Supplier<T> stateSupplier,
-                                                                 BiFunction<Object, T, ?> transformer,
-                                                                 BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer);
+        <T> UpgradableBlockingStreamingHttpResponse transformRaw(
+                Supplier<T> stateSupplier, BiFunction<Object, T, ?> transformer,
+                BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer);
+
+        @Override
+        Single<? extends UpgradableHttpResponse> toResponse();
+
+        @Override
+        UpgradableStreamingHttpResponse toStreamingResponse();
 
         @Override
         UpgradableBlockingStreamingHttpResponse setVersion(HttpProtocolVersion version);

@@ -27,33 +27,30 @@ import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
-import static io.servicetalk.http.api.BufferHttpRequest.from;
-import static io.servicetalk.http.api.HttpClientToStreamingHttpClient.UpgradableHttpResponseToUpgradableStreamingHttpResponse.newUpgradeResponse;
 import static java.util.Objects.requireNonNull;
 
 final class BlockingHttpClientToStreamingHttpClient extends StreamingHttpClient {
     private final BlockingHttpClient client;
 
     BlockingHttpClientToStreamingHttpClient(BlockingHttpClient client) {
+        super(new HttpRequestFactoryToStreamingHttpRequestFactory(client));
         this.client = requireNonNull(client);
     }
 
     @Override
-    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest<HttpPayloadChunk> request) {
-        return from(request, client.getExecutionContext().getBufferAllocator()).flatMap(aggregatedRequest ->
-                blockingToSingle(() -> new BlockingReservedStreamingHttpConnectionToReserved(
-                        client.reserveConnection(aggregatedRequest))));
+    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest request) {
+        return request.toRequest().flatMap(req -> blockingToSingle(() ->
+                new BlockingReservedStreamingHttpConnectionToReserved(client.reserveConnection(req))));
     }
 
     @Override
-    public Single<? extends UpgradableStreamingHttpResponse<HttpPayloadChunk>> upgradeConnection(
-            final StreamingHttpRequest<HttpPayloadChunk> request) {
-        return from(request, client.getExecutionContext().getBufferAllocator()).flatMap(aggregatedRequest ->
-                blockingToSingle(() -> newUpgradeResponse(client.upgradeConnection(aggregatedRequest))));
+    public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(final StreamingHttpRequest request) {
+        return request.toRequest().flatMap(req -> blockingToSingle(() -> client.upgradeConnection(req))
+                .map(HttpClient.UpgradableHttpResponse::toStreamingResponse));
     }
 
     @Override
-    public Single<StreamingHttpResponse<HttpPayloadChunk>> request(final StreamingHttpRequest<HttpPayloadChunk> request) {
+    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
         return BlockingUtils.request(client, request);
     }
 
@@ -85,6 +82,7 @@ final class BlockingHttpClientToStreamingHttpClient extends StreamingHttpClient 
         private final ReservedBlockingHttpConnection connection;
 
         BlockingReservedStreamingHttpConnectionToReserved(ReservedBlockingHttpConnection connection) {
+            super(new HttpRequestFactoryToStreamingHttpRequestFactory(connection));
             this.connection = requireNonNull(connection);
         }
 
@@ -104,7 +102,7 @@ final class BlockingHttpClientToStreamingHttpClient extends StreamingHttpClient 
         }
 
         @Override
-        public Single<StreamingHttpResponse<HttpPayloadChunk>> request(final StreamingHttpRequest<HttpPayloadChunk> request) {
+        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
             return BlockingUtils.request(connection, request);
         }
 

@@ -15,519 +15,53 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
-
-import static io.servicetalk.concurrent.api.Publisher.empty;
-import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
-import static io.servicetalk.http.api.HttpPayloadChunks.newLastPayloadChunk;
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 
 /**
  * Factory methods for creating {@link StreamingHttpRequest}s.
  */
 public final class StreamingHttpRequests {
-
     private StreamingHttpRequests() {
         // No instances
     }
 
     /**
-     * Create a new instance using HTTP 1.1 with empty payload body and headers.
+     * Create a new instance using HTTP 1.1 with empty payload body.
      *
-     * @param <I> Type of the payload of the request.
      * @param method the {@link HttpRequestMethod} of the request.
      * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
      * request.
+     * @param version the {@link HttpProtocolVersion} of the request.
+     * @param headers the {@link HttpHeaders} of the request.
+     * @param allocator the allocator used for serialization purposes if necessary.
+     * @param initialTrailers the initial state of the
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a> for this request.
      * @return a new {@link StreamingHttpRequest}.
      */
-    public static <I> StreamingHttpRequest<I> newRequest(final HttpRequestMethod method,
-                                                         final String requestTarget) {
-        return newRequest(HTTP_1_1, method, requestTarget);
+    public static StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget,
+                                                  final HttpProtocolVersion version, final HttpHeaders headers,
+                                                  final BufferAllocator allocator, final HttpHeaders initialTrailers) {
+        return new BufferStreamingHttpRequest(method, requestTarget, version, headers, allocator, initialTrailers);
     }
 
     /**
      * Create a new instance using HTTP 1.1 with empty payload body.
      *
-     * @param <I> Type of the payload of the request.
      * @param method the {@link HttpRequestMethod} of the request.
      * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
      * request.
-     * @param headers the {@link HttpHeaders} of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static <I> StreamingHttpRequest<I> newRequest(final HttpRequestMethod method,
-                                                         final String requestTarget,
-                                                         final HttpHeaders headers) {
-        return newRequest(HTTP_1_1, method, requestTarget, headers);
-    }
-
-    /**
-     * Create a new instance with empty payload body and headers.
-     *
-     * @param <I> Type of the payload of the request.
      * @param version the {@link HttpProtocolVersion} of the request.
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static <I> StreamingHttpRequest<I> newRequest(final HttpProtocolVersion version,
-                                                         final HttpRequestMethod method,
-                                                         final String requestTarget) {
-        return newRequest(version, method, requestTarget, empty());
-    }
-
-    /**
-     * Create a new instance with empty payload body.
-     *
-     * @param <I> Type of the payload of the request.
-     * @param version the {@link HttpProtocolVersion} of the request.
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
      * @param headers the {@link HttpHeaders} of the request.
+     * @param allocator the allocator used for serialization purposes if necessary.
+     * @param payloadAndTrailers a {@link Publisher} of the form [&lt;payload chunk&gt;* {@link HttpHeaders}].
      * @return a new {@link StreamingHttpRequest}.
      */
-    public static <I> StreamingHttpRequest<I> newRequest(final HttpProtocolVersion version,
-                                                         final HttpRequestMethod method,
-                                                         final String requestTarget,
-                                                         final HttpHeaders headers) {
-        return newRequest(version, method, requestTarget, empty(), headers);
-    }
-
-    /**
-     * Create a new instance using HTTP 1.1 with empty headers.
-     *
-     * @param <I> Type of the payload of the request.
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody the payload body of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static <I> StreamingHttpRequest<I> newRequest(final HttpRequestMethod method,
-                                                         final String requestTarget,
-                                                         final I payloadBody) {
-        return newRequest(HTTP_1_1, method, requestTarget, payloadBody);
-    }
-
-    /**
-     * Create a new instance using HTTP 1.1 with empty headers.
-     *
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody the payload body of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static StreamingHttpRequest<HttpPayloadChunk> newRequest(final HttpRequestMethod method,
-                                                                    final String requestTarget,
-                                                                    final Buffer payloadBody) {
-        return newRequest(HTTP_1_1, method, requestTarget, payloadBody);
-    }
-
-    /**
-     * Create a new instance using HTTP 1.1.
-     *
-     * @param <I> Type of the payload of the request.
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody the payload body of the request.
-     * @param headers the {@link HttpHeaders} of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static <I> StreamingHttpRequest<I> newRequest(final HttpRequestMethod method,
-                                                         final String requestTarget,
-                                                         final I payloadBody,
-                                                         final HttpHeaders headers) {
-        return newRequest(HTTP_1_1, method, requestTarget, payloadBody, headers);
-    }
-
-    /**
-     * Create a new instance using HTTP 1.1.
-     *
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody the payload body of the request.
-     * @param headers the {@link HttpHeaders} of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static StreamingHttpRequest<HttpPayloadChunk> newRequest(final HttpRequestMethod method,
-                                                                    final String requestTarget,
-                                                                    final Buffer payloadBody,
-                                                                    final HttpHeaders headers) {
-        return newRequest(HTTP_1_1, method, requestTarget, payloadBody, headers);
-    }
-
-    /**
-     * Create a new instance with empty headers.
-     *
-     * @param <I> Type of the payload of the request.
-     * @param version the {@link HttpProtocolVersion} of the request.
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody the payload body of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static <I> StreamingHttpRequest<I> newRequest(final HttpProtocolVersion version,
-                                                         final HttpRequestMethod method,
-                                                         final String requestTarget,
-                                                         final I payloadBody) {
-        return newRequest(version, method, requestTarget, just(payloadBody));
-    }
-
-    /**
-     * Create a new instance with empty headers.
-     *
-     * @param version the {@link HttpProtocolVersion} of the request.
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody the payload body of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static StreamingHttpRequest<HttpPayloadChunk> newRequest(final HttpProtocolVersion version,
-                                                                    final HttpRequestMethod method,
-                                                                    final String requestTarget,
-                                                                    final Buffer payloadBody) {
-        return newRequest(version, method, requestTarget,
-                just(newLastPayloadChunk(payloadBody, INSTANCE.newEmptyTrailers())));
-    }
-
-    /**
-     * Create a new instance.
-     *
-     * @param <I> Type of the payload of the request.
-     * @param version the {@link HttpProtocolVersion} of the request.
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody the payload body of the request.
-     * @param headers the {@link HttpHeaders} of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static <I> StreamingHttpRequest<I> newRequest(final HttpProtocolVersion version,
-                                                         final HttpRequestMethod method,
-                                                         final String requestTarget,
-                                                         final I payloadBody,
-                                                         final HttpHeaders headers) {
-        return newRequest(version, method, requestTarget, just(payloadBody), headers);
-    }
-
-    /**
-     * Create a new instance.
-     *
-     * @param version the {@link HttpProtocolVersion} of the request.
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody the payload body of the request.
-     * @param headers the {@link HttpHeaders} of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static StreamingHttpRequest<HttpPayloadChunk> newRequest(final HttpProtocolVersion version,
-                                                                    final HttpRequestMethod method,
-                                                                    final String requestTarget,
-                                                                    final Buffer payloadBody,
-                                                                    final HttpHeaders headers) {
-        return newRequest(version, method, requestTarget,
-                just(newLastPayloadChunk(payloadBody, INSTANCE.newEmptyTrailers())), headers);
-    }
-
-    /**
-     * Create a new instance using HTTP 1.1 with empty headers.
-     *
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody a {@link Single} of the payload body of the request.
-     * @param <I> Type of the payload of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static <I> StreamingHttpRequest<I> newRequest(final HttpRequestMethod method,
-                                                         final String requestTarget,
-                                                         final Single<I> payloadBody) {
-        return newRequest(HTTP_1_1, method, requestTarget, payloadBody);
-    }
-
-    /**
-     * Create a new instance using HTTP 1.1 with empty headers.
-     *
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody a {@link Single} of the payload body of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static StreamingHttpRequest<HttpPayloadChunk> newRequestFromBuffer(final HttpRequestMethod method,
-                                                                              final String requestTarget,
-                                                                              final Single<Buffer> payloadBody) {
-        return newRequestFromBuffer(HTTP_1_1, method, requestTarget, payloadBody);
-    }
-
-    /**
-     * Create a new instance using HTTP 1.1.
-     *
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody a {@link Single} of the payload body of the request.
-     * @param headers the {@link HttpHeaders} of the request.
-     * @param <I> Type of the payload of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static <I> StreamingHttpRequest<I> newRequest(final HttpRequestMethod method,
-                                                         final String requestTarget,
-                                                         final Single<I> payloadBody,
-                                                         final HttpHeaders headers) {
-        return newRequest(HTTP_1_1, method, requestTarget, payloadBody, headers);
-    }
-
-    /**
-     * Create a new instance using HTTP 1.1.
-     *
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody a {@link Single} of the payload body of the request.
-     * @param headers the {@link HttpHeaders} of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static StreamingHttpRequest<HttpPayloadChunk> newRequestFromBuffer(final HttpRequestMethod method,
-                                                                              final String requestTarget,
-                                                                              final Single<Buffer> payloadBody,
-                                                                              final HttpHeaders headers) {
-        return newRequestFromBuffer(HTTP_1_1, method, requestTarget, payloadBody, headers);
-    }
-
-    /**
-     * Create a new instance with empty headers.
-     *
-     * @param version the {@link HttpProtocolVersion} of the request.
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody a {@link Single} of the payload body of the request.
-     * @param <I> Type of the payload of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static <I> StreamingHttpRequest<I> newRequest(final HttpProtocolVersion version,
-                                                         final HttpRequestMethod method,
-                                                         final String requestTarget,
-                                                         final Single<I> payloadBody) {
-        return newRequest(version, method, requestTarget, payloadBody, INSTANCE.newHeaders());
-    }
-
-    /**
-     * Create a new instance with empty headers.
-     *
-     * @param version the {@link HttpProtocolVersion} of the request.
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody a {@link Single} of the payload body of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static StreamingHttpRequest<HttpPayloadChunk> newRequestFromBuffer(final HttpProtocolVersion version,
-                                                                              final HttpRequestMethod method,
-                                                                              final String requestTarget,
-                                                                              final Single<Buffer> payloadBody) {
-        return newRequestFromBuffer(version, method, requestTarget, payloadBody, INSTANCE.newHeaders());
-    }
-
-    /**
-     * Create a new instance.
-     *
-     * @param version the {@link HttpProtocolVersion} of the request.
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody a {@link Single} of the payload body of the request.
-     * @param headers the {@link HttpHeaders} of the request.
-     * @param <I> Type of the payload of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static <I> StreamingHttpRequest<I> newRequest(final HttpProtocolVersion version,
-                                                         final HttpRequestMethod method,
-                                                         final String requestTarget,
-                                                         final Single<I> payloadBody,
-                                                         final HttpHeaders headers) {
-        return new DefaultStreamingHttpRequest<>(method, requestTarget, version, payloadBody.toPublisher(), headers);
-    }
-
-    /**
-     * Create a new instance.
-     *
-     * @param version the {@link HttpProtocolVersion} of the request.
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody a {@link Single} of the payload body of the request.
-     * @param headers the {@link HttpHeaders} of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static StreamingHttpRequest<HttpPayloadChunk> newRequestFromBuffer(final HttpProtocolVersion version,
-                                                                              final HttpRequestMethod method,
-                                                                              final String requestTarget,
-                                                                              final Single<Buffer> payloadBody,
-                                                                              final HttpHeaders headers) {
-        return new DefaultStreamingHttpRequest<>(method, requestTarget, version, payloadBody.toPublisher()
-                .map(buf -> newLastPayloadChunk(buf, INSTANCE.newEmptyTrailers())), headers);
-    }
-
-    /**
-     * Create a new instance using HTTP 1.1 with empty headers.
-     *
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody a {@link Publisher} of the payload body of the request.
-     * @param <I> Type of the payload of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static <I> StreamingHttpRequest<I> newRequest(final HttpRequestMethod method,
-                                                         final String requestTarget,
-                                                         final Publisher<I> payloadBody) {
-        return newRequest(HTTP_1_1, method, requestTarget, payloadBody);
-    }
-
-    /**
-     * Create a new instance using HTTP 1.1 with empty headers.
-     *
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody a {@link Publisher} of the payload body of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static StreamingHttpRequest<HttpPayloadChunk> newRequestFromBuffer(final HttpRequestMethod method,
-                                                                              final String requestTarget,
-                                                                              final Publisher<Buffer> payloadBody) {
-        return newRequestFromBuffer(HTTP_1_1, method, requestTarget, payloadBody);
-    }
-
-    /**
-     * Create a new instance using HTTP 1.1.
-     *
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody a {@link Publisher} of the payload body of the request.
-     * @param headers the {@link HttpHeaders} of the request.
-     * @param <I> Type of the payload of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static <I> StreamingHttpRequest<I> newRequest(final HttpRequestMethod method,
-                                                         final String requestTarget,
-                                                         final Publisher<I> payloadBody,
-                                                         final HttpHeaders headers) {
-        return newRequest(HTTP_1_1, method, requestTarget, payloadBody, headers);
-    }
-
-    /**
-     * Create a new instance using HTTP 1.1.
-     *
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody a {@link Publisher} of the payload body of the request.
-     * @param headers the {@link HttpHeaders} of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static StreamingHttpRequest<HttpPayloadChunk> newRequestFromBuffer(final HttpRequestMethod method,
-                                                                              final String requestTarget,
-                                                                              final Publisher<Buffer> payloadBody,
-                                                                              final HttpHeaders headers) {
-        return newRequestFromBuffer(HTTP_1_1, method, requestTarget, payloadBody, headers);
-    }
-
-    /**
-     * Create a new instance with empty headers.
-     *
-     * @param version the {@link HttpProtocolVersion} of the request.
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody a {@link Publisher} of the payload body of the request.
-     * @param <I> Type of the payload of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static <I> StreamingHttpRequest<I> newRequest(final HttpProtocolVersion version,
-                                                         final HttpRequestMethod method,
-                                                         final String requestTarget,
-                                                         final Publisher<I> payloadBody) {
-        return newRequest(version, method, requestTarget, payloadBody, INSTANCE.newHeaders());
-    }
-
-    /**
-     * Create a new instance with empty headers.
-     *
-     * @param version the {@link HttpProtocolVersion} of the request.
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody a {@link Publisher} of the payload body of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static StreamingHttpRequest<HttpPayloadChunk> newRequestFromBuffer(final HttpProtocolVersion version,
-                                                                              final HttpRequestMethod method,
-                                                                              final String requestTarget,
-                                                                              final Publisher<Buffer> payloadBody) {
-        return newRequestFromBuffer(version, method, requestTarget, payloadBody, INSTANCE.newHeaders());
-    }
-
-    /**
-     * Create a new instance.
-     *
-     * @param version the {@link HttpProtocolVersion} of the request.
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody a {@link Publisher} of the payload body of the request.
-     * @param headers the {@link HttpHeaders} of the request.
-     * @param <I> Type of the payload of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static <I> StreamingHttpRequest<I> newRequest(final HttpProtocolVersion version,
-                                                         final HttpRequestMethod method,
-                                                         final String requestTarget,
-                                                         final Publisher<I> payloadBody,
-                                                         final HttpHeaders headers) {
-        return new DefaultStreamingHttpRequest<>(method, requestTarget, version, payloadBody, headers);
-    }
-
-    /**
-     * Create a new instance.
-     *
-     * @param version the {@link HttpProtocolVersion} of the request.
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param payloadBody a {@link Publisher} of the payload body of the request.
-     * @param headers the {@link HttpHeaders} of the request.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static StreamingHttpRequest<HttpPayloadChunk> newRequestFromBuffer(final HttpProtocolVersion version,
-                                                                              final HttpRequestMethod method,
-                                                                              final String requestTarget,
-                                                                              final Publisher<Buffer> payloadBody,
-                                                                              final HttpHeaders headers) {
-        return new DefaultStreamingHttpRequest<>(method, requestTarget, version,
-                payloadBody.map(HttpPayloadChunks::newPayloadChunk), headers);
-    }
-
-    static <I> StreamingHttpRequest<I> fromBlockingRequest(BlockingStreamingHttpRequest<I> request) {
-        return new DefaultStreamingHttpRequest<>(request.getMethod(),
-                request.getRequestTarget(), request.getVersion(),
-                // The from(..) operator will take care of propagating cancel.
-                from(request.getPayloadBody()),
-                request.getHeaders());
+    public static StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget,
+                                                  final HttpProtocolVersion version, final HttpHeaders headers,
+                                                  final BufferAllocator allocator,
+                                                  final Publisher<Object> payloadAndTrailers) {
+        return new TransportStreamingHttpRequest(method, requestTarget, version, headers, allocator,
+                payloadAndTrailers);
     }
 }

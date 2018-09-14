@@ -29,10 +29,11 @@ final class HttpServiceToStreamingHttpService extends StreamingHttpService {
     }
 
     @Override
-    public Single<StreamingHttpResponse<HttpPayloadChunk>> handle(
-            final ConnectionContext ctx, final StreamingHttpRequest<HttpPayloadChunk> request) {
-        return BufferHttpRequest.from(request, ctx.getExecutionContext().getBufferAllocator()).flatMap(fullRequest ->
-                aggregatedService.handle(ctx, fullRequest).map(BufferHttpResponse::toHttpResponse));
+    public Single<StreamingHttpResponse> handle(final StreamingHttpServiceContext ctx,
+                                                final StreamingHttpRequest request) {
+        // TODO(scott): additional object allocation on every request for the factory :(
+        return request.toRequest().flatMap(req -> aggregatedService.handle(, req))
+                .map(HttpResponse::toStreamingResponse);
     }
 
     @Override
@@ -48,5 +49,29 @@ final class HttpServiceToStreamingHttpService extends StreamingHttpService {
     @Override
     HttpService asServiceInternal() {
         return aggregatedService;
+    }
+
+    private static final class StreamingHttpServiceContextToHttpServiceContext implements HttpServiceContext {
+        private final StreamingHttpServiceContext ctx;
+        private final HttpResponseFactory
+
+        StreamingHttpServiceContextToHttpServiceContext(final StreamingHttpServiceContext ctx) {
+            this.ctx = ctx;
+        }
+
+        @Override
+        public ConnectionContext getConnectionContext() {
+            return ctx.getConnectionContext();
+        }
+
+        @Override
+        public HttpResponse newResponse(final HttpResponseStatus status) {
+            return ctx.newResponse(status).toResponse();
+        }
+
+        @Override
+        public HttpRequestFactory getHttpRequestFactory() {
+            return ctx.;
+        }
     }
 }

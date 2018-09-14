@@ -18,10 +18,12 @@ package io.servicetalk.http.api;
 import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.http.api.BlockingHttpClient.ReservedBlockingHttpConnection;
+import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
+import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpClient.UpgradableStreamingHttpResponse;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
-import static io.servicetalk.http.api.BufferHttpRequest.toHttpRequest;
-import static io.servicetalk.http.api.BufferHttpResponse.from;
+import static io.servicetalk.http.api.StreamingHttpClientToHttpClient.newRequestBlocking;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpClientGroupToBlockingHttpClientGroup<UnresolvedAddress>
@@ -33,28 +35,24 @@ final class StreamingHttpClientGroupToBlockingHttpClientGroup<UnresolvedAddress>
     }
 
     @Override
-    public HttpResponse<HttpPayloadChunk> request(final GroupKey<UnresolvedAddress> key,
-                                                  final HttpRequest<HttpPayloadChunk> request)
-            throws Exception {
-        return blockingInvocation(clientGroup.request(key, toHttpRequest(request)).flatMap(response ->
-                            from(response, key.getExecutionContext().getBufferAllocator())));
+    public HttpResponse request(
+            final GroupKey<UnresolvedAddress> key, final HttpRequest request) throws Exception {
+        return blockingInvocation(clientGroup.request(key, request.toStreamingRequest())
+                .flatMap(StreamingHttpResponse::toResponse));
     }
 
     @Override
     public ReservedBlockingHttpConnection reserveConnection(final GroupKey<UnresolvedAddress> key,
-                                                            final HttpRequest<HttpPayloadChunk> request)
-            throws Exception {
-        return blockingInvocation(clientGroup.reserveConnection(key, toHttpRequest(request))
-                .map(StreamingHttpClient.ReservedStreamingHttpConnection::asReservedBlockingConnection));
+                                                            final HttpRequest request) throws Exception {
+        return blockingInvocation(clientGroup.reserveConnection(key, request.toStreamingRequest())
+                .map(ReservedStreamingHttpConnection::asReservedBlockingConnection));
     }
 
     @Override
-    public HttpClient.UpgradableHttpResponse<HttpPayloadChunk> upgradeConnection(final GroupKey<UnresolvedAddress> key,
-                                                                                 final HttpRequest<HttpPayloadChunk> request) throws Exception {
-        return blockingInvocation(clientGroup.upgradeConnection(key, toHttpRequest(request))
-                .flatMap(response -> from(response, key.getExecutionContext().getBufferAllocator())
-                        .map(fullResponse -> new StreamingHttpClientToHttpClient.UpgradableStreamingHttpResponseToUpgradableHttpResponse<>(response,
-                                fullResponse.getPayloadBody(), fullResponse.getTrailers()))));
+    public UpgradableHttpResponse upgradeConnection(
+            final GroupKey<UnresolvedAddress> key, final HttpRequest request) throws Exception {
+        return blockingInvocation(clientGroup.upgradeConnection(key, request.toStreamingRequest())
+                .flatMap(UpgradableStreamingHttpResponse::toResponse));
     }
 
     @Override
@@ -69,5 +67,10 @@ final class StreamingHttpClientGroupToBlockingHttpClientGroup<UnresolvedAddress>
 
     Completable onClose() {
         return clientGroup.onClose();
+    }
+
+    @Override
+    public HttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
+        return newRequestBlocking(clientGroup, method, requestTarget);
     }
 }

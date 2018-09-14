@@ -25,12 +25,12 @@ final class HttpRequesterToBlockingHttpRequester extends BlockingHttpRequester {
     private final HttpRequester requester;
 
     HttpRequesterToBlockingHttpRequester(HttpRequester requester) {
+        super(requester);
         this.requester = requireNonNull(requester);
     }
 
     @Override
-    public HttpResponse<HttpPayloadChunk> request(final HttpRequest<HttpPayloadChunk> request)
-            throws Exception {
+    public HttpResponse request(final HttpRequest request) throws Exception {
         return BlockingUtils.request(requester, request);
     }
 

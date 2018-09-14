@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.http.api.BlockingHttpClientToHttpClient.ReservedBlockingHttpConnectionToReservedHttpConnection;
+import io.servicetalk.http.api.BlockingHttpClientToStreamingHttpClient.BlockingReservedStreamingHttpConnectionToReserved;
 import io.servicetalk.http.api.BlockingStreamingHttpClient.ReservedBlockingStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
 import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
@@ -25,6 +26,16 @@ import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnecti
  * The equivalent of {@link HttpClient} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
 public abstract class BlockingHttpClient extends BlockingHttpRequester {
+    /**
+     * Create a new instance.
+     *
+     * @param requestFactory The {@link HttpRequestFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     */
+    protected BlockingHttpClient(final HttpRequestFactory requestFactory) {
+        super(requestFactory);
+    }
+
     /**
      * Reserve a {@link ReservedBlockingHttpConnection} for handling the provided
      * {@link HttpRequest} but <b>does not execute it</b>!
@@ -95,6 +106,16 @@ public abstract class BlockingHttpClient extends BlockingHttpRequester {
      */
     public abstract static class ReservedBlockingHttpConnection extends BlockingHttpConnection {
         /**
+         * Create a new instance.
+         *
+         * @param requestFactory The {@link HttpRequestFactory} used to
+         * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+         */
+        protected ReservedBlockingHttpConnection(final HttpRequestFactory requestFactory) {
+            super(requestFactory);
+        }
+
+        /**
          * Releases this reserved {@link BlockingHttpConnection} to be used for subsequent requests.
          * This method must be idempotent, i.e. calling multiple times must not have side-effects.
          *
@@ -145,7 +166,7 @@ public abstract class BlockingHttpClient extends BlockingHttpRequester {
 
         @Override
         ReservedStreamingHttpConnection asStreamingConnectionInternal() {
-            return new BlockingHttpClientToStreamingHttpClient.BlockingReservedStreamingHttpConnectionToReserved(this);
+            return new BlockingReservedStreamingHttpConnectionToReserved(this);
         }
 
         @Override

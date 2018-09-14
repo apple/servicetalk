@@ -22,8 +22,8 @@ import io.servicetalk.concurrent.api.Single;
 
 final class BufferStreamingHttpResponse extends DefaultStreamingHttpResponse<Buffer> {
     BufferStreamingHttpResponse(final HttpResponseStatus status, final HttpProtocolVersion version,
-                                 final HttpHeaders headers, final BufferAllocator allocator,
-                                 final HttpHeaders initialTrailers) {
+                                final HttpHeaders headers, final BufferAllocator allocator,
+                                final HttpHeaders initialTrailers) {
         super(status, version, headers, allocator, initialTrailers);
     }
 
@@ -45,9 +45,9 @@ final class BufferStreamingHttpResponse extends DefaultStreamingHttpResponse<Buf
     }
 
     BufferStreamingHttpResponse(final DefaultHttpResponseMetaData oldRequest,
-                                 final BufferAllocator allocator,
-                                 final Publisher<Buffer> payloadBody,
-                                 final Single<HttpHeaders> trailersSingle) {
+                                final BufferAllocator allocator,
+                                final Publisher<Buffer> payloadBody,
+                                final Single<HttpHeaders> trailersSingle) {
         super(oldRequest, allocator, payloadBody, trailersSingle);
     }
 

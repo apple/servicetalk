@@ -27,6 +27,7 @@ final class StreamingHttpConnectionToBlockingHttpConnection extends BlockingHttp
     private final StreamingHttpConnection connection;
 
     StreamingHttpConnectionToBlockingHttpConnection(StreamingHttpConnection connection) {
+        super(new StreamingHttpRequestFactoryToHttpRequestFactory(connection));
         this.connection = requireNonNull(connection);
     }
 
@@ -41,8 +42,7 @@ final class StreamingHttpConnectionToBlockingHttpConnection extends BlockingHttp
     }
 
     @Override
-    public HttpResponse<HttpPayloadChunk> request(final HttpRequest<HttpPayloadChunk> request)
-            throws Exception {
+    public HttpResponse request(final HttpRequest request) throws Exception {
         return BlockingUtils.request(connection, request);
     }
 
