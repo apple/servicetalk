@@ -15,18 +15,16 @@
  */
 package io.servicetalk.redis.api;
 
-import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleProcessor;
-import io.servicetalk.concurrent.internal.SequentialCancellable;
 
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.redis.api.RedisData.QUEUED;
 
 final class CommanderUtils {
@@ -97,7 +95,6 @@ final class CommanderUtils {
         private final List<SingleProcessor<?>> singles;
         @SuppressWarnings("AtomicFieldUpdaterNotStaticFinal")
         private final AtomicIntegerFieldUpdater<T> stateUpdater;
-        private final SequentialCancellable sequentialCancellable = new SequentialCancellable();
 
         DiscardSingle(final T commander, final Single<String> queued, final List<SingleProcessor<?>> singles,
                       final AtomicIntegerFieldUpdater<T> stateUpdater) {
@@ -110,27 +107,11 @@ final class CommanderUtils {
         @Override
         protected void handleSubscribe(final Subscriber<? super String> subscriber) {
             if (!stateUpdater.compareAndSet(commander, STATE_PENDING, STATE_DISCARDED)) {
-                subscriber.onSubscribe(sequentialCancellable);
+                subscriber.onSubscribe(IGNORE_CANCEL);
                 subscriber.onError(new IllegalStateException("Only one subscriber allowed."));
                 return;
             }
-            abortSingles(queued, singles).subscribe(new Subscriber<String>() {
-                @Override
-                public void onSubscribe(final Cancellable cancellable) {
-                    subscriber.onSubscribe(cancellable);
-                    sequentialCancellable.setNextCancellable(cancellable);
-                }
-
-                @Override
-                public void onSuccess(@Nullable final String result) {
-                    subscriber.onSuccess(result);
-                }
-
-                @Override
-                public void onError(final Throwable t) {
-                    subscriber.onError(t);
-                }
-            });
+            abortSingles(queued, singles).subscribe(subscriber);
         }
     }
 
@@ -141,7 +122,6 @@ final class CommanderUtils {
         private final List<SingleProcessor<?>> singles;
         @SuppressWarnings("AtomicFieldUpdaterNotStaticFinal")
         private final AtomicIntegerFieldUpdater<T> stateUpdater;
-        private final SequentialCancellable sequentialCancellable = new SequentialCancellable();
 
         ExecCompletable(final T commander, final Single<List<Object>> queued, final List<SingleProcessor<?>> singles,
                         final AtomicIntegerFieldUpdater<T> stateUpdater) {
@@ -154,27 +134,11 @@ final class CommanderUtils {
         @Override
         protected void handleSubscribe(final Subscriber subscriber) {
             if (!stateUpdater.compareAndSet(commander, STATE_PENDING, STATE_EXECED)) {
-                subscriber.onSubscribe(sequentialCancellable);
+                subscriber.onSubscribe(IGNORE_CANCEL);
                 subscriber.onError(new IllegalStateException("Only one subscriber allowed."));
                 return;
             }
-            completeSingles(queued, singles).subscribe(new Subscriber() {
-                @Override
-                public void onSubscribe(final Cancellable cancellable) {
-                    subscriber.onSubscribe(cancellable);
-                    sequentialCancellable.setNextCancellable(cancellable);
-                }
-
-                @Override
-                public void onComplete() {
-                    subscriber.onComplete();
-                }
-
-                @Override
-                public void onError(final Throwable t) {
-                    subscriber.onError(t);
-                }
-            });
+            completeSingles(queued, singles).subscribe(subscriber);
         }
     }
 }
