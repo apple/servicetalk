@@ -19,13 +19,11 @@ import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpClient.UpgradableStreamingHttpResponse;
 
 import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
-import static io.servicetalk.http.api.BufferHttpRequest.from;
-import static io.servicetalk.http.api.BufferHttpResponse.toHttpResponse;
-import static io.servicetalk.http.api.HttpClientToStreamingHttpClient.UpgradableHttpResponseToUpgradableStreamingHttpResponse.newUpgradeResponse;
 import static java.util.Objects.requireNonNull;
 
 final class BlockingHttpClientGroupToStreamingHttpClientGroup<UnresolvedAddress>
@@ -34,32 +32,29 @@ final class BlockingHttpClientGroupToStreamingHttpClientGroup<UnresolvedAddress>
 
     BlockingHttpClientGroupToStreamingHttpClientGroup(
             BlockingHttpClientGroup<UnresolvedAddress> clientGroup) {
+        super(new HttpRequestFactoryToStreamingHttpRequestFactory(clientGroup));
         this.clientGroup = requireNonNull(clientGroup);
     }
 
     @Override
-    public Single<StreamingHttpResponse<HttpPayloadChunk>> request(final GroupKey<UnresolvedAddress> key,
-                                                                   final StreamingHttpRequest<HttpPayloadChunk> request) {
-
-        return from(request, key.getExecutionContext().getBufferAllocator())
-                .flatMap(aggregatedRequest -> blockingToSingle(() ->
-                        toHttpResponse(clientGroup.request(key, aggregatedRequest))));
+    public Single<StreamingHttpResponse> request(
+            final GroupKey<UnresolvedAddress> key, final StreamingHttpRequest request) {
+        return request.toRequest().flatMap(req -> blockingToSingle(() -> clientGroup.request(key, req))
+                .map(HttpResponse::toStreamingResponse));
     }
 
     @Override
     public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final GroupKey<UnresolvedAddress> key,
-                                                                               final StreamingHttpRequest<HttpPayloadChunk> request) {
-        return from(request, key.getExecutionContext().getBufferAllocator())
-                .flatMap(aggregatedRequest -> blockingToSingle(() ->
-                        clientGroup.reserveConnection(key, aggregatedRequest).asReservedStreamingConnection()));
+                                                                               final StreamingHttpRequest request) {
+        return request.toRequest().flatMap(req -> blockingToSingle(() -> clientGroup.reserveConnection(key, req)
+                    .asReservedStreamingConnection()));
     }
 
     @Override
-    public Single<? extends StreamingHttpClient.UpgradableStreamingHttpResponse<HttpPayloadChunk>> upgradeConnection(
-            final GroupKey<UnresolvedAddress> key, final StreamingHttpRequest<HttpPayloadChunk> request) {
-        return from(request, key.getExecutionContext().getBufferAllocator())
-                .flatMap(aggregatedRequest -> blockingToSingle(() ->
-                        newUpgradeResponse(clientGroup.upgradeConnection(key, aggregatedRequest))));
+    public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(
+            final GroupKey<UnresolvedAddress> key, final StreamingHttpRequest request) {
+        return request.toRequest().flatMap(req -> blockingToSingle(() -> clientGroup.upgradeConnection(key, req)
+                .toStreamingResponse()));
     }
 
     @Override

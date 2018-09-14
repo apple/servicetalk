@@ -128,7 +128,7 @@ class DefaultBlockingStreamingHttpResponse<P> extends DefaultHttpResponseMetaDat
     }
 
     @Override
-    public final Single<HttpResponse> toResponse() {
+    public final Single<? extends HttpResponse> toResponse() {
         return toStreamingResponse().toResponse();
     }
 

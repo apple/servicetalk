@@ -19,20 +19,19 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import static io.servicetalk.http.api.BufferHttpRequest.from;
 import static java.util.Objects.requireNonNull;
 
 final class HttpRequesterToStreamingHttpRequester extends StreamingHttpRequester {
     private final HttpRequester requester;
 
     HttpRequesterToStreamingHttpRequester(final HttpRequester requester) {
+        super(new HttpRequestFactoryToStreamingHttpRequestFactory(requester));
         this.requester = requireNonNull(requester);
     }
 
     @Override
     public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return from(request, requester.getExecutionContext().getBufferAllocator())
-                .flatMap(requester::request).map(BufferHttpResponse::toHttpResponse);
+        return request.toRequest().flatMap(requester::request).map(HttpResponse::toStreamingResponse);
     }
 
     @Override

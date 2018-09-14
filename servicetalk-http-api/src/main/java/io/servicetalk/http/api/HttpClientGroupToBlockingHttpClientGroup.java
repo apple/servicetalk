@@ -32,24 +32,22 @@ final class HttpClientGroupToBlockingHttpClientGroup<UnresolvedAddress>
     }
 
     @Override
-    public HttpResponse<HttpPayloadChunk> request(final GroupKey<UnresolvedAddress> key,
-                                                  final HttpRequest<HttpPayloadChunk> request)
-            throws Exception {
-        // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So we don't
-        // apply any explicit timeout here and just wait forever.
+    public HttpResponse request(final GroupKey<UnresolvedAddress> key, final HttpRequest request) throws Exception {
+        // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So
+        // we don't apply any explicit timeout here and just wait forever.
         return blockingInvocation(clientGroup.request(key, request));
     }
 
     @Override
     public ReservedBlockingHttpConnection reserveConnection(
-            final GroupKey<UnresolvedAddress> key, final HttpRequest<HttpPayloadChunk> request) throws Exception {
+            final GroupKey<UnresolvedAddress> key, final HttpRequest request) throws Exception {
         return blockingInvocation(clientGroup.reserveConnection(key, request))
                 .asReservedBlockingConnection();
     }
 
     @Override
-    public UpgradableHttpResponse<HttpPayloadChunk> upgradeConnection(
-            final GroupKey<UnresolvedAddress> key, final HttpRequest<HttpPayloadChunk> request) throws Exception {
+    public UpgradableHttpResponse upgradeConnection(
+            final GroupKey<UnresolvedAddress> key, final HttpRequest request) throws Exception {
         return blockingInvocation(clientGroup.upgradeConnection(key, request));
     }
 
@@ -65,5 +63,10 @@ final class HttpClientGroupToBlockingHttpClientGroup<UnresolvedAddress>
 
     Completable onClose() {
         return clientGroup.onClose();
+    }
+
+    @Override
+    public HttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
+        return clientGroup.newRequest(method, requestTarget);
     }
 }

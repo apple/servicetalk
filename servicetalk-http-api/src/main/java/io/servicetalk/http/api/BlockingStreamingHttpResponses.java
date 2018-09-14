@@ -15,15 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.concurrent.api.Publisher;
-
-import static io.servicetalk.concurrent.api.Publisher.empty;
-import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
-import static io.servicetalk.http.api.HttpPayloadChunks.newLastPayloadChunk;
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
+import io.servicetalk.buffer.api.BufferAllocator;
 
 /**
  * Factory methods for creating {@link BlockingStreamingHttpResponse}s.
@@ -34,179 +26,20 @@ public final class BlockingStreamingHttpResponses {
     }
 
     /**
-     * Create a new instance using HTTP 1.1 with empty payload body and headers.
-     *
-     * @param status the {@link HttpResponseStatus} of the response.
-     * @param <O> Type of the content of the response.
-     * @return a new {@link BlockingStreamingHttpResponse}.
-     */
-    public static <O> BlockingStreamingHttpResponse<O> newResponse(final HttpResponseStatus status) {
-        return newResponse(HTTP_1_1, status);
-    }
-
-    /**
-     * Create a new instance with empty payload body and headers.
-     *
-     * @param version the {@link HttpProtocolVersion} of the response.
-     * @param status the {@link HttpResponseStatus} of the response.
-     * @param <O> Type of the content of the response.
-     * @return a new {@link BlockingStreamingHttpResponse}.
-     */
-    public static <O> BlockingStreamingHttpResponse<O> newResponse(final HttpProtocolVersion version,
-                                                                   final HttpResponseStatus status) {
-        return newResponse(version, status, empty());
-    }
-
-    /**
-     * Create a new instance using HTTP 1.1 with empty headers.
-     *
-     * @param status the {@link HttpResponseStatus} of the response.
-     * @param payloadBody the payload body of the response.
-     * @param <O> Type of the content of the response.
-     * @return a new {@link BlockingStreamingHttpResponse}.
-     */
-    public static <O> BlockingStreamingHttpResponse<O> newResponse(final HttpResponseStatus status,
-                                                                   final O payloadBody) {
-        return newResponse(HTTP_1_1, status, payloadBody);
-    }
-
-    /**
-     * Create a new instance using HTTP 1.1 with empty headers.
-     *
-     * @param status the {@link HttpResponseStatus} of the response.
-     * @param payloadBody the payload body of the response.
-     * @return a new {@link BlockingStreamingHttpResponse}.
-     */
-    public static BlockingStreamingHttpResponse<HttpPayloadChunk> newResponse(final HttpResponseStatus status,
-                                                                              final Buffer payloadBody) {
-        return newResponse(HTTP_1_1, status, payloadBody);
-    }
-
-    /**
-     * Create a new instance with empty headers.
-     *
-     * @param version the {@link HttpProtocolVersion} of the response.
-     * @param status the {@link HttpResponseStatus} of the response.
-     * @param payloadBody the payload body of the response.
-     * @param <O> Type of the content of the response.
-     * @return a new {@link BlockingStreamingHttpResponse}.
-     */
-    public static <O> BlockingStreamingHttpResponse<O> newResponse(final HttpProtocolVersion version,
-                                                                   final HttpResponseStatus status,
-                                                                   final O payloadBody) {
-        return newResponse(version, status, just(payloadBody));
-    }
-
-    /**
-     * Create a new instance with empty headers.
-     *
-     * @param version the {@link HttpProtocolVersion} of the response.
-     * @param status the {@link HttpResponseStatus} of the response.
-     * @param payloadBody the payload body of the response.
-     * @return a new {@link BlockingStreamingHttpResponse}.
-     */
-    public static BlockingStreamingHttpResponse<HttpPayloadChunk> newResponse(final HttpProtocolVersion version,
-                                                                              final HttpResponseStatus status,
-                                                                              final Buffer payloadBody) {
-        return newResponse(version, status, just(newLastPayloadChunk(payloadBody, INSTANCE.newEmptyTrailers())));
-    }
-
-    /**
-     * Create a new instance using HTTP 1.1 with empty headers.
-     *
-     * @param status the {@link HttpResponseStatus} of the response.
-     * @param payloadBody a {@link Iterable} of the payload body of the response.
-     * @param <O> Type of the content of the response.
-     * @return a new {@link BlockingStreamingHttpResponse}.
-     */
-    public static <O> BlockingStreamingHttpResponse<O> newResponse(final HttpResponseStatus status,
-                                                                   final Iterable<O> payloadBody) {
-        return newResponse(HTTP_1_1, status, payloadBody);
-    }
-
-    /**
-     * Create a new instance using HTTP 1.1 with empty headers.
-     *
-     * @param status the {@link HttpResponseStatus} of the response.
-     * @param payloadBody a {@link Iterable} of the payload body of the response.
-     * @return a new {@link BlockingStreamingHttpResponse}.
-     */
-    public static BlockingStreamingHttpResponse<HttpPayloadChunk> newResponseFromBuffer(
-            final HttpResponseStatus status, final Iterable<Buffer> payloadBody) {
-        return newResponseFromBuffer(HTTP_1_1, status, payloadBody);
-    }
-
-    /**
-     * Create a new instance with empty headers.
+     * Create a new instance using HTTP 1.1 with empty payload body.
      *
      * @param status the {@link HttpResponseStatus} of the response.
      * @param version the {@link HttpProtocolVersion} of the response.
-     * @param payloadBody a {@link Iterable} of the payload body of the response.
-     * @param <O> Type of the content of the response.
-     * @return a new {@link BlockingStreamingHttpResponse}.
-     */
-    public static <O> BlockingStreamingHttpResponse<O> newResponse(final HttpProtocolVersion version,
-                                                                   final HttpResponseStatus status,
-                                                                   final Iterable<O> payloadBody) {
-        return newResponse(version, status, payloadBody, INSTANCE.newHeaders());
-    }
-
-    /**
-     * Create a new instance with empty headers.
-     *
-     * @param status the {@link HttpResponseStatus} of the response.
-     * @param version the {@link HttpProtocolVersion} of the response.
-     * @param payloadBody a {@link Iterable} of the payload body of the response.
-     * @return a new {@link BlockingStreamingHttpResponse}.
-     */
-    public static BlockingStreamingHttpResponse<HttpPayloadChunk> newResponseFromBuffer(
-            final HttpProtocolVersion version, final HttpResponseStatus status, final Iterable<Buffer> payloadBody) {
-        return newResponseFromBuffer(version, status, payloadBody, INSTANCE.newHeaders());
-    }
-
-    /**
-     * Create a new instance.
-     *
-     * @param version the {@link HttpProtocolVersion} of the response.
-     * @param status the {@link HttpResponseStatus} of the response.
-     * @param payloadBody a {@link Iterable} of the payload body of the response.
      * @param headers the {@link HttpHeaders} of the response.
-     * @param <O> Type of the content of the response.
-     * @return a new {@link BlockingStreamingHttpResponse}.
+     * @param allocator the allocator used for serialization purposes if necessary.
+     * @param initialTrailers the initial state of the
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a> for this response.
+     * @return a new {@link StreamingHttpResponse}.
      */
-    public static <O> BlockingStreamingHttpResponse<O> newResponse(final HttpProtocolVersion version,
-                                                                   final HttpResponseStatus status,
-                                                                   final Iterable<O> payloadBody,
-                                                                   final HttpHeaders headers) {
-        return newResponse(version, status, from(payloadBody), headers);
-    }
-
-    /**
-     * Create a new instance.
-     *
-     * @param version the {@link HttpProtocolVersion} of the response.
-     * @param status the {@link HttpResponseStatus} of the response.
-     * @param payloadBody a {@link Iterable} of the payload body of the response.
-     * @param headers the {@link HttpHeaders} of the response.
-     * @return a new {@link BlockingStreamingHttpResponse}.
-     */
-    public static BlockingStreamingHttpResponse<HttpPayloadChunk> newResponseFromBuffer(
-            final HttpProtocolVersion version, final HttpResponseStatus status, final Iterable<Buffer> payloadBody,
-            final HttpHeaders headers) {
-        return newResponse(version, status, from(payloadBody).map(HttpPayloadChunks::newPayloadChunk), headers);
-    }
-
-    private static <O> BlockingStreamingHttpResponse<O> newResponse(final HttpProtocolVersion version,
-                                                                    final HttpResponseStatus status,
-                                                                    final Publisher<O> payloadBody) {
-        return newResponse(version, status, payloadBody, INSTANCE.newHeaders());
-    }
-
-    private static <O> BlockingStreamingHttpResponse<O> newResponse(final HttpProtocolVersion version,
-                                                                    final HttpResponseStatus status,
-                                                                    final Publisher<O> payloadBody,
-                                                                    final HttpHeaders headers) {
-        return new DefaultBlockingStreamingHttpResponse<>(
-                StreamingHttpResponses.newResponse(version, status, payloadBody, headers));
+    public static BlockingStreamingHttpResponse newResponse(final HttpResponseStatus status,
+                                                            final HttpProtocolVersion version,
+                                                            final HttpHeaders headers, final BufferAllocator allocator,
+                                                            final HttpHeaders initialTrailers) {
+        return new BufferBlockingStreamingHttpResponse(status, version, headers, allocator, initialTrailers);
     }
 }

@@ -18,47 +18,45 @@ package io.servicetalk.http.api;
 import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.http.api.BlockingStreamingHttpClient.ReservedBlockingStreamingHttpConnection;
+import io.servicetalk.http.api.BlockingStreamingHttpClient.UpgradableBlockingStreamingHttpResponse;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
-import static io.servicetalk.http.api.StreamingHttpRequests.fromBlockingRequest;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpClientGroupToBlockingStreamingHttpClientGroup<UnresolvedAddress> extends
                                                                  BlockingStreamingHttpClientGroup<UnresolvedAddress> {
     private final StreamingHttpClientGroup<UnresolvedAddress> clientGroup;
 
-    StreamingHttpClientGroupToBlockingStreamingHttpClientGroup(StreamingHttpClientGroup<UnresolvedAddress> clientGroup) {
+    StreamingHttpClientGroupToBlockingStreamingHttpClientGroup(
+            StreamingHttpClientGroup<UnresolvedAddress> clientGroup) {
+        super(new StreamingHttpRequestFactoryToBlockingStreamingHttpRequestFactory(clientGroup));
         this.clientGroup = requireNonNull(clientGroup);
     }
 
     @Override
-    public BlockingStreamingHttpResponse<HttpPayloadChunk> request(final GroupKey<UnresolvedAddress> key,
-                                                                   final BlockingStreamingHttpRequest<HttpPayloadChunk> request)
-            throws Exception {
-        // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So we don't
-        // apply any explicit timeout here and just wait forever.
-        return new DefaultBlockingStreamingHttpResponse<>(
-                blockingInvocation(clientGroup.request(key, fromBlockingRequest(request))));
+    public BlockingStreamingHttpResponse request(final GroupKey<UnresolvedAddress> key,
+                                                 final BlockingStreamingHttpRequest request) throws Exception {
+        // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So
+        // we don't apply any explicit timeout here and just wait forever.
+        return blockingInvocation(clientGroup.request(key, request.toStreamingRequest())).toBlockingStreamingResponse();
     }
 
     @Override
-    public ReservedBlockingStreamingHttpConnection reserveConnection(final GroupKey<UnresolvedAddress> key,
-                                                                     final BlockingStreamingHttpRequest<HttpPayloadChunk> request)
-            throws Exception {
-        // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So we don't
-        // apply any explicit timeout here and just wait forever.
-        return blockingInvocation(clientGroup.reserveConnection(key, fromBlockingRequest(request)))
+    public ReservedBlockingStreamingHttpConnection reserveConnection(
+            final GroupKey<UnresolvedAddress> key, final BlockingStreamingHttpRequest request) throws Exception {
+        // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So
+        // we don't apply any explicit timeout here and just wait forever.
+        return blockingInvocation(clientGroup.reserveConnection(key, request.toStreamingRequest()))
                 .asReservedBlockingStreamingConnection();
     }
 
     @Override
-    public BlockingStreamingHttpClient.UpgradableBlockingStreamingHttpResponse<HttpPayloadChunk> upgradeConnection(final GroupKey<UnresolvedAddress> key,
-                                                                                                                   final BlockingStreamingHttpRequest<HttpPayloadChunk> request) throws Exception {
+    public UpgradableBlockingStreamingHttpResponse upgradeConnection(
+            final GroupKey<UnresolvedAddress> key, final BlockingStreamingHttpRequest request) throws Exception {
         // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So we don't
         // apply any explicit timeout here and just wait forever.
-        StreamingHttpClient.UpgradableStreamingHttpResponse<HttpPayloadChunk> upgradeResponse = blockingInvocation(
-                clientGroup.upgradeConnection(key, fromBlockingRequest(request)));
-        return new StreamingHttpClientToBlockingStreamingHttpClient.UpgradableHttpResponseToBlockingStreaming<>(upgradeResponse, upgradeResponse.getPayloadBody().toIterable());
+        return blockingInvocation(clientGroup.upgradeConnection(key, request.toStreamingRequest()))
+                .toBlockingStreamingResponse();
     }
 
     @Override

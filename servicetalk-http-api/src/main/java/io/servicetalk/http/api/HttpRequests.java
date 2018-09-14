@@ -20,8 +20,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 /**
  * Factory methods for creating {@link HttpRequest}s.
  */
-final class HttpRequests {
-
+public final class HttpRequests {
     private HttpRequests() {
         // No instances
     }
@@ -34,16 +33,13 @@ final class HttpRequests {
      * request.
      * @param version the {@link HttpProtocolVersion}.
      * @param headers the headers.
-     * @param trailers the <a href="https://tools.ietf.org/html/rfc7230#section-4.4>trailers</a>.
+     * @param trailers the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
      * @param allocator The {@link BufferAllocator} used for serialization.
      * @return a new {@link HttpRequest}.
      */
-    static HttpRequest newRequest(HttpRequestMethod method,
-                                  String requestTarget,
-                                  HttpProtocolVersion version,
-                                  HttpHeaders headers,
-                                  HttpHeaders trailers,
-                                  BufferAllocator allocator) {
+    public static HttpRequest newRequest(final HttpRequestMethod method, final String requestTarget,
+                                         final HttpProtocolVersion version, final HttpHeaders headers,
+                                         final HttpHeaders trailers, final BufferAllocator allocator) {
         return new BufferHttpRequest(method, requestTarget, version, headers, trailers, allocator);
     }
 }

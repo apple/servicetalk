@@ -25,26 +25,27 @@ import java.util.function.Function;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static java.util.Objects.requireNonNull;
 
-final class StremaingHttpClientGroupToStreamingHttpClient<UnresolvedAddress> extends StreamingHttpClient {
+final class StreamingHttpClientGroupToStreamingHttpClient<UnresolvedAddress> extends StreamingHttpClient {
     private final StreamingHttpClientGroup<UnresolvedAddress> clientGroup;
-    private final Function<StreamingHttpRequest<HttpPayloadChunk>, GroupKey<UnresolvedAddress>> requestToGroupKeyFunc;
+    private final Function<StreamingHttpRequest, GroupKey<UnresolvedAddress>> requestToGroupKeyFunc;
     private final ExecutionContext executionContext;
 
-    StremaingHttpClientGroupToStreamingHttpClient(final StreamingHttpClientGroup<UnresolvedAddress> clientGroup,
-                                                  final Function<StreamingHttpRequest<HttpPayloadChunk>,
+    StreamingHttpClientGroupToStreamingHttpClient(final StreamingHttpClientGroup<UnresolvedAddress> clientGroup,
+                                                  final Function<StreamingHttpRequest,
                                         GroupKey<UnresolvedAddress>> requestToGroupKeyFunc,
                                                   final ExecutionContext executionContext) {
+        super(clientGroup);
         this.clientGroup = requireNonNull(clientGroup);
         this.requestToGroupKeyFunc = requireNonNull(requestToGroupKeyFunc);
         this.executionContext = requireNonNull(executionContext);
     }
 
     @Override
-    public Single<StreamingHttpResponse<HttpPayloadChunk>> request(final StreamingHttpRequest<HttpPayloadChunk> request) {
-        return new Single<StreamingHttpResponse<HttpPayloadChunk>>() {
+    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+        return new Single<StreamingHttpResponse>() {
             @Override
-            protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse<HttpPayloadChunk>> subscriber) {
-                final Single<StreamingHttpResponse<HttpPayloadChunk>> response;
+            protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
+                final Single<? extends StreamingHttpResponse> response;
                 try {
                     response = clientGroup.request(requestToGroupKeyFunc.apply(request), request);
                 } catch (final Throwable t) {
@@ -58,7 +59,7 @@ final class StremaingHttpClientGroupToStreamingHttpClient<UnresolvedAddress> ext
     }
 
     @Override
-    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest<HttpPayloadChunk> request) {
+    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest request) {
         return new Single<ReservedStreamingHttpConnection>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super ReservedStreamingHttpConnection> subscriber) {
@@ -76,12 +77,12 @@ final class StremaingHttpClientGroupToStreamingHttpClient<UnresolvedAddress> ext
     }
 
     @Override
-    public Single<? extends UpgradableStreamingHttpResponse<HttpPayloadChunk>> upgradeConnection(
-            final StreamingHttpRequest<HttpPayloadChunk> request) {
-        return new Single<UpgradableStreamingHttpResponse<HttpPayloadChunk>>() {
+    public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(
+            final StreamingHttpRequest request) {
+        return new Single<UpgradableStreamingHttpResponse>() {
             @Override
-            protected void handleSubscribe(final Subscriber<? super UpgradableStreamingHttpResponse<HttpPayloadChunk>> subscriber) {
-                final Single<? extends UpgradableStreamingHttpResponse<HttpPayloadChunk>> upgradedConnection;
+            protected void handleSubscribe(final Subscriber<? super UpgradableStreamingHttpResponse> subscriber) {
+                final Single<? extends UpgradableStreamingHttpResponse> upgradedConnection;
                 try {
                     upgradedConnection = clientGroup.upgradeConnection(requestToGroupKeyFunc.apply(request), request);
                 } catch (Throwable t) {

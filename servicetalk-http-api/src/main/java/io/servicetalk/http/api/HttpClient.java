@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient.ReservedBlockingHttpConnection;
 import io.servicetalk.http.api.BlockingStreamingHttpClient.ReservedBlockingStreamingHttpConnection;
+import io.servicetalk.http.api.BlockingStreamingHttpClient.UpgradableBlockingStreamingHttpResponse;
 import io.servicetalk.http.api.HttpClientToBlockingHttpClient.ReservedHttpConnectionToReservedBlockingHttpConnection;
 import io.servicetalk.http.api.HttpClientToStreamingHttpClient.ReservedHttpConnectionToReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
@@ -30,6 +31,16 @@ import io.servicetalk.http.api.StreamingHttpClient.UpgradableStreamingHttpRespon
  * {@link HttpConnection} instances and distribute calls to {@link #request(HttpRequest)} amongst this collection.
  */
 public abstract class HttpClient extends HttpRequester {
+    /**
+     * Create a new instance.
+     *
+     * @param requestFactory The {@link HttpRequestFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     */
+    protected HttpClient(final HttpRequestFactory requestFactory) {
+        super(requestFactory);
+    }
+
     /**
      * Reserve a {@link HttpConnection} for handling the provided {@link HttpRequest} but <b>does not execute it</b>!
      *
@@ -94,6 +105,16 @@ public abstract class HttpClient extends HttpRequester {
      * @see ReservedStreamingHttpConnection
      */
     public abstract static class ReservedHttpConnection extends HttpConnection {
+        /**
+         * Create a new instance.
+         *
+         * @param requestFactory The {@link HttpRequestFactory} used to
+         * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+         */
+        protected ReservedHttpConnection(final HttpRequestFactory requestFactory) {
+            super(requestFactory);
+        }
+
         /**
          * Releases this reserved {@link ReservedHttpConnection} to be used for subsequent requests.
          * This method must be idempotent, i.e. calling multiple times must not have side-effects.
@@ -180,7 +201,13 @@ public abstract class HttpClient extends HttpRequester {
         UpgradableHttpResponse setPayloadBody(Buffer payloadBody);
 
         @Override
-        <T> HttpResponse setPayloadBody(T pojo, HttpSerializer<T> serializer);
+        <T> UpgradableHttpResponse setPayloadBody(T pojo, HttpSerializer<T> serializer);
+
+        @Override
+        UpgradableStreamingHttpResponse toStreamingResponse();
+
+        @Override
+        UpgradableBlockingStreamingHttpResponse toBlockingStreamingResponse();
 
         @Override
         UpgradableHttpResponse setVersion(HttpProtocolVersion version);

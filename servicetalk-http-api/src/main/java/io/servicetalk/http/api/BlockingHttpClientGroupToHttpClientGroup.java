@@ -31,24 +31,24 @@ final class BlockingHttpClientGroupToHttpClientGroup<UnresolvedAddress>
 
     BlockingHttpClientGroupToHttpClientGroup(
             BlockingHttpClientGroup<UnresolvedAddress> clientGroup) {
+        super(clientGroup);
         this.clientGroup = requireNonNull(clientGroup);
     }
 
     @Override
-    public Single<HttpResponse<HttpPayloadChunk>> request(final GroupKey<UnresolvedAddress> key,
-                                                          final HttpRequest<HttpPayloadChunk> request) {
+    public Single<HttpResponse> request(final GroupKey<UnresolvedAddress> key, final HttpRequest request) {
         return blockingToSingle(() -> clientGroup.request(key, request));
     }
 
     @Override
     public Single<? extends HttpClient.ReservedHttpConnection> reserveConnection(final GroupKey<UnresolvedAddress> key,
-                                                                                 final HttpRequest<HttpPayloadChunk> request) {
+                                                                                 final HttpRequest request) {
         return blockingToSingle(() -> clientGroup.reserveConnection(key, request).asReservedConnection());
     }
 
     @Override
-    public Single<? extends UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
-            final GroupKey<UnresolvedAddress> key, final HttpRequest<HttpPayloadChunk> request) {
+    public Single<? extends UpgradableHttpResponse> upgradeConnection(
+            final GroupKey<UnresolvedAddress> key, final HttpRequest request) {
         return blockingToSingle(() -> clientGroup.upgradeConnection(key, request));
     }
 

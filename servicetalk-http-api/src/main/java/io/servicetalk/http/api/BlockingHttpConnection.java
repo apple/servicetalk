@@ -26,6 +26,16 @@ import org.reactivestreams.Subscriber;
  */
 public abstract class BlockingHttpConnection extends BlockingHttpRequester {
     /**
+     * Create a new instance.
+     *
+     * @param requestFactory The {@link HttpRequestFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     */
+    protected BlockingHttpConnection(final HttpRequestFactory requestFactory) {
+        super(requestFactory);
+    }
+
+    /**
      * Get the {@link ConnectionContext}.
      *
      * @return the {@link ConnectionContext}.

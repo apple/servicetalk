@@ -24,6 +24,8 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.Function;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Logically this interface provides a Map&lt;{@link GroupKey}, {@link HttpClient}&gt;, and also the ability to
  * create new {@link HttpClient} objects if none yet exist.
@@ -31,6 +33,17 @@ import java.util.function.Function;
  * @param <UnresolvedAddress> The address type used to create new {@link HttpClient}s.
  */
 public abstract class HttpClientGroup<UnresolvedAddress> implements HttpRequestFactory, ListenableAsyncCloseable {
+    private final HttpRequestFactory requestFactory;
+
+    /**
+     * Create a new instance.
+     * @param requestFactory The {@link HttpRequestFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     */
+    protected HttpClientGroup(HttpRequestFactory requestFactory) {
+        this.requestFactory = requireNonNull(requestFactory);
+    }
+
     /**
      * Locate or create a client and delegate to {@link HttpClient#request(HttpRequest)}.
      *
@@ -40,7 +53,7 @@ public abstract class HttpClientGroup<UnresolvedAddress> implements HttpRequestF
      * @return The received {@link HttpResponse}.
      * @see HttpClient#request(HttpRequest)
      */
-    public abstract Single<HttpResponse> request(GroupKey<UnresolvedAddress> key, HttpRequest request);
+    public abstract Single<? extends HttpResponse> request(GroupKey<UnresolvedAddress> key, HttpRequest request);
 
     /**
      * Locate or create a client and delegate to {@link HttpClient#reserveConnection(HttpRequest)}.
@@ -68,6 +81,16 @@ public abstract class HttpClientGroup<UnresolvedAddress> implements HttpRequestF
      */
     public abstract Single<? extends UpgradableHttpResponse> upgradeConnection(
             GroupKey<UnresolvedAddress> key, HttpRequest request);
+
+    @Override
+    public final HttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
+        return requestFactory.newRequest(method, requestTarget);
+    }
+
+    @Override
+    public final HttpResponseFactory getHttpResponseFactory() {
+        return requestFactory.getHttpResponseFactory();
+    }
 
     /**
      * Convert this {@link HttpClientGroup} to the {@link HttpRequester} API. This can simplify the

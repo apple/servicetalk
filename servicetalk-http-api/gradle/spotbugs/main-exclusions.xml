@@ -44,7 +44,7 @@
       <Class name="io.servicetalk.http.api.BlockingStreamingHttpClientToStreamingHttpClient$BlockingToUpgradableStreamingHttpResponse"/>
       <Class name="io.servicetalk.http.api.BlockingStreamingHttpClientToStreamingHttpClient$BlockingUpgradableHttpResponseConverter"/>
       <Class name="io.servicetalk.http.api.BlockingStreamingHttpClientToStreamingHttpClient$BlockingUpgradableHttpResponseConverter"/>
-      <Class name="io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient$UpgradableHttpResponseToBlockingStreaming"/>
+      <Class name="io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient$UpgradableStreamingHttpResponseToBlockingStreaming"/>
       <Class name="io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient$UpgradableHttpResponseToBlockingConverter"/>
       <Class name="io.servicetalk.http.api.HttpClientToStreamingHttpClient$UpgradableHttpResponseToUpgradableStreamingHttpResponse"/>
       <Class name="io.servicetalk.http.api.StreamingHttpClientToHttpClient$UpgradableStreamingHttpResponseToUpgradableHttpResponse"/>
