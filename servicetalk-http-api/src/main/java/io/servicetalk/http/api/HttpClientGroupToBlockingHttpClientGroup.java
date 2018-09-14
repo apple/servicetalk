@@ -28,6 +28,7 @@ final class HttpClientGroupToBlockingHttpClientGroup<UnresolvedAddress>
     private final HttpClientGroup<UnresolvedAddress> clientGroup;
 
     HttpClientGroupToBlockingHttpClientGroup(HttpClientGroup<UnresolvedAddress> clientGroup) {
+        super(clientGroup.requestFactory, clientGroup.getHttpResponseFactory());
         this.clientGroup = requireNonNull(clientGroup);
     }
 
@@ -63,10 +64,5 @@ final class HttpClientGroupToBlockingHttpClientGroup<UnresolvedAddress>
 
     Completable onClose() {
         return clientGroup.onClose();
-    }
-
-    @Override
-    public HttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
-        return clientGroup.newRequest(method, requestTarget);
     }
 }

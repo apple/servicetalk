@@ -25,15 +25,18 @@ import static java.util.Objects.requireNonNull;
  * Provides a means to make a HTTP request.
  */
 public abstract class HttpRequester implements HttpRequestFactory, ListenableAsyncCloseable {
-    private final HttpRequestFactory requestFactory;
+    final HttpRequestFactory requestFactory;
+    private final HttpResponseFactory responseFactory;
 
     /**
      * Create a new instance.
      * @param requestFactory The {@link HttpRequestFactory} used to
      * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     * @param responseFactory Used for {@link #getHttpResponseFactory()}.
      */
-    protected HttpRequester(HttpRequestFactory requestFactory) {
+    protected HttpRequester(final HttpRequestFactory requestFactory, final HttpResponseFactory responseFactory) {
         this.requestFactory = requireNonNull(requestFactory);
+        this.responseFactory = requireNonNull(responseFactory);
     }
 
     /**
@@ -59,9 +62,12 @@ public abstract class HttpRequester implements HttpRequestFactory, ListenableAsy
         return requestFactory.newRequest(method, requestTarget);
     }
 
-    @Override
+    /**
+     * Get a {@link HttpResponseFactory}.
+     * @return a {@link HttpResponseFactory}.
+     */
     public final HttpResponseFactory getHttpResponseFactory() {
-        return requestFactory.getHttpResponseFactory();
+        return responseFactory;
     }
 
     /**

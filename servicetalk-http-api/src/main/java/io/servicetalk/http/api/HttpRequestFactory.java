@@ -47,10 +47,4 @@ public interface HttpRequestFactory {
     default HttpRequest post(String requestTarget) {
         return newRequest(POST, requestTarget);
     }
-
-    /**
-     * Get a {@link HttpResponseFactory}.
-     * @return a {@link HttpResponseFactory}.
-     */
-    HttpResponseFactory getHttpResponseFactory();
 }

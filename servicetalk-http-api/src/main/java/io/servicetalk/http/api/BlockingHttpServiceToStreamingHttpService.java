@@ -17,11 +17,9 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
-import static io.servicetalk.http.api.BufferHttpResponse.toHttpResponse;
 import static java.util.Objects.requireNonNull;
 
 final class BlockingHttpServiceToStreamingHttpService extends StreamingHttpService {
@@ -32,11 +30,11 @@ final class BlockingHttpServiceToStreamingHttpService extends StreamingHttpServi
     }
 
     @Override
-    public Single<StreamingHttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                                  final StreamingHttpRequest<HttpPayloadChunk> request) {
-
-        return BufferHttpRequest.from(request, ctx.getExecutionContext().getBufferAllocator()).flatMap(
-                aggregatedRequest -> blockingToSingle(() -> toHttpResponse(service.handle(ctx, aggregatedRequest))));
+    public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                final StreamingHttpRequest request,
+                                                final StreamingHttpResponseFactory factory) {
+        return request.toRequest().flatMap(req -> blockingToSingle(() -> service.handle(
+                ctx, req, ctx.getResponseFactory())) .map(HttpResponse::toStreamingResponse));
     }
 
     @Override

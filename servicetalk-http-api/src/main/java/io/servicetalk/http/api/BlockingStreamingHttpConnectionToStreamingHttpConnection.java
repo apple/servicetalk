@@ -30,7 +30,9 @@ final class BlockingStreamingHttpConnectionToStreamingHttpConnection extends Str
     private final BlockingStreamingHttpConnection blockingConnection;
 
     BlockingStreamingHttpConnectionToStreamingHttpConnection(BlockingStreamingHttpConnection blockingConnection) {
-        super(new BlockingStreamingHttpRequestFactoryToStreamingHttpRequestFactory(blockingConnection));
+        super(new BlockingStreamingHttpRequestFactoryToStreamingHttpRequestFactory(blockingConnection.requestFactory),
+                new BlockingStreamingHttpResponseFactoryToStreamingHttpResponseFactory(
+                        blockingConnection.getHttpResponseFactory()));
         this.blockingConnection = requireNonNull(blockingConnection);
     }
 

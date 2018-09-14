@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import static java.util.Objects.requireNonNull;
 
@@ -29,10 +28,10 @@ final class HttpServiceToStreamingHttpService extends StreamingHttpService {
     }
 
     @Override
-    public Single<StreamingHttpResponse> handle(final StreamingHttpServiceContext ctx,
-                                                final StreamingHttpRequest request) {
-        // TODO(scott): additional object allocation on every request for the factory :(
-        return request.toRequest().flatMap(req -> aggregatedService.handle(, req))
+    public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                final StreamingHttpRequest request,
+                                                final StreamingHttpResponseFactory factory) {
+        return request.toRequest().flatMap(req -> aggregatedService.handle(ctx, req,  ctx.getResponseFactory()))
                 .map(HttpResponse::toStreamingResponse);
     }
 
@@ -49,29 +48,5 @@ final class HttpServiceToStreamingHttpService extends StreamingHttpService {
     @Override
     HttpService asServiceInternal() {
         return aggregatedService;
-    }
-
-    private static final class StreamingHttpServiceContextToHttpServiceContext implements HttpServiceContext {
-        private final StreamingHttpServiceContext ctx;
-        private final HttpResponseFactory
-
-        StreamingHttpServiceContextToHttpServiceContext(final StreamingHttpServiceContext ctx) {
-            this.ctx = ctx;
-        }
-
-        @Override
-        public ConnectionContext getConnectionContext() {
-            return ctx.getConnectionContext();
-        }
-
-        @Override
-        public HttpResponse newResponse(final HttpResponseStatus status) {
-            return ctx.newResponse(status).toResponse();
-        }
-
-        @Override
-        public HttpRequestFactory getHttpRequestFactory() {
-            return ctx.;
-        }
     }
 }

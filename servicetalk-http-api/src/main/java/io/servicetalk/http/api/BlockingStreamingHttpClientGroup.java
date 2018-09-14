@@ -28,15 +28,19 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class BlockingStreamingHttpClientGroup<UnresolvedAddress> implements
                                                           BlockingStreamingHttpRequestFactory, AutoCloseable {
-    private final BlockingStreamingHttpRequestFactory requestFactory;
+    final BlockingStreamingHttpRequestFactory requestFactory;
+    private final BlockingStreamingHttpResponseFactory responseFactory;
 
     /**
      * Create a new instance.
      * @param requestFactory The {@link HttpRequestFactory} used to
      * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     * @param responseFactory Used for {@link #getHttpResponseFactory()}.
      */
-    protected BlockingStreamingHttpClientGroup(BlockingStreamingHttpRequestFactory requestFactory) {
+    protected BlockingStreamingHttpClientGroup(final BlockingStreamingHttpRequestFactory requestFactory,
+                                               final BlockingStreamingHttpResponseFactory responseFactory) {
         this.requestFactory = requireNonNull(requestFactory);
+        this.responseFactory = requireNonNull(responseFactory);
     }
 
     /**
@@ -89,9 +93,12 @@ public abstract class BlockingStreamingHttpClientGroup<UnresolvedAddress> implem
         return requestFactory.newRequest(method, requestTarget);
     }
 
-    @Override
+    /**
+     * Get a {@link BlockingStreamingHttpResponseFactory}.
+     * @return a {@link BlockingStreamingHttpResponseFactory}.
+     */
     public final BlockingStreamingHttpResponseFactory getHttpResponseFactory() {
-        return requestFactory.getHttpResponseFactory();
+        return responseFactory;
     }
 
     /**

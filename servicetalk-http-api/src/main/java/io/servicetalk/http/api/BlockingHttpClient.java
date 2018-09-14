@@ -31,9 +31,10 @@ public abstract class BlockingHttpClient extends BlockingHttpRequester {
      *
      * @param requestFactory The {@link HttpRequestFactory} used to
      * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     * @param responseFactory Used for {@link #getHttpResponseFactory()}.
      */
-    protected BlockingHttpClient(final HttpRequestFactory requestFactory) {
-        super(requestFactory);
+    protected BlockingHttpClient(final HttpRequestFactory requestFactory, final HttpResponseFactory responseFactory) {
+        super(requestFactory, responseFactory);
     }
 
     /**
@@ -110,9 +111,11 @@ public abstract class BlockingHttpClient extends BlockingHttpRequester {
          *
          * @param requestFactory The {@link HttpRequestFactory} used to
          * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+         * @param responseFactory Used for {@link #getHttpResponseFactory()}.
          */
-        protected ReservedBlockingHttpConnection(final HttpRequestFactory requestFactory) {
-            super(requestFactory);
+        protected ReservedBlockingHttpConnection(final HttpRequestFactory requestFactory,
+                                                 final HttpResponseFactory responseFactory) {
+            super(requestFactory, responseFactory);
         }
 
         /**

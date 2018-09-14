@@ -15,8 +15,18 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.transport.api.ConnectionContext;
+import static java.util.Objects.requireNonNull;
 
-public interface StreamingHttpServiceContext extends StreamingHttpResponseFactory {
-    ConnectionContext getConnectionContext();
+final class BlockingStreamingHttpResponseFactoryToStreamingHttpResponseFactory implements StreamingHttpResponseFactory {
+    private final BlockingStreamingHttpResponseFactory responseFactory;
+
+    BlockingStreamingHttpResponseFactoryToStreamingHttpResponseFactory(
+            final BlockingStreamingHttpResponseFactory responseFactory) {
+        this.responseFactory = requireNonNull(responseFactory);
+    }
+
+    @Override
+    public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
+        return responseFactory.newResponse(status).toStreamingResponse();
+    }
 }

@@ -47,10 +47,4 @@ public interface BlockingStreamingHttpRequestFactory {
     default BlockingStreamingHttpRequest post(String requestTarget) {
         return newRequest(POST, requestTarget);
     }
-
-    /**
-     * Get a {@link BlockingStreamingHttpResponseFactory}.
-     * @return a {@link BlockingStreamingHttpResponseFactory}.
-     */
-    BlockingStreamingHttpResponseFactory getHttpResponseFactory();
 }

@@ -17,6 +17,39 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.transport.api.ConnectionContext;
 
-public interface HttpServiceContext extends HttpResponseFactory {
-    ConnectionContext getConnectionContext();
+import static java.util.Objects.requireNonNull;
+
+/**
+ * A {@link ConnectionContext} for use in the {@link HttpService} context.
+ */
+public abstract class HttpServiceContext implements ConnectionContext {
+    private final HttpResponseFactory factory;
+    private final StreamingHttpResponseFactory streamingFactory;
+    private final BlockingStreamingHttpResponseFactory blockingFactory;
+
+    /**
+     * Create a new instance.
+     * @param factory The {@link HttpResponseFactory} used for API conversions.
+     * @param streamingFactory The {@link StreamingHttpResponseFactory} used for API conversions.
+     * @param blockingFactory The {@link BlockingStreamingHttpResponseFactory} used for API conversions.
+     */
+    protected HttpServiceContext(HttpResponseFactory factory,
+                                 StreamingHttpResponseFactory streamingFactory,
+                                 BlockingStreamingHttpResponseFactory blockingFactory) {
+        this.factory = requireNonNull(factory);
+        this.streamingFactory = requireNonNull(streamingFactory);
+        this.blockingFactory = requireNonNull(blockingFactory);
+    }
+
+    final HttpResponseFactory getResponseFactory() {
+        return factory;
+    }
+
+    final StreamingHttpResponseFactory getStreamingResponseFactory() {
+        return streamingFactory;
+    }
+
+    final BlockingStreamingHttpResponseFactory getStreamingBlockingResponseFactory() {
+        return blockingFactory;
+    }
 }

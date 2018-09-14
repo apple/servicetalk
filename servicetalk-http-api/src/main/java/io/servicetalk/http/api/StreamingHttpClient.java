@@ -39,14 +39,17 @@ import static io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
  * {@link StreamingHttpResponse}.
  */
 public abstract class StreamingHttpClient extends StreamingHttpRequester {
+
     /**
      * Create a new instance.
      *
-     * @param requestFactory The {@link StreamingHttpRequestFactory} used to
+     * @param requestFactory The {@link HttpRequestFactory} used to
      * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     * @param responseFactory Used for {@link #getHttpResponseFactory()}.
      */
-    protected StreamingHttpClient(final StreamingHttpRequestFactory requestFactory) {
-        super(requestFactory);
+    protected StreamingHttpClient(final StreamingHttpRequestFactory requestFactory,
+                                  final StreamingHttpResponseFactory responseFactory) {
+        super(requestFactory, responseFactory);
     }
 
     /**
@@ -124,11 +127,13 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
         /**
          * Create a new instance.
          *
-         * @param requestFactory The {@link StreamingHttpRequestFactory} used to
+         * @param requestFactory The {@link HttpRequestFactory} used to
          * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+         * @param responseFactory Used for {@link #getHttpResponseFactory()}.
          */
-        protected ReservedStreamingHttpConnection(final StreamingHttpRequestFactory requestFactory) {
-            super(requestFactory);
+        protected ReservedStreamingHttpConnection(final StreamingHttpRequestFactory requestFactory,
+                                                  final StreamingHttpResponseFactory responseFactory) {
+            super(requestFactory, responseFactory);
         }
 
         /**

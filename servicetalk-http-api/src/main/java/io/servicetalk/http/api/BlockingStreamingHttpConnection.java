@@ -28,9 +28,11 @@ public abstract class BlockingStreamingHttpConnection extends BlockingStreamingH
      *
      * @param requestFactory The {@link HttpRequestFactory} used to
      * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     * @param responseFactory Used for {@link #getHttpResponseFactory()}.
      */
-    protected BlockingStreamingHttpConnection(final BlockingStreamingHttpRequestFactory requestFactory) {
-        super(requestFactory);
+    protected BlockingStreamingHttpConnection(final BlockingStreamingHttpRequestFactory requestFactory,
+                                              final BlockingStreamingHttpResponseFactory responseFactory) {
+        super(requestFactory, responseFactory);
     }
 
     /**
