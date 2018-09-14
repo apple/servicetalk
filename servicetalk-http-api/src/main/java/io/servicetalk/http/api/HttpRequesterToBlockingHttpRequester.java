@@ -25,7 +25,7 @@ final class HttpRequesterToBlockingHttpRequester extends BlockingHttpRequester {
     private final HttpRequester requester;
 
     HttpRequesterToBlockingHttpRequester(HttpRequester requester) {
-        super(requester);
+        super(requester.requestFactory, requester.getHttpResponseFactory());
         this.requester = requireNonNull(requester);
     }
 

@@ -18,9 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ConnectionContext;
-
-import java.util.function.BiFunction;
 
 /**
  * A service contract for the HTTP protocol.
@@ -31,9 +28,12 @@ public abstract class StreamingHttpService implements AsyncCloseable {
      *
      * @param ctx Context of the service.
      * @param request to handle.
+     * @param factory used to create {@link StreamingHttpResponse} objects.
      * @return {@link Single} of HTTP response.
      */
-    public abstract Single<StreamingHttpResponse> handle(StreamingHttpServiceContext ctx, StreamingHttpRequest request);
+    public abstract Single<? extends StreamingHttpResponse> handle(HttpServiceContext ctx,
+                                                                   StreamingHttpRequest request,
+                                                                   StreamingHttpResponseFactory factory);
 
     /**
      * Closes this {@link StreamingHttpService} asynchronously.
@@ -74,23 +74,6 @@ public abstract class StreamingHttpService implements AsyncCloseable {
      */
     public final BlockingHttpService asBlockingService() {
         return asBlockingServiceInternal();
-    }
-
-    /**
-     * Create a new {@link StreamingHttpService} from a {@link BiFunction}.
-     * @param handleFunc Provides the functionality for the
-     * {@link #handle(StreamingHttpServiceContext, StreamingHttpRequest)} method.
-     * @return a new {@link StreamingHttpService}.
-     */
-    public static StreamingHttpService from(
-            BiFunction<StreamingHttpServiceContext, StreamingHttpRequest, Single<StreamingHttpResponse>> handleFunc) {
-        return new StreamingHttpService() {
-            @Override
-            public Single<StreamingHttpResponse> handle(
-                    final StreamingHttpServiceContext ctx, final StreamingHttpRequest request) {
-                return handleFunc.apply(ctx, request);
-            }
-        };
     }
 
     HttpService asServiceInternal() {

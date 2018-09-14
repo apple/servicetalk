@@ -44,10 +44,4 @@ public interface StreamingHttpResponseFactory {
     default StreamingHttpResponse serverError() {
         return newResponse(INTERNAL_SERVER_ERROR);
     }
-
-    /**
-     * Get a {@link StreamingHttpRequestFactory}.
-     * @return a {@Link StreamingHttpRequestFactory}.
-     */
-    StreamingHttpRequestFactory getHttpRequestFactory();
 }

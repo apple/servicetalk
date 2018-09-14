@@ -27,7 +27,9 @@ final class BlockingStreamingHttpRequesterToStreamingHttpRequester extends Strea
     private final BlockingStreamingHttpRequester requester;
 
     BlockingStreamingHttpRequesterToStreamingHttpRequester(BlockingStreamingHttpRequester requester) {
-        super(new BlockingStreamingHttpRequestFactoryToStreamingHttpRequestFactory(requester));
+        super(new BlockingStreamingHttpRequestFactoryToStreamingHttpRequestFactory(requester.requestFactory),
+                new BlockingStreamingHttpResponseFactoryToStreamingHttpResponseFactory(
+                        requester.getHttpResponseFactory()));
         this.requester = requireNonNull(requester);
     }
 

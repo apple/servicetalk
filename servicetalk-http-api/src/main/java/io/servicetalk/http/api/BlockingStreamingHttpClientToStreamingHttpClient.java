@@ -47,7 +47,9 @@ final class BlockingStreamingHttpClientToStreamingHttpClient extends StreamingHt
     private final BlockingStreamingHttpClient blockingClient;
 
     BlockingStreamingHttpClientToStreamingHttpClient(BlockingStreamingHttpClient blockingClient) {
-        super(new BlockingStreamingHttpRequestFactoryToStreamingHttpRequestFactory(blockingClient));
+        super(new BlockingStreamingHttpRequestFactoryToStreamingHttpRequestFactory(blockingClient.requestFactory),
+                new BlockingStreamingHttpResponseFactoryToStreamingHttpResponseFactory(
+                        blockingClient.getHttpResponseFactory()));
         this.blockingClient = requireNonNull(blockingClient);
     }
 
@@ -95,9 +97,11 @@ final class BlockingStreamingHttpClientToStreamingHttpClient extends StreamingHt
     static final class BlockingToReservedStreamingHttpConnection extends ReservedStreamingHttpConnection {
         private final ReservedBlockingStreamingHttpConnection blockingReservedConnection;
 
-        BlockingToReservedStreamingHttpConnection(ReservedBlockingStreamingHttpConnection blockingReservedConnection) {
-            super(new BlockingStreamingHttpRequestFactoryToStreamingHttpRequestFactory(blockingReservedConnection));
-            this.blockingReservedConnection = requireNonNull(blockingReservedConnection);
+        BlockingToReservedStreamingHttpConnection(ReservedBlockingStreamingHttpConnection connection) {
+            super(new BlockingStreamingHttpRequestFactoryToStreamingHttpRequestFactory(connection.requestFactory),
+                    new BlockingStreamingHttpResponseFactoryToStreamingHttpResponseFactory(
+                            connection.getHttpResponseFactory()));
+            this.blockingReservedConnection = requireNonNull(connection);
         }
 
         @Override

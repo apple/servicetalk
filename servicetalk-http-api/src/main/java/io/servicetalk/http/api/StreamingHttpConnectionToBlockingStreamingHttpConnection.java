@@ -28,7 +28,9 @@ final class StreamingHttpConnectionToBlockingStreamingHttpConnection extends Blo
     private final StreamingHttpConnection connection;
 
     StreamingHttpConnectionToBlockingStreamingHttpConnection(StreamingHttpConnection connection) {
-        super(new StreamingHttpRequestFactoryToBlockingStreamingHttpRequestFactory(connection));
+        super(new StreamingHttpRequestFactoryToBlockingStreamingHttpRequestFactory(connection.requestFactory),
+                new StreamingHttpResponseFactoryToBlockingStreamingHttpResponseFactory(
+                        connection.getHttpResponseFactory()));
         this.connection = requireNonNull(connection);
     }
 

@@ -19,8 +19,6 @@ import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
-import java.util.function.BiFunction;
-
 /**
  * Same as {@link StreamingHttpService} but that accepts {@link HttpRequest} and returns {@link HttpResponse}.
  */
@@ -30,9 +28,11 @@ public abstract class HttpService implements AsyncCloseable {
      *
      * @param ctx Context of the service.
      * @param request to handle.
+     * @param factory used to create {@link HttpResponse} objects.
      * @return {@link Single} of HTTP response.
      */
-    public abstract Single<HttpResponse> handle(HttpServiceContext ctx, HttpRequest request);
+    public abstract Single<? extends HttpResponse> handle(
+            HttpServiceContext ctx, HttpRequest request, HttpResponseFactory factory);
 
     /**
      * Closes this {@link HttpService} asynchronously.
@@ -69,21 +69,6 @@ public abstract class HttpService implements AsyncCloseable {
      */
     public final BlockingHttpService asBlockingService() {
         return asBlockingServiceInternal();
-    }
-
-    /**
-     * Create a new {@link HttpService} from a {@link BiFunction}.
-     *
-     * @param handleFunc Provides the functionality for the {@link #handle(HttpServiceContext, HttpRequest)} method.
-     * @return a new {@link HttpService}.
-     */
-    public static HttpService from(BiFunction<HttpServiceContext, HttpRequest, Single<HttpResponse>> handleFunc) {
-        return new HttpService() {
-            @Override
-            public Single<HttpResponse> handle(final HttpServiceContext ctx, final HttpRequest request) {
-                return handleFunc.apply(ctx, request);
-            }
-        };
     }
 
     StreamingHttpService asStreamingServiceInternal() {

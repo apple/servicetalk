@@ -15,29 +15,19 @@
  */
 package io.servicetalk.http.api;
 
-import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static java.util.Objects.requireNonNull;
 
-final class HttpServiceToBlockingHttpService extends BlockingHttpService {
-    private final HttpService service;
+final class StreamingHttpResponseFactoryToBlockingStreamingHttpResponseFactory implements
+                                                                               BlockingStreamingHttpResponseFactory {
+    private final StreamingHttpResponseFactory responseFactory;
 
-    HttpServiceToBlockingHttpService(HttpService service) {
-        this.service = requireNonNull(service);
+    StreamingHttpResponseFactoryToBlockingStreamingHttpResponseFactory(
+            final StreamingHttpResponseFactory responseFactory) {
+        this.responseFactory = requireNonNull(responseFactory);
     }
 
     @Override
-    public HttpResponse handle(final HttpServiceContext ctx, final HttpRequest request,
-                               final HttpResponseFactory factory) throws Exception {
-        return blockingInvocation(service.handle(ctx, request, factory));
-    }
-
-    @Override
-    public void close() throws Exception {
-        blockingInvocation(service.closeAsync());
-    }
-
-    @Override
-    HttpService asServiceInternal() {
-        return service;
+    public BlockingStreamingHttpResponse newResponse(final HttpResponseStatus status) {
+        return responseFactory.newResponse(status).toBlockingStreamingResponse();
     }
 }

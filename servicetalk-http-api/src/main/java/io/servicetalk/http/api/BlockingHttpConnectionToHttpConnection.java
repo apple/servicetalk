@@ -31,7 +31,7 @@ final class BlockingHttpConnectionToHttpConnection extends HttpConnection {
     private final BlockingHttpConnection connection;
 
     BlockingHttpConnectionToHttpConnection(BlockingHttpConnection connection) {
-        super(connection);
+        super(connection.requestFactory, connection.getHttpResponseFactory());
         this.connection = requireNonNull(connection);
     }
 

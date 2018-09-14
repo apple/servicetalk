@@ -38,7 +38,8 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
     private final StreamingHttpClient client;
 
     StreamingHttpClientToHttpClient(final StreamingHttpClient client) {
-        super(new StreamingHttpRequestFactoryToHttpRequestFactory(client));
+        super(new StreamingHttpRequestFactoryToHttpRequestFactory(client.requestFactory),
+                new StreamingHttpResponseFactoryToHttpResponseFactory(client.getHttpResponseFactory()));
         this.client = requireNonNull(client);
     }
 
@@ -93,7 +94,8 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
         private final ReservedStreamingHttpConnection reservedConnection;
 
         ReservedStreamingHttpConnectionToReservedHttpConnection(ReservedStreamingHttpConnection reservedConnection) {
-            super(new StreamingHttpRequestFactoryToHttpRequestFactory(reservedConnection));
+            super(new StreamingHttpRequestFactoryToHttpRequestFactory(reservedConnection.requestFactory),
+                    new StreamingHttpResponseFactoryToHttpResponseFactory(reservedConnection.getHttpResponseFactory()));
             this.reservedConnection = requireNonNull(reservedConnection);
         }
 

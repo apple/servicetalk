@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
@@ -31,9 +30,9 @@ final class BlockingHttpServiceToHttpService extends HttpService {
     }
 
     @Override
-    public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                         final HttpRequest<HttpPayloadChunk> request) {
-        return blockingToSingle(() -> service.handle(ctx, request));
+    public Single<HttpResponse> handle(final HttpServiceContext ctx, final HttpRequest request,
+                                       final HttpResponseFactory factory) {
+        return blockingToSingle(() -> service.handle(ctx, request, factory));
     }
 
     @Override
