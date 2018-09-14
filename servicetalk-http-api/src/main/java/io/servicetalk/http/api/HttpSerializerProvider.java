@@ -17,26 +17,50 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.serialization.api.TypeHolder;
 
+import java.util.function.IntUnaryOperator;
+
 /**
  * A provider for {@link HttpSerializer}s.
  */
 public interface HttpSerializerProvider {
 
-    // TODO(scott): add "int bytesEstimate" and "IntUnaryOperator bytesEstimator"?
-
     /**
      * Get a {@link HttpSerializer} for a {@link Class} of type {@link T}.
-     * @param type The {@link Class} type that the return value will serialize.
+     *
+     * @param type The {@link Class} type that the returned {@link HttpSerializer} can serialize.
      * @param <T> The type of object to serialize.
      * @return a {@link HttpSerializer} for a {@link Class} of type {@link T}.
      */
-    <T> HttpSerializer<T> getSerializer(Class<T> type);
+    <T> HttpSerializer<T> forClass(Class<T> type);
+
+    /**
+     * Get a {@link HttpSerializer} for a {@link Class} of type {@link T}.
+     *
+     * @param type The {@link Class} type that the returned {@link HttpSerializer} can serialize.
+     * @param <T> The type of object to serialize.
+     * @param bytesEstimator An {@link IntUnaryOperator} that given the last serialized size in bytes, estimates the
+     * size of the next object to be serialized in bytes.
+     * @return a {@link HttpSerializer} for a {@link Class} of type {@link T}.
+     */
+    <T> HttpSerializer<T> forClass(Class<T> type, IntUnaryOperator bytesEstimator);
 
     /**
      * Get a {@link HttpSerializer} for a {@link TypeHolder} of type {@link T}.
-     * @param type The {@link TypeHolder} type that the return value will serialize.
+     *
+     * @param type The {@link TypeHolder} type that the returned {@link HttpSerializer} can serialize.
      * @param <T> The type of object to serialize.
      * @return a {@link HttpSerializer} for a {@link TypeHolder} of type {@link T}.
      */
-    <T> HttpSerializer<T> getSerializer(TypeHolder<T> type);
+    <T> HttpSerializer<T> forType(TypeHolder<T> type);
+
+    /**
+     * Get a {@link HttpSerializer} for a {@link TypeHolder} of type {@link T}.
+     *
+     * @param type The {@link TypeHolder} type that the returned {@link HttpSerializer} can serialize.
+     * @param <T> The type of object to serialize.
+     * @param bytesEstimator An {@link IntUnaryOperator} that given the last serialized size in bytes, estimates the
+     * size of the next object to be serialized in bytes.
+     * @return a {@link HttpSerializer} for a {@link TypeHolder} of type {@link T}.
+     */
+    <T> HttpSerializer<T> forType(TypeHolder<T> type, IntUnaryOperator bytesEstimator);
 }

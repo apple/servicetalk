@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.api.Publisher;
 
@@ -23,8 +24,6 @@ import io.servicetalk.concurrent.api.Publisher;
  * @param <T> The type of objects to deserialize.
  */
 public interface HttpDeserializer<T> {
-    // TODO(scott): should this just take Buffer instead of Object? The data will have to be in memory to deserialize
-    // anyways.
 
     /**
      * Deserialize a single {@link Object} into a {@link T}.
@@ -33,7 +32,7 @@ public interface HttpDeserializer<T> {
      * may block.
      * @return The result of the deserialization.
      */
-    T deserialize(HttpHeaders headers, Object payload);
+    T deserialize(HttpHeaders headers, Buffer payload);
 
     /**
      * Deserialize a {@link BlockingIterable} of {@link Object}s into a {@link BlockingIterable} of type {@link T}.
@@ -42,7 +41,7 @@ public interface HttpDeserializer<T> {
      * this method may block.
      * @return a {@link BlockingIterable} of type {@link T} which is the result of the deserialization.
      */
-    BlockingIterable<T> deserialize(HttpHeaders headers, BlockingIterable<?> payload);
+    BlockingIterable<T> deserialize(HttpHeaders headers, BlockingIterable<Buffer> payload);
 
     /**
      * Deserialize a {@link Publisher} of {@link Object}s into a {@link Publisher} of type {@link T}.
@@ -50,5 +49,5 @@ public interface HttpDeserializer<T> {
      * @param payload Provides the {@link Object}s to deserialize.
      * @return a {@link Publisher} of type {@link T} which is the result of the deserialization.
      */
-    Publisher<T> deserialize(HttpHeaders headers, Publisher<?> payload);
+    Publisher<T> deserialize(HttpHeaders headers, Publisher<Buffer> payload);
 }
