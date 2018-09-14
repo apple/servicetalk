@@ -18,7 +18,6 @@ package io.servicetalk.examples.http.service.composition.backends;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
-import io.servicetalk.http.api.DefaultHttpSerializer;
 import io.servicetalk.http.api.HttpSerializer;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
