@@ -36,9 +36,10 @@ public abstract class HttpClient extends HttpRequester {
      *
      * @param requestFactory The {@link HttpRequestFactory} used to
      * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     * @param responseFactory Used for {@link #getHttpResponseFactory()}.
      */
-    protected HttpClient(final HttpRequestFactory requestFactory) {
-        super(requestFactory);
+    protected HttpClient(final HttpRequestFactory requestFactory, final HttpResponseFactory responseFactory) {
+        super(requestFactory, responseFactory);
     }
 
     /**
@@ -110,9 +111,11 @@ public abstract class HttpClient extends HttpRequester {
          *
          * @param requestFactory The {@link HttpRequestFactory} used to
          * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+         * @param responseFactory Used for {@link #getHttpResponseFactory()}.
          */
-        protected ReservedHttpConnection(final HttpRequestFactory requestFactory) {
-            super(requestFactory);
+        protected ReservedHttpConnection(final HttpRequestFactory requestFactory,
+                                         final HttpResponseFactory responseFactory) {
+            super(requestFactory, responseFactory);
         }
 
         /**

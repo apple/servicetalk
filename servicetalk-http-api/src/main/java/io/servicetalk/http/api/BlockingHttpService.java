@@ -17,8 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Single;
 
-import java.util.function.BiFunction;
-
 /**
  * The equivalent of {@link HttpService} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
@@ -28,10 +26,12 @@ public abstract class BlockingHttpService implements AutoCloseable {
      *
      * @param ctx Context of the service.
      * @param request to handle.
+     * @param factory used to create {@link HttpResponse} objects.
      * @return {@link Single} of HTTP response.
      * @throws Exception If an exception occurs during request processing.
      */
-    public abstract HttpResponse handle(HttpServiceContext ctx, HttpRequest request) throws Exception;
+    public abstract HttpResponse handle(
+            HttpServiceContext ctx, HttpRequest request, HttpResponseFactory factory) throws Exception;
 
     @Override
     public void close() throws Exception {
@@ -72,21 +72,6 @@ public abstract class BlockingHttpService implements AutoCloseable {
      */
     public final BlockingStreamingHttpService asBlockingStreamingService() {
         return asStreamingService().asBlockingStreamingService();
-    }
-
-    /**
-     * Create a new {@link StreamingHttpService} from a {@link BiFunction}.
-     * @param handleFunc Provides the functionality for the {@link #handle(HttpServiceContext, HttpRequest)}
-     * method.
-     * @return a new {@link BlockingHttpService}.
-     */
-    public static BlockingHttpService from(BiFunction<HttpServiceContext, HttpRequest, HttpResponse> handleFunc) {
-        return new BlockingHttpService() {
-            @Override
-            public HttpResponse handle(final HttpServiceContext ctx, final HttpRequest request) {
-                return handleFunc.apply(ctx, request);
-            }
-        };
     }
 
     StreamingHttpService asStreamingServiceInternal() {

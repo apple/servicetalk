@@ -17,34 +17,33 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
-import static io.servicetalk.http.api.StreamingHttpResponses.fromBlockingResponse;
 import static java.util.Objects.requireNonNull;
 
 final class BlockingStreamingHttpServiceToStreamingHttpService extends StreamingHttpService {
-    private final BlockingStreamingHttpService hervice;
+    private final BlockingStreamingHttpService service;
 
-    BlockingStreamingHttpServiceToStreamingHttpService(BlockingStreamingHttpService httpService) {
-        this.hervice = requireNonNull(httpService);
+    BlockingStreamingHttpServiceToStreamingHttpService(BlockingStreamingHttpService service) {
+        this.service = requireNonNull(service);
     }
 
     @Override
-    public Single<StreamingHttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                                  final StreamingHttpRequest<HttpPayloadChunk> request) {
-        return blockingToSingle(() -> fromBlockingResponse(hervice.handle(ctx,
-                new DefaultBlockingStreamingHttpRequest<>(request))));
+    public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                final StreamingHttpRequest request,
+                                                final StreamingHttpResponseFactory factory) {
+        return blockingToSingle(() -> service.handle(ctx, request.toBlockingStreamingRequest(),
+                ctx.getStreamingBlockingResponseFactory())).map(BlockingStreamingHttpResponse::toStreamingResponse);
     }
 
     @Override
     public Completable closeAsync() {
-        return blockingToCompletable(hervice::close);
+        return blockingToCompletable(service::close);
     }
 
     @Override
     BlockingStreamingHttpService asBlockingStreamingServiceInternal() {
-        return hervice;
+        return service;
     }
 }

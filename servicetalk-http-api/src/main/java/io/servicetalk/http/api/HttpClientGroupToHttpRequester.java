@@ -34,7 +34,7 @@ final class HttpClientGroupToHttpRequester<UnresolvedAddress> extends HttpReques
                                    Function<HttpRequest,
                                                      GroupKey<UnresolvedAddress>> requestToGroupKeyFunc,
                                    ExecutionContext executionContext) {
-        super(clientGroup);
+        super(clientGroup.requestFactory, clientGroup.getHttpResponseFactory());
         this.clientGroup = requireNonNull(clientGroup);
         this.requestToGroupKeyFunc = requireNonNull(requestToGroupKeyFunc);
         this.executionContext = requireNonNull(executionContext);

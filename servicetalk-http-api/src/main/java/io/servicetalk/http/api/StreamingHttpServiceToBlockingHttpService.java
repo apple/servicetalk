@@ -15,10 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.transport.api.ConnectionContext;
-
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
-import static io.servicetalk.http.api.BufferHttpRequest.toHttpRequest;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpServiceToBlockingHttpService extends BlockingHttpService {
@@ -29,11 +26,10 @@ final class StreamingHttpServiceToBlockingHttpService extends BlockingHttpServic
     }
 
     @Override
-    public HttpResponse<HttpPayloadChunk> handle(final ConnectionContext ctx,
-                                                 final HttpRequest<HttpPayloadChunk> request)
-            throws Exception {
-        return blockingInvocation(service.handle(ctx, toHttpRequest(request)).flatMap(response ->
-                BufferHttpResponse.from(response, ctx.getExecutionContext().getBufferAllocator())));
+    public HttpResponse handle(final HttpServiceContext ctx, final HttpRequest request,
+                               final HttpResponseFactory factory) throws Exception {
+        return blockingInvocation(service.handle(ctx, request.toStreamingRequest(), ctx.getStreamingResponseFactory())
+                .flatMap(StreamingHttpResponse::toResponse));
     }
 
     @Override

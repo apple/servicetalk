@@ -26,16 +26,19 @@ import static java.util.Objects.requireNonNull;
  * {@link StreamingHttpResponse}.
  */
 public abstract class StreamingHttpRequester implements StreamingHttpRequestFactory, ListenableAsyncCloseable {
-
-    private final StreamingHttpRequestFactory requestFactory;
+    final StreamingHttpRequestFactory requestFactory;
+    private final StreamingHttpResponseFactory responseFactory;
 
     /**
      * Create a new instance.
-     * @param requestFactory The {@link StreamingHttpRequestFactory} used to
+     * @param requestFactory The {@link HttpRequestFactory} used to
      * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     * @param responseFactory Used for {@link #getHttpResponseFactory()}.
      */
-    protected StreamingHttpRequester(StreamingHttpRequestFactory requestFactory) {
+    protected StreamingHttpRequester(final StreamingHttpRequestFactory requestFactory,
+                                     final StreamingHttpResponseFactory responseFactory) {
         this.requestFactory = requireNonNull(requestFactory);
+        this.responseFactory = requireNonNull(responseFactory);
     }
 
     /**
@@ -59,9 +62,12 @@ public abstract class StreamingHttpRequester implements StreamingHttpRequestFact
         return requestFactory.newRequest(method, requestTarget);
     }
 
-    @Override
+    /**
+     * Get a {@link StreamingHttpResponseFactory}.
+     * @return a {@link StreamingHttpResponseFactory}.
+     */
     public final StreamingHttpResponseFactory getHttpResponseFactory() {
-        return requestFactory.getHttpResponseFactory();
+        return responseFactory;
     }
 
     /**

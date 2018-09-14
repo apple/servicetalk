@@ -30,7 +30,8 @@ final class StreamingHttpClientGroupToHttpClientGroup<UnresolvedAddress> extends
     private final StreamingHttpClientGroup<UnresolvedAddress> clientGroup;
 
     StreamingHttpClientGroupToHttpClientGroup(StreamingHttpClientGroup<UnresolvedAddress> clientGroup) {
-        super(new StreamingHttpRequestFactoryToHttpRequestFactory(clientGroup));
+        super(new StreamingHttpRequestFactoryToHttpRequestFactory(clientGroup.requestFactory),
+                new StreamingHttpResponseFactoryToHttpResponseFactory(clientGroup.getHttpResponseFactory()));
         this.clientGroup = requireNonNull(clientGroup);
     }
 

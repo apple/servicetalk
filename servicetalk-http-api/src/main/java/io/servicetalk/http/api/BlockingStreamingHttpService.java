@@ -15,8 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import java.util.function.BiFunction;
-
 /**
  * The equivalent of {@link StreamingHttpService} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
@@ -26,11 +24,13 @@ public abstract class BlockingStreamingHttpService implements AutoCloseable {
      *
      * @param ctx Context of the service.
      * @param request to handle.
+     * @param factory used to create {@link BlockingStreamingHttpResponse} objects.
      * @return a {@link BlockingStreamingHttpResponse} which represents the HTTP response.
      * @throws Exception If an exception occurs during request processing.
      */
     public abstract BlockingStreamingHttpResponse handle(
-            BlockingStreamingHttpServiceContext ctx, BlockingStreamingHttpRequest request) throws Exception;
+            HttpServiceContext ctx, BlockingStreamingHttpRequest request,
+            BlockingStreamingHttpResponseFactory factory) throws Exception;
 
     @Override
     public void close() throws Exception {
@@ -71,25 +71,6 @@ public abstract class BlockingStreamingHttpService implements AutoCloseable {
      */
     public final BlockingHttpService asBlockingService() {
         return asStreamingService().asBlockingService();
-    }
-
-    /**
-     * Create a new {@link BlockingStreamingHttpService} from a {@link BiFunction}.
-     *
-     * @param handleFunc Provides the functionality for the
-     * {@link #handle(BlockingStreamingHttpServiceContext, BlockingStreamingHttpRequest)} method.
-     * @return a new {@link BlockingStreamingHttpService}.
-     */
-    public static BlockingStreamingHttpService from(
-            BiFunction<BlockingStreamingHttpServiceContext, BlockingStreamingHttpRequest,
-                    BlockingStreamingHttpResponse> handleFunc) {
-        return new BlockingStreamingHttpService() {
-            @Override
-            public BlockingStreamingHttpResponse handle(
-                    final BlockingStreamingHttpServiceContext ctx, final BlockingStreamingHttpRequest request) {
-                return handleFunc.apply(ctx, request);
-            }
-        };
     }
 
     /**
