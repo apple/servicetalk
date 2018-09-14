@@ -23,7 +23,7 @@ buildscript {
   }
 
   dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.2.0-SNAPSHOT"
+    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:$project.version"
   }
 }
 

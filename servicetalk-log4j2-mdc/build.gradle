@@ -22,18 +22,18 @@ buildscript {
   }
 
   dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.2.0-SNAPSHOT"
+    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:$project.version"
   }
 }
 
 apply plugin: "servicetalk-library"
 
 dependencies {
-  implementation "io.servicetalk:servicetalk-bom-internal:0.2.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
 
   implementation "com.google.code.findbugs:jsr305"
-  implementation "io.servicetalk:servicetalk-annotations:0.2.0-SNAPSHOT"
-  implementation "io.servicetalk:servicetalk-log4j2-mdc-internal:0.2.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-annotations:$project.version"
+  implementation "io.servicetalk:servicetalk-log4j2-mdc-internal:$project.version"
 
   testImplementation "junit:junit"
   testImplementation "org.hamcrest:hamcrest-library"

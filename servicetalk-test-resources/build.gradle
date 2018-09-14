@@ -22,19 +22,19 @@ buildscript {
   }
 
   dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.2.0-SNAPSHOT"
+    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:$project.version"
   }
 }
 
 apply plugin: "servicetalk-library"
 
 dependencies {
-  implementation "io.servicetalk:servicetalk-bom-internal:0.2.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
 
   api "org.apache.logging.log4j:log4j-core"
   api "org.apache.logging.log4j:log4j-slf4j-impl"
 
-  implementation "io.servicetalk:servicetalk-annotations:0.2.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-annotations:$project.version"
 
   testImplementation "junit:junit"
 }
