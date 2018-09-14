@@ -25,7 +25,8 @@ final class StreamingHttpRequesterToHttpRequester extends HttpRequester {
     private final StreamingHttpRequester requester;
 
     StreamingHttpRequesterToHttpRequester(final StreamingHttpRequester requester) {
-        super(new StreamingHttpRequestFactoryToHttpRequestFactory(requester));
+        super(new StreamingHttpRequestFactoryToHttpRequestFactory(requester.requestFactory),
+              new StreamingHttpResponseFactoryToHttpResponseFactory(requester.getHttpResponseFactory()));
         this.requester = requireNonNull(requester);
     }
 

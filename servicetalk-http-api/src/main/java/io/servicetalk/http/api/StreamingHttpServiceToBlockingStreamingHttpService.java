@@ -15,10 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.transport.api.ConnectionContext;
-
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
-import static io.servicetalk.http.api.StreamingHttpRequests.fromBlockingRequest;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpServiceToBlockingStreamingHttpService extends BlockingStreamingHttpService {
@@ -29,13 +26,13 @@ final class StreamingHttpServiceToBlockingStreamingHttpService extends BlockingS
     }
 
     @Override
-    public BlockingStreamingHttpResponse<HttpPayloadChunk> handle(final ConnectionContext ctx,
-                                                                  final BlockingStreamingHttpRequest<HttpPayloadChunk> request)
-            throws Exception {
-        // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So we don't
-        // apply any explicit timeout here and just wait forever.
-        return new DefaultBlockingStreamingHttpResponse<>(
-                blockingInvocation(service.handle(ctx, fromBlockingRequest(request))));
+    public BlockingStreamingHttpResponse handle(final HttpServiceContext ctx,
+                                                final BlockingStreamingHttpRequest request,
+                                                final BlockingStreamingHttpResponseFactory factory) throws Exception {
+        // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So
+        // we don't apply any explicit timeout here and just wait forever.
+        return blockingInvocation(service.handle(ctx, request.toStreamingRequest(), ctx.getStreamingResponseFactory()))
+                .toBlockingStreamingResponse();
     }
 
     @Override

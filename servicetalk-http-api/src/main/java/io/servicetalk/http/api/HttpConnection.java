@@ -30,9 +30,10 @@ public abstract class HttpConnection extends HttpRequester {
      *
      * @param requestFactory The {@link HttpRequestFactory} used to
      * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     * @param responseFactory Used for {@link #getHttpResponseFactory()}.
      */
-    protected HttpConnection(final HttpRequestFactory requestFactory) {
-        super(requestFactory);
+    protected HttpConnection(final HttpRequestFactory requestFactory, final HttpResponseFactory responseFactory) {
+        super(requestFactory, responseFactory);
     }
 
     /**

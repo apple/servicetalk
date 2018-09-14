@@ -33,7 +33,7 @@ final class BlockingHttpClientToHttpClient extends HttpClient {
     private final BlockingHttpClient client;
 
     BlockingHttpClientToHttpClient(BlockingHttpClient client) {
-        super(client);
+        super(client.requestFactory, client.getHttpResponseFactory());
         this.client = requireNonNull(client);
     }
 
@@ -81,7 +81,7 @@ final class BlockingHttpClientToHttpClient extends HttpClient {
         private final ReservedBlockingHttpConnection connection;
 
         ReservedBlockingHttpConnectionToReservedHttpConnection(ReservedBlockingHttpConnection connection) {
-            super(connection);
+            super(connection.requestFactory, connection.getHttpResponseFactory());
             this.connection = requireNonNull(connection);
         }
 

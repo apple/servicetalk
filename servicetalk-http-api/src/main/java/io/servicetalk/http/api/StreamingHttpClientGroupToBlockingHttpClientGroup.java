@@ -23,7 +23,6 @@ import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnecti
 import io.servicetalk.http.api.StreamingHttpClient.UpgradableStreamingHttpResponse;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
-import static io.servicetalk.http.api.StreamingHttpClientToHttpClient.newRequestBlocking;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpClientGroupToBlockingHttpClientGroup<UnresolvedAddress>
@@ -31,6 +30,8 @@ final class StreamingHttpClientGroupToBlockingHttpClientGroup<UnresolvedAddress>
     private final StreamingHttpClientGroup<UnresolvedAddress> clientGroup;
 
     StreamingHttpClientGroupToBlockingHttpClientGroup(StreamingHttpClientGroup<UnresolvedAddress> clientGroup) {
+        super(new StreamingHttpRequestFactoryToHttpRequestFactory(clientGroup.requestFactory),
+                new StreamingHttpResponseFactoryToHttpResponseFactory(clientGroup.getHttpResponseFactory()));
         this.clientGroup = requireNonNull(clientGroup);
     }
 
@@ -67,10 +68,5 @@ final class StreamingHttpClientGroupToBlockingHttpClientGroup<UnresolvedAddress>
 
     Completable onClose() {
         return clientGroup.onClose();
-    }
-
-    @Override
-    public HttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
-        return newRequestBlocking(clientGroup, method, requestTarget);
     }
 }

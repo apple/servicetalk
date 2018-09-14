@@ -47,10 +47,4 @@ public interface StreamingHttpRequestFactory {
     default StreamingHttpRequest post(String requestTarget) {
         return newRequest(POST, requestTarget);
     }
-
-    /**
-     * Get a {@link StreamingHttpResponseFactory}.
-     * @return a {@link StreamingHttpResponseFactory}.
-     */
-    StreamingHttpResponseFactory getHttpResponseFactory();
 }

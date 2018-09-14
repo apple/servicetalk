@@ -20,45 +20,14 @@ import static java.util.Objects.requireNonNull;
 final class BlockingStreamingHttpRequestFactoryToStreamingHttpRequestFactory implements
                                                                         StreamingHttpRequestFactory {
     private final BlockingStreamingHttpRequestFactory requestFactory;
-    private final StreamingHttpResponseFactory responseFactory;
 
     BlockingStreamingHttpRequestFactoryToStreamingHttpRequestFactory(
             final BlockingStreamingHttpRequestFactory requestFactory) {
         this.requestFactory = requireNonNull(requestFactory);
-        this.responseFactory = new BlockingStreamingHttpResponseFactoryToStreamingHttpResponseFactory(
-                requestFactory.getHttpResponseFactory(), this);
     }
 
     @Override
     public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
         return requestFactory.newRequest(method, requestTarget).toStreamingRequest();
-    }
-
-    @Override
-    public StreamingHttpResponseFactory getHttpResponseFactory() {
-        return responseFactory;
-    }
-
-    private static final class BlockingStreamingHttpResponseFactoryToStreamingHttpResponseFactory implements
-                                                                                      StreamingHttpResponseFactory {
-        private final BlockingStreamingHttpResponseFactory responseFactory;
-        private final StreamingHttpRequestFactory requestFactory;
-
-        private BlockingStreamingHttpResponseFactoryToStreamingHttpResponseFactory(
-                final BlockingStreamingHttpResponseFactory responseFactory,
-                final StreamingHttpRequestFactory requestFactory) {
-            this.responseFactory = responseFactory;
-            this.requestFactory = requestFactory;
-        }
-
-        @Override
-        public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
-            return responseFactory.newResponse(status).toStreamingResponse();
-        }
-
-        @Override
-        public StreamingHttpRequestFactory getHttpRequestFactory() {
-            return requestFactory;
-        }
     }
 }

@@ -16,47 +16,17 @@
 package io.servicetalk.http.api;
 
 import static io.servicetalk.http.api.StreamingHttpRequestResponseFactories.newRequestBlocking;
-import static io.servicetalk.http.api.StreamingHttpRequestResponseFactories.newResponseBlocking;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpRequestFactoryToHttpRequestFactory implements HttpRequestFactory {
     private final StreamingHttpRequestFactory requestFactory;
-    private final HttpResponseFactory responseFactory;
 
     StreamingHttpRequestFactoryToHttpRequestFactory(StreamingHttpRequestFactory requestFactory) {
         this.requestFactory = requireNonNull(requestFactory);
-        this.responseFactory = new StreamingHttpResponseFactoryToHttpResponseFactory(
-                requestFactory.getHttpResponseFactory(), this);
     }
 
     @Override
     public HttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
         return newRequestBlocking(requestFactory, method, requestTarget);
-    }
-
-    @Override
-    public HttpResponseFactory getHttpResponseFactory() {
-        return responseFactory;
-    }
-
-    private static final class StreamingHttpResponseFactoryToHttpResponseFactory implements HttpResponseFactory {
-        private final StreamingHttpResponseFactory responseFactory;
-        private final HttpRequestFactory requestFactory;
-
-        StreamingHttpResponseFactoryToHttpResponseFactory(StreamingHttpResponseFactory responseFactory,
-                                                          HttpRequestFactory requestFactory) {
-            this.responseFactory = responseFactory;
-            this.requestFactory = requestFactory;
-        }
-
-        @Override
-        public HttpResponse newResponse(final HttpResponseStatus status) {
-            return newResponseBlocking(responseFactory, status);
-        }
-
-        @Override
-        public HttpRequestFactory getHttpRequestFactory() {
-            return requestFactory;
-        }
     }
 }
