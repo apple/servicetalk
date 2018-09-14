@@ -44,7 +44,7 @@ public final class HttpDeserializerProviders {
      *
      * @return {@link HttpDeserializer} that could deserialize {@link String}.
      */
-    public static HttpDeserializer<String> forUtf8String() {
+    public static HttpDeserializer<String> forUtf8PlainText() {
         return UTF_8_STRING_DESERIALIZER;
     }
 
@@ -54,9 +54,9 @@ public final class HttpDeserializerProviders {
      * @param charset {@link Charset} for the {@link String} that will be deserialized.
      * @return {@link HttpDeserializer} that could deserialize {@link String}.
      */
-    public static HttpDeserializer<String> forString(Charset charset) {
+    public static HttpDeserializer<String> forPlainText(Charset charset) {
         final String contentType = TEXT_PLAIN + "; charset=" + charset.name();
-        return forString(charset, headers -> headers.contains(CONTENT_TYPE, contentType));
+        return forPlainText(charset, headers -> headers.contains(CONTENT_TYPE, contentType));
     }
 
     /**
@@ -67,7 +67,7 @@ public final class HttpDeserializerProviders {
      * deserialized payload. If the validation fails, then deserialization will fail with {@link SerializationException}
      * @return {@link HttpDeserializer} that could deserialize {@link String}.
      */
-    public static HttpDeserializer<String> forString(Charset charset, Predicate<HttpHeaders> checkContentType) {
+    public static HttpDeserializer<String> forPlainText(Charset charset, Predicate<HttpHeaders> checkContentType) {
         return new HttpStringDeserializer(charset, checkContentType);
     }
 

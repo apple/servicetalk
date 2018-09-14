@@ -43,7 +43,7 @@ public final class HttpSerializerProviders {
      *
      * @return {@link HttpSerializer} that could serialize from {@link String}.
      */
-    public static HttpSerializer<String> forUtf8String() {
+    public static HttpSerializer<String> forUtf8PlainText() {
         return UTF8_STRING_SERIALIZER;
     }
 
@@ -53,9 +53,9 @@ public final class HttpSerializerProviders {
      * @param charset {@link Charset} for the {@link String} that will be serialized.
      * @return {@link HttpSerializer} that could serialize from {@link String}.
      */
-    public static HttpSerializer<String> forString(Charset charset) {
+    public static HttpSerializer<String> forPlainText(Charset charset) {
         final String contentType = TEXT_PLAIN + "; charset=" + charset.name();
-        return forString(charset, headers -> headers.set(CONTENT_TYPE, contentType));
+        return forPlainText(charset, headers -> headers.set(CONTENT_TYPE, contentType));
     }
 
     /**
@@ -66,7 +66,7 @@ public final class HttpSerializerProviders {
      * the serialized payload. Typically, this involves adding a {@link HttpHeaderNames#CONTENT_TYPE} header.
      * @return {@link HttpSerializer} that could serialize from {@link String}.
      */
-    public static HttpSerializer<String> forString(Charset charset, Consumer<HttpHeaders> addContentType) {
+    public static HttpSerializer<String> forPlainText(Charset charset, Consumer<HttpHeaders> addContentType) {
         return new HttpStringSerializer(charset, addContentType);
     }
 
