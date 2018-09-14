@@ -20,8 +20,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SingleProcessor;
-import io.servicetalk.http.api.HttpSerializerUtils.HttpBuffersAndTrailersOperator;
-import io.servicetalk.http.api.HttpSerializerUtils.HttpObjectsAndTrailersOperator;
+import io.servicetalk.http.api.HttpSerializerUtils.HttpPayloadAndTrailersFromSingleOperator;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -149,7 +148,7 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
                                                     BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
         final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
         return new BufferStreamingHttpRequest(this, allocator, getPayloadBody()
-                .liftSynchronous(new HttpBuffersAndTrailersOperator<>(stateSupplier, transformer,
+                .liftSynchronous(new HttpPayloadAndTrailersFromSingleOperator<>(stateSupplier, transformer,
                         trailersTransformer, trailersSingle, outTrailersSingle)),
                 outTrailersSingle);
     }
@@ -160,7 +159,7 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
                                                        BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
         final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
         return new DefaultStreamingHttpRequest<>(this, allocator, payloadBody
-                .liftSynchronous(new HttpObjectsAndTrailersOperator<>(stateSupplier, transformer,
+                .liftSynchronous(new HttpPayloadAndTrailersFromSingleOperator<>(stateSupplier, transformer,
                         trailersTransformer, trailersSingle, outTrailersSingle)),
                 outTrailersSingle);
     }

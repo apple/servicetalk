@@ -19,17 +19,31 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * The equivalent of {@link HttpRequester} but that accepts {@link StreamingHttpRequest} and returns
  * {@link StreamingHttpResponse}.
  */
 public abstract class StreamingHttpRequester implements StreamingHttpRequestFactory, ListenableAsyncCloseable {
+
+    private final StreamingHttpRequestFactory requestFactory;
+
+    /**
+     * Create a new instance.
+     * @param requestFactory The {@link StreamingHttpRequestFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     */
+    protected StreamingHttpRequester(StreamingHttpRequestFactory requestFactory) {
+        this.requestFactory = requireNonNull(requestFactory);
+    }
+
     /**
      * Send a {@code request}.
      * @param request the request to send.
      * @return The response.
      */
-    public abstract Single<StreamingHttpResponse> request(StreamingHttpRequest request);
+    public abstract Single<? extends StreamingHttpResponse> request(StreamingHttpRequest request);
 
     /**
      * Get the {@link ExecutionContext} used during construction of this object.
@@ -39,6 +53,16 @@ public abstract class StreamingHttpRequester implements StreamingHttpRequestFact
      * @return the {@link ExecutionContext} used during construction of this object.
      */
     public abstract ExecutionContext getExecutionContext();
+
+    @Override
+    public final StreamingHttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
+        return requestFactory.newRequest(method, requestTarget);
+    }
+
+    @Override
+    public final StreamingHttpResponseFactory getHttpResponseFactory() {
+        return requestFactory.getHttpResponseFactory();
+    }
 
     /**
      * Convert this {@link StreamingHttpRequester} to the {@link BlockingStreamingHttpRequester} API.

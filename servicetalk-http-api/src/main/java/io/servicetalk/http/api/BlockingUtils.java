@@ -24,12 +24,6 @@ import java.util.concurrent.ExecutionException;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
-import static io.servicetalk.http.api.BufferHttpRequest.from;
-import static io.servicetalk.http.api.BufferHttpRequest.toHttpRequest;
-import static io.servicetalk.http.api.BufferHttpResponse.from;
-import static io.servicetalk.http.api.BufferHttpResponse.toHttpResponse;
-import static io.servicetalk.http.api.StreamingHttpRequests.fromBlockingRequest;
-import static io.servicetalk.http.api.StreamingHttpResponses.fromBlockingResponse;
 import static java.lang.Thread.currentThread;
 
 final class BlockingUtils {
@@ -94,52 +88,44 @@ final class BlockingUtils {
         };
     }
 
-    static BlockingStreamingHttpResponse<HttpPayloadChunk> request(final StreamingHttpRequester requester,
-                                                                   final BlockingStreamingHttpRequest<HttpPayloadChunk> request)
-            throws Exception {
-        // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So we don't
-        // apply any explicit timeout here and just wait forever.
-        return new DefaultBlockingStreamingHttpResponse<>(blockingInvocation(requester.request(fromBlockingRequest(request))));
+    static BlockingStreamingHttpResponse request(final StreamingHttpRequester requester,
+                                                 final BlockingStreamingHttpRequest request) throws Exception {
+        // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So
+        // we don't apply any explicit timeout here and just wait forever.
+        return blockingInvocation(requester.request(request.toStreamingRequest())).toBlockingStreamingResponse();
     }
 
-    static Single<StreamingHttpResponse<HttpPayloadChunk>> request(final BlockingHttpRequester requester,
-                                                                   final StreamingHttpRequest<HttpPayloadChunk> request) {
-        return from(request, requester.getExecutionContext().getBufferAllocator())
-                .flatMap(aggregatedRequest -> blockingToSingle(() ->
-                        toHttpResponse(requester.request(aggregatedRequest))));
+    static Single<StreamingHttpResponse> request(final BlockingHttpRequester requester,
+                                                 final StreamingHttpRequest request) {
+        return request.toRequest().flatMap(req -> blockingToSingle(() -> requester.request(req)))
+                .map(HttpResponse::toStreamingResponse);
     }
 
-    static HttpResponse<HttpPayloadChunk> request(final HttpRequester requester,
-                                                  final HttpRequest<HttpPayloadChunk> request)
-            throws Exception {
-        // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So we don't
-        // apply any explicit timeout here and just wait forever.
+    static HttpResponse request(final HttpRequester requester, final HttpRequest request) throws Exception {
+        // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So
+        // we don't apply any explicit timeout here and just wait forever.
         return blockingInvocation(requester.request(request));
     }
 
-    static HttpResponse<HttpPayloadChunk> request(final StreamingHttpRequester requester,
-                                                  final HttpRequest<HttpPayloadChunk> request)
-            throws Exception {
-        // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So we don't
-        // apply any explicit timeout here and just wait forever.
-        return blockingInvocation(requester.request(toHttpRequest(request)).flatMap(response ->
-                from(response, requester.getExecutionContext().getBufferAllocator())));
+    static HttpResponse request(final StreamingHttpRequester requester, final HttpRequest request) throws Exception {
+        // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So
+        // we don't apply any explicit timeout here and just wait forever.
+        return blockingInvocation(requester.request(request.toStreamingRequest())
+                .flatMap(StreamingHttpResponse::toResponse));
     }
 
-    static Single<StreamingHttpResponse<HttpPayloadChunk>> request(final BlockingStreamingHttpRequester requester,
-                                                                   final StreamingHttpRequest<HttpPayloadChunk> request) {
-        return blockingToSingle(() -> fromBlockingResponse(requester.request(
-                new DefaultBlockingStreamingHttpRequest<>(request))));
+    static Single<StreamingHttpResponse> request(final BlockingStreamingHttpRequester requester,
+                                                 final StreamingHttpRequest request) {
+        return blockingToSingle(() -> requester.request(request.toBlockingStreamingRequest()).toStreamingResponse());
     }
 
-    static Single<HttpResponse<HttpPayloadChunk>> request(final BlockingHttpRequester requester,
-                                                          final HttpRequest<HttpPayloadChunk> request) {
+    static Single<HttpResponse> request(final BlockingHttpRequester requester, final HttpRequest request) {
         return blockingToSingle(() -> requester.request(request));
     }
 
     static <T> T blockingInvocation(Single<T> source) throws Exception {
-        // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So we don't
-        // apply any explicit timeout here and just wait forever.
+        // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So
+        // we don't apply any explicit timeout here and just wait forever.
         try {
             return awaitIndefinitelyNonNull(source);
         } catch (final ExecutionException e) {
@@ -149,8 +135,8 @@ final class BlockingUtils {
     }
 
     static void blockingInvocation(Completable source) throws Exception {
-        // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So we don't
-        // apply any explicit timeout here and just wait forever.
+        // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter). So
+        // we don't apply any explicit timeout here and just wait forever.
         try {
             awaitIndefinitely(source);
         } catch (final ExecutionException e) {

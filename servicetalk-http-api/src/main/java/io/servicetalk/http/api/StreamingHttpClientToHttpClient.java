@@ -15,53 +15,53 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.BlockingStreamingHttpClient.UpgradableBlockingStreamingHttpResponse;
+import io.servicetalk.http.api.HttpClientToStreamingHttpClient.UpgradableHttpResponseToUpgradableStreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient.UpgradableStreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient.UpgradableStreamingHttpResponseToBlockingStreaming;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
-import static io.servicetalk.http.api.BufferHttpRequest.toHttpRequest;
-import static io.servicetalk.http.api.BufferHttpResponse.from;
+import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Single.success;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpClientToHttpClient extends HttpClient {
     private final StreamingHttpClient client;
 
     StreamingHttpClientToHttpClient(final StreamingHttpClient client) {
+        super(new StreamingHttpRequestFactoryToHttpRequestFactory(client));
         this.client = requireNonNull(client);
     }
 
     @Override
-    public Single<? extends ReservedHttpConnection> reserveConnection(
-            final HttpRequest<HttpPayloadChunk> request) {
-        return client.reserveConnection(toHttpRequest(request))
+    public Single<? extends ReservedHttpConnection> reserveConnection(final HttpRequest request) {
+        return client.reserveConnection(request.toStreamingRequest())
                 .map(ReservedStreamingHttpConnectionToReservedHttpConnection::new);
     }
 
     @Override
-    public Single<? extends UpgradableHttpResponse<HttpPayloadChunk>> upgradeConnection(
-            final HttpRequest<HttpPayloadChunk> request) {
+    public Single<? extends UpgradableHttpResponse> upgradeConnection(final HttpRequest request) {
         return doUpgradeConnection(client, request);
     }
 
-    static Single<? extends UpgradableHttpResponse<HttpPayloadChunk>> doUpgradeConnection(
-            StreamingHttpClient client, final HttpRequest<HttpPayloadChunk> request) {
-        return client.upgradeConnection(toHttpRequest(request))
-                .flatMap(response -> from(response, client.getExecutionContext().getBufferAllocator())
-                        .map(fullResponse -> new UpgradableStreamingHttpResponseToUpgradableHttpResponse<>(response,
-                                fullResponse.getPayloadBody(), fullResponse.getTrailers())));
+    static Single<? extends UpgradableHttpResponse> doUpgradeConnection(
+            StreamingHttpClient client, HttpRequest request) {
+        return client.upgradeConnection(request.toStreamingRequest())
+                      .flatMap(UpgradableStreamingHttpResponse::toResponse);
     }
 
     @Override
-    public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
-        return client.request(toHttpRequest(request)).flatMap(response ->
-                from(response, client.getExecutionContext().getBufferAllocator()));
+    public Single<? extends HttpResponse> request(final HttpRequest request) {
+        return client.request(request.toStreamingRequest()).flatMap(StreamingHttpResponse::toResponse);
     }
 
     @Override
@@ -93,6 +93,7 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
         private final ReservedStreamingHttpConnection reservedConnection;
 
         ReservedStreamingHttpConnectionToReservedHttpConnection(ReservedStreamingHttpConnection reservedConnection) {
+            super(new StreamingHttpRequestFactoryToHttpRequestFactory(reservedConnection));
             this.reservedConnection = requireNonNull(reservedConnection);
         }
 
@@ -112,9 +113,9 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
         }
 
         @Override
-        public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
-            return reservedConnection.request(toHttpRequest(request)).flatMap(response ->
-                    from(response, reservedConnection.getExecutionContext().getBufferAllocator()));
+        public Single<? extends HttpResponse> request(final HttpRequest request) {
+            return reservedConnection.request(request.toStreamingRequest())
+                    .flatMap(StreamingHttpResponse::toResponse);
         }
 
         @Override
@@ -143,17 +144,20 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
         }
     }
 
-    static final class UpgradableStreamingHttpResponseToUpgradableHttpResponse<T> implements UpgradableHttpResponse<T> {
-        private final UpgradableStreamingHttpResponse<?> upgradableResponse;
-        private final T payloadBody;
+    static final class UpgradableStreamingHttpResponseToUpgradableHttpResponse implements UpgradableHttpResponse {
+        private final UpgradableStreamingHttpResponse upgradableResponse;
+        private final Buffer payloadBody;
         private final HttpHeaders trailers;
+        private final BufferAllocator allocator;
 
-        UpgradableStreamingHttpResponseToUpgradableHttpResponse(UpgradableStreamingHttpResponse<?> upgradableResponse,
-                                                                T payloadBody,
-                                                                HttpHeaders trailers) {
+        UpgradableStreamingHttpResponseToUpgradableHttpResponse(UpgradableStreamingHttpResponse upgradableResponse,
+                                                                Buffer payloadBody,
+                                                                HttpHeaders trailers,
+                                                                BufferAllocator allocator) {
             this.upgradableResponse = requireNonNull(upgradableResponse);
             this.payloadBody = requireNonNull(payloadBody);
             this.trailers = requireNonNull(trailers);
+            this.allocator = requireNonNull(allocator);
         }
 
         @Override
@@ -163,9 +167,27 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
         }
 
         @Override
-        public <R> UpgradableHttpResponse<R> transformPayloadBody(final Function<T, R> transformer) {
-            return new UpgradableStreamingHttpResponseToUpgradableHttpResponse<>(
-                    upgradableResponse, transformer.apply(payloadBody), trailers);
+        public UpgradableHttpResponse setPayloadBody(final Buffer payloadBody) {
+            return new UpgradableStreamingHttpResponseToUpgradableHttpResponse(upgradableResponse, payloadBody,
+                    trailers, allocator);
+        }
+
+        @Override
+        public <T> UpgradableHttpResponse setPayloadBody(final T pojo, final HttpSerializer<T> serializer) {
+            return new UpgradableStreamingHttpResponseToUpgradableHttpResponse(upgradableResponse,
+                    serializer.serialize(getHeaders(), pojo, allocator), trailers, allocator);
+        }
+
+        @Override
+        public UpgradableStreamingHttpResponse toStreamingResponse() {
+            return new UpgradableHttpResponseToUpgradableStreamingHttpResponse(this, just(payloadBody),
+                    success(trailers), allocator);
+        }
+
+        @Override
+        public UpgradableBlockingStreamingHttpResponse toBlockingStreamingResponse() {
+            return new UpgradableStreamingHttpResponseToBlockingStreaming(upgradableResponse, just(payloadBody).toIterable(),
+                    success(trailers), allocator);
         }
 
         @Override
@@ -174,7 +196,7 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
         }
 
         @Override
-        public UpgradableHttpResponse<T> setVersion(final HttpProtocolVersion version) {
+        public UpgradableHttpResponse setVersion(final HttpProtocolVersion version) {
             upgradableResponse.setVersion(version);
             return this;
         }
@@ -201,14 +223,19 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
         }
 
         @Override
-        public UpgradableHttpResponse<T> setStatus(final HttpResponseStatus status) {
+        public UpgradableHttpResponse setStatus(final HttpResponseStatus status) {
             upgradableResponse.setStatus(status);
             return this;
         }
 
         @Override
-        public T getPayloadBody() {
+        public Buffer getPayloadBody() {
             return payloadBody;
+        }
+
+        @Override
+        public <T> T getPayloadBody(final HttpDeserializer<T> deserializer) {
+            return deserializer.deserialize(getHeaders(), payloadBody);
         }
 
         @Override

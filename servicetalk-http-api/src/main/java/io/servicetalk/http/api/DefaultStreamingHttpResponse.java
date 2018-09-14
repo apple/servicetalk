@@ -20,7 +20,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SingleProcessor;
-import io.servicetalk.http.api.HttpSerializerUtils.HttpBuffersAndTrailersOperator;
+import io.servicetalk.http.api.HttpSerializerUtils.HttpPayloadAndTrailersFromSingleOperator;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -122,7 +122,7 @@ class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implem
                                                      final BiFunction<T, HttpHeaders, HttpHeaders> trailersTrans) {
         final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
         return new BufferStreamingHttpResponse(this, allocator, getPayloadBody()
-                .liftSynchronous(new HttpBuffersAndTrailersOperator<>(stateSupplier, transformer,
+                .liftSynchronous(new HttpPayloadAndTrailersFromSingleOperator<>(stateSupplier, transformer,
                         trailersTrans, trailersSingle, outTrailersSingle)),
                 outTrailersSingle);
     }
@@ -132,8 +132,8 @@ class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implem
                                                         final BiFunction<Object, T, ?> transformer,
                                                         final BiFunction<T, HttpHeaders, HttpHeaders> trailersTrans) {
         final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
-        return new DefaultStreamingHttpResponse<>(this, allocator, getPayloadBody()
-                .liftSynchronous(new HttpBuffersAndTrailersOperator<>(stateSupplier, transformer,
+        return new DefaultStreamingHttpResponse<>(this, allocator, payloadBody
+                .liftSynchronous(new HttpPayloadAndTrailersFromSingleOperator<>(stateSupplier, transformer,
                         trailersTrans, trailersSingle, outTrailersSingle)),
                 outTrailersSingle);
     }

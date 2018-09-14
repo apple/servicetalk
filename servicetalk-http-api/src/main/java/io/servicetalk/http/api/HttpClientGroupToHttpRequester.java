@@ -27,26 +27,25 @@ import static java.util.Objects.requireNonNull;
 
 final class HttpClientGroupToHttpRequester<UnresolvedAddress> extends HttpRequester {
     private final HttpClientGroup<UnresolvedAddress> clientGroup;
-    private final Function<HttpRequest<HttpPayloadChunk>, GroupKey<UnresolvedAddress>> requestToGroupKeyFunc;
+    private final Function<HttpRequest, GroupKey<UnresolvedAddress>> requestToGroupKeyFunc;
     private final ExecutionContext executionContext;
 
     HttpClientGroupToHttpRequester(HttpClientGroup<UnresolvedAddress> clientGroup,
-                                   Function<HttpRequest<HttpPayloadChunk>,
+                                   Function<HttpRequest,
                                                      GroupKey<UnresolvedAddress>> requestToGroupKeyFunc,
                                    ExecutionContext executionContext) {
+        super(clientGroup);
         this.clientGroup = requireNonNull(clientGroup);
         this.requestToGroupKeyFunc = requireNonNull(requestToGroupKeyFunc);
         this.executionContext = requireNonNull(executionContext);
     }
 
     @Override
-    public Single<HttpResponse<HttpPayloadChunk>> request(
-            final HttpRequest<HttpPayloadChunk> request) {
-        return new Single<HttpResponse<HttpPayloadChunk>>() {
+    public Single<HttpResponse> request(final HttpRequest request) {
+        return new Single<HttpResponse>() {
             @Override
-            protected void handleSubscribe(
-                    final Subscriber<? super HttpResponse<HttpPayloadChunk>> subscriber) {
-                final Single<HttpResponse<HttpPayloadChunk>> response;
+            protected void handleSubscribe(final Subscriber<? super HttpResponse> subscriber) {
+                final Single<? extends HttpResponse> response;
                 try {
                     response = clientGroup.request(requestToGroupKeyFunc.apply(request), request);
                 } catch (final Throwable t) {

@@ -19,6 +19,8 @@ import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.http.api.BlockingStreamingHttpClient.ReservedBlockingStreamingHttpConnection;
 import io.servicetalk.http.api.BlockingStreamingHttpClient.UpgradableBlockingStreamingHttpResponse;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * The equivalent of {@link HttpClientGroup} but with synchronous/blocking APIs instead of asynchronous APIs.
  *
@@ -26,6 +28,17 @@ import io.servicetalk.http.api.BlockingStreamingHttpClient.UpgradableBlockingStr
  */
 public abstract class BlockingStreamingHttpClientGroup<UnresolvedAddress> implements
                                                           BlockingStreamingHttpRequestFactory, AutoCloseable {
+    private final BlockingStreamingHttpRequestFactory requestFactory;
+
+    /**
+     * Create a new instance.
+     * @param requestFactory The {@link HttpRequestFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     */
+    protected BlockingStreamingHttpClientGroup(BlockingStreamingHttpRequestFactory requestFactory) {
+        this.requestFactory = requireNonNull(requestFactory);
+    }
+
     /**
      * Locate or create a client and delegate to
      * {@link BlockingStreamingHttpClient#request(BlockingStreamingHttpRequest)}.
@@ -70,6 +83,16 @@ public abstract class BlockingStreamingHttpClientGroup<UnresolvedAddress> implem
      */
     public abstract UpgradableBlockingStreamingHttpResponse upgradeConnection(
             GroupKey<UnresolvedAddress> key, BlockingStreamingHttpRequest request) throws Exception;
+
+    @Override
+    public final BlockingStreamingHttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
+        return requestFactory.newRequest(method, requestTarget);
+    }
+
+    @Override
+    public final BlockingStreamingHttpResponseFactory getHttpResponseFactory() {
+        return requestFactory.getHttpResponseFactory();
+    }
 
     /**
      * Convert this {@link BlockingStreamingHttpClientGroup} to the {@link StreamingHttpClientGroup} API.

@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.api.Publisher;
 
 /**
@@ -35,7 +36,7 @@ public interface HttpSerializer<T> {
     Buffer serialize(HttpHeaders headers, T value, BufferAllocator allocator);
 
     /**
-     * Serialize an {@link Iterable} of type {@link T} into an {@link Iterable} of type
+     * Serialize an {@link BlockingIterable} of type {@link T} into an {@link BlockingIterable} of type
      * {@link Buffer}. If necessary the {@link HttpHeaders} should be updated to indicate the
      * <a href="https://tools.ietf.org/html/rfc7231#section-3.1.1.5">content-type</a>.
      * @param headers The {@link HttpHeaders} associated with the serialization operation.
@@ -43,7 +44,7 @@ public interface HttpSerializer<T> {
      * @param allocator The {@link BufferAllocator} used to create the resulting {@link Buffer}s.
      * @return The result of the serialization operation.
      */
-    Iterable<Buffer> serialize(HttpHeaders headers, Iterable<T> value, BufferAllocator allocator);
+    BlockingIterable<Buffer> serialize(HttpHeaders headers, BlockingIterable<T> value, BufferAllocator allocator);
 
     /**
      * Serialize a {@link Publisher} of type {@link T} into a {@link Publisher} of type {@link Buffer}. If necessary the

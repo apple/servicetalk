@@ -19,17 +19,30 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Provides a means to make a HTTP request.
  */
 public abstract class HttpRequester implements HttpRequestFactory, ListenableAsyncCloseable {
+    private final HttpRequestFactory requestFactory;
+
+    /**
+     * Create a new instance.
+     * @param requestFactory The {@link HttpRequestFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     */
+    protected HttpRequester(HttpRequestFactory requestFactory) {
+        this.requestFactory = requireNonNull(requestFactory);
+    }
+
     /**
      * Send a {@code request}.
      *
      * @param request the request to send.
      * @return The response.
      */
-    public abstract Single<HttpResponse> request(HttpRequest request);
+    public abstract Single<? extends HttpResponse> request(HttpRequest request);
 
     /**
      * Get the {@link ExecutionContext} used during construction of this object.
@@ -40,6 +53,16 @@ public abstract class HttpRequester implements HttpRequestFactory, ListenableAsy
      * @return the {@link ExecutionContext} used during construction of this object.
      */
     public abstract ExecutionContext getExecutionContext();
+
+    @Override
+    public final HttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
+        return requestFactory.newRequest(method, requestTarget);
+    }
+
+    @Override
+    public final HttpResponseFactory getHttpResponseFactory() {
+        return requestFactory.getHttpResponseFactory();
+    }
 
     /**
      * Convert this {@link HttpRequester} to the {@link StreamingHttpRequester} API.

@@ -27,12 +27,12 @@ final class BlockingStreamingHttpRequesterToStreamingHttpRequester extends Strea
     private final BlockingStreamingHttpRequester requester;
 
     BlockingStreamingHttpRequesterToStreamingHttpRequester(BlockingStreamingHttpRequester requester) {
+        super(new BlockingStreamingHttpRequestFactoryToStreamingHttpRequestFactory(requester));
         this.requester = requireNonNull(requester);
     }
 
     @Override
-    public Single<StreamingHttpResponse<HttpPayloadChunk>> request(
-            final StreamingHttpRequest<HttpPayloadChunk> request) {
+    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
         return BlockingUtils.request(requester, request);
     }
 

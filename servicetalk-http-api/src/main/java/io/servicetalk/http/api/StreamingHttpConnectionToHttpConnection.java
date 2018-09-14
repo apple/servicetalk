@@ -21,14 +21,13 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import static io.servicetalk.http.api.BufferHttpRequest.toHttpRequest;
-import static io.servicetalk.http.api.BufferHttpResponse.from;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpConnectionToHttpConnection extends HttpConnection {
     private final StreamingHttpConnection connection;
 
     StreamingHttpConnectionToHttpConnection(final StreamingHttpConnection connection) {
+        super(new StreamingHttpRequestFactoryToHttpRequestFactory(connection));
         this.connection = requireNonNull(connection);
     }
 
@@ -43,9 +42,8 @@ final class StreamingHttpConnectionToHttpConnection extends HttpConnection {
     }
 
     @Override
-    public Single<HttpResponse<HttpPayloadChunk>> request(final HttpRequest<HttpPayloadChunk> request) {
-        return connection.request(toHttpRequest(request)).flatMap(response ->
-                from(response, connection.getExecutionContext().getBufferAllocator()));
+    public Single<? extends HttpResponse> request(final HttpRequest request) {
+        return connection.request(request.toStreamingRequest()).flatMap(StreamingHttpResponse::toResponse);
     }
 
     @Override
