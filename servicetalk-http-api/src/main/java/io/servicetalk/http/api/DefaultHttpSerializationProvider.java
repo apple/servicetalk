@@ -20,37 +20,48 @@ import io.servicetalk.serialization.api.TypeHolder;
 
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
+import java.util.function.Predicate;
 
-/**
- * Default implementation of {@link HttpSerializerProvider} using a {@link Serializer}.
- */
-final class DefaultHttpSerializerProvider implements HttpSerializerProvider {
+final class DefaultHttpSerializationProvider implements HttpSerializationProvider {
 
     private final Serializer serializer;
     private final Consumer<HttpHeaders> addContentType;
+    private final Predicate<HttpHeaders> checkContentType;
 
-    DefaultHttpSerializerProvider(final Serializer serializer, final Consumer<HttpHeaders> addContentType) {
+    DefaultHttpSerializationProvider(final Serializer serializer, final Consumer<HttpHeaders> addContentType,
+                                     final Predicate<HttpHeaders> checkContentType) {
         this.serializer = serializer;
         this.addContentType = addContentType;
+        this.checkContentType = checkContentType;
     }
 
     @Override
-    public <T> HttpSerializer<T> forClass(final Class<T> type) {
+    public <T> HttpSerializer<T> serializerFor(final Class<T> type) {
         return new DefaultClassHttpSerializer<>(type, serializer, addContentType);
     }
 
     @Override
-    public <T> HttpSerializer<T> forClass(final Class<T> type, final IntUnaryOperator bytesEstimator) {
+    public <T> HttpSerializer<T> serializerFor(final Class<T> type, final IntUnaryOperator bytesEstimator) {
         return new DefaultSizeAwareClassHttpSerializer<>(type, serializer, addContentType, bytesEstimator);
     }
 
     @Override
-    public <T> HttpSerializer<T> forType(final TypeHolder<T> type) {
+    public <T> HttpSerializer<T> serializerFor(final TypeHolder<T> type) {
         return new DefaultTypeHttpSerializer<>(type, serializer, addContentType);
     }
 
     @Override
-    public <T> HttpSerializer<T> forType(final TypeHolder<T> type, final IntUnaryOperator bytesEstimator) {
+    public <T> HttpSerializer<T> serializerFor(final TypeHolder<T> type, final IntUnaryOperator bytesEstimator) {
         return new DefaultSizeAwareTypeHttpSerializer<>(type, serializer, addContentType, bytesEstimator);
+    }
+
+    @Override
+    public <T> HttpDeserializer<T> deserializerFor(final Class<T> type) {
+        return new DefaultClassHttpDeserializer<>(serializer, type, checkContentType);
+    }
+
+    @Override
+    public <T> HttpDeserializer<T> deserializerFor(final TypeHolder<T> type) {
+        return new DefaultTypeHttpDeserializer<>(serializer, type, checkContentType);
     }
 }
