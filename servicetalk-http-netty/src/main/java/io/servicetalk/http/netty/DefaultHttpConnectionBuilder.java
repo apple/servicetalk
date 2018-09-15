@@ -23,6 +23,7 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.LastHttpPayloadChunk;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpRequestFactory;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
@@ -69,11 +70,17 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
     public Single<StreamingHttpConnection> buildStreaming(final ExecutionContext executionContext,
                                                           final ResolvedAddress resolvedAddress) {
         ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
+
+        final DefaultStreamingHttpRequestFactory requestFactory = new DefaultStreamingHttpRequestFactory(
+                roConfig.getHeadersFactory(), executionContext.getBufferAllocator());
+
         return (roConfig.getMaxPipelinedRequests() == 1 ?
-                  buildForNonPipelined(executionContext, resolvedAddress, roConfig, connectionFilterFunction) :
-                  buildForPipelined(executionContext, resolvedAddress, roConfig, connectionFilterFunction))
-                        .map(filteredConnection -> new StreamingHttpConnectionConcurrentRequestsFilter(filteredConnection,
-                                roConfig.getMaxPipelinedRequests()));
+                buildForNonPipelined(executionContext, resolvedAddress, roConfig, connectionFilterFunction,
+                        requestFactory)
+                : buildForPipelined(executionContext, resolvedAddress, roConfig, connectionFilterFunction,
+                requestFactory))
+                    .map(filteredConnection -> new StreamingHttpConnectionConcurrentRequestsFilter(filteredConnection,
+                            roConfig.getMaxPipelinedRequests()));
     }
 
     @Override
@@ -83,16 +90,18 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
 
     static <ResolvedAddress> Single<StreamingHttpConnection> buildForPipelined(
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
-            final ConnectionFilterFunction connectionFilterFunction) {
+            final ConnectionFilterFunction connectionFilterFunction, StreamingHttpRequestFactory requestFactory) {
         return buildStreaming(executionContext, resolvedAddress, roConfig, conn ->
-                connectionFilterFunction.apply(new PipelinedStreamingHttpConnection(conn, roConfig, executionContext)));
+                connectionFilterFunction.apply(
+                        new PipelinedStreamingHttpConnection(conn, roConfig, executionContext, requestFactory)));
     }
 
     static <ResolvedAddress> Single<StreamingHttpConnection> buildForNonPipelined(
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
-            final ConnectionFilterFunction connectionFilterFunction) {
+            final ConnectionFilterFunction connectionFilterFunction, StreamingHttpRequestFactory requestFactory) {
         return buildStreaming(executionContext, resolvedAddress, roConfig, conn ->
-                connectionFilterFunction.apply(new NonPipelinedStreamingHttpConnection(conn, roConfig, executionContext)));
+                connectionFilterFunction.apply(
+                        new NonPipelinedStreamingHttpConnection(conn, roConfig, executionContext, requestFactory)));
     }
 
     private static <ResolvedAddress> Single<StreamingHttpConnection> buildStreaming(

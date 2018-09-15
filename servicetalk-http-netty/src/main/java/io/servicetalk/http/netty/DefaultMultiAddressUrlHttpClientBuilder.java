@@ -28,8 +28,8 @@ import io.servicetalk.http.api.ClientGroupFilterFunction;
 import io.servicetalk.http.api.ConnectionFilterFunction;
 import io.servicetalk.http.api.GroupedClientFilterFunction;
 import io.servicetalk.http.api.HttpHeadersFactory;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequestMetaData;
+import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientGroup;
 import io.servicetalk.http.api.StreamingHttpConnection;
@@ -85,6 +85,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     private GroupedClientFilterFunction<HostAndPort> clientFilterFunction = GroupedClientFilterFunction.identity();
     @Nullable
     private Function<HostAndPort, CharSequence> hostHeaderTransformer;
+    private HttpHeadersFactory headersFactory;
 
     DefaultMultiAddressUrlHttpClientBuilder(
             final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate) {
@@ -98,14 +99,24 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         // Tracks StreamingHttpClient dependencies for clean-up on exception during buildStreaming
         final CompositeCloseable closeOnException = newCompositeCloseable();
         try {
+
             final ClientBuilderFactory clientBuilderFactory = new ClientBuilderFactory(builderTemplate,
                     sslConfigProvider, clientFilterFunction, hostHeaderTransformer);
-            StreamingHttpClientGroup<HostAndPort> clientGroup = closeOnException.prepend(clientGroupFilterFunction.apply(
-                    newHttpClientGroup((gk, md) -> clientBuilderFactory.apply(gk, md).buildStreaming(executionContext))));
+
+            final HttpHeadersFactory headersFactory = clientBuilderFactory.headersFactory();
+            final DefaultStreamingHttpRequestFactory requestFactory = new DefaultStreamingHttpRequestFactory(
+                    headersFactory, executionContext.getBufferAllocator());
+            final DefaultStreamingHttpResponseFactory responseFactory = new DefaultStreamingHttpResponseFactory(
+                    headersFactory, executionContext.getBufferAllocator());
+
+            StreamingHttpClientGroup<HostAndPort> clientGroup = closeOnException.prepend(
+                    clientGroupFilterFunction.apply(
+                    newHttpClientGroup(requestFactory, responseFactory, executionContext, (gk, md) ->
+                            clientBuilderFactory.apply(gk, md).buildStreaming(executionContext))));
             final CacheableGroupKeyFactory groupKeyFactory = closeables.prepend(closeOnException.prepend(
                     new CacheableGroupKeyFactory(executionContext, sslConfigProvider)));
-            clientGroup = maxRedirects <= 0 ? clientGroup :
-                    new RedirectingStreamingHttpClientGroup<>(clientGroup, groupKeyFactory, executionContext, maxRedirects);
+            clientGroup = maxRedirects <= 0 ? clientGroup : new RedirectingStreamingHttpClientGroup<>(
+                    clientGroup, groupKeyFactory, executionContext, maxRedirects);
             final StreamingHttpClient client = closeables.prepend(closeOnException.prepend(
                     clientGroup.asClient(groupKeyFactory, executionContext)));
 
@@ -120,7 +131,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
      * Returns a cached {@link GroupKey} or creates a new one based on {@link StreamingHttpRequest} information.
      */
     private static final class CacheableGroupKeyFactory
-            implements Function<StreamingHttpRequest<HttpPayloadChunk>, GroupKey<HostAndPort>>, AsyncCloseable {
+            implements Function<StreamingHttpRequest, GroupKey<HostAndPort>>, AsyncCloseable {
 
         private final ConcurrentMap<String, GroupKey<HostAndPort>> groupKeyCache = new ConcurrentHashMap<>();
         private final ExecutionContext executionContext;
@@ -132,7 +143,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         }
 
         @Override
-        public GroupKey<HostAndPort> apply(final StreamingHttpRequest<HttpPayloadChunk> request) {
+        public GroupKey<HostAndPort> apply(final StreamingHttpRequest request) {
             final String host = request.getEffectiveHost();
             if (host == null) {
                 throw new IllegalArgumentException(
@@ -229,6 +240,10 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                     .setSslConfig(sslConfig)
                     .appendClientFilter(clientFilterFunction.asClientFilter(groupKey.getAddress()));
         }
+
+        private HttpHeadersFactory headersFactory() {
+            return builderTemplate.getHeadersFactory();
+        }
     }
 
     private static final class StreamingHttpClientWithDependencies extends StreamingHttpClient {
@@ -238,23 +253,24 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
         StreamingHttpClientWithDependencies(final StreamingHttpClient httpClient,
                                             final ListenableAsyncCloseable closeable) {
+            super(httpClient, httpClient.getHttpResponseFactory());
             this.httpClient = requireNonNull(httpClient);
             this.closeable = requireNonNull(closeable);
         }
 
         @Override
-        public Single<StreamingHttpResponse<HttpPayloadChunk>> request(final StreamingHttpRequest<HttpPayloadChunk> request) {
+        public Single<? extends StreamingHttpResponse> request(final StreamingHttpRequest request) {
             return httpClient.request(request);
         }
 
         @Override
-        public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest<HttpPayloadChunk> request) {
+        public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest request) {
             return httpClient.reserveConnection(request);
         }
 
         @Override
-        public Single<? extends UpgradableStreamingHttpResponse<HttpPayloadChunk>> upgradeConnection(
-                final StreamingHttpRequest<HttpPayloadChunk> request) {
+        public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(
+                final StreamingHttpRequest request) {
             return httpClient.upgradeConnection(request);
         }
 

@@ -195,7 +195,7 @@ public abstract class HttpClient extends HttpRequester {
          *     {@link HttpClient} API no longer makes sense.</li>
          * </ul>
          * @return A {@link ReservedHttpConnection} which contains the {@link HttpConnection} used
-         * for the upgrade attempt, and controls the lifetime of the {@link StreamingHttpConnection} relative to this
+         * for the upgrade attempt, and controls the lifetime of the {@link HttpConnection} relative to this
          * {@link HttpClient}.
          */
         ReservedHttpConnection getHttpConnection(boolean releaseReturnsToClient);

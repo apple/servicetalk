@@ -59,7 +59,7 @@ enum HttpKeepAlive {
         return getResponseKeepAlive(metaData).shouldCloseConnection;
     }
 
-    void addConnectionHeaderIfNecessary(final StreamingHttpResponse<HttpPayloadChunk> response) {
+    void addConnectionHeaderIfNecessary(final StreamingHttpResponse response) {
         if (shouldAddConnectionHeader) {
             if (shouldCloseConnection) {
                 response.getHeaders().set(CONNECTION, CLOSE);

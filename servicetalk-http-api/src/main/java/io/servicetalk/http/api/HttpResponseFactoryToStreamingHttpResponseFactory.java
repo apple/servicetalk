@@ -19,42 +19,13 @@ import static java.util.Objects.requireNonNull;
 
 final class HttpResponseFactoryToStreamingHttpResponseFactory implements StreamingHttpResponseFactory {
     private final HttpResponseFactory responseFactory;
-    private final StreamingHttpRequestFactory requestFactory;
 
     HttpResponseFactoryToStreamingHttpResponseFactory(final HttpResponseFactory responseFactory) {
         this.responseFactory = requireNonNull(responseFactory);
-        this.requestFactory = new HttpRequestFactoryToStreamingHttpRequestFactory(
-                responseFactory.getHttpRequestFactory(), this);
     }
 
     @Override
     public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
         return responseFactory.newResponse(status).toStreamingResponse();
-    }
-
-    @Override
-    public StreamingHttpRequestFactory getHttpRequestFactory() {
-        return requestFactory;
-    }
-
-    private static final class HttpRequestFactoryToStreamingHttpRequestFactory implements StreamingHttpRequestFactory {
-        private final HttpRequestFactory requestFactory;
-        private final StreamingHttpResponseFactory responseFactory;
-
-        private HttpRequestFactoryToStreamingHttpRequestFactory(final HttpRequestFactory requestFactory,
-                                                                final StreamingHttpResponseFactory responseFactory) {
-            this.requestFactory = requestFactory;
-            this.responseFactory = responseFactory;
-        }
-
-        @Override
-        public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
-            return requestFactory.newRequest(method, requestTarget).toStreamingRequest();
-        }
-
-        @Override
-        public StreamingHttpResponseFactory getHttpResponseFactory() {
-            return responseFactory;
-        }
     }
 }

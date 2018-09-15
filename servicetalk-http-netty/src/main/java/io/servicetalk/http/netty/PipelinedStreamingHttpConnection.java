@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.Connection;
@@ -29,14 +30,16 @@ import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 
 final class PipelinedStreamingHttpConnection extends AbstractStreamingHttpConnection<DefaultPipelinedConnection<Object, Object>> {
 
-    PipelinedStreamingHttpConnection(Connection<Object, Object> connection, ReadOnlyHttpClientConfig config,
-                                     ExecutionContext executionContext) {
-        super(new DefaultPipelinedConnection<>(
-                connection, config.getMaxPipelinedRequests()), connection.onClosing(), config, executionContext);
+    PipelinedStreamingHttpConnection(final Connection<Object, Object> connection,
+                                     final ReadOnlyHttpClientConfig config,
+                                     final ExecutionContext executionContext,
+                                     final StreamingHttpRequestFactory requestFactory) {
+        super(new DefaultPipelinedConnection<>(connection, config.getMaxPipelinedRequests()),
+                connection.onClosing(), config, executionContext, requestFactory);
     }
 
     @Override
-    public Single<StreamingHttpResponse<HttpPayloadChunk>> request(StreamingHttpRequest<HttpPayloadChunk> request) {
+    public Single<StreamingHttpResponse> request(StreamingHttpRequest request) {
         HttpProtocolVersion version = request.getVersion();
         if (version != HTTP_1_1 && (version.getMajorVersion() != HTTP_1_1.getMajorVersion()
                 || version.getMinorVersion() != HTTP_1_1.getMinorVersion())) {

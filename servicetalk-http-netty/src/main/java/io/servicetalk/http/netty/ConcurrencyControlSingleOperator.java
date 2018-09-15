@@ -15,12 +15,12 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.client.internal.RequestConcurrencyController;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Single.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.SingleOperator;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import org.reactivestreams.Subscription;
@@ -35,7 +35,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 final class ConcurrencyControlSingleOperator
-        implements SingleOperator<StreamingHttpResponse<HttpPayloadChunk>, StreamingHttpResponse<HttpPayloadChunk>> {
+        implements SingleOperator<StreamingHttpResponse, StreamingHttpResponse> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConcurrencyControlSingleOperator.class);
 
@@ -56,20 +56,21 @@ final class ConcurrencyControlSingleOperator
     }
 
     @Override
-    public Subscriber<? super StreamingHttpResponse<HttpPayloadChunk>> apply(
-            final Subscriber<? super StreamingHttpResponse<HttpPayloadChunk>> subscriber) {
-        // Here we avoid calling limiter.requestFinished() when we get a cancel() on the Single after we have handed
-        // out the StreamingHttpResponse to the subscriber. Doing which will mean we double decrement the concurrency controller.
-        // In case, we do get an StreamingHttpResponse after we got cancel(), we subscribe to the payload Publisher and cancel
-        // to indicate to the Connection that there is no other Subscriber that will use the payload Publisher.
+    public Subscriber<? super StreamingHttpResponse> apply(
+            final Subscriber<? super StreamingHttpResponse> subscriber) {
+        // Here we avoid calling limiter.requestFinished() when we get a cancel() on the Single after we have handed out
+        // the StreamingHttpResponse to the subscriber. Doing which will mean we double decrement the concurrency
+        // controller. In case, we do get an StreamingHttpResponse after we got cancel(), we subscribe to the payload
+        // Publisher and cancel to indicate to the Connection that there is no other Subscriber that will use the
+        // payload Publisher.
         return new ConcurrencyControlManagingSubscriber(subscriber);
     }
 
-    private final class ConcurrencyControlManagingSubscriber implements Subscriber<StreamingHttpResponse<HttpPayloadChunk>> {
+    private final class ConcurrencyControlManagingSubscriber implements Subscriber<StreamingHttpResponse> {
 
-        private final Subscriber<? super StreamingHttpResponse<HttpPayloadChunk>> subscriber;
+        private final Subscriber<? super StreamingHttpResponse> subscriber;
 
-        ConcurrencyControlManagingSubscriber(final Subscriber<? super StreamingHttpResponse<HttpPayloadChunk>> sub) {
+        ConcurrencyControlManagingSubscriber(final Subscriber<? super StreamingHttpResponse> sub) {
             this.subscriber = sub;
         }
 
@@ -85,7 +86,7 @@ final class ConcurrencyControlSingleOperator
         }
 
         @Override
-        public void onSuccess(@Nullable final StreamingHttpResponse<HttpPayloadChunk> response) {
+        public void onSuccess(@Nullable final StreamingHttpResponse response) {
             if (response == null) {
                 sendNullResponse();
             } else if (stateUpdater.compareAndSet(ConcurrencyControlSingleOperator.this, IDLE, TERMINATED)) {
@@ -118,7 +119,7 @@ final class ConcurrencyControlSingleOperator
         }
     }
 
-    private static final class CancelImmediatelySubscriber implements org.reactivestreams.Subscriber<HttpPayloadChunk> {
+    private static final class CancelImmediatelySubscriber implements org.reactivestreams.Subscriber<Buffer> {
 
         static final CancelImmediatelySubscriber INSTANCE = new CancelImmediatelySubscriber();
 
@@ -133,7 +134,7 @@ final class ConcurrencyControlSingleOperator
         }
 
         @Override
-        public void onNext(final HttpPayloadChunk chunk) {
+        public void onNext(final Buffer buffer) {
             // Can not be here since we never request.
         }
 

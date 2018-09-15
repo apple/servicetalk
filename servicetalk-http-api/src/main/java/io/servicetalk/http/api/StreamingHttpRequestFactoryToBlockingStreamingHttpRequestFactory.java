@@ -20,44 +20,13 @@ import java.util.Objects;
 final class StreamingHttpRequestFactoryToBlockingStreamingHttpRequestFactory implements
                                                                          BlockingStreamingHttpRequestFactory {
     private final StreamingHttpRequestFactory requestFactory;
-    private final BlockingStreamingHttpResponseFactory responseFactory;
 
     StreamingHttpRequestFactoryToBlockingStreamingHttpRequestFactory(StreamingHttpRequestFactory requestFactory) {
         this.requestFactory = Objects.requireNonNull(requestFactory);
-        this.responseFactory = new StreamingHttpResponseFactoryToBlockingStreamingHttpResponseFactory(
-                requestFactory.getHttpResponseFactory(), this);
     }
 
     @Override
     public BlockingStreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
         return requestFactory.newRequest(method, requestTarget).toBlockingStreamingRequest();
-    }
-
-    @Override
-    public BlockingStreamingHttpResponseFactory getHttpResponseFactory() {
-        return responseFactory;
-    }
-
-    private static final class StreamingHttpResponseFactoryToBlockingStreamingHttpResponseFactory implements
-                                                                                  BlockingStreamingHttpResponseFactory {
-        private final StreamingHttpResponseFactory responseFactory;
-        private final BlockingStreamingHttpRequestFactory requestFactory;
-
-        private StreamingHttpResponseFactoryToBlockingStreamingHttpResponseFactory(
-                final StreamingHttpResponseFactory responseFactory,
-                final BlockingStreamingHttpRequestFactory requestFactory) {
-            this.responseFactory = responseFactory;
-            this.requestFactory = requestFactory;
-        }
-
-        @Override
-        public BlockingStreamingHttpResponse newResponse(final HttpResponseStatus status) {
-            return responseFactory.newResponse(status).toBlockingStreamingResponse();
-        }
-
-        @Override
-        public BlockingStreamingHttpRequestFactory getHttpRequestFactory() {
-            return requestFactory;
-        }
     }
 }

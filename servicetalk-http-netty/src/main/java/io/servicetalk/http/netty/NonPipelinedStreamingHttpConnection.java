@@ -16,14 +16,17 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.http.api.StreamingHttpRequestFactory;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.Connection;
 
 final class NonPipelinedStreamingHttpConnection extends AbstractStreamingHttpConnection<Connection<Object, Object>> {
 
-    NonPipelinedStreamingHttpConnection(Connection<Object, Object> connection, ReadOnlyHttpClientConfig config,
-                                        ExecutionContext executionContext) {
-        super(connection, connection.onClosing(), config, executionContext);
+    NonPipelinedStreamingHttpConnection(final Connection<Object, Object> connection,
+                                        final ReadOnlyHttpClientConfig config,
+                                        final ExecutionContext executionContext,
+                                        final StreamingHttpRequestFactory requestFactory) {
+        super(connection, connection.onClosing(), config, executionContext, requestFactory);
     }
 
     @Override

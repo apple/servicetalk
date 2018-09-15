@@ -45,20 +45,21 @@ public abstract class DelegatingStreamingHttpClientGroup<UnresolvedAddress> exte
     }
 
     @Override
-    public Single<StreamingHttpResponse<HttpPayloadChunk>> request(final GroupKey<UnresolvedAddress> key,
-                                                                   final StreamingHttpRequest<HttpPayloadChunk> request) {
+    public Single<StreamingHttpResponse> request(
+            final GroupKey<UnresolvedAddress> key, final StreamingHttpRequest request) {
         return delegate.request(key, request);
     }
 
     @Override
-    public Single<? extends StreamingHttpClient.ReservedStreamingHttpConnection> reserveConnection(final GroupKey<UnresolvedAddress> key,
-                                                                                                   final StreamingHttpRequest<HttpPayloadChunk> request) {
+    public Single<? extends StreamingHttpClient.ReservedStreamingHttpConnection> reserveConnection(
+            final GroupKey<UnresolvedAddress> key,
+            final StreamingHttpRequest request) {
         return delegate.reserveConnection(key, request);
     }
 
     @Override
-    public Single<? extends StreamingHttpClient.UpgradableStreamingHttpResponse<HttpPayloadChunk>> upgradeConnection(
-            final GroupKey<UnresolvedAddress> key, final StreamingHttpRequest<HttpPayloadChunk> request) {
+    public Single<? extends StreamingHttpClient.UpgradableStreamingHttpResponse> upgradeConnection(
+            final GroupKey<UnresolvedAddress> key, final StreamingHttpRequest request) {
         return delegate.upgradeConnection(key, request);
     }
 
