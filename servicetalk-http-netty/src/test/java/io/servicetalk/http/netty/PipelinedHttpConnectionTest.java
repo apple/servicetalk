@@ -96,7 +96,7 @@ public class PipelinedHttpConnectionTest {
         readPublisher2.sendOnSubscribe();
         writePublisher1.sendOnSubscribe();
         writePublisher2.sendOnSubscribe();
-        pipe = new PipelinedStreamingHttpConnection(connection, config.asReadOnly(), ctx);
+        pipe = new PipelinedStreamingHttpConnection(connection, config.asReadOnly(), ctx, requestFactory);
     }
 
     @Test

@@ -166,7 +166,7 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
     }
 
     @Override
-    public final Single<HttpRequest> toRequest() {
+    public final Single<? extends HttpRequest> toRequest() {
         return toStreamingRequest().toRequest();
     }
 

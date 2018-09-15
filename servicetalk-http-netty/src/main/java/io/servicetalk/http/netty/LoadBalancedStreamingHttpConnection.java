@@ -20,7 +20,6 @@ import io.servicetalk.client.internal.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -40,6 +39,7 @@ final class LoadBalancedStreamingHttpConnection extends ReservedStreamingHttpCon
 
     LoadBalancedStreamingHttpConnection(StreamingHttpConnection delegate,
                                         ReservableRequestConcurrencyController limiter) {
+        super(delegate, delegate.getHttpResponseFactory());
         this.delegate = requireNonNull(delegate);
         this.limiter = requireNonNull(limiter);
     }
@@ -55,7 +55,7 @@ final class LoadBalancedStreamingHttpConnection extends ReservedStreamingHttpCon
     }
 
     @Override
-    public Single<StreamingHttpResponse<HttpPayloadChunk>> request(final StreamingHttpRequest<HttpPayloadChunk> request) {
+    public Single<? extends StreamingHttpResponse> request(final StreamingHttpRequest request) {
         return delegate.request(request);
     }
 

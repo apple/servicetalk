@@ -33,15 +33,15 @@ public final class BlockingStreamingHttpRequests {
      * request.
      * @param version the {@link HttpProtocolVersion} of the request.
      * @param headers the {@link HttpHeaders} of the request.
-     * @param allocator the allocator used for serialization purposes if necessary.
      * @param initialTrailers the initial state of the
      * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a> for this request.
+     * @param allocator the allocator used for serialization purposes if necessary.
      * @return a new {@link StreamingHttpRequest}.
      */
     public static BlockingStreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget,
                                                           final HttpProtocolVersion version, final HttpHeaders headers,
-                                                          final BufferAllocator allocator,
-                                                          final HttpHeaders initialTrailers) {
+                                                          final HttpHeaders initialTrailers,
+                                                          final BufferAllocator allocator) {
         return new BufferBlockingStreamingHttpRequest(method, requestTarget, version, headers, allocator,
                 initialTrailers);
     }
