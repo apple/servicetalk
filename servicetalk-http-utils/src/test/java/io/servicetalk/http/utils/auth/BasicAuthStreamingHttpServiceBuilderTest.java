@@ -15,17 +15,21 @@
  */
 package io.servicetalk.http.utils.auth;
 
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.context.AsyncContext;
 import io.servicetalk.concurrent.context.AsyncContextMap.Key;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
+import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.utils.auth.BasicAuthHttpServiceBuilder.CredentialsVerifier;
-import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.After;
@@ -38,6 +42,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.success;
@@ -50,12 +55,9 @@ import static io.servicetalk.http.api.HttpHeaderNames.PROXY_AUTHENTICATE;
 import static io.servicetalk.http.api.HttpHeaderNames.PROXY_AUTHORIZATION;
 import static io.servicetalk.http.api.HttpHeaderNames.WWW_AUTHENTICATE;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
-import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponseStatuses.PROXY_AUTHENTICATION_REQUIRED;
 import static io.servicetalk.http.api.HttpResponseStatuses.UNAUTHORIZED;
-import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
-import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.http.utils.auth.BasicAuthHttpServiceBuilder.newBasicAuthBuilder;
 import static io.servicetalk.http.utils.auth.BasicAuthHttpServiceBuilder.newBasicAuthBuilderForProxy;
 import static java.util.Base64.getEncoder;
@@ -83,8 +85,15 @@ public class BasicAuthStreamingHttpServiceBuilderTest {
         }
     }
 
-    private static final StreamingHttpService HELLO_WORLD_SERVICE = StreamingHttpService.from((ctx, request) ->
-            success(newResponse(OK, ctx.getExecutionContext().getBufferAllocator().fromAscii("Hello World!"))));
+    private static final StreamingHttpService HELLO_WORLD_SERVICE = new StreamingHttpService() {
+        @Override
+        public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                    final StreamingHttpRequest request,
+                                                    final StreamingHttpResponseFactory factory) {
+            return success(factory.ok().setPayloadBody(
+                    just(ctx.getExecutionContext().getBufferAllocator().fromAscii("Hello World!"))));
+        }
+    };
     private static final CredentialsVerifier<BasicUserInfo> CREDENTIALS_VERIFIER = new CredentialsVerifier<BasicUserInfo>() {
         @Override
         public Single<BasicUserInfo> apply(final String userId, final String password) {
@@ -102,7 +111,10 @@ public class BasicAuthStreamingHttpServiceBuilderTest {
 
     private static final Key<BasicUserInfo> USER_INFO_KEY = newKeyWithDebugToString("basicUserInfo");
     private static final String REALM_VALUE = "hw_realm";
-    private static final ConnectionContext CONN_CTX = mock(ConnectionContext.class);
+    private static final HttpServiceContext CONN_CTX = mock(HttpServiceContext.class);
+    private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
+    private static final StreamingHttpRequestResponseFactory reqRespFactory =
+            new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE);
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
@@ -121,77 +133,77 @@ public class BasicAuthStreamingHttpServiceBuilderTest {
 
     @Test
     public void noAuthorizationHeader() throws Exception {
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        StreamingHttpRequest request = reqRespFactory.get("/path");
         testUnauthorized(request);
         testProxyAuthenticationRequired(request);
     }
 
     @Test
     public void tooShortAuthorizationHeader() throws Exception {
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        StreamingHttpRequest request = reqRespFactory.get("/path");
         request.getHeaders().set(AUTHORIZATION, "short");
         testUnauthorized(request);
     }
 
     @Test
     public void tooShortAuthorizationHeaderForProxy() throws Exception {
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        StreamingHttpRequest request = reqRespFactory.get("/path");
         request.getHeaders().set(PROXY_AUTHORIZATION, "short");
         testProxyAuthenticationRequired(request);
     }
 
     @Test
     public void noBasicSchemeInAuthorizationHeader() throws Exception {
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        StreamingHttpRequest request = reqRespFactory.get("/path");
         request.getHeaders().set(AUTHORIZATION, "long-enough-but-no-scheme");
         testUnauthorized(request);
     }
 
     @Test
     public void noBasicSchemeInAuthorizationHeaderForProxy() throws Exception {
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        StreamingHttpRequest request = reqRespFactory.get("/path");
         request.getHeaders().set(PROXY_AUTHORIZATION, "long-enough-but-no-scheme");
         testProxyAuthenticationRequired(request);
     }
 
     @Test
     public void emptyBasicTokenInAuthorizationHeader() throws Exception {
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        StreamingHttpRequest request = reqRespFactory.get("/path");
         request.getHeaders().set(AUTHORIZATION, "OtherScheme qwe, Basic ");
         testUnauthorized(request);
     }
 
     @Test
     public void emptyBasicTokenInAuthorizationHeaderForProxy() throws Exception {
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        StreamingHttpRequest request = reqRespFactory.get("/path");
         request.getHeaders().set(PROXY_AUTHORIZATION, "OtherScheme qwe, Basic ");
         testProxyAuthenticationRequired(request);
     }
 
     @Test
     public void noUserIdInToken() throws Exception {
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        StreamingHttpRequest request = reqRespFactory.get("/path");
         request.getHeaders().set(AUTHORIZATION, "Basic " + base64("no-colon"));
         testUnauthorized(request);
     }
 
     @Test
     public void noUserIdInTokenForProxy() throws Exception {
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        StreamingHttpRequest request = reqRespFactory.get("/path");
         request.getHeaders().set(PROXY_AUTHORIZATION, "Basic " + base64("no-colon"));
         testProxyAuthenticationRequired(request);
     }
 
     @Test
     public void wrongPassword() throws Exception {
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        StreamingHttpRequest request = reqRespFactory.get("/path");
         request.getHeaders().set(AUTHORIZATION, "Basic " + base64("userId:wrong-password"));
         testUnauthorized(request);
     }
 
     @Test
     public void wrongPasswordForProxy() throws Exception {
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        StreamingHttpRequest request = reqRespFactory.get("/path");
         request.getHeaders().set(PROXY_AUTHORIZATION, "Basic " + base64("userId:wrong-password"));
         testProxyAuthenticationRequired(request);
     }
@@ -201,10 +213,10 @@ public class BasicAuthStreamingHttpServiceBuilderTest {
         StreamingHttpService service = newBasicAuthBuilder(CREDENTIALS_VERIFIER, REALM_VALUE)
                 .build(HELLO_WORLD_SERVICE);
 
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        StreamingHttpRequest request = reqRespFactory.get("/path");
         request.getHeaders().set(AUTHORIZATION, "Basic " + base64("userId:password"));
 
-        StreamingHttpResponse<HttpPayloadChunk> response = awaitIndefinitelyNonNull(service.handle(CONN_CTX, request));
+        StreamingHttpResponse response = awaitIndefinitelyNonNull(service.handle(CONN_CTX, request, reqRespFactory));
         assertEquals(OK, response.getStatus());
 
         BasicUserInfo userInfo = AsyncContext.get(USER_INFO_KEY);
@@ -213,42 +225,42 @@ public class BasicAuthStreamingHttpServiceBuilderTest {
 
     @Test
     public void authenticated() throws Exception {
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        StreamingHttpRequest request = reqRespFactory.get("/path");
         request.getHeaders().set(AUTHORIZATION, "Basic " + base64("userId:password"));
         testAuthenticated(request);
     }
 
     @Test
     public void authenticatedForProxy() throws Exception {
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        StreamingHttpRequest request = reqRespFactory.get("/path");
         request.getHeaders().set(PROXY_AUTHORIZATION, "Basic " + base64("userId:password"));
         testAuthenticatedForProxy(request);
     }
 
     @Test
     public void authenticatedAndHasOtherScheme() throws Exception {
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        StreamingHttpRequest request = reqRespFactory.get("/path");
         request.getHeaders().set(AUTHORIZATION, "Other token, Basic " + base64("userId:password"));
         testAuthenticated(request);
     }
 
     @Test
     public void authenticatedAndHasOtherSchemeForProxy() throws Exception {
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        StreamingHttpRequest request = reqRespFactory.get("/path");
         request.getHeaders().set(PROXY_AUTHORIZATION, "Other token, Basic " + base64("userId:password"));
         testAuthenticatedForProxy(request);
     }
 
     @Test
     public void authenticatedBasicTokenInBetween() throws Exception {
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        StreamingHttpRequest request = reqRespFactory.get("/path");
         request.getHeaders().set(AUTHORIZATION, "Other token1, Basic " + base64("userId:password") + ", Some token2");
         testAuthenticated(request);
     }
 
     @Test
     public void authenticatedBasicTokenInBetweenForProxy() throws Exception {
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        StreamingHttpRequest request = reqRespFactory.get("/path");
         request.getHeaders().set(PROXY_AUTHORIZATION,
                 "Other token1, Basic " + base64("userId:password") + ", Some token2");
         testAuthenticatedForProxy(request);
@@ -256,7 +268,7 @@ public class BasicAuthStreamingHttpServiceBuilderTest {
 
     @Test
     public void authenticatedWithSecondHeader() throws Exception {
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        StreamingHttpRequest request = reqRespFactory.get("/path");
         request.getHeaders().add(AUTHORIZATION, "Other token1");
         request.getHeaders().add(AUTHORIZATION, "Basic " + base64("userId:password"));
         request.getHeaders().add(AUTHORIZATION, "Some token2");
@@ -265,7 +277,7 @@ public class BasicAuthStreamingHttpServiceBuilderTest {
 
     @Test
     public void authenticatedWithSecondHeaderForProxy() throws Exception {
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        StreamingHttpRequest request = reqRespFactory.get("/path");
         request.getHeaders().add(PROXY_AUTHORIZATION, "Other token1");
         request.getHeaders().add(PROXY_AUTHORIZATION, "Basic " + base64("userId:password"));
         request.getHeaders().add(PROXY_AUTHORIZATION, "Some token2");
@@ -293,14 +305,14 @@ public class BasicAuthStreamingHttpServiceBuilderTest {
                 .setCharsetUtf8(true)
                 .build(HELLO_WORLD_SERVICE);
 
-        StreamingHttpResponse<HttpPayloadChunk> response =
-                awaitIndefinitelyNonNull(service.handle(CONN_CTX, newRequest(GET, "/path")));
+        StreamingHttpResponse response =
+                awaitIndefinitelyNonNull(service.handle(CONN_CTX, reqRespFactory.get("/path"), reqRespFactory));
         assertEquals(UNAUTHORIZED, response.getStatus());
         assertEquals("Basic realm=\"" + REALM_VALUE + "\", charset=\"UTF-8\"",
                 response.getHeaders().get(WWW_AUTHENTICATE));
         assertNull(AsyncContext.get(USER_INFO_KEY));
 
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        StreamingHttpRequest request = reqRespFactory.get("/path");
         request.getHeaders().set(AUTHORIZATION, "Basic " + base64("userId:пароль"));
         testAuthenticated(request, service);
     }
@@ -322,8 +334,9 @@ public class BasicAuthStreamingHttpServiceBuilderTest {
             }
         }, REALM_VALUE).build(new StreamingHttpService() {
             @Override
-            public Single<StreamingHttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                                          final StreamingHttpRequest<HttpPayloadChunk> request) {
+            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                        final StreamingHttpRequest request,
+                                                        final StreamingHttpResponseFactory factory) {
                 return never();
             }
 
@@ -340,37 +353,37 @@ public class BasicAuthStreamingHttpServiceBuilderTest {
         assertTrue(nextServiceClosed.get());
     }
 
-    private static void testUnauthorized(StreamingHttpRequest<HttpPayloadChunk> request) throws Exception {
+    private static void testUnauthorized(StreamingHttpRequest request) throws Exception {
         StreamingHttpService service = newBasicAuthBuilder(CREDENTIALS_VERIFIER, REALM_VALUE)
                 .build(HELLO_WORLD_SERVICE);
 
-        StreamingHttpResponse<HttpPayloadChunk> response = awaitIndefinitelyNonNull(service.handle(CONN_CTX, request));
+        StreamingHttpResponse response = awaitIndefinitelyNonNull(service.handle(CONN_CTX, request, reqRespFactory));
         assertEquals(UNAUTHORIZED, response.getStatus());
         assertEquals("Basic realm=\"" + REALM_VALUE + '"', response.getHeaders().get(WWW_AUTHENTICATE));
         assertEquals(ZERO, response.getHeaders().get(CONTENT_LENGTH));
         assertNull(AsyncContext.get(USER_INFO_KEY));
     }
 
-    private static void testProxyAuthenticationRequired(StreamingHttpRequest<HttpPayloadChunk> request) throws Exception {
+    private static void testProxyAuthenticationRequired(StreamingHttpRequest request) throws Exception {
         StreamingHttpService service = newBasicAuthBuilderForProxy(CREDENTIALS_VERIFIER, REALM_VALUE)
                 .build(HELLO_WORLD_SERVICE);
 
-        StreamingHttpResponse<HttpPayloadChunk> response = awaitIndefinitelyNonNull(service.handle(CONN_CTX, request));
+        StreamingHttpResponse response = awaitIndefinitelyNonNull(service.handle(CONN_CTX, request, reqRespFactory));
         assertEquals(PROXY_AUTHENTICATION_REQUIRED, response.getStatus());
         assertEquals("Basic realm=\"" + REALM_VALUE + '"', response.getHeaders().get(PROXY_AUTHENTICATE));
         assertEquals(ZERO, response.getHeaders().get(CONTENT_LENGTH));
         assertNull(AsyncContext.get(USER_INFO_KEY));
     }
 
-    private static void testAuthenticated(StreamingHttpRequest<HttpPayloadChunk> request) throws Exception {
+    private static void testAuthenticated(StreamingHttpRequest request) throws Exception {
         StreamingHttpService service = newBasicAuthBuilder(CREDENTIALS_VERIFIER, REALM_VALUE)
                 .setUserInfoKey(USER_INFO_KEY)
                 .build(HELLO_WORLD_SERVICE);
         testAuthenticated(request, service);
     }
 
-    private static void testAuthenticated(StreamingHttpRequest<HttpPayloadChunk> request, StreamingHttpService service) throws Exception {
-        StreamingHttpResponse<HttpPayloadChunk> response = awaitIndefinitelyNonNull(service.handle(CONN_CTX, request));
+    private static void testAuthenticated(StreamingHttpRequest request, StreamingHttpService service) throws Exception {
+        StreamingHttpResponse response = awaitIndefinitelyNonNull(service.handle(CONN_CTX, request, reqRespFactory));
         assertEquals(OK, response.getStatus());
 
         BasicUserInfo userInfo = AsyncContext.get(USER_INFO_KEY);
@@ -378,12 +391,12 @@ public class BasicAuthStreamingHttpServiceBuilderTest {
         assertEquals("userId", userInfo.getUserId());
     }
 
-    private static void testAuthenticatedForProxy(StreamingHttpRequest<HttpPayloadChunk> request) throws Exception {
+    private static void testAuthenticatedForProxy(StreamingHttpRequest request) throws Exception {
         StreamingHttpService service = newBasicAuthBuilderForProxy(CREDENTIALS_VERIFIER, REALM_VALUE)
                 .setUserInfoKey(USER_INFO_KEY)
                 .build(HELLO_WORLD_SERVICE);
 
-        StreamingHttpResponse<HttpPayloadChunk> response = awaitIndefinitelyNonNull(service.handle(CONN_CTX, request));
+        StreamingHttpResponse response = awaitIndefinitelyNonNull(service.handle(CONN_CTX, request, reqRespFactory));
         assertEquals(OK, response.getStatus());
 
         BasicUserInfo userInfo = AsyncContext.get(USER_INFO_KEY);

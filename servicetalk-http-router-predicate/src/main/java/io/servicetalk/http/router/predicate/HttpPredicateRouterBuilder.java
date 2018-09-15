@@ -16,7 +16,6 @@
 package io.servicetalk.http.router.predicate;
 
 import io.servicetalk.http.api.HttpCookie;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
@@ -63,7 +62,7 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
 
     private final List<PredicateServicePair> predicateServicePairs = new ArrayList<>();
     @Nullable
-    private BiPredicate<ConnectionContext, StreamingHttpRequest<HttpPayloadChunk>> predicate;
+    private BiPredicate<ConnectionContext, StreamingHttpRequest> predicate;
     private final RouteContinuationImpl continuation = new RouteContinuationImpl();
 
     @Override
@@ -139,14 +138,14 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
     }
 
     @Override
-    public RouteContinuation when(final Predicate<StreamingHttpRequest<HttpPayloadChunk>> predicate) {
+    public RouteContinuation when(final Predicate<StreamingHttpRequest> predicate) {
         requireNonNull(predicate);
         andPredicate((ctx, req) -> predicate.test(req));
         return continuation;
     }
 
     @Override
-    public RouteContinuation when(final BiPredicate<ConnectionContext, StreamingHttpRequest<HttpPayloadChunk>> predicate) {
+    public RouteContinuation when(final BiPredicate<ConnectionContext, StreamingHttpRequest> predicate) {
         andPredicate(requireNonNull(predicate));
         return continuation;
     }
@@ -156,7 +155,7 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
         return new InOrderRouter(DefaultFallbackServiceStreaming.instance(), predicateServicePairs);
     }
 
-    private void andPredicate(final BiPredicate<ConnectionContext, StreamingHttpRequest<HttpPayloadChunk>> newPredicate) {
+    private void andPredicate(final BiPredicate<ConnectionContext, StreamingHttpRequest> newPredicate) {
         if (predicate == null) {
             predicate = newPredicate;
         } else {
@@ -227,12 +226,12 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
         }
 
         @Override
-        public RouteContinuation and(final Predicate<StreamingHttpRequest<HttpPayloadChunk>> predicate) {
+        public RouteContinuation and(final Predicate<StreamingHttpRequest> predicate) {
             return when(predicate);
         }
 
         @Override
-        public RouteContinuation and(final BiPredicate<ConnectionContext, StreamingHttpRequest<HttpPayloadChunk>> predicate) {
+        public RouteContinuation and(final BiPredicate<ConnectionContext, StreamingHttpRequest> predicate) {
             return when(predicate);
         }
 
@@ -246,9 +245,9 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
     }
 
     private class CookieMatcherImpl implements CookieMatcher {
-        private final Function<StreamingHttpRequest<HttpPayloadChunk>, Iterator<? extends HttpCookie>> itemsSource;
+        private final Function<StreamingHttpRequest, Iterator<? extends HttpCookie>> itemsSource;
 
-        CookieMatcherImpl(final Function<StreamingHttpRequest<HttpPayloadChunk>, Iterator<? extends HttpCookie>> itemsSource) {
+        CookieMatcherImpl(final Function<StreamingHttpRequest, Iterator<? extends HttpCookie>> itemsSource) {
             this.itemsSource = itemsSource;
         }
 
@@ -277,9 +276,9 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
     }
 
     private class StringMultiValueMatcherImpl implements StringMultiValueMatcher {
-        private final Function<StreamingHttpRequest<HttpPayloadChunk>, Iterator<? extends CharSequence>> itemsSource;
+        private final Function<StreamingHttpRequest, Iterator<? extends CharSequence>> itemsSource;
 
-        StringMultiValueMatcherImpl(final Function<StreamingHttpRequest<HttpPayloadChunk>,
+        StringMultiValueMatcherImpl(final Function<StreamingHttpRequest,
                 Iterator<? extends CharSequence>> itemsSource) {
             this.itemsSource = itemsSource;
         }

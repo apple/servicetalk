@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
@@ -38,16 +40,16 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
-import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
-import static io.servicetalk.http.api.TestUtils.chunkFromString;
+import static io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
+import static io.servicetalk.http.api.StreamingHttpClient.UpgradableStreamingHttpResponse;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
@@ -63,15 +65,20 @@ public class BlockingStreamingHttpClientGroupTest {
     @Mock
     private ConnectionContext mockCtx;
     @Rule
-    public final PublisherRule<HttpPayloadChunk> publisherRule = new PublisherRule<>();
+    public final PublisherRule<Buffer> publisherRule = new PublisherRule<>();
     @Mock
-    private BlockingIterable<HttpPayloadChunk> mockIterable;
+    private BlockingIterable<Buffer> mockIterable;
     @Mock
-    private BlockingIterator<HttpPayloadChunk> mockIterator;
+    private BlockingIterator<Buffer> mockIterator;
     @Mock
     private GroupKey<String> mockKey;
     @Mock
     private ExecutionContext mockExecutionContext;
+    private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
+    private static final StreamingHttpRequestResponseFactory reqRespFactory =
+            new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE);
+    private static final BlockingStreamingHttpRequestResponseFactory blkReqRespFactory =
+            new StreamingHttpRequestResponseFactoryToBlockingStreamingHttpRequestResponseFactory(reqRespFactory);
 
     @Before
     public void setup() {
@@ -85,10 +92,10 @@ public class BlockingStreamingHttpClientGroupTest {
     @Test
     public void asyncToSyncNoPayload() throws Exception {
         StreamingHttpClientGroup<String> asyncGroup = newAsyncGroup(
-                (key, req) -> success(newResponse(HTTP_1_1, OK)));
+                (key, req) -> success(reqRespFactory.ok()));
         BlockingStreamingHttpClientGroup<String> syncGroup = asyncGroup.asBlockingStreamingClientGroup();
-        BlockingStreamingHttpResponse<HttpPayloadChunk> syncResponse = syncGroup.request(mockKey,
-                BlockingStreamingHttpRequests.newRequest(HTTP_1_1, GET, "/"));
+        BlockingStreamingHttpResponse syncResponse = syncGroup.request(mockKey,
+                syncGroup.get("/"));
         assertEquals(HTTP_1_1, syncResponse.getVersion());
         assertEquals(OK, syncResponse.getStatus());
     }
@@ -96,15 +103,15 @@ public class BlockingStreamingHttpClientGroupTest {
     @Test
     public void asyncToSyncWithPayload() throws Exception {
         StreamingHttpClientGroup<String> asyncGroup = newAsyncGroup(
-                (key, req) -> success(newResponse(HTTP_1_1, OK, just(chunkFromString("hello")))));
+                (key, req) -> success(reqRespFactory.ok().setPayloadBody(just(allocator.fromAscii("hello")))));
         BlockingStreamingHttpClientGroup<String> syncGroup = asyncGroup.asBlockingStreamingClientGroup();
-        BlockingStreamingHttpResponse<HttpPayloadChunk> syncResponse = syncGroup.request(mockKey,
-                BlockingStreamingHttpRequests.newRequest(HTTP_1_1, GET, "/"));
+        BlockingStreamingHttpResponse syncResponse = syncGroup.request(mockKey,
+                syncGroup.get("/"));
         assertEquals(HTTP_1_1, syncResponse.getVersion());
         assertEquals(OK, syncResponse.getStatus());
-        BlockingIterator<HttpPayloadChunk> iterator = syncResponse.getPayloadBody().iterator();
+        BlockingIterator<Buffer> iterator = syncResponse.getPayloadBody().iterator();
         assertTrue(iterator.hasNext());
-        assertEquals(chunkFromString("hello"), iterator.next());
+        assertEquals(allocator.fromAscii("hello"), iterator.next());
         assertFalse(iterator.hasNext());
     }
 
@@ -120,14 +127,14 @@ public class BlockingStreamingHttpClientGroupTest {
     @Test
     public void asyncToSyncCancelPropagated() throws Exception {
         TestStreamingHttpClientGroup<String> asyncGroup = newAsyncGroup(
-                (key, req) -> success(newResponse(HTTP_1_1, OK, publisherRule.getPublisher())));
+                (key, req) -> success(reqRespFactory.ok().setPayloadBody(publisherRule.getPublisher())));
         BlockingStreamingHttpClientGroup<String> syncGroup = asyncGroup.asBlockingStreamingClientGroup();
-        BlockingStreamingHttpResponse<HttpPayloadChunk> syncResponse = syncGroup.request(mockKey,
-                BlockingStreamingHttpRequests.newRequest(HTTP_1_1, GET, "/"));
+        BlockingStreamingHttpResponse syncResponse = syncGroup.request(mockKey,
+                syncGroup.get("/"));
         assertEquals(HTTP_1_1, syncResponse.getVersion());
         assertEquals(OK, syncResponse.getStatus());
-        BlockingIterator<HttpPayloadChunk> iterator = syncResponse.getPayloadBody().iterator();
-        publisherRule.sendItems(chunkFromString("hello"));
+        BlockingIterator<Buffer> iterator = syncResponse.getPayloadBody().iterator();
+        publisherRule.sendItems(allocator.fromAscii("hello"));
         assertTrue(iterator.hasNext());
         iterator.close();
         publisherRule.verifyCancelled();
@@ -136,10 +143,10 @@ public class BlockingStreamingHttpClientGroupTest {
     @Test
     public void syncToAsyncNoPayload() throws Exception {
         BlockingStreamingHttpClientGroup<String> syncGroup = newBlockingGroup(
-                (key, req) -> BlockingStreamingHttpResponses.newResponse(HTTP_1_1, OK));
+                (key, req) -> blkReqRespFactory.ok());
         StreamingHttpClientGroup<String> asyncRequester = syncGroup.asStreamingClientGroup();
-        StreamingHttpResponse<HttpPayloadChunk> asyncResponse = awaitIndefinitely(asyncRequester.request(mockKey,
-                StreamingHttpRequests.newRequest(HTTP_1_1, GET, "/")));
+        StreamingHttpResponse asyncResponse = awaitIndefinitely(asyncRequester.request(mockKey,
+                asyncRequester.get("/")));
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.getVersion());
         assertEquals(OK, asyncResponse.getStatus());
@@ -148,15 +155,15 @@ public class BlockingStreamingHttpClientGroupTest {
     @Test
     public void syncToAsyncWithPayload() throws Exception {
         BlockingStreamingHttpClientGroup<String> syncGroup = newBlockingGroup(
-                (key, req) -> BlockingStreamingHttpResponses.newResponse(HTTP_1_1, OK, singleton(chunkFromString("hello"))));
+                (key, req) -> blkReqRespFactory.ok().setPayloadBody(singleton(allocator.fromAscii("hello"))));
         StreamingHttpClientGroup<String> asyncRequester = syncGroup.asStreamingClientGroup();
-        StreamingHttpResponse<HttpPayloadChunk> asyncResponse = awaitIndefinitely(asyncRequester.request(mockKey,
-                StreamingHttpRequests.newRequest(HTTP_1_1, GET, "/")));
+        StreamingHttpResponse asyncResponse = awaitIndefinitely(asyncRequester.request(mockKey,
+                asyncRequester.get("/")));
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.getVersion());
         assertEquals(OK, asyncResponse.getStatus());
         assertEquals("hello", awaitIndefinitely(asyncResponse.getPayloadBody()
-                .reduce(() -> "", (acc, next) -> acc + next.getContent().toString(US_ASCII))));
+                .reduce(() -> "", (acc, next) -> acc + next.toString(US_ASCII))));
     }
 
     @Test
@@ -172,13 +179,13 @@ public class BlockingStreamingHttpClientGroupTest {
     @Test
     public void syncToAsyncCancelPropagated() throws Exception {
         TestBlockingStreamingHttpClientGroup<String> syncGroup = newBlockingGroup((key, req) ->
-                BlockingStreamingHttpResponses.newResponse(HTTP_1_1, OK, mockIterable));
+                blkReqRespFactory.ok().setPayloadBody(mockIterable));
         StreamingHttpClientGroup<String> asyncRequester = syncGroup.asStreamingClientGroup();
-        StreamingHttpResponse<HttpPayloadChunk> asyncResponse = awaitIndefinitely(asyncRequester.request(mockKey,
-                StreamingHttpRequests.newRequest(HTTP_1_1, GET, "/")));
+        StreamingHttpResponse asyncResponse = awaitIndefinitely(asyncRequester.request(mockKey,
+                asyncRequester.get("/")));
         assertNotNull(asyncResponse);
         CountDownLatch latch = new CountDownLatch(1);
-        asyncResponse.getPayloadBody().subscribe(new Subscriber<HttpPayloadChunk>() {
+        asyncResponse.getPayloadBody().subscribe(new Subscriber<Buffer>() {
             @Override
             public void onSubscribe(final Subscription s) {
                 s.cancel();
@@ -186,7 +193,7 @@ public class BlockingStreamingHttpClientGroupTest {
             }
 
             @Override
-            public void onNext(final HttpPayloadChunk s) {
+            public void onNext(final Buffer s) {
             }
 
             @Override
@@ -202,58 +209,68 @@ public class BlockingStreamingHttpClientGroupTest {
     }
 
     private static <UnresolvedAddress> TestStreamingHttpClientGroup<UnresolvedAddress> newAsyncGroup(
-            BiFunction<GroupKey<UnresolvedAddress>, StreamingHttpRequest<HttpPayloadChunk>,
-                    Single<StreamingHttpResponse<HttpPayloadChunk>>> doRequest) {
-        return new TestStreamingHttpClientGroup<UnresolvedAddress>() {
+            BiFunction<GroupKey<UnresolvedAddress>, StreamingHttpRequest,
+                    Single<StreamingHttpResponse>> doRequest) {
+        return new TestStreamingHttpClientGroup<UnresolvedAddress>(reqRespFactory) {
             @Override
-            public Single<StreamingHttpResponse<HttpPayloadChunk>> request(final GroupKey<UnresolvedAddress> key,
-                                                                           final StreamingHttpRequest<HttpPayloadChunk> request) {
+            public Single<StreamingHttpResponse> request(final GroupKey<UnresolvedAddress> key,
+                                                         final StreamingHttpRequest request) {
                 return doRequest.apply(key, request);
             }
 
             @Override
-            public Single<? extends StreamingHttpClient.ReservedStreamingHttpConnection> reserveConnection(
-                    final GroupKey<UnresolvedAddress> key, final StreamingHttpRequest<HttpPayloadChunk> request) {
+            public Single<? extends ReservedStreamingHttpConnection> reserveConnection(
+                    final GroupKey<UnresolvedAddress> key, final StreamingHttpRequest request) {
                 return error(new UnsupportedOperationException());
             }
 
             @Override
-            public Single<? extends StreamingHttpClient.UpgradableStreamingHttpResponse<HttpPayloadChunk>> upgradeConnection(
-                    final GroupKey<UnresolvedAddress> key, final StreamingHttpRequest<HttpPayloadChunk> request) {
+            public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(
+                    final GroupKey<UnresolvedAddress> key, final StreamingHttpRequest request) {
                 return error(new UnsupportedOperationException());
             }
         };
     }
 
     private static <UnresolvedAddress> TestBlockingStreamingHttpClientGroup<UnresolvedAddress> newBlockingGroup(
-            BiFunction<GroupKey<UnresolvedAddress>, BlockingStreamingHttpRequest<HttpPayloadChunk>,
-                    BlockingStreamingHttpResponse<HttpPayloadChunk>> doRequest) {
-        return new TestBlockingStreamingHttpClientGroup<UnresolvedAddress>() {
+            BiFunction<GroupKey<UnresolvedAddress>, BlockingStreamingHttpRequest,
+                    BlockingStreamingHttpResponse> doRequest) {
+        return new TestBlockingStreamingHttpClientGroup<UnresolvedAddress>(blkReqRespFactory) {
             @Override
-            public BlockingStreamingHttpResponse<HttpPayloadChunk> request(final GroupKey<UnresolvedAddress> key,
-                                                                           final BlockingStreamingHttpRequest<HttpPayloadChunk> request) {
+            public BlockingStreamingHttpResponse request(final GroupKey<UnresolvedAddress> key,
+                                                         final BlockingStreamingHttpRequest request) {
                 return doRequest.apply(key, request);
             }
 
             @Override
             public BlockingStreamingHttpClient.ReservedBlockingStreamingHttpConnection reserveConnection(
-                    final GroupKey<UnresolvedAddress> key, final BlockingStreamingHttpRequest<HttpPayloadChunk> request) {
+                    final GroupKey<UnresolvedAddress> key, final BlockingStreamingHttpRequest request) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            public BlockingStreamingHttpClient.UpgradableBlockingStreamingHttpResponse<HttpPayloadChunk> upgradeConnection(
+            public BlockingStreamingHttpClient.UpgradableBlockingStreamingHttpResponse upgradeConnection(
                     final GroupKey<UnresolvedAddress> key,
-                    final BlockingStreamingHttpRequest<HttpPayloadChunk> request) throws Exception {
+                    final BlockingStreamingHttpRequest request) {
                 throw new UnsupportedOperationException();
             }
         };
     }
 
     private abstract static class TestStreamingHttpClientGroup<UnresolvedAddress> extends
-                                                                                  StreamingHttpClientGroup<UnresolvedAddress> {
+                                                                      StreamingHttpClientGroup<UnresolvedAddress> {
         private final AtomicBoolean closed = new AtomicBoolean();
         private final CompletableProcessor onClose = new CompletableProcessor();
+
+        /**
+         * Create a new instance.
+         *
+         * @param reqRespFactory The {@link StreamingHttpRequestResponseFactory} used to
+         * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
+         */
+        protected TestStreamingHttpClientGroup(final StreamingHttpRequestResponseFactory reqRespFactory) {
+            super(reqRespFactory);
+        }
 
         @Override
         public final Completable onClose() {
@@ -279,8 +296,18 @@ public class BlockingStreamingHttpClientGroupTest {
     }
 
     private abstract static class TestBlockingStreamingHttpClientGroup<UnresolvedAddress> extends
-                                                                                          BlockingStreamingHttpClientGroup<UnresolvedAddress> {
+                                                              BlockingStreamingHttpClientGroup<UnresolvedAddress> {
         private final AtomicBoolean closed = new AtomicBoolean();
+
+        /**
+         * Create a new instance.
+         *
+         * @param reqRespFactory The {@link BlockingStreamingHttpRequestResponseFactory} used to
+         * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
+         */
+        protected TestBlockingStreamingHttpClientGroup(final BlockingStreamingHttpRequestResponseFactory reqRespFactory) {
+            super(reqRespFactory);
+        }
 
         @Override
         public void close() {

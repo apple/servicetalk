@@ -15,16 +15,18 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.HostAndPort;
@@ -55,12 +57,8 @@ import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
-import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
-import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
-import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
-import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static java.lang.Long.MAX_VALUE;
@@ -107,7 +105,7 @@ public class HttpOffloadingTest {
         terminated = new CountDownLatch(1);
         client = forSingleAddress(HostAndPort.of(LOOPBACK_ADDRESS.getHostName(), socketAddress.getPort()))
                 .buildStreaming(CLIENT_CTX);
-        httpConnection = awaitIndefinitelyNonNull(client.reserveConnection(newRequest(GET, "/")));
+        httpConnection = awaitIndefinitelyNonNull(client.reserveConnection(client.get("/")));
         connectionContext = httpConnection.getConnectionContext();
     }
 
@@ -118,17 +116,18 @@ public class HttpOffloadingTest {
 
     @Test
     public void requestResponseIsOffloaded() throws Exception {
-        final Publisher<HttpPayloadChunk> reqPayload =
-                just(newPayloadChunk(httpConnection.getConnectionContext().getExecutionContext().getBufferAllocator()
-                        .fromAscii("Hello")))
+        final Publisher<Buffer> reqPayload =
+                just(httpConnection.getConnectionContext().getExecutionContext().getBufferAllocator()
+                        .fromAscii("Hello"))
                         .doBeforeRequest(n -> {
                             if (inEventLoopOrTestThread().test(currentThread())) {
                                 errors.add(new AssertionError("Server response: request-n was not offloaded. Thread: "
                                         + currentThread().getName()));
                             }
                         });
-        final Single<StreamingHttpResponse<HttpPayloadChunk>> resp = httpConnection.request(newRequest(GET, "/", reqPayload));
-        resp.subscribe(new Single.Subscriber<StreamingHttpResponse<HttpPayloadChunk>>() {
+        final Single<StreamingHttpResponse> resp = httpConnection.request(
+                httpConnection.get("/").setPayloadBody(reqPayload));
+        resp.subscribe(new Single.Subscriber<StreamingHttpResponse>() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
                 if (inEventLoopOrTestThread().test(currentThread())) {
@@ -138,7 +137,7 @@ public class HttpOffloadingTest {
             }
 
             @Override
-            public void onSuccess(@Nullable final StreamingHttpResponse<HttpPayloadChunk> result) {
+            public void onSuccess(@Nullable final StreamingHttpResponse result) {
                 if (inEventLoopOrTestThread().test(currentThread())) {
                     errors.add(new AssertionError("Client response single: onSuccess not offloaded. Thread: "
                             + currentThread().getName()));
@@ -173,7 +172,7 @@ public class HttpOffloadingTest {
 
     @Test
     public void reserveConnectionIsOffloaded() throws Exception {
-        client.reserveConnection(newRequest(GET, "/")).doAfterFinally(terminated::countDown)
+        client.reserveConnection(client.get("/")).doAfterFinally(terminated::countDown)
                 .subscribe(new Single.Subscriber<StreamingHttpClient.ReservedStreamingHttpConnection>() {
                     @Override
                     public void onSubscribe(final Cancellable cancellable) {
@@ -343,8 +342,9 @@ public class HttpOffloadingTest {
         private final Collection<Throwable> errors = new ConcurrentLinkedQueue<>();
 
         @Override
-        public Single<StreamingHttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                                      final StreamingHttpRequest<HttpPayloadChunk> request) {
+        public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                    final StreamingHttpRequest request,
+                                                    final StreamingHttpResponseFactory factory) {
             if (inEventLoopOrTestThread().test(currentThread())) {
                 errors.add(new AssertionError("Request: " + request + " received on the eventloop."));
             }
@@ -356,15 +356,16 @@ public class HttpOffloadingTest {
             } catch (InterruptedException e) {
                 errors.add(e);
             }
-            Publisher<HttpPayloadChunk> responsePayload =
-                    just(newPayloadChunk(ctx.getExecutionContext().getBufferAllocator().fromAscii("Hello")))
+            Publisher responsePayload =
+                    just(ctx.getExecutionContext().getBufferAllocator().fromAscii("Hello"))
                             .doBeforeRequest(n -> {
                                 if (inEventLoopOrTestThread().test(currentThread())) {
-                                    errors.add(new AssertionError("Server response: request-n was not offloaded. Thread: "
+                                    errors.add(
+                                            new AssertionError("Server response: request-n was not offloaded. Thread: "
                                             + currentThread().getName()));
                                 }
                             });
-            return success(newResponse(OK, responsePayload));
+            return success(factory.ok().setPayloadBody(responsePayload));
         }
     }
 }

@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.CompositeCloseable;
@@ -24,12 +25,12 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
+import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaders;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequestMetaData;
-import io.servicetalk.http.api.LastHttpPayloadChunk;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
@@ -66,7 +67,6 @@ import java.util.function.Predicate;
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
-import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
@@ -77,12 +77,9 @@ import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderNames.USER_AGENT;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
-import static io.servicetalk.http.api.HttpPayloadChunks.newLastPayloadChunk;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
-import static io.servicetalk.http.api.HttpRequestMethods.POST;
-import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
 import static java.lang.Boolean.TRUE;
@@ -101,16 +98,19 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 public class HttpRequestEncoderTest {
+    private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
+    private static final StreamingHttpRequestResponseFactory reqRespFactory =
+            new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE);
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     @ClassRule
-    public static final ExecutionContextRule SEC = new ExecutionContextRule(() -> DEFAULT_ALLOCATOR,
+    public static final ExecutionContextRule SEC = new ExecutionContextRule(() -> allocator,
             () -> createIoExecutor(0, new DefaultThreadFactory("server-io", false, NORM_PRIORITY)),
             Executors::immediate);
     @ClassRule
-    public static final ExecutionContextRule CEC = new ExecutionContextRule(() -> DEFAULT_ALLOCATOR,
+    public static final ExecutionContextRule CEC = new ExecutionContextRule(() -> allocator,
             () -> createIoExecutor(0, new DefaultThreadFactory("client-io", false, NORM_PRIORITY)),
             Executors::newCachedThreadExecutor);
 
@@ -125,8 +125,7 @@ public class HttpRequestEncoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
-        Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
-        LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, EmptyHttpHeaders.INSTANCE);
+        Buffer buffer = allocator.wrap(content);
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
                 GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
         request.getHeaders()
@@ -134,7 +133,8 @@ public class HttpRequestEncoderTest {
                 .add(USER_AGENT, "unit-test")
                 .add(CONTENT_LENGTH, valueOf(content.length));
         channel.writeOutbound(request);
-        channel.writeOutbound(lastChunk.duplicate());
+        channel.writeOutbound(buffer.duplicate());
+        channel.writeOutbound(EmptyHttpHeaders.INSTANCE);
         verifyHttpRequest(channel, buffer, TransferEncoding.ContentLength, false);
         assertFalse(channel.finishAndReleaseAll());
     }
@@ -156,9 +156,8 @@ public class HttpRequestEncoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
-        Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
+        Buffer buffer = allocator.wrap(content);
 
-        LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, EmptyHttpHeaders.INSTANCE);
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1, GET, "/some/path?foo=bar&baz=yyy",
                 new DefaultHttpHeadersFactory(false, false).newHeaders());
         request.getHeaders()
@@ -166,15 +165,20 @@ public class HttpRequestEncoderTest {
                 .add("  " + USER_AGENT + "   ", "    unit-test   ")
                 .add(CONTENT_LENGTH, valueOf(content.length));
         channel.writeOutbound(request);
-        channel.writeOutbound(lastChunk.duplicate());
+        channel.writeOutbound(buffer.duplicate());
+        channel.writeOutbound(EmptyHttpHeaders.INSTANCE);
 
         ByteBuf byteBuf = channel.readOutbound();
         String actualMetaData = byteBuf.toString(US_ASCII);
         byteBuf.release();
-        assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n"));
-        assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(" " + CONNECTION + " :  " + KEEP_ALIVE + "\r\n"));
-        assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains("  " + USER_AGENT + "   :     unit-test   " + "\r\n"));
-        assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(CONTENT_LENGTH + ": " + valueOf(buffer.getReadableBytes()) + "\r\n"));
+        assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(
+                "GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n"));
+        assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(
+                " " + CONNECTION + " :  " + KEEP_ALIVE + "\r\n"));
+        assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(
+                "  " + USER_AGENT + "   :     unit-test   " + "\r\n"));
+        assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(
+                CONTENT_LENGTH + ": " + valueOf(buffer.getReadableBytes()) + "\r\n"));
         assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.endsWith("\r\n" + "\r\n"));
         byteBuf = channel.readOutbound();
         assertEquals(buffer.toNioBuffer(), byteBuf.nioBuffer());
@@ -188,8 +192,7 @@ public class HttpRequestEncoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
-        Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
-        LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, EmptyHttpHeaders.INSTANCE);
+        Buffer buffer = allocator.wrap(content);
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
                 GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
         request.getHeaders()
@@ -197,7 +200,8 @@ public class HttpRequestEncoderTest {
                 .add(USER_AGENT, "unit-test")
                 .add(TRANSFER_ENCODING, CHUNKED);
         channel.writeOutbound(request);
-        channel.writeOutbound(lastChunk.duplicate());
+        channel.writeOutbound(buffer.duplicate());
+        channel.writeOutbound(EmptyHttpHeaders.INSTANCE);
         verifyHttpRequest(channel, buffer, TransferEncoding.Chunked, false);
         assertFalse(channel.finishAndReleaseAll());
     }
@@ -207,10 +211,10 @@ public class HttpRequestEncoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
-        Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
+        Buffer buffer = allocator.wrap(content);
         HttpHeaders trailers = INSTANCE.newTrailers();
         trailers.add("TrailerStatus", "good");
-        LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, trailers);
+
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
                 GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
         request.getHeaders()
@@ -218,7 +222,8 @@ public class HttpRequestEncoderTest {
                 .add(USER_AGENT, "unit-test")
                 .add(TRANSFER_ENCODING, CHUNKED);
         channel.writeOutbound(request);
-        channel.writeOutbound(lastChunk.duplicate());
+        channel.writeOutbound(buffer.duplicate());
+        channel.writeOutbound(trailers);
         verifyHttpRequest(channel, buffer, TransferEncoding.Chunked, true);
         assertFalse(channel.finishAndReleaseAll());
     }
@@ -226,7 +231,6 @@ public class HttpRequestEncoderTest {
     @Test
     public void chunkedNoTrailersNoContent() {
         EmbeddedChannel channel = newEmbeddedChannel();
-        LastHttpPayloadChunk lastChunk = newLastPayloadChunk(EMPTY_BUFFER, EmptyHttpHeaders.INSTANCE);
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
                 GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
         request.getHeaders()
@@ -234,7 +238,8 @@ public class HttpRequestEncoderTest {
                 .add(USER_AGENT, "unit-test")
                 .add(TRANSFER_ENCODING, CHUNKED);
         channel.writeOutbound(request);
-        channel.writeOutbound(lastChunk.duplicate());
+        channel.writeOutbound(EMPTY_BUFFER.duplicate());
+        channel.writeOutbound(EmptyHttpHeaders.INSTANCE);
         verifyHttpRequest(channel, EMPTY_BUFFER, TransferEncoding.Chunked, false);
         assertFalse(channel.finishAndReleaseAll());
     }
@@ -242,14 +247,14 @@ public class HttpRequestEncoderTest {
     @Test
     public void variableNoTrailersNoContent() {
         EmbeddedChannel channel = newEmbeddedChannel();
-        LastHttpPayloadChunk lastChunk = newLastPayloadChunk(EMPTY_BUFFER, EmptyHttpHeaders.INSTANCE);
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
                 GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
         request.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(USER_AGENT, "unit-test");
         channel.writeOutbound(request);
-        channel.writeOutbound(lastChunk.duplicate());
+        channel.writeOutbound(EMPTY_BUFFER);
+        channel.writeOutbound(EmptyHttpHeaders.INSTANCE);
         verifyHttpRequest(channel, EMPTY_BUFFER, TransferEncoding.Variable, false);
         assertFalse(channel.finishAndReleaseAll());
     }
@@ -259,15 +264,15 @@ public class HttpRequestEncoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
-        Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
-        LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, EmptyHttpHeaders.INSTANCE);
+        Buffer buffer = allocator.wrap(content);
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
                 GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
         request.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(USER_AGENT, "unit-test");
         channel.writeOutbound(request);
-        channel.writeOutbound(lastChunk.duplicate());
+        channel.writeOutbound(buffer.duplicate());
+        channel.writeOutbound(EmptyHttpHeaders.INSTANCE);
         verifyHttpRequest(channel, buffer, TransferEncoding.Variable, false);
         assertFalse(channel.finishAndReleaseAll());
     }
@@ -277,17 +282,17 @@ public class HttpRequestEncoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
-        Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
+        Buffer buffer = allocator.wrap(content);
         HttpHeaders trailers = INSTANCE.newTrailers();
         trailers.add("TrailerStatus", "good");
-        LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, trailers);
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
                 GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
         request.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(USER_AGENT, "unit-test");
         channel.writeOutbound(request);
-        channel.writeOutbound(lastChunk.duplicate());
+        channel.writeOutbound(buffer.duplicate());
+        channel.writeOutbound(trailers);
         verifyHttpRequest(channel, buffer, TransferEncoding.Variable, false);
 
         // The trailers will just not be encoded if the transfer encoding is not set correctly.
@@ -299,10 +304,9 @@ public class HttpRequestEncoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
-        Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
+        Buffer buffer = allocator.wrap(content);
         HttpHeaders trailers = INSTANCE.newTrailers();
         trailers.add("TrailerStatus", "good");
-        LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, trailers);
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
                 GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
         request.getHeaders()
@@ -310,7 +314,8 @@ public class HttpRequestEncoderTest {
                 .add(USER_AGENT, "unit-test")
                 .add(CONTENT_LENGTH, valueOf(content.length));
         channel.writeOutbound(request);
-        channel.writeOutbound(lastChunk.duplicate());
+        channel.writeOutbound(buffer.duplicate());
+        channel.writeOutbound(trailers);
         verifyHttpRequest(channel, buffer, TransferEncoding.ContentLength, false);
 
         // The trailers will just not be encoded if the transfer encoding is not set correctly.
@@ -322,13 +327,17 @@ public class HttpRequestEncoderTest {
         ByteBuf byteBuf = channel.readOutbound();
         String actualMetaData = byteBuf.toString(US_ASCII);
         byteBuf.release();
-        assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n"));
-        assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(CONNECTION + ": " + KEEP_ALIVE + "\r\n"));
-        assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(USER_AGENT + ": unit-test" + "\r\n"));
+        assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(
+                "GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n"));
+        assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(
+                CONNECTION + ": " + KEEP_ALIVE + "\r\n"));
+        assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(
+                USER_AGENT + ": unit-test" + "\r\n"));
         assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.endsWith("\r\n" + "\r\n"));
         switch (encoding) {
             case Chunked:
-                assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(TRANSFER_ENCODING + ": " + CHUNKED + "\r\n"));
+                assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(
+                        TRANSFER_ENCODING + ": " + CHUNKED + "\r\n"));
                 if (buffer.getReadableBytes() != 0) {
                     byteBuf = channel.readOutbound();
                     assertEquals(toHexString(buffer.getReadableBytes()) + "\r\n", byteBuf.toString(US_ASCII));
@@ -354,7 +363,8 @@ public class HttpRequestEncoderTest {
                 }
                 break;
             case ContentLength:
-                assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(CONTENT_LENGTH + ": " + valueOf(buffer.getReadableBytes()) + "\r\n"));
+                assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(
+                        CONTENT_LENGTH + ": " + valueOf(buffer.getReadableBytes()) + "\r\n"));
                 byteBuf = channel.readOutbound();
                 assertEquals(buffer.toNioBuffer(), byteBuf.nioBuffer());
                 break;
@@ -415,7 +425,7 @@ public class HttpRequestEncoderTest {
                         return context;
                     });
 
-            Predicate<Object> predicate = (Object h) -> h instanceof LastHttpPayloadChunk;
+            Predicate<Object> predicate = (Object h) -> h instanceof HttpHeaders;
 
             Connection<Object, Object> conn = resources.prepend(awaitIndefinitelyNonNull(
                     new TcpConnector<>(cConfig.getTcpClientConfig().asReadOnly(), initializer, () -> predicate, null,
@@ -428,12 +438,10 @@ public class HttpRequestEncoderTest {
             ((SocketChannel) serverChannel).config().setSoLinger(0);
             serverChannel.close(); // Close and send RST concurrently with client write
 
-            StreamingHttpRequest<?> request = newRequest(POST, "/closeme", empty());
-            HttpPayloadChunk lastChunk = newLastPayloadChunk(DEFAULT_ALLOCATOR.fromAscii("Bye"),
-                    INSTANCE.newEmptyTrailers());
+            StreamingHttpRequest request = reqRespFactory.post("/closeme");
 
             awaitIndefinitely(serverCloseTrigger);
-            Completable write = conn.write(from(request, lastChunk));
+            Completable write = conn.write(from(request, allocator.fromAscii("Bye"), EmptyHttpHeaders.INSTANCE));
 
             try {
                 awaitIndefinitely(write);

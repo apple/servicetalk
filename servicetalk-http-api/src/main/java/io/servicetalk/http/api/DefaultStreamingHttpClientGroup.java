@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
@@ -34,7 +35,6 @@ import java.util.function.BiFunction;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
@@ -45,8 +45,21 @@ final class DefaultStreamingHttpClientGroup<UnresolvedAddress> extends Streaming
     public static final String PLACEHOLDER_EXCEPTION_MSG = "Not supported by PLACEHOLDER_CLIENT";
     public static final String CLOSED_EXCEPTION_MSG = "This group has been closed";
 
+    private static final StreamingHttpRequestResponseFactory NOOP_REQ_RESP_FACTORY =
+            new StreamingHttpRequestResponseFactory() {
+        @Override
+        public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
+            throw new UnsupportedOperationException(PLACEHOLDER_EXCEPTION_MSG);
+        }
+
+        @Override
+        public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
+            throw new UnsupportedOperationException(PLACEHOLDER_EXCEPTION_MSG);
+        }
+    };
+
     // Placeholder should not leak outside of the scope of existing class
-    private static final StreamingHttpClient PLACEHOLDER_CLIENT = new StreamingHttpClient() {
+    private static final StreamingHttpClient PLACEHOLDER_CLIENT = new StreamingHttpClient(NOOP_REQ_RESP_FACTORY) {
         @Override
         public Single<ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest request) {
             return Single.error(new UnsupportedOperationException(PLACEHOLDER_EXCEPTION_MSG));
@@ -81,7 +94,6 @@ final class DefaultStreamingHttpClientGroup<UnresolvedAddress> extends Streaming
 
     private volatile boolean closed;
     private final ConcurrentMap<GroupKey<UnresolvedAddress>, StreamingHttpClient> clientMap = new ConcurrentHashMap<>();
-    private final ExecutionContext executionContext;
     private final BiFunction<GroupKey<UnresolvedAddress>, HttpRequestMetaData, StreamingHttpClient> clientFactory;
     private final ListenableAsyncCloseable asyncCloseable = toAsyncCloseable(() -> {
                 closed = true;
@@ -93,25 +105,26 @@ final class DefaultStreamingHttpClientGroup<UnresolvedAddress> extends Streaming
             }
     );
 
-    DefaultStreamingHttpClientGroup(
-            final StreamingHttpRequestFactory requestFactory,
-            final StreamingHttpResponseFactory responseFactory,
-            final ExecutionContext executionContext,
+    DefaultStreamingHttpClientGroup(final BufferAllocator allocator, final HttpHeadersFactory headersFactory,
             final BiFunction<GroupKey<UnresolvedAddress>, HttpRequestMetaData, StreamingHttpClient> clientFactory) {
-        super(requestFactory, responseFactory);
+        this(new DefaultStreamingHttpRequestResponseFactory(allocator, headersFactory), clientFactory);
+    }
+
+    DefaultStreamingHttpClientGroup(final StreamingHttpRequestResponseFactory reqRespFactory,
+            final BiFunction<GroupKey<UnresolvedAddress>, HttpRequestMetaData, StreamingHttpClient> clientFactory) {
+        super(reqRespFactory);
         this.clientFactory = requireNonNull(clientFactory);
-        this.executionContext = requireNonNull(executionContext);
     }
 
     @Override
-    public Single<? extends StreamingHttpResponse> request(final GroupKey<UnresolvedAddress> key,
+    public Single<StreamingHttpResponse> request(final GroupKey<UnresolvedAddress> key,
                                                  final StreamingHttpRequest request) {
         requireNonNull(key);
         requireNonNull(request);
         return new Single<StreamingHttpResponse>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
-                final Single<? extends StreamingHttpResponse> response;
+                final Single<StreamingHttpResponse> response;
                 try {
                     response = selectClient(key, request).request(request);
                 } catch (final Throwable t) {
@@ -167,7 +180,8 @@ final class DefaultStreamingHttpClientGroup<UnresolvedAddress> extends Streaming
         };
     }
 
-    private StreamingHttpClient selectClient(final GroupKey<UnresolvedAddress> key, final HttpRequestMetaData requestMetaData) {
+    private StreamingHttpClient selectClient(final GroupKey<UnresolvedAddress> key,
+                                             final HttpRequestMetaData requestMetaData) {
         // It is assumed that clientFactory will not acquire synchronization primitives which may be held by threads
         // in the spin/wait loop below to avoid livelock. This allows us to avoid acquiring locks/monitors
         // for the expected steady state where the key will already exist in the map.

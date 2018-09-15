@@ -34,19 +34,15 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class StreamingHttpClientGroup<UnresolvedAddress> implements
                                                               StreamingHttpRequestFactory, ListenableAsyncCloseable {
-    final StreamingHttpRequestFactory requestFactory;
-    private final StreamingHttpResponseFactory responseFactory;
+    final StreamingHttpRequestResponseFactory reqRespFactory;
 
     /**
      * Create a new instance.
-     * @param requestFactory The {@link HttpRequestFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
-     * @param responseFactory Used for {@link #getHttpResponseFactory()}.
+     * @param reqRespFactory The {@link StreamingHttpRequestResponseFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
      */
-    protected StreamingHttpClientGroup(final StreamingHttpRequestFactory requestFactory,
-                                       final StreamingHttpResponseFactory responseFactory) {
-        this.requestFactory = requireNonNull(requestFactory);
-        this.responseFactory = requireNonNull(responseFactory);
+    protected StreamingHttpClientGroup(final StreamingHttpRequestResponseFactory reqRespFactory) {
+        this.reqRespFactory = requireNonNull(reqRespFactory);
     }
 
     /**
@@ -58,7 +54,7 @@ public abstract class StreamingHttpClientGroup<UnresolvedAddress> implements
      * @return The received {@link StreamingHttpResponse}.
      * @see StreamingHttpClient#request(StreamingHttpRequest)
      */
-    public abstract Single<? extends StreamingHttpResponse> request(
+    public abstract Single<StreamingHttpResponse> request(
             GroupKey<UnresolvedAddress> key, StreamingHttpRequest request);
 
     /**
@@ -90,7 +86,7 @@ public abstract class StreamingHttpClientGroup<UnresolvedAddress> implements
 
     @Override
     public final StreamingHttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
-        return requestFactory.newRequest(method, requestTarget);
+        return reqRespFactory.newRequest(method, requestTarget);
     }
 
     /**
@@ -98,7 +94,7 @@ public abstract class StreamingHttpClientGroup<UnresolvedAddress> implements
      * @return a {@link StreamingHttpResponseFactory}.
      */
     public final StreamingHttpResponseFactory getHttpResponseFactory() {
-        return responseFactory;
+        return reqRespFactory;
     }
 
     /**

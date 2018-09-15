@@ -45,7 +45,7 @@ public interface HttpServerStarter {
      * the server could not be started.
      */
     default Single<ServerContext> startStreaming(ExecutionContext executionContext, SocketAddress address,
-                                                 StreamingRequestHandler service) {
+                                                 StreamingHttpRequestHandler service) {
         return startStreaming(executionContext, address, ACCEPT_ALL, service);
     }
 
@@ -61,9 +61,9 @@ public interface HttpServerStarter {
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
-     * @see #startStreaming(ExecutionContext, SocketAddress, StreamingRequestHandler)
+     * @see #startStreaming(ExecutionContext, SocketAddress, StreamingHttpRequestHandler)
      */
-    default Single<ServerContext> startStreaming(SocketAddress address, StreamingRequestHandler service) {
+    default Single<ServerContext> startStreaming(SocketAddress address, StreamingHttpRequestHandler service) {
         return startStreaming(address, ACCEPT_ALL, service);
     }
 
@@ -83,7 +83,7 @@ public interface HttpServerStarter {
      * the server could not be started.
      */
     Single<ServerContext> startStreaming(ExecutionContext executionContext, SocketAddress address,
-                                         ContextFilter contextFilter, StreamingRequestHandler service);
+                                         ContextFilter contextFilter, StreamingHttpRequestHandler service);
 
     /**
      * Starts this server and returns a {@link Single} that completes when the server is successfully started or
@@ -99,10 +99,10 @@ public interface HttpServerStarter {
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
-     * @see #startStreaming(ExecutionContext, SocketAddress, ContextFilter, StreamingRequestHandler)
+     * @see #startStreaming(ExecutionContext, SocketAddress, ContextFilter, StreamingHttpRequestHandler)
      */
     Single<ServerContext> startStreaming(SocketAddress address, ContextFilter contextFilter,
-                                         StreamingRequestHandler service);
+                                         StreamingHttpRequestHandler service);
 
     /**
      * Starts this server and returns a {@link Single} that completes when the server is successfully started or
@@ -118,7 +118,7 @@ public interface HttpServerStarter {
      * the server could not be started.
      */
     default Single<ServerContext> startStreaming(ExecutionContext executionContext, int port,
-                                                 StreamingRequestHandler service) {
+                                                 StreamingHttpRequestHandler service) {
         return startStreaming(executionContext, port, ACCEPT_ALL, service);
     }
 
@@ -134,9 +134,9 @@ public interface HttpServerStarter {
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
-     * @see #startStreaming(ExecutionContext, int, StreamingRequestHandler)
+     * @see #startStreaming(ExecutionContext, int, StreamingHttpRequestHandler)
      */
-    default Single<ServerContext> startStreaming(int port, StreamingRequestHandler service) {
+    default Single<ServerContext> startStreaming(int port, StreamingHttpRequestHandler service) {
         return startStreaming(port, ACCEPT_ALL, service);
     }
 
@@ -156,7 +156,7 @@ public interface HttpServerStarter {
      * the server could not be started.
      */
     default Single<ServerContext> startStreaming(ExecutionContext executionContext, int port,
-                                                 ContextFilter contextFilter, StreamingRequestHandler service) {
+                                                 ContextFilter contextFilter, StreamingHttpRequestHandler service) {
         return startStreaming(executionContext, new InetSocketAddress(port), contextFilter, service);
     }
 
@@ -174,10 +174,10 @@ public interface HttpServerStarter {
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
-     * @see #startStreaming(ExecutionContext, int, ContextFilter, StreamingRequestHandler)
+     * @see #startStreaming(ExecutionContext, int, ContextFilter, StreamingHttpRequestHandler)
      */
     default Single<ServerContext> startStreaming(int port, ContextFilter contextFilter,
-                                                 StreamingRequestHandler service) {
+                                                 StreamingHttpRequestHandler service) {
         return startStreaming(new InetSocketAddress(port), contextFilter, service);
     }
 
@@ -195,7 +195,7 @@ public interface HttpServerStarter {
      * the server could not be started.
      */
     default Single<ServerContext> start(ExecutionContext executionContext, SocketAddress address,
-                                        RequestHandler service) {
+                                        HttpRequestHandler service) {
         return start(executionContext, address, ACCEPT_ALL, service);
     }
 
@@ -211,9 +211,9 @@ public interface HttpServerStarter {
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
-     * @see #start(ExecutionContext, SocketAddress, RequestHandler)
+     * @see #start(ExecutionContext, SocketAddress, HttpRequestHandler)
      */
-    default Single<ServerContext> start(SocketAddress address, RequestHandler service) {
+    default Single<ServerContext> start(SocketAddress address, HttpRequestHandler service) {
         return start(address, ACCEPT_ALL, service);
     }
 
@@ -233,7 +233,7 @@ public interface HttpServerStarter {
      * the server could not be started.
      */
     default Single<ServerContext> start(ExecutionContext executionContext, SocketAddress address,
-                                        ContextFilter contextFilter, RequestHandler service) {
+                                        ContextFilter contextFilter, HttpRequestHandler service) {
         return startStreaming(executionContext, address, contextFilter,
                 HttpService.wrap(service).asStreamingService());
     }
@@ -252,10 +252,10 @@ public interface HttpServerStarter {
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
-     * @see #start(ExecutionContext, SocketAddress, ContextFilter, RequestHandler)
+     * @see #start(ExecutionContext, SocketAddress, ContextFilter, HttpRequestHandler)
      */
     default Single<ServerContext> start(SocketAddress address,
-                                        ContextFilter contextFilter, RequestHandler service) {
+                                        ContextFilter contextFilter, HttpRequestHandler service) {
         return startStreaming(address, contextFilter, HttpService.wrap(service).asStreamingService());
     }
 
@@ -272,7 +272,7 @@ public interface HttpServerStarter {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    default Single<ServerContext> start(ExecutionContext executionContext, int port, RequestHandler service) {
+    default Single<ServerContext> start(ExecutionContext executionContext, int port, HttpRequestHandler service) {
         return start(executionContext, port, ACCEPT_ALL, service);
     }
 
@@ -288,9 +288,9 @@ public interface HttpServerStarter {
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
-     * @see #start(ExecutionContext, int, RequestHandler)
+     * @see #start(ExecutionContext, int, HttpRequestHandler)
      */
-    default Single<ServerContext> start(int port, RequestHandler service) {
+    default Single<ServerContext> start(int port, HttpRequestHandler service) {
         return start(port, ACCEPT_ALL, service);
     }
 
@@ -310,7 +310,7 @@ public interface HttpServerStarter {
      * the server could not be started.
      */
     default Single<ServerContext> start(ExecutionContext executionContext, int port, ContextFilter contextFilter,
-                                        RequestHandler service) {
+                                        HttpRequestHandler service) {
         return start(executionContext, new InetSocketAddress(port), contextFilter, service);
     }
 
@@ -328,9 +328,9 @@ public interface HttpServerStarter {
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
-     * @see #start(ExecutionContext, int, ContextFilter, RequestHandler)
+     * @see #start(ExecutionContext, int, ContextFilter, HttpRequestHandler)
      */
-    default Single<ServerContext> start(int port, ContextFilter contextFilter, RequestHandler service) {
+    default Single<ServerContext> start(int port, ContextFilter contextFilter, HttpRequestHandler service) {
         return start(new InetSocketAddress(port), contextFilter, service);
     }
 
@@ -347,7 +347,7 @@ public interface HttpServerStarter {
      * @throws Exception If the server could not be started.
      */
     default ServerContext startBlockingStreaming(ExecutionContext executionContext, SocketAddress address,
-                                                 BlockingStreamingRequestHandler service)
+                                                 BlockingStreamingHttpRequestHandler service)
             throws Exception {
         return startBlockingStreaming(executionContext, address, ACCEPT_ALL, service);
     }
@@ -363,10 +363,10 @@ public interface HttpServerStarter {
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
      * @return A {@link ServerContext} if the server starts successfully.
      * @throws Exception If the server could not be started.
-     * @see #startBlockingStreaming(ExecutionContext, SocketAddress, BlockingStreamingRequestHandler)
+     * @see #startBlockingStreaming(ExecutionContext, SocketAddress, BlockingStreamingHttpRequestHandler)
      */
     default ServerContext startBlockingStreaming(SocketAddress address,
-                                                 BlockingStreamingRequestHandler service) throws Exception {
+                                                 BlockingStreamingHttpRequestHandler service) throws Exception {
         return startBlockingStreaming(address, ACCEPT_ALL, service);
     }
 
@@ -386,7 +386,7 @@ public interface HttpServerStarter {
      */
     default ServerContext startBlockingStreaming(ExecutionContext executionContext, SocketAddress address,
                                                  ContextFilter contextFilter,
-                                                 BlockingStreamingRequestHandler service) throws Exception {
+                                                 BlockingStreamingHttpRequestHandler service) throws Exception {
         return blockingInvocation(startStreaming(executionContext, address, contextFilter,
                 BlockingStreamingHttpService.wrap(service).asStreamingService()));
     }
@@ -405,10 +405,10 @@ public interface HttpServerStarter {
      * @return A {@link ServerContext} if the server starts successfully.
      * @throws Exception If the server could not be started.
      * @see #startBlockingStreaming(ExecutionContext, SocketAddress, ContextFilter,
-     * BlockingStreamingRequestHandler)
+     * BlockingStreamingHttpRequestHandler)
      */
     default ServerContext startBlockingStreaming(SocketAddress address, ContextFilter contextFilter,
-                                                 BlockingStreamingRequestHandler service) throws Exception {
+                                                 BlockingStreamingHttpRequestHandler service) throws Exception {
         return blockingInvocation(startStreaming(address, contextFilter,
                 BlockingStreamingHttpService.wrap(service).asStreamingService()));
     }
@@ -426,7 +426,7 @@ public interface HttpServerStarter {
      * @throws Exception If the server could not be started.
      */
     default ServerContext startBlockingStreaming(ExecutionContext executionContext, int port,
-                                                 BlockingStreamingRequestHandler service)
+                                                 BlockingStreamingHttpRequestHandler service)
             throws Exception {
         return startBlockingStreaming(executionContext, port, ACCEPT_ALL, service);
     }
@@ -442,9 +442,9 @@ public interface HttpServerStarter {
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
      * @return A {@link ServerContext} if the server starts successfully.
      * @throws Exception If the server could not be started.
-     * @see #startBlockingStreaming(ExecutionContext, int, BlockingStreamingRequestHandler)
+     * @see #startBlockingStreaming(ExecutionContext, int, BlockingStreamingHttpRequestHandler)
      */
-    default ServerContext startBlockingStreaming(int port, BlockingStreamingRequestHandler service)
+    default ServerContext startBlockingStreaming(int port, BlockingStreamingHttpRequestHandler service)
             throws Exception {
         return startBlockingStreaming(port, ACCEPT_ALL, service);
     }
@@ -465,7 +465,7 @@ public interface HttpServerStarter {
      */
     default ServerContext startBlockingStreaming(ExecutionContext executionContext, int port,
                                                  ContextFilter contextFilter,
-                                                 BlockingStreamingRequestHandler service) throws Exception {
+                                                 BlockingStreamingHttpRequestHandler service) throws Exception {
         return startBlockingStreaming(executionContext, new InetSocketAddress(port), contextFilter, service);
     }
 
@@ -482,10 +482,10 @@ public interface HttpServerStarter {
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
      * @return A {@link ServerContext} if the server starts successfully.
      * @throws Exception If the server could not be started.
-     * @see #startBlockingStreaming(ExecutionContext, int, ContextFilter, BlockingStreamingRequestHandler)
+     * @see #startBlockingStreaming(ExecutionContext, int, ContextFilter, BlockingStreamingHttpRequestHandler)
      */
     default ServerContext startBlockingStreaming(int port, ContextFilter contextFilter,
-                                                 BlockingStreamingRequestHandler service) throws Exception {
+                                                 BlockingStreamingHttpRequestHandler service) throws Exception {
         return startBlockingStreaming(new InetSocketAddress(port), contextFilter, service);
     }
 
@@ -502,7 +502,7 @@ public interface HttpServerStarter {
      * @throws Exception If the server could not be started.
      */
     default ServerContext startBlocking(ExecutionContext executionContext, SocketAddress address,
-                                        BlockingRequestHandler service) throws Exception {
+                                        BlockingHttpRequestHandler service) throws Exception {
         return startBlocking(executionContext, address, ACCEPT_ALL, service);
     }
 
@@ -517,9 +517,9 @@ public interface HttpServerStarter {
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
      * @return A {@link ServerContext} if the server starts successfully.
      * @throws Exception If the server could not be started.
-     * @see #startBlocking(ExecutionContext, SocketAddress, BlockingRequestHandler)
+     * @see #startBlocking(ExecutionContext, SocketAddress, BlockingHttpRequestHandler)
      */
-    default ServerContext startBlocking(SocketAddress address, BlockingRequestHandler service) throws Exception {
+    default ServerContext startBlocking(SocketAddress address, BlockingHttpRequestHandler service) throws Exception {
         return startBlocking(address, ACCEPT_ALL, service);
     }
 
@@ -539,7 +539,7 @@ public interface HttpServerStarter {
      */
     default ServerContext startBlocking(ExecutionContext executionContext, SocketAddress address,
                                         ContextFilter contextFilter,
-                                        BlockingRequestHandler service) throws Exception {
+                                        BlockingHttpRequestHandler service) throws Exception {
         return blockingInvocation(startStreaming(executionContext, address, contextFilter,
                 BlockingHttpService.wrap(service).asStreamingService()));
     }
@@ -557,10 +557,10 @@ public interface HttpServerStarter {
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
      * @return A {@link ServerContext} if the server starts successfully.
      * @throws Exception If the server could not be started.
-     * @see #startBlocking(ExecutionContext, SocketAddress, ContextFilter, BlockingRequestHandler)
+     * @see #startBlocking(ExecutionContext, SocketAddress, ContextFilter, BlockingHttpRequestHandler)
      */
     default ServerContext startBlocking(SocketAddress address, ContextFilter contextFilter,
-                                        BlockingRequestHandler service) throws Exception {
+                                        BlockingHttpRequestHandler service) throws Exception {
         return blockingInvocation(startStreaming(address, contextFilter,
                 BlockingHttpService.wrap(service).asStreamingService()));
     }
@@ -578,7 +578,7 @@ public interface HttpServerStarter {
      * @throws Exception If the server could not be started.
      */
     default ServerContext startBlocking(ExecutionContext executionContext, int port,
-                                        BlockingRequestHandler service) throws Exception {
+                                        BlockingHttpRequestHandler service) throws Exception {
         return startBlocking(executionContext, port, ACCEPT_ALL, service);
     }
 
@@ -593,9 +593,9 @@ public interface HttpServerStarter {
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
      * @return A {@link ServerContext} if the server starts successfully.
      * @throws Exception If the server could not be started.
-     * @see #startBlocking(ExecutionContext, int, BlockingRequestHandler)
+     * @see #startBlocking(ExecutionContext, int, BlockingHttpRequestHandler)
      */
-    default ServerContext startBlocking(int port, BlockingRequestHandler service) throws Exception {
+    default ServerContext startBlocking(int port, BlockingHttpRequestHandler service) throws Exception {
         return startBlocking(port, ACCEPT_ALL, service);
     }
 
@@ -614,7 +614,7 @@ public interface HttpServerStarter {
      * @throws Exception If the server could not be started.
      */
     default ServerContext startBlocking(ExecutionContext executionContext, int port, ContextFilter contextFilter,
-                                        BlockingRequestHandler service) throws Exception {
+                                        BlockingHttpRequestHandler service) throws Exception {
         return startBlocking(executionContext, new InetSocketAddress(port), contextFilter, service);
     }
 
@@ -631,10 +631,10 @@ public interface HttpServerStarter {
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
      * @return A {@link ServerContext} if the server starts successfully.
      * @throws Exception If the server could not be started.
-     * @see #startBlocking(ExecutionContext, int, ContextFilter, BlockingRequestHandler)
+     * @see #startBlocking(ExecutionContext, int, ContextFilter, BlockingHttpRequestHandler)
      */
     default ServerContext startBlocking(int port, ContextFilter contextFilter,
-                                        BlockingRequestHandler service) throws Exception {
+                                        BlockingHttpRequestHandler service) throws Exception {
         return startBlocking(new InetSocketAddress(port), contextFilter, service);
     }
 }

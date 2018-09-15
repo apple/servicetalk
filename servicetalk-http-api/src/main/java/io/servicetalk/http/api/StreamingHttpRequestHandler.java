@@ -23,7 +23,8 @@ import io.servicetalk.concurrent.api.Single;
  * This is a simpler version of {@link StreamingHttpService} without lifecycle constructs and other higher level
  * concerns.
  */
-public interface StreamingRequestHandler {
+@FunctionalInterface
+public interface StreamingHttpRequestHandler {
 
     /**
      * Handles a single HTTP request.
@@ -33,6 +34,6 @@ public interface StreamingRequestHandler {
      * @param responseFactory used to create {@link StreamingHttpResponse} objects.
      * @return {@link Single} of HTTP response.
      */
-    Single<? extends StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
-                                                   StreamingHttpResponseFactory responseFactory);
+    Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
+                                         StreamingHttpResponseFactory responseFactory);
 }

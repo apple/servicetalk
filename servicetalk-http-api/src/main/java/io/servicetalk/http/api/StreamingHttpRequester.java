@@ -27,20 +27,16 @@ import static java.util.Objects.requireNonNull;
  * {@link StreamingHttpResponse}.
  */
 public abstract class StreamingHttpRequester implements
-                                             StreamingHttpRequestFactory, ListenableAsyncCloseable, AutoCloseable {
-    final StreamingHttpRequestFactory requestFactory;
-    private final StreamingHttpResponseFactory responseFactory;
+                                             StreamingHttpRequestFactory, ListenableAsyncCloseable, AutoCloseable{
+    final StreamingHttpRequestResponseFactory reqRespFactory;
 
     /**
      * Create a new instance.
-     * @param requestFactory The {@link HttpRequestFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
-     * @param responseFactory Used for {@link #getHttpResponseFactory()}.
+     * @param reqRespFactory The {@link StreamingHttpRequestResponseFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
      */
-    protected StreamingHttpRequester(final StreamingHttpRequestFactory requestFactory,
-                                     final StreamingHttpResponseFactory responseFactory) {
-        this.requestFactory = requireNonNull(requestFactory);
-        this.responseFactory = requireNonNull(responseFactory);
+    protected StreamingHttpRequester(final StreamingHttpRequestResponseFactory reqRespFactory) {
+        this.reqRespFactory = requireNonNull(reqRespFactory);
     }
 
     /**
@@ -48,7 +44,7 @@ public abstract class StreamingHttpRequester implements
      * @param request the request to send.
      * @return The response.
      */
-    public abstract Single<? extends StreamingHttpResponse> request(StreamingHttpRequest request);
+    public abstract Single<StreamingHttpResponse> request(StreamingHttpRequest request);
 
     /**
      * Get the {@link ExecutionContext} used during construction of this object.
@@ -61,7 +57,7 @@ public abstract class StreamingHttpRequester implements
 
     @Override
     public final StreamingHttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
-        return requestFactory.newRequest(method, requestTarget);
+        return reqRespFactory.newRequest(method, requestTarget);
     }
 
     /**
@@ -69,7 +65,7 @@ public abstract class StreamingHttpRequester implements
      * @return a {@link StreamingHttpResponseFactory}.
      */
     public final StreamingHttpResponseFactory getHttpResponseFactory() {
-        return responseFactory;
+        return reqRespFactory;
     }
 
     /**

@@ -30,7 +30,7 @@ import static java.util.Objects.requireNonNull;
 final class ResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
 
     private final Single<T> original;
-    private final Function<Throwable, Single<T>> nextFactory;
+    private final Function<? super Throwable, Single<? extends T>> nextFactory;
 
     /**
      * New instance.
@@ -38,7 +38,7 @@ final class ResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
      * @param original Source.
      * @param nextFactory For creating the next {@link Single}.
      */
-    ResumeSingle(Single<T> original, Function<Throwable, Single<T>> nextFactory, Executor executor) {
+    ResumeSingle(Single<T> original, Function<? super Throwable, Single<? extends T>> nextFactory, Executor executor) {
         super(executor);
         this.original = original;
         this.nextFactory = requireNonNull(nextFactory);
@@ -52,12 +52,12 @@ final class ResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     private static final class ResumeSubscriber<T> implements Subscriber<T> {
         private final Subscriber<? super T> subscriber;
         @Nullable
-        private volatile Function<Throwable, Single<T>> nextFactory;
+        private volatile Function<? super Throwable, Single<? extends T>> nextFactory;
         private final SignalOffloader signalOffloader;
         @Nullable
         private volatile SequentialCancellable sequentialCancellable;
 
-        ResumeSubscriber(Subscriber<? super T> subscriber, Function<Throwable, Single<T>> nextFactory,
+        ResumeSubscriber(Subscriber<? super T> subscriber, Function<? super Throwable, Single<? extends T>> nextFactory,
                          final SignalOffloader signalOffloader) {
             this.subscriber = subscriber;
             this.nextFactory = nextFactory;
@@ -84,13 +84,13 @@ final class ResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
 
         @Override
         public void onError(Throwable throwable) {
-            final Function<Throwable, Single<T>> nextFactory = this.nextFactory;
+            final Function<? super Throwable, Single<? extends T>> nextFactory = this.nextFactory;
             if (nextFactory == null) {
                 subscriber.onError(throwable);
                 return;
             }
 
-            Single<T> next;
+            Single<? extends T> next;
             try {
                 next = requireNonNull(nextFactory.apply(throwable));
             } catch (Throwable t) {

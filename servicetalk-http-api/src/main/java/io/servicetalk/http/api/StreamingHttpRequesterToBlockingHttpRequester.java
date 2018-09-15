@@ -25,8 +25,7 @@ final class StreamingHttpRequesterToBlockingHttpRequester extends BlockingHttpRe
     private final StreamingHttpRequester requester;
 
     StreamingHttpRequesterToBlockingHttpRequester(StreamingHttpRequester requester) {
-        super(new StreamingHttpRequestFactoryToHttpRequestFactory(requester.requestFactory),
-                new StreamingHttpResponseFactoryToHttpResponseFactory(requester.getHttpResponseFactory()));
+        super(new StreamingHttpRequestResponseFactoryToHttpRequestResponseFactory(requester.reqRespFactory));
         this.requester = requireNonNull(requester);
     }
 

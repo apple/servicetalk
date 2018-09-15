@@ -15,9 +15,12 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.StreamingHttpResponse;
 
 import org.reactivestreams.Subscription;
 
@@ -35,12 +38,12 @@ import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace
 import static java.util.Objects.requireNonNull;
 
 /**
- * This class is responsible for splicing a {@link Publisher}&lt;{@link Object}&gt; with a common {@code Payload}
- * into a {@code Data}&lt;{@code Payload}&gt; eg. {@code StreamingHttpResponse}&lt;{@code HttpPayloadChunk}&gt;.
+ * This class is responsible for splicing a {@link Publisher}&lt;{@link Object}&gt; with a common {@link Payload}
+ * into a {@link Data}&lt;{@link Payload}&gt; eg. {@link StreamingHttpResponse}&lt;{@link Buffer}&gt;.
  *
- * @param <Data> type of container, eg. {@code StreamingHttpResponse}&lt;{@code HttpPayloadChunk}&gt;
- * @param <MetaData> type of meta-data in front of the stream of {@code Payload}, eg. {@code HttpResponseMetaData}
- * @param <Payload> type of payload inside the {@code Data}, eg. {@code HttpPayloadChunk}
+ * @param <Data> type of container, eg. {@link StreamingHttpResponse}&lt;{@link Buffer}&gt;
+ * @param <MetaData> type of meta-data in front of the stream of {@link Payload}, eg. {@link HttpResponseMetaData}
+ * @param <Payload> type of payload inside the {@link Data}, eg. {@link Buffer}
  */
 final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single<Data> {
 
@@ -48,13 +51,13 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
     private final Publisher<?> original;
 
     /**
-     * Operator splicing a {@link Publisher}&lt;{@link Object}&gt; with a common {@code Payload} and {@code
-     * MetaData} header as first element into a {@code Data}&lt;{@code Payload}&gt; eg. {@code
-     * StreamingHttpResponse}&lt;{@code HttpPayloadChunk}&gt;.
+     * Operator splicing a {@link Publisher}&lt;{@link Object}&gt; with a common {@link Payload} and {@link
+     * MetaData} header as first element into a {@link Data}&lt;{@link Payload}&gt; eg. {@link
+     * StreamingHttpResponse}&lt;{@link Buffer}&gt;.
      *
-     * @param original the stream of {@link Object}s to splice in a {@code Data}&lt;{@code Payload}&gt;
-     * @param packer function to pack the {@link Publisher}&lt;{@code Payload}&gt; and {@code MetaData} into a
-     * {@code Data}
+     * @param original the stream of {@link Object}s to splice in a {@link Data}&lt;{@link Payload}&gt;
+     * @param packer function to pack the {@link Publisher}&lt;{@link Payload}&gt; and {@link MetaData} into a
+     * {@link Data}
      */
     SpliceFlatStreamToMetaSingle(Publisher<?> original, BiFunction<MetaData, Publisher<Payload>, Data> packer) {
         this.packer = requireNonNull(packer);
@@ -67,12 +70,12 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
     }
 
     /**
-     * Operator to flatten a {@code Data}&lt;{@code Payload}&gt; into a {@link Publisher}&lt;{@link Object}&gt;.
+     * Operator to flatten a {@link Data}&lt;{@link Payload}&gt; into a {@link Publisher}&lt;{@link Object}&gt;.
      *
-     * @param data object containing a {@link Publisher}&lt;{@code Payload}&gt;
-     * @param unpack function to unpack the {@link Publisher}&lt;{@code Payload}&gt; from the container
-     * @param <Data> type of container, eg. {@code StreamingHttpResponse}&lt;{@code HttpPayloadChunk}&gt;
-     * @param <Payload> type of payload inside the {@code Data}, eg. {@code HttpPayloadChunk}
+     * @param data object containing a {@link Publisher}&lt;{@link Payload}&gt;
+     * @param unpack function to unpack the {@link Publisher}&lt;{@link Payload}&gt; from the container
+     * @param <Data> type of container, eg. {@link StreamingHttpResponse}&lt;{@link Buffer}&gt;
+     * @param <Payload> type of payload inside the {@link Data}, eg. {@link Buffer}
      * @return a flattened {@link Publisher}&lt;{@link Object}&gt;
      */
     @SuppressWarnings("unchecked")
@@ -98,10 +101,10 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
          * A field that assumes various types and states depending on the state of the operator.
          * <p>
          * One of <ul>
-         *     <li>{@code null} – initial pending state before the {@link Single} is completed</li>
-         *     <li>{@link org.reactivestreams.Subscriber}&lt;{@code Payload}&gt; - when subscribed to the payload</li>
+         *     <li>{@link null} – initial pending state before the {@link Single} is completed</li>
+         *     <li>{@link org.reactivestreams.Subscriber}&lt;{@link Payload}&gt; - when subscribed to the payload</li>
          *     <li>{@link #CANCELED} - when the {@link Single} is canceled prematurely</li>
-         *     <li>{@link #PENDING} - when the {@link Single} will complete and {@code Payload} pending subscribe</li>
+         *     <li>{@link #PENDING} - when the {@link Single} will complete and {@link Payload} pending subscribe</li>
          *     <li>{@link #EMPTY_COMPLETED} - when the stream completed prematurely (empty) payload</li>
          *     <li>{@link #EMPTY_COMPLETED_DELIVERED} - when the premature (empty) completion event was delivered to a
          *     subscriber</li>
@@ -133,7 +136,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
         private Subscription rawSubscription;
 
         /**
-         * We request-1 first and then send {@link Subscriber#onSubscribe(Cancellable)} to {@code dataSubscriber}.
+         * We request-1 first and then send {@link Subscriber#onSubscribe(Cancellable)} to {@link #dataSubscriber}.
          * If request-1 synchronously delivers {@link #onNext(Object)}, then we may send
          * {@link Subscriber#onSuccess(Object)} before onSubscribe.
          * This state makes sure we always send onSubscribe first and only once.
@@ -150,7 +153,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
          * a CAS on {@link Single} termination.
          *
          * @param parent reference to the parent class holding immutable state
-         * @param dataSubscriber {@link Subscriber} to the {@code Data}
+         * @param dataSubscriber {@link Subscriber} to the {@link Data}
          */
         private SplicingSubscriber(SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> parent,
                                    Subscriber<? super Data> dataSubscriber) {
@@ -163,7 +166,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Single
          * {@link Single} has already terminated.
          * <p>
          * Guarded by the CAS to avoid concurrency with the {@link Subscription} on the contained {@link
-         * Publisher}&lt;{@code Payload}&gt;
+         * Publisher}&lt;{@link Payload}&gt;
          */
         private void cancelData(Subscription subscription) {
             if (maybePayloadSubUpdater.compareAndSet(this, null, CANCELED)) {

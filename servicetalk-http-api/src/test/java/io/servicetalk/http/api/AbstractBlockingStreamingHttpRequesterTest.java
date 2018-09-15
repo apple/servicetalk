@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.PublisherRule;
@@ -34,15 +36,13 @@ import org.reactivestreams.Subscription;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Function;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
-import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
-import static io.servicetalk.http.api.TestUtils.chunkFromString;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
@@ -60,20 +60,25 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     @Mock
     private ConnectionContext mockCtx;
     @Rule
-    public final PublisherRule<HttpPayloadChunk> publisherRule = new PublisherRule<>();
+    public final PublisherRule<Buffer> publisherRule = new PublisherRule<>();
     @Mock
-    private BlockingIterable<HttpPayloadChunk> mockIterable;
+    private BlockingIterable<Buffer> mockIterable;
     @Mock
-    private BlockingIterator<HttpPayloadChunk> mockIterator;
+    private BlockingIterator<Buffer> mockIterator;
+    private final BufferAllocator allocator = DEFAULT_ALLOCATOR;
+    private final StreamingHttpRequestResponseFactory reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(
+            allocator, DefaultHttpHeadersFactory.INSTANCE);
+    private final BlockingStreamingHttpRequestResponseFactory blkReqRespFactory =
+            new StreamingHttpRequestResponseFactoryToBlockingStreamingHttpRequestResponseFactory(reqRespFactory);
 
     protected abstract <T extends StreamingHttpRequester & TestHttpRequester>
-        T newAsyncRequester(ExecutionContext executionContext,
-                            Function<StreamingHttpRequest<HttpPayloadChunk>, Single<StreamingHttpResponse<HttpPayloadChunk>>> doRequest);
+        T newAsyncRequester(StreamingHttpRequestResponseFactory factory, ExecutionContext executionContext,
+                            Function<StreamingHttpRequest, Single<StreamingHttpResponse>> doRequest);
 
     protected abstract <T extends BlockingStreamingHttpRequester & TestHttpRequester>
-        T newBlockingRequester(ExecutionContext executionContext,
-                               Function<BlockingStreamingHttpRequest<HttpPayloadChunk>,
-                                       BlockingStreamingHttpResponse<HttpPayloadChunk>> doRequest);
+        T newBlockingRequester(BlockingStreamingHttpRequestResponseFactory factory, ExecutionContext executionContext,
+                               Function<BlockingStreamingHttpRequest,
+                                       BlockingStreamingHttpResponse> doRequest);
 
     protected interface TestHttpRequester {
         boolean isClosed();
@@ -89,33 +94,33 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
 
     @Test
     public void asyncToSyncNoPayload() throws Exception {
-        StreamingHttpRequester asyncRequester = newAsyncRequester(mockExecutionCtx,
-                req -> success(newResponse(HTTP_1_1, OK)));
+        StreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
+                req -> success(reqRespFactory.ok()));
         BlockingStreamingHttpRequester syncRequester = asyncRequester.asBlockingStreamingRequester();
-        BlockingStreamingHttpResponse<HttpPayloadChunk> syncResponse = syncRequester.request(
-                BlockingStreamingHttpRequests.newRequest(HTTP_1_1, GET, "/"));
+        BlockingStreamingHttpResponse syncResponse = syncRequester.request(
+                syncRequester.get("/"));
         assertEquals(HTTP_1_1, syncResponse.getVersion());
         assertEquals(OK, syncResponse.getStatus());
     }
 
     @Test
     public void asyncToSyncWithPayload() throws Exception {
-        StreamingHttpRequester asyncRequester = newAsyncRequester(mockExecutionCtx,
-                req -> success(newResponse(HTTP_1_1, OK, just(chunkFromString("hello")))));
+        StreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
+                req -> success(reqRespFactory.ok().setPayloadBody(just(allocator.fromAscii("hello")))));
         BlockingStreamingHttpRequester syncRequester = asyncRequester.asBlockingStreamingRequester();
-        BlockingStreamingHttpResponse<HttpPayloadChunk> syncResponse = syncRequester.request(
-                BlockingStreamingHttpRequests.newRequest(HTTP_1_1, GET, "/"));
+        BlockingStreamingHttpResponse syncResponse = syncRequester.request(
+                syncRequester.get("/"));
         assertEquals(HTTP_1_1, syncResponse.getVersion());
         assertEquals(OK, syncResponse.getStatus());
-        BlockingIterator<HttpPayloadChunk> iterator = syncResponse.getPayloadBody().iterator();
+        BlockingIterator<Buffer> iterator = syncResponse.getPayloadBody().iterator();
         assertTrue(iterator.hasNext());
-        assertEquals(chunkFromString("hello"), iterator.next());
+        assertEquals(allocator.fromAscii("hello"), iterator.next());
         assertFalse(iterator.hasNext());
     }
 
     @Test
     public void asyncToSyncClose() throws Exception {
-        StreamingHttpRequester asyncRequester = newAsyncRequester(mockExecutionCtx,
+        StreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
                 req -> Single.error(new IllegalStateException("shouldn't be called!")));
         BlockingStreamingHttpRequester syncRequester = asyncRequester.asBlockingStreamingRequester();
         syncRequester.close();
@@ -124,15 +129,15 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
 
     @Test
     public void asyncToSyncCancelPropagated() throws Exception {
-        StreamingHttpRequester asyncRequester = newAsyncRequester(mockExecutionCtx,
-                req -> success(newResponse(HTTP_1_1, OK, publisherRule.getPublisher())));
+        StreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
+                req -> success(reqRespFactory.ok().setPayloadBody(publisherRule.getPublisher())));
         BlockingStreamingHttpRequester syncRequester = asyncRequester.asBlockingStreamingRequester();
-        BlockingStreamingHttpResponse<HttpPayloadChunk> syncResponse = syncRequester.request(
-                BlockingStreamingHttpRequests.newRequest(HTTP_1_1, GET, "/"));
+        BlockingStreamingHttpResponse syncResponse = syncRequester.request(
+                syncRequester.get("/"));
         assertEquals(HTTP_1_1, syncResponse.getVersion());
         assertEquals(OK, syncResponse.getStatus());
-        BlockingIterator<HttpPayloadChunk> iterator = syncResponse.getPayloadBody().iterator();
-        publisherRule.sendItems(chunkFromString("hello"));
+        BlockingIterator iterator = syncResponse.getPayloadBody().iterator();
+        publisherRule.sendItems(allocator.fromAscii("hello"));
         assertTrue(iterator.hasNext());
         iterator.close();
         publisherRule.verifyCancelled();
@@ -140,11 +145,11 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
 
     @Test
     public void syncToAsyncNoPayload() throws Exception {
-        BlockingStreamingHttpRequester syncRequester = newBlockingRequester(mockExecutionCtx,
-                req -> BlockingStreamingHttpResponses.newResponse(HTTP_1_1, OK));
+        BlockingStreamingHttpRequester syncRequester = newBlockingRequester(blkReqRespFactory, mockExecutionCtx,
+                req -> blkReqRespFactory.ok());
         StreamingHttpRequester asyncRequester = syncRequester.asStreamingRequester();
-        StreamingHttpResponse<HttpPayloadChunk> asyncResponse = awaitIndefinitely(asyncRequester.request(
-                StreamingHttpRequests.newRequest(HTTP_1_1, GET, "/")));
+        StreamingHttpResponse asyncResponse = awaitIndefinitely(asyncRequester.request(
+                asyncRequester.get("/")));
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.getVersion());
         assertEquals(OK, asyncResponse.getStatus());
@@ -152,21 +157,22 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
 
     @Test
     public void syncToAsyncWithPayload() throws Exception {
-        BlockingStreamingHttpRequester syncRequester = newBlockingRequester(mockExecutionCtx,
-                req -> BlockingStreamingHttpResponses.newResponse(HTTP_1_1, OK, singleton(chunkFromString("hello"))));
+        BlockingStreamingHttpRequester syncRequester = newBlockingRequester(blkReqRespFactory, mockExecutionCtx,
+                req -> blkReqRespFactory.ok().setPayloadBody(singleton(allocator.fromAscii("hello"))));
         StreamingHttpRequester asyncRequester = syncRequester.asStreamingRequester();
-        StreamingHttpResponse<HttpPayloadChunk> asyncResponse = awaitIndefinitely(asyncRequester.request(
-                StreamingHttpRequests.newRequest(HTTP_1_1, GET, "/")));
+        StreamingHttpResponse asyncResponse = awaitIndefinitely(asyncRequester.request(
+                asyncRequester.get("/")));
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.getVersion());
         assertEquals(OK, asyncResponse.getStatus());
         assertEquals("hello", awaitIndefinitely(asyncResponse.getPayloadBody()
-                .reduce(() -> "", (acc, next) -> acc + next.getContent().toString(US_ASCII))));
+                .reduce(() -> "", (acc, next) -> acc + next.toString(US_ASCII))));
     }
 
     @Test
     public void syncToAsyncClose() throws Exception {
-        BlockingStreamingHttpRequester syncRequester = newBlockingRequester(mockExecutionCtx, req -> {
+        BlockingStreamingHttpRequester syncRequester = newBlockingRequester(blkReqRespFactory,
+                mockExecutionCtx, req -> {
             throw new IllegalStateException("shouldn't be called!");
         });
         StreamingHttpRequester asyncRequester = syncRequester.asStreamingRequester();
@@ -176,14 +182,14 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
 
     @Test
     public void syncToAsyncCancelPropagated() throws Exception {
-        BlockingStreamingHttpRequester syncRequester = newBlockingRequester(mockExecutionCtx, req ->
-                BlockingStreamingHttpResponses.newResponse(HTTP_1_1, OK, mockIterable));
+        BlockingStreamingHttpRequester syncRequester = newBlockingRequester(blkReqRespFactory, mockExecutionCtx, req ->
+                blkReqRespFactory.ok().setPayloadBody(mockIterable));
         StreamingHttpRequester asyncRequester = syncRequester.asStreamingRequester();
-        StreamingHttpResponse<HttpPayloadChunk> asyncResponse = awaitIndefinitely(asyncRequester.request(
-                StreamingHttpRequests.newRequest(HTTP_1_1, GET, "/")));
+        StreamingHttpResponse asyncResponse = awaitIndefinitely(asyncRequester.request(
+                asyncRequester.get("/")));
         assertNotNull(asyncResponse);
         CountDownLatch latch = new CountDownLatch(1);
-        asyncResponse.getPayloadBody().subscribe(new Subscriber<HttpPayloadChunk>() {
+        asyncResponse.getPayloadBody().subscribe(new Subscriber<Buffer>() {
             @Override
             public void onSubscribe(final Subscription s) {
                 s.cancel();
@@ -191,7 +197,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
             }
 
             @Override
-            public void onNext(final HttpPayloadChunk s) {
+            public void onNext(final Buffer s) {
             }
 
             @Override

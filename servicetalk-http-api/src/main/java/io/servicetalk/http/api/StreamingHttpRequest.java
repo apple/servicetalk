@@ -34,9 +34,7 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
      * Get the underlying payload as a {@link Publisher} of {@link Buffer}s.
      * @return The {@link Publisher} of {@link Buffer} representation of the underlying
      */
-    default Publisher<Buffer> getPayloadBody() {
-        return HttpSerializerUtils.getPayloadBody(this);
-    }
+    Publisher<Buffer> getPayloadBody();
 
     /**
      * Get and deserialize the payload body.
@@ -44,7 +42,9 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
      * @param <T> The resulting type of the deserialization operation.
      * @return The results of the deserialization operation.
      */
-    <T> Publisher<T> getPayloadBody(HttpDeserializer<T> deserializer);
+    default <T> Publisher<T> getPayloadBody(HttpDeserializer<T> deserializer) {
+        return deserializer.deserialize(getHeaders(), getPayloadBody());
+    }
 
     /**
      * Get a {@link Publisher} that combines the raw payload body concatenated with the {@link HttpHeaders trailers}.
@@ -54,24 +54,33 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
     Publisher<Object> getPayloadBodyAndTrailers();
 
     /**
-     * Transform the underlying payload body with the result of serialization.
+     * Set the underlying payload body.
      * <p>
-     * Note this method has the following caveats:
-     * <ul>
-     *     <li>back pressure on the existing payload body will not be respected!</li>
-     *     <li>The new payload body {@link Publisher} may not complete until the existing payload body completes!</li>
-     * </ul>
-     * It is preferred to serialize the content during {@link StreamingHttpRequest} creation to avoid this ambiguity.
+     * A best effort will be made to apply back pressure to the existing {@link Publisher} payload body. If this default
+     * policy is not sufficient you can use {@link #transformPayloadBody(UnaryOperator)} for more fine grain control.
+     * <p>
+     * This method reserves the right to delay completion/consumption of {@code payloadBody}. This may occur due to the
+     * combination with the existing {@link Publisher} payload body.
+     * @param payloadBody The new payload body.
+     * @return A {@link StreamingHttpRequest} with the new serialized payload body.
+     */
+    StreamingHttpRequest setPayloadBody(Publisher<Buffer> payloadBody);
+
+    /**
+     * Set the underlying payload body with the result of serialization.
+     * <p>
+     * A best effort will be made to apply back pressure to the existing {@link Publisher} payload body. If this default
+     * policy is not sufficient you can use {@link #transformPayloadBody(Function, HttpSerializer)} for more fine grain
+     * control.
+     * <p>
+     * This method reserves the right to delay completion/consumption of {@code payloadBody}. This may occur due to the
+     * combination with the existing {@link Publisher} payload body.
      * @param payloadBody The new payload body, prior to serialization.
      * @param serializer Used to serialize the payload body.
      * @param <T> The type of objects to serialize.
      * @return A {@link StreamingHttpRequest} with the new serialized payload body.
      */
-    default <T> StreamingHttpRequest transformPayloadBody(Publisher<T> payloadBody, HttpSerializer<T> serializer) {
-        // Ignore content of original Publisher (payloadBody). Merge means the resulting publisher will not complete
-        // until the previous payload body and the serialization both complete.
-        return transformPayloadBody(old -> old.ignoreElements().merge(payloadBody), serializer);
-    }
+    <T> StreamingHttpRequest setPayloadBody(Publisher<T> payloadBody, HttpSerializer<T> serializer);
 
     /**
      * Transform the underlying payload body with the result of serialization.

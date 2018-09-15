@@ -26,18 +26,15 @@ import static java.util.Objects.requireNonNull;
  * Provides a means to make a HTTP request.
  */
 public abstract class HttpRequester implements HttpRequestFactory, ListenableAsyncCloseable, AutoCloseable {
-    final HttpRequestFactory requestFactory;
-    private final HttpResponseFactory responseFactory;
+    final HttpRequestResponseFactory reqRespFactory;
 
     /**
      * Create a new instance.
-     * @param requestFactory The {@link HttpRequestFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
-     * @param responseFactory Used for {@link #getHttpResponseFactory()}.
+     * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
      */
-    protected HttpRequester(final HttpRequestFactory requestFactory, final HttpResponseFactory responseFactory) {
-        this.requestFactory = requireNonNull(requestFactory);
-        this.responseFactory = requireNonNull(responseFactory);
+    protected HttpRequester(final HttpRequestResponseFactory reqRespFactory) {
+        this.reqRespFactory = requireNonNull(reqRespFactory);
     }
 
     /**
@@ -60,7 +57,7 @@ public abstract class HttpRequester implements HttpRequestFactory, ListenableAsy
 
     @Override
     public final HttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
-        return requestFactory.newRequest(method, requestTarget);
+        return reqRespFactory.newRequest(method, requestTarget);
     }
 
     /**
@@ -68,7 +65,7 @@ public abstract class HttpRequester implements HttpRequestFactory, ListenableAsy
      * @return a {@link HttpResponseFactory}.
      */
     public final HttpResponseFactory getHttpResponseFactory() {
-        return responseFactory;
+        return reqRespFactory;
     }
 
     /**

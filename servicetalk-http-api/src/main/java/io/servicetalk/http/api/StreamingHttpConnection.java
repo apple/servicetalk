@@ -30,13 +30,11 @@ public abstract class StreamingHttpConnection extends StreamingHttpRequester {
     /**
      * Create a new instance.
      *
-     * @param requestFactory The {@link HttpRequestFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
-     * @param responseFactory Used for {@link #getHttpResponseFactory()}.
+     * @param reqRespFactory The {@link StreamingHttpRequestResponseFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
      */
-    protected StreamingHttpConnection(final StreamingHttpRequestFactory requestFactory,
-                                      final StreamingHttpResponseFactory responseFactory) {
-        super(requestFactory, responseFactory);
+    protected StreamingHttpConnection(final StreamingHttpRequestResponseFactory reqRespFactory) {
+        super(reqRespFactory);
     }
 
     /**

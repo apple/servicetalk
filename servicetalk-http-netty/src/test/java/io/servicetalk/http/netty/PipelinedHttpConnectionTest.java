@@ -15,14 +15,17 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.LastHttpPayloadChunk;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
+import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.netty.internal.Connection;
@@ -33,16 +36,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_0;
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersions.newProtocolVersion;
-import static io.servicetalk.http.api.HttpRequestMethods.GET;
-import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
-import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
-import static io.servicetalk.http.netty.EmptyLastHttpPayloadChunk.INSTANCE;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -61,24 +59,26 @@ public class PipelinedHttpConnectionTest {
     private final Connection<Object, Object> connection = mock(Connection.class);
 
     @Rule
-    public final MockedSubscriberRule<StreamingHttpResponse<HttpPayloadChunk>> dataSubscriber1 = new MockedSubscriberRule<>();
+    public final MockedSubscriberRule<StreamingHttpResponse> dataSubscriber1 = new MockedSubscriberRule<>();
     @Rule
-    public final MockedSubscriberRule<StreamingHttpResponse<HttpPayloadChunk>> dataSubscriber2 = new MockedSubscriberRule<>();
+    public final MockedSubscriberRule<StreamingHttpResponse> dataSubscriber2 = new MockedSubscriberRule<>();
 
     private TestPublisher<Object> readPublisher1;
     private TestPublisher<Object> readPublisher2;
-    private TestPublisher<HttpPayloadChunk> writePublisher1;
-    private TestPublisher<HttpPayloadChunk> writePublisher2;
+    private TestPublisher<Buffer> writePublisher1;
+    private TestPublisher<Buffer> writePublisher2;
 
     private StreamingHttpConnection pipe;
 
-    private final LastHttpPayloadChunk emptyLastChunk = INSTANCE;
-    private StreamingHttpResponse<HttpPayloadChunk> mockResp;
+    private final HttpHeaders emptyLastChunk = DefaultHttpHeadersFactory.INSTANCE.newEmptyTrailers();
+    private StreamingHttpResponse mockResp;
+    private final StreamingHttpRequestResponseFactory reqRespFactory =
+            new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE);
 
     @SuppressWarnings("unchecked")
     @Before
     public void setup() {
-        mockResp = newResponse(OK, emptyLastChunk);
+        mockResp = reqRespFactory.ok();
         when(connection.onClosing()).thenReturn(never());
         when(connection.getExecutionContext()).thenReturn(ctx);
         HttpClientConfig config = new HttpClientConfig(new TcpClientConfig(true));
@@ -96,19 +96,19 @@ public class PipelinedHttpConnectionTest {
         readPublisher2.sendOnSubscribe();
         writePublisher1.sendOnSubscribe();
         writePublisher2.sendOnSubscribe();
-        pipe = new PipelinedStreamingHttpConnection(connection, config.asReadOnly(), ctx, requestFactory);
+        pipe = new PipelinedStreamingHttpConnection(connection, config.asReadOnly(), ctx, reqRespFactory);
     }
 
     @Test
     public void http09RequestShouldReturnOnError() {
-        Single<StreamingHttpResponse<HttpPayloadChunk>> request = pipe.request(
-                newRequest(newProtocolVersion(0, 9), GET, "/Foo"));
+        Single<StreamingHttpResponse> request = pipe.request(
+                reqRespFactory.get("/Foo").setVersion(newProtocolVersion(0, 9)));
         dataSubscriber1.subscribe(request).request(1).verifyFailure(IllegalArgumentException.class);
     }
 
     @Test
     public void http10RequestShouldReturnOnError() {
-        Single<StreamingHttpResponse<HttpPayloadChunk>> request = pipe.request(newRequest(HTTP_1_0, GET, "/Foo"));
+        Single<StreamingHttpResponse> request = pipe.request(reqRespFactory.get("/Foo").setVersion(HTTP_1_0));
         dataSubscriber1.subscribe(request).request(1).verifyFailure(IllegalArgumentException.class);
     }
 
@@ -118,28 +118,28 @@ public class PipelinedHttpConnectionTest {
         reset(connection); // Simplified mocking
         when(connection.getExecutionContext()).thenReturn(ctx);
         when(connection.write(any(), any())).thenReturn(completed());
-        when(connection.read()).thenReturn(Publisher.from(newResponse(OK), emptyLastChunk));
-        Single<StreamingHttpResponse<HttpPayloadChunk>> request = pipe.request(
-                newRequest(HTTP_1_1, GET, "/Foo"));
+        when(connection.read()).thenReturn(Publisher.from(reqRespFactory.ok(), emptyLastChunk));
+        Single<StreamingHttpResponse> request = pipe.request(
+                reqRespFactory.get("/Foo"));
         dataSubscriber1.subscribe(request).request(1).verifySuccess();
     }
 
     @Test
     public void ensureRequestsArePipelined() {
-        dataSubscriber1.subscribe(pipe.request(newRequest(GET, "/foo", writePublisher1))).request(1);
-        dataSubscriber2.subscribe(pipe.request(newRequest(GET, "/bar", writePublisher2))).request(1);
+        dataSubscriber1.subscribe(pipe.request(reqRespFactory.get("/foo").setPayloadBody(writePublisher1))).request(1);
+        dataSubscriber2.subscribe(pipe.request(reqRespFactory.get("/bar").setPayloadBody(writePublisher2))).request(1);
 
         readPublisher1.verifyNotSubscribed();
         readPublisher2.verifyNotSubscribed();
         writePublisher1.verifySubscribed();
         writePublisher2.verifyNotSubscribed();
 
-        writePublisher1.sendItems(emptyLastChunk).onComplete();
+        writePublisher1.onComplete();
         readPublisher1.verifySubscribed(); // read after write completes, pipelining will be full-duplex in follow-up PR
         readPublisher1.sendItems(mockResp);
 
         writePublisher2.verifySubscribed(); // pipelining in action – 2nd req writing while 1st req still reading
-        writePublisher2.sendItems(emptyLastChunk).onComplete();
+        writePublisher2.onComplete();
 
         readPublisher1.onComplete();
         dataSubscriber1.request(1).verifySuccess();

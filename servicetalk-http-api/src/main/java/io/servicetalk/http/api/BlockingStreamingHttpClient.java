@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.CloseableIterable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient.ReservedBlockingHttpConnection;
 import io.servicetalk.http.api.BlockingStreamingHttpClientToStreamingHttpClient.BlockingToReservedStreamingHttpConnection;
@@ -37,13 +38,11 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
     /**
      * Create a new instance.
      *
-     * @param requestFactory The {@link HttpRequestFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
-     * @param responseFactory Used for {@link #getHttpResponseFactory()}.
+     * @param reqRespFactory The {@link BlockingStreamingHttpRequestResponseFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
      */
-    protected BlockingStreamingHttpClient(final BlockingStreamingHttpRequestFactory requestFactory,
-                                          final BlockingStreamingHttpResponseFactory responseFactory) {
-        super(requestFactory, responseFactory);
+    protected BlockingStreamingHttpClient(final BlockingStreamingHttpRequestResponseFactory reqRespFactory) {
+        super(reqRespFactory);
     }
 
     /**
@@ -125,13 +124,12 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
         /**
          * Create a new instance.
          *
-         * @param requestFactory The {@link HttpRequestFactory} used to
-         * {@link #newRequest(HttpRequestMethod, String) create new requests}.
-         * @param responseFactory Used for {@link #getHttpResponseFactory()}.
+         * @param reqRespFactory The {@link BlockingStreamingHttpRequestResponseFactory} used to
+         * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
          */
-        protected ReservedBlockingStreamingHttpConnection(final BlockingStreamingHttpRequestFactory requestFactory,
-                                                          final BlockingStreamingHttpResponseFactory responseFactory) {
-            super(requestFactory, responseFactory);
+        protected ReservedBlockingStreamingHttpConnection(
+                final BlockingStreamingHttpRequestResponseFactory reqRespFactory) {
+            super(reqRespFactory);
         }
 
         /**
@@ -224,15 +222,18 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
         ReservedBlockingStreamingHttpConnection getHttpConnection(boolean releaseReturnsToClient);
 
         @Override
-        default <T> UpgradableBlockingStreamingHttpResponse transformPayloadBody(BlockingIterable<T> payloadBody,
-                                                                                 HttpSerializer<T> serializer) {
-            // Ignore content of original Publisher (payloadBody). Merge means the resulting publisher will not complete
-            // until the previous payload body and the serialization both complete.
-            return transformPayloadBody(old -> {
-                old.forEach(buffer -> { });
-                return payloadBody;
-            }, serializer);
-        }
+        UpgradableBlockingStreamingHttpResponse setPayloadBody(Iterable<Buffer> payloadBody);
+
+        @Override
+        UpgradableBlockingStreamingHttpResponse setPayloadBody(CloseableIterable<Buffer> payloadBody);
+
+        @Override
+        <T> UpgradableBlockingStreamingHttpResponse setPayloadBody(Iterable<T> payloadBody,
+                                                                   HttpSerializer<T> serializer);
+
+        @Override
+        <T> UpgradableBlockingStreamingHttpResponse setPayloadBody(CloseableIterable<T> payloadBody,
+                                                                   HttpSerializer<T> serializer);
 
         @Override
         <T> UpgradableBlockingStreamingHttpResponse transformPayloadBody(

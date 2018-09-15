@@ -25,9 +25,11 @@ import io.servicetalk.examples.http.service.composition.pojo.User;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.HttpResponseFactory;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpSerializer;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.serialization.api.TypeHolder;
 import io.servicetalk.transport.api.ConnectionContext;
 
@@ -69,14 +71,15 @@ final class GatewayService extends HttpService {
     }
 
     @Override
-    public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                         final HttpRequest<HttpPayloadChunk> request) {
+    public Single<HttpResponse> handle(final HttpServiceContext ctx,
+                                       final HttpRequest request,
+                                       final HttpResponseFactory factory) {
         final String userId = request.parseQuery().get(USER_ID_QP_NAME);
         if (userId == null) {
-            return success(newResponse(BAD_REQUEST));
+            return success(factory.newResponse(BAD_REQUEST));
         }
 
-        return recommendationsClient.request(newRequest(GET, "/recommendations/aggregated?userId=" + userId))
+        return recommendationsClient.request(recommendationsClient.get("/recommendations/aggregated?userId=" + userId))
                 // Since HTTP payload is a buffer, we deserialize into List<Recommendation>>.
                 .map(response -> serializer.deserialize(response, typeOfRecommendation).getPayloadBody())
                 // Recommendations are a List and we want to query details for each recommendation in parallel.
