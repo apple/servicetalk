@@ -51,6 +51,7 @@ import javax.ws.rs.core.Configuration;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
+import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.internal.Await.awaitNonNull;
@@ -67,7 +68,6 @@ import static io.servicetalk.http.api.HttpRequestMethods.HEAD;
 import static io.servicetalk.http.api.HttpRequestMethods.OPTIONS;
 import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.http.api.HttpRequestMethods.PUT;
-import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.router.jersey.TestUtils.getContentAsString;
 import static io.servicetalk.transport.api.HostAndPort.of;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
@@ -165,7 +165,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
     }
 
     protected StreamingHttpRequest noPayloadRequest(final HttpRequestMethod method, final String path) {
-        final StreamingHttpRequest req = newRequest(method, testUri(path));
+        final StreamingHttpRequest req = httpClient.newRequest(method, testUri(path));
         req.getHeaders().set(HOST, host());
         return req;
     }
@@ -175,7 +175,8 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
                                                   final CharSequence payload,
                                                   final CharSequence contentType) {
         final Buffer content = DEFAULT_ALLOCATOR.fromUtf8(payload);
-        final StreamingHttpRequest req = newRequest(method, testUri(path), content);
+        final StreamingHttpRequest req = httpClient.newRequest(method, testUri(path))
+                .transformPayloadBody(__ -> just(content));
         req.getHeaders().set(HOST, host());
         req.getHeaders().set(CONTENT_TYPE, contentType);
         req.getHeaders().set(CONTENT_LENGTH, Integer.toString(content.getReadableBytes()));

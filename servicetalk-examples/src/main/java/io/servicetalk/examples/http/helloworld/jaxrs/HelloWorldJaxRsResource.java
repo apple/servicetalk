@@ -19,7 +19,6 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.Map;
@@ -37,7 +36,6 @@ import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.Response;
 
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static java.lang.Math.random;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -119,6 +117,8 @@ public class HelloWorldJaxRsResource {
 
     /**
      * Resource that only relies on {@link Single}s for consuming and producing data, and operators for processing it.
+     * No OIO adaptation is involved when requests are dispatched to it,
+     * allowing it to fully benefit from ReactiveStream's features like flow control.
      * Behind the scene, ServiceTalk's aggregation mechanism is used to provide the resource with a
      * {@link Single Single&lt;Buffer&gt;} that contains the whole request entity as a {@link Buffer}.
      * Note that the {@link ConnectionContext} could also be injected into a class-level {@code @Context} field.
@@ -130,7 +130,7 @@ public class HelloWorldJaxRsResource {
      *
      * @param who the recipient of the greetings.
      * @param ctx the {@link ConnectionContext}.
-     * @return greetings as a {@link Publisher} of {@link HttpPayloadChunk}.
+     * @return greetings as a {@link Single} {@link Buffer}.
      */
     @POST
     @Path("hello")
@@ -146,10 +146,12 @@ public class HelloWorldJaxRsResource {
     }
 
     /**
-     * Resource that only relies on {@link Publisher}s for consuming and producing data,
+     * Resource that only relies on {@link Single}/{@link Publisher} for consuming and producing data,
      * and returns a JAX-RS {@link Response} in order to set its status.
      * No OIO adaptation is involved when requests are dispatched to it,
      * allowing it to fully benefit from ReactiveStream's features like flow control.
+     * Behind the scene, ServiceTalk's aggregation mechanism is used to provide the resource with a
+     * {@link Single Single&lt;Buffer&gt;} that contains the whole request entity as a {@link Buffer}.
      * Note that the {@link ConnectionContext} could also be injected into a class-level {@code @Context} field.
      * <p>
      * Test with:
@@ -165,19 +167,17 @@ public class HelloWorldJaxRsResource {
     @Path("random-hello")
     @Consumes(TEXT_PLAIN)
     @Produces(TEXT_PLAIN)
-    public Response randomHello(final Publisher<HttpPayloadChunk> who,
+    public Response randomHello(final Single<Buffer> who,
                                 @Context final ConnectionContext ctx) {
         if (random() < .5) {
             return accepted("greetings accepted, call again for a response").build();
         }
 
         final BufferAllocator allocator = ctx.getExecutionContext().getBufferAllocator();
-        final Publisher<HttpPayloadChunk> payload =
-                just(newPayloadChunk(allocator.fromAscii("hello "))).concatWith(who);
+        final Publisher<Buffer> payload = just(allocator.fromAscii("hello ")).concatWith(who);
 
-        // Wrap content Publisher to capture its generic type (i.e. HttpPayloadChunk) so it is handled correctly
-        final GenericEntity<Publisher<HttpPayloadChunk>> entity =
-                new GenericEntity<Publisher<HttpPayloadChunk>>(payload) { };
+        // Wrap content Publisher to capture its generic type (i.e. Buffer) so it is handled correctly
+        final GenericEntity<Publisher<Buffer>> entity = new GenericEntity<Publisher<Buffer>>(payload) { };
 
         return ok(entity).build();
     }
