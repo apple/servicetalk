@@ -34,6 +34,7 @@ import java.util.function.BiFunction;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
@@ -47,13 +48,13 @@ final class DefaultStreamingHttpClientGroup<UnresolvedAddress> extends Streaming
     // Placeholder should not leak outside of the scope of existing class
     private static final StreamingHttpClient PLACEHOLDER_CLIENT = new StreamingHttpClient() {
         @Override
-        public Single<ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest<HttpPayloadChunk> request) {
+        public Single<ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest request) {
             return Single.error(new UnsupportedOperationException(PLACEHOLDER_EXCEPTION_MSG));
         }
 
         @Override
-        public Single<UpgradableStreamingHttpResponse<HttpPayloadChunk>> upgradeConnection(
-                final StreamingHttpRequest<HttpPayloadChunk> request) {
+        public Single<UpgradableStreamingHttpResponse> upgradeConnection(
+                final StreamingHttpRequest request) {
             return Single.error(new UnsupportedOperationException(PLACEHOLDER_EXCEPTION_MSG));
         }
 
@@ -63,7 +64,7 @@ final class DefaultStreamingHttpClientGroup<UnresolvedAddress> extends Streaming
         }
 
         @Override
-        public Single<StreamingHttpResponse<HttpPayloadChunk>> request(final StreamingHttpRequest<HttpPayloadChunk> request) {
+        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
             return Single.error(new UnsupportedOperationException(PLACEHOLDER_EXCEPTION_MSG));
         }
 
@@ -80,6 +81,7 @@ final class DefaultStreamingHttpClientGroup<UnresolvedAddress> extends Streaming
 
     private volatile boolean closed;
     private final ConcurrentMap<GroupKey<UnresolvedAddress>, StreamingHttpClient> clientMap = new ConcurrentHashMap<>();
+    private final ExecutionContext executionContext;
     private final BiFunction<GroupKey<UnresolvedAddress>, HttpRequestMetaData, StreamingHttpClient> clientFactory;
     private final ListenableAsyncCloseable asyncCloseable = toAsyncCloseable(() -> {
                 closed = true;
@@ -92,19 +94,24 @@ final class DefaultStreamingHttpClientGroup<UnresolvedAddress> extends Streaming
     );
 
     DefaultStreamingHttpClientGroup(
+            final StreamingHttpRequestFactory requestFactory,
+            final StreamingHttpResponseFactory responseFactory,
+            final ExecutionContext executionContext,
             final BiFunction<GroupKey<UnresolvedAddress>, HttpRequestMetaData, StreamingHttpClient> clientFactory) {
+        super(requestFactory, responseFactory);
         this.clientFactory = requireNonNull(clientFactory);
+        this.executionContext = requireNonNull(executionContext);
     }
 
     @Override
-    public Single<StreamingHttpResponse<HttpPayloadChunk>> request(final GroupKey<UnresolvedAddress> key,
-                                                                   final StreamingHttpRequest<HttpPayloadChunk> request) {
+    public Single<? extends StreamingHttpResponse> request(final GroupKey<UnresolvedAddress> key,
+                                                 final StreamingHttpRequest request) {
         requireNonNull(key);
         requireNonNull(request);
-        return new Single<StreamingHttpResponse<HttpPayloadChunk>>() {
+        return new Single<StreamingHttpResponse>() {
             @Override
-            protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse<HttpPayloadChunk>> subscriber) {
-                final Single<StreamingHttpResponse<HttpPayloadChunk>> response;
+            protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
+                final Single<? extends StreamingHttpResponse> response;
                 try {
                     response = selectClient(key, request).request(request);
                 } catch (final Throwable t) {
@@ -118,11 +125,11 @@ final class DefaultStreamingHttpClientGroup<UnresolvedAddress> extends Streaming
     }
 
     @Override
-    public Single<? extends StreamingHttpClient.ReservedStreamingHttpConnection> reserveConnection(final GroupKey<UnresolvedAddress> key,
-                                                                                                   final StreamingHttpRequest<HttpPayloadChunk> request) {
+    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final GroupKey<UnresolvedAddress> key,
+                                                                               final StreamingHttpRequest request) {
         requireNonNull(key);
         requireNonNull(request);
-        return new Single<StreamingHttpClient.ReservedStreamingHttpConnection>() {
+        return new Single<ReservedStreamingHttpConnection>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super ReservedStreamingHttpConnection> subscriber) {
                 final Single<? extends ReservedStreamingHttpConnection> reservedHttpConnection;
@@ -139,15 +146,15 @@ final class DefaultStreamingHttpClientGroup<UnresolvedAddress> extends Streaming
     }
 
     @Override
-    public Single<? extends StreamingHttpClient.UpgradableStreamingHttpResponse<HttpPayloadChunk>> upgradeConnection(
-            final GroupKey<UnresolvedAddress> key, final StreamingHttpRequest<HttpPayloadChunk> request) {
+    public Single<? extends StreamingHttpClient.UpgradableStreamingHttpResponse> upgradeConnection(
+            final GroupKey<UnresolvedAddress> key, final StreamingHttpRequest request) {
         requireNonNull(key);
         requireNonNull(request);
-        return new Single<StreamingHttpClient.UpgradableStreamingHttpResponse<HttpPayloadChunk>>() {
+        return new Single<StreamingHttpClient.UpgradableStreamingHttpResponse>() {
             @Override
             protected void handleSubscribe(
-                    final Subscriber<? super UpgradableStreamingHttpResponse<HttpPayloadChunk>> subscriber) {
-                final Single<? extends UpgradableStreamingHttpResponse<HttpPayloadChunk>> upgradedHttpConnection;
+                    final Subscriber<? super UpgradableStreamingHttpResponse> subscriber) {
+                final Single<? extends UpgradableStreamingHttpResponse> upgradedHttpConnection;
                 try {
                     upgradedHttpConnection = selectClient(key, request).upgradeConnection(request);
                 } catch (final Throwable t) {

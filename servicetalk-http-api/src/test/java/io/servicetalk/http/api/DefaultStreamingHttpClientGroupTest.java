@@ -59,7 +59,7 @@ public class DefaultStreamingHttpClientGroupTest {
             new MockedSingleListenerRule<>();
 
     @Rule
-    public final MockedSingleListenerRule<StreamingHttpResponse<HttpPayloadChunk>> httpResponseListener =
+    public final MockedSingleListenerRule<StreamingHttpResponse> httpResponseListener =
             new MockedSingleListenerRule<>();
 
     private final ExecutionContext executionContext = mock(ExecutionContext.class);
@@ -72,13 +72,16 @@ public class DefaultStreamingHttpClientGroupTest {
     private final StreamingHttpClient httpClient = mock(StreamingHttpClient.class);
 
     @SuppressWarnings("unchecked")
-    private final StreamingHttpRequest<HttpPayloadChunk> request = mock(StreamingHttpRequest.class);
+    private final StreamingHttpRequest request = mock(StreamingHttpRequest.class);
     @SuppressWarnings("unchecked")
-    private final StreamingHttpResponse<HttpPayloadChunk> expectedResponse = mock(StreamingHttpResponse.class);
+    private final StreamingHttpResponse expectedResponse = mock(StreamingHttpResponse.class);
     @SuppressWarnings("unchecked")
     private final ReservedStreamingHttpConnection expectedReservedCon = mock(ReservedStreamingHttpConnection.class);
 
     private StreamingHttpClientGroup<String> clientGroup;
+
+    // TODO (jayv) revisit HttpClientGroup.newRequest()
+    private final HttpHeadersFactory headersFactory = DefaultHttpHeadersFactory.INSTANCE;
 
     @SuppressWarnings("unchecked")
     private static GroupKey<String> mockKey(final int i) {
@@ -94,12 +97,13 @@ public class DefaultStreamingHttpClientGroupTest {
         // Mockito type-safe API can't deal with wildcard on ReservedStreamingHttpConnection
         doReturn(success(expectedReservedCon)).when(httpClient).reserveConnection(request);
         when(httpClient.closeAsync()).thenReturn(completed());
-        clientGroup = newHttpClientGroup(clientFactory);
+        // TODO (jayv) revisit HttpClientGroup.newRequest()
+        clientGroup = newHttpClientGroup(headersFactory, executionContext, clientFactory);
     }
 
     @Test(expected = NullPointerException.class)
     public void createWithNullFactory() {
-        new DefaultStreamingHttpClientGroup<String>(null);
+        new DefaultStreamingHttpClientGroup<String>(headersFactory, executionContext, null);
     }
 
     @Test(expected = NullPointerException.class)
@@ -206,17 +210,18 @@ public class DefaultStreamingHttpClientGroupTest {
 
         final AtomicBoolean invoked = new AtomicBoolean();
         final AtomicBoolean returned = new AtomicBoolean();
-        final StreamingHttpClientGroup<String> clientGroup = newHttpClientGroup((gk, md) -> {
-            invoked.set(true);
-            latchForCancel.countDown();
-            try {
-                latchForFactory.await();
-            } catch (final InterruptedException e) {
-                throw new IllegalStateException("thread should wait when client group will be closed");
-            }
-            returned.set(true);
-            return httpClient;
-        });
+        final StreamingHttpClientGroup<String> clientGroup = newHttpClientGroup(headersFactory, executionContext,
+                (gk, md) -> {
+                    invoked.set(true);
+                    latchForCancel.countDown();
+                    try {
+                        latchForFactory.await();
+                    } catch (final InterruptedException e) {
+                        throw new IllegalStateException("thread should wait when client group will be closed");
+                    }
+                    returned.set(true);
+                    return httpClient;
+                });
         final ExecutorService executorService = Executors.newFixedThreadPool(1);
         try {
             final Future<?> future = executorService.submit(() ->

@@ -18,15 +18,19 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpHeadersFactory;
+import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestFactory;
+import io.servicetalk.http.api.StreamingHttpRequests;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Single.error;
+import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultStreamingHttpClient extends StreamingHttpClient {
@@ -41,32 +45,31 @@ final class DefaultStreamingHttpClient extends StreamingHttpClient {
     private final LoadBalancer<LoadBalancedStreamingHttpConnection> loadBalancer;
 
     @SuppressWarnings("unchecked")
-    DefaultStreamingHttpClient(ExecutionContext executionContext,
-                               LoadBalancer<LoadBalancedStreamingHttpConnection> loadBalancer) {
+    DefaultStreamingHttpClient(final ExecutionContext executionContext,
+                               final LoadBalancer<LoadBalancedStreamingHttpConnection> loadBalancer,
+                               final StreamingHttpRequestFactory requestFactory) {
+        super(requestFactory);
         this.executionContext = requireNonNull(executionContext);
         this.loadBalancer = requireNonNull(loadBalancer);
     }
 
     @Override
-    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(
-            final StreamingHttpRequest<HttpPayloadChunk> request) {
+    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest request) {
         return loadBalancer.selectConnection(SELECTOR_FOR_RESERVE);
     }
 
     @Override
-    public Single<? extends UpgradableStreamingHttpResponse<HttpPayloadChunk>> upgradeConnection(
-            final StreamingHttpRequest<HttpPayloadChunk> request) {
+    public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(final StreamingHttpRequest request) {
         return error(new UnsupportedOperationException("Protocol upgrades not yet implemented"));
     }
 
     @Override
-    public Single<StreamingHttpResponse<HttpPayloadChunk>> request(
-            final StreamingHttpRequest<HttpPayloadChunk> request) {
-        // TODO should we do smart things here, add encoding headers etc. ?
-        // We have to do the incrementing/decrementing in the Client instead of LoadBalancedStreamingHttpConnection because
-        // it is possible that someone can use the ConnectionFactory exported by this Client before the LoadBalancer
-        // takes ownership of it (e.g. connection initialization) and in that case they will not be following the
-        // LoadBalancer API which this Client depends upon to ensure the concurrent request count state is correct.
+    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+        // We have to do the incrementing/decrementing in the Client instead of LoadBalancedStreamingHttpConnection
+        // because it is possible that someone can use the ConnectionFactory exported by this Client before the
+        // LoadBalancer takes ownership of it (e.g. connection initialization) and in that case they will not be
+        // following the LoadBalancer API which this Client depends upon to ensure the concurrent request count state is
+        // correct.
         return loadBalancer.selectConnection(SELECTOR_FOR_REQUEST)
                 .flatMap(c -> c.request(request).liftSynchronous(new ConcurrencyControlSingleOperator(c)));
     }

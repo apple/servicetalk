@@ -47,26 +47,20 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 final class HttpSerializerUtils {
     private static final HttpDeserializer<Buffer> BUFFER_DESERIALIZER = new HttpDeserializer<Buffer>() {
+
         @Override
-        public Buffer deserialize(final HttpHeaders headers, final Object payload) {
-            if (payload instanceof Buffer) {
-                return (Buffer) payload;
-            }
-            // TODO(scott): support FileRegion?
-            // We can also add best effort detection if we are running on an EventLoop thread to prevent blocking.
-            // It is assumed that when HttpRequests are created with a file they have access to a BufferAllocator
-            // to allocate buffers if necessary.
-            throw new UnsupportedHttpChunkException(payload);
+        public Buffer deserialize(final HttpHeaders headers, final Buffer payload) {
+            return payload;
         }
 
         @Override
-        public BlockingIterable<Buffer> deserialize(final HttpHeaders headers, final BlockingIterable<?> payload) {
-            return new HttpBufferFilterBlockingIterable(payload);
+        public BlockingIterable<Buffer> deserialize(final HttpHeaders headers, final BlockingIterable<Buffer> payload) {
+            return payload;
         }
 
         @Override
-        public Publisher<Buffer> deserialize(final HttpHeaders headers, final Publisher<?> payload) {
-            return payload.liftSynchronous(new HttpBufferFilterOperator());
+        public Publisher<Buffer> deserialize(final HttpHeaders headers, final Publisher<Buffer> payload) {
+            return payload;
         }
     };
 

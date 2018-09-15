@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.GroupKey;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.BiFunction;
 
@@ -37,7 +38,10 @@ public final class HttpClientGroups {
      * @return A new {@link StreamingHttpClientGroup}.
      */
     public static <UnresolvedAddress> StreamingHttpClientGroup<UnresolvedAddress> newHttpClientGroup(
+            final StreamingHttpRequestFactory requestFactory,
+            final StreamingHttpResponseFactory responseFactory,
+            final ExecutionContext executionContext,
             final BiFunction<GroupKey<UnresolvedAddress>, HttpRequestMetaData, StreamingHttpClient> clientFactory) {
-        return new DefaultStreamingHttpClientGroup<>(clientFactory);
+        return new DefaultStreamingHttpClientGroup<>(requestFactory, responseFactory, executionContext, clientFactory);
     }
 }

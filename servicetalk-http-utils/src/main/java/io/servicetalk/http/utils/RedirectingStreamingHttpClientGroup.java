@@ -18,7 +18,7 @@ package io.servicetalk.http.utils;
 import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpHeaderNames;
-import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientGroup;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -45,7 +45,8 @@ import java.util.function.Function;
  *
  * @param <UnresolvedAddress> The address type used to create new {@link StreamingHttpClient}s.
  */
-public final class RedirectingStreamingHttpClientGroup<UnresolvedAddress> extends DelegatingStreamingHttpClientGroup<UnresolvedAddress> {
+public final class RedirectingStreamingHttpClientGroup<UnresolvedAddress> extends
+                                                                DelegatingStreamingHttpClientGroup<UnresolvedAddress> {
 
     // https://tools.ietf.org/html/rfc2068#section-10.3 says:
     // A user agent SHOULD NOT automatically redirect a request more than 5 times,
@@ -64,10 +65,10 @@ public final class RedirectingStreamingHttpClientGroup<UnresolvedAddress> extend
      * @param executionContext The {@link ExecutionContext} to convert the {@link StreamingHttpClientGroup} to
      * an {@link StreamingHttpRequester}.
      */
-    public RedirectingStreamingHttpClientGroup(final StreamingHttpClientGroup<UnresolvedAddress> delegate,
-                                               final Function<StreamingHttpRequest<HttpPayloadChunk>,
-                                              GroupKey<UnresolvedAddress>> requestToGroupKey,
-                                               final ExecutionContext executionContext) {
+    public RedirectingStreamingHttpClientGroup(
+                                    final StreamingHttpClientGroup<UnresolvedAddress> delegate,
+                                    final Function<StreamingHttpRequest, GroupKey<UnresolvedAddress>> requestToGroupKey,
+                                    final ExecutionContext executionContext) {
         this(delegate, requestToGroupKey, executionContext, DEFAULT_MAX_REDIRECTS);
     }
 
@@ -81,23 +82,28 @@ public final class RedirectingStreamingHttpClientGroup<UnresolvedAddress> extend
      * an {@link StreamingHttpRequester}.
      * @param maxRedirects The maximum number of follow up redirects.
      */
-    public RedirectingStreamingHttpClientGroup(final StreamingHttpClientGroup<UnresolvedAddress> delegate,
-                                               final Function<StreamingHttpRequest<HttpPayloadChunk>,
-                                              GroupKey<UnresolvedAddress>> requestToGroupKey,
-                                               final ExecutionContext executionContext,
-                                               final int maxRedirects) {
+    public RedirectingStreamingHttpClientGroup(
+                                    final StreamingHttpClientGroup<UnresolvedAddress> delegate,
+                                    final Function<StreamingHttpRequest, GroupKey<UnresolvedAddress>> requestToGroupKey,
+                                    final ExecutionContext executionContext,
+                                    final int maxRedirects) {
         super(delegate);
         client = delegate.asClient(requestToGroupKey, executionContext);
         this.maxRedirects = maxRedirects;
     }
 
     @Override
-    public Single<StreamingHttpResponse<HttpPayloadChunk>> request(final GroupKey<UnresolvedAddress> key,
-                                                                   final StreamingHttpRequest<HttpPayloadChunk> request) {
-        final Single<StreamingHttpResponse<HttpPayloadChunk>> response = super.request(key, request);
+    public Single<StreamingHttpResponse> request(final GroupKey<UnresolvedAddress> key,
+                                                                   final StreamingHttpRequest request) {
+        final Single<StreamingHttpResponse> response = super.request(key, request);
         if (maxRedirects <= 0) {
             return response;
         }
         return new RedirectSingle(response, request, maxRedirects, client);
+    }
+
+    @Override
+    public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
+        return client.newRequest(method, requestTarget);
     }
 }

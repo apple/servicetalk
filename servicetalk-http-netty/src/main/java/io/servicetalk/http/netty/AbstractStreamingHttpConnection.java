@@ -15,21 +15,18 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.api.LastHttpPayloadChunk;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponses;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
-
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.Publisher.error;
 import static io.servicetalk.concurrent.api.Publisher.just;
@@ -40,10 +37,6 @@ import static java.util.Objects.requireNonNull;
 
 abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> extends StreamingHttpConnection {
 
-    // TODO consolidate with http server logic
-    private static final Predicate<HttpPayloadChunk> LAST_CHUNK_PREDICATE = p -> p instanceof LastHttpPayloadChunk;
-    private static final Supplier<HttpPayloadChunk> LAST_CHUNK_SUPPLIER = () -> EmptyLastHttpPayloadChunk.INSTANCE;
-
     protected final CC connection;
     protected final ExecutionContext executionContext;
     private final Publisher<Integer> maxConcurrencySetting;
@@ -51,7 +44,9 @@ abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> ext
     protected AbstractStreamingHttpConnection(CC conn,
                                               Completable onClosing,
                                               ReadOnlyHttpClientConfig config,
-                                              ExecutionContext executionContext) {
+                                              ExecutionContext executionContext,
+                                              StreamingHttpRequestFactory requestFactory) {
+        super(requestFactory);
         this.connection = requireNonNull(conn);
         this.executionContext = requireNonNull(executionContext);
         maxConcurrencySetting = just(config.getMaxPipelinedRequests()).concatWith(onClosing.andThen(success(0)));
@@ -72,7 +67,7 @@ abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> ext
     }
 
     @Override
-    public Single<StreamingHttpResponse<HttpPayloadChunk>> request(StreamingHttpRequest<HttpPayloadChunk> request) {
+    public Single<StreamingHttpResponse> request(StreamingHttpRequest request) {
         addRequestTransferEncodingIfNecessary(request); // See https://tools.ietf.org/html/rfc7230#section-3.3.3
         final Publisher<Object> requestAsPublisher = flatten(request, AbstractStreamingHttpConnection::unpack)
                 // We will write this stream to the connection, which will request more data from the EventLoop.
@@ -90,15 +85,15 @@ abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> ext
 
     protected abstract Publisher<Object> writeAndRead(Publisher<Object> stream);
 
-    private static Publisher<HttpPayloadChunk> unpack(StreamingHttpRequest<HttpPayloadChunk> request) {
-        return request.getPayloadBody().liftSynchronous(new EnsureLastItemBeforeCompleteOperator<>(
-                LAST_CHUNK_PREDICATE, LAST_CHUNK_SUPPLIER));
+    private static Publisher<Buffer> unpack(StreamingHttpRequest request) {
+        return request.getPayloadBody();
     }
 
-    private StreamingHttpResponse<HttpPayloadChunk> newResponse(HttpResponseMetaData meta, Publisher<HttpPayloadChunk> pub) {
-        return StreamingHttpResponses.newResponse(meta.getVersion(), meta.getStatus(),
+    private StreamingHttpResponse newResponse(HttpResponseMetaData meta, Publisher<Object> pub) {
+        return StreamingHttpResponses.newResponse(meta.getStatus(), meta.getVersion(), meta.getHeaders(),
+                executionContext.getBufferAllocator(),
                 // Payload will be emitted from the EventLoop, so offload those signals to avoid blocking the EventLoop.
-                pub.publishOn(executionContext.getExecutor()), meta.getHeaders());
+                pub.publishOn(executionContext.getExecutor()));
     }
 
     @Override
