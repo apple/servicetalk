@@ -17,7 +17,7 @@ package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
@@ -29,40 +29,42 @@ import java.util.function.BiFunction;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A {@link StreamingHttpClient} filter that delegates to a {@link BiFunction} in {@link StreamingHttpClient#request(StreamingHttpRequest)}.
+ * A {@link StreamingHttpClient} filter that delegates to a {@link BiFunction} in {@link
+ * StreamingHttpClient#request(StreamingHttpRequest)}.
  */
 public final class StreamingHttpClientFunctionFilter extends StreamingHttpClient {
     private final BiFunction<StreamingHttpRequester,
-            StreamingHttpRequest<HttpPayloadChunk>, Single<StreamingHttpResponse<HttpPayloadChunk>>> filter;
+            StreamingHttpRequest, Single<StreamingHttpResponse>> filter;
     private final StreamingHttpClient next;
 
     /**
      * Create a new instance.
+     *
      * @param filter The {@link BiFunction} which provides the filtering for the
      * {@link StreamingHttpClient#request(StreamingHttpRequest)} method.
      * @param next The next {@link StreamingHttpClient} in the filter chain.
      */
-    public StreamingHttpClientFunctionFilter(BiFunction<StreamingHttpRequester,
-            StreamingHttpRequest<HttpPayloadChunk>,
-                                               Single<StreamingHttpResponse<HttpPayloadChunk>>> filter,
-                                             StreamingHttpClient next) {
+    public StreamingHttpClientFunctionFilter(
+            BiFunction<StreamingHttpRequester, StreamingHttpRequest, Single<StreamingHttpResponse>> filter,
+            StreamingHttpClient next) {
+        super(next, next.getHttpResponseFactory());
         this.filter = requireNonNull(filter);
         this.next = requireNonNull(next);
     }
 
     @Override
-    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest<HttpPayloadChunk> request) {
+    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest request) {
         return next.reserveConnection(request);
     }
 
     @Override
-    public Single<? extends UpgradableStreamingHttpResponse<HttpPayloadChunk>> upgradeConnection(
-            final StreamingHttpRequest<HttpPayloadChunk> request) {
+    public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(
+            final StreamingHttpRequest request) {
         return next.upgradeConnection(request);
     }
 
     @Override
-    public Single<StreamingHttpResponse<HttpPayloadChunk>> request(final StreamingHttpRequest<HttpPayloadChunk> request) {
+    public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
         return filter.apply(next, request);
     }
 

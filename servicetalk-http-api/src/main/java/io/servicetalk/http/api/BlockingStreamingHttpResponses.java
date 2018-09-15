@@ -31,15 +31,16 @@ public final class BlockingStreamingHttpResponses {
      * @param status the {@link HttpResponseStatus} of the response.
      * @param version the {@link HttpProtocolVersion} of the response.
      * @param headers the {@link HttpHeaders} of the response.
-     * @param allocator the allocator used for serialization purposes if necessary.
      * @param initialTrailers the initial state of the
      * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a> for this response.
+     * @param allocator the allocator used for serialization purposes if necessary.
      * @return a new {@link StreamingHttpResponse}.
      */
     public static BlockingStreamingHttpResponse newResponse(final HttpResponseStatus status,
                                                             final HttpProtocolVersion version,
-                                                            final HttpHeaders headers, final BufferAllocator allocator,
-                                                            final HttpHeaders initialTrailers) {
+                                                            final HttpHeaders headers,
+                                                            final HttpHeaders initialTrailers,
+                                                            final BufferAllocator allocator) {
         return new BufferBlockingStreamingHttpResponse(status, version, headers, allocator, initialTrailers);
     }
 }

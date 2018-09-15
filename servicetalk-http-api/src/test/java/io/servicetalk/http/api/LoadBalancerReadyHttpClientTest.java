@@ -37,15 +37,15 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_READY_EVENT;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.HttpRequestMethods.GET;
+import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
+import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
-import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -74,40 +74,40 @@ public class LoadBalancerReadyHttpClientTest {
 
     @Test
     public void requestsAreDelayed() throws InterruptedException {
-        when(mockClient.request(any())).thenReturn(defer(new DeferredSuccessSupplier<>(newResponse(OK))));
-        verifyActionIsDelayedUntilAfterInitialized(filter -> filter.request(newDummyRequest()));
+        when(mockClient.request(any())).then(__ -> defer(new DeferredSuccessSupplier<>(newOkResponse())));
+        verifyActionIsDelayedUntilAfterInitialized(filter -> filter.request(filter.get("/noop")));
     }
 
     @Test
     public void reserveIsDelayed() throws InterruptedException {
         doReturn(defer(new DeferredSuccessSupplier<>(mockReservedConnection)))
                 .when(mockClient).reserveConnection(any());
-        verifyActionIsDelayedUntilAfterInitialized(filter -> filter.reserveConnection(newDummyRequest()));
+        verifyActionIsDelayedUntilAfterInitialized(filter -> filter.reserveConnection(filter.get("/noop")));
     }
 
     @Test
     public void upgradeIsDelayed() throws InterruptedException {
         doReturn(defer(new DeferredSuccessSupplier<>(mockUpgradeResponse))).when(mockClient).upgradeConnection(any());
-        verifyActionIsDelayedUntilAfterInitialized(filter -> filter.upgradeConnection(newDummyRequest()));
+        verifyActionIsDelayedUntilAfterInitialized(filter -> filter.upgradeConnection(filter.get("/noop")));
     }
 
     @Test
     public void initializedFailedAlsoFailsRequest() throws InterruptedException {
-        when(mockClient.request(any())).thenReturn(defer(new DeferredSuccessSupplier<>(newResponse(OK))));
-        verifyOnInitializedFailedFailsAction(filter -> filter.request(newDummyRequest()));
+        when(mockClient.request(any())).then(__ -> defer(new DeferredSuccessSupplier<>(newOkResponse())));
+        verifyOnInitializedFailedFailsAction(filter -> filter.request(filter.get("/noop")));
     }
 
     @Test
     public void initializedFailedAlsoFailsReserve() throws InterruptedException {
         doReturn(defer(new DeferredSuccessSupplier<>(mockReservedConnection)))
                 .when(mockClient).reserveConnection(any());
-        verifyOnInitializedFailedFailsAction(filter -> filter.reserveConnection(newDummyRequest()));
+        verifyOnInitializedFailedFailsAction(filter -> filter.reserveConnection(filter.get("/noop")));
     }
 
     @Test
     public void initializedFailedAlsoFailsUpgrade() throws InterruptedException {
         doReturn(defer(new DeferredSuccessSupplier<>(mockUpgradeResponse))).when(mockClient).upgradeConnection(any());
-        verifyOnInitializedFailedFailsAction(filter -> filter.upgradeConnection(newDummyRequest()));
+        verifyOnInitializedFailedFailsAction(filter -> filter.upgradeConnection(filter.get("/noop")));
     }
 
     private void verifyOnInitializedFailedFailsAction(Function<StreamingHttpClient,
@@ -158,10 +158,6 @@ public class LoadBalancerReadyHttpClientTest {
         latch.await();
     }
 
-    private static StreamingHttpRequest<HttpPayloadChunk> newDummyRequest() {
-        return newRequest(GET, "/noop");
-    }
-
     private static final class DeferredSuccessSupplier<T> implements Supplier<Single<T>> {
         private final T value;
         private int count;
@@ -174,5 +170,10 @@ public class LoadBalancerReadyHttpClientTest {
         public Single<T> get() {
             return ++count == 1 ? error(new NoAvailableHostException("deliberate testing")) : success(value);
         }
+    }
+
+    private StreamingHttpResponse newOkResponse() {
+        return StreamingHttpResponses.newResponse(OK, HTTP_1_1, INSTANCE.newHeaders(), INSTANCE.newTrailers(),
+                DEFAULT_ALLOCATOR);
     }
 }

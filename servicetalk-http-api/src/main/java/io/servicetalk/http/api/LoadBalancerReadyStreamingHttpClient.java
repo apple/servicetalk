@@ -48,6 +48,7 @@ public final class LoadBalancerReadyStreamingHttpClient extends StreamingHttpCli
     public LoadBalancerReadyStreamingHttpClient(int maxRetryCount,
                                                 Publisher<Object> loadBalancerEvents,
                                                 StreamingHttpClient next) {
+        super(next, next.getHttpResponseFactory());
         if (maxRetryCount <= 0) {
             throw new IllegalArgumentException("maxRetryCount " + maxRetryCount + " (expected >0)");
         }
@@ -58,18 +59,17 @@ public final class LoadBalancerReadyStreamingHttpClient extends StreamingHttpCli
     }
 
     @Override
-    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest<HttpPayloadChunk> request) {
+    public Single<? extends ReservedStreamingHttpConnection> reserveConnection(final StreamingHttpRequest request) {
         return next.reserveConnection(request).retryWhen(retryWhenFunction());
     }
 
     @Override
-    public Single<? extends UpgradableStreamingHttpResponse<HttpPayloadChunk>> upgradeConnection(
-            final StreamingHttpRequest<HttpPayloadChunk> request) {
+    public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(final StreamingHttpRequest request) {
         return next.upgradeConnection(request).retryWhen(retryWhenFunction());
     }
 
     @Override
-    public Single<StreamingHttpResponse<HttpPayloadChunk>> request(final StreamingHttpRequest<HttpPayloadChunk> request) {
+    public Single<? extends StreamingHttpResponse> request(final StreamingHttpRequest request) {
         return next.request(request).retryWhen(retryWhenFunction());
     }
 
