@@ -20,9 +20,9 @@ import io.servicetalk.serialization.api.TypeHolder;
 import java.util.function.IntUnaryOperator;
 
 /**
- * A provider for {@link HttpSerializer}s.
+ * A provider of {@link HttpSerializer}s and {@link HttpDeserializer}s.
  */
-public interface HttpSerializerProvider {
+public interface HttpSerializationProvider {
 
     /**
      * Get a {@link HttpSerializer} for a {@link Class} of type {@link T}.
@@ -31,7 +31,7 @@ public interface HttpSerializerProvider {
      * @param <T> The type of object to serialize.
      * @return a {@link HttpSerializer} for a {@link Class} of type {@link T}.
      */
-    <T> HttpSerializer<T> forClass(Class<T> type);
+    <T> HttpSerializer<T> serializerFor(Class<T> type);
 
     /**
      * Get a {@link HttpSerializer} for a {@link Class} of type {@link T}.
@@ -42,7 +42,7 @@ public interface HttpSerializerProvider {
      * size of the next object to be serialized in bytes.
      * @return a {@link HttpSerializer} for a {@link Class} of type {@link T}.
      */
-    <T> HttpSerializer<T> forClass(Class<T> type, IntUnaryOperator bytesEstimator);
+    <T> HttpSerializer<T> serializerFor(Class<T> type, IntUnaryOperator bytesEstimator);
 
     /**
      * Get a {@link HttpSerializer} for a {@link TypeHolder} of type {@link T}.
@@ -51,7 +51,7 @@ public interface HttpSerializerProvider {
      * @param <T> The type of object to serialize.
      * @return a {@link HttpSerializer} for a {@link TypeHolder} of type {@link T}.
      */
-    <T> HttpSerializer<T> forType(TypeHolder<T> type);
+    <T> HttpSerializer<T> serializerFor(TypeHolder<T> type);
 
     /**
      * Get a {@link HttpSerializer} for a {@link TypeHolder} of type {@link T}.
@@ -62,5 +62,21 @@ public interface HttpSerializerProvider {
      * size of the next object to be serialized in bytes.
      * @return a {@link HttpSerializer} for a {@link TypeHolder} of type {@link T}.
      */
-    <T> HttpSerializer<T> forType(TypeHolder<T> type, IntUnaryOperator bytesEstimator);
+    <T> HttpSerializer<T> serializerFor(TypeHolder<T> type, IntUnaryOperator bytesEstimator);
+
+    /**
+     * Get a {@link HttpDeserializer} for a {@link Class} of type {@link T}.
+     * @param type The {@link Class} type that the return value will serialize.
+     * @param <T> The type of object to serialize.
+     * @return a {@link HttpDeserializer} for a {@link Class} of type {@link T}.
+     */
+    <T> HttpDeserializer<T> deserializerFor(Class<T> type);
+
+    /**
+     * Get a {@link HttpDeserializer} for a {@link TypeHolder} of type {@link T}.
+     * @param type The {@link TypeHolder} type that the return value will serialize.
+     * @param <T> The type of object to serialize.
+     * @return a {@link HttpDeserializer} for a {@link TypeHolder} of type {@link T}.
+     */
+    <T> HttpDeserializer<T> deserializerFor(TypeHolder<T> type);
 }
