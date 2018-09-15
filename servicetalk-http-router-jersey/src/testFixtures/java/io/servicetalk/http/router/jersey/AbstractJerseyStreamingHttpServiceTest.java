@@ -104,7 +104,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
                 String.class).toLowerCase().contains("servicetalk");
 
         serverContext = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
-                .start(getServerExecutionContext(), new InetSocketAddress(0), router));
+                .startStreaming(getServerExecutionContext(), new InetSocketAddress(0), router));
 
         final InetSocketAddress serverAddress = (InetSocketAddress) serverContext.getListenAddress();
         httpClient = HttpClients.forSingleAddress(of(serverAddress)).buildStreaming();

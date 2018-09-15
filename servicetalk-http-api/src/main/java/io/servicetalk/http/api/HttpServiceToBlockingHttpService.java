@@ -27,8 +27,8 @@ final class HttpServiceToBlockingHttpService extends BlockingHttpService {
 
     @Override
     public HttpResponse handle(final HttpServiceContext ctx, final HttpRequest request,
-                               final HttpResponseFactory factory) throws Exception {
-        return blockingInvocation(service.handle(ctx, request, factory));
+                               final HttpResponseFactory responseFactory) throws Exception {
+        return blockingInvocation(service.handle(ctx, request, responseFactory));
     }
 
     @Override

@@ -143,7 +143,7 @@ public abstract class AbstractNettyHttpServerTest {
         }
         serverContext = awaitIndefinitelyNonNull(
                 httpServerStarter
-                        .start(new DefaultExecutionContext(DEFAULT_ALLOCATOR, serverIoExecutor, serverExecutor),
+                        .startStreaming(new DefaultExecutionContext(DEFAULT_ALLOCATOR, serverIoExecutor, serverExecutor),
                                 bindAddress, contextFilter, service)
                         .doBeforeSuccess(ctx -> LOGGER.debug("Server started on {}.", ctx.getListenAddress()))
                         .doBeforeError(throwable -> LOGGER.debug("Failed starting server on {}.", bindAddress)));
