@@ -17,13 +17,12 @@ package io.servicetalk.data.jackson.jersey;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.concurrent.BlockingIterator;
+import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.router.jersey.internal.InputStreamIterator;
 import io.servicetalk.serialization.api.DefaultSerializer;
-import io.servicetalk.serialization.api.SerializationException;
 import io.servicetalk.serialization.api.Serializer;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -35,12 +34,11 @@ import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import javax.annotation.Nullable;
+import java.util.NoSuchElementException;
 import javax.annotation.Priority;
 import javax.inject.Provider;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.Consumes;
-import javax.ws.rs.InternalServerErrorException;
 import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -67,8 +65,6 @@ import static javax.ws.rs.core.MediaType.WILDCARD;
 final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReader<Object>, MessageBodyWriter<Object> {
     private static final JacksonSerializationProvider DEFAULT_JACKSON_SERIALIZATION_PROVIDER =
             new JacksonSerializationProvider();
-
-    private static final Object NOTHING_DESERIALIZED = new Object();
 
     // We can not use `@Context ConnectionContext` directly because we would not see the latest version
     // in case it has been rebound as part of offloading.
@@ -110,8 +106,8 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
         }
 
         return handleEntityStream(entityStream, allocator,
-                (p, a) -> deserialize(p, ser, type),
-                (is, a) -> deserialize(toBufferPublisher(is, a), ser, type));
+                (p, a) -> deserialize(p, ser, type, a),
+                (is, a) -> deserialize(toBufferPublisher(is, a), ser, type, a));
     }
 
     @Override
@@ -163,25 +159,17 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
         return Publisher.from(() -> new InputStreamIterator(is)).map(a::wrap);
     }
 
-    @Nullable
     private static Object deserialize(final Publisher<Buffer> bufferPublisher, final Serializer ser,
-                                      final Class<Object> type) {
+                                      final Class<Object> type, final BufferAllocator allocator) {
+        // FIXME use Buffer aggregator helper when ready
+        final CompositeBuffer cb = allocator.newCompositeBuffer();
+        bufferPublisher.toIterable().forEach(cb::addBuffer);
 
-        final Object result;
-
-        try (final BlockingIterator<Object> i = ser.deserialize(bufferPublisher.toIterable(), type).iterator()) {
-            result = !i.hasNext() ? NOTHING_DESERIALIZED : i.next();
-        } catch (final SerializationException se) {
-            throw se; // handled by the exception mapper
-        } catch (final Exception e) {
-            throw new InternalServerErrorException(e);
+        try {
+            return ser.deserializeAggregatedSingle(cb, type);
+        } catch (final NoSuchElementException e) {
+            throw new BadRequestException("No deserializable JSON content", e);
         }
-
-        if (result == NOTHING_DESERIALIZED) {
-            throw new BadRequestException("No deserializable JSON content");
-        }
-
-        return result;
     }
 
     private static boolean isSupportedMediaType(final MediaType mediaType) {
