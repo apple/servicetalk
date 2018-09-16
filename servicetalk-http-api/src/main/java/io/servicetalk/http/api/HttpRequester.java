@@ -19,12 +19,15 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import java.util.concurrent.ExecutionException;
+
+import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static java.util.Objects.requireNonNull;
 
 /**
  * Provides a means to make a HTTP request.
  */
-public abstract class HttpRequester implements HttpRequestFactory, ListenableAsyncCloseable {
+public abstract class HttpRequester implements HttpRequestFactory, ListenableAsyncCloseable, AutoCloseable {
     final HttpRequestFactory requestFactory;
     private final HttpResponseFactory responseFactory;
 
@@ -95,6 +98,17 @@ public abstract class HttpRequester implements HttpRequestFactory, ListenableAsy
      */
     public final BlockingHttpRequester asBlockingRequester() {
         return asBlockingRequesterInternal();
+    }
+
+    @Override
+    public final void close() {
+        try {
+            closeAsyncGracefully().toFuture().get();
+        } catch (InterruptedException e) {
+            throwException(e);
+        } catch (ExecutionException e) {
+            throwException(e.getCause());
+        }
     }
 
     StreamingHttpRequester asStreamingRequesterInternal() {
