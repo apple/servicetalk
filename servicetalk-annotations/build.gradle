@@ -23,14 +23,14 @@ buildscript {
   }
 
   dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:0.2.0-SNAPSHOT"
+    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:$project.version"
   }
 }
 
 apply plugin: "servicetalk-library"
 
 dependencies {
-  implementation "io.servicetalk:servicetalk-bom-internal:0.2.0-SNAPSHOT"
+  implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
 
   implementation "com.google.code.findbugs:jsr305"
 }
