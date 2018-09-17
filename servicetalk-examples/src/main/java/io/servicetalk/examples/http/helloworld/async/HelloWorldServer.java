@@ -13,21 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.helloworld.async.streaming;
+package io.servicetalk.examples.http.helloworld.async;
 
 import io.servicetalk.http.netty.DefaultHttpServerStarter;
 
-import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpSerializationProviders.serializerForUtf8PlainText;
 
-public final class HelloWorldStreamingServer {
+public final class HelloWorldServer {
+
     public static void main(String[] args) throws Exception {
         new DefaultHttpServerStarter()
-                .startStreaming(8080, (ctx, request, responseFactory) ->
+                .start(8080, (ctx, request, responseFactory) ->
                         success(responseFactory.ok()
-                                .transformPayloadBody(from("Hello\n", " World\n", " From\n", " ServiceTalk\n"),
-                                        serializerForUtf8PlainText())))
+                                .setPayloadBody("Hello World!", serializerForUtf8PlainText())))
                 .toFuture().get()
                 .awaitShutdown();
     }

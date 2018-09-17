@@ -13,7 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@ElementsAreNonnullByDefault
 package io.servicetalk.examples.http.helloworld.async.streaming;
 
-import io.servicetalk.annotations.ElementsAreNonnullByDefault;
+import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.netty.HttpClients;
+
+public final class HelloWorldStreamingUrlClient {
+
+    public static void main(String[] args) {
+        try (StreamingHttpClient client = HttpClients.forMultiAddressUrl().buildStreaming()) {
+            client.request(client.get("http://localhost:8080/sayHello"))
+                    .doBeforeSuccess(System.out::println)
+                    .flatMapPublisher(StreamingHttpResponse::getPayloadBody)
+                    .forEach(System.out::println);
+        }
+    }
+}

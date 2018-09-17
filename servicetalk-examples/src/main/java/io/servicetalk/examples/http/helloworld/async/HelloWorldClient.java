@@ -13,7 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@ElementsAreNonnullByDefault
-package io.servicetalk.examples.http;
+package io.servicetalk.examples.http.helloworld.async;
 
-import io.servicetalk.annotations.ElementsAreNonnullByDefault;
+import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.netty.HttpClients;
+
+public final class HelloWorldClient {
+    public static void main(String[] args) {
+        try (HttpClient client = HttpClients.forSingleAddress("localhost", 8080).build()) {
+            client.request(client.get("http://localhost:8080/sayHello"))
+                    .subscribe(System.out::println);
+        }
+    }
+}
