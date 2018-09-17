@@ -98,7 +98,7 @@ public class HttpOffloadingTest {
         final InetSocketAddress bindAddress = new InetSocketAddress(LOOPBACK_ADDRESS, 0);
         service = new OffloadingVerifyingServiceStreaming();
         serverContext = awaitIndefinitelyNonNull(
-                new DefaultHttpServerStarter().start(SERVER_CTX, bindAddress, service));
+                new DefaultHttpServerStarter().startStreaming(SERVER_CTX, bindAddress, service));
 
         final InetSocketAddress socketAddress = (InetSocketAddress) serverContext.getListenAddress();
 

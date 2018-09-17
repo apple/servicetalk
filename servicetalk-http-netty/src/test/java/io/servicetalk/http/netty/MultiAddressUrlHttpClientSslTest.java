@@ -103,7 +103,7 @@ public class MultiAddressUrlHttpClientSslTest {
         when(STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
         when(STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
         serverCtx = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
-                .start(CTX, new InetSocketAddress(HOSTNAME, 0), STREAMING_HTTP_SERVICE));
+                .startStreaming(CTX, new InetSocketAddress(HOSTNAME, 0), STREAMING_HTTP_SERVICE));
         serverHostHeader = HostAndPort.of(HOSTNAME,
                 ((InetSocketAddress) serverCtx.getListenAddress()).getPort()).toString();
 
@@ -113,7 +113,7 @@ public class MultiAddressUrlHttpClientSslTest {
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
         secureServerCtx = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
                 .setSslConfig(SslConfigBuilder.forServer(() -> loadServerPem(), () -> loadServerKey()).build())
-                .start(CTX, new InetSocketAddress(HOSTNAME, 0), SECURE_STREAMING_HTTP_SERVICE));
+                .startStreaming(CTX, new InetSocketAddress(HOSTNAME, 0), SECURE_STREAMING_HTTP_SERVICE));
         secureServerHostHeader = HostAndPort.of(HOSTNAME,
                 ((InetSocketAddress) secureServerCtx.getListenAddress()).getPort()).toString();
     }

@@ -15,23 +15,10 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Single;
-
 /**
  * The equivalent of {@link HttpService} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public abstract class BlockingHttpService implements AutoCloseable {
-    /**
-     * Handles a single HTTP request.
-     *
-     * @param ctx Context of the service.
-     * @param request to handle.
-     * @param factory used to create {@link HttpResponse} objects.
-     * @return {@link Single} of HTTP response.
-     * @throws Exception If an exception occurs during request processing.
-     */
-    public abstract HttpResponse handle(
-            HttpServiceContext ctx, HttpRequest request, HttpResponseFactory factory) throws Exception;
+public abstract class BlockingHttpService implements AutoCloseable, BlockingRequestHandler {
 
     @Override
     public void close() throws Exception {
@@ -72,6 +59,19 @@ public abstract class BlockingHttpService implements AutoCloseable {
      */
     public final BlockingStreamingHttpService asBlockingStreamingService() {
         return asStreamingService().asBlockingStreamingService();
+    }
+
+    static BlockingHttpService wrap(BlockingRequestHandler handler) {
+        if (handler instanceof BlockingHttpService) {
+            return (BlockingHttpService) handler;
+        }
+        return new BlockingHttpService() {
+            @Override
+            public HttpResponse handle(final HttpServiceContext ctx, final HttpRequest request,
+                                       final HttpResponseFactory responseFactory) throws Exception {
+                return handler.handle(ctx, request, responseFactory);
+            }
+        };
     }
 
     StreamingHttpService asStreamingServiceInternal() {

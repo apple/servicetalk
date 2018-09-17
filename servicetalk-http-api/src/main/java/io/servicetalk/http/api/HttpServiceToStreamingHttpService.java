@@ -30,8 +30,8 @@ final class HttpServiceToStreamingHttpService extends StreamingHttpService {
     @Override
     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                 final StreamingHttpRequest request,
-                                                final StreamingHttpResponseFactory factory) {
-        return request.toRequest().flatMap(req -> aggregatedService.handle(ctx, req,  ctx.getResponseFactory()))
+                                                final StreamingHttpResponseFactory responseFactory) {
+        return request.toRequest().flatMap(req -> aggregatedService.handle(ctx, req, ctx.getResponseFactory()))
                 .map(HttpResponse::toStreamingResponse);
     }
 

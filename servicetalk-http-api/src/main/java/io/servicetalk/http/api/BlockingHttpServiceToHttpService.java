@@ -31,8 +31,8 @@ final class BlockingHttpServiceToHttpService extends HttpService {
 
     @Override
     public Single<HttpResponse> handle(final HttpServiceContext ctx, final HttpRequest request,
-                                       final HttpResponseFactory factory) {
-        return blockingToSingle(() -> service.handle(ctx, request, factory));
+                                       final HttpResponseFactory responseFactory) {
+        return blockingToSingle(() -> service.handle(ctx, request, responseFactory));
     }
 
     @Override

@@ -19,7 +19,12 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpServerStarter;
+import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.api.StreamingRequestHandler;
 import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
@@ -139,10 +144,12 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
      * @param mappings mapping hostnames to the ssl configuration that should be used.
      * @param defaultConfig the configuration to use if no hostnames matched from {@code mappings}.
      * @return this.
-     * @throws IllegalStateException if the {@link SslConfig#getKeyCertChainSupplier()}, {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()}
-     * throws when {@link InputStream#close()} is called.
+     * @throws IllegalStateException if the {@link SslConfig#getKeyCertChainSupplier()},
+     * {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()} throws when
+     * {@link InputStream#close()} is called.
      */
-    public DefaultHttpServerStarter setSniConfig(@Nullable final Map<String, SslConfig> mappings, final SslConfig defaultConfig) {
+    public DefaultHttpServerStarter setSniConfig(@Nullable final Map<String, SslConfig> mappings,
+                                                 final SslConfig defaultConfig) {
         config.getTcpConfig().setSniConfig(mappings, defaultConfig);
         return this;
     }
@@ -152,8 +159,9 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
      *
      * @param sslConfig the {@link SslConfig}.
      * @return this.
-     * @throws IllegalStateException if the {@link SslConfig#getKeyCertChainSupplier()}, {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()}
-     * throws when {@link InputStream#close()} is called.
+     * @throws IllegalStateException if the {@link SslConfig#getKeyCertChainSupplier()},
+     * {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()} throws when
+     * {@link InputStream#close()} is called.
      */
     public DefaultHttpServerStarter setSslConfig(@Nullable final SslConfig sslConfig) {
         config.getTcpConfig().setSslConfig(sslConfig);
@@ -197,14 +205,25 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
     }
 
     @Override
-    public Single<ServerContext> start(final ExecutionContext executionContext, final SocketAddress address,
-                                       final ContextFilter contextFilter, final StreamingHttpService service) {
-        return bind(executionContext, config.asReadOnly(), address, contextFilter, service);
+    public Single<ServerContext> startStreaming(final ExecutionContext executionContext, final SocketAddress address,
+                                                final ContextFilter contextFilter,
+                                                final StreamingRequestHandler handler) {
+        return bind(executionContext, config.asReadOnly(), address, contextFilter,
+                handler instanceof StreamingHttpService ?
+                        (StreamingHttpService) handler :
+                        new StreamingHttpService() {
+                            @Override
+                            public Single<? extends StreamingHttpResponse> handle(
+                                    final HttpServiceContext ctx, final StreamingHttpRequest request,
+                                    final StreamingHttpResponseFactory responseFactory) {
+                                return handler.handle(ctx, request, responseFactory);
+                            }
+                        });
     }
 
     @Override
-    public Single<ServerContext> start(final SocketAddress address, final ContextFilter contextFilter,
-                                       final StreamingHttpService service) {
-        return start(globalExecutionContext(), address, contextFilter, service);
+    public Single<ServerContext> startStreaming(final SocketAddress address, final ContextFilter contextFilter,
+                                                final StreamingRequestHandler service) {
+        return startStreaming(globalExecutionContext(), address, contextFilter, service);
     }
 }
