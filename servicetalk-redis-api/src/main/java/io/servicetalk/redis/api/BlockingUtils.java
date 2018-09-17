@@ -54,7 +54,7 @@ final class BlockingUtils {
         } catch (final ExecutionException e) {
             throwException(e.getCause());
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            throwException(e);
         }
     }
 
@@ -68,7 +68,8 @@ final class BlockingUtils {
             throwException(e.getCause());
             return uncheckedCast(); // Used to fool the compiler, but actually should never be invoked at runtime.
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            throwException(e);
+            return uncheckedCast(); // Used to fool the compiler, but actually should never be invoked at runtime.
         }
     }
 
