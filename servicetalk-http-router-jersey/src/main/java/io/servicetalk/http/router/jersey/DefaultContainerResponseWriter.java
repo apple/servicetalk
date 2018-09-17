@@ -25,7 +25,8 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpServiceContext;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import org.glassfish.jersey.server.ContainerException;
 import org.glassfish.jersey.server.ContainerRequest;
@@ -67,7 +68,8 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
 
     private final ContainerRequest request;
     private final HttpProtocolVersion protocolVersion;
-    private final StreamingHttpServiceContext serviceCtx;
+    private final StreamingHttpResponseFactory resFactory;
+    private final ExecutionContext executionContext;
     private final Subscriber<? super StreamingHttpResponse> responseSubscriber;
 
     @Nullable
@@ -78,11 +80,13 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
 
     DefaultContainerResponseWriter(final ContainerRequest request,
                                    final HttpProtocolVersion protocolVersion,
-                                   final StreamingHttpServiceContext serviceCtx,
+                                   final StreamingHttpResponseFactory resFactory,
+                                   final ExecutionContext executionContext,
                                    final Subscriber<? super StreamingHttpResponse> responseSubscriber) {
         this.request = requireNonNull(request);
         this.protocolVersion = requireNonNull(protocolVersion);
-        this.serviceCtx = requireNonNull(serviceCtx);
+        this.resFactory = requireNonNull(resFactory);
+        this.executionContext = requireNonNull(executionContext);
         this.responseSubscriber = requireNonNull(responseSubscriber);
     }
 
@@ -101,8 +105,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
             return null;
         } else {
             final ConnectableOutputStream os = new ConnectableOutputStream();
-            sendResponse(contentLength, os.connect().map(bytes ->
-                            serviceCtx.getConnectionContext().getExecutionContext().getBufferAllocator().wrap(bytes)),
+            sendResponse(contentLength, os.connect().map(bytes -> executionContext.getBufferAllocator().wrap(bytes)),
                     responseContext);
             return os;
         }
@@ -138,8 +141,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     private void scheduleSuspendedTimer(final long timeOut, final TimeUnit timeUnit, final Runnable r) {
         // timeOut<=0 means processing is suspended indefinitely: no need to actually schedule a task
         if (timeOut > 0) {
-            suspendedTimerCancellable = serviceCtx.getConnectionContext().getExecutionContext().getExecutor()
-                    .schedule(r, timeOut, timeUnit);
+            suspendedTimerCancellable = executionContext.getExecutor().schedule(r, timeOut, timeUnit);
         }
     }
 
@@ -182,11 +184,11 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         final StreamingHttpResponse response;
         if (content != null && !isHeadRequest()) {
             final Executor executor = getResponseExecutorOffloader(request);
-            response = serviceCtx.newResponse(status)
+            response = resFactory.newResponse(status)
                     .setVersion(protocolVersion)
                     .transformPayloadBody(__ -> executor != null ? content.subscribeOn(executor) : content);
         } else {
-            response = serviceCtx.newResponse(status).setVersion(protocolVersion);
+            response = resFactory.newResponse(status).setVersion(protocolVersion);
         }
 
         final HttpHeaders headers = response.getHeaders();
@@ -212,8 +214,8 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     private HttpResponseStatus getStatus(final ContainerResponse containerResponse) {
         final StatusType statusInfo = containerResponse.getStatusInfo();
         return statusInfo instanceof Status ? RESPONSE_STATUSES.get(statusInfo) :
-                getResponseStatus(statusInfo.getStatusCode(), serviceCtx.getConnectionContext().getExecutionContext()
-                        .getBufferAllocator().fromAscii(statusInfo.getReasonPhrase()));
+                getResponseStatus(statusInfo.getStatusCode(),
+                        executionContext.getBufferAllocator().fromAscii(statusInfo.getReasonPhrase()));
     }
 
     private boolean isHeadRequest() {

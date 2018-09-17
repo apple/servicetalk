@@ -20,10 +20,11 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.http.api.StreamingHttpServiceContext;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.glassfish.jersey.internal.MapPropertiesDelegate;
@@ -151,15 +152,16 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
     }
 
     @Override
-    public Single<StreamingHttpResponse> handle(final StreamingHttpServiceContext serviceCtx,
-                                                final StreamingHttpRequest req) {
+    public Single<StreamingHttpResponse> handle(final HttpServiceContext serviceCtx,
+                                                final StreamingHttpRequest req,
+                                                final StreamingHttpResponseFactory resFactory) {
         return new Single<StreamingHttpResponse>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
                 final DelayedCancellable delayedCancellable = new DelayedCancellable();
                 subscriber.onSubscribe(delayedCancellable);
                 try {
-                    handle0(serviceCtx, req, subscriber, delayedCancellable);
+                    handle0(serviceCtx, req, resFactory, subscriber, delayedCancellable);
                 } catch (final Throwable t) {
                     subscriber.onError(t);
                 }
@@ -167,12 +169,13 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
         };
     }
 
-    private void handle0(final StreamingHttpServiceContext serviceCtx, final StreamingHttpRequest req,
+    private void handle0(final HttpServiceContext serviceCtx,
+                         final StreamingHttpRequest req,
+                         final StreamingHttpResponseFactory resFactory,
                          final Subscriber<? super StreamingHttpResponse> subscriber,
                          final DelayedCancellable delayedCancellable) {
 
-        final ConnectionContext cnxCtx = serviceCtx.getConnectionContext();
-        final CharSequence baseUri = baseUriFunction.apply(cnxCtx, req);
+        final CharSequence baseUri = baseUriFunction.apply(serviceCtx, req);
         final CharSequence path = ensureNoLeadingSlash(req.getRawPath());
 
         // Jersey needs URI-unsafe query chars to be encoded
@@ -205,12 +208,12 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
         initRequestProperties(entityStream, containerRequest);
 
         final DefaultContainerResponseWriter responseWriter = new DefaultContainerResponseWriter(containerRequest,
-                req.getVersion(), serviceCtx, subscriber);
+                req.getVersion(), resFactory, serviceCtx.getExecutionContext(), subscriber);
 
         containerRequest.setWriter(responseWriter);
 
         containerRequest.setRequestScopedInitializer(injectionManager -> {
-            injectionManager.<Ref<ConnectionContext>>getInstance(CONNECTION_CONTEXT_REF_TYPE).set(cnxCtx);
+            injectionManager.<Ref<ConnectionContext>>getInstance(CONNECTION_CONTEXT_REF_TYPE).set(serviceCtx);
             injectionManager.<Ref<StreamingHttpRequest>>getInstance(HTTP_REQUEST_REF_TYPE).set(req);
         });
 
