@@ -19,10 +19,12 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 import java.net.SocketAddress;
 
+import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
+
 /**
  * Context for servers.
  */
-public interface ServerContext extends ListenableAsyncCloseable {
+public interface ServerContext extends ListenableAsyncCloseable, AutoCloseable {
 
     /**
      * Listen address for the server associated with this context.
@@ -30,4 +32,18 @@ public interface ServerContext extends ListenableAsyncCloseable {
      * @return Address which the associated server is listening at.
      */
     SocketAddress getListenAddress();
+
+    /**
+     * Blocks and await shutdown of the server, this {@link ServerContext} represents.
+     * <p>
+     * This method will return when {@link #onClose()} terminates either successfully or unsuccessfully.
+     */
+    default void awaitShutdown() {
+        awaitTermination(onClose().toFuture());
+    }
+
+    @Override
+    default void close() {
+        awaitTermination(closeAsyncGracefully().toFuture());
+    }
 }

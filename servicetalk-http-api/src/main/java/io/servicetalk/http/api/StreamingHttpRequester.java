@@ -19,13 +19,15 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 import static java.util.Objects.requireNonNull;
 
 /**
  * The equivalent of {@link HttpRequester} but that accepts {@link StreamingHttpRequest} and returns
  * {@link StreamingHttpResponse}.
  */
-public abstract class StreamingHttpRequester implements StreamingHttpRequestFactory, ListenableAsyncCloseable {
+public abstract class StreamingHttpRequester implements
+                                             StreamingHttpRequestFactory, ListenableAsyncCloseable, AutoCloseable {
     final StreamingHttpRequestFactory requestFactory;
     private final StreamingHttpResponseFactory responseFactory;
 
@@ -101,6 +103,11 @@ public abstract class StreamingHttpRequester implements StreamingHttpRequestFact
      */
     public final BlockingHttpRequester asBlockingRequester() {
         return asBlockingRequesterInternal();
+    }
+
+    @Override
+    public final void close() {
+        awaitTermination(closeAsyncGracefully().toFuture());
     }
 
     HttpRequester asRequesterInternal() {

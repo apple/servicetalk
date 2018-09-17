@@ -192,7 +192,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
             @SuppressWarnings("unchecked")
             List<Host<ResolvedAddress, C>> currentList = activeHostsUpdater
                     .getAndSet(RoundRobinLoadBalancer.this, Collections.<Host<ResolvedAddress, C>>emptyList());
-            return newCompositeCloseable().appendAll(currentList).appendAll(connectionFactory).closeAsync();
+            return newCompositeCloseable().appendAll(currentList).appendAll(connectionFactory).closeAsyncGracefully();
         });
     }
 
@@ -348,7 +348,16 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
 
         @Override
         public Completable closeAsync() {
-            return connections == null ? completed() : completed().mergeDelayError(connections.stream().map(AsyncCloseable::closeAsync)::iterator);
+            return connections == null ? completed() :
+                    completed().mergeDelayError(connections.stream()
+                            .map(AsyncCloseable::closeAsync)::iterator);
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return connections == null ? completed() :
+                    completed().mergeDelayError(connections.stream()
+                            .map(AsyncCloseable::closeAsyncGracefully)::iterator);
         }
     }
 
