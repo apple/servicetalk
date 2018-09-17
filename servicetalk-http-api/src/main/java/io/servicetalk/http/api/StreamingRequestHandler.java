@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.api.Single;
 /**
  * A handler of {@link StreamingHttpRequest}.
  * <p>
- * This is a simpler version of {@link StreamingHttpService} which add lifecycle constructs and other higher level
+ * This is a simpler version of {@link StreamingHttpService} without lifecycle constructs and other higher level
  * concerns.
  */
 public interface StreamingRequestHandler {

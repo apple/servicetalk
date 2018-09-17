@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.api.Single;
 /**
  * A handler of {@link HttpRequest}.
  * <p>
- * This is a simpler version of {@link HttpService} which add lifecycle constructs and other higher level concerns.
+ * This is a simpler version of {@link HttpService} without lifecycle constructs and other higher level concerns.
  */
 @FunctionalInterface
 public interface RequestHandler {

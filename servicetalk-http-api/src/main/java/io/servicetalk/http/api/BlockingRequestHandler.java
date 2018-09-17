@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.api.Single;
 /**
  * A handler of {@link HttpRequest}.
  * <p>
- * This is a simpler version of {@link BlockingHttpService} which add lifecycle constructs and other higher level
+ * This is a simpler version of {@link BlockingHttpService} without lifecycle constructs and other higher level
  * concerns.
  */
 public interface BlockingRequestHandler {

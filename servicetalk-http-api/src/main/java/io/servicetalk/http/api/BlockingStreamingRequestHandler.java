@@ -18,7 +18,7 @@ package io.servicetalk.http.api;
 /**
  * A handler of {@link BlockingStreamingHttpRequest}.
  * <p>
- * This is a simpler version of {@link BlockingStreamingHttpService} which add lifecycle constructs and other higher
+ * This is a simpler version of {@link BlockingStreamingHttpService} without lifecycle constructs and other higher
  * level concerns.
  */
 public interface BlockingStreamingRequestHandler {
