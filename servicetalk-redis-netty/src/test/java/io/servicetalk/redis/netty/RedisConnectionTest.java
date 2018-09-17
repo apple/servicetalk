@@ -25,8 +25,8 @@ import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisData.ArraySize;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
-import io.servicetalk.redis.api.RedisException;
 import io.servicetalk.redis.api.RedisRequest;
+import io.servicetalk.redis.api.RedisServerException;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -86,7 +86,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
         final Buffer reqBuf = getEnv().client.getExecutionContext().getBufferAllocator().fromAscii("*1\r\n+PING\r\n");
 
         thrown.expect(ExecutionException.class);
-        thrown.expectCause(is(instanceOf(RedisException.class)));
+        thrown.expectCause(is(instanceOf(RedisServerException.class)));
         awaitIndefinitely(getEnv().client.reserveConnection(newRequest(PING)).flatMap(cnx -> cnx.request(newRequest(PING, reqBuf), Buffer.class)));
     }
 

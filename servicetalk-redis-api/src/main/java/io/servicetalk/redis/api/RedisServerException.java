@@ -18,15 +18,15 @@ package io.servicetalk.redis.api;
 /**
  * An exception that represents an error reported by the Redis server.
  */
-public class RedisException extends RuntimeException {
+public class RedisServerException extends RuntimeException {
     private static final long serialVersionUID = 1971082412459546322L;
 
     /**
-     * Instantiates a new {@link RedisException}.
+     * Instantiates a new {@link RedisServerException}.
      *
      * @param data the {@link RedisData.Error} instance containing the details of the error.
      */
-    public RedisException(final RedisData.Error data) {
+    public RedisServerException(final RedisData.Error data) {
         super(data.getCharSequenceValue().toString());
     }
 }

@@ -13,20 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.redis.internal;
+package io.servicetalk.redis.api;
 
 /**
- * Exception throws when a data type can not be converted to an intended type.
+ * Indicates that a transaction was aborted via {@link TransactedRedisCommander#discard()}, preventing a command from
+ * being executed.
  */
-public final class CoercionException extends RuntimeException {
-    private static final long serialVersionUID = 3800561374199643550L;
+public final class TransactionAbortedException extends RedisClientException {
+    private static final long serialVersionUID = 2625374006820886896L;
 
     /**
-     * New instance.
-     * @param source Data.
-     * @param type Intended type.
+     * Instantiates a new {@link TransactionAbortedException}.
      */
-    public CoercionException(final Object source, final Class<?> type) {
-        super("Failed to coerce: " + source + " to: " + type);
+    TransactionAbortedException() {
+        super("Transaction was aborted by discard()");
     }
 }

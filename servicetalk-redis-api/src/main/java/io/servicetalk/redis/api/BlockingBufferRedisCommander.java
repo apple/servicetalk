@@ -24,10 +24,10 @@ import javax.annotation.Generated;
 import javax.annotation.Nullable;
 
 /**
- * Redis command client that uses {@link Buffer} for keys and data.
+ * Redis command client that uses {@link Buffer} for keys and data. This API is provided for convenience for a more
+ * familiar sequential programming model.
  * <p>
- * Note that Redis Simple String responses are always returned as {@link String}. This API is provided for convenience
- * for a more familiar sequential programming model.
+ * Note that Redis Simple String responses are always returned as {@link String}.
  */
 @Generated({})
 public abstract class BlockingBufferRedisCommander implements AutoCloseable {
@@ -2196,7 +2196,8 @@ public abstract class BlockingBufferRedisCommander implements AutoCloseable {
     public abstract Long msetnx(@RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.BufferKeyValue> keyValues) throws Exception;
 
     /**
-     * Mark the start of a transaction block.
+     * Mark the start of a transaction block. The returned transacted commanders are not expected to be thread-safe.
+     * That is, methods are not expected to be invoked concurrently, and implementations may assume that.
      *
      * @return a {@link BlockingTransactedBufferRedisCommander} result
      * @throws Exception if an exception occurs during the request processing.

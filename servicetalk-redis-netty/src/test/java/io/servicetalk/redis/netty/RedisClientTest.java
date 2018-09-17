@@ -29,8 +29,8 @@ import io.servicetalk.redis.api.RedisData.BulkStringSize;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.api.RedisData.LastBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.RequestRedisData;
-import io.servicetalk.redis.api.RedisException;
 import io.servicetalk.redis.api.RedisRequest;
+import io.servicetalk.redis.api.RedisServerException;
 import io.servicetalk.redis.internal.RedisUtils.ListWithBuffersCoercedToCharSequences;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -191,7 +191,7 @@ public class RedisClientTest extends BaseRedisClientTest {
                 awaitIndefinitely(getEnv().client.request(newRequest(PING, reqBuf), coercionType));
                 fail();
             } catch (ExecutionException e) {
-                assertThat(e.getCause(), is(instanceOf(RedisException.class)));
+                assertThat(e.getCause(), is(instanceOf(RedisServerException.class)));
             }
         }
     }

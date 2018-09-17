@@ -27,7 +27,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.Publisher.error;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static java.lang.Thread.currentThread;
 
@@ -47,24 +46,29 @@ final class BlockingUtils {
         T get() throws Exception;
     }
 
-    static void blockingInvocation(final Completable source) throws Exception {
+    static void blockingInvocation(final Completable source) {
         // It is assumed that users will always apply timeouts at another layer. So we don't
         // apply any explicit timeout here and just wait forever.
         try {
-            awaitIndefinitely(source);
+            source.toFuture().get();
         } catch (final ExecutionException e) {
             throwException(e.getCause());
+        } catch (InterruptedException e) {
+            throwException(e);
         }
     }
 
     @Nullable
-    static <T> T blockingInvocation(final Single<T> source) throws Exception {
+    static <T> T blockingInvocation(final Single<T> source) {
         // It is assumed that users will always apply timeouts at another layer. So we don't
         // apply any explicit timeout here and just wait forever.
         try {
-            return awaitIndefinitely(source);
+            return source.toFuture().get();
         } catch (final ExecutionException e) {
             throwException(e.getCause());
+            return uncheckedCast(); // Used to fool the compiler, but actually should never be invoked at runtime.
+        } catch (InterruptedException e) {
+            throwException(e);
             return uncheckedCast(); // Used to fool the compiler, but actually should never be invoked at runtime.
         }
     }

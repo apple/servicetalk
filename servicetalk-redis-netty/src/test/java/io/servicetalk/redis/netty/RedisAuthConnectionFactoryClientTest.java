@@ -23,7 +23,7 @@ import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancer;
 import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisCommander;
-import io.servicetalk.redis.api.RedisException;
+import io.servicetalk.redis.api.RedisServerException;
 import io.servicetalk.redis.utils.RedisAuthConnectionFactory;
 import io.servicetalk.redis.utils.RedisAuthorizationException;
 import io.servicetalk.redis.utils.RetryingRedisClient;
@@ -93,7 +93,7 @@ public class RedisAuthConnectionFactoryClientTest {
                 fail();
             } catch (Exception e) {
                 assertThat(e.getCause(), is(instanceOf(RedisAuthorizationException.class)));
-                assertThat(e.getCause().getCause(), is(instanceOf(RedisException.class)));
+                assertThat(e.getCause().getCause(), is(instanceOf(RedisServerException.class)));
             }
         });
     }

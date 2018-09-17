@@ -24,8 +24,8 @@ import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.redis.api.BlockingBufferRedisCommander;
 import io.servicetalk.redis.api.BlockingPubSubBufferRedisConnection;
 import io.servicetalk.redis.api.BlockingTransactedBufferRedisCommander;
+import io.servicetalk.redis.api.IllegalTransactionStateException;
 import io.servicetalk.redis.api.PubSubRedisMessage;
-import io.servicetalk.redis.api.RedisException;
 import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Get;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Incrby;
@@ -33,6 +33,8 @@ import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Overflow
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Set;
 import io.servicetalk.redis.api.RedisProtocolSupport.BufferLongitudeLatitudeMember;
 import io.servicetalk.redis.api.RedisProtocolSupport.ExpireDuration;
+import io.servicetalk.redis.api.RedisServerException;
+import io.servicetalk.redis.api.TransactionAbortedException;
 
 import org.hamcrest.Matcher;
 import org.junit.Before;
@@ -41,6 +43,8 @@ import org.junit.Test;
 import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.stream.IntStream;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
@@ -67,7 +71,6 @@ import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.either;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -247,46 +250,71 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
         try {
             commandClient.eval(buf("bad"), 0L, emptyList(), emptyList());
             fail("Expected ExecutionException");
-        } catch (final RedisException ee) {
+        } catch (final RedisServerException ee) {
             assertThat(commandClient.ping(), is("PONG"));
         }
     }
 
     @Test
-    public void transactionEmpty() throws Exception {
-        final List<?> results = commandClient.multi().exec();
-        assertThat(results, is(empty()));
-    }
-
-    @Test
     public void transactionExec() throws Exception {
         BlockingTransactedBufferRedisCommander tcc = commandClient.multi();
-        tcc.del(key("a-key"));
-        tcc.set(key("a-key"), buf("a-value3"));
-        tcc.ping(buf("in-transac"));
-        tcc.get(key("a-key"));
-        final List<?> results = tcc.exec();
-        assertThat(results, contains(1L, "OK", buf("in-transac"), buf("a-value3")));
+        Future<Long> value1 = tcc.del(key("a-key"));
+        Future<String> value2 = tcc.set(key("a-key"), buf("a-value3"));
+        Future<Buffer> value3 = tcc.ping(buf("in-transac"));
+        Future<Buffer> value4 = tcc.get(key("a-key"));
+        tcc.exec();
+        assertThat(value1.get(), is(1L));
+        assertThat(value2.get(), is("OK"));
+        assertThat(value3.get(), is(buf("in-transac")));
+        assertThat(value4.get(), is(buf("a-value3")));
     }
 
     @Test
     public void transactionDiscard() throws Exception {
         BlockingTransactedBufferRedisCommander tcc = commandClient.multi();
-        tcc.ping(buf("in-transac"));
+        Future<Buffer> future = tcc.ping(buf("in-transac"));
         final String result = tcc.discard();
 
         assertThat(result, is("OK"));
+
+        thrown.expect(ExecutionException.class);
+        thrown.expectCause(instanceOf(TransactionAbortedException.class));
+        future.get();
+    }
+
+    @Test
+    public void transactionCommandAfterExec() throws Exception {
+        final BlockingTransactedBufferRedisCommander tcc = commandClient.multi();
+        tcc.exec();
+
+        thrown.expect(IllegalTransactionStateException.class);
+        tcc.ping(buf("in-transac"));
+    }
+
+    @Test
+    public void transactionCommandAfterDiscard() throws Exception {
+        final BlockingTransactedBufferRedisCommander tcc = commandClient.multi();
+        tcc.discard();
+
+        thrown.expect(IllegalTransactionStateException.class);
+        tcc.ping(buf("in-transac"));
     }
 
     @Test
     public void transactionPartialFailure() throws Exception {
         BlockingTransactedBufferRedisCommander tcc = commandClient.multi();
-        tcc.set(key("ptf"), buf("foo"));
-        tcc.lpop(key("ptf"));
-        final List<?> results = tcc.exec();
 
-        assertThat(results, contains(is("OK"), instanceOf(RedisException.class)));
-        assertThat(((RedisException) results.get(1)).getMessage(), startsWith("WRONGTYPE"));
+        Future<String> r1 = tcc.set(key("ptf"), buf("foo"));
+        Future<Buffer> r2 = tcc.lpop(key("ptf"));
+
+        tcc.exec();
+
+        assertThat(r1.get(), is("OK"));
+
+        thrown.expect(ExecutionException.class);
+        thrown.expectCause(instanceOf(RedisServerException.class));
+        thrown.expectCause(hasProperty("message", startsWith("WRONGTYPE")));
+        r2.get();
     }
 
     @Test
@@ -294,8 +322,9 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
         BlockingTransactedBufferRedisCommander tcc = commandClient.multi();
         tcc.close();
 
-        thrown.expect(ClosedChannelException.class);
-        tcc.ping();
+        thrown.expect(ExecutionException.class);
+        thrown.expectCause(instanceOf(ClosedChannelException.class));
+        tcc.ping().get();
     }
 
     @Test
