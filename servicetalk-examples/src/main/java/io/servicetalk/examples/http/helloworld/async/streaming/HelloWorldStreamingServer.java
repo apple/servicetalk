@@ -43,7 +43,7 @@ public final class HelloWorldStreamingServer {
     public static void main(String[] args) throws Exception {
         // Starting the server will start listening for incoming client requests.
         ServerContext serverContext = awaitIndefinitelyNonNull(
-                new DefaultHttpServerStarter().start(8080, new HelloWorldStreamingService()));
+                new DefaultHttpServerStarter().startStreaming(8080, new HelloWorldStreamingService()));
 
         LOGGER.info("listening on {}", serverContext.getListenAddress());
 

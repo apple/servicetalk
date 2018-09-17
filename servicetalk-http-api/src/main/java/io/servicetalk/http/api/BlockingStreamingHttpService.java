@@ -18,19 +18,7 @@ package io.servicetalk.http.api;
 /**
  * The equivalent of {@link StreamingHttpService} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public abstract class BlockingStreamingHttpService implements AutoCloseable {
-    /**
-     * Handles a single HTTP request.
-     *
-     * @param ctx Context of the service.
-     * @param request to handle.
-     * @param factory used to create {@link BlockingStreamingHttpResponse} objects.
-     * @return a {@link BlockingStreamingHttpResponse} which represents the HTTP response.
-     * @throws Exception If an exception occurs during request processing.
-     */
-    public abstract BlockingStreamingHttpResponse handle(
-            HttpServiceContext ctx, BlockingStreamingHttpRequest request,
-            BlockingStreamingHttpResponseFactory factory) throws Exception;
+public abstract class BlockingStreamingHttpService implements AutoCloseable, BlockingStreamingRequestHandler {
 
     @Override
     public void close() throws Exception {
@@ -71,6 +59,21 @@ public abstract class BlockingStreamingHttpService implements AutoCloseable {
      */
     public final BlockingHttpService asBlockingService() {
         return asStreamingService().asBlockingService();
+    }
+
+    static BlockingStreamingHttpService wrap(BlockingStreamingRequestHandler handler) {
+        if (handler instanceof BlockingStreamingHttpService) {
+            return (BlockingStreamingHttpService) handler;
+        }
+        return new BlockingStreamingHttpService() {
+            @Override
+            public BlockingStreamingHttpResponse handle(final HttpServiceContext ctx,
+                                                        final BlockingStreamingHttpRequest request,
+                                                        final BlockingStreamingHttpResponseFactory responseFactory)
+                    throws Exception {
+                return handler.handle(ctx, request, responseFactory);
+            }
+        };
     }
 
     /**

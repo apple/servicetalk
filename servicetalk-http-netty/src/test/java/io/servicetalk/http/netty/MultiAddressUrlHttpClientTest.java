@@ -264,6 +264,6 @@ public class MultiAddressUrlHttpClientTest {
     private static ServerContext startNewLocalServer(final StreamingHttpService httpService,
                                                      final CompositeCloseable closeables) throws Exception {
         return closeables.append(awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
-                .start(CTX, new InetSocketAddress(HOSTNAME, 0), httpService)));
+                .startStreaming(CTX, new InetSocketAddress(HOSTNAME, 0), httpService)));
     }
 }
