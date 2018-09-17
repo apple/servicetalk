@@ -19,9 +19,7 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import java.util.concurrent.ExecutionException;
-
-import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
+import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -102,13 +100,7 @@ public abstract class HttpRequester implements HttpRequestFactory, ListenableAsy
 
     @Override
     public final void close() {
-        try {
-            closeAsyncGracefully().toFuture().get();
-        } catch (InterruptedException e) {
-            throwException(e);
-        } catch (ExecutionException e) {
-            throwException(e.getCause());
-        }
+        awaitTermination(closeAsyncGracefully().toFuture());
     }
 
     StreamingHttpRequester asStreamingRequesterInternal() {

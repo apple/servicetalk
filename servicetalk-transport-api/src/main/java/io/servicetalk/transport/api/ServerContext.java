@@ -18,9 +18,8 @@ package io.servicetalk.transport.api;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 import java.net.SocketAddress;
-import java.util.concurrent.ExecutionException;
 
-import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
+import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 
 /**
  * Context for servers.
@@ -40,23 +39,11 @@ public interface ServerContext extends ListenableAsyncCloseable, AutoCloseable {
      * This method will return when {@link #onClose()} terminates either successfully or unsuccessfully.
      */
     default void awaitShutdown() {
-        try {
-            onClose().toFuture().get();
-        } catch (InterruptedException e) {
-            throwException(e);
-        } catch (ExecutionException e) {
-            throwException(e.getCause()); // unwrap ExecutionException
-        }
+        awaitTermination(onClose().toFuture());
     }
 
     @Override
     default void close() {
-        try {
-            closeAsyncGracefully().toFuture().get();
-        } catch (InterruptedException e) {
-            throwException(e);
-        } catch (ExecutionException e) {
-            throwException(e.getCause());
-        }
+        awaitTermination(closeAsyncGracefully().toFuture());
     }
 }

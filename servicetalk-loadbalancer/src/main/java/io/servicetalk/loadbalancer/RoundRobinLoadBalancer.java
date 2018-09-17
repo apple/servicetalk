@@ -349,7 +349,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
         @Override
         public Completable closeAsync() {
             return connections == null ? completed() :
-                    completed().mergeDelayError(connections.stream().map(AsyncCloseable::closeAsync)::iterator);
+                    completed().mergeDelayError(connections.stream()
+                            .map(AsyncCloseable::closeAsync)::iterator);
         }
 
         @Override
