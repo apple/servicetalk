@@ -68,7 +68,7 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
     @BeforeClass
     public static void startServer() throws ExecutionException, InterruptedException {
         serverContext = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
-                .start(CTX, 0, new EchoServiceStreaming()));
+                .startStreaming(CTX, 0, new EchoServiceStreaming()));
     }
 
     @AfterClass

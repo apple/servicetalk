@@ -22,17 +22,7 @@ import io.servicetalk.concurrent.api.Single;
 /**
  * Same as {@link StreamingHttpService} but that accepts {@link HttpRequest} and returns {@link HttpResponse}.
  */
-public abstract class HttpService implements AsyncCloseable {
-    /**
-     * Handles a single HTTP request.
-     *
-     * @param ctx Context of the service.
-     * @param request to handle.
-     * @param factory used to create {@link HttpResponse} objects.
-     * @return {@link Single} of HTTP response.
-     */
-    public abstract Single<? extends HttpResponse> handle(
-            HttpServiceContext ctx, HttpRequest request, HttpResponseFactory factory);
+public abstract class HttpService implements RequestHandler, AsyncCloseable {
 
     /**
      * Closes this {@link HttpService} asynchronously.
@@ -69,6 +59,19 @@ public abstract class HttpService implements AsyncCloseable {
      */
     public final BlockingHttpService asBlockingService() {
         return asBlockingServiceInternal();
+    }
+
+    static HttpService wrap(RequestHandler handler) {
+        if (handler instanceof HttpService) {
+            return (HttpService) handler;
+        }
+        return new HttpService() {
+            @Override
+            public Single<? extends HttpResponse> handle(final HttpServiceContext ctx, final HttpRequest request,
+                                                         HttpResponseFactory responseFactory) {
+                return handler.handle(ctx, request, responseFactory);
+            }
+        };
     }
 
     StreamingHttpService asStreamingServiceInternal() {

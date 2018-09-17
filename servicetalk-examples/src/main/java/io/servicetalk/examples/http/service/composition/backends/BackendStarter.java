@@ -58,7 +58,7 @@ final class BackendStarter {
         final ExecutionContext executionContext = new DefaultExecutionContext(DEFAULT_ALLOCATOR,
                 ioExecutor, resources.prepend(newCachedThreadExecutor()));
         // Starting the server will start listening for incoming client requests.
-        final ServerContext ctx = awaitIndefinitelyNonNull(starter.start(executionContext, listenPort, service));
+        final ServerContext ctx = awaitIndefinitelyNonNull(starter.startStreaming(executionContext, listenPort, service));
         LOGGER.info("Started {} listening on {}.", name, ctx.getListenAddress());
         return ctx;
     }

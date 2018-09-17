@@ -44,7 +44,7 @@ public final class HelloWorldBlockingStreamingServer {
         // Create configurable starter for HTTP server.
         HttpServerStarter starter = new DefaultHttpServerStarter();
         // Starting the server will start listening for incoming client requests.
-        ServerContext serverContext = starter.start(8080, new HelloWorldBlockingStreamingService());
+        ServerContext serverContext = starter.startBlockingStreaming(8080, new HelloWorldBlockingStreamingService());
 
         LOGGER.info("listening on {}", serverContext.getListenAddress());
 

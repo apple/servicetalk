@@ -108,7 +108,7 @@ public final class GatewayServer {
             DefaultHttpServerStarter starter = new DefaultHttpServerStarter();
             // Starting the server will start listening for incoming client requests.
             ServerContext serverContext = awaitIndefinitelyNonNull(
-                    starter.start(executionContext, 8080, gatewayService));
+                    starter.startStreaming(executionContext, 8080, gatewayService));
 
             LOGGER.info("listening on {}", serverContext.getListenAddress());
 
