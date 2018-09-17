@@ -26,7 +26,9 @@ import javax.annotation.Nullable;
 /**
  * Redis transacted command client that uses {@link Buffer} for keys and data. This API is provided for convenience for
  * a more familiar sequential programming model. Command methods return a {@link Future} that completes with the result
- * of the command after {@link #exec}, or with an exception after {@link #discard}.
+ * of the command after {@link #exec}, or with an exception after {@link #discard}. Transacted commanders are not
+ * expected to be thread-safe. That is, methods are not expected to be invoked concurrently, and implementations may
+ * assume that.
  * <p>
  * Note that Redis Simple String responses are always returned as {@link String}.
  */

@@ -2021,7 +2021,8 @@ public abstract class BufferRedisCommander implements AsyncCloseable {
     public abstract Single<Long> msetnx(@RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.BufferKeyValue> keyValues);
 
     /**
-     * Mark the start of a transaction block.
+     * Mark the start of a transaction block. The returned transacted commanders are not expected to be thread-safe.
+     * That is, methods are not expected to be invoked concurrently, and implementations may assume that.
      *
      * @return a {@link Single} result
      */

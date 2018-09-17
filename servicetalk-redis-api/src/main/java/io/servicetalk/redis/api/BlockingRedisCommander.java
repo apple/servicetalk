@@ -2221,7 +2221,8 @@ public abstract class BlockingRedisCommander implements AutoCloseable {
     public abstract Long msetnx(@RedisProtocolSupport.Tuple Collection<RedisProtocolSupport.KeyValue> keyValues) throws Exception;
 
     /**
-     * Mark the start of a transaction block.
+     * Mark the start of a transaction block. The returned transacted commanders are not expected to be thread-safe.
+     * That is, methods are not expected to be invoked concurrently, and implementations may assume that.
      *
      * @return a {@link BlockingTransactedRedisCommander} result
      * @throws Exception if an exception occurs during the request processing.
