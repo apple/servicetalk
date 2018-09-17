@@ -280,10 +280,11 @@ public class FromInputStreamPublisherTest {
     @Test
     public void consumeSimpleStream() throws Exception {
         initChunkedStream(smallBuff, of(10, 0), of(10, 0));
-
-        sub1.subscribe(pub);
-        sub1.request(2); // 1 for onNext(smallBuff), 1 for onComplete()
-        sub1.verifySuccessNoRequestN(smallBuff);
+        sub1.subscribe(pub)
+                .request(1) // smallBuff
+                .verifyItems(smallBuff)
+                .request(1) // read EOF
+                .verifySuccess();
     }
 
     @Test
