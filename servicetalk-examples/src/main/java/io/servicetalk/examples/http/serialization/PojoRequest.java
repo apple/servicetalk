@@ -22,6 +22,9 @@ public final class PojoRequest {
 
     private String id;
 
+    public PojoRequest() {
+    }
+
     public PojoRequest(String id) {
         this.id = id;
     }

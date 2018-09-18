@@ -32,7 +32,7 @@ public class BlockingPojoStreamingUrlClient {
     public static void main(String[] args) throws Exception {
         HttpSerializationProvider serializer = serializeJson(new JacksonSerializationProvider());
         try (BlockingStreamingHttpClient client = HttpClients.forMultiAddressUrl().buildBlockingStreaming()) {
-            BlockingStreamingHttpResponse response = client.request(client.get("http://localhost:8080/getPojo")
+            BlockingStreamingHttpResponse response = client.request(client.get("http://localhost:8080/pojo")
                     //TODO: (Invalid) This would use setPayloadBody(Iterable, HttpSerializer) when available.
                     .transformPayloadBody(asList(new PojoRequest("1"), new PojoRequest("2"), new PojoRequest("3")),
                             serializer.serializerFor(PojoRequest.class)));

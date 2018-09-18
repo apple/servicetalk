@@ -23,6 +23,9 @@ public final class MyPojo {
     private String id;
     private String value;
 
+    public MyPojo() {
+    }
+
     public MyPojo(String id, String value) {
         this.id = id;
         this.value = value;

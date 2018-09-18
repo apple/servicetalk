@@ -30,7 +30,7 @@ public class PojoStreamingClient {
     public static void main(String[] args) {
         HttpSerializationProvider serializer = serializeJson(new JacksonSerializationProvider());
         try (StreamingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildStreaming()) {
-            client.request(client.get("getPojo")
+            client.request(client.get("pojo")
                     .transformPayloadBody(Publisher.from("1", "2", "3").map(PojoRequest::new),
                             serializer.serializerFor(PojoRequest.class)))
                     .doBeforeSuccess(System.out::println)

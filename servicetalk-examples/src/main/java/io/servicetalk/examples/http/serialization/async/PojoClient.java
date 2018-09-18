@@ -28,7 +28,7 @@ public final class PojoClient {
     public static void main(String[] args) {
         HttpSerializationProvider serializer = serializeJson(new JacksonSerializationProvider());
         try (HttpClient client = HttpClients.forSingleAddress("localhost", 8080).build()) {
-            client.request(client.get("getPojo")
+            client.request(client.get("pojo")
                     .setPayloadBody(new PojoRequest("1"), serializer.serializerFor(PojoRequest.class)))
                     .subscribe(resp -> {
                         // TODO: We probably need a toString() overload in aggregated req/resp to print payload too.
