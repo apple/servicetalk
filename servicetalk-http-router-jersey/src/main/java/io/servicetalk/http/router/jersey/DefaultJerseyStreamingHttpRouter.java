@@ -154,14 +154,14 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
     @Override
     public Single<StreamingHttpResponse> handle(final HttpServiceContext serviceCtx,
                                                 final StreamingHttpRequest req,
-                                                final StreamingHttpResponseFactory resFactory) {
+                                                final StreamingHttpResponseFactory factory) {
         return new Single<StreamingHttpResponse>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
                 final DelayedCancellable delayedCancellable = new DelayedCancellable();
                 subscriber.onSubscribe(delayedCancellable);
                 try {
-                    handle0(serviceCtx, req, resFactory, subscriber, delayedCancellable);
+                    handle0(serviceCtx, req, factory, subscriber, delayedCancellable);
                 } catch (final Throwable t) {
                     subscriber.onError(t);
                 }
@@ -169,9 +169,8 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
         };
     }
 
-    private void handle0(final HttpServiceContext serviceCtx,
-                         final StreamingHttpRequest req,
-                         final StreamingHttpResponseFactory resFactory,
+    private void handle0(final HttpServiceContext serviceCtx, final StreamingHttpRequest req,
+                         final StreamingHttpResponseFactory factory,
                          final Subscriber<? super StreamingHttpResponse> subscriber,
                          final DelayedCancellable delayedCancellable) {
 
@@ -208,7 +207,7 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
         initRequestProperties(entityStream, containerRequest);
 
         final DefaultContainerResponseWriter responseWriter = new DefaultContainerResponseWriter(containerRequest,
-                req.getVersion(), resFactory, serviceCtx.getExecutionContext(), subscriber);
+                req.getVersion(), serviceCtx, factory, subscriber);
 
         containerRequest.setWriter(responseWriter);
 

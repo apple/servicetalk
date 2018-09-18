@@ -22,7 +22,7 @@ import io.servicetalk.concurrent.api.Single;
 /**
  * Same as {@link StreamingHttpService} but that accepts {@link HttpRequest} and returns {@link HttpResponse}.
  */
-public abstract class HttpService implements RequestHandler, AsyncCloseable {
+public abstract class HttpService implements HttpRequestHandler, AsyncCloseable {
 
     /**
      * Closes this {@link HttpService} asynchronously.
@@ -61,7 +61,7 @@ public abstract class HttpService implements RequestHandler, AsyncCloseable {
         return asBlockingServiceInternal();
     }
 
-    static HttpService wrap(RequestHandler handler) {
+    static HttpService wrap(HttpRequestHandler handler) {
         if (handler instanceof HttpService) {
             return (HttpService) handler;
         }

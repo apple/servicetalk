@@ -15,17 +15,17 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpPayloadChunks;
 import io.servicetalk.http.api.HttpProtocolVersions;
 import io.servicetalk.http.api.HttpResponseStatuses;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.test.resources.DefaultTestCerts;
@@ -96,7 +96,7 @@ public abstract class AbstractNettyHttpServerTest {
     public final MockitoRule rule = MockitoJUnit.rule().silent();
 
     @Mock
-    Function<StreamingHttpRequest<HttpPayloadChunk>, Publisher<HttpPayloadChunk>> publisherSupplier;
+    Function<StreamingHttpRequest, Publisher<Buffer>> publisherSupplier;
 
     private static IoExecutor clientIoExecutor;
     private static IoExecutor serverIoExecutor;
@@ -198,27 +198,27 @@ public abstract class AbstractNettyHttpServerTest {
         return serverContext;
     }
 
-    Function<StreamingHttpRequest<HttpPayloadChunk>, Publisher<HttpPayloadChunk>> getPublisherSupplier() {
+    Function<StreamingHttpRequest, Publisher<Buffer>> getPublisherSupplier() {
         return publisherSupplier;
     }
 
-    StreamingHttpResponse<HttpPayloadChunk> makeRequest(final StreamingHttpRequest<HttpPayloadChunk> request)
+    StreamingHttpResponse makeRequest(final StreamingHttpRequest request)
             throws Exception {
         return awaitIndefinitelyNonNull(httpConnection.request(request));
     }
 
-    void assertResponse(final StreamingHttpResponse<HttpPayloadChunk> response, final HttpProtocolVersions version,
+    void assertResponse(final StreamingHttpResponse response, final HttpProtocolVersions version,
                         final HttpResponseStatuses status, final int expectedSize)
             throws ExecutionException, InterruptedException {
         assertEquals(status, response.getStatus());
         assertEquals(version, response.getVersion());
 
         final int size = awaitIndefinitelyNonNull(
-                response.getPayloadBody().reduce(() -> 0, (is, c) -> is + c.getContent().getReadableBytes()));
+                response.getPayloadBody().reduce(() -> 0, (is, c) -> is + c.getReadableBytes()));
         assertEquals(expectedSize, size);
     }
 
-    void assertResponse(final StreamingHttpResponse<HttpPayloadChunk> response, final HttpProtocolVersions version,
+    void assertResponse(final StreamingHttpResponse response, final HttpProtocolVersions version,
                         final HttpResponseStatuses status, final List<String> expectedPayloadChunksAsStrings)
             throws ExecutionException, InterruptedException {
         assertEquals(status, response.getStatus());
@@ -228,17 +228,21 @@ public abstract class AbstractNettyHttpServerTest {
         assertEquals(expectedPayloadChunksAsStrings.size(), bodyAsListOfStrings.size());
     }
 
-    Publisher<HttpPayloadChunk> getChunkPublisherFromStrings(final String... texts) {
+    Publisher<Buffer> getChunkPublisherFromStrings(final String... texts) {
         return Publisher.from(texts).map(this::getChunkFromString);
     }
 
-    HttpPayloadChunk getChunkFromString(final String text) {
-        return HttpPayloadChunks.newPayloadChunk(DEFAULT_ALLOCATOR.fromAscii(text));
+    StreamingHttpRequestFactory getStreamingRequestFactory() {
+        return httpConnection;
     }
 
-    static List<String> getBodyAsListOfStrings(final StreamingHttpResponse<HttpPayloadChunk> response)
+    Buffer getChunkFromString(final String text) {
+        return DEFAULT_ALLOCATOR.fromAscii(text);
+    }
+
+    static List<String> getBodyAsListOfStrings(final StreamingHttpResponse response)
             throws ExecutionException, InterruptedException {
-        return awaitIndefinitelyNonNull(response.getPayloadBody().map(c -> c.getContent().toString(US_ASCII)));
+        return awaitIndefinitelyNonNull(response.getPayloadBody().map(c -> c.toString(US_ASCII)));
     }
 
     void assertConnectionClosed() throws Exception {

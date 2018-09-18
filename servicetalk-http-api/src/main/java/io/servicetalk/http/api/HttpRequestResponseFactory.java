@@ -15,18 +15,8 @@
  */
 package io.servicetalk.http.api;
 
-import static io.servicetalk.http.api.StreamingHttpRequestResponseFactories.newResponseBlocking;
-import static java.util.Objects.requireNonNull;
-
-final class StreamingHttpResponseFactoryToHttpResponseFactory implements HttpResponseFactory {
-    private final StreamingHttpResponseFactory responseFactory;
-
-    StreamingHttpResponseFactoryToHttpResponseFactory(StreamingHttpResponseFactory responseFactory) {
-        this.responseFactory = requireNonNull(responseFactory);
-    }
-
-    @Override
-    public HttpResponse newResponse(final HttpResponseStatus status) {
-        return newResponseBlocking(responseFactory, status);
-    }
+/**
+ * A combination of {@link HttpRequestFactory} and {@link HttpResponseFactory}.
+ */
+public interface HttpRequestResponseFactory extends HttpRequestFactory, HttpResponseFactory {
 }

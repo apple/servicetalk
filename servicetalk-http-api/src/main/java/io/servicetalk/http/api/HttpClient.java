@@ -34,12 +34,11 @@ public abstract class HttpClient extends HttpRequester {
     /**
      * Create a new instance.
      *
-     * @param requestFactory The {@link HttpRequestFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
-     * @param responseFactory Used for {@link #getHttpResponseFactory()}.
+     * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
      */
-    protected HttpClient(final HttpRequestFactory requestFactory, final HttpResponseFactory responseFactory) {
-        super(requestFactory, responseFactory);
+    protected HttpClient(final HttpRequestResponseFactory reqRespFactory) {
+        super(reqRespFactory);
     }
 
     /**
@@ -109,13 +108,11 @@ public abstract class HttpClient extends HttpRequester {
         /**
          * Create a new instance.
          *
-         * @param requestFactory The {@link HttpRequestFactory} used to
-         * {@link #newRequest(HttpRequestMethod, String) create new requests}.
-         * @param responseFactory Used for {@link #getHttpResponseFactory()}.
+         * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
+         * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
          */
-        protected ReservedHttpConnection(final HttpRequestFactory requestFactory,
-                                         final HttpResponseFactory responseFactory) {
-            super(requestFactory, responseFactory);
+        protected ReservedHttpConnection(final HttpRequestResponseFactory reqRespFactory) {
+            super(reqRespFactory);
         }
 
         /**

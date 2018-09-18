@@ -18,9 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpHeaders;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.api.LastHttpPayloadChunk;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -59,11 +57,10 @@ public class HttpResponseDecoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = new String(
-                "HTTP/1.1 200 " + "\r\n" +
-                        "Connection: keep-alive" + "\r\n" +
-                        "Server: unit-test" + "\r\n" +
-                        "Content-Length: " + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
+        byte[] beforeContentBytes = ("HTTP/1.1 200 " + "\r\n" +
+                "Connection: keep-alive" + "\r\n" +
+                "Server: unit-test" + "\r\n" +
+                "Content-Length: " + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
         assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
         assertTrue(channel.writeInbound(wrappedBuffer(content)));
 
@@ -76,11 +73,10 @@ public class HttpResponseDecoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = new String(
-                "HTTP/1.1 200 OK" + "\r\n" +
-                        "Connection: keep-alive" + "\r\n" +
-                        "Server: unit-test" + "\r\n" +
-                        "Content-Length: " + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
+        byte[] beforeContentBytes = ("HTTP/1.1 200 OK" + "\r\n" +
+                "Connection: keep-alive" + "\r\n" +
+                "Server: unit-test" + "\r\n" +
+                "Content-Length: " + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
         assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
         assertTrue(channel.writeInbound(wrappedBuffer(content)));
 
@@ -93,11 +89,10 @@ public class HttpResponseDecoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = new String(
-                "HTTP/1.1 200 OK" + "\r\n" +
-                        " Connection :  keep-alive " + "\r\n" +
-                        "  Server  :        unit-test        " + "\r\n" +
-                        "   Content-Length  : " + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
+        byte[] beforeContentBytes = ("HTTP/1.1 200 OK" + "\r\n" +
+                " Connection :  keep-alive " + "\r\n" +
+                "  Server  :        unit-test        " + "\r\n" +
+                "   Content-Length  : " + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
         assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
         assertTrue(channel.writeInbound(wrappedBuffer(content)));
 
@@ -110,13 +105,12 @@ public class HttpResponseDecoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = new String(
-                "HTTP/1.1 200 OK" + "\r\n" +
-                        "Connection: keep-alive" + "\r\n" +
-                        "Server: unit-test" + "\r\n" +
-                        "Transfer-Encoding: chunked" + "\r\n" + "\r\n" +
-                        toHexString(content.length) + ";\r\n").getBytes(US_ASCII);
-        byte[] afterContentBytes = new String("\r\n0\r\n\r\n").getBytes(US_ASCII);
+        byte[] beforeContentBytes = ("HTTP/1.1 200 OK" + "\r\n" +
+                "Connection: keep-alive" + "\r\n" +
+                "Server: unit-test" + "\r\n" +
+                "Transfer-Encoding: chunked" + "\r\n" + "\r\n" +
+                toHexString(content.length) + ";\r\n").getBytes(US_ASCII);
+        byte[] afterContentBytes = "\r\n0\r\n\r\n".getBytes(US_ASCII);
         assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
         assertTrue(channel.writeInbound(wrappedBuffer(content)));
         assertTrue(channel.writeInbound(wrappedBuffer(afterContentBytes)));
@@ -129,13 +123,12 @@ public class HttpResponseDecoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = new String(
-                "HTTP/1.1 200 OK" + "\r\n" +
-                        "Connection: keep-alive" + "\r\n" +
-                        "Server: unit-test" + "\r\n" +
-                        "Transfer-Encoding: chunked" + "\r\n" + "\r\n" +
-                        toHexString(content.length) + ";\r\n").getBytes(US_ASCII);
-        byte[] afterContentBytes = new String("\r\n0\r\n" +
+        byte[] beforeContentBytes = ("HTTP/1.1 200 OK" + "\r\n" +
+                "Connection: keep-alive" + "\r\n" +
+                "Server: unit-test" + "\r\n" +
+                "Transfer-Encoding: chunked" + "\r\n" + "\r\n" +
+                toHexString(content.length) + ";\r\n").getBytes(US_ASCII);
+        byte[] afterContentBytes = ("\r\n0\r\n" +
                 "TrailerStatus: good" + "\r\n" + "\r\n").getBytes(US_ASCII);
         assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
         assertTrue(channel.writeInbound(wrappedBuffer(content)));
@@ -150,13 +143,12 @@ public class HttpResponseDecoderTest {
         byte[] content = new byte[4096];
         final int numChunks = 5;
         ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = new String(
-                "HTTP/1.1 200 OK" + "\r\n" +
-                        "Connection: keep-alive" + "\r\n" +
-                        "Server: unit-test" + "\r\n" +
-                        "Transfer-Encoding: chunked" + "\r\n" + "\r\n").getBytes(US_ASCII);
-        byte[] chunkHeaderBytes = new String(toHexString(content.length) + "\r\n").getBytes(US_ASCII);
-        byte[] afterContentBytes = new String("0\r\n\r\n").getBytes(US_ASCII);
+        byte[] beforeContentBytes = ("HTTP/1.1 200 OK" + "\r\n" +
+                "Connection: keep-alive" + "\r\n" +
+                "Server: unit-test" + "\r\n" +
+                "Transfer-Encoding: chunked" + "\r\n" + "\r\n").getBytes(US_ASCII);
+        byte[] chunkHeaderBytes = (toHexString(content.length) + "\r\n").getBytes(US_ASCII);
+        byte[] afterContentBytes = "0\r\n\r\n".getBytes(US_ASCII);
         assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
         for (int i = 0; i < numChunks; ++i) {
             assertTrue(channel.writeInbound(wrappedBuffer(chunkHeaderBytes)));
@@ -173,13 +165,12 @@ public class HttpResponseDecoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = new String(
-                "HTTP/1.1 200 OK" + "\r\n" +
-                        "Connection: keep-alive" + "\r\n" +
-                        "Server: unit-test" + "\r\n" +
-                        "Transfer-Encoding: chunked" + "\r\n" + "\r\n").getBytes(US_ASCII);
-        byte[] chunkHeaderBytes = new String(toHexString(content.length) + "\r\n").getBytes(US_ASCII);
-        byte[] afterContentBytes = new String("0\r\n\r\n").getBytes(US_ASCII);
+        byte[] beforeContentBytes = ("HTTP/1.1 200 OK" + "\r\n" +
+                "Connection: keep-alive" + "\r\n" +
+                "Server: unit-test" + "\r\n" +
+                "Transfer-Encoding: chunked" + "\r\n" + "\r\n").getBytes(US_ASCII);
+        byte[] chunkHeaderBytes = (toHexString(content.length) + "\r\n").getBytes(US_ASCII);
+        byte[] afterContentBytes = "0\r\n\r\n".getBytes(US_ASCII);
         assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
         assertTrue(channel.writeInbound(wrappedBuffer(chunkHeaderBytes)));
         assertTrue(channel.writeInbound(wrappedBuffer(content)));
@@ -199,37 +190,37 @@ public class HttpResponseDecoderTest {
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
         List<byte[]> beforeContentBytes = new ArrayList<>();
-        beforeContentBytes.add(new String("HTTP/").getBytes(US_ASCII));
-        beforeContentBytes.add(new String("1.1 ").getBytes(US_ASCII));
-        beforeContentBytes.add(new String("200 OK" + "\r").getBytes(US_ASCII));
-        beforeContentBytes.add(new String("\n" + "C").getBytes(US_ASCII));
-        beforeContentBytes.add(new String("onnection").getBytes(US_ASCII));
-        beforeContentBytes.add(new String(":").getBytes(US_ASCII));
-        beforeContentBytes.add(new String(" keep-alive" + "\r").getBytes(US_ASCII));
-        beforeContentBytes.add(new String("\n").getBytes(US_ASCII));
-        beforeContentBytes.add(new String("\n").getBytes(US_ASCII));
-        beforeContentBytes.add(new String("Server: ").getBytes(US_ASCII));
-        beforeContentBytes.add(new String(" unit-test").getBytes(US_ASCII));
-        beforeContentBytes.add(new String("\r\n").getBytes(US_ASCII));
-        beforeContentBytes.add(new String("Transfer-Encoding: chunked\r\n").getBytes(US_ASCII));
-        beforeContentBytes.add(new String("\r").getBytes(US_ASCII));
-        beforeContentBytes.add(new String("\n").getBytes(US_ASCII));
+        beforeContentBytes.add("HTTP/".getBytes(US_ASCII));
+        beforeContentBytes.add("1.1 ".getBytes(US_ASCII));
+        beforeContentBytes.add(("200 OK" + "\r").getBytes(US_ASCII));
+        beforeContentBytes.add(("\n" + "C").getBytes(US_ASCII));
+        beforeContentBytes.add("onnection".getBytes(US_ASCII));
+        beforeContentBytes.add(":".getBytes(US_ASCII));
+        beforeContentBytes.add((" keep-alive" + "\r").getBytes(US_ASCII));
+        beforeContentBytes.add("\n".getBytes(US_ASCII));
+        beforeContentBytes.add("\n".getBytes(US_ASCII));
+        beforeContentBytes.add("Server: ".getBytes(US_ASCII));
+        beforeContentBytes.add(" unit-test".getBytes(US_ASCII));
+        beforeContentBytes.add("\r\n".getBytes(US_ASCII));
+        beforeContentBytes.add("Transfer-Encoding: chunked\r\n".getBytes(US_ASCII));
+        beforeContentBytes.add("\r".getBytes(US_ASCII));
+        beforeContentBytes.add("\n".getBytes(US_ASCII));
         beforeContentBytes.add(toHexString(content.length).getBytes(US_ASCII));
         beforeContentBytes.add(";".getBytes(US_ASCII));
         beforeContentBytes.add("\r".getBytes(US_ASCII));
         beforeContentBytes.add("\n".getBytes(US_ASCII));
         List<byte[]> afterContentBytes = new ArrayList<>();
-        afterContentBytes.add(new String("\r").getBytes(US_ASCII));
-        afterContentBytes.add(new String("\n").getBytes(US_ASCII));
-        afterContentBytes.add(new String("0").getBytes(US_ASCII));
-        afterContentBytes.add(new String("\r").getBytes(US_ASCII));
-        afterContentBytes.add(new String("\n").getBytes(US_ASCII));
-        afterContentBytes.add(new String("TrailerStatus").getBytes(US_ASCII));
-        afterContentBytes.add(new String(": good").getBytes(US_ASCII));
-        afterContentBytes.add(new String("\r").getBytes(US_ASCII));
-        afterContentBytes.add(new String("\n").getBytes(US_ASCII));
-        afterContentBytes.add(new String("\r").getBytes(US_ASCII));
-        afterContentBytes.add(new String("\n").getBytes(US_ASCII));
+        afterContentBytes.add("\r".getBytes(US_ASCII));
+        afterContentBytes.add("\n".getBytes(US_ASCII));
+        afterContentBytes.add("0".getBytes(US_ASCII));
+        afterContentBytes.add("\r".getBytes(US_ASCII));
+        afterContentBytes.add("\n".getBytes(US_ASCII));
+        afterContentBytes.add("TrailerStatus".getBytes(US_ASCII));
+        afterContentBytes.add(": good".getBytes(US_ASCII));
+        afterContentBytes.add("\r".getBytes(US_ASCII));
+        afterContentBytes.add("\n".getBytes(US_ASCII));
+        afterContentBytes.add("\r".getBytes(US_ASCII));
+        afterContentBytes.add("\n".getBytes(US_ASCII));
         for (int i = 0; i < beforeContentBytes.size(); ++i) {
             channel.writeInbound(wrappedBuffer(beforeContentBytes.get(i)));
         }
@@ -248,30 +239,27 @@ public class HttpResponseDecoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = new String(
-                "HTTP/1.1 200 OK" + "\r\n" +
-                        "Connection: keep-alive" + "\r\n" +
-                        "Server: unit-test" + "\r\n" +
-                        "Transfer-Encoding: chunked" + "\r\n" + "\r\n").getBytes(US_ASCII);
-        byte[] afterContentBytes = new String("0\r\n\r\n").getBytes(US_ASCII);
+        byte[] beforeContentBytes = ("HTTP/1.1 200 OK" + "\r\n" +
+                "Connection: keep-alive" + "\r\n" +
+                "Server: unit-test" + "\r\n" +
+                "Transfer-Encoding: chunked" + "\r\n" + "\r\n").getBytes(US_ASCII);
+        byte[] afterContentBytes = "0\r\n\r\n".getBytes(US_ASCII);
         assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
         assertTrue(channel.writeInbound(wrappedBuffer(afterContentBytes)));
 
         HttpResponseMetaData response = channel.readInbound();
         assertStandardHeaders(response.getHeaders());
-        LastHttpPayloadChunk lastChunk = channel.readInbound();
-        assertTrue(lastChunk.getTrailers().isEmpty());
-        assertEquals(0, lastChunk.getContent().getReadableBytes());
+        HttpHeaders lastChunk = channel.readInbound();
+        assertTrue(lastChunk.isEmpty());
         assertFalse(channel.finishAndReleaseAll());
     }
 
     @Test
     public void variableNoTrailersNoContent() {
         EmbeddedChannel channel = newEmbeddedChannel();
-        byte[] beforeContentBytes = new String(
-                "HTTP/1.1 200 OK" + "\r\n" +
-                        "Connection: keep-alive" + "\r\n" +
-                        "Server: unit-test" + "\r\n" + "\r\n").getBytes(US_ASCII);
+        byte[] beforeContentBytes = ("HTTP/1.1 200 OK" + "\r\n" +
+                "Connection: keep-alive" + "\r\n" +
+                "Server: unit-test" + "\r\n" + "\r\n").getBytes(US_ASCII);
         assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
 
         // For a response, the variable length content is considered "complete" when the channel is closed.
@@ -279,9 +267,8 @@ public class HttpResponseDecoderTest {
 
         HttpResponseMetaData response = channel.readInbound();
         assertStandardHeaders(response.getHeaders());
-        LastHttpPayloadChunk lastChunk = channel.readInbound();
-        assertTrue(lastChunk.getTrailers().isEmpty());
-        assertEquals(0, lastChunk.getContent().getReadableBytes());
+        HttpHeaders lastChunk = channel.readInbound();
+        assertTrue(lastChunk.isEmpty());
         assertFalse(channel.finishAndReleaseAll());
     }
 
@@ -290,10 +277,9 @@ public class HttpResponseDecoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = new String(
-                "HTTP/1.1 200 OK" + "\r\n" +
-                        "Connection: keep-alive" + "\r\n" +
-                        "Server: unit-test" + "\r\n" + "\r\n").getBytes(US_ASCII);
+        byte[] beforeContentBytes = ("HTTP/1.1 200 OK" + "\r\n" +
+                "Connection: keep-alive" + "\r\n" +
+                "Server: unit-test" + "\r\n" + "\r\n").getBytes(US_ASCII);
         // Note that trailers are only allowed when chunked encoding is used. So the trailers in this case are
         // considered part of the payload (even the \r\n), and the response is terminated when the channel is closed.
         // https://tools.ietf.org/html/rfc7230.html#section-4.1
@@ -314,11 +300,10 @@ public class HttpResponseDecoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = new String(
-                "HTTP/1.1 200 OK" + "\r\n" +
-                        " Connection :  keep-alive " + "\r\n" +
-                        "  Server  :        unit-test        " + "\r\n" +
-                        "   Content-Length  : " + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
+        byte[] beforeContentBytes = ("HTTP/1.1 200 OK" + "\r\n" +
+                " Connection :  keep-alive " + "\r\n" +
+                "  Server  :        unit-test        " + "\r\n" +
+                "   Content-Length  : " + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
         // Note that trailers are not allowed when content is specified
         // https://tools.ietf.org/html/rfc7230.html#section-4.1
         byte[] afterContentBytes = "TrailerStatus: good\r\n".getBytes(US_ASCII);
@@ -336,7 +321,7 @@ public class HttpResponseDecoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = new String("HTTP/1.z 200 OK" + "\r\n").getBytes(US_ASCII);
+        byte[] beforeContentBytes = ("HTTP/1.z 200 OK" + "\r\n").getBytes(US_ASCII);
         try {
             assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
         } finally {
@@ -356,27 +341,27 @@ public class HttpResponseDecoderTest {
         assertStandardHeaders(response.getHeaders());
         if (expectedContentLength >= 0) {
             assertSingleHeaderValue(response.getHeaders(), CONTENT_LENGTH, String.valueOf(expectedContentLength));
-            LastHttpPayloadChunk chunk = channel.readInbound();
-            assertEquals(expectedContentLength, chunk.getContent().getReadableBytes());
-            assertTrue(chunk.getTrailers().isEmpty());
+            Buffer chunk = channel.readInbound();
+            assertEquals(expectedContentLength, chunk.getReadableBytes());
+            HttpHeaders trailers = channel.readInbound();
+            assertTrue(trailers.isEmpty());
         } else {
             Buffer actual = DEFAULT_ALLOCATOR.newBuffer(-expectedContentLength);
             Object chunk;
             for (;;) {
                 chunk = channel.readInbound();
-                if (chunk instanceof HttpPayloadChunk && !(chunk instanceof LastHttpPayloadChunk)) {
-                    actual.writeBytes(((HttpPayloadChunk) chunk).getContent());
+                if (chunk instanceof Buffer) {
+                    actual.writeBytes(((Buffer) chunk));
                 } else {
                     break;
                 }
             }
             assertEquals(-expectedContentLength, actual.getReadableBytes());
-            LastHttpPayloadChunk lastChunk = (LastHttpPayloadChunk) chunk;
-            assertEquals(0, lastChunk.getContent().getReadableBytes());
+            HttpHeaders lastChunk = (HttpHeaders) chunk;
             if (containsTrailers) {
-                assertSingleHeaderValue(lastChunk.getTrailers(), "TrailerStatus", "good");
+                assertSingleHeaderValue(lastChunk, "TrailerStatus", "good");
             } else {
-                assertTrue(lastChunk.getTrailers().isEmpty());
+                assertTrue(lastChunk.isEmpty());
             }
         }
     }

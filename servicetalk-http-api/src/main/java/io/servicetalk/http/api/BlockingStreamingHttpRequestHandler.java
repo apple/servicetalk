@@ -21,7 +21,8 @@ package io.servicetalk.http.api;
  * This is a simpler version of {@link BlockingStreamingHttpService} without lifecycle constructs and other higher
  * level concerns.
  */
-public interface BlockingStreamingRequestHandler {
+@FunctionalInterface
+public interface BlockingStreamingHttpRequestHandler {
     /**
      * Handles a single HTTP request.
      *

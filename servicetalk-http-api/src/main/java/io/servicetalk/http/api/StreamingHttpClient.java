@@ -39,17 +39,14 @@ import static io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
  * {@link StreamingHttpResponse}.
  */
 public abstract class StreamingHttpClient extends StreamingHttpRequester {
-
     /**
      * Create a new instance.
      *
-     * @param requestFactory The {@link HttpRequestFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
-     * @param responseFactory Used for {@link #getHttpResponseFactory()}.
+     * @param reqRespFactory The {@link StreamingHttpRequestResponseFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
      */
-    protected StreamingHttpClient(final StreamingHttpRequestFactory requestFactory,
-                                  final StreamingHttpResponseFactory responseFactory) {
-        super(requestFactory, responseFactory);
+    protected StreamingHttpClient(final StreamingHttpRequestResponseFactory reqRespFactory) {
+        super(reqRespFactory);
     }
 
     /**
@@ -127,13 +124,11 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
         /**
          * Create a new instance.
          *
-         * @param requestFactory The {@link HttpRequestFactory} used to
-         * {@link #newRequest(HttpRequestMethod, String) create new requests}.
-         * @param responseFactory Used for {@link #getHttpResponseFactory()}.
+         * @param reqRespFactory The {@link StreamingHttpRequestResponseFactory} used to
+         * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
          */
-        protected ReservedStreamingHttpConnection(final StreamingHttpRequestFactory requestFactory,
-                                                  final StreamingHttpResponseFactory responseFactory) {
-            super(requestFactory, responseFactory);
+        protected ReservedStreamingHttpConnection(final StreamingHttpRequestResponseFactory reqRespFactory) {
+            super(reqRespFactory);
         }
 
         /**
@@ -230,12 +225,10 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
         ReservedStreamingHttpConnection getHttpConnection(boolean releaseReturnsToClient);
 
         @Override
-        default <T> UpgradableStreamingHttpResponse transformPayloadBody(
-                Publisher<T> payloadBody, HttpSerializer<T> serializer) {
-            // Ignore content of original Publisher (payloadBody). Merge means the resulting publisher will not complete
-            // until the previous payload body and the serialization both complete.
-            return transformPayloadBody(old -> old.ignoreElements().merge(payloadBody), serializer);
-        }
+        UpgradableStreamingHttpResponse setPayloadBody(Publisher<Buffer> payloadBody);
+
+        @Override
+        <T> UpgradableStreamingHttpResponse setPayloadBody(Publisher<T> payloadBody, HttpSerializer<T> serializer);
 
         @Override
         <T> UpgradableStreamingHttpResponse transformPayloadBody(Function<Publisher<Buffer>, Publisher<T>> transformer,

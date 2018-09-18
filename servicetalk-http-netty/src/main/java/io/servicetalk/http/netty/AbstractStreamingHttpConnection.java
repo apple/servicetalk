@@ -22,7 +22,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequestFactory;
+import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponses;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -41,12 +41,10 @@ abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> ext
     protected final ExecutionContext executionContext;
     private final Publisher<Integer> maxConcurrencySetting;
 
-    protected AbstractStreamingHttpConnection(CC conn,
-                                              Completable onClosing,
-                                              ReadOnlyHttpClientConfig config,
-                                              ExecutionContext executionContext,
-                                              StreamingHttpRequestFactory requestFactory) {
-        super(requestFactory);
+    protected AbstractStreamingHttpConnection(
+            CC conn, Completable onClosing, ReadOnlyHttpClientConfig config, ExecutionContext executionContext,
+            StreamingHttpRequestResponseFactory reqRespFactory) {
+        super(reqRespFactory);
         this.connection = requireNonNull(conn);
         this.executionContext = requireNonNull(executionContext);
         maxConcurrencySetting = just(config.getMaxPipelinedRequests()).concatWith(onClosing.andThen(success(0)));
@@ -90,7 +88,7 @@ abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> ext
     }
 
     private StreamingHttpResponse newResponse(HttpResponseMetaData meta, Publisher<Object> pub) {
-        return StreamingHttpResponses.newResponse(meta.getStatus(), meta.getVersion(), meta.getHeaders(),
+        return StreamingHttpResponses.newResponseWithTrailers(meta.getStatus(), meta.getVersion(), meta.getHeaders(),
                 executionContext.getBufferAllocator(),
                 // Payload will be emitted from the EventLoop, so offload those signals to avoid blocking the EventLoop.
                 pub.publishOn(executionContext.getExecutor()));

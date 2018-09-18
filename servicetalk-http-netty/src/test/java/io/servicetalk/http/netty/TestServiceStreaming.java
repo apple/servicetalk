@@ -16,13 +16,13 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpResponseStatuses;
-import io.servicetalk.http.api.LastHttpPayloadChunk;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 
@@ -32,15 +32,12 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 
-import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
-import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
+import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
-import static io.servicetalk.http.api.HttpPayloadChunks.newLastPayloadChunk;
-import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static io.servicetalk.http.api.HttpResponseStatuses.NOT_FOUND;
-import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
+import static io.servicetalk.http.api.HttpResponseStatuses.NO_CONTENT;
 
 final class TestServiceStreaming extends StreamingHttpService {
 
@@ -57,40 +54,41 @@ final class TestServiceStreaming extends StreamingHttpService {
     static final String SVC_SINGLE_ERROR = "/singleError";
     static final String SVC_ERROR_BEFORE_READ = "/errorBeforeRead";
     static final String SVC_ERROR_DURING_READ = "/errorDuringRead";
-    private final Function<StreamingHttpRequest<HttpPayloadChunk>, Publisher<HttpPayloadChunk>> publisherSupplier;
+    private final Function<StreamingHttpRequest, Publisher<Buffer>> publisherSupplier;
 
     private int counter;
 
-    TestServiceStreaming(final Function<StreamingHttpRequest<HttpPayloadChunk>, Publisher<HttpPayloadChunk>> publisherSupplier) {
+    TestServiceStreaming(final Function<StreamingHttpRequest, Publisher<Buffer>> publisherSupplier) {
         this.publisherSupplier = publisherSupplier;
     }
 
     @Override
-    public Single<StreamingHttpResponse<HttpPayloadChunk>> handle(final ConnectionContext context,
-                                                                  final StreamingHttpRequest<HttpPayloadChunk> req) {
+    public Single<StreamingHttpResponse> handle(final HttpServiceContext context,
+                                                final StreamingHttpRequest req,
+                                                final StreamingHttpResponseFactory factory) {
         LOGGER.debug("({}) Handling {}", counter, req.toString((a, b) -> b));
-        final StreamingHttpResponse<HttpPayloadChunk> response;
+        final StreamingHttpResponse response;
         switch (req.getPath()) {
             case SVC_ECHO:
-                response = newEchoResponse(req);
+                response = newEchoResponse(req, factory);
                 break;
             case SVC_COUNTER_NO_LAST_CHUNK:
-                response = newTestCounterResponse(context, req);
+                response = newTestCounterResponse(context, req, factory);
                 break;
             case SVC_COUNTER:
-                response = newTestCounterResponseWithLastPayloadChunk(context, req);
+                response = newTestCounterResponseWithLastPayloadChunk(context, req, factory);
                 break;
             case SVC_LARGE_LAST:
-                response = newLargeLastChunkResponse(context, req);
+                response = newLargeLastChunkResponse(context, req, factory);
                 break;
             case SVC_PUBLISHER_RULE:
-                response = newPublisherRuleResponse(req);
+                response = newPublisherRuleResponse(req, factory);
                 break;
             case SVC_NO_CONTENT:
-                response = newNoContentResponse(req);
+                response = newNoContentResponse(req, factory);
                 break;
             case SVC_ROT13:
-                response = newRot13Response(req);
+                response = newRot13Response(req, factory);
                 break;
             case SVC_THROW_ERROR:
                 response = throwErrorSynchronously();
@@ -98,19 +96,21 @@ final class TestServiceStreaming extends StreamingHttpService {
             case SVC_SINGLE_ERROR:
                 return Single.error(DELIBERATE_EXCEPTION);
             case SVC_ERROR_BEFORE_READ:
-                response = throwErrorBeforeRead(req);
+                response = throwErrorBeforeRead(req, factory);
                 break;
             case SVC_ERROR_DURING_READ:
-                response = throwErrorDuringRead(req);
+                response = throwErrorDuringRead(req, factory);
                 break;
             default:
-                response = newNotFoundResponse(req);
+                response = newNotFoundResponse(req, factory);
         }
         return Single.success(response);
     }
 
-    private StreamingHttpResponse<HttpPayloadChunk> newEchoResponse(final StreamingHttpRequest<HttpPayloadChunk> req) {
-        final StreamingHttpResponse<HttpPayloadChunk> response = newResponse(req.getVersion(), OK, req.getPayloadBody());
+    private StreamingHttpResponse newEchoResponse(final StreamingHttpRequest req,
+                                                  final StreamingHttpResponseFactory factory) {
+        final StreamingHttpResponse response = factory.ok().setVersion(req.getVersion())
+                .setPayloadBody(req.getPayloadBody());
         final CharSequence contentLength = req.getHeaders().get(CONTENT_LENGTH);
         if (contentLength != null) {
             response.getHeaders().set(CONTENT_LENGTH, contentLength);
@@ -118,53 +118,49 @@ final class TestServiceStreaming extends StreamingHttpService {
         return response;
     }
 
-    private StreamingHttpResponse<HttpPayloadChunk> newTestCounterResponse(final ConnectionContext context,
-                                                                           final StreamingHttpRequest<HttpPayloadChunk> req) {
+    private StreamingHttpResponse newTestCounterResponse(final ConnectionContext context,
+                                                         final StreamingHttpRequest req,
+                                                         final StreamingHttpResponseFactory factory) {
         final Buffer responseContent = context.getExecutionContext().getBufferAllocator().fromUtf8(
                 "Testing" + ++counter + "\n");
-        final HttpPayloadChunk responseBody = newPayloadChunk(responseContent);
-        return newResponse(req.getVersion(), OK, responseBody);
+        return factory.ok().setVersion(req.getVersion()).setPayloadBody(just(responseContent));
     }
 
-    private StreamingHttpResponse<HttpPayloadChunk> newTestCounterResponseWithLastPayloadChunk(
-            final ConnectionContext context, final StreamingHttpRequest<HttpPayloadChunk> req) {
+    private StreamingHttpResponse newTestCounterResponseWithLastPayloadChunk(
+            final ConnectionContext context, final StreamingHttpRequest req,
+            final StreamingHttpResponseFactory factory) {
         final Buffer responseContent = context.getExecutionContext().getBufferAllocator().fromUtf8(
                 "Testing" + ++counter + "\n");
-        final HttpPayloadChunk responseBody = newLastPayloadChunk(responseContent,
-                INSTANCE.newEmptyTrailers());
-        return newResponse(req.getVersion(), OK, responseBody);
+        return factory.ok().setVersion(req.getVersion()).setPayloadBody(just(responseContent));
     }
 
-    private StreamingHttpResponse<HttpPayloadChunk> newLargeLastChunkResponse(
-            final ConnectionContext context, final StreamingHttpRequest<HttpPayloadChunk> req) {
+    private StreamingHttpResponse newLargeLastChunkResponse(
+            final ConnectionContext context, final StreamingHttpRequest req,
+            final StreamingHttpResponseFactory factory) {
         final byte[] content = new byte[1024];
         ThreadLocalRandom.current().nextBytes(content);
-        final HttpPayloadChunk chunk = newPayloadChunk(
-                context.getExecutionContext().getBufferAllocator().wrap(content));
+        final Buffer chunk = context.getExecutionContext().getBufferAllocator().wrap(content);
 
         final byte[] lastContent = new byte[6144];
         ThreadLocalRandom.current().nextBytes(lastContent);
-        final HttpPayloadChunk lastChunk = newLastPayloadChunk(
-                context.getExecutionContext().getBufferAllocator().wrap(lastContent),
-                INSTANCE.newEmptyTrailers());
+        final Buffer lastChunk = context.getExecutionContext().getBufferAllocator().wrap(lastContent);
 
-        final Publisher<HttpPayloadChunk> responseBody = Publisher.from(chunk, lastChunk);
-
-        return newResponse(req.getVersion(), OK, responseBody);
+        return factory.ok().setVersion(req.getVersion()).setPayloadBody(from(chunk, lastChunk));
     }
 
-    private StreamingHttpResponse<HttpPayloadChunk> newPublisherRuleResponse(
-            final StreamingHttpRequest<HttpPayloadChunk> req) {
-        return newResponse(req.getVersion(), OK, publisherSupplier.apply(req));
+    private StreamingHttpResponse newPublisherRuleResponse(
+            final StreamingHttpRequest req, final StreamingHttpResponseFactory factory) {
+        return factory.ok().setVersion(req.getVersion()).setPayloadBody(publisherSupplier.apply(req));
     }
 
-    private StreamingHttpResponse<HttpPayloadChunk> newNoContentResponse(final StreamingHttpRequest<HttpPayloadChunk> req) {
-        return newResponse(req.getVersion(), HttpResponseStatuses.NO_CONTENT);
+    private StreamingHttpResponse newNoContentResponse(final StreamingHttpRequest req,
+                                                       final StreamingHttpResponseFactory factory) {
+        return factory.newResponse(NO_CONTENT).setVersion(req.getVersion());
     }
 
-    private StreamingHttpResponse<HttpPayloadChunk> newRot13Response(final StreamingHttpRequest<HttpPayloadChunk> req) {
-        final Publisher<HttpPayloadChunk> responseBody = req.getPayloadBody().map(chunk -> {
-            final Buffer buffer = chunk.getContent();
+    private StreamingHttpResponse newRot13Response(final StreamingHttpRequest req,
+                                                   final StreamingHttpResponseFactory factory) {
+        final Publisher<Buffer> responseBody = req.getPayloadBody().map(buffer -> {
             // Do an ASCII-only ROT13
             for (int i = buffer.getReaderIndex(); i < buffer.getWriterIndex(); i++) {
                 final byte c = buffer.getByte(i);
@@ -174,30 +170,29 @@ final class TestServiceStreaming extends StreamingHttpService {
                     buffer.setByte(i, c - 13);
                 }
             }
-            return chunk;
+            return buffer;
         });
-        return newResponse(req.getVersion(), OK, responseBody);
+        return factory.ok().setVersion(req.getVersion()).setPayloadBody(responseBody);
     }
 
-    private StreamingHttpResponse<HttpPayloadChunk> newNotFoundResponse(final StreamingHttpRequest<HttpPayloadChunk> req) {
-        return newResponse(req.getVersion(), NOT_FOUND);
+    private StreamingHttpResponse newNotFoundResponse(final StreamingHttpRequest req,
+                                                      final StreamingHttpResponseFactory factory) {
+        return factory.newResponse(NOT_FOUND).setVersion(req.getVersion());
     }
 
-    private StreamingHttpResponse<HttpPayloadChunk> throwErrorSynchronously() {
+    private StreamingHttpResponse throwErrorSynchronously() {
         throw DELIBERATE_EXCEPTION;
     }
 
-    private StreamingHttpResponse<HttpPayloadChunk> throwErrorBeforeRead(final StreamingHttpRequest<HttpPayloadChunk> req) {
-        final Publisher<HttpPayloadChunk> responseBodyPublisher = Publisher.error(
-                DELIBERATE_EXCEPTION);
-        return newResponse(req.getVersion(), OK, responseBodyPublisher);
+    private StreamingHttpResponse throwErrorBeforeRead(final StreamingHttpRequest req,
+                                                       final StreamingHttpResponseFactory factory) {
+        return factory.ok().setVersion(req.getVersion()).setPayloadBody(Publisher.error(
+                DELIBERATE_EXCEPTION));
     }
 
-    private StreamingHttpResponse<HttpPayloadChunk> throwErrorDuringRead(final StreamingHttpRequest<HttpPayloadChunk> req) {
-        final Publisher<HttpPayloadChunk> responseBodyPublisher = req.getPayloadBody()
-                .filter(reqChunk -> !(reqChunk instanceof LastHttpPayloadChunk))
-                .concatWith(error(DELIBERATE_EXCEPTION));
-
-        return newResponse(req.getVersion(), OK, responseBodyPublisher);
+    private StreamingHttpResponse throwErrorDuringRead(final StreamingHttpRequest req,
+                                                       final StreamingHttpResponseFactory factory) {
+        return factory.ok().setVersion(req.getVersion()).setPayloadBody(
+                req.getPayloadBody().concatWith(Completable.error(DELIBERATE_EXCEPTION)));
     }
 }

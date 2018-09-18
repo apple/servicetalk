@@ -85,7 +85,7 @@ public abstract class Completable implements io.servicetalk.concurrent.Completab
      * @param nextFactory Returns the next {@link Completable}, if this {@link Completable} emits an error.
      * @return The new {@link Completable}.
      */
-    public final Completable onErrorResume(Function<Throwable, Completable> nextFactory) {
+    public final Completable onErrorResume(Function<? super Throwable, Completable> nextFactory) {
         return new ResumeCompletable(this, nextFactory, executor);
     }
 

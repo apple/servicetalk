@@ -19,11 +19,14 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
@@ -43,11 +46,7 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
-import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
-import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
-import static io.servicetalk.http.api.StreamingHttpService.from;
 import static java.util.Objects.requireNonNull;
 import static org.junit.Assert.assertEquals;
 
@@ -74,13 +73,20 @@ public class HttpAuthConnectionFactoryClientTest {
     @Test
     public void simulateAuth() throws Exception {
         serverContext = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
-                .start(CTX, new InetSocketAddress(0), ContextFilter.ACCEPT_ALL,
-                        from((ctx, req) -> success(newTestResponse()))));
+                .startStreaming(CTX, new InetSocketAddress(0), ContextFilter.ACCEPT_ALL,
+                        new StreamingHttpService() {
+                            @Override
+                            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                                        final StreamingHttpRequest request,
+                                                                        final StreamingHttpResponseFactory factory) {
+                                return success(newTestResponse(factory));
+                            }
+                        }));
         client = HttpClients.forSingleAddress("localhost",
                 ((InetSocketAddress) serverContext.getListenAddress()).getPort())
                 .buildStreaming(CTX);
 
-        StreamingHttpResponse<HttpPayloadChunk> response = awaitIndefinitely(client.request(newTestRequest("/foo")));
+        StreamingHttpResponse response = awaitIndefinitely(client.request(newTestRequest(client, "/foo")));
         assertEquals(OK, response.getStatus());
     }
 
@@ -98,7 +104,7 @@ public class HttpAuthConnectionFactoryClientTest {
         public Single<StreamingHttpConnection> newConnection(
                 final ResolvedAddress resolvedAddress) {
             return delegate.newConnection(resolvedAddress).flatMap(cnx ->
-                    cnx.request(newTestRequest("/auth"))
+                    cnx.request(newTestRequest(cnx, "/auth"))
                             .onErrorResume(cause -> {
                                 cnx.closeAsync().subscribe();
                                 return error(new IllegalStateException("failed auth"));
@@ -131,14 +137,14 @@ public class HttpAuthConnectionFactoryClientTest {
         }
     }
 
-    private static StreamingHttpRequest<HttpPayloadChunk> newTestRequest(String requestTarget) {
-        StreamingHttpRequest<HttpPayloadChunk> req = newRequest(GET, requestTarget);
+    private static StreamingHttpRequest newTestRequest(StreamingHttpRequestFactory factory, String requestTarget) {
+        StreamingHttpRequest req = factory.get(requestTarget);
         req.getHeaders().set(CONTENT_LENGTH, ZERO);
         return req;
     }
 
-    private static StreamingHttpResponse<HttpPayloadChunk> newTestResponse() {
-        StreamingHttpResponse<HttpPayloadChunk> resp = newResponse(OK);
+    private static StreamingHttpResponse newTestResponse(StreamingHttpResponseFactory factory) {
+        StreamingHttpResponse resp = factory.ok();
         resp.getHeaders().set(CONTENT_LENGTH, ZERO);
         return resp;
     }

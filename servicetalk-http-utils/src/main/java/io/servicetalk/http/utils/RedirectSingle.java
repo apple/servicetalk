@@ -57,7 +57,8 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
     /**
      * Create a new {@link Single}<{@link StreamingHttpResponse}> which will be able to handle redirects.
      *
-     * @param originalResponse The original {@link Single}<{@link StreamingHttpResponse}> for which redirect should be applied.
+     * @param originalResponse The original {@link Single}<{@link StreamingHttpResponse}> for which redirect should be
+     * applied.
      * @param originalRequest The original {@link StreamingHttpRequest} which was sent.
      * @param maxRedirects The maximum number of follow up redirects.
      * @param requester The {@link StreamingHttpRequester} to send redirected requests, must be backed by
@@ -121,7 +122,7 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
 
             final StreamingHttpRequest newRequest;
             try {
-                newRequest = prepareRedirectRequest(redirectSingle.requester, request, result);
+                newRequest = prepareRedirectRequest(request, result, redirectSingle.requester);
             } catch (final Throwable cause) {
                 target.onError(cause);
                 return;
@@ -192,15 +193,15 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
             }
         }
 
-        private static StreamingHttpRequest prepareRedirectRequest(final StreamingHttpRequestFactory requestFactory,
-                                                                   final StreamingHttpRequest request,
-                                                                   final StreamingHttpResponse response) {
+        private static StreamingHttpRequest prepareRedirectRequest(
+                final StreamingHttpRequest request, final StreamingHttpResponse response,
+                final StreamingHttpRequestFactory requestFactory) {
             final HttpRequestMethod method = defineRedirectMethod(request.getMethod());
             final CharSequence locationHeader = response.getHeaders().get(LOCATION);
             assert locationHeader != null;
 
-            final StreamingHttpRequest redirectRequest = requestFactory.newRequest(method, locationHeader.toString())
-                    .setVersion(request.getVersion());
+            final StreamingHttpRequest redirectRequest =
+                    requestFactory.newRequest(method, locationHeader.toString()).setVersion(request.getVersion());
 
             final HttpHeaders headers = redirectRequest.getHeaders();
             // TODO CONTENT_LENGTH could be non ZERO, when we will support repeatable payloadBody

@@ -32,8 +32,7 @@ final class BlockingHttpClientGroupToStreamingHttpClientGroup<UnresolvedAddress>
 
     BlockingHttpClientGroupToStreamingHttpClientGroup(
             BlockingHttpClientGroup<UnresolvedAddress> clientGroup) {
-        super(new HttpRequestFactoryToStreamingHttpRequestFactory(clientGroup.requestFactory),
-                new HttpResponseFactoryToStreamingHttpResponseFactory(clientGroup.getHttpResponseFactory()));
+        super(new HttpRequestResponseFactoryToStreamingHttpRequestResponseFactory(clientGroup.reqRespFactory));
         this.clientGroup = requireNonNull(clientGroup);
     }
 

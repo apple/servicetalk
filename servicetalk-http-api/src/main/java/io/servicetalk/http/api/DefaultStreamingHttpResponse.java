@@ -20,7 +20,10 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SingleProcessor;
-import io.servicetalk.http.api.HttpSerializerUtils.HttpPayloadAndTrailersFromSingleOperator;
+import io.servicetalk.http.api.HttpDataSourceTranformations.BridgeFlowControlAndDiscardOperator;
+import io.servicetalk.http.api.HttpDataSourceTranformations.HttpBufferFilterOperator;
+import io.servicetalk.http.api.HttpDataSourceTranformations.HttpPayloadAndTrailersFromSingleOperator;
+import io.servicetalk.http.api.HttpDataSourceTranformations.SerializeBridgeFlowControlAndDiscardOperator;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -28,9 +31,8 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.HttpSerializerUtils.aggregatePayloadAndTrailers;
+import static io.servicetalk.http.api.HttpDataSourceTranformations.aggregatePayloadAndTrailers;
 import static java.util.Objects.requireNonNull;
 
 class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implements StreamingHttpResponse {
@@ -39,9 +41,9 @@ class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implem
     final Single<HttpHeaders> trailersSingle;
 
     DefaultStreamingHttpResponse(final HttpResponseStatus status, final HttpProtocolVersion version,
-                                 final HttpHeaders headers, final BufferAllocator allocator,
-                                 final HttpHeaders initialTrailers) {
-        this(status, version, headers, allocator, empty(), success(initialTrailers));
+                                 final HttpHeaders headers, final HttpHeaders initialTrailers,
+                                 final BufferAllocator allocator, final Publisher<P> payloadBody) {
+        this(status, version, headers, success(initialTrailers), allocator, payloadBody);
     }
 
     /**
@@ -56,8 +58,8 @@ class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implem
      * provide the original data if re-used over transformation operations.
      */
     DefaultStreamingHttpResponse(final HttpResponseStatus status, final HttpProtocolVersion version,
-                                 final HttpHeaders headers, final BufferAllocator allocator,
-                                 final Publisher<P> payloadBody, final Single<HttpHeaders> trailersSingle) {
+                                 final HttpHeaders headers, final Single<HttpHeaders> trailersSingle,
+                                 final BufferAllocator allocator, final Publisher<P> payloadBody) {
         super(status, version, headers);
         this.allocator = requireNonNull(allocator);
         this.payloadBody = requireNonNull(payloadBody);
@@ -87,8 +89,8 @@ class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implem
     }
 
     @Override
-    public final <T> Publisher<T> getPayloadBody(final HttpDeserializer<T> deserializer) {
-        return deserializer.deserialize(getHeaders(), payloadBody);
+    public Publisher<Buffer> getPayloadBody() {
+        return payloadBody.liftSynchronous(HttpBufferFilterOperator.INSTANCE);
     }
 
     @Override
@@ -96,6 +98,22 @@ class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implem
         return payloadBody
                 .map(payload -> (Object) payload) // down cast to Object
                 .concatWith(trailersSingle);
+    }
+
+    @Override
+    public final StreamingHttpResponse setPayloadBody(final Publisher<Buffer> payloadBody) {
+        return new BufferStreamingHttpResponse(this, allocator,
+                payloadBody.liftSynchronous(new BridgeFlowControlAndDiscardOperator(getPayloadBody())), trailersSingle);
+    }
+
+    @Override
+    public final <T> StreamingHttpResponse setPayloadBody(final Publisher<T> payloadBody,
+                                                          final HttpSerializer<T> serializer) {
+        final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
+        return new BufferStreamingHttpResponse(this, allocator, serializer.serialize(getHeaders(),
+                    payloadBody.liftSynchronous(new SerializeBridgeFlowControlAndDiscardOperator<>(getPayloadBody())),
+                    allocator),
+                outTrailersSingle);
     }
 
     @Override

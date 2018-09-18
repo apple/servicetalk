@@ -29,23 +29,24 @@ import static java.util.Objects.requireNonNull;
 public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHttpRequesterTest {
     @SuppressWarnings("unchecked")
     @Override
-    protected <T extends StreamingHttpRequester & TestHttpRequester> T newAsyncRequester(final ExecutionContext ctx,
-                                                                                         final Function<StreamingHttpRequest<HttpPayloadChunk>, Single<StreamingHttpResponse<HttpPayloadChunk>>> doRequest) {
-        return (T) new TestStreamingHttpClient(ctx) {
+    protected <T extends StreamingHttpRequester & TestHttpRequester> T newAsyncRequester(
+            StreamingHttpRequestResponseFactory factory,
+            final ExecutionContext ctx, final Function<StreamingHttpRequest, Single<StreamingHttpResponse>> doRequest) {
+        return (T) new TestStreamingHttpClient(factory, ctx) {
             @Override
-            public Single<StreamingHttpResponse<HttpPayloadChunk>> request(final StreamingHttpRequest<HttpPayloadChunk> request) {
+            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
                 return doRequest.apply(request);
             }
 
             @Override
             public Single<? extends ReservedStreamingHttpConnection> reserveConnection(
-                    final StreamingHttpRequest<HttpPayloadChunk> request) {
+                    final StreamingHttpRequest request) {
                 return error(new UnsupportedOperationException());
             }
 
             @Override
-            public Single<? extends UpgradableStreamingHttpResponse<HttpPayloadChunk>> upgradeConnection(
-                    final StreamingHttpRequest<HttpPayloadChunk> request) {
+            public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(
+                    final StreamingHttpRequest request) {
                 return error(new UnsupportedOperationException());
             }
         };
@@ -53,23 +54,25 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
 
     @SuppressWarnings("unchecked")
     @Override
-    protected <T extends BlockingStreamingHttpRequester & TestHttpRequester> T newBlockingRequester(final ExecutionContext ctx,
-                                                                                                    final Function<BlockingStreamingHttpRequest<HttpPayloadChunk>, BlockingStreamingHttpResponse<HttpPayloadChunk>> doRequest) {
-        return (T) new TestBlockingStreamingHttpClient(ctx) {
+    protected <T extends BlockingStreamingHttpRequester & TestHttpRequester> T newBlockingRequester(
+            BlockingStreamingHttpRequestResponseFactory factory,
+            final ExecutionContext ctx,
+            final Function<BlockingStreamingHttpRequest, BlockingStreamingHttpResponse> doRequest) {
+        return (T) new TestBlockingStreamingHttpClient(factory, ctx) {
             @Override
-            public BlockingStreamingHttpResponse<HttpPayloadChunk> request(final BlockingStreamingHttpRequest<HttpPayloadChunk> request) {
+            public BlockingStreamingHttpResponse request(final BlockingStreamingHttpRequest request) {
                 return doRequest.apply(request);
             }
 
             @Override
             public ReservedBlockingStreamingHttpConnection reserveConnection(
-                    final BlockingStreamingHttpRequest<HttpPayloadChunk> request) {
+                    final BlockingStreamingHttpRequest request) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            public UpgradableBlockingStreamingHttpResponse<HttpPayloadChunk> upgradeConnection(
-                    final BlockingStreamingHttpRequest<HttpPayloadChunk> request) {
+            public UpgradableBlockingStreamingHttpResponse upgradeConnection(
+                    final BlockingStreamingHttpRequest request) {
                 throw new UnsupportedOperationException();
             }
         };
@@ -80,7 +83,9 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
         private final CompletableProcessor onClose = new CompletableProcessor();
         private final ExecutionContext executionContext;
 
-        TestStreamingHttpClient(ExecutionContext executionContext) {
+        TestStreamingHttpClient(StreamingHttpRequestResponseFactory factory,
+                                ExecutionContext executionContext) {
+            super(factory);
             this.executionContext = requireNonNull(executionContext);
         }
 
@@ -118,7 +123,9 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
         private final AtomicBoolean closed = new AtomicBoolean();
         private final ExecutionContext executionContext;
 
-        TestBlockingStreamingHttpClient(ExecutionContext executionContext) {
+        TestBlockingStreamingHttpClient(BlockingStreamingHttpRequestResponseFactory factory,
+                                        ExecutionContext executionContext) {
+            super(factory);
             this.executionContext = requireNonNull(executionContext);
         }
 

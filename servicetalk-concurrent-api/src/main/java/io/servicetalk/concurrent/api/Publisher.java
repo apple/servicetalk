@@ -157,7 +157,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * produced by {@code nextFactory}.
      * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
-    public final Publisher<T> onErrorResume(Function<Throwable, Publisher<T>> nextFactory) {
+    public final Publisher<T> onErrorResume(Function<? super Throwable, Publisher<? extends T>> nextFactory) {
         return new ResumePublisher<>(this, nextFactory, executor);
     }
 
@@ -194,7 +194,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      * @see #flatMapSingle(Function, int)
      */
-    public final <R> Publisher<R> flatMapSingle(Function<T, Single<R>> mapper) {
+    public final <R> Publisher<R> flatMapSingle(Function<? super T, Single<? extends R>> mapper) {
         return new PublisherFlatMapSingle<>(this, mapper, false, executor);
     }
 
@@ -231,7 +231,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      */
-    public final <R> Publisher<R> flatMapSingle(Function<T, Single<R>> mapper, int maxConcurrency) {
+    public final <R> Publisher<R> flatMapSingle(Function<? super T, Single<? extends R>> mapper, int maxConcurrency) {
         return new PublisherFlatMapSingle<>(this, mapper, maxConcurrency, false, executor);
     }
 
@@ -281,7 +281,7 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
      * @see #flatMapSingleDelayError(Function, int)
      */
-    public final <R> Publisher<R> flatMapSingleDelayError(Function<T, Single<R>> mapper) {
+    public final <R> Publisher<R> flatMapSingleDelayError(Function<? super T, Single<? extends R>> mapper) {
         return new PublisherFlatMapSingle<>(this, mapper, true, executor);
     }
 
@@ -330,7 +330,8 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
      */
-    public final <R> Publisher<R> flatMapSingleDelayError(Function<T, Single<R>> mapper, int maxConcurrency) {
+    public final <R> Publisher<R> flatMapSingleDelayError(Function<? super T, Single<? extends R>> mapper,
+                                                          int maxConcurrency) {
         return new PublisherFlatMapSingle<>(this, mapper, maxConcurrency, true, executor);
     }
 

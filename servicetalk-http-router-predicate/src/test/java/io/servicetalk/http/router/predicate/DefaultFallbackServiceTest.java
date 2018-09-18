@@ -15,12 +15,16 @@
  */
 package io.servicetalk.http.router.predicate;
 
+import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.buffer.api.ReadOnlyBufferAllocators;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
+import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Before;
@@ -42,15 +46,18 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 
 public class DefaultFallbackServiceTest {
+    static final BufferAllocator allocator = ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
+    static final StreamingHttpRequestResponseFactory reqRespFactory =
+            new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE);
     @Rule
     public MockitoRule rule = MockitoJUnit.rule();
 
     @Mock
-    private ConnectionContext ctx;
+    private HttpServiceContext ctx;
     @Mock
     private ExecutionContext executionCtx;
     @Mock
-    private StreamingHttpRequest<HttpPayloadChunk> request;
+    private StreamingHttpRequest request;
 
     @Before
     public void setUp() {
@@ -63,9 +70,9 @@ public class DefaultFallbackServiceTest {
     public void testDefaultFallbackService() throws Exception {
         final StreamingHttpService fixture = DefaultFallbackServiceStreaming.instance();
 
-        final Single<StreamingHttpResponse<HttpPayloadChunk>> responseSingle = fixture.handle(ctx, request);
+        final Single<StreamingHttpResponse> responseSingle = fixture.handle(ctx, request, reqRespFactory);
 
-        final StreamingHttpResponse<HttpPayloadChunk> response = awaitIndefinitely(responseSingle);
+        final StreamingHttpResponse response = awaitIndefinitely(responseSingle);
         assert response != null;
         assertEquals(HTTP_1_1, response.getVersion());
         assertEquals(NOT_FOUND, response.getStatus());

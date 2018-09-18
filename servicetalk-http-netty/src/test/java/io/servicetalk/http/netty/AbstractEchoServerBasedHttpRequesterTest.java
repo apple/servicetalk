@@ -19,12 +19,12 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpHeaders;
-import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
@@ -38,17 +38,12 @@ import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoff;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
-import static io.servicetalk.http.api.HttpPayloadChunks.aggregateChunks;
-import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
-import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
-import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -78,10 +73,11 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
 
     private static class EchoServiceStreaming extends StreamingHttpService {
         @Override
-        public Single<StreamingHttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                                      final StreamingHttpRequest<HttpPayloadChunk> request) {
+        public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                    final StreamingHttpRequest request,
+                                                    final StreamingHttpResponseFactory factory) {
 
-            StreamingHttpResponse<HttpPayloadChunk> resp = newResponse(HTTP_1_1, OK, request.getPayloadBody());
+            StreamingHttpResponse resp = factory.ok().setPayloadBody(request.getPayloadBody());
 
             resp.getHeaders()
                     .set("test-req-target", request.getRequestTarget())
@@ -96,18 +92,20 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
     public static void makeRequestValidateResponseAndClose(StreamingHttpRequester requester)
             throws ExecutionException, InterruptedException {
         try {
-            StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/request?foo=bar&foo=baz",
-                    newPayloadChunk(DEFAULT_ALLOCATOR.fromAscii("Testing123")));
+            StreamingHttpRequest request = requester.get("/request?foo=bar&foo=baz").setPayloadBody(
+                    just(DEFAULT_ALLOCATOR.fromAscii("Testing123")));
             request.getHeaders().set(HttpHeaderNames.HOST, "mock.servicetalk.io");
 
-            StreamingHttpResponse<HttpPayloadChunk> resp = awaitIndefinitelyNonNull(requester.request(request).retryWhen(
+            StreamingHttpResponse resp = awaitIndefinitelyNonNull(requester.request(request).retryWhen(
                     retryWithExponentialBackoff(10, t -> true, Duration.ofMillis(100),
                             CTX.getExecutor())));
 
             assertThat(resp.getStatus().getCode(), equalTo(200));
 
-            Single<String> respBody = aggregateChunks(resp.getPayloadBody(), CTX.getBufferAllocator())
-                    .map(ch -> ch.getContent().toString(UTF_8));
+            Single<String> respBody = resp.getPayloadBody().reduce(StringBuilder::new, (sb, buf) -> {
+                sb.append(buf.toString(UTF_8));
+                return sb;
+            }).map(StringBuilder::toString);
 
             HttpHeaders headers = resp.getHeaders();
             assertThat(headers.get("test-req-method"), hasToString(GET.toString()));

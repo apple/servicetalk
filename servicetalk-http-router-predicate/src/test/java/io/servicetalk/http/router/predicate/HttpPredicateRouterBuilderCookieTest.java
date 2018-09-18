@@ -38,10 +38,10 @@ public class HttpPredicateRouterBuilderCookieTest extends BaseHttpPredicateRoute
                 .buildStreaming();
 
         when(headers.getCookies("session")).then(answerIteratorOf(cookie1));
-        assertSame(responseA, service.handle(ctx, request));
+        assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
         when(headers.getCookies("session")).thenReturn(emptyIterator());
-        assertSame(fallbackResponse, service.handle(ctx, request));
+        assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
     @Test
@@ -52,19 +52,19 @@ public class HttpPredicateRouterBuilderCookieTest extends BaseHttpPredicateRoute
                 .buildStreaming();
 
         when(headers.getCookies("session")).then(answerIteratorOf(cookie1));
-        assertSame(responseA, service.handle(ctx, request));
+        assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
         when(headers.getCookies("session")).then(answerIteratorOf(cookie1, cookie2));
-        assertSame(responseA, service.handle(ctx, request));
+        assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
         when(headers.getCookies("session")).then(answerIteratorOf(cookie2, cookie1));
-        assertSame(responseA, service.handle(ctx, request));
+        assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
         when(headers.getCookies("session")).then(answerIteratorOf(cookie2));
-        assertSame(fallbackResponse, service.handle(ctx, request));
+        assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
 
         when(headers.getCookies("session")).thenReturn(emptyIterator());
-        assertSame(fallbackResponse, service.handle(ctx, request));
+        assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
     @Test
@@ -75,15 +75,15 @@ public class HttpPredicateRouterBuilderCookieTest extends BaseHttpPredicateRoute
                 .buildStreaming();
 
         when(headers.getCookies("session")).then(answerIteratorOf(cookie1));
-        assertSame(responseA, service.handle(ctx, request));
+        assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
         when(headers.getCookies("session")).then(answerIteratorOf(cookie2, cookie1));
-        assertSame(responseA, service.handle(ctx, request));
+        assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
         when(headers.getCookies("session")).then(answerIteratorOf(cookie2));
-        assertSame(fallbackResponse, service.handle(ctx, request));
+        assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
 
         when(headers.getCookies("session")).thenReturn(emptyIterator());
-        assertSame(fallbackResponse, service.handle(ctx, request));
+        assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 }

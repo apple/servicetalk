@@ -20,7 +20,6 @@ import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.api.LastHttpPayloadChunk;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -38,7 +37,6 @@ import static io.servicetalk.http.api.HttpHeaderNames.SERVER;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
-import static io.servicetalk.http.api.HttpPayloadChunks.newLastPayloadChunk;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseMetaDataFactory.newResponseMetaData;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
@@ -62,14 +60,14 @@ public class HttpResponseEncoderTest {
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
-        LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, EmptyHttpHeaders.INSTANCE);
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
         response.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test")
                 .add(CONTENT_LENGTH, valueOf(content.length));
         channel.writeOutbound(response);
-        channel.writeOutbound(lastChunk.duplicate());
+        channel.writeOutbound(buffer.duplicate());
+        channel.writeOutbound(EmptyHttpHeaders.INSTANCE);
         verifyHttpResponse(channel, buffer, TransferEncoding.ContentLength, false);
         assertFalse(channel.finishAndReleaseAll());
     }
@@ -92,7 +90,6 @@ public class HttpResponseEncoderTest {
         ThreadLocalRandom.current().nextBytes(content);
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
 
-        LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, EmptyHttpHeaders.INSTANCE);
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK,
                 new DefaultHttpHeadersFactory(false, false).newHeaders());
         response.getHeaders()
@@ -100,7 +97,8 @@ public class HttpResponseEncoderTest {
                 .add("  " + SERVER + "   ", "    unit-test   ")
                 .add(CONTENT_LENGTH, valueOf(content.length));
         channel.writeOutbound(response);
-        channel.writeOutbound(lastChunk.duplicate());
+        channel.writeOutbound(buffer.duplicate());
+        channel.writeOutbound(EmptyHttpHeaders.INSTANCE);
 
         ByteBuf byteBuf = channel.readOutbound();
         String actualMetaData = byteBuf.toString(US_ASCII);
@@ -123,14 +121,14 @@ public class HttpResponseEncoderTest {
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
-        LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, EmptyHttpHeaders.INSTANCE);
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
         response.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test")
                 .add(TRANSFER_ENCODING, CHUNKED);
         channel.writeOutbound(response);
-        channel.writeOutbound(lastChunk.duplicate());
+        channel.writeOutbound(buffer.duplicate());
+        channel.writeOutbound(EmptyHttpHeaders.INSTANCE);
         verifyHttpResponse(channel, buffer, TransferEncoding.Chunked, false);
         assertFalse(channel.finishAndReleaseAll());
     }
@@ -143,14 +141,14 @@ public class HttpResponseEncoderTest {
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
         HttpHeaders trailers = DefaultHttpHeadersFactory.INSTANCE.newTrailers();
         trailers.add("TrailerStatus", "good");
-        LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, trailers);
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
         response.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test")
                 .add(TRANSFER_ENCODING, CHUNKED);
         channel.writeOutbound(response);
-        channel.writeOutbound(lastChunk.duplicate());
+        channel.writeOutbound(buffer.duplicate());
+        channel.writeOutbound(trailers);
         verifyHttpResponse(channel, buffer, TransferEncoding.Chunked, true);
         assertFalse(channel.finishAndReleaseAll());
     }
@@ -158,14 +156,14 @@ public class HttpResponseEncoderTest {
     @Test
     public void chunkedNoTrailersNoContent() {
         EmbeddedChannel channel = newEmbeddedChannel();
-        LastHttpPayloadChunk lastChunk = newLastPayloadChunk(EMPTY_BUFFER, EmptyHttpHeaders.INSTANCE);
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
         response.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test")
                 .add(TRANSFER_ENCODING, CHUNKED);
         channel.writeOutbound(response);
-        channel.writeOutbound(lastChunk.duplicate());
+        channel.writeOutbound(EMPTY_BUFFER.duplicate());
+        channel.writeOutbound(EmptyHttpHeaders.INSTANCE);
         verifyHttpResponse(channel, EMPTY_BUFFER, TransferEncoding.Chunked, false);
         assertFalse(channel.finishAndReleaseAll());
     }
@@ -173,13 +171,13 @@ public class HttpResponseEncoderTest {
     @Test
     public void variableNoTrailersNoContent() {
         EmbeddedChannel channel = newEmbeddedChannel();
-        LastHttpPayloadChunk lastChunk = newLastPayloadChunk(EMPTY_BUFFER, EmptyHttpHeaders.INSTANCE);
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
         response.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test");
         channel.writeOutbound(response);
-        channel.writeOutbound(lastChunk.duplicate());
+        channel.writeOutbound(EMPTY_BUFFER.duplicate());
+        channel.writeOutbound(EmptyHttpHeaders.INSTANCE);
         verifyHttpResponse(channel, EMPTY_BUFFER, TransferEncoding.Variable, false);
         assertFalse(channel.finishAndReleaseAll());
     }
@@ -190,13 +188,13 @@ public class HttpResponseEncoderTest {
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
-        LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, EmptyHttpHeaders.INSTANCE);
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
         response.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test");
         channel.writeOutbound(response);
-        channel.writeOutbound(lastChunk.duplicate());
+        channel.writeOutbound(buffer.duplicate());
+        channel.writeOutbound(EmptyHttpHeaders.INSTANCE);
         verifyHttpResponse(channel, buffer, TransferEncoding.Variable, false);
         assertFalse(channel.finishAndReleaseAll());
     }
@@ -209,13 +207,13 @@ public class HttpResponseEncoderTest {
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
         HttpHeaders trailers = DefaultHttpHeadersFactory.INSTANCE.newTrailers();
         trailers.add("TrailerStatus", "good");
-        LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, trailers);
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
         response.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test");
         channel.writeOutbound(response);
-        channel.writeOutbound(lastChunk.duplicate());
+        channel.writeOutbound(buffer.duplicate());
+        channel.writeOutbound(trailers);
         verifyHttpResponse(channel, buffer, TransferEncoding.Variable, false);
 
         // The trailers will just not be encoded if the transfer encoding is not set correctly.
@@ -230,14 +228,14 @@ public class HttpResponseEncoderTest {
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
         HttpHeaders trailers = DefaultHttpHeadersFactory.INSTANCE.newTrailers();
         trailers.add("TrailerStatus", "good");
-        LastHttpPayloadChunk lastChunk = newLastPayloadChunk(buffer, trailers);
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
         response.getHeaders()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test")
                 .add(CONTENT_LENGTH, valueOf(content.length));
         channel.writeOutbound(response);
-        channel.writeOutbound(lastChunk.duplicate());
+        channel.writeOutbound(buffer.duplicate());
+        channel.writeOutbound(trailers);
         verifyHttpResponse(channel, buffer, TransferEncoding.ContentLength, false);
 
         // The trailers will just not be encoded if the transfer encoding is not set correctly.

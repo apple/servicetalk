@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.GroupKey;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.BiFunction;
 
@@ -32,16 +31,16 @@ public final class HttpClientGroups {
     /**
      * Creates an {@link StreamingHttpClientGroup} instance which will use provided client factory function
      * to buildStreaming inner {@link StreamingHttpClient}s.
-     *
+     * @param reqRespFactory The {@link StreamingHttpRequestFactory} used by the returned
+     * {@link StreamingHttpClientGroup#newRequest(HttpRequestMethod, String)} and
+     * {@link StreamingHttpClientGroup#getHttpResponseFactory()}.
      * @param clientFactory A factory to create a {@link StreamingHttpClient} for the passed {@link GroupKey}.
      * @param <UnresolvedAddress> The address type used to create new {@link StreamingHttpClient}s.
      * @return A new {@link StreamingHttpClientGroup}.
      */
     public static <UnresolvedAddress> StreamingHttpClientGroup<UnresolvedAddress> newHttpClientGroup(
-            final StreamingHttpRequestFactory requestFactory,
-            final StreamingHttpResponseFactory responseFactory,
-            final ExecutionContext executionContext,
+            final StreamingHttpRequestResponseFactory reqRespFactory,
             final BiFunction<GroupKey<UnresolvedAddress>, HttpRequestMetaData, StreamingHttpClient> clientFactory) {
-        return new DefaultStreamingHttpClientGroup<>(requestFactory, responseFactory, executionContext, clientFactory);
+        return new DefaultStreamingHttpClientGroup<>(reqRespFactory, clientFactory);
     }
 }

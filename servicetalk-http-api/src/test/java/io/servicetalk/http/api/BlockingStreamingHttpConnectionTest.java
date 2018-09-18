@@ -33,11 +33,12 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
 
     @SuppressWarnings("unchecked")
     @Override
-    protected <T extends StreamingHttpRequester & TestHttpRequester> T newAsyncRequester(final ExecutionContext ctx,
-                                                                                         final Function<StreamingHttpRequest<HttpPayloadChunk>, Single<StreamingHttpResponse<HttpPayloadChunk>>> doRequest) {
-        return (T) new TestStreamingHttpConnection(ctx) {
+    protected <T extends StreamingHttpRequester & TestHttpRequester> T newAsyncRequester(
+            StreamingHttpRequestResponseFactory factory,
+            final ExecutionContext ctx, final Function<StreamingHttpRequest, Single<StreamingHttpResponse>> doRequest) {
+        return (T) new TestStreamingHttpConnection(factory, ctx) {
             @Override
-            public Single<StreamingHttpResponse<HttpPayloadChunk>> request(final StreamingHttpRequest<HttpPayloadChunk> request) {
+            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
                 return doRequest.apply(request);
             }
         };
@@ -45,11 +46,13 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
 
     @SuppressWarnings("unchecked")
     @Override
-    protected <T extends BlockingStreamingHttpRequester & TestHttpRequester> T newBlockingRequester(final ExecutionContext ctx,
-                                                                                                    final Function<BlockingStreamingHttpRequest<HttpPayloadChunk>, BlockingStreamingHttpResponse<HttpPayloadChunk>> doRequest) {
-        return (T) new TestBlockingStreamingHttpConnection(ctx) {
+    protected <T extends BlockingStreamingHttpRequester & TestHttpRequester> T newBlockingRequester(
+            BlockingStreamingHttpRequestResponseFactory factory,
+            final ExecutionContext ctx,
+            final Function<BlockingStreamingHttpRequest, BlockingStreamingHttpResponse> doRequest) {
+        return (T) new TestBlockingStreamingHttpConnection(factory, ctx) {
             @Override
-            public BlockingStreamingHttpResponse<HttpPayloadChunk> request(final BlockingStreamingHttpRequest<HttpPayloadChunk> request) {
+            public BlockingStreamingHttpResponse request(final BlockingStreamingHttpRequest request) {
                 return doRequest.apply(request);
             }
         };
@@ -61,7 +64,9 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
         private final ExecutionContext executionContext;
         private final ConnectionContext connectionContext;
 
-        TestStreamingHttpConnection(ExecutionContext executionContext) {
+        TestStreamingHttpConnection(StreamingHttpRequestResponseFactory factory,
+                                    ExecutionContext executionContext) {
+            super(factory);
             this.executionContext = executionContext;
             this.connectionContext = mock(ConnectionContext.class);
             when(connectionContext.getExecutionContext()).thenReturn(executionContext);
@@ -112,7 +117,9 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
         private final ExecutionContext executionContext;
         private final ConnectionContext connectionContext;
 
-        TestBlockingStreamingHttpConnection(ExecutionContext executionContext) {
+        TestBlockingStreamingHttpConnection(BlockingStreamingHttpRequestResponseFactory factory,
+                                            ExecutionContext executionContext) {
+            super(factory);
             this.executionContext = executionContext;
             this.connectionContext = mock(ConnectionContext.class);
             when(connectionContext.getExecutionContext()).thenReturn(executionContext);

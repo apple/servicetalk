@@ -18,7 +18,7 @@ package io.servicetalk.http.api;
 /**
  * The equivalent of {@link StreamingHttpService} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public abstract class BlockingStreamingHttpService implements AutoCloseable, BlockingStreamingRequestHandler {
+public abstract class BlockingStreamingHttpService implements AutoCloseable, BlockingStreamingHttpRequestHandler {
 
     @Override
     public void close() throws Exception {
@@ -61,7 +61,7 @@ public abstract class BlockingStreamingHttpService implements AutoCloseable, Blo
         return asStreamingService().asBlockingService();
     }
 
-    static BlockingStreamingHttpService wrap(BlockingStreamingRequestHandler handler) {
+    static BlockingStreamingHttpService wrap(BlockingStreamingHttpRequestHandler handler) {
         if (handler instanceof BlockingStreamingHttpService) {
             return (BlockingStreamingHttpService) handler;
         }

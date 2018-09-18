@@ -18,11 +18,11 @@ package io.servicetalk.http.router.predicate;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.List;
 
@@ -59,14 +59,15 @@ final class InOrderRouter extends StreamingHttpService {
     }
 
     @Override
-    public Single<StreamingHttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                                  final StreamingHttpRequest<HttpPayloadChunk> request) {
+    public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                final StreamingHttpRequest request,
+                                                final StreamingHttpResponseFactory factory) {
         for (final PredicateServicePair pair : predicateServicePairs) {
             if (pair.getPredicate().test(ctx, request)) {
-                return pair.getService().handle(ctx, request);
+                return pair.getService().handle(ctx, request, factory);
             }
         }
-        return fallbackService.handle(ctx, request);
+        return fallbackService.handle(ctx, request, factory);
     }
 
     @Override

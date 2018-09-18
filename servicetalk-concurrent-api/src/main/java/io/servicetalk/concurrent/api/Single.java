@@ -106,7 +106,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return A {@link Single} that ignores error from this {@code Single} and resume with the {@link Single} produced
      * by {@code nextFactory}.
      */
-    public final Single<T> onErrorResume(Function<Throwable, Single<T>> nextFactory) {
+    public final Single<T> onErrorResume(Function<? super Throwable, Single<? extends T>> nextFactory) {
         return new ResumeSingle<>(this, nextFactory, executor);
     }
 
@@ -165,7 +165,7 @@ public abstract class Single<T> implements io.servicetalk.concurrent.Single<T> {
      * @return New {@link Publisher} that switches to the {@link Publisher} returned by {@code next} after this
      * {@link Single} completes successfully.
      */
-    public final <R> Publisher<R> flatMapPublisher(Function<T, Publisher<? extends R>> next) {
+    public final <R> Publisher<R> flatMapPublisher(Function<? super T, Publisher<? extends R>> next) {
         return new SingleFlatMapPublisher<>(this, next, executor);
     }
 

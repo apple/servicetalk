@@ -17,10 +17,9 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequestFactory;
+import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.Connection;
@@ -33,9 +32,9 @@ final class PipelinedStreamingHttpConnection extends AbstractStreamingHttpConnec
     PipelinedStreamingHttpConnection(final Connection<Object, Object> connection,
                                      final ReadOnlyHttpClientConfig config,
                                      final ExecutionContext executionContext,
-                                     final StreamingHttpRequestFactory requestFactory) {
+                                     final StreamingHttpRequestResponseFactory reqRespFactor) {
         super(new DefaultPipelinedConnection<>(connection, config.getMaxPipelinedRequests()),
-                connection.onClosing(), config, executionContext, requestFactory);
+                connection.onClosing(), config, executionContext, reqRespFactor);
     }
 
     @Override

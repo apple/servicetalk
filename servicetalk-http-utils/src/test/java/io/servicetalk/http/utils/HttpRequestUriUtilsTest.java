@@ -15,7 +15,11 @@
  */
 package io.servicetalk.http.utils;
 
+import io.servicetalk.buffer.netty.BufferAllocators;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
+import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.junit.Rule;
@@ -28,9 +32,7 @@ import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpRequestMethods.CONNECT;
-import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpRequestMethods.OPTIONS;
-import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.utils.HttpRequestUriUtils.getBaseRequestUri;
 import static io.servicetalk.http.utils.HttpRequestUriUtils.getEffectiveRequestUri;
 import static java.net.InetSocketAddress.createUnresolved;
@@ -46,11 +48,14 @@ public class HttpRequestUriUtilsTest {
     @Mock
     private ConnectionContext ctx;
 
+    private final StreamingHttpRequestResponseFactory reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(
+            BufferAllocators.DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE);
+
     @Test
     public void originForm() {
         when(ctx.getLocalAddress()).thenReturn(createUnresolved("my.site.com", 80));
 
-        final StreamingHttpRequest<Object> req = newRequest(GET, "/some/path.html?query");
+        final StreamingHttpRequest req = reqRespFactory.get("/some/path.html?query");
 
         assertThat(getEffectiveRequestUri(ctx, req, null, null, false),
                 is("http://my.site.com/some/path.html?query"));
@@ -89,7 +94,7 @@ public class HttpRequestUriUtilsTest {
 
     @Test
     public void originFormWithHostHeader() {
-        final StreamingHttpRequest<Object> req = newRequest(GET, "/some/path.html?query");
+        final StreamingHttpRequest req = reqRespFactory.get("/some/path.html?query");
         req.getHeaders().set(HOST, "my.site.com:8080");
 
         assertThat(getEffectiveRequestUri(ctx, req, null, null, false),
@@ -113,7 +118,7 @@ public class HttpRequestUriUtilsTest {
 
     @Test
     public void absoluteForm() {
-        final StreamingHttpRequest<Object> req = newRequest(GET, "https://my.site.com/some/path.html?query");
+        final StreamingHttpRequest req = reqRespFactory.get("https://my.site.com/some/path.html?query");
 
         assertThat(getEffectiveRequestUri(ctx, req, null, null, false),
                 is("https://my.site.com/some/path.html?query"));
@@ -152,7 +157,7 @@ public class HttpRequestUriUtilsTest {
 
     @Test
     public void absoluteFormWithUserInfo() {
-        final StreamingHttpRequest<Object> req = newRequest(GET, "https://jdoe@my.site.com/some/path.html?query");
+        final StreamingHttpRequest req = reqRespFactory.get("https://jdoe@my.site.com/some/path.html?query");
 
         assertThat(getEffectiveRequestUri(ctx, req, null, null, true),
                 is("https://jdoe@my.site.com/some/path.html?query"));
@@ -197,7 +202,7 @@ public class HttpRequestUriUtilsTest {
     public void authorityForm() {
         when(ctx.getSslSession()).thenReturn(mock(SSLSession.class));
 
-        final StreamingHttpRequest<Object> req = newRequest(CONNECT, "my.site.com:9876");
+        final StreamingHttpRequest req = reqRespFactory.newRequest(CONNECT, "my.site.com:9876");
 
         assertThat(getEffectiveRequestUri(ctx, req, null, null, false),
                 is("https://my.site.com:9876"));
@@ -239,7 +244,7 @@ public class HttpRequestUriUtilsTest {
         when(ctx.getLocalAddress()).thenReturn(createUnresolved("my.site.com", 443));
         when(ctx.getSslSession()).thenReturn(mock(SSLSession.class));
 
-        final StreamingHttpRequest<Object> req = newRequest(OPTIONS, "*");
+        final StreamingHttpRequest req = reqRespFactory.newRequest(OPTIONS, "*");
 
         assertThat(getEffectiveRequestUri(ctx, req, null, null, false),
                 is("https://my.site.com"));
@@ -262,7 +267,7 @@ public class HttpRequestUriUtilsTest {
 
     @Test
     public void asteriskFormWithHostHeader() {
-        final StreamingHttpRequest<Object> req = newRequest(OPTIONS, "*");
+        final StreamingHttpRequest req = reqRespFactory.newRequest(OPTIONS, "*");
         req.getHeaders().set(HOST, "my.site.com:8080");
 
         assertThat(getEffectiveRequestUri(ctx, req, null, null, false),
@@ -302,13 +307,13 @@ public class HttpRequestUriUtilsTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void unsupportedFixedSchemeEffectiveRequestUri() {
-        final StreamingHttpRequest<Object> req = newRequest(GET, "/some/path.html?query");
+        final StreamingHttpRequest req = reqRespFactory.get("/some/path.html?query");
         getEffectiveRequestUri(ctx, req, "ftp", null, false);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void unsupportedFixedSchemeBaseUri() {
-        final StreamingHttpRequest<Object> req = newRequest(GET, "/some/path.html?query");
+        final StreamingHttpRequest req = reqRespFactory.get("/some/path.html?query");
         getBaseRequestUri(ctx, req, "ftp", null, false);
     }
 }

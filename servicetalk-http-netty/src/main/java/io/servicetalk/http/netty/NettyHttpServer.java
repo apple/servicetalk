@@ -19,12 +19,11 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMethod;
-import io.servicetalk.http.api.LastHttpPayloadChunk;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpServerInitializer;
-import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
@@ -45,12 +44,13 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
+import static io.servicetalk.http.netty.DefaultHttpServiceContext.newInstance;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 
 final class NettyHttpServer {
 
     private static final Predicate<Object> LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE =
-            p -> p instanceof LastHttpPayloadChunk;
+            p -> p instanceof HttpHeaders;
 
     private NettyHttpServer() {
         // No instances
@@ -78,7 +78,8 @@ final class NettyHttpServer {
                     config.getMaxInitialLineLength(), config.getMaxHeaderSize(), closeHandler));
             channel.pipeline().addLast(new HttpResponseEncoder(methodQueue, config.getHeadersEncodedSizeEstimate(),
                     config.getTrailersEncodedSizeEstimate(), closeHandler));
-            channel.pipeline().addLast(new HttpChannelReadHandler(closeHandler, context, service));
+            channel.pipeline().addLast(new HttpChannelReadHandler(closeHandler,
+                    newInstance(context, config.getHeadersFactory()), service));
             return context;
         };
     }
@@ -117,13 +118,13 @@ final class NettyHttpServer {
     private static final class HttpChannelReadHandler extends AbstractContextFilterAwareChannelReadHandler<Object>
             implements ConnectionHolderChannelHandler<Object, Object> {
         private final CloseHandler closeHandler;
-        private final ConnectionContext context;
+        private final DefaultHttpServiceContext context;
         private final StreamingHttpService service;
         @Nullable
         private NettyHttpServerConnection connection;
 
         HttpChannelReadHandler(final CloseHandler closeHandler,
-                               final ConnectionContext context, final StreamingHttpService service) {
+                               final DefaultHttpServiceContext context, final StreamingHttpService service) {
             super(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE);
             this.closeHandler = closeHandler;
             this.context = context;

@@ -24,7 +24,11 @@ import io.servicetalk.concurrent.api.internal.SingleProcessor;
 import io.servicetalk.http.api.BlockingStreamingHttpClient.UpgradableBlockingStreamingHttpResponse;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
 import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
-import io.servicetalk.http.api.HttpSerializerUtils.HttpPayloadAndTrailersFromSingleOperator;
+import io.servicetalk.http.api.HttpDataSourceTranformations.BridgeFlowControlAndDiscardOperator;
+import io.servicetalk.http.api.HttpDataSourceTranformations.HttpBufferFilterOperator;
+import io.servicetalk.http.api.HttpDataSourceTranformations.HttpPayloadAndTrailersFromSingleOperator;
+import io.servicetalk.http.api.HttpDataSourceTranformations.SerializeBridgeFlowControlAndDiscardOperator;
+import io.servicetalk.http.api.StreamingHttpClient.UpgradableStreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient.UpgradableStreamingHttpResponseToBlockingStreaming;
 import io.servicetalk.http.api.StreamingHttpClientToHttpClient.UpgradableStreamingHttpResponseToUpgradableHttpResponse;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -38,15 +42,14 @@ import java.util.function.UnaryOperator;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpClientToStreamingHttpClient.UpgradableHttpResponseToUpgradableStreamingHttpResponse.newUpgradeResponse;
-import static io.servicetalk.http.api.HttpSerializerUtils.aggregatePayloadAndTrailers;
+import static io.servicetalk.http.api.HttpDataSourceTranformations.aggregatePayloadAndTrailers;
 import static java.util.Objects.requireNonNull;
 
 final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
     private final HttpClient client;
 
     HttpClientToStreamingHttpClient(HttpClient client) {
-        super(new HttpRequestFactoryToStreamingHttpRequestFactory(client.requestFactory),
-                new HttpResponseFactoryToStreamingHttpResponseFactory(client.getHttpResponseFactory()));
+        super(new HttpRequestResponseFactoryToStreamingHttpRequestResponseFactory(client.reqRespFactory));
         this.client = requireNonNull(client);
     }
 
@@ -96,8 +99,8 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
         private final ReservedHttpConnection reservedConnection;
 
         ReservedHttpConnectionToReservedStreamingHttpConnection(ReservedHttpConnection reservedConnection) {
-            super(new HttpRequestFactoryToStreamingHttpRequestFactory(reservedConnection.requestFactory),
-                    new HttpResponseFactoryToStreamingHttpResponseFactory(reservedConnection.getHttpResponseFactory()));
+            super(new HttpRequestResponseFactoryToStreamingHttpRequestResponseFactory(
+                    reservedConnection.reqRespFactory));
             this.reservedConnection = requireNonNull(reservedConnection);
         }
 
@@ -177,8 +180,21 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
         }
 
         @Override
-        public <T> Publisher<T> getPayloadBody(final HttpDeserializer<T> deserializer) {
-            return deserializer.deserialize(getHeaders(), getPayloadBody());
+        public UpgradableStreamingHttpResponse setPayloadBody(final Publisher<Buffer> payloadBody) {
+            return transformPayloadBody(old -> payloadBody.liftSynchronous(
+                    new BridgeFlowControlAndDiscardOperator(old)));
+        }
+
+        @Override
+        public <T> UpgradableStreamingHttpResponse setPayloadBody(final Publisher<T> payloadBody,
+                                                                  final HttpSerializer<T> serializer) {
+            return transformPayloadBody(old -> payloadBody.liftSynchronous(
+                    new SerializeBridgeFlowControlAndDiscardOperator<>(old)), serializer);
+        }
+
+        @Override
+        public Publisher<Buffer> getPayloadBody() {
+            return payloadBody.liftSynchronous(HttpBufferFilterOperator.INSTANCE);
         }
 
         @Override

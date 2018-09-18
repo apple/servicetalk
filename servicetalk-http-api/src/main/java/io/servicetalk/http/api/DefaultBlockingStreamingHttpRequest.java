@@ -18,10 +18,13 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.CloseableIterable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SingleProcessor;
-import io.servicetalk.http.api.HttpSerializerUtils.HttpBuffersAndTrailersIterable;
-import io.servicetalk.http.api.HttpSerializerUtils.HttpObjectsAndTrailersIterable;
+import io.servicetalk.http.api.HttpDataSourceTranformations.HttpBufferFilterIterable;
+import io.servicetalk.http.api.HttpDataSourceTranformations.HttpBuffersAndTrailersIterable;
+import io.servicetalk.http.api.HttpDataSourceTranformations.HttpObjectsAndTrailersIterable;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -29,9 +32,10 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.concurrent.internal.Iterables.emptyBlockingIterable;
+import static io.servicetalk.concurrent.internal.BlockingIterables.from;
+import static io.servicetalk.http.api.HttpDataSourceTranformations.consumeOldPayloadBody;
+import static io.servicetalk.http.api.HttpDataSourceTranformations.consumeOldPayloadBodySerialized;
 import static java.util.Objects.requireNonNull;
 
 class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implements
@@ -40,11 +44,11 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
     final BufferAllocator allocator;
     final Single<HttpHeaders> trailersSingle;
 
-    DefaultBlockingStreamingHttpRequest(final HttpRequestMethod method, final String requestTarget,
-                                        final HttpProtocolVersion version, final HttpHeaders headers,
-                                        final BufferAllocator allocator, final HttpHeaders initialTrailers) {
-        this(method, requestTarget, version, headers, allocator, emptyBlockingIterable(),
-                success(initialTrailers));
+    DefaultBlockingStreamingHttpRequest(
+            final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
+            final HttpHeaders headers, final HttpHeaders initialTrailers, final BufferAllocator allocator,
+            final BlockingIterable<P> payloadBody) {
+        this(method, requestTarget, version, headers, success(initialTrailers), allocator, payloadBody);
     }
 
     /**
@@ -59,10 +63,10 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
      * @param trailersSingle The {@link Single} <strong>must</strong> support multiple subscribes, and it is assumed to
      * provide the original data if re-used over transformation operations.
      */
-    DefaultBlockingStreamingHttpRequest(final HttpRequestMethod method, final String requestTarget,
-                                        final HttpProtocolVersion version, final HttpHeaders headers,
-                                        final BufferAllocator allocator, final BlockingIterable<P> payloadBody,
-                                        final Single<HttpHeaders> trailersSingle) {
+    DefaultBlockingStreamingHttpRequest(
+            final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
+            final HttpHeaders headers, final Single<HttpHeaders> trailersSingle, final BufferAllocator allocator,
+            final BlockingIterable<P> payloadBody) {
         super(method, requestTarget, version, headers);
         this.allocator = requireNonNull(allocator);
         this.payloadBody = requireNonNull(payloadBody);
@@ -116,8 +120,30 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
     }
 
     @Override
-    public final <T> BlockingIterable<T> getPayloadBody(final HttpDeserializer<T> deserializer) {
-        return deserializer.deserialize(getHeaders(), payloadBody);
+    public BlockingIterable<Buffer> getPayloadBody() {
+        return new HttpBufferFilterIterable(payloadBody);
+    }
+
+    @Override
+    public final BlockingStreamingHttpRequest setPayloadBody(final Iterable<Buffer> payloadBody) {
+        return transformPayloadBody(consumeOldPayloadBody(from(payloadBody)));
+    }
+
+    @Override
+    public final BlockingStreamingHttpRequest setPayloadBody(final CloseableIterable<Buffer> payloadBody) {
+        return transformPayloadBody(consumeOldPayloadBody(from(payloadBody)));
+    }
+
+    @Override
+    public final <T> BlockingStreamingHttpRequest setPayloadBody(final Iterable<T> payloadBody,
+                                                                 final HttpSerializer<T> serializer) {
+        return transformPayloadBody(consumeOldPayloadBodySerialized(from(payloadBody)), serializer);
+    }
+
+    @Override
+    public final <T> BlockingStreamingHttpRequest setPayloadBody(final CloseableIterable<T> payloadBody,
+                                                                 final HttpSerializer<T> serializer) {
+        return transformPayloadBody(consumeOldPayloadBodySerialized(from(payloadBody)), serializer);
     }
 
     @Override
@@ -172,8 +198,8 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
 
     @Override
     public StreamingHttpRequest toStreamingRequest() {
-        return new DefaultStreamingHttpRequest<>(getMethod(), getRequestTarget(), getVersion(), getHeaders(), allocator,
-                from(payloadBody), trailersSingle);
+        return new DefaultStreamingHttpRequest<>(getMethod(), getRequestTarget(), getVersion(), getHeaders(),
+                trailersSingle, allocator, Publisher.from(payloadBody));
     }
 
     @Override
