@@ -13,7 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@ElementsAreNonnullByDefault
-package io.servicetalk.examples.http.helloworld.blocking.aggregated;
+package io.servicetalk.examples.http.helloworld.blocking;
 
-import io.servicetalk.annotations.ElementsAreNonnullByDefault;
+import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.netty.HttpClients;
+
+public final class BlockingHelloWorldClient {
+    public static void main(String[] args) throws Exception {
+        try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildBlocking()) {
+            HttpResponse response = client.request(client.get("/sayHello"));
+            System.out.println(response);
+        }
+    }
+}
