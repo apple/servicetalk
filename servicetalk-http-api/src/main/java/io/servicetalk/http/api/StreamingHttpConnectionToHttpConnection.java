@@ -27,8 +27,7 @@ final class StreamingHttpConnectionToHttpConnection extends HttpConnection {
     private final StreamingHttpConnection connection;
 
     StreamingHttpConnectionToHttpConnection(final StreamingHttpConnection connection) {
-        super(new StreamingHttpRequestFactoryToHttpRequestFactory(connection.requestFactory),
-                new StreamingHttpResponseFactoryToHttpResponseFactory(connection.getHttpResponseFactory()));
+        super(new StreamingHttpRequestResponseFactoryToHttpRequestResponseFactory(connection.reqRespFactory));
         this.connection = requireNonNull(connection);
     }
 

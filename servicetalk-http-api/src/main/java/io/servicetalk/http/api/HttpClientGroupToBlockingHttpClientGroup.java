@@ -28,7 +28,7 @@ final class HttpClientGroupToBlockingHttpClientGroup<UnresolvedAddress>
     private final HttpClientGroup<UnresolvedAddress> clientGroup;
 
     HttpClientGroupToBlockingHttpClientGroup(HttpClientGroup<UnresolvedAddress> clientGroup) {
-        super(clientGroup.requestFactory, clientGroup.getHttpResponseFactory());
+        super(clientGroup.reqRespFactory);
         this.clientGroup = requireNonNull(clientGroup);
     }
 

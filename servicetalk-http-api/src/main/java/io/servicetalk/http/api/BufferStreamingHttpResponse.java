@@ -22,26 +22,15 @@ import io.servicetalk.concurrent.api.Single;
 
 final class BufferStreamingHttpResponse extends DefaultStreamingHttpResponse<Buffer> {
     BufferStreamingHttpResponse(final HttpResponseStatus status, final HttpProtocolVersion version,
-                                final HttpHeaders headers, final BufferAllocator allocator,
-                                final HttpHeaders initialTrailers) {
-        super(status, version, headers, allocator, initialTrailers);
+                                final HttpHeaders headers, final HttpHeaders initialTrailers,
+                                final BufferAllocator allocator, Publisher<Buffer> payloadBody) {
+        super(status, version, headers, initialTrailers, allocator, payloadBody);
     }
 
-    /**
-     * Create a new instance.
-     * @param status The {@link HttpResponseStatus}.
-     * @param version The {@link HttpProtocolVersion}.
-     * @param headers The initial {@link HttpHeaders}.
-     * @param allocator The {@link BufferAllocator} to use for serialization (if required).
-     * @param payloadBody A {@link Publisher} that provide only the payload body. The trailers <strong>must</strong>
-     * not be included, and instead are represented by {@code trailersSingle}.
-     * @param trailersSingle The {@link Single} <strong>must</strong> support multiple subscribes, and it is assumed to
-     * provide the original data if re-used over transformation operations.
-     */
     BufferStreamingHttpResponse(final HttpResponseStatus status, final HttpProtocolVersion version,
-                                final HttpHeaders headers, final BufferAllocator allocator,
-                                final Publisher<Buffer> payloadBody, final Single<HttpHeaders> trailersSingle) {
-        super(status, version, headers, allocator, payloadBody, trailersSingle);
+                                final HttpHeaders headers, final Single<HttpHeaders> trailersSingle,
+                                final BufferAllocator allocator, Publisher<Buffer> payloadBody) {
+        super(status, version, headers, trailersSingle, allocator, payloadBody);
     }
 
     BufferStreamingHttpResponse(final DefaultHttpResponseMetaData oldRequest,

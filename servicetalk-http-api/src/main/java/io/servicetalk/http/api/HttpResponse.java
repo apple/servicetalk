@@ -25,9 +25,7 @@ public interface HttpResponse extends HttpResponseMetaData {
      * Get the underlying payload as a {@link Buffer}.
      * @return The {@link Buffer} representation of the underlying payload.
      */
-    default Buffer getPayloadBody() {
-        return HttpSerializerUtils.getPayloadBody(this);
-    }
+    Buffer getPayloadBody();
 
     /**
      * Get and deserialize the payload body.
@@ -35,7 +33,9 @@ public interface HttpResponse extends HttpResponseMetaData {
      * @param <T> The resulting type of the deserialization operation.
      * @return The results of the deserialization operation.
      */
-    <T> T getPayloadBody(HttpDeserializer<T> deserializer);
+    default <T> T getPayloadBody(HttpDeserializer<T> deserializer) {
+        return deserializer.deserialize(getHeaders(), getPayloadBody());
+    }
 
     /**
      * Get the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.

@@ -17,12 +17,12 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.CloseableIterable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
 import org.reactivestreams.Subscriber;
 
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -36,9 +36,7 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
      * Get the underlying payload as a {@link Publisher} of {@link Buffer}s.
      * @return The {@link Publisher} of {@link Buffer} representation of the underlying
      */
-    default BlockingIterable<Buffer> getPayloadBody() {
-        return HttpSerializerUtils.getPayloadBody(this);
-    }
+    BlockingIterable<Buffer> getPayloadBody();
 
     /**
      * Get and deserialize the payload body.
@@ -46,34 +44,69 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
      * @param <T> The resulting type of the deserialization operation.
      * @return The results of the deserialization operation.
      */
-    <T> BlockingIterable<T> getPayloadBody(HttpDeserializer<T> deserializer);
+    default <T> BlockingIterable<T> getPayloadBody(HttpDeserializer<T> deserializer) {
+        return deserializer.deserialize(getHeaders(), getPayloadBody());
+    }
 
     /**
-     * Transform the underlying payload body with the result of serialization.
+     * Set the underlying payload body.
      * <p>
-     * Note this method has the following caveats:
-     * <ul>
-     *     <li>back pressure on the existing payload body will not be respected!</li>
-     *     <li>The new payload body {@link BlockingIterable} may not complete until the existing payload body
-     *     completes!</li>
-     * </ul>
-     * It is preferred to serialize the content during {@link BlockingStreamingHttpResponse} creation to avoid this
-     * ambiguity.
+     * A best effort will be made to apply back pressure to the existing {@link Iterable} payload body. If this
+     * default policy is not sufficient you can use {@link #transformPayloadBody(UnaryOperator)} for more fine grain
+     * control.
+     * <p>
+     * This method reserves the right to delay completion/consumption of {@code payloadBody}. This may occur due to the
+     * combination with the existing {@link Iterable} payload body.
+     * @param payloadBody The new payload body.
+     * @return A {@link BlockingStreamingHttpResponse} with the new serialized payload body.
+     */
+    BlockingStreamingHttpResponse setPayloadBody(Iterable<Buffer> payloadBody);
+
+    /**
+     * Set the underlying payload body.
+     * <p>
+     * A best effort will be made to apply back pressure to the existing {@link CloseableIterable} payload body. If this
+     * default policy is not sufficient you can use {@link #transformPayloadBody(UnaryOperator)} for more fine grain
+     * control.
+     * <p>
+     * This method reserves the right to delay completion/consumption of {@code payloadBody}. This may occur due to the
+     * combination with the existing {@link CloseableIterable} payload body.
+     * @param payloadBody The new payload body.
+     * @return A {@link BlockingStreamingHttpResponse} with the new serialized payload body.
+     */
+    BlockingStreamingHttpResponse setPayloadBody(CloseableIterable<Buffer> payloadBody);
+
+    /**
+     * Set the underlying payload body with the result of serialization.
+     * <p>
+     * A best effort will be made to apply back pressure to the existing {@link Iterable} payload body. If this
+     * default policy is not sufficient you can use {@link #transformPayloadBody(Function, HttpSerializer)} for more
+     * fine grain control.
+     * <p>
+     * This method reserves the right to delay completion/consumption of {@code payloadBody}. This may occur due to the
+     * combination with the existing {@link Iterable} payload body.
      * @param payloadBody The new payload body, prior to serialization.
      * @param serializer Used to serialize the payload body.
      * @param <T> The type of objects to serialize.
      * @return A {@link BlockingStreamingHttpResponse} with the new serialized payload body.
      */
-    default <T> BlockingStreamingHttpResponse transformPayloadBody(BlockingIterable<T> payloadBody,
-                                                                   HttpSerializer<T> serializer) {
-        // Ignore content of original Publisher (payloadBody). Due to the blocking APIs we will consume the payload in
-        // a blocking fashion, this default behavior can be overriden via the method overload and may change to be in
-        // parallel later.
-        return transformPayloadBody(old -> {
-            old.forEach(buffer -> { });
-            return payloadBody;
-        }, serializer);
-    }
+    <T> BlockingStreamingHttpResponse setPayloadBody(Iterable<T> payloadBody, HttpSerializer<T> serializer);
+
+    /**
+     * Set the underlying payload body with the result of serialization.
+     * <p>
+     * A best effort will be made to apply back pressure to the existing {@link CloseableIterable} payload body. If this
+     * default policy is not sufficient you can use {@link #transformPayloadBody(Function, HttpSerializer)} for more
+     * fine grain control.
+     * <p>
+     * This method reserves the right to delay completion/consumption of {@code payloadBody}. This may occur due to the
+     * combination with the existing {@link CloseableIterable} payload body.
+     * @param payloadBody The new payload body, prior to serialization.
+     * @param serializer Used to serialize the payload body.
+     * @param <T> The type of objects to serialize.
+     * @return A {@link BlockingStreamingHttpResponse} with the new serialized payload body.
+     */
+    <T> BlockingStreamingHttpResponse setPayloadBody(CloseableIterable<T> payloadBody, HttpSerializer<T> serializer);
 
     /**
      * Transform the underlying payload body with the result of serialization.

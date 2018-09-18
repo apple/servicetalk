@@ -17,11 +17,23 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Single;
 
 /**
  * A service contract for the HTTP protocol.
  */
-public abstract class StreamingHttpService implements AsyncCloseable, StreamingRequestHandler {
+public abstract class StreamingHttpService implements AsyncCloseable, StreamingHttpRequestHandler {
+    /**
+     * Handles a single HTTP request.
+     *
+     * @param ctx Context of the service.
+     * @param request to handle.
+     * @param factory used to create {@link StreamingHttpResponse} objects.
+     * @return {@link Single} of HTTP response.
+     */
+    public abstract Single<StreamingHttpResponse> handle(HttpServiceContext ctx,
+                                                         StreamingHttpRequest request,
+                                                         StreamingHttpResponseFactory factory);
 
     /**
      * Closes this {@link StreamingHttpService} asynchronously.

@@ -24,19 +24,19 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 
 final class BufferBlockingStreamingHttpResponse extends DefaultBlockingStreamingHttpResponse<Buffer> {
     BufferBlockingStreamingHttpResponse(final HttpResponseStatus status, final HttpProtocolVersion version,
-                                        final HttpHeaders headers, final BufferAllocator allocator,
-                                        final HttpHeaders initialTrailers) {
-        super(status, version, headers, allocator, initialTrailers);
+                                        final HttpHeaders headers, final HttpHeaders initialTrailers,
+                                        final BufferAllocator allocator, final BlockingIterable<Buffer> payloadBody) {
+        super(status, version, headers, initialTrailers, allocator, payloadBody);
     }
 
     BufferBlockingStreamingHttpResponse(final HttpResponseStatus status, final HttpProtocolVersion version,
-                                        final HttpHeaders headers, final BufferAllocator allocator,
-                                        final BlockingIterable<Buffer> payloadBody,
-                                        final Single<HttpHeaders> trailersSingle) {
-        super(status, version, headers, allocator, payloadBody, trailersSingle);
+                                         final HttpHeaders headers, final Single<HttpHeaders> trailersSingle,
+                                         final BufferAllocator allocator, final BlockingIterable<Buffer> payloadBody) {
+        super(status, version, headers, trailersSingle, allocator, payloadBody);
     }
 
-    BufferBlockingStreamingHttpResponse(final DefaultHttpResponseMetaData oldRequest, final BufferAllocator allocator,
+    BufferBlockingStreamingHttpResponse(final DefaultHttpResponseMetaData oldRequest,
+                                        final BufferAllocator allocator,
                                         final BlockingIterable<Buffer> payloadBody,
                                         final Single<HttpHeaders> trailersSingle) {
         super(oldRequest, allocator, payloadBody, trailersSingle);
@@ -49,7 +49,7 @@ final class BufferBlockingStreamingHttpResponse extends DefaultBlockingStreaming
 
     @Override
     public StreamingHttpResponse toStreamingResponse() {
-        return new BufferStreamingHttpResponse(getStatus(), getVersion(), getHeaders(), allocator, from(payloadBody),
-                trailersSingle);
+        return new BufferStreamingHttpResponse(getStatus(), getVersion(), getHeaders(), trailersSingle, allocator,
+                from(payloadBody));
     }
 }

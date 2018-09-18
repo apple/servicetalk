@@ -26,14 +26,15 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.ClientGroupFilterFunction;
 import io.servicetalk.http.api.ConnectionFilterFunction;
+import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.GroupedClientFilterFunction;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
-import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientGroup;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.RedirectingStreamingHttpClientGroup;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -85,7 +86,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     private GroupedClientFilterFunction<HostAndPort> clientFilterFunction = GroupedClientFilterFunction.identity();
     @Nullable
     private Function<HostAndPort, CharSequence> hostHeaderTransformer;
-    private HttpHeadersFactory headersFactory;
 
     DefaultMultiAddressUrlHttpClientBuilder(
             final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate) {
@@ -99,19 +99,16 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         // Tracks StreamingHttpClient dependencies for clean-up on exception during buildStreaming
         final CompositeCloseable closeOnException = newCompositeCloseable();
         try {
-
             final ClientBuilderFactory clientBuilderFactory = new ClientBuilderFactory(builderTemplate,
                     sslConfigProvider, clientFilterFunction, hostHeaderTransformer);
 
-            final HttpHeadersFactory headersFactory = clientBuilderFactory.headersFactory();
-            final DefaultStreamingHttpRequestFactory requestFactory = new DefaultStreamingHttpRequestFactory(
-                    headersFactory, executionContext.getBufferAllocator());
-            final DefaultStreamingHttpResponseFactory responseFactory = new DefaultStreamingHttpResponseFactory(
-                    headersFactory, executionContext.getBufferAllocator());
+            final DefaultStreamingHttpRequestResponseFactory reqRespFactory =
+                    new DefaultStreamingHttpRequestResponseFactory(executionContext.getBufferAllocator(),
+                            clientBuilderFactory.headersFactory());
 
             StreamingHttpClientGroup<HostAndPort> clientGroup = closeOnException.prepend(
                     clientGroupFilterFunction.apply(
-                    newHttpClientGroup(requestFactory, responseFactory, executionContext, (gk, md) ->
+                    newHttpClientGroup(reqRespFactory, (gk, md) ->
                             clientBuilderFactory.apply(gk, md).buildStreaming(executionContext))));
             final CacheableGroupKeyFactory groupKeyFactory = closeables.prepend(closeOnException.prepend(
                     new CacheableGroupKeyFactory(executionContext, sslConfigProvider)));
@@ -120,7 +117,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             final StreamingHttpClient client = closeables.prepend(closeOnException.prepend(
                     clientGroup.asClient(groupKeyFactory, executionContext)));
 
-            return new StreamingHttpClientWithDependencies(client, toListenableAsyncCloseable(closeables));
+            return new StreamingHttpClientWithDependencies(client, toListenableAsyncCloseable(closeables),
+                    reqRespFactory);
         } catch (final Throwable t) {
             closeOnException.closeAsync().subscribe();
             throw t;
@@ -241,7 +239,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                     .appendClientFilter(clientFilterFunction.asClientFilter(groupKey.getAddress()));
         }
 
-        private HttpHeadersFactory headersFactory() {
+        HttpHeadersFactory headersFactory() {
             return builderTemplate.getHeadersFactory();
         }
     }
@@ -252,14 +250,15 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         private final ListenableAsyncCloseable closeable;
 
         StreamingHttpClientWithDependencies(final StreamingHttpClient httpClient,
-                                            final ListenableAsyncCloseable closeable) {
-            super(httpClient, httpClient.getHttpResponseFactory());
+                                            final ListenableAsyncCloseable closeable,
+                                            final StreamingHttpRequestResponseFactory factory) {
+            super(factory);
             this.httpClient = requireNonNull(httpClient);
             this.closeable = requireNonNull(closeable);
         }
 
         @Override
-        public Single<? extends StreamingHttpResponse> request(final StreamingHttpRequest request) {
+        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
             return httpClient.request(request);
         }
 

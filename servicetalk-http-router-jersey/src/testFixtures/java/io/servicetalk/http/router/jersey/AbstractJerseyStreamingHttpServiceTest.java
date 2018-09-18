@@ -175,8 +175,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
                                                   final CharSequence payload,
                                                   final CharSequence contentType) {
         final Buffer content = DEFAULT_ALLOCATOR.fromUtf8(payload);
-        final StreamingHttpRequest req = httpClient.newRequest(method, testUri(path))
-                .transformPayloadBody(__ -> just(content));
+        final StreamingHttpRequest req = httpClient.newRequest(method, testUri(path)).setPayloadBody(just(content));
         req.getHeaders().set(HOST, host());
         req.getHeaders().set(CONTENT_TYPE, contentType);
         req.getHeaders().set(CONTENT_LENGTH, Integer.toString(content.getReadableBytes()));

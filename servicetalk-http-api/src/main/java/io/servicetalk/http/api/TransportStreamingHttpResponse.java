@@ -20,10 +20,13 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SingleProcessor;
-import io.servicetalk.http.api.HttpSerializerUtils.HttpBufferTrailersSpliceOperator;
-import io.servicetalk.http.api.HttpSerializerUtils.HttpObjectTrailersSpliceOperator;
-import io.servicetalk.http.api.HttpSerializerUtils.HttpRawBuffersAndTrailersOperator;
-import io.servicetalk.http.api.HttpSerializerUtils.HttpRawObjectsAndTrailersOperator;
+import io.servicetalk.http.api.HttpDataSourceTranformations.BridgeFlowControlAndDiscardOperator;
+import io.servicetalk.http.api.HttpDataSourceTranformations.HttpBufferTrailersSpliceOperator;
+import io.servicetalk.http.api.HttpDataSourceTranformations.HttpObjectTrailersSpliceOperator;
+import io.servicetalk.http.api.HttpDataSourceTranformations.HttpRawBuffersAndTrailersOperator;
+import io.servicetalk.http.api.HttpDataSourceTranformations.HttpRawObjectsAndTrailersOperator;
+import io.servicetalk.http.api.HttpDataSourceTranformations.HttpTransportBufferFilterOperator;
+import io.servicetalk.http.api.HttpDataSourceTranformations.SerializeBridgeFlowControlAndDiscardOperator;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -31,7 +34,7 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.HttpSerializerUtils.aggregatePayloadAndTrailers;
+import static io.servicetalk.http.api.HttpDataSourceTranformations.aggregatePayloadAndTrailers;
 import static java.util.Objects.requireNonNull;
 
 final class TransportStreamingHttpResponse extends DefaultHttpResponseMetaData implements StreamingHttpResponse {
@@ -47,25 +50,45 @@ final class TransportStreamingHttpResponse extends DefaultHttpResponseMetaData i
     }
 
     @Override
-    public final StreamingHttpResponse setVersion(final HttpProtocolVersion version) {
+    public StreamingHttpResponse setVersion(final HttpProtocolVersion version) {
         super.setVersion(version);
         return this;
     }
 
     @Override
-    public final StreamingHttpResponse setStatus(final HttpResponseStatus status) {
+    public StreamingHttpResponse setStatus(final HttpResponseStatus status) {
         super.setStatus(status);
         return this;
     }
 
     @Override
-    public final <T> Publisher<T> getPayloadBody(final HttpDeserializer<T> deserializer) {
-        return deserializer.deserialize(getHeaders(), getPayloadBody());
+    public Publisher<Buffer> getPayloadBody() {
+        return payloadAndTrailers.liftSynchronous(HttpTransportBufferFilterOperator.INSTANCE);
     }
 
     @Override
     public Publisher<Object> getPayloadBodyAndTrailers() {
         return payloadAndTrailers;
+    }
+
+    @Override
+    public StreamingHttpResponse setPayloadBody(final Publisher<Buffer> payloadBody) {
+        final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
+        return new BufferStreamingHttpResponse(this, allocator,
+                payloadBody.liftSynchronous(new BridgeFlowControlAndDiscardOperator(payloadAndTrailers.liftSynchronous(
+                        new HttpBufferTrailersSpliceOperator(outTrailersSingle)))),
+                outTrailersSingle);
+    }
+
+    @Override
+    public <T> StreamingHttpResponse setPayloadBody(final Publisher<T> payloadBody,
+                                                    final HttpSerializer<T> serializer) {
+        final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
+        return new BufferStreamingHttpResponse(this, allocator, serializer.serialize(getHeaders(),
+                payloadBody.liftSynchronous(new SerializeBridgeFlowControlAndDiscardOperator<>(
+                        payloadAndTrailers.liftSynchronous(new HttpBufferTrailersSpliceOperator(outTrailersSingle)))),
+                allocator),
+                outTrailersSingle);
     }
 
     @Override

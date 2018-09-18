@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
@@ -25,16 +24,13 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.ClientFilterFunction;
 import io.servicetalk.http.api.ConnectionFilterFunction;
+import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpHeadersFactory;
-import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.LoadBalancerReadyStreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnection;
-import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequestFactory;
-import io.servicetalk.http.api.StreamingHttpRequests;
-import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.api.StreamingHttpResponses;
+import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
+import io.servicetalk.http.utils.StreamingHttpConnectionHostHeaderFilter;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
@@ -46,9 +42,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
-import static io.servicetalk.http.utils.HttpHostHeaderFilter.newHostHeaderFilter;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static java.util.Objects.requireNonNull;
 
@@ -73,7 +67,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     private final HttpClientConfig config;
     private LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory;
     private ServiceDiscoverer<U, R> serviceDiscoverer;
-    private Function<U, ClientFilterFunction> hostHeaderFilterFunction =
+    private Function<U, ConnectionFilterFunction> hostHeaderFilterFunction =
             DefaultSingleAddressHttpClientBuilder::defaultHostClientFilterFactory;
     private ConnectionFilterFunction connectionFilterFunction = ConnectionFilterFunction.identity();
     private ClientFilterFunction clientFilterFunction = ClientFilterFunction.identity();
@@ -130,40 +124,37 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
         try {
             Publisher<Event<R>> sdEvents = serviceDiscoverer.discover(address);
 
-            DefaultStreamingHttpRequestFactory requestFactory = new DefaultStreamingHttpRequestFactory(
-                    roConfig.getHeadersFactory(), exec.getBufferAllocator());
+            final StreamingHttpRequestResponseFactory reqRespFactory =
+                    new DefaultStreamingHttpRequestResponseFactory(exec.getBufferAllocator(),
+                            roConfig.getHeadersFactory());
+            final ConnectionFilterFunction connectionFilters = connectionFilterFunction.append(
+                    hostHeaderFilterFunction.apply(address));
 
             // closed by the LoadBalancer
             ConnectionFactory<R, LoadBalancedStreamingHttpConnection> connectionFactory =
                     closeOnException.prepend(roConfig.getMaxPipelinedRequests() == 1 ?
-                            new NonPipelinedLBHttpConnectionFactory<>(roConfig, exec, connectionFilterFunction,
-                                    requestFactory)
-                            : new PipelinedLBHttpConnectionFactory<>(roConfig, exec, connectionFilterFunction,
-                                    requestFactory));
+                        new NonPipelinedLBHttpConnectionFactory<>(roConfig, exec, connectionFilters, reqRespFactory) :
+                        new PipelinedLBHttpConnectionFactory<>(roConfig, exec, connectionFilters, reqRespFactory));
 
             LoadBalancer<? extends StreamingHttpConnection> lbfUntypedForCast = closeOnException.prepend(
                      loadBalancerFactory.newLoadBalancer(sdEvents, connectionFactory));
             LoadBalancer<LoadBalancedStreamingHttpConnection> lb =
                     (LoadBalancer<LoadBalancedStreamingHttpConnection>) lbfUntypedForCast;
 
-            final ClientFilterFunction hostHeaderFilter = hostHeaderFilterFunction.apply(address);
-            final ClientFilterFunction clientFilters =
-                    clientFilterFunction.append(hostHeaderFilter).append(lbReadyFilter);
-
-            return clientFilters.apply(closeOnException.prepend(
-                    new DefaultStreamingHttpClient(exec, lb, requestFactory)), lb.getEventStream());
+            return clientFilterFunction.append(lbReadyFilter).apply(closeOnException.prepend(
+                    new DefaultStreamingHttpClient(exec, lb, reqRespFactory)), lb.getEventStream());
         } catch (final Throwable t) {
             closeOnException.closeAsync().subscribe();
             throw t;
         }
     }
 
-    private static <U> ClientFilterFunction defaultHostClientFilterFactory(final U address) {
+    private static <U> ConnectionFilterFunction defaultHostClientFilterFactory(final U address) {
         if (address instanceof CharSequence) {
-            return (c, p) -> newHostHeaderFilter((CharSequence) address, c);
+            return c -> new StreamingHttpConnectionHostHeaderFilter((CharSequence) address, c);
         }
         if (address instanceof HostAndPort) {
-            return (c, p) -> newHostHeaderFilter((HostAndPort) address, c);
+            return c -> new StreamingHttpConnectionHostHeaderFilter((HostAndPort) address, c);
         }
         throw new IllegalArgumentException("Unsupported host header address type, provide an override");
     }
@@ -234,7 +225,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback() {
-        hostHeaderFilterFunction = address -> ClientFilterFunction.identity();
+        hostHeaderFilterFunction = address -> ConnectionFilterFunction.identity();
         return this;
     }
 
@@ -246,7 +237,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> enableHostHeaderFallback(final CharSequence hostHeader) {
-        hostHeaderFilterFunction = address -> (client, lbEvents) -> newHostHeaderFilter(hostHeader, client);
+        hostHeaderFilterFunction = address -> connection ->
+                new StreamingHttpConnectionHostHeaderFilter(hostHeader, connection);
         return this;
     }
 

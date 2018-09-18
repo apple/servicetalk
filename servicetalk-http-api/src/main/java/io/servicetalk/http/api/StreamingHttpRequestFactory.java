@@ -30,6 +30,13 @@ public interface StreamingHttpRequestFactory {
      */
     StreamingHttpRequest newRequest(HttpRequestMethod method, String requestTarget);
 
+    // TODO(scott): if the new source is provided at creation, then we don't have to pay the costs of set(Publisher<>)
+    // to manage flow control of both streams.
+    // default StreamingHttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
+    //     return newRequest(method, requestTarget, empty());
+    // }
+    // StreamingHttpRequest newRequest(HttpRequestMethod method, String requestTarget, Publisher<Buffer> payloadBody);
+
     /**
      * Create a new {@link HttpRequestMethods#GET} request.
      * @param requestTarget The <a herf="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.

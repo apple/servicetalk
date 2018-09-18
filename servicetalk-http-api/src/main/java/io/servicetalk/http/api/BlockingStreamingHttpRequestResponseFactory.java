@@ -15,16 +15,9 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.api.Buffer;
-
 /**
- * A special instance of {@link HttpPayloadChunk} that terminates the payload and contains
- * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailer headers</a>.
+ * A combination of {@link BlockingStreamingHttpRequestFactory} and {@link BlockingStreamingHttpResponseFactory}.
  */
-public interface LastHttpPayloadChunk extends HttpPayloadChunk, LastHttpMetaData {
-    @Override
-    LastHttpPayloadChunk duplicate();
-
-    @Override
-    LastHttpPayloadChunk replace(Buffer content);
+public interface BlockingStreamingHttpRequestResponseFactory extends BlockingStreamingHttpRequestFactory,
+                                                                     BlockingStreamingHttpResponseFactory{
 }

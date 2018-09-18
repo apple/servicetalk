@@ -15,14 +15,18 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.api.LastHttpPayloadChunk;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.netty.internal.Connection;
@@ -45,13 +49,13 @@ import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
-import static io.servicetalk.http.api.HttpPayloadChunks.newLastPayloadChunk;
-import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpResponseMetaDataFactory.newResponseMetaData;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
+import static io.servicetalk.http.api.StreamingHttpRequests.newRequestWithTrailers;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -77,11 +81,15 @@ public final class AbstractHttpConnectionTest {
 
     private StreamingHttpConnection http;
     private HttpClientConfig config = new HttpClientConfig(new TcpClientConfig(true));
+    private final BufferAllocator allocator = DEFAULT_ALLOCATOR;
+    private final HttpHeadersFactory headersFactory = INSTANCE;
+    private final StreamingHttpRequestResponseFactory reqRespFactory =
+            new DefaultStreamingHttpRequestResponseFactory(allocator, headersFactory);
 
     private class MockStreamingHttpConnection extends AbstractStreamingHttpConnection<Connection<Object, Object>> {
         protected MockStreamingHttpConnection(final Connection<Object, Object> connection,
                                               final ReadOnlyHttpClientConfig config) {
-            super(connection, never(), config, ctx);
+            super(connection, never(), config, ctx, reqRespFactory);
         }
 
         @Override
@@ -100,7 +108,7 @@ public final class AbstractHttpConnectionTest {
 
     @Test
     public void shouldEmitMaxConcurrencyInSettingStream() throws ExecutionException, InterruptedException {
-        Integer max = awaitIndefinitely(http.getSettingStream(StreamingHttpConnection.SettingKey.MAX_CONCURRENCY).first());
+        Integer max = awaitIndefinitely(http.getSettingStream(MAX_CONCURRENCY).first());
         assertThat(max, equalTo(101));
     }
 
@@ -109,25 +117,27 @@ public final class AbstractHttpConnectionTest {
     public void requestShouldWriteFlatStreamToConnectionAndReadFlatStreamSplicedIntoResponseAndPayload()
             throws ExecutionException, InterruptedException {
 
-        HttpPayloadChunk chunk1 = newPayloadChunk(DEFAULT_ALLOCATOR.fromAscii("test"));
-        HttpPayloadChunk chunk2 = newPayloadChunk(DEFAULT_ALLOCATOR.fromAscii("payload"));
-        LastHttpPayloadChunk chunk3 = newLastPayloadChunk(DEFAULT_ALLOCATOR.fromAscii("payload"),
-                INSTANCE.newEmptyTrailers());
+        Buffer chunk1 = allocator.fromAscii("test");
+        Buffer chunk2 = allocator.fromAscii("payload");
+        Buffer chunk3 = allocator.fromAscii("payload");
+        HttpHeaders trailers = headersFactory.newEmptyTrailers();
 
-        StreamingHttpRequest<HttpPayloadChunk> req = newRequest(GET, "/foo", from(chunk1, chunk2, chunk3));
+        StreamingHttpRequest req = newRequestWithTrailers(GET, "/foo", HTTP_1_1,
+                headersFactory.newHeaders(),
+                allocator, from(chunk1, chunk2, chunk3, trailers));
 
         HttpResponseMetaData respMeta = newResponseMetaData(HTTP_1_1, OK,
                 INSTANCE.newHeaders().add(CONTENT_TYPE, TEXT_PLAIN));
 
-        Publisher<Object> respFlat = from(respMeta, chunk1, chunk2, chunk3);
+        Publisher<Object> respFlat = from(respMeta, chunk1, chunk2, chunk3, trailers);
         ArgumentCaptor<Publisher<Object>> reqFlatCaptor = ArgumentCaptor.forClass(Publisher.class);
         when(reqResp.apply(reqFlatCaptor.capture())).thenReturn(respFlat);
 
-        Single<StreamingHttpResponse<HttpPayloadChunk>> responseSingle = http.request(req);
+        Single<StreamingHttpResponse> responseSingle = http.request(req);
 
-        StreamingHttpResponse<HttpPayloadChunk> resp = awaitIndefinitelyNonNull(responseSingle);
+        StreamingHttpResponse resp = awaitIndefinitelyNonNull(responseSingle);
 
-        assertThat(awaitIndefinitely(reqFlatCaptor.getValue()), contains(req, chunk1, chunk2, chunk3));
+        assertThat(awaitIndefinitely(reqFlatCaptor.getValue()), contains(req, chunk1, chunk2, chunk3, trailers));
 
         assertThat(resp.getStatus(), equalTo(OK));
         assertThat(resp.getVersion(), equalTo(HTTP_1_1));
@@ -141,28 +151,29 @@ public final class AbstractHttpConnectionTest {
     public void requestShouldInsertLastPayloadChunkInRequestPayloadWhenMissing()
             throws ExecutionException, InterruptedException {
 
-        HttpPayloadChunk chunk1 = newPayloadChunk(DEFAULT_ALLOCATOR.fromAscii("test"));
-        HttpPayloadChunk chunk2 = newPayloadChunk(DEFAULT_ALLOCATOR.fromAscii("payload"));
+        Buffer chunk1 = allocator.fromAscii("test");
+        Buffer chunk2 = allocator.fromAscii("payload");
 
-        StreamingHttpRequest<HttpPayloadChunk> req = newRequest(GET, "/foo", from(chunk1, chunk2)); // NO chunk3 here!
+        StreamingHttpRequest req = newRequest(GET, "/foo", HTTP_1_1, headersFactory.newHeaders(),
+                headersFactory.newEmptyTrailers(), allocator, from(chunk1, chunk2)); // NO chunk3 here!
 
         HttpResponseMetaData respMeta = newResponseMetaData(HTTP_1_1, OK,
-                INSTANCE.newHeaders().add(CONTENT_TYPE, TEXT_PLAIN));
+                headersFactory.newHeaders().add(CONTENT_TYPE, TEXT_PLAIN));
 
-        LastHttpPayloadChunk chunk3 = newLastPayloadChunk(DEFAULT_ALLOCATOR.fromAscii("payload"),
-                INSTANCE.newEmptyTrailers());
+        Buffer chunk3 = allocator.fromAscii("payload");
+        HttpHeaders trailers = headersFactory.newEmptyTrailers();
 
-        Publisher<Object> respFlat = from(respMeta, chunk1, chunk2, chunk3);
+        Publisher<Object> respFlat = from(respMeta, chunk1, chunk2, chunk3, trailers);
         ArgumentCaptor<Publisher<Object>> reqFlatCaptor = ArgumentCaptor.forClass(Publisher.class);
         when(reqResp.apply(reqFlatCaptor.capture())).thenReturn(respFlat);
 
-        Single<StreamingHttpResponse<HttpPayloadChunk>> responseSingle = http.request(req);
+        Single<StreamingHttpResponse> responseSingle = http.request(req);
 
-        StreamingHttpResponse<HttpPayloadChunk> resp = awaitIndefinitelyNonNull(responseSingle);
+        StreamingHttpResponse resp = awaitIndefinitelyNonNull(responseSingle);
 
         List<Object> objects = awaitIndefinitelyNonNull(reqFlatCaptor.getValue());
         assertThat(objects.subList(0, 3), contains(req, chunk1, chunk2)); // User provided chunks
-        assertThat(objects.get(3), instanceOf(LastHttpPayloadChunk.class)); // Ensure new Last chunk inserted
+        assertThat(objects.get(3), instanceOf(HttpHeaders.class)); // Ensure new Last chunk inserted
 
         assertThat(resp.getStatus(), equalTo(OK));
         assertThat(resp.getVersion(), equalTo(HTTP_1_1));

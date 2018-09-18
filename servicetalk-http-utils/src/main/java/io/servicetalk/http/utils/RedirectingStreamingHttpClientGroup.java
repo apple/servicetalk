@@ -18,9 +18,9 @@ package io.servicetalk.http.utils;
 import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpHeaderNames;
-import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientGroup;
+import io.servicetalk.http.api.StreamingHttpClientGroupAdapter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -39,14 +39,14 @@ import java.util.function.Function;
  *     choice's URI reference is not returned in the {@link HttpHeaderNames#LOCATION Location} header.</li>
  *     <li>This implementation creates a redirect request internally with a request target in the
  *     <a href="https://tools.ietf.org/html/rfc7230#section-5.3.1">origin-form</a> and assumes that
- *     {@link StreamingHttpRequest#getRequestTarget() request target} and {@link HttpHeaderNames#HOST host header} are sufficient
- *     for a provided request-to-group-key function.</li>
+ *     {@link StreamingHttpRequest#getRequestTarget() request target} and {@link HttpHeaderNames#HOST host header} are
+ *     sufficient for a provided request-to-group-key function.</li>
  * </ul>
  *
  * @param <UnresolvedAddress> The address type used to create new {@link StreamingHttpClient}s.
  */
 public final class RedirectingStreamingHttpClientGroup<UnresolvedAddress> extends
-                                                                DelegatingStreamingHttpClientGroup<UnresolvedAddress> {
+                                                                  StreamingHttpClientGroupAdapter<UnresolvedAddress> {
 
     // https://tools.ietf.org/html/rfc2068#section-10.3 says:
     // A user agent SHOULD NOT automatically redirect a request more than 5 times,
@@ -65,10 +65,10 @@ public final class RedirectingStreamingHttpClientGroup<UnresolvedAddress> extend
      * @param executionContext The {@link ExecutionContext} to convert the {@link StreamingHttpClientGroup} to
      * an {@link StreamingHttpRequester}.
      */
-    public RedirectingStreamingHttpClientGroup(
-                                    final StreamingHttpClientGroup<UnresolvedAddress> delegate,
-                                    final Function<StreamingHttpRequest, GroupKey<UnresolvedAddress>> requestToGroupKey,
-                                    final ExecutionContext executionContext) {
+    public RedirectingStreamingHttpClientGroup(final StreamingHttpClientGroup<UnresolvedAddress> delegate,
+                                               final Function<StreamingHttpRequest,
+                                                       GroupKey<UnresolvedAddress>> requestToGroupKey,
+                                               final ExecutionContext executionContext) {
         this(delegate, requestToGroupKey, executionContext, DEFAULT_MAX_REDIRECTS);
     }
 
@@ -82,11 +82,11 @@ public final class RedirectingStreamingHttpClientGroup<UnresolvedAddress> extend
      * an {@link StreamingHttpRequester}.
      * @param maxRedirects The maximum number of follow up redirects.
      */
-    public RedirectingStreamingHttpClientGroup(
-                                    final StreamingHttpClientGroup<UnresolvedAddress> delegate,
-                                    final Function<StreamingHttpRequest, GroupKey<UnresolvedAddress>> requestToGroupKey,
-                                    final ExecutionContext executionContext,
-                                    final int maxRedirects) {
+    public RedirectingStreamingHttpClientGroup(final StreamingHttpClientGroup<UnresolvedAddress> delegate,
+                                               final Function<StreamingHttpRequest,
+                                                       GroupKey<UnresolvedAddress>> requestToGroupKey,
+                                               final ExecutionContext executionContext,
+                                               final int maxRedirects) {
         super(delegate);
         client = delegate.asClient(requestToGroupKey, executionContext);
         this.maxRedirects = maxRedirects;
@@ -94,16 +94,11 @@ public final class RedirectingStreamingHttpClientGroup<UnresolvedAddress> extend
 
     @Override
     public Single<StreamingHttpResponse> request(final GroupKey<UnresolvedAddress> key,
-                                                                   final StreamingHttpRequest request) {
-        final Single<StreamingHttpResponse> response = super.request(key, request);
+                                                 final StreamingHttpRequest request) {
+        final Single<StreamingHttpResponse> response = getDelegate().request(key, request);
         if (maxRedirects <= 0) {
             return response;
         }
         return new RedirectSingle(response, request, maxRedirects, client);
-    }
-
-    @Override
-    public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
-        return client.newRequest(method, requestTarget);
     }
 }

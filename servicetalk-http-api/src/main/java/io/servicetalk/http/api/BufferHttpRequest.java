@@ -21,7 +21,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.concurrent.internal.Iterables.singletonBlockingIterable;
+import static io.servicetalk.concurrent.internal.BlockingIterables.singletonBlockingIterable;
 import static java.util.Objects.requireNonNull;
 
 final class BufferHttpRequest extends DefaultHttpRequestMetaData implements HttpRequest {
@@ -56,11 +56,6 @@ final class BufferHttpRequest extends DefaultHttpRequestMetaData implements Http
     @Override
     public Buffer getPayloadBody() {
         return payloadBody;
-    }
-
-    @Override
-    public <T> T getPayloadBody(final HttpDeserializer<T> deserializer) {
-        return deserializer.deserialize(getHeaders(), payloadBody);
     }
 
     @Override
@@ -117,12 +112,12 @@ final class BufferHttpRequest extends DefaultHttpRequestMetaData implements Http
     @Override
     public StreamingHttpRequest toStreamingRequest() {
         return new BufferStreamingHttpRequest(getMethod(), getRequestTarget(), getVersion(),
-                getHeaders(), allocator, just(payloadBody), success(trailers));
+                getHeaders(), success(trailers), allocator, just(payloadBody));
     }
 
     @Override
     public BlockingStreamingHttpRequest toBlockingStreamingRequest() {
         return new BufferBlockingStreamingHttpRequest(getMethod(), getRequestTarget(), getVersion(), getHeaders(),
-                allocator, singletonBlockingIterable(payloadBody), success(trailers));
+                success(trailers), allocator, singletonBlockingIterable(payloadBody));
     }
 }

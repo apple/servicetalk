@@ -33,8 +33,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
-import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.LastHttpPayloadChunk;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.buffer.ByteBuf;
@@ -147,88 +145,79 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                                             HEADERS_WEIGHT_HISTORICAL * headersEncodedSizeAccumulator;
         }
 
-        // Bypass the encoder in case of an empty buffer, so that the following idiom works:
-        //
-        //     ch.write(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
-        //
-        // See https://github.com/netty/netty/issues/2983 for more information.
         if (msg instanceof Buffer) {
-            final Buffer potentialEmptyBuf = (Buffer) msg;
-            if (potentialEmptyBuf.getReadableBytes() == 0) {
+            final Buffer stBuffer = (Buffer) msg;
+            if (stBuffer.getReadableBytes() == 0) {
+                // Bypass the encoder in case of an empty buffer, so that the following idiom works:
+                //
+                //     ch.write(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
+                //
+                // See https://github.com/netty/netty/issues/2983 for more information.
                 // We can directly write EMPTY_BUFFER here because there is no need to worry about the buffer being
                 // already released.
                 ctx.write(EMPTY_BUFFER, promise);
-                return;
-            }
-        }
-
-        if (msg instanceof HttpPayloadChunk || msg instanceof Buffer) {
-            switch (state) {
-                case ST_INIT:
-                    throw new IllegalStateException("unexpected message type: " + simpleClassName(msg));
-                case ST_CONTENT_NON_CHUNK:
-                    final long contentLength = contentLength(msg);
-                    if (contentLength > 0) {
-                        if (byteBuf != null && byteBuf.writableBytes() >= contentLength && msg instanceof HttpPayloadChunk) {
-                            // merge into other buffer for performance reasons
-                            writeBufferToByteBuf(((HttpPayloadChunk) msg).getContent(), byteBuf.writerIndex(), byteBuf);
-                            ctx.write(byteBuf, promise);
-                        } else {
-                            if (byteBuf != null) {
+            } else {
+                switch (state) {
+                    case ST_INIT:
+                        throw new IllegalStateException("unexpected message type: " + simpleClassName(msg));
+                    case ST_CONTENT_NON_CHUNK:
+                        final long contentLength = contentLength(stBuffer);
+                        if (contentLength > 0) {
+                            if (byteBuf != null && byteBuf.writableBytes() >= contentLength) {
+                                // merge into other buffer for performance reasons
+                                writeBufferToByteBuf(stBuffer, byteBuf.writerIndex(), byteBuf);
+                                ctx.write(byteBuf, promise);
+                            } else if (byteBuf != null) {
                                 PromiseCombiner promiseCombiner = new PromiseCombiner();
                                 promiseCombiner.add(ctx.write(byteBuf));
-                                promiseCombiner.add(ctx.write(encodeAndRetain(msg)));
+                                promiseCombiner.add(ctx.write(encodeAndRetain(stBuffer)));
                                 promiseCombiner.finish(promise);
                             } else {
-                                ctx.write(encodeAndRetain(msg), promise);
+                                ctx.write(encodeAndRetain(stBuffer), promise);
                             }
+
+                            break;
                         }
 
+                        // fall-through!
+                    case ST_CONTENT_ALWAYS_EMPTY:
+                        if (byteBuf != null) {
+                            // We allocated a buffer so add it now.
+                            ctx.write(byteBuf, promise);
+                        } else {
+                            // Need to produce some output otherwise an IllegalStateException will be thrown as we did
+                            // not write anything Its ok to just write an EMPTY_BUFFER as if there are reference count
+                            // issues these will be propagated as the caller of the encodeAndRetain(...) method will
+                            // release the original buffer. Writing an empty buffer will not actually write anything on
+                            // the wire, so if there is a user error with msg it will not be visible externally
+                            ctx.write(EMPTY_BUFFER, promise);
+                        }
                         break;
-                    }
-
-                    // fall-through!
-                case ST_CONTENT_ALWAYS_EMPTY:
-                    if (byteBuf != null) {
-                        // We allocated a buffer so add it now.
-                        ctx.write(byteBuf, promise);
-                    } else {
-                        // Need to produce some output otherwise an
-                        // IllegalStateException will be thrown as we did not write anything
-                        // Its ok to just write an EMPTY_BUFFER as if there are reference count issues these will be
-                        // propagated as the caller of the encodeAndRetain(...) method will release the original
-                        // buffer.
-                        // Writing an empty buffer will not actually write anything on the wire, so if there is a user
-                        // error with msg it will not be visible externally
-                        ctx.write(EMPTY_BUFFER, promise);
-                    }
-
-                    break;
-                case ST_CONTENT_CHUNK:
-                    PromiseCombiner promiseCombiner = new PromiseCombiner();
-                    if (byteBuf != null) {
-                        // We allocated a buffer so write it now.
-                        promiseCombiner.add(ctx.write(byteBuf));
-                    }
-                    encodeChunkedContent(ctx, msg, contentLength(msg), promiseCombiner);
-                    promiseCombiner.finish(promise);
-
-                    break;
-                default:
-                    throw new Error();
+                    case ST_CONTENT_CHUNK:
+                        PromiseCombiner promiseCombiner = new PromiseCombiner();
+                        if (byteBuf != null) {
+                            // We allocated a buffer so write it now.
+                            promiseCombiner.add(ctx.write(byteBuf));
+                        }
+                        encodeChunkedContent(ctx, stBuffer, contentLength(stBuffer), promiseCombiner);
+                        promiseCombiner.finish(promise);
+                        break;
+                    default:
+                        throw new Error();
+                }
             }
-
-            if (msg instanceof LastHttpPayloadChunk) {
-                state = ST_INIT;
-                promise.addListener(f -> {
-                    if (f.isSuccess()) {
-                        // Only writes of the last payload that have been successfully written and flushed should emit
-                        // events. A CloseHandler should not get into a completed state on a failed write so that it can
-                        // abort and close the Channel when appropriate.
-                        closeHandler.protocolPayloadEndOutbound(ctx);
-                    }
-                });
-            }
+        } else if (msg instanceof HttpHeaders) {
+            assert byteBuf == null;
+            state = ST_INIT;
+            promise.addListener(f -> {
+                if (f.isSuccess()) {
+                    // Only writes of the last payload that have been successfully written and flushed should emit
+                    // events. A CloseHandler should not get into a completed state on a failed write so that it can
+                    // abort and close the Channel when appropriate.
+                    closeHandler.protocolPayloadEndOutbound(ctx);
+                }
+            });
+            encodeAndWriteTrailers(ctx, (HttpHeaders) msg, promise);
         } else if (byteBuf != null) {
             ctx.write(byteBuf, promise);
         }
@@ -273,7 +262,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
         }
     }
 
-    private void encodeChunkedContent(ChannelHandlerContext ctx, Object msg, long contentLength,
+    private void encodeChunkedContent(ChannelHandlerContext ctx, Buffer msg, long contentLength,
                                       PromiseCombiner promiseCombiner) {
         if (contentLength > 0) {
             String lengthHex = toHexString(contentLength);
@@ -283,25 +272,25 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
             promiseCombiner.add(ctx.write(buf));
             promiseCombiner.add(ctx.write(encodeAndRetain(msg)));
             promiseCombiner.add(ctx.write(CRLF_BUF.duplicate()));
-        }
-
-        if (msg instanceof LastHttpPayloadChunk) {
-            HttpHeaders headers = ((LastHttpPayloadChunk) msg).getTrailers();
-            if (headers.isEmpty()) {
-                promiseCombiner.add(ctx.write(ZERO_CRLF_CRLF_BUF.duplicate()));
-            } else {
-                ByteBuf buf = ctx.alloc().buffer((int) trailersEncodedSizeAccumulator);
-                writeMediumBE(buf, ZERO_CRLF_MEDIUM);
-                encodeHeaders(headers, buf);
-                writeShortBE(buf, CRLF_SHORT);
-                trailersEncodedSizeAccumulator = TRAILERS_WEIGHT_NEW * padSizeForAccumulation(buf.readableBytes()) +
-                        TRAILERS_WEIGHT_HISTORICAL * trailersEncodedSizeAccumulator;
-                promiseCombiner.add(ctx.write(buf));
-            }
-        } else if (contentLength == 0) {
+        } else {
+            assert contentLength == 0;
             // Need to produce some output otherwise an
             // IllegalStateException will be thrown
             promiseCombiner.add(ctx.write(encodeAndRetain(msg)));
+        }
+    }
+
+    private void encodeAndWriteTrailers(ChannelHandlerContext ctx, HttpHeaders headers, ChannelPromise promise) {
+        if (headers.isEmpty()) {
+            ctx.write(ZERO_CRLF_CRLF_BUF.duplicate(), promise);
+        } else {
+            ByteBuf buf = ctx.alloc().buffer((int) trailersEncodedSizeAccumulator);
+            writeMediumBE(buf, ZERO_CRLF_MEDIUM);
+            encodeHeaders(headers, buf);
+            writeShortBE(buf, CRLF_SHORT);
+            trailersEncodedSizeAccumulator = TRAILERS_WEIGHT_NEW * padSizeForAccumulation(buf.readableBytes()) +
+                    TRAILERS_WEIGHT_HISTORICAL * trailersEncodedSizeAccumulator;
+            ctx.write(buf, promise);
         }
     }
 
@@ -354,24 +343,16 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
         }
     }
 
-    private static long contentLength(Object msg) {
-        if (msg instanceof HttpPayloadChunk) {
-            return ((HttpPayloadChunk) msg).getContent().getReadableBytes();
-        } else if (msg instanceof Buffer) {
-            return ((Buffer) msg).getReadableBytes();
-        }
-        throw new IllegalStateException("unexpected message type: " + simpleClassName(msg));
+    private static long contentLength(Buffer msg) {
+        // TODO(scott): add support for file region
+        return msg.getReadableBytes();
     }
 
-    private static ByteBuf encodeAndRetain(Object msg) {
+    private static ByteBuf encodeAndRetain(Buffer msg) {
         // We still want to retain the objects we encode because otherwise folks may hold on to references of objects
         // with a 0 reference count and get an IllegalReferenceCountException.
-        if (msg instanceof HttpPayloadChunk) {
-            return toByteBuf(((HttpPayloadChunk) msg).getContent()).retain();
-        } else if (msg instanceof Buffer) {
-            return toByteBuf(((Buffer) msg)).retain();
-        }
-        throw new IllegalStateException("unexpected message type: " + simpleClassName(msg));
+        // TODO(scott): add support for file region
+        return toByteBuf(msg).retain();
     }
 
     static ByteBuf toByteBuf(Buffer buffer) {

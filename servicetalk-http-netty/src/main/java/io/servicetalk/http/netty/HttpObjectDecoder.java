@@ -30,15 +30,14 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpMetaData;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethods;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.api.LastHttpPayloadChunk;
 import io.servicetalk.transport.netty.internal.ByteToMessageDecoder;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
@@ -59,7 +58,6 @@ import static io.netty.handler.codec.http.HttpConstants.CR;
 import static io.netty.handler.codec.http.HttpConstants.LF;
 import static io.netty.util.ByteProcessor.FIND_LINEAR_WHITESPACE;
 import static io.netty.util.ByteProcessor.FIND_NON_LINEAR_WHITESPACE;
-import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferUtil.newBufferFrom;
 import static io.servicetalk.http.api.CharSequences.emptyAsciiString;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
@@ -69,8 +67,6 @@ import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY2;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_LOCATION;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_ORIGIN;
 import static io.servicetalk.http.api.HttpHeaderNames.UPGRADE;
-import static io.servicetalk.http.api.HttpPayloadChunks.newLastPayloadChunk;
-import static io.servicetalk.http.api.HttpPayloadChunks.newPayloadChunk;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static io.servicetalk.http.api.HttpProtocolVersions.newProtocolVersion;
@@ -107,7 +103,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     @Nullable
     private T message;
     @Nullable
-    private LastHttpPayloadChunk trailer;
+    private HttpHeaders trailer;
     private long chunkSize;
     private int cumulationIndex = -1;
     private long contentLength = Long.MIN_VALUE;
@@ -236,6 +232,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 if (nextState == null) {
                     return;
                 }
+                assert message != null;
                 if (shouldClose(message)) {
                     closeHandler.protocolClosingInbound(ctx);
                 }
@@ -245,7 +242,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                         // fast-path
                         // No content is expected.
                         ctx.fireChannelRead(message);
-                        ctx.fireChannelRead(EmptyLastHttpPayloadChunk.INSTANCE);
+                        ctx.fireChannelRead(headersFactory.newEmptyTrailers());
                         closeHandler.protocolPayloadEndInbound(ctx);
                         resetNow();
                         return;
@@ -261,7 +258,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                         long contentLength = contentLength();
                         if (contentLength == 0 || contentLength == -1 && isDecodingRequest()) {
                             ctx.fireChannelRead(message);
-                            ctx.fireChannelRead(EmptyLastHttpPayloadChunk.INSTANCE);
+                            ctx.fireChannelRead(headersFactory.newEmptyTrailers());
                             closeHandler.protocolPayloadEndInbound(ctx);
                             resetNow();
                             return;
@@ -288,7 +285,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 if (toRead > 0) {
                     ByteBuf content = buffer.readRetainedSlice(toRead);
                     cumulationIndex = buffer.readerIndex();
-                    ctx.fireChannelRead(newPayloadChunk(newBufferFrom(content)));
+                    ctx.fireChannelRead(newBufferFrom(content));
                 }
                 return;
             }
@@ -316,12 +313,12 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                     // Read all content.
                     // https://tools.ietf.org/html/rfc7230.html#section-4.1
                     // This is not chunked encoding so there will not be any trailers.
-                    ctx.fireChannelRead(newLastPayloadChunk(newBufferFrom(content),
-                                        headersFactory.newEmptyTrailers()));
+                    ctx.fireChannelRead(newBufferFrom(content));
+                    ctx.fireChannelRead(headersFactory.newEmptyTrailers());
                     closeHandler.protocolPayloadEndInbound(ctx);
                     resetNow();
                 } else {
-                    ctx.fireChannelRead(newPayloadChunk(newBufferFrom(content)));
+                    ctx.fireChannelRead(newBufferFrom(content));
                 }
                 return;
             }
@@ -348,7 +345,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 if (toRead == 0) {
                     return;
                 }
-                HttpPayloadChunk chunk = newPayloadChunk(newBufferFrom(buffer.readRetainedSlice(toRead)));
+                Buffer chunk = newBufferFrom(buffer.readRetainedSlice(toRead));
                 chunkSize -= toRead;
                 cumulationIndex = buffer.readerIndex();
 
@@ -371,7 +368,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 break;
             }
             case READ_CHUNK_FOOTER: {
-                LastHttpPayloadChunk trailer = readTrailingHeaders(buffer);
+                HttpHeaders trailer = readTrailingHeaders(buffer);
                 if (trailer == null) {
                     return;
                 }
@@ -420,7 +417,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             boolean chunked = isTransferEncodingChunked(message.getHeaders());
             if (currentState == State.READ_VARIABLE_LENGTH_CONTENT && !in.isReadable() && !chunked) {
                 // End of connection.
-                ctx.fireChannelRead(EmptyLastHttpPayloadChunk.INSTANCE);
+                ctx.fireChannelRead(headersFactory.newEmptyTrailers());
                 closeHandler.protocolPayloadEndInbound(ctx);
                 resetNow();
                 return;
@@ -447,7 +444,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             }
 
             if (!prematureClosure) {
-                ctx.fireChannelRead(EmptyLastHttpPayloadChunk.INSTANCE);
+                ctx.fireChannelRead(headersFactory.newEmptyTrailers());
                 closeHandler.protocolPayloadEndInbound(ctx);
             }
             resetNow();
@@ -605,26 +602,24 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     }
 
     @Nullable
-    private LastHttpPayloadChunk readTrailingHeaders(ByteBuf buffer) {
+    private HttpHeaders readTrailingHeaders(ByteBuf buffer) {
         final int lfIndex = findCRLF(buffer, maxHeaderSize);
         if (lfIndex < 0) {
             return null;
         }
         if (lfIndex - 2 > buffer.readerIndex()) {
-            LastHttpPayloadChunk trailer = this.trailer;
+            HttpHeaders trailer = this.trailer;
             if (trailer == null) {
-                trailer = this.trailer = newLastPayloadChunk(EMPTY_BUFFER, headersFactory.newTrailers());
+                trailer = this.trailer = headersFactory.newTrailers();
             }
 
-            return parseAllHeaders(buffer, trailer.getTrailers(), lfIndex, maxHeaderSize) ? trailer : null;
+            return parseAllHeaders(buffer, trailer, lfIndex, maxHeaderSize) ? trailer : null;
         }
 
         consumeCRLF(buffer, lfIndex);
-        // https://tools.ietf.org/html/rfc7230.html#section-4.1
-        // TODO(scott): this section says the trailers are optional, should we use a static read-only instance
-        // to make it clear there were no headers and if folks really want trailers they can replace the object?
-        return trailer != null ? trailer : EmptyLastHttpPayloadChunk.INSTANCE;
-        // return new DefaultLastHttpPayloadChunk(EMPTY_BUFFER, newTrailers());
+        // The RFC says the trailers are optional [1] so use an empty trailers instance from the headers factory.
+        // [1] https://tools.ietf.org/html/rfc7230.html#section-4.1
+        return trailer != null ? trailer : headersFactory.newEmptyTrailers();
     }
 
     private boolean parseAllHeaders(ByteBuf buffer, HttpHeaders headers, int lfIndex, int maxHeaderSize) {

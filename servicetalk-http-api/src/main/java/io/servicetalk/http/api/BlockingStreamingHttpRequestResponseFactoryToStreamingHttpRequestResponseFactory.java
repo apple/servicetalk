@@ -15,17 +15,22 @@
  */
 package io.servicetalk.http.api;
 
-import static java.util.Objects.requireNonNull;
+final class BlockingStreamingHttpRequestResponseFactoryToStreamingHttpRequestResponseFactory implements
+                                                                                 StreamingHttpRequestResponseFactory {
+    private final BlockingStreamingHttpRequestResponseFactory reqRespFactory;
 
-final class HttpRequestFactoryToStreamingHttpRequestFactory implements StreamingHttpRequestFactory {
-    private final HttpRequestFactory requestFactory;
-
-    HttpRequestFactoryToStreamingHttpRequestFactory(final HttpRequestFactory requestFactory) {
-        this.requestFactory = requireNonNull(requestFactory);
+    BlockingStreamingHttpRequestResponseFactoryToStreamingHttpRequestResponseFactory(
+            final BlockingStreamingHttpRequestResponseFactory reqRespFactory) {
+        this.reqRespFactory = reqRespFactory;
     }
 
     @Override
     public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
-        return requestFactory.newRequest(method, requestTarget).toStreamingRequest();
+        return reqRespFactory.newRequest(method, requestTarget).toStreamingRequest();
+    }
+
+    @Override
+    public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
+        return reqRespFactory.newResponse(status).toStreamingResponse();
     }
 }

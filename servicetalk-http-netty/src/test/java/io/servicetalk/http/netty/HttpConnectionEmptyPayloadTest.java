@@ -20,10 +20,11 @@ import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpConnection;
-import io.servicetalk.http.api.StreamingHttpRequests;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
@@ -36,15 +37,13 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
+import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
-import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
-import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpRequestMethods.HEAD;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static java.lang.Integer.parseInt;
 import static org.junit.Assert.assertArrayEquals;
@@ -64,12 +63,20 @@ public class HttpConnectionEmptyPayloadTest {
             byte[] expectedPayload = new byte[expectedContentLength];
             ThreadLocalRandom.current().nextBytes(expectedPayload);
             ServerContext serverContext = closeable.merge(awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
-                    .start(executionContextRule, new InetSocketAddress(0), StreamingHttpService.from((ctx, req) ->
-                            success(newResponse(OK, req.getMethod() == HEAD ? EMPTY_BUFFER :
-                                            ctx.getExecutionContext().getBufferAllocator()
-                                                    .newBuffer(expectedContentLength).writeBytes(expectedPayload),
-                                    INSTANCE.newHeaders()
-                                            .add(CONTENT_LENGTH, String.valueOf(expectedContentLength))))))));
+                    .startStreaming(executionContextRule, new InetSocketAddress(0),
+                            new StreamingHttpService() {
+                                @Override
+                                public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                                            final StreamingHttpRequest req,
+                                                                            final StreamingHttpResponseFactory factory) {
+                                    StreamingHttpResponse resp = factory.ok().setPayloadBody(just(
+                                            req.getMethod() == HEAD ? EMPTY_BUFFER :
+                                                    ctx.getExecutionContext().getBufferAllocator()
+                                                    .newBuffer(expectedContentLength).writeBytes(expectedPayload)));
+                                    resp.getHeaders().add(CONTENT_LENGTH, String.valueOf(expectedContentLength));
+                                    return success(resp);
+                                }
+                            })));
 
             StreamingHttpConnection connection = closeable.merge(awaitIndefinitelyNonNull(new DefaultHttpConnectionBuilder<>()
                     .setMaxPipelinedRequests(3)
@@ -77,11 +84,11 @@ public class HttpConnectionEmptyPayloadTest {
 
             // Request HEAD, GET, HEAD to verify that we can keep reading data despite a HEAD request providing a hint
             // about content-length (and not actually providing the content).
-            Single<StreamingHttpResponse<HttpPayloadChunk>> response1Single = connection.request(StreamingHttpRequests.newRequest(HEAD, "/"));
-            Single<StreamingHttpResponse<HttpPayloadChunk>> response2Single = connection.request(StreamingHttpRequests.newRequest(GET, "/"));
-            Single<StreamingHttpResponse<HttpPayloadChunk>> response3Single = connection.request(StreamingHttpRequests.newRequest(HEAD, "/"));
+            Single<StreamingHttpResponse> response1Single = connection.request(connection.newRequest(HEAD, "/"));
+            Single<StreamingHttpResponse> response2Single = connection.request(connection.get("/"));
+            Single<StreamingHttpResponse> response3Single = connection.request(connection.newRequest(HEAD, "/"));
 
-            StreamingHttpResponse<HttpPayloadChunk> response = awaitIndefinitelyNonNull(response1Single);
+            StreamingHttpResponse response = awaitIndefinitelyNonNull(response1Single);
             assertEquals(OK, response.getStatus());
             CharSequence contentLength = response.getHeaders().get(CONTENT_LENGTH);
             assertNotNull(contentLength);
@@ -96,7 +103,7 @@ public class HttpConnectionEmptyPayloadTest {
             assertEquals(expectedContentLength, parseInt(contentLength.toString()));
             Buffer buffer = awaitIndefinitelyNonNull(response.getPayloadBody().reduce(
                     () -> connection.getConnectionContext().getExecutionContext().getBufferAllocator().newBuffer(),
-                    (buf, chunk) -> buf.writeBytes(chunk.getContent())));
+                    Buffer::writeBytes));
             byte[] actualBytes = new byte[buffer.getReadableBytes()];
             buffer.readBytes(actualBytes);
             assertArrayEquals(expectedPayload, actualBytes);
