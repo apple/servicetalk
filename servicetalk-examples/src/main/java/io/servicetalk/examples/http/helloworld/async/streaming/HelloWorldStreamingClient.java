@@ -15,53 +15,18 @@
  */
 package io.servicetalk.examples.http.helloworld.async.streaming;
 
-import io.servicetalk.concurrent.api.AsyncCloseables;
-import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.netty.HttpClients;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.CountDownLatch;
-
-import static io.servicetalk.http.api.HttpRequestMethods.GET;
-import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
-import static java.nio.charset.StandardCharsets.US_ASCII;
-
 public final class HelloWorldStreamingClient {
-    private static final Logger LOGGER = LoggerFactory.getLogger(HelloWorldStreamingClient.class);
 
-    public static void main(String[] args) throws Exception {
-        // Collection of all resources in this test that can be closed together at the end.
-        try (CompositeCloseable resources = AsyncCloseables.newCompositeCloseable()) {
-
-            // Build the client, and register for DNS discovery events.
-            StreamingHttpClient client = resources.prepend(
-                    HttpClients.forSingleAddress("localhost", 8080).buildStreaming());
-
-            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-            // before the response has been processed. This isn't typical usage for a streaming API but is useful for
-            // demonstration purposes.
-            CountDownLatch responseProcessedLatch = new CountDownLatch(1);
-
-            // Create a request, send the request, convert each chunk to a string, and log it out.
-            client.request(newRequest(GET, "/sayHello"))
-                    .flatMapPublisher(response -> {
-                        // Log the response meta data and headers, by default the header values will be filtered for
-                        // security reasons, however here we override the filter and print every value.
-                        LOGGER.info("got response {}", response.toString((name, value) -> value));
-
-                        // Map each chunk of the response payload from a Buffer to a String.
-                        return response.getPayloadBody()
-                                .map(chunk -> chunk.getContent().toString(US_ASCII));
-                    })
-                    .doOnError(cause -> LOGGER.error("request failed!", cause))
-                    .doFinally(responseProcessedLatch::countDown)
-                    .forEach(stringPayloadChunk -> LOGGER.info("converted string chunk '{}'", stringPayloadChunk));
-
-            // Don't exit the main thread until after the response is completely processed.
-            responseProcessedLatch.await();
+    public static void main(String[] args) {
+        try (StreamingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildStreaming()) {
+            client.request(client.get("/sayHello"))
+                    .doBeforeSuccess(System.out::println)
+                    .flatMapPublisher(StreamingHttpResponse::getPayloadBody)
+                    .forEach(System.out::println);
         }
     }
 }

@@ -13,21 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.helloworld.async.streaming;
+package io.servicetalk.examples.http.helloworld.blocking.streaming;
 
 import io.servicetalk.http.netty.DefaultHttpServerStarter;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpSerializationProviders.serializeText;
 
-public final class HelloWorldStreamingServer {
+public final class BlockingHelloWorldStreamingServer {
     public static void main(String[] args) throws Exception {
         new DefaultHttpServerStarter()
-                .startStreaming(8080, (ctx, request, responseFactory) ->
-                        success(responseFactory.ok()
+                .startBlockingStreaming(8080, (ctx, request, responseFactory) ->
+                        responseFactory.ok()
+                                //TODO: This would use setPayloadBody(Iterable, HttpSerializer) when available.
                                 .transformPayloadBody(from("Hello\n", " World\n", " From\n", " ServiceTalk\n"),
-                                        serializeText())))
+                                        serializeText()))
                 .toFuture().get()
                 .awaitShutdown();
     }
