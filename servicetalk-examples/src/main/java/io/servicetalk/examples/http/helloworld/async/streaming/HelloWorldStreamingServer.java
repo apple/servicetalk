@@ -19,7 +19,7 @@ import io.servicetalk.http.netty.DefaultHttpServerStarter;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.HttpSerializationProviders.serializerForUtf8PlainText;
+import static io.servicetalk.http.api.HttpSerializationProviders.serializeText;
 
 public final class HelloWorldStreamingServer {
     public static void main(String[] args) throws Exception {
@@ -27,7 +27,7 @@ public final class HelloWorldStreamingServer {
                 .startStreaming(8080, (ctx, request, responseFactory) ->
                         success(responseFactory.ok()
                                 .transformPayloadBody(from("Hello\n", " World\n", " From\n", " ServiceTalk\n"),
-                                        serializerForUtf8PlainText())))
+                                        serializeText())))
                 .toFuture().get()
                 .awaitShutdown();
     }

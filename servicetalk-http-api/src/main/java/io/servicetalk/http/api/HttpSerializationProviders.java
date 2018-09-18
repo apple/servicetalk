@@ -44,9 +44,9 @@ public final class HttpSerializationProviders {
      * Creates an {@link HttpSerializer} that can serialize {@link String}s with {@link StandardCharsets#UTF_8}
      * {@code Charset}.
      *
-     * @return {@link HttpSerializer} that could serialize from {@link String}.
+     * @return {@link HttpSerializer} that could serialize {@link String}.
      */
-    public static HttpSerializer<String> serializerForUtf8PlainText() {
+    public static HttpSerializer<String> serializeText() {
         return UTF8_STRING_SERIALIZER;
     }
 
@@ -56,9 +56,9 @@ public final class HttpSerializationProviders {
      * @param charset {@link Charset} for the {@link String} that will be serialized.
      * @return {@link HttpSerializer} that could serialize from {@link String}.
      */
-    public static HttpSerializer<String> serializerForPlainText(Charset charset) {
+    public static HttpSerializer<String> serializeText(Charset charset) {
         final String contentType = TEXT_PLAIN + "; charset=" + charset.name();
-        return serializerForPlainText(charset, headers -> headers.set(CONTENT_TYPE, contentType));
+        return serializeText(charset, headers -> headers.set(CONTENT_TYPE, contentType));
     }
 
     /**
@@ -69,8 +69,7 @@ public final class HttpSerializationProviders {
      * the serialized payload. Typically, this involves adding a {@link HttpHeaderNames#CONTENT_TYPE} header.
      * @return {@link HttpSerializer} that could serialize from {@link String}.
      */
-    public static HttpSerializer<String> serializerForPlainText(Charset charset,
-                                                                Consumer<HttpHeaders> addContentType) {
+    public static HttpSerializer<String> serializeText(Charset charset, Consumer<HttpHeaders> addContentType) {
         return new HttpStringSerializer(charset, addContentType);
     }
 
@@ -80,7 +79,7 @@ public final class HttpSerializationProviders {
      *
      * @return {@link HttpDeserializer} that could deserialize {@link String}.
      */
-    public static HttpDeserializer<String> deserializerForUtf8PlainText() {
+    public static HttpDeserializer<String> deserializeText() {
         return UTF_8_STRING_DESERIALIZER;
     }
 
@@ -90,9 +89,9 @@ public final class HttpSerializationProviders {
      * @param charset {@link Charset} for the {@link String} that will be deserialized.
      * @return {@link HttpDeserializer} that could deserialize {@link String}.
      */
-    public static HttpDeserializer<String> deserializerForPlainText(Charset charset) {
+    public static HttpDeserializer<String> deserializeText(Charset charset) {
         final String contentType = TEXT_PLAIN + "; charset=" + charset.name();
-        return deserializerForPlainText(charset, headers -> headers.contains(CONTENT_TYPE, contentType));
+        return deserializeText(charset, headers -> headers.contains(CONTENT_TYPE, contentType));
     }
 
     /**
@@ -103,8 +102,7 @@ public final class HttpSerializationProviders {
      * deserialized payload. If the validation fails, then deserialization will fail with {@link SerializationException}
      * @return {@link HttpDeserializer} that could deserialize {@link String}.
      */
-    public static HttpDeserializer<String> deserializerForPlainText(Charset charset,
-                                                                    Predicate<HttpHeaders> checkContentType) {
+    public static HttpDeserializer<String> deserializeText(Charset charset, Predicate<HttpHeaders> checkContentType) {
         return new HttpStringDeserializer(charset, checkContentType);
     }
 
@@ -119,8 +117,8 @@ public final class HttpSerializationProviders {
      * @param serializer {@link Serializer} that has the capability of serializing/deserializing to/from JSON.
      * @return {@link HttpSerializationProvider} that has the capability of serializing/deserializing to/from JSON.
      */
-    public static HttpSerializationProvider forJson(Serializer serializer) {
-        return forContentType(serializer, headers -> headers.set(CONTENT_TYPE, APPLICATION_JSON),
+    public static HttpSerializationProvider serializeJson(Serializer serializer) {
+        return serializeContentType(serializer, headers -> headers.set(CONTENT_TYPE, APPLICATION_JSON),
                 headers -> headers.contains(CONTENT_TYPE, APPLICATION_JSON));
     }
 
@@ -136,8 +134,8 @@ public final class HttpSerializationProviders {
      * to/from JSON.
      * @return {@link HttpSerializationProvider} that has the capability of serializing/deserializing to/from JSON.
      */
-    public static HttpSerializationProvider forJson(SerializationProvider serializationProvider) {
-        return forJson(new DefaultSerializer(serializationProvider));
+    public static HttpSerializationProvider serializeJson(SerializationProvider serializationProvider) {
+        return serializeJson(new DefaultSerializer(serializationProvider));
     }
 
     /**
@@ -159,9 +157,9 @@ public final class HttpSerializationProviders {
      * @return {@link HttpSerializationProvider} that has the capability of serializing/deserializing to/from a desired
      * content-type.
      */
-    public static HttpSerializationProvider forContentType(Serializer serializer,
-                                                           Consumer<HttpHeaders> addContentType,
-                                                           Predicate<HttpHeaders> checkContentType) {
+    public static HttpSerializationProvider serializeContentType(Serializer serializer,
+                                                                 Consumer<HttpHeaders> addContentType,
+                                                                 Predicate<HttpHeaders> checkContentType) {
         return new DefaultHttpSerializationProvider(serializer, addContentType, checkContentType);
     }
 
@@ -185,9 +183,9 @@ public final class HttpSerializationProviders {
      * @return {@link HttpSerializationProvider} that has the capability of serializing/deserializing to/from a desired
      * content-type.
      */
-    public static HttpSerializationProvider forContentType(SerializationProvider serializationProvider,
-                                                           Consumer<HttpHeaders> addContentType,
-                                                           Predicate<HttpHeaders> checkContentType) {
-        return forContentType(new DefaultSerializer(serializationProvider), addContentType, checkContentType);
+    public static HttpSerializationProvider serializeContentType(SerializationProvider serializationProvider,
+                                                                 Consumer<HttpHeaders> addContentType,
+                                                                 Predicate<HttpHeaders> checkContentType) {
+        return serializeContentType(new DefaultSerializer(serializationProvider), addContentType, checkContentType);
     }
 }
