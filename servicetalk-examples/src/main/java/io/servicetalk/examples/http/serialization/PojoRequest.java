@@ -13,19 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.helloworld.jaxrs;
-
-import java.util.Set;
-import javax.ws.rs.core.Application;
-
-import static java.util.Collections.singleton;
+package io.servicetalk.examples.http.serialization;
 
 /**
- * JAX-RS Hello World {@link Application}.
+ * A request object to request {@link MyPojo} from the server.
  */
-public class HelloWorldJaxrsApplication extends Application {
-    @Override
-    public Set<Class<?>> getClasses() {
-        return singleton(HelloWorldJaxRsResource.class);
+public final class PojoRequest {
+
+    private String id;
+
+    public PojoRequest(String id) {
+        this.id = id;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 }
