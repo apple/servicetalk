@@ -29,9 +29,10 @@ import static java.util.Objects.requireNonNull;
  */
 final class ResumeCompletable extends AbstractNoHandleSubscribeCompletable {
     private final Completable original;
-    private final Function<Throwable, Completable> nextFactory;
+    private final Function<? super Throwable, Completable> nextFactory;
 
-    ResumeCompletable(Completable original, Function<Throwable, Completable> nextFactory, Executor executor) {
+    ResumeCompletable(Completable original, Function<? super Throwable, Completable> nextFactory,
+                      Executor executor) {
         super(executor);
         this.original = original;
         this.nextFactory = requireNonNull(nextFactory);
@@ -45,12 +46,12 @@ final class ResumeCompletable extends AbstractNoHandleSubscribeCompletable {
     private static final class ResumeSubscriber implements Subscriber {
         private final Subscriber subscriber;
         @Nullable
-        private volatile Function<Throwable, Completable> nextFactory;
+        private volatile Function<? super Throwable, Completable> nextFactory;
         private final SignalOffloader signalOffloader;
         @Nullable
         private volatile SequentialCancellable sequentialCancellable;
 
-        ResumeSubscriber(Subscriber subscriber, Function<Throwable, Completable> nextFactory,
+        ResumeSubscriber(Subscriber subscriber, Function<? super Throwable, Completable> nextFactory,
                          final SignalOffloader signalOffloader) {
             this.subscriber = subscriber;
             this.nextFactory = nextFactory;
@@ -77,7 +78,7 @@ final class ResumeCompletable extends AbstractNoHandleSubscribeCompletable {
 
         @Override
         public void onError(Throwable throwable) {
-            final Function<Throwable, Completable> nextFactory = this.nextFactory;
+            final Function<? super Throwable, Completable> nextFactory = this.nextFactory;
             if (nextFactory == null) {
                 subscriber.onError(throwable);
                 return;

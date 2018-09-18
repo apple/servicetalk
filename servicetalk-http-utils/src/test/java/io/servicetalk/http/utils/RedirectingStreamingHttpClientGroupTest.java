@@ -15,16 +15,19 @@
  */
 package io.servicetalk.http.utils;
 
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.DefaultGroupKey;
 import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
+import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientGroup;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -37,6 +40,7 @@ import org.junit.Test;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
@@ -62,8 +66,6 @@ import static io.servicetalk.http.api.HttpResponseStatuses.SEE_OTHER;
 import static io.servicetalk.http.api.HttpResponseStatuses.TEMPORARY_REDIRECT;
 import static io.servicetalk.http.api.HttpResponseStatuses.USE_PROXY;
 import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
-import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
-import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static java.lang.Integer.parseUnsignedInt;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -80,6 +82,9 @@ public class RedirectingStreamingHttpClientGroupTest {
     private static final String REQUESTED_STATUS = "Requested-Status";
     private static final String REQUESTED_LOCATION = "Requested-Location";
     private static final int MAX_REDIRECTS = 5;
+    private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
+    private static final StreamingHttpRequestResponseFactory reqRespFactory =
+            new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE);
 
     private static final ExecutionContext executionContext = mock(ExecutionContext.class);
 
@@ -95,11 +100,11 @@ public class RedirectingStreamingHttpClientGroupTest {
     public void setUp() {
         when(httpClient.request(any())).thenAnswer(a -> {
             try {
-                StreamingHttpRequest<String> request = a.getArgument(0);
+                StreamingHttpRequest request = a.getArgument(0);
                 CharSequence statusHeader = request.getHeaders().get(REQUESTED_STATUS);
                 HttpResponseStatus status = statusHeader == null ? OK
                         : getResponseStatus(parseUnsignedInt(statusHeader.toString()), EMPTY_BUFFER);
-                StreamingHttpResponse<String> response = newResponse(status);
+                StreamingHttpResponse response = reqRespFactory.newResponse(status);
                 CharSequence redirectLocation = request.getHeaders().get(REQUESTED_LOCATION);
                 response.getHeaders().set(LOCATION, redirectLocation);
                 return success(response);
@@ -108,7 +113,7 @@ public class RedirectingStreamingHttpClientGroupTest {
             }
         });
         when(httpClient.closeAsync()).thenReturn(completed());
-        clientGroup = newHttpClientGroup((groupKey, metaData) -> httpClient);
+        clientGroup = newHttpClientGroup(reqRespFactory, (groupKey, metaData) -> httpClient);
     }
 
     @After
@@ -212,12 +217,12 @@ public class RedirectingStreamingHttpClientGroupTest {
                 RedirectingStreamingHttpClientGroupTest::createGroupKey, executionContext, maxRedirects)
                 .asClient(RedirectingStreamingHttpClientGroupTest::createGroupKey, executionContext);
 
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(method, "/path");
+        StreamingHttpRequest request = redirectingRequester.newRequest(method, "/path");
         request.getHeaders().set(HOST, "servicetalk.io");
         request.getHeaders().set(REQUESTED_STATUS, String.valueOf(requestedStatus.getCode()));
         request.getHeaders().set(REQUESTED_LOCATION, requestedLocation);
 
-        StreamingHttpResponse<HttpPayloadChunk> response = awaitIndefinitely(redirectingRequester.request(request));
+        StreamingHttpResponse response = awaitIndefinitely(redirectingRequester.request(request));
         assertNotNull(response);
         assertEquals(requestedStatus.getCode(), response.getStatus().getCode());
         assertEquals(requestedLocation, response.getHeaders().get(LOCATION));
@@ -235,10 +240,10 @@ public class RedirectingStreamingHttpClientGroupTest {
                 RedirectingStreamingHttpClientGroupTest::createGroupKey, executionContext, maxRedirects)
                 .asClient(RedirectingStreamingHttpClientGroupTest::createGroupKey, executionContext);
 
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        StreamingHttpRequest request = redirectingRequester.get("/path");
         request.getHeaders().set(HOST, "servicetalk.io");
 
-        StreamingHttpResponse<HttpPayloadChunk> response = awaitIndefinitely(redirectingRequester.request(request));
+        StreamingHttpResponse response = awaitIndefinitely(redirectingRequester.request(request));
         assertNotNull(response);
         assertEquals(MOVED_PERMANENTLY, response.getStatus());
         assertEquals("/location-" + (maxRedirects + 1), response.getHeaders().get(LOCATION));
@@ -253,12 +258,12 @@ public class RedirectingStreamingHttpClientGroupTest {
                 RedirectingStreamingHttpClientGroupTest::createGroupKey, executionContext)
                 .asClient(RedirectingStreamingHttpClientGroupTest::createGroupKey, executionContext);
 
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        StreamingHttpRequest request = redirectingRequester.get("/path");
         request.getHeaders().set(HOST, "servicetalk.io");
         request.getHeaders().set(REQUESTED_STATUS, String.valueOf(MOVED_PERMANENTLY.getCode()));
         request.getHeaders().set(REQUESTED_LOCATION, "/new-location");
 
-        StreamingHttpResponse<HttpPayloadChunk> response = awaitIndefinitely(redirectingRequester.request(request));
+        StreamingHttpResponse response = awaitIndefinitely(redirectingRequester.request(request));
         assertNull(response);
     }
 
@@ -305,12 +310,12 @@ public class RedirectingStreamingHttpClientGroupTest {
                 RedirectingStreamingHttpClientGroupTest::createGroupKey, executionContext)
                 .asClient(RedirectingStreamingHttpClientGroupTest::createGroupKey, executionContext);
 
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(method, "/path");
+        StreamingHttpRequest request = redirectingRequester.newRequest(method, "/path");
         request.getHeaders().set(HOST, "servicetalk.io");
         request.getHeaders().set(REQUESTED_STATUS, String.valueOf(requestedStatus.getCode()));
         request.getHeaders().set(REQUESTED_LOCATION, "/new-location");
 
-        StreamingHttpResponse<HttpPayloadChunk> response = awaitIndefinitely(redirectingRequester.request(request));
+        StreamingHttpResponse response = awaitIndefinitely(redirectingRequester.request(request));
         assertNotNull(response);
         assertEquals(OK, response.getStatus());
         assertNull(response.getHeaders().get(LOCATION));
@@ -324,24 +329,24 @@ public class RedirectingStreamingHttpClientGroupTest {
                 createRedirectResponse(1),
                 createRedirectResponse(2),
                 createRedirectResponse(3),
-                success(newResponse(OK)));
+                success(reqRespFactory.ok()));
 
         StreamingHttpRequester redirectingRequester = new RedirectingStreamingHttpClientGroup<>(clientGroup,
                 RedirectingStreamingHttpClientGroupTest::createGroupKey, executionContext)
                 .asClient(RedirectingStreamingHttpClientGroupTest::createGroupKey, executionContext);
 
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "/path");
+        StreamingHttpRequest request = redirectingRequester.get("/path");
         request.getHeaders().set(HOST, "servicetalk.io");
 
-        StreamingHttpResponse<HttpPayloadChunk> response = awaitIndefinitely(redirectingRequester.request(request));
+        StreamingHttpResponse response = awaitIndefinitely(redirectingRequester.request(request));
         assertNotNull(response);
         assertEquals(OK, response.getStatus());
         assertNull(response.getHeaders().get(LOCATION));
         verify(httpClient, times(4)).request(any());
     }
 
-    private static <O> Single<StreamingHttpResponse<O>> createRedirectResponse(final int i) {
-        StreamingHttpResponse<O> response = newResponse(MOVED_PERMANENTLY);
+    private static Single<StreamingHttpResponse> createRedirectResponse(final int i) {
+        StreamingHttpResponse response = reqRespFactory.newResponse(MOVED_PERMANENTLY);
         response.getHeaders().set(LOCATION, "/location-" + i);
         return success(response);
     }
@@ -352,18 +357,18 @@ public class RedirectingStreamingHttpClientGroupTest {
                 RedirectingStreamingHttpClientGroupTest::createGroupKey, executionContext)
                 .asClient(RedirectingStreamingHttpClientGroupTest::createGroupKey, executionContext);
 
-        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(GET, "http://servicetalk.io/path");
+        StreamingHttpRequest request = redirectingRequester.get("http://servicetalk.io/path");
         request.getHeaders().set(REQUESTED_STATUS, String.valueOf(SEE_OTHER.getCode()));
         request.getHeaders().set(REQUESTED_LOCATION, "/new-location");
 
-        StreamingHttpResponse<HttpPayloadChunk> response = awaitIndefinitely(redirectingRequester.request(request));
+        StreamingHttpResponse response = awaitIndefinitely(redirectingRequester.request(request));
         assertNotNull(response);
         assertEquals(OK, response.getStatus());
         assertNull(response.getHeaders().get(LOCATION));
         verify(httpClient, times(2)).request(any());
     }
 
-    private static <I> GroupKey<String> createGroupKey(StreamingHttpRequest<I> request) {
+    private static <I> GroupKey<String> createGroupKey(StreamingHttpRequest request) {
         final String host = request.getEffectiveHost();
         if (host == null) {
             throw new IllegalArgumentException("StreamingHttpRequest does not contain information about target server address");

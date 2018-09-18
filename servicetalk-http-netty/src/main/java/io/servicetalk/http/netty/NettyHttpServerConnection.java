@@ -22,11 +22,10 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
-import io.servicetalk.http.api.LastHttpPayloadChunk;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequests;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.http.api.StreamingHttpServiceResponseFactory;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
@@ -35,30 +34,28 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.function.BiFunction;
-import java.util.function.Predicate;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.netty.HeaderUtils.addResponseTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.SpliceFlatStreamToMetaSingle.flatten;
 
 final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NettyHttpServerConnection.class);
-    private final StreamingHttpServiceResponseFactory respFactory;
+    private final DefaultHttpServiceContext context;
     private final StreamingHttpService service;
     private BiFunction<HttpRequestMetaData, Publisher<Object>, StreamingHttpRequest> packer;
 
     NettyHttpServerConnection(final Channel channel, final Publisher<Object> requestObjectPublisher,
                               final TerminalPredicate<Object> terminalPredicate,
                               final CloseHandler closeHandler,
-                              final StreamingHttpServiceResponseFactory respFactory,
+                              final DefaultHttpServiceContext context,
                               final StreamingHttpService service) {
-        super(channel, respFactory.getConnectionContext(), requestObjectPublisher, terminalPredicate, closeHandler);
-        this.respFactory = respFactory;
+        super(channel, context, requestObjectPublisher, terminalPredicate, closeHandler);
+        this.context = context;
         this.service = service;
-        final BufferAllocator alloc = respFactory.getConnectionContext().getExecutionContext().getBufferAllocator();
+        final BufferAllocator alloc = context.getExecutionContext().getBufferAllocator();
         packer = (HttpRequestMetaData hdr, Publisher<Object> pandt) -> spliceRequest(alloc, hdr, pandt);
     }
 
@@ -73,7 +70,7 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
     private static StreamingHttpRequest spliceRequest(final BufferAllocator alloc,
                                                       final HttpRequestMetaData hr,
                                                       final Publisher<Object> pub) {
-        return newRequest(hr.getMethod(), hr.getRequestTarget(), hr.getVersion(), hr.getHeaders(), alloc, pub);
+        return StreamingHttpRequests.newRequestWithTrailers(hr.getMethod(), hr.getRequestTarget(), hr.getVersion(), hr.getHeaders(), alloc, pub);
     }
 
     private Completable handleRequestAndWriteResponse(final Single<StreamingHttpRequest> requestSingle) {
@@ -89,7 +86,7 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
                     .flatMapPublisher(resp -> flatten(resp, StreamingHttpResponse::getPayloadBody));
             // We are writing to the connection which may request more data from the EventLoop. So offload control
             // signals which may have blocking code.
-        }).subscribeOn(respFactory.getConnectionContext().getExecutionContext().getExecutor());
+        }).subscribeOn(context.getExecutionContext().getExecutor());
         return writeResponse(responseObjectPublisher.repeat(val -> true));
     }
 
@@ -99,11 +96,12 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
             protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
                 // Since we do not offload data path for the request single, this method will be invoked from the
                 // EventLoop. So, we offload the call to StreamingHttpService.
-                Executor exec = respFactory.getConnectionContext().getExecutionContext().getExecutor();
+                Executor exec = context.getExecutionContext().getExecutor();
                 exec.execute(() -> {
                     Single<StreamingHttpResponse> source;
                     try {
-                        source = service.handle(respFactory, request.transformPayloadBody(bdy -> bdy.publishOn(exec)))
+                        source = service.handle(context, request.transformPayloadBody(bdy -> bdy.publishOn(exec)),
+                                context.getStreamingFactory())
                                 .onErrorResume(cause -> newErrorResponse(cause, request));
                     } catch (final Throwable cause) {
                         source = newErrorResponse(cause, request);
@@ -128,9 +126,8 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
 
     private Single<StreamingHttpResponse> newErrorResponse(final Throwable cause,
                                                            final StreamingHttpRequest request) {
-        LOGGER.error("internal server error service={} connection={}", service, respFactory, cause);
-        final StreamingHttpResponse response = respFactory.serverError().setVersion(request.getVersion());
-        return success(response);
+        LOGGER.error("internal server error service={} connection={}", service, context, cause);
+        return success(context.getStreamingFactory().serverError().setVersion(request.getVersion()));
     }
 
     private Completable writeResponse(final Publisher<Object> responseObjectPublisher) {

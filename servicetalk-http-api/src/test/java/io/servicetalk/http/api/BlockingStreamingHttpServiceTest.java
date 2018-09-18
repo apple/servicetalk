@@ -15,13 +15,14 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.PublisherRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Before;
@@ -35,16 +36,14 @@ import org.reactivestreams.Subscription;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
-import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
-import static io.servicetalk.http.api.TestUtils.chunkFromString;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
@@ -58,15 +57,20 @@ public class BlockingStreamingHttpServiceTest {
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
     @Mock
-    private ConnectionContext mockCtx;
+    private HttpServiceContext mockCtx;
     @Rule
-    public final PublisherRule<HttpPayloadChunk> publisherRule = new PublisherRule<>();
+    public final PublisherRule<Buffer> publisherRule = new PublisherRule<>();
     @Mock
-    private BlockingIterable<HttpPayloadChunk> mockIterable;
+    private BlockingIterable<Buffer> mockIterable;
     @Mock
-    private BlockingIterator<HttpPayloadChunk> mockIterator;
+    private BlockingIterator<Buffer> mockIterator;
     @Mock
     private ExecutionContext mockExecutionCtx;
+    private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
+    private final StreamingHttpRequestResponseFactory reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(
+            allocator, DefaultHttpHeadersFactory.INSTANCE);
+    private final BlockingStreamingHttpRequestResponseFactory blkReqRespFactory =
+            new StreamingHttpRequestResponseFactoryToBlockingStreamingHttpRequestResponseFactory(reqRespFactory);
 
     @Before
     public void setup() {
@@ -78,27 +82,39 @@ public class BlockingStreamingHttpServiceTest {
 
     @Test
     public void asyncToSyncNoPayload() throws Exception {
-        StreamingHttpService asyncService = StreamingHttpService.from((ctx, request) ->
-                success(newResponse(HTTP_1_1, OK)));
+        StreamingHttpService asyncService = new StreamingHttpService() {
+            @Override
+            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                        final StreamingHttpRequest request,
+                                                        final StreamingHttpResponseFactory factory) {
+                return success(factory.ok());
+            }
+        };
         BlockingStreamingHttpService syncService = asyncService.asBlockingStreamingService();
-        BlockingStreamingHttpResponse<HttpPayloadChunk> syncResponse = syncService.handle(mockCtx,
-                BlockingStreamingHttpRequests.newRequest(HTTP_1_1, GET, "/"));
+        BlockingStreamingHttpResponse syncResponse = syncService.handle(mockCtx,
+                blkReqRespFactory.get("/"), blkReqRespFactory);
         assertEquals(HTTP_1_1, syncResponse.getVersion());
         assertEquals(OK, syncResponse.getStatus());
     }
 
     @Test
     public void asyncToSyncWithPayload() throws Exception {
-        StreamingHttpService asyncService = StreamingHttpService.from((ctx, request) ->
-                success(newResponse(HTTP_1_1, OK, just(chunkFromString("hello")))));
+        StreamingHttpService asyncService = new StreamingHttpService() {
+            @Override
+            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                        final StreamingHttpRequest request,
+                                                        final StreamingHttpResponseFactory factory) {
+                return success(factory.ok().setPayloadBody(just(allocator.fromAscii("hello"))));
+            }
+        };
         BlockingStreamingHttpService syncService = asyncService.asBlockingStreamingService();
-        BlockingStreamingHttpResponse<HttpPayloadChunk> syncResponse = syncService.handle(mockCtx,
-                BlockingStreamingHttpRequests.newRequest(HTTP_1_1, GET, "/"));
+        BlockingStreamingHttpResponse syncResponse = syncService.handle(mockCtx,
+                blkReqRespFactory.get("/"), blkReqRespFactory);
         assertEquals(HTTP_1_1, syncResponse.getVersion());
         assertEquals(OK, syncResponse.getStatus());
-        BlockingIterator<HttpPayloadChunk> iterator = syncResponse.getPayloadBody().iterator();
+        BlockingIterator<Buffer> iterator = syncResponse.getPayloadBody().iterator();
         assertTrue(iterator.hasNext());
-        assertEquals("hello", iterator.next().getContent().toString(US_ASCII));
+        assertEquals("hello", iterator.next().toString(US_ASCII));
         assertFalse(iterator.hasNext());
     }
 
@@ -107,8 +123,9 @@ public class BlockingStreamingHttpServiceTest {
         final AtomicBoolean closedCalled = new AtomicBoolean();
         StreamingHttpService asyncService = new StreamingHttpService() {
             @Override
-            public Single<StreamingHttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                                          final StreamingHttpRequest<HttpPayloadChunk> request) {
+            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                        final StreamingHttpRequest request,
+                                                        final StreamingHttpResponseFactory factory) {
                 return Single.error(new IllegalStateException("shouldn't be called!"));
             }
 
@@ -125,15 +142,21 @@ public class BlockingStreamingHttpServiceTest {
 
     @Test
     public void asyncToSyncCancelPropagated() throws Exception {
-        StreamingHttpService asyncService = StreamingHttpService.from((ctx, request) ->
-                success(newResponse(HTTP_1_1, OK, publisherRule.getPublisher())));
+        StreamingHttpService asyncService = new StreamingHttpService() {
+            @Override
+            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                        final StreamingHttpRequest request,
+                                                        final StreamingHttpResponseFactory factory) {
+                return success(factory.ok().setPayloadBody(publisherRule.getPublisher()));
+            }
+        };
         BlockingStreamingHttpService syncService = asyncService.asBlockingStreamingService();
-        BlockingStreamingHttpResponse<HttpPayloadChunk> syncResponse = syncService.handle(mockCtx,
-                BlockingStreamingHttpRequests.newRequest(HTTP_1_1, GET, "/"));
+        BlockingStreamingHttpResponse syncResponse = syncService.handle(mockCtx,
+                blkReqRespFactory.get("/"), blkReqRespFactory);
         assertEquals(HTTP_1_1, syncResponse.getVersion());
         assertEquals(OK, syncResponse.getStatus());
-        BlockingIterator<HttpPayloadChunk> iterator = syncResponse.getPayloadBody().iterator();
-        publisherRule.sendItems(chunkFromString("hello"));
+        BlockingIterator<Buffer> iterator = syncResponse.getPayloadBody().iterator();
+        publisherRule.sendItems(allocator.fromAscii("hello"));
         assertTrue(iterator.hasNext());
         iterator.close();
         publisherRule.verifyCancelled();
@@ -141,11 +164,17 @@ public class BlockingStreamingHttpServiceTest {
 
     @Test
     public void syncToAsyncNoPayload() throws Exception {
-        BlockingStreamingHttpService syncService = BlockingStreamingHttpService.from((ctx, request) ->
-                BlockingStreamingHttpResponses.newResponse(HTTP_1_1, OK));
+        BlockingStreamingHttpService syncService = new BlockingStreamingHttpService() {
+            @Override
+            public BlockingStreamingHttpResponse handle(final HttpServiceContext ctx,
+                                                        final BlockingStreamingHttpRequest request,
+                                                        final BlockingStreamingHttpResponseFactory factory) {
+                return factory.ok();
+            }
+        };
         StreamingHttpService asyncService = syncService.asStreamingService();
-        StreamingHttpResponse<HttpPayloadChunk> asyncResponse = awaitIndefinitely(asyncService.handle(mockCtx,
-                StreamingHttpRequests.newRequest(HTTP_1_1, GET, "/")));
+        StreamingHttpResponse asyncResponse = awaitIndefinitely(asyncService.handle(mockCtx,
+                reqRespFactory.get("/"), reqRespFactory));
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.getVersion());
         assertEquals(OK, asyncResponse.getStatus());
@@ -153,16 +182,22 @@ public class BlockingStreamingHttpServiceTest {
 
     @Test
     public void syncToAsyncWithPayload() throws Exception {
-        BlockingStreamingHttpService syncService = BlockingStreamingHttpService.from((ctx, request) ->
-                BlockingStreamingHttpResponses.newResponse(HTTP_1_1, OK, singleton(chunkFromString("hello"))));
+        BlockingStreamingHttpService syncService = new BlockingStreamingHttpService() {
+            @Override
+            public BlockingStreamingHttpResponse handle(final HttpServiceContext ctx,
+                                                        final BlockingStreamingHttpRequest request,
+                                                        final BlockingStreamingHttpResponseFactory factory) {
+                return factory.ok().setPayloadBody(singleton(allocator.fromAscii("hello")));
+            }
+        };
         StreamingHttpService asyncService = syncService.asStreamingService();
-        StreamingHttpResponse<HttpPayloadChunk> asyncResponse = awaitIndefinitely(asyncService.handle(mockCtx,
-                StreamingHttpRequests.newRequest(HTTP_1_1, GET, "/")));
+        StreamingHttpResponse asyncResponse = awaitIndefinitely(asyncService.handle(mockCtx,
+                reqRespFactory.get("/"), reqRespFactory));
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.getVersion());
         assertEquals(OK, asyncResponse.getStatus());
         assertEquals("hello", awaitIndefinitely(asyncResponse.getPayloadBody()
-                .reduce(() -> "", (acc, next) -> acc + next.getContent().toString(US_ASCII))));
+                .reduce(() -> "", (acc, next) -> acc + next.toString(US_ASCII))));
     }
 
     @Test
@@ -170,8 +205,9 @@ public class BlockingStreamingHttpServiceTest {
         final AtomicBoolean closedCalled = new AtomicBoolean();
         BlockingStreamingHttpService syncService = new BlockingStreamingHttpService() {
             @Override
-            public BlockingStreamingHttpResponse<HttpPayloadChunk> handle(final ConnectionContext ctx,
-                                                                          final BlockingStreamingHttpRequest<HttpPayloadChunk> request) {
+            public BlockingStreamingHttpResponse handle(final HttpServiceContext ctx,
+                                                        final BlockingStreamingHttpRequest request,
+                                                        final BlockingStreamingHttpResponseFactory factory) {
                 throw new IllegalStateException("shouldn't be called!");
             }
 
@@ -187,14 +223,20 @@ public class BlockingStreamingHttpServiceTest {
 
     @Test
     public void syncToAsyncCancelPropagated() throws Exception {
-        BlockingStreamingHttpService syncService = BlockingStreamingHttpService.from((ctx, request) ->
-            BlockingStreamingHttpResponses.newResponse(HTTP_1_1, OK, mockIterable));
+        BlockingStreamingHttpService syncService = new BlockingStreamingHttpService() {
+            @Override
+            public BlockingStreamingHttpResponse handle(final HttpServiceContext ctx,
+                                                        final BlockingStreamingHttpRequest request,
+                                                        final BlockingStreamingHttpResponseFactory factory) {
+                return factory.ok().setPayloadBody(mockIterable);
+            }
+        };
         StreamingHttpService asyncService = syncService.asStreamingService();
-        StreamingHttpResponse<HttpPayloadChunk> asyncResponse = awaitIndefinitely(asyncService.handle(mockCtx,
-                StreamingHttpRequests.newRequest(HTTP_1_1, GET, "/")));
+        StreamingHttpResponse asyncResponse = awaitIndefinitely(asyncService.handle(mockCtx,
+                reqRespFactory.get("/"), reqRespFactory));
         assertNotNull(asyncResponse);
         CountDownLatch latch = new CountDownLatch(1);
-        asyncResponse.getPayloadBody().subscribe(new Subscriber<HttpPayloadChunk>() {
+        asyncResponse.getPayloadBody().subscribe(new Subscriber<Buffer>() {
             @Override
             public void onSubscribe(final Subscription s) {
                 s.cancel();
@@ -202,7 +244,7 @@ public class BlockingStreamingHttpServiceTest {
             }
 
             @Override
-            public void onNext(final HttpPayloadChunk s) {
+            public void onNext(final Buffer s) {
             }
 
             @Override

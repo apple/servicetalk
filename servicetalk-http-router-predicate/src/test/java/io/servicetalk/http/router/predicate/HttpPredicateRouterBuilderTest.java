@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestCompletable;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 
@@ -48,7 +47,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuilderTest {
-
     final CompleteTestCompletable completableA = new CompleteTestCompletable();
     final CompleteTestCompletable completableB = new CompleteTestCompletable();
     final CompleteTestCompletable completableC = new CompleteTestCompletable();
@@ -60,7 +58,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 
-        assertSame(fallbackResponse, service.handle(ctx, request));
+        assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
     @Test
@@ -68,8 +66,8 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
                 .buildStreaming();
 
-        final Single<StreamingHttpResponse<HttpPayloadChunk>> responseSingle = service.handle(ctx, request);
-        final StreamingHttpResponse<HttpPayloadChunk> response = awaitIndefinitely(responseSingle);
+        final Single<StreamingHttpResponse> responseSingle = service.handle(ctx, request, reqRespFactory);
+        final StreamingHttpResponse response = awaitIndefinitely(responseSingle);
         assert response != null;
         assertEquals(404, response.getStatus().getCode());
     }
@@ -82,10 +80,10 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
                 .buildStreaming();
 
         when(request.getMethod()).thenReturn(POST);
-        assertSame(responseA, service.handle(ctx, request));
+        assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
         when(request.getMethod()).thenReturn(GET);
-        assertSame(fallbackResponse, service.handle(ctx, request));
+        assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
     @Test
@@ -96,13 +94,13 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
                 .buildStreaming();
 
         when(request.getMethod()).thenReturn(POST);
-        assertSame(responseA, service.handle(ctx, request));
+        assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
         when(request.getMethod()).thenReturn(PUT);
-        assertSame(responseA, service.handle(ctx, request));
+        assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
         when(request.getMethod()).thenReturn(GET);
-        assertSame(fallbackResponse, service.handle(ctx, request));
+        assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
     @Test
@@ -113,10 +111,10 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
                 .buildStreaming();
 
         when(request.getPath()).thenReturn("/abc");
-        assertSame(responseA, service.handle(ctx, request));
+        assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
         when(request.getPath()).thenReturn("/abcd");
-        assertSame(fallbackResponse, service.handle(ctx, request));
+        assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
     @Test
@@ -127,13 +125,13 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
                 .buildStreaming();
 
         when(request.getPath()).thenReturn("/abc");
-        assertSame(responseA, service.handle(ctx, request));
+        assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
         when(request.getPath()).thenReturn("/def");
-        assertSame(responseA, service.handle(ctx, request));
+        assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
         when(request.getPath()).thenReturn("/abcd");
-        assertSame(fallbackResponse, service.handle(ctx, request));
+        assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
     @Test
@@ -144,13 +142,13 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
                 .buildStreaming();
 
         when(request.getPath()).thenReturn("/abc");
-        assertSame(responseA, service.handle(ctx, request));
+        assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
         when(request.getPath()).thenReturn("/abcdef");
-        assertSame(responseA, service.handle(ctx, request));
+        assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
         when(request.getPath()).thenReturn("/def");
-        assertSame(fallbackResponse, service.handle(ctx, request));
+        assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
     @Test
@@ -161,16 +159,16 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
                 .buildStreaming();
 
         when(request.getPath()).thenReturn("/abc");
-        assertSame(responseA, service.handle(ctx, request));
+        assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
         when(request.getPath()).thenReturn("/defabc");
-        assertSame(responseA, service.handle(ctx, request));
+        assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
         when(request.getPath()).thenReturn("/ABC");
-        assertSame(fallbackResponse, service.handle(ctx, request));
+        assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
 
         when(request.getPath()).thenReturn("/abcdef");
-        assertSame(fallbackResponse, service.handle(ctx, request));
+        assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
     @Test
@@ -181,13 +179,13 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
                 .buildStreaming();
 
         when(request.getPath()).thenReturn("/abc");
-        assertSame(responseA, service.handle(ctx, request));
+        assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
         when(request.getPath()).thenReturn("/defabc");
-        assertSame(responseA, service.handle(ctx, request));
+        assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
         when(request.getPath()).thenReturn("/abcdef");
-        assertSame(fallbackResponse, service.handle(ctx, request));
+        assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
     @Test
@@ -198,10 +196,10 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
                 .buildStreaming();
 
         when(ctx.getSslSession()).thenReturn(mock(SSLSession.class));
-        assertSame(responseA, service.handle(ctx, request));
+        assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
         when(ctx.getSslSession()).thenReturn(null);
-        assertSame(fallbackResponse, service.handle(ctx, request));
+        assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
     @Test
@@ -212,10 +210,10 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
                 .buildStreaming();
 
         when(ctx.getSslSession()).thenReturn(null);
-        assertSame(responseA, service.handle(ctx, request));
+        assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
         when(ctx.getSslSession()).thenReturn(mock(SSLSession.class));
-        assertSame(fallbackResponse, service.handle(ctx, request));
+        assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
     @Test
@@ -225,10 +223,10 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 
-        assertSame(responseA, service.handle(ctx, request));
+        assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
         when(request.getVersion()).thenReturn(HTTP_1_0);
-        assertSame(fallbackResponse, service.handle(ctx, request));
+        assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
     @Test
@@ -241,10 +239,10 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
                 .buildStreaming();
 
         when(ctx.getRemoteAddress()).thenReturn(addr1);
-        assertSame(responseA, service.handle(ctx, request));
+        assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
         when(ctx.getRemoteAddress()).thenReturn(addr2);
-        assertSame(fallbackResponse, service.handle(ctx, request));
+        assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
     @Test

@@ -18,7 +18,6 @@ package io.servicetalk.http.router.predicate.dsl;
 import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpCookie;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -136,7 +135,7 @@ public interface RouteStarter {
      * @param predicate the predicate to evaluate against requests.
      * @return {@link RouteContinuation} for the next steps of building a route.
      */
-    RouteContinuation when(Predicate<StreamingHttpRequest<HttpPayloadChunk>> predicate);
+    RouteContinuation when(Predicate<StreamingHttpRequest> predicate);
 
     /**
      * Begin a route that matches {@link StreamingHttpRequest} and {@link ConnectionContext} with a user-specified
@@ -145,7 +144,7 @@ public interface RouteStarter {
      * @param predicate the predicate to evaluate against the request and connection context.
      * @return {@link RouteContinuation} for the next steps of building a route.
      */
-    RouteContinuation when(BiPredicate<ConnectionContext, StreamingHttpRequest<HttpPayloadChunk>> predicate);
+    RouteContinuation when(BiPredicate<ConnectionContext, StreamingHttpRequest> predicate);
 
     /**
      * Builds the {@link StreamingHttpService} that performs the configured routing.

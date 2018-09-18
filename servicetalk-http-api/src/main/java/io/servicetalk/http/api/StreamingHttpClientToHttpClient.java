@@ -38,8 +38,7 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
     private final StreamingHttpClient client;
 
     StreamingHttpClientToHttpClient(final StreamingHttpClient client) {
-        super(new StreamingHttpRequestFactoryToHttpRequestFactory(client.requestFactory),
-                new StreamingHttpResponseFactoryToHttpResponseFactory(client.getHttpResponseFactory()));
+        super(new StreamingHttpRequestResponseFactoryToHttpRequestResponseFactory(client.reqRespFactory));
         this.client = requireNonNull(client);
     }
 
@@ -94,8 +93,8 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
         private final ReservedStreamingHttpConnection reservedConnection;
 
         ReservedStreamingHttpConnectionToReservedHttpConnection(ReservedStreamingHttpConnection reservedConnection) {
-            super(new StreamingHttpRequestFactoryToHttpRequestFactory(reservedConnection.requestFactory),
-                    new StreamingHttpResponseFactoryToHttpResponseFactory(reservedConnection.getHttpResponseFactory()));
+            super(new StreamingHttpRequestResponseFactoryToHttpRequestResponseFactory(
+                    reservedConnection.reqRespFactory));
             this.reservedConnection = requireNonNull(reservedConnection);
         }
 
@@ -233,11 +232,6 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
         @Override
         public Buffer getPayloadBody() {
             return payloadBody;
-        }
-
-        @Override
-        public <T> T getPayloadBody(final HttpDeserializer<T> deserializer) {
-            return deserializer.deserialize(getHeaders(), payloadBody);
         }
 
         @Override

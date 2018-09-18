@@ -34,7 +34,7 @@ final class StreamingHttpClientGroupToStreamingHttpClient<UnresolvedAddress> ext
                                                   final Function<StreamingHttpRequest,
                                         GroupKey<UnresolvedAddress>> requestToGroupKeyFunc,
                                                   final ExecutionContext executionContext) {
-        super(clientGroup.requestFactory, clientGroup.getHttpResponseFactory());
+        super(clientGroup.reqRespFactory);
         this.clientGroup = requireNonNull(clientGroup);
         this.requestToGroupKeyFunc = requireNonNull(requestToGroupKeyFunc);
         this.executionContext = requireNonNull(executionContext);

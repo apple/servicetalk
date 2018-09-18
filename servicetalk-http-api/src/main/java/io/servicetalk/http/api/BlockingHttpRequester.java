@@ -23,19 +23,15 @@ import static java.util.Objects.requireNonNull;
  * The equivalent of {@link HttpRequester} with synchronous/blocking APIs instead of asynchronous APIs.
  */
 public abstract class BlockingHttpRequester implements HttpRequestFactory, AutoCloseable {
-    final HttpRequestFactory requestFactory;
-    private final HttpResponseFactory responseFactory;
+    final HttpRequestResponseFactory reqRespFactory;
 
     /**
      * Create a new instance.
-     * @param requestFactory The {@link HttpRequestFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
-     * @param responseFactory Used for {@link #getHttpResponseFactory()}.
+     * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
      */
-    protected BlockingHttpRequester(final HttpRequestFactory requestFactory,
-                                    final HttpResponseFactory responseFactory) {
-        this.requestFactory = requireNonNull(requestFactory);
-        this.responseFactory = requireNonNull(responseFactory);
+    protected BlockingHttpRequester(final HttpRequestResponseFactory reqRespFactory) {
+        this.reqRespFactory = requireNonNull(reqRespFactory);
     }
 
     /**
@@ -59,7 +55,7 @@ public abstract class BlockingHttpRequester implements HttpRequestFactory, AutoC
 
     @Override
     public final HttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
-        return requestFactory.newRequest(method, requestTarget);
+        return reqRespFactory.newRequest(method, requestTarget);
     }
 
     /**
@@ -67,7 +63,7 @@ public abstract class BlockingHttpRequester implements HttpRequestFactory, AutoC
      * @return a {@link HttpResponseFactory}.
      */
     public final HttpResponseFactory getHttpResponseFactory() {
-        return responseFactory;
+        return reqRespFactory;
     }
 
     /**

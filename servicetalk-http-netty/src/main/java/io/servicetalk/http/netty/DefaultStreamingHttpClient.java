@@ -18,19 +18,15 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpHeadersFactory;
-import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequestFactory;
-import io.servicetalk.http.api.StreamingHttpRequests;
+import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Single.error;
-import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultStreamingHttpClient extends StreamingHttpClient {
@@ -47,8 +43,8 @@ final class DefaultStreamingHttpClient extends StreamingHttpClient {
     @SuppressWarnings("unchecked")
     DefaultStreamingHttpClient(final ExecutionContext executionContext,
                                final LoadBalancer<LoadBalancedStreamingHttpConnection> loadBalancer,
-                               final StreamingHttpRequestFactory requestFactory) {
-        super(requestFactory);
+                               final StreamingHttpRequestResponseFactory reqRespFactory) {
+        super(reqRespFactory);
         this.executionContext = requireNonNull(executionContext);
         this.loadBalancer = requireNonNull(loadBalancer);
     }

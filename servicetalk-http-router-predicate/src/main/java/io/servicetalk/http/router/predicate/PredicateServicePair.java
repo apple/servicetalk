@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.router.predicate;
 
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -30,7 +29,7 @@ import static java.util.Objects.requireNonNull;
  */
 final class PredicateServicePair {
 
-    private final BiPredicate<ConnectionContext, StreamingHttpRequest<HttpPayloadChunk>> predicate;
+    private final BiPredicate<ConnectionContext, StreamingHttpRequest> predicate;
     private final StreamingHttpService service;
 
     /**
@@ -38,7 +37,7 @@ final class PredicateServicePair {
      * @param predicate the {@link BiPredicate} to evaluate.
      * @param service the {@link StreamingHttpService} to route to.
      */
-    PredicateServicePair(final BiPredicate<ConnectionContext, StreamingHttpRequest<HttpPayloadChunk>> predicate,
+    PredicateServicePair(final BiPredicate<ConnectionContext, StreamingHttpRequest> predicate,
                          final StreamingHttpService service) {
         this.predicate = requireNonNull(predicate);
         this.service = requireNonNull(service);
@@ -48,7 +47,7 @@ final class PredicateServicePair {
      * Get the predicate.
      * @return the predicate.
      */
-    BiPredicate<ConnectionContext, StreamingHttpRequest<HttpPayloadChunk>> getPredicate() {
+    BiPredicate<ConnectionContext, StreamingHttpRequest> getPredicate() {
         return predicate;
     }
 

@@ -28,13 +28,11 @@ public abstract class BlockingHttpConnection extends BlockingHttpRequester {
     /**
      * Create a new instance.
      *
-     * @param requestFactory The {@link HttpRequestFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
-     * @param responseFactory Used for {@link #getHttpResponseFactory()}.
+     * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
      */
-    protected BlockingHttpConnection(final HttpRequestFactory requestFactory,
-                                     final HttpResponseFactory responseFactory) {
-        super(requestFactory, responseFactory);
+    protected BlockingHttpConnection(final HttpRequestResponseFactory reqRespFactory) {
+        super(reqRespFactory);
     }
 
     /**

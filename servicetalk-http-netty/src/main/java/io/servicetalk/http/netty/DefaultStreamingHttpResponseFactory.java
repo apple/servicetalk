@@ -24,7 +24,7 @@ import io.servicetalk.http.api.StreamingHttpResponses;
 
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 
-public class DefaultStreamingHttpResponseFactory implements StreamingHttpResponseFactory {
+final class DefaultStreamingHttpResponseFactory implements StreamingHttpResponseFactory {
     private final HttpHeadersFactory headersFactory;
     private final BufferAllocator allocator;
 

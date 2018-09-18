@@ -24,12 +24,12 @@ import io.servicetalk.concurrent.context.AsyncContextMap.Key;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequestMetaData;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +51,6 @@ import static io.servicetalk.http.api.HttpHeaderNames.WWW_AUTHENTICATE;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatuses.PROXY_AUTHENTICATION_REQUIRED;
 import static io.servicetalk.http.api.HttpResponseStatuses.UNAUTHORIZED;
-import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
@@ -249,8 +248,9 @@ public final class BasicAuthHttpServiceBuilder<UserInfo> {
         }
 
         @Override
-        public Single<StreamingHttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                                      final StreamingHttpRequest<HttpPayloadChunk> request) {
+        public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                    final StreamingHttpRequest request,
+                                                    final StreamingHttpResponseFactory factory) {
             // Use of the format "user:password" in the userinfo field is deprecated:
             //  - https://tools.ietf.org/html/rfc3986#section-3.2.1
             //  - https://tools.ietf.org/html/rfc3986#section-7.5
@@ -281,7 +281,7 @@ public final class BasicAuthHttpServiceBuilder<UserInfo> {
                 }
             }
             if (token.isEmpty()) {
-                return onAccessDenied(request);
+                return onAccessDenied(request, factory);
             }
 
             // Because most browsers use UTF-8 encoding for usernames and passwords (see:
@@ -291,7 +291,7 @@ public final class BasicAuthHttpServiceBuilder<UserInfo> {
             final String userIdAndPassword = new String(Base64.getDecoder().decode(token), UTF_8);
             final int colonIdx = userIdAndPassword.indexOf(':');
             if (colonIdx < 1) {
-                return onAccessDenied(request);
+                return onAccessDenied(request, factory);
             }
 
             final String userId = userIdAndPassword.substring(0, colonIdx);
@@ -299,10 +299,10 @@ public final class BasicAuthHttpServiceBuilder<UserInfo> {
                     userIdAndPassword.substring(colonIdx + 1);
 
             return credentialsVerifier.apply(userId, password)
-                    .flatMap(userInfo -> onAuthenticated(ctx, request, userInfo))
+                    .flatMap(userInfo -> onAuthenticated(ctx, request, factory, userInfo))
                     .onErrorResume(t -> {
                         if (t instanceof AuthenticationException) {
-                            return onAccessDenied(request);
+                            return onAccessDenied(request, factory);
                         }
 
                         LOGGER.debug("Unexpected exception during authentication", t);
@@ -320,22 +320,24 @@ public final class BasicAuthHttpServiceBuilder<UserInfo> {
             return closeable.closeAsyncGracefully();
         }
 
-        private Single<StreamingHttpResponse<HttpPayloadChunk>> onAccessDenied(final HttpMetaData requestMetaData) {
-            final StreamingHttpResponse<HttpPayloadChunk> response = newResponse(requestMetaData.getVersion(),
-                    proxy ? PROXY_AUTHENTICATION_REQUIRED : UNAUTHORIZED);
+        private Single<StreamingHttpResponse> onAccessDenied(final HttpMetaData requestMetaData,
+                                                             final StreamingHttpResponseFactory factory) {
+            final StreamingHttpResponse response = factory.newResponse(
+                    proxy ? PROXY_AUTHENTICATION_REQUIRED : UNAUTHORIZED).setVersion(requestMetaData.getVersion());
             HttpHeaders headers = response.getHeaders();
             headers.set(proxy ? PROXY_AUTHENTICATE : WWW_AUTHENTICATE, authenticateHeader);
             headers.set(CONTENT_LENGTH, ZERO);
             return success(response);
         }
 
-        private Single<StreamingHttpResponse<HttpPayloadChunk>> onAuthenticated(final ConnectionContext ctx,
-                                                                                final StreamingHttpRequest<HttpPayloadChunk> request,
-                                                                                final UserInfo userInfo) {
+        private Single<StreamingHttpResponse> onAuthenticated(final HttpServiceContext ctx,
+                                                                        final StreamingHttpRequest request,
+                                                                        final StreamingHttpResponseFactory factory,
+                                                                        final UserInfo userInfo) {
             if (userInfoKey != null) {
                 AsyncContext.put(userInfoKey, userInfo);
             }
-            return next.handle(ctx, request);
+            return next.handle(ctx, request, factory);
         }
     }
 }

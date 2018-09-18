@@ -16,7 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.http.api.StreamingHttpRequestFactory;
+import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.Connection;
 
@@ -25,8 +25,8 @@ final class NonPipelinedStreamingHttpConnection extends AbstractStreamingHttpCon
     NonPipelinedStreamingHttpConnection(final Connection<Object, Object> connection,
                                         final ReadOnlyHttpClientConfig config,
                                         final ExecutionContext executionContext,
-                                        final StreamingHttpRequestFactory requestFactory) {
-        super(connection, connection.onClosing(), config, executionContext, requestFactory);
+                                        final StreamingHttpRequestResponseFactory reqRespFactory) {
+        super(connection, connection.onClosing(), config, executionContext, reqRespFactory);
     }
 
     @Override

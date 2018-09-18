@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.buffer.api.ReadOnlyBufferAllocators;
 import io.servicetalk.client.api.DefaultGroupKey;
 import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.concurrent.api.MockedSingleListenerRule;
@@ -37,7 +39,6 @@ import java.util.function.BiFunction;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.HttpClientGroups.newHttpClientGroup;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -65,7 +66,8 @@ public class DefaultStreamingHttpClientGroupTest {
     private final ExecutionContext executionContext = mock(ExecutionContext.class);
 
     @SuppressWarnings("unchecked")
-    private final BiFunction<GroupKey<String>, HttpRequestMetaData, StreamingHttpClient> clientFactory = mock(BiFunction.class);
+    private final BiFunction<GroupKey<String>, HttpRequestMetaData, StreamingHttpClient> clientFactory =
+            mock(BiFunction.class);
 
     private final GroupKey<String> key = mockKey(1);
     @SuppressWarnings("unchecked")
@@ -80,8 +82,8 @@ public class DefaultStreamingHttpClientGroupTest {
 
     private StreamingHttpClientGroup<String> clientGroup;
 
-    // TODO (jayv) revisit HttpClientGroup.newRequest()
     private final HttpHeadersFactory headersFactory = DefaultHttpHeadersFactory.INSTANCE;
+    private final BufferAllocator allocator = ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 
     @SuppressWarnings("unchecked")
     private static GroupKey<String> mockKey(final int i) {
@@ -97,13 +99,12 @@ public class DefaultStreamingHttpClientGroupTest {
         // Mockito type-safe API can't deal with wildcard on ReservedStreamingHttpConnection
         doReturn(success(expectedReservedCon)).when(httpClient).reserveConnection(request);
         when(httpClient.closeAsync()).thenReturn(completed());
-        // TODO (jayv) revisit HttpClientGroup.newRequest()
-        clientGroup = newHttpClientGroup(headersFactory, executionContext, clientFactory);
+        clientGroup = new DefaultStreamingHttpClientGroup<>(allocator, headersFactory, clientFactory);
     }
 
     @Test(expected = NullPointerException.class)
     public void createWithNullFactory() {
-        new DefaultStreamingHttpClientGroup<String>(headersFactory, executionContext, null);
+        new DefaultStreamingHttpClientGroup<String>(allocator, headersFactory, null);
     }
 
     @Test(expected = NullPointerException.class)
@@ -210,7 +211,8 @@ public class DefaultStreamingHttpClientGroupTest {
 
         final AtomicBoolean invoked = new AtomicBoolean();
         final AtomicBoolean returned = new AtomicBoolean();
-        final StreamingHttpClientGroup<String> clientGroup = newHttpClientGroup(headersFactory, executionContext,
+        final StreamingHttpClientGroup<String> clientGroup = new DefaultStreamingHttpClientGroup<>(
+                allocator, headersFactory,
                 (gk, md) -> {
                     invoked.set(true);
                     latchForCancel.countDown();

@@ -54,17 +54,17 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
 final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOperator<T, R> {
     private static final Logger LOGGER = LoggerFactory.getLogger(PublisherFlatMapSingle.class);
 
-    private final Function<T, Single<R>> mapper;
+    private final Function<? super T, Single<? extends R>> mapper;
     private final int maxConcurrency;
     private final boolean delayError;
 
-    PublisherFlatMapSingle(Publisher<T> original, Function<T, Single<R>> mapper, boolean delayError,
+    PublisherFlatMapSingle(Publisher<T> original, Function<? super T, Single<? extends R>> mapper, boolean delayError,
                            Executor executor) {
         this(original, mapper, 16, delayError, executor);
     }
 
-    PublisherFlatMapSingle(Publisher<T> original, Function<T, Single<R>> mapper, int maxConcurrency, boolean delayError,
-                           Executor executor) {
+    PublisherFlatMapSingle(Publisher<T> original, Function<? super T, Single<? extends R>> mapper, int maxConcurrency,
+                           boolean delayError, Executor executor) {
         super(original, executor);
         this.mapper = requireNonNull(mapper);
         if (maxConcurrency <= 0) {
@@ -182,7 +182,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
             }
             // If Function.apply(...) throws we just propagate it to the caller which is responsible to terminate
             // its subscriber and cancel the subscription.
-            final Single<R> next = requireNonNull(source.mapper.apply(t));
+            final Single<? extends R> next = requireNonNull(source.mapper.apply(t));
 
             // Requested count will be decremented after this single completes.
             // If we are cancelled we don't care if the active count isn't decremented because we no longer

@@ -17,16 +17,20 @@ package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
+import io.servicetalk.concurrent.CloseableIterable;
+import io.servicetalk.concurrent.CloseableIterator;
 
+import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
 /**
  * Utility methods for {@link BlockingIterable}.
  */
-public final class Iterables {
-    private Iterables() {
+public final class BlockingIterables {
+    private BlockingIterables() {
         // no instances
     }
 
@@ -51,6 +55,91 @@ public final class Iterables {
      */
     public static <T> BlockingIterable<T> singletonBlockingIterable(T item) {
         return new SingletonBlockingIterable<>(item);
+    }
+
+    /**
+     * Convert from a {@link Iterable} to a {@link BlockingIterable}.
+     * @param iterable The {@link Iterable} to convert.
+     * @param <T> The type of data.
+     * @return The {@link BlockingIterable}.
+     */
+    public static <T> BlockingIterable<T> from(Iterable<T> iterable) {
+        if (iterable instanceof BlockingIterable) {
+            return (BlockingIterable<T>) iterable;
+        }
+        return () -> new BlockingIterator<T>() {
+            private final Iterator<T> itr = iterable.iterator();
+            @Override
+            public boolean hasNext(final long timeout, final TimeUnit unit) throws TimeoutException {
+                // TODO(scott): apply timeout in another thread?
+                return hasNext();
+            }
+
+            @Nullable
+            @Override
+            public T next(final long timeout, final TimeUnit unit) throws TimeoutException {
+                // TODO(scott): apply timeout in another thread?
+                return itr.next();
+            }
+
+            @Nullable
+            @Override
+            public T next() {
+                return itr.next();
+            }
+
+            @Override
+            public void close() {
+            }
+
+            @Override
+            public boolean hasNext() {
+                return itr.hasNext();
+            }
+        };
+    }
+
+    /**
+     * Convert from a {@link Iterable} to a {@link CloseableIterable}.
+     * @param iterable The {@link Iterable} to convert.
+     * @param <T> The type of data.
+     * @return The {@link CloseableIterable}.
+     */
+    public static <T> BlockingIterable<T> from(CloseableIterable<T> iterable) {
+        if (iterable instanceof BlockingIterable) {
+            return (BlockingIterable<T>) iterable;
+        }
+        return () -> new BlockingIterator<T>() {
+            private final CloseableIterator<T> itr = iterable.iterator();
+            @Override
+            public boolean hasNext(final long timeout, final TimeUnit unit) throws TimeoutException {
+                // TODO(scott): apply timeout in another thread?
+                return hasNext();
+            }
+
+            @Nullable
+            @Override
+            public T next(final long timeout, final TimeUnit unit) throws TimeoutException {
+                // TODO(scott): apply timeout in another thread?
+                return itr.next();
+            }
+
+            @Nullable
+            @Override
+            public T next() {
+                return itr.next();
+            }
+
+            @Override
+            public void close() throws Exception {
+                itr.close();
+            }
+
+            @Override
+            public boolean hasNext() {
+                return itr.hasNext();
+            }
+        };
     }
 
     /**

@@ -25,6 +25,8 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherOperator;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SingleProcessor;
+import io.servicetalk.concurrent.internal.ConcurrentSubscription;
+import io.servicetalk.concurrent.internal.DelayedSubscription;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -37,61 +39,135 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.System.nanoTime;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
-final class HttpSerializerUtils {
-    private static final HttpDeserializer<Buffer> BUFFER_DESERIALIZER = new HttpDeserializer<Buffer>() {
+final class HttpDataSourceTranformations {
+    private HttpDataSourceTranformations() {
+        // no instances
+    }
 
-        @Override
-        public Buffer deserialize(final HttpHeaders headers, final Buffer payload) {
-            return payload;
+    static final class SerializeBridgeFlowControlAndDiscardOperator<T> implements PublisherOperator<T, T> {
+        private final Publisher<Buffer> discardedPublisher;
+
+        SerializeBridgeFlowControlAndDiscardOperator(final Publisher<Buffer> discardedPublisher) {
+            this.discardedPublisher = requireNonNull(discardedPublisher);
         }
 
         @Override
-        public BlockingIterable<Buffer> deserialize(final HttpHeaders headers, final BlockingIterable<Buffer> payload) {
-            return payload;
+        public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {
+            return new BridgeFlowControlAndDiscardSubscriber<>(subscriber, discardedPublisher);
+        }
+    }
+
+    static final class BridgeFlowControlAndDiscardOperator implements PublisherOperator<Buffer, Buffer> {
+        private final Publisher<Buffer> discardedPublisher;
+
+        BridgeFlowControlAndDiscardOperator(final Publisher<Buffer> discardedPublisher) {
+            this.discardedPublisher = requireNonNull(discardedPublisher);
         }
 
         @Override
-        public Publisher<Buffer> deserialize(final HttpHeaders headers, final Publisher<Buffer> payload) {
-            return payload;
+        public Subscriber<? super Buffer> apply(final Subscriber<? super Buffer> subscriber) {
+            return new BridgeFlowControlAndDiscardSubscriber<>(subscriber, discardedPublisher);
         }
-    };
-
-    static Buffer getPayloadBody(HttpRequest request) {
-        return request.getPayloadBody(BUFFER_DESERIALIZER);
     }
 
-    static Buffer getPayloadBody(HttpResponse response) {
-        return response.getPayloadBody(BUFFER_DESERIALIZER);
+    private static final class BridgeFlowControlAndDiscardSubscriber<T> implements Subscriber<T> {
+        private final Subscriber<? super T> target;
+        private final DelayedSubscription bridgedSubscription;
+        @Nullable
+        private Subscription outerSubscription;
+
+        BridgeFlowControlAndDiscardSubscriber(final Subscriber<? super T> target,
+                                              final Publisher<Buffer> discardedPublisher) {
+            this.target = target;
+            bridgedSubscription = new DelayedSubscription();
+            discardedPublisher.subscribe(new Subscriber<Buffer>() {
+                @Override
+                public void onSubscribe(final Subscription s) {
+                    bridgedSubscription.setDelayedSubscription(ConcurrentSubscription.wrap(s));
+                }
+
+                @Override
+                public void onNext(final Buffer buffer) {
+                }
+
+                @Override
+                public void onError(final Throwable t) {
+                }
+
+                @Override
+                public void onComplete() {
+                }
+            });
+        }
+
+        @Override
+        public void onSubscribe(final Subscription s) {
+            if (checkDuplicateSubscription(outerSubscription, s)) {
+                outerSubscription = new Subscription() {
+                    @Override
+                    public void request(final long n) {
+                        try {
+                            s.request(n);
+                        } finally {
+                            bridgedSubscription.request(n);
+                        }
+                    }
+
+                    @Override
+                    public void cancel() {
+                        try {
+                            s.cancel();
+                        } finally {
+                            bridgedSubscription.cancel();
+                        }
+                    }
+                };
+                target.onSubscribe(outerSubscription);
+            }
+        }
+
+        @Override
+        public void onNext(final T t) {
+            target.onNext(t);
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+            try {
+                target.onError(t);
+            } finally {
+                // TODO(scott): we should consider making this policy more sophisticated and rate limit the amount
+                // of data we ingest from the original publisher. For now we apply a "best effort" policy and
+                // assume the original publisher is of similar cardinality to the new publisher.
+                bridgedSubscription.request(Long.MAX_VALUE);
+            }
+        }
+
+        @Override
+        public void onComplete() {
+            try {
+                target.onComplete();
+            } finally {
+                bridgedSubscription.request(Long.MAX_VALUE);
+            }
+        }
     }
 
-    static Publisher<Buffer> getPayloadBody(StreamingHttpRequest request) {
-        return request.getPayloadBody(BUFFER_DESERIALIZER);
-    }
-
-    static Publisher<Buffer> getPayloadBody(StreamingHttpResponse response) {
-        return response.getPayloadBody(BUFFER_DESERIALIZER);
-    }
-
-    static BlockingIterable<Buffer> getPayloadBody(BlockingStreamingHttpRequest request) {
-        return request.getPayloadBody(BUFFER_DESERIALIZER);
-    }
-
-    static BlockingIterable<Buffer> getPayloadBody(BlockingStreamingHttpResponse response) {
-        return response.getPayloadBody(BUFFER_DESERIALIZER);
-    }
-
-    private static final class HttpBufferFilterBlockingIterable implements BlockingIterable<Buffer> {
+    static final class HttpBufferFilterIterable implements BlockingIterable<Buffer> {
         private final BlockingIterable<?> original;
 
-        HttpBufferFilterBlockingIterable(final BlockingIterable<?> original) {
+        HttpBufferFilterIterable(final BlockingIterable<?> original) {
             this.original = original;
         }
 
@@ -120,7 +196,7 @@ final class HttpSerializerUtils {
                     return false;
                 }
                 timeoutNanos -= (nanoTime() - timeStampA);
-                return isNextValid(iterator.next(timeoutNanos, NANOSECONDS));
+                return validateNext(iterator.next(timeoutNanos, NANOSECONDS));
             }
 
             @Override
@@ -139,7 +215,7 @@ final class HttpSerializerUtils {
 
             @Override
             public boolean hasNext() {
-                return nextBuffer != null || hasNext() && isNextValid(iterator.next());
+                return nextBuffer != null || hasNext() && validateNext(iterator.next());
             }
 
             @Override
@@ -150,15 +226,18 @@ final class HttpSerializerUtils {
                 return getAndResetNextBuffer();
             }
 
-            private boolean isNextValid(@Nullable Object next) {
+            private boolean validateNext(@Nullable Object next) {
                 if (next instanceof Buffer) {
                     nextBuffer = (Buffer) next;
                     return true;
-                } else if (next instanceof HttpHeaders) {
-                    // Trailers must be the last element on the stream, no need to interact with the Subscription.
-                    return false;
                 }
-                throw new UnsupportedHttpChunkException(next);
+                final UnsupportedHttpChunkException e = new UnsupportedHttpChunkException(next);
+                try {
+                    iterator.close();
+                } catch (Throwable cause) {
+                    e.addSuppressed(cause);
+                }
+                throw e;
             }
 
             private Buffer getAndResetNextBuffer() {
@@ -166,6 +245,96 @@ final class HttpSerializerUtils {
                 Buffer next = nextBuffer;
                 this.nextBuffer = null;
                 return next;
+            }
+        }
+    }
+
+    static final class HttpTransportBufferFilterOperator implements PublisherOperator<Object, Buffer> {
+        static final PublisherOperator<Object, Buffer> INSTANCE = new HttpTransportBufferFilterOperator();
+
+        private HttpTransportBufferFilterOperator() {
+            // singleton
+        }
+
+        @Override
+        public Subscriber<? super Object> apply(final Subscriber<? super Buffer> subscriber) {
+            return new JustBufferSubscriber(subscriber);
+        }
+
+        private static final class JustBufferSubscriber implements Subscriber<Object> {
+            private final Subscriber<? super Buffer> subscriber;
+
+            JustBufferSubscriber(final Subscriber<? super Buffer> target) {
+                this.subscriber = target;
+            }
+
+            @Override
+            public void onSubscribe(final Subscription s) {
+                subscriber.onSubscribe(s);
+            }
+
+            @Override
+            public void onNext(final Object o) {
+                if (o instanceof Buffer) {
+                    subscriber.onNext((Buffer) o);
+                } else if (!(o instanceof HttpHeaders)) {
+                    throw new UnsupportedHttpChunkException(o);
+                }
+                // Trailers must be the last element on the stream, no need to interact with the Subscription.
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+                subscriber.onError(t);
+            }
+
+            @Override
+            public void onComplete() {
+                subscriber.onComplete();
+            }
+        }
+    }
+
+    static final class HttpBufferFilterOperator implements PublisherOperator<Object, Buffer> {
+        static final PublisherOperator<Object, Buffer> INSTANCE = new HttpBufferFilterOperator();
+
+        private HttpBufferFilterOperator() {
+            // singleton
+        }
+
+        @Override
+        public Subscriber<? super Object> apply(final Subscriber<? super Buffer> subscriber) {
+            return new JustBufferSubscriber(subscriber);
+        }
+
+        private static final class JustBufferSubscriber implements Subscriber<Object> {
+            private final Subscriber<? super Buffer> subscriber;
+
+            JustBufferSubscriber(final Subscriber<? super Buffer> target) {
+                this.subscriber = target;
+            }
+
+            @Override
+            public void onSubscribe(final Subscription s) {
+                subscriber.onSubscribe(s);
+            }
+
+            @Override
+            public void onNext(final Object o) {
+                if (o instanceof Buffer) {
+                    subscriber.onNext((Buffer) o);
+                }
+                throw new UnsupportedHttpChunkException(o);
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+                subscriber.onError(t);
+            }
+
+            @Override
+            public void onComplete() {
+                subscriber.onComplete();
             }
         }
     }
@@ -821,6 +990,39 @@ final class HttpSerializerUtils {
                 });
     }
 
+    static UnaryOperator<BlockingIterable<Buffer>> consumeOldPayloadBody(final BlockingIterable<Buffer> payloadBody) {
+        // Ignore content of original Publisher (payloadBody). Due to the blocking APIs we will consume the payload in
+        // a blocking fashion, this default behavior can be overriden via the method overload and may change to be in
+        // parallel later.
+        return old -> {
+            consumeBlockingIterator(old.iterator());
+            return payloadBody;
+        };
+    }
+
+    static <T> Function<BlockingIterable<Buffer>, BlockingIterable<T>> consumeOldPayloadBodySerialized(
+            final BlockingIterable<T> payloadBody) {
+        // Ignore content of original Publisher (payloadBody). Due to the blocking APIs we will consume the payload in
+        // a blocking fashion, this default behavior can be overriden via the method overload and may change to be in
+        // parallel later.
+        return old -> {
+            consumeBlockingIterator(old.iterator());
+            return payloadBody;
+        };
+    }
+
+    private static <T> void consumeBlockingIterator(BlockingIterator<T> itr) {
+        try {
+            itr.forEachRemaining(buffer -> { });
+        } finally {
+            try {
+                itr.close();
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        }
+    }
+
     private static <T> void completeOutTrailerSingle(@Nullable T userState, Single<HttpHeaders> inTrailersSingle,
                                                      BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer,
                                                      SingleProcessor<HttpHeaders> outTrailersSingle,
@@ -867,46 +1069,6 @@ final class HttpSerializerUtils {
                 return;
             }
             outTrailersSingle.onSuccess(outTrailers);
-        }
-    }
-
-    private static final class HttpBufferFilterOperator implements PublisherOperator<Object, Buffer> {
-        @Override
-        public Subscriber<? super Object> apply(final Subscriber<? super Buffer> subscriber) {
-            return new JustBufferSubscriber(subscriber);
-        }
-
-        private static final class JustBufferSubscriber implements Subscriber<Object> {
-            private final Subscriber<? super Buffer> subscriber;
-
-            JustBufferSubscriber(final Subscriber<? super Buffer> target) {
-                this.subscriber = target;
-            }
-
-            @Override
-            public void onSubscribe(final Subscription s) {
-                subscriber.onSubscribe(s);
-            }
-
-            @Override
-            public void onNext(final Object o) {
-                if (o instanceof Buffer) {
-                    subscriber.onNext((Buffer) o);
-                } else if (!(o instanceof HttpHeaders)) {
-                    throw new UnsupportedHttpChunkException(o);
-                }
-                // Trailers must be the last element on the stream, no need to interact with the Subscription.
-            }
-
-            @Override
-            public void onError(final Throwable t) {
-                subscriber.onError(t);
-            }
-
-            @Override
-            public void onComplete() {
-                subscriber.onComplete();
-            }
         }
     }
 }

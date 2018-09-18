@@ -23,19 +23,15 @@ import static java.util.Objects.requireNonNull;
  * The equivalent of {@link StreamingHttpRequester} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
 public abstract class BlockingStreamingHttpRequester implements BlockingStreamingHttpRequestFactory, AutoCloseable {
-    final BlockingStreamingHttpRequestFactory requestFactory;
-    private final BlockingStreamingHttpResponseFactory responseFactory;
+    final BlockingStreamingHttpRequestResponseFactory reqRespFactory;
 
     /**
      * Create a new instance.
-     * @param requestFactory The {@link HttpRequestFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
-     * @param responseFactory Used for {@link #getHttpResponseFactory()}.
+     * @param reqRespFactory The {@link BlockingStreamingHttpRequestResponseFactory} used to
+     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
      */
-    protected BlockingStreamingHttpRequester(final BlockingStreamingHttpRequestFactory requestFactory,
-                                             final BlockingStreamingHttpResponseFactory responseFactory) {
-        this.requestFactory = requireNonNull(requestFactory);
-        this.responseFactory = requireNonNull(responseFactory);
+    protected BlockingStreamingHttpRequester(final BlockingStreamingHttpRequestResponseFactory reqRespFactory) {
+        this.reqRespFactory = requireNonNull(reqRespFactory);
     }
 
     /**
@@ -59,7 +55,7 @@ public abstract class BlockingStreamingHttpRequester implements BlockingStreamin
 
     @Override
     public final BlockingStreamingHttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
-        return requestFactory.newRequest(method, requestTarget);
+        return reqRespFactory.newRequest(method, requestTarget);
     }
 
     /**
@@ -67,7 +63,7 @@ public abstract class BlockingStreamingHttpRequester implements BlockingStreamin
      * @return a {@link BlockingStreamingHttpResponseFactory}.
      */
     public final BlockingStreamingHttpResponseFactory getHttpResponseFactory() {
-        return responseFactory;
+        return reqRespFactory;
     }
 
     /**

@@ -18,65 +18,22 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.internal.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
+import io.servicetalk.http.api.ReservedFromStreamingHttpConnectionAdapter;
 import io.servicetalk.http.api.StreamingHttpConnection;
-import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import static java.util.Objects.requireNonNull;
 
 /**
  * Makes the wrapped {@link StreamingHttpConnection} aware of the {@link LoadBalancer}.
  */
-final class LoadBalancedStreamingHttpConnection extends ReservedStreamingHttpConnection
+final class LoadBalancedStreamingHttpConnection extends ReservedFromStreamingHttpConnectionAdapter
         implements ReservableRequestConcurrencyController {
-    private final StreamingHttpConnection delegate;
     private final ReservableRequestConcurrencyController limiter;
 
     LoadBalancedStreamingHttpConnection(StreamingHttpConnection delegate,
                                         ReservableRequestConcurrencyController limiter) {
-        super(delegate, delegate.getHttpResponseFactory());
-        this.delegate = requireNonNull(delegate);
+        super(delegate);
         this.limiter = requireNonNull(limiter);
-    }
-
-    @Override
-    public ConnectionContext getConnectionContext() {
-        return delegate.getConnectionContext();
-    }
-
-    @Override
-    public <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
-        return delegate.getSettingStream(settingKey);
-    }
-
-    @Override
-    public Single<? extends StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return delegate.request(request);
-    }
-
-    @Override
-    public ExecutionContext getExecutionContext() {
-        return delegate.getExecutionContext();
-    }
-
-    @Override
-    public Completable onClose() {
-        return delegate.onClose();
-    }
-
-    @Override
-    public Completable closeAsync() {
-        return delegate.closeAsync();
-    }
-
-    @Override
-    public Completable closeAsyncGracefully() {
-        return delegate.closeAsyncGracefully();
     }
 
     @Override
@@ -101,6 +58,6 @@ final class LoadBalancedStreamingHttpConnection extends ReservedStreamingHttpCon
 
     @Override
     public String toString() {
-        return LoadBalancedStreamingHttpConnection.class.getSimpleName() + "(" + delegate + ")";
+        return LoadBalancedStreamingHttpConnection.class.getSimpleName() + "(" + getDelegate() + ")";
     }
 }

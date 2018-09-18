@@ -17,7 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.ConnectionFilterFunction;
-import io.servicetalk.http.api.StreamingHttpRequestFactory;
+import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.client.internal.ReservableRequestConcurrencyControllers.newController;
@@ -28,22 +28,22 @@ import static java.util.Objects.requireNonNull;
 final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
     private final ReadOnlyHttpClientConfig config;
     private final ExecutionContext executionContext;
-    private final StreamingHttpRequestFactory requestFactory;
+    private final StreamingHttpRequestResponseFactory reqRespFactory;
 
     PipelinedLBHttpConnectionFactory(final ReadOnlyHttpClientConfig config,
                                      final ExecutionContext executionContext,
                                      final ConnectionFilterFunction connectionFilterFunction,
-                                     final StreamingHttpRequestFactory requestFactory) {
+                                     final StreamingHttpRequestResponseFactory reqRespFactory) {
         super(connectionFilterFunction);
         this.config = requireNonNull(config);
         this.executionContext = requireNonNull(executionContext);
-        this.requestFactory = requireNonNull(requestFactory);
+        this.reqRespFactory = requireNonNull(reqRespFactory);
     }
 
     @Override
     Single<LoadBalancedStreamingHttpConnection> newConnection(final ResolvedAddress resolvedAddress,
                                                               final ConnectionFilterFunction connectionFilterFunction) {
-        return buildForPipelined(executionContext, resolvedAddress, config, connectionFilterFunction, requestFactory)
+        return buildForPipelined(executionContext, resolvedAddress, config, connectionFilterFunction, reqRespFactory)
                 .map(filteredConnection -> new LoadBalancedStreamingHttpConnection(filteredConnection,
                         newController(filteredConnection.getSettingStream(MAX_CONCURRENCY),
                                    filteredConnection.onClose(),

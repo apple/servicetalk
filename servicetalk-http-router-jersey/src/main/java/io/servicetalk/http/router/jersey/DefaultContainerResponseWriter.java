@@ -24,9 +24,9 @@ import io.servicetalk.concurrent.api.internal.ConnectableOutputStream;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import org.glassfish.jersey.server.ContainerException;
 import org.glassfish.jersey.server.ContainerRequest;
@@ -68,8 +68,8 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
 
     private final ContainerRequest request;
     private final HttpProtocolVersion protocolVersion;
-    private final StreamingHttpResponseFactory resFactory;
-    private final ExecutionContext executionContext;
+    private final HttpServiceContext serviceCtx;
+    private final StreamingHttpResponseFactory responseFactory;
     private final Subscriber<? super StreamingHttpResponse> responseSubscriber;
 
     @Nullable
@@ -80,13 +80,13 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
 
     DefaultContainerResponseWriter(final ContainerRequest request,
                                    final HttpProtocolVersion protocolVersion,
-                                   final StreamingHttpResponseFactory resFactory,
-                                   final ExecutionContext executionContext,
+                                   final HttpServiceContext serviceCtx,
+                                   final StreamingHttpResponseFactory responseFactory,
                                    final Subscriber<? super StreamingHttpResponse> responseSubscriber) {
         this.request = requireNonNull(request);
         this.protocolVersion = requireNonNull(protocolVersion);
-        this.resFactory = requireNonNull(resFactory);
-        this.executionContext = requireNonNull(executionContext);
+        this.serviceCtx = requireNonNull(serviceCtx);
+        this.responseFactory = requireNonNull(responseFactory);
         this.responseSubscriber = requireNonNull(responseSubscriber);
     }
 
@@ -105,7 +105,8 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
             return null;
         } else {
             final ConnectableOutputStream os = new ConnectableOutputStream();
-            sendResponse(contentLength, os.connect().map(bytes -> executionContext.getBufferAllocator().wrap(bytes)),
+            sendResponse(contentLength, os.connect().map(bytes ->
+                            serviceCtx.getExecutionContext().getBufferAllocator().wrap(bytes)),
                     responseContext);
             return os;
         }
@@ -141,7 +142,8 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     private void scheduleSuspendedTimer(final long timeOut, final TimeUnit timeUnit, final Runnable r) {
         // timeOut<=0 means processing is suspended indefinitely: no need to actually schedule a task
         if (timeOut > 0) {
-            suspendedTimerCancellable = executionContext.getExecutor().schedule(r, timeOut, timeUnit);
+            suspendedTimerCancellable = serviceCtx.getExecutionContext().getExecutor()
+                    .schedule(r, timeOut, timeUnit);
         }
     }
 
@@ -184,11 +186,12 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         final StreamingHttpResponse response;
         if (content != null && !isHeadRequest()) {
             final Executor executor = getResponseExecutorOffloader(request);
-            response = resFactory.newResponse(status)
+            // TODO(scott): use request factory methods that accept a payload body to avoid overhead of setPayloadBody.
+            response = responseFactory.newResponse(status)
                     .setVersion(protocolVersion)
-                    .transformPayloadBody(__ -> executor != null ? content.subscribeOn(executor) : content);
+                    .setPayloadBody(executor != null ? content.subscribeOn(executor) : content);
         } else {
-            response = resFactory.newResponse(status).setVersion(protocolVersion);
+            response = responseFactory.newResponse(status).setVersion(protocolVersion);
         }
 
         final HttpHeaders headers = response.getHeaders();
@@ -214,8 +217,8 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     private HttpResponseStatus getStatus(final ContainerResponse containerResponse) {
         final StatusType statusInfo = containerResponse.getStatusInfo();
         return statusInfo instanceof Status ? RESPONSE_STATUSES.get(statusInfo) :
-                getResponseStatus(statusInfo.getStatusCode(),
-                        executionContext.getBufferAllocator().fromAscii(statusInfo.getReasonPhrase()));
+                getResponseStatus(statusInfo.getStatusCode(), serviceCtx.getExecutionContext()
+                        .getBufferAllocator().fromAscii(statusInfo.getReasonPhrase()));
     }
 
     private boolean isHeadRequest() {

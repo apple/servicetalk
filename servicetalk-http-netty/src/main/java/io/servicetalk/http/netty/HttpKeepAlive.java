@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpMetaData;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;

@@ -18,13 +18,17 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.CloseableIterable;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SingleProcessor;
+import io.servicetalk.concurrent.internal.BlockingIterables;
 import io.servicetalk.http.api.BlockingStreamingHttpClientToStreamingHttpClient.BlockingToUpgradableStreamingHttpResponse;
 import io.servicetalk.http.api.HttpClient.UpgradableHttpResponse;
-import io.servicetalk.http.api.HttpSerializerUtils.HttpBuffersAndTrailersIterable;
-import io.servicetalk.http.api.HttpSerializerUtils.HttpObjectsAndTrailersIterable;
+import io.servicetalk.http.api.HttpDataSourceTranformations.HttpBufferFilterIterable;
+import io.servicetalk.http.api.HttpDataSourceTranformations.HttpBuffersAndTrailersIterable;
+import io.servicetalk.http.api.HttpDataSourceTranformations.HttpObjectsAndTrailersIterable;
 import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient.UpgradableStreamingHttpResponse;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -35,16 +39,18 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
-import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.internal.BlockingIterables.from;
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
+import static io.servicetalk.http.api.HttpDataSourceTranformations.consumeOldPayloadBody;
+import static io.servicetalk.http.api.HttpDataSourceTranformations.consumeOldPayloadBodySerialized;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpClientToBlockingStreamingHttpClient extends BlockingStreamingHttpClient {
     private final StreamingHttpClient client;
 
     StreamingHttpClientToBlockingStreamingHttpClient(StreamingHttpClient client) {
-        super(new StreamingHttpRequestFactoryToBlockingStreamingHttpRequestFactory(client.requestFactory),
-              new StreamingHttpResponseFactoryToBlockingStreamingHttpResponseFactory(client.getHttpResponseFactory()));
+        super(new StreamingHttpRequestResponseFactoryToBlockingStreamingHttpRequestResponseFactory(
+                client.reqRespFactory));
         this.client = requireNonNull(client);
     }
 
@@ -95,9 +101,8 @@ final class StreamingHttpClientToBlockingStreamingHttpClient extends BlockingStr
         private final ReservedStreamingHttpConnection connection;
 
         ReservedStreamingHttpConnectionToBlockingStreaming(ReservedStreamingHttpConnection connection) {
-            super(new StreamingHttpRequestFactoryToBlockingStreamingHttpRequestFactory(connection.requestFactory),
-                    new StreamingHttpResponseFactoryToBlockingStreamingHttpResponseFactory(
-                            connection.getHttpResponseFactory()));
+            super(new StreamingHttpRequestResponseFactoryToBlockingStreamingHttpRequestResponseFactory(
+                    connection.reqRespFactory));
             this.connection = requireNonNull(connection);
         }
 
@@ -165,8 +170,31 @@ final class StreamingHttpClientToBlockingStreamingHttpClient extends BlockingStr
         }
 
         @Override
-        public <T> BlockingIterable<T> getPayloadBody(final HttpDeserializer<T> deserializer) {
-            return deserializer.deserialize(getHeaders(), payloadBody);
+        public UpgradableBlockingStreamingHttpResponse setPayloadBody(final Iterable<Buffer> payloadBody) {
+            return transformPayloadBody(consumeOldPayloadBody(BlockingIterables.from(payloadBody)));
+        }
+
+        @Override
+        public UpgradableBlockingStreamingHttpResponse setPayloadBody(final CloseableIterable<Buffer> payloadBody) {
+            return transformPayloadBody(consumeOldPayloadBody(from(payloadBody)));
+        }
+
+        @Override
+        public <T> UpgradableBlockingStreamingHttpResponse setPayloadBody(final Iterable<T> payloadBody,
+                                                                          final HttpSerializer<T> serializer) {
+            return transformPayloadBody(consumeOldPayloadBodySerialized(BlockingIterables.from(payloadBody)),
+                    serializer);
+        }
+
+        @Override
+        public <T> UpgradableBlockingStreamingHttpResponse setPayloadBody(final CloseableIterable<T> payloadBody,
+                                                                          final HttpSerializer<T> serializer) {
+            return transformPayloadBody(consumeOldPayloadBodySerialized(from(payloadBody)), serializer);
+        }
+
+        @Override
+        public BlockingIterable<Buffer> getPayloadBody() {
+            return new HttpBufferFilterIterable(payloadBody);
         }
 
         @Override
@@ -181,15 +209,15 @@ final class StreamingHttpClientToBlockingStreamingHttpClient extends BlockingStr
         @Override
         public UpgradableBlockingStreamingHttpResponse transformPayloadBody(
                 final UnaryOperator<BlockingIterable<Buffer>> transformer) {
-            return new UpgradableStreamingHttpResponseToBlockingStreaming(upgradeResponse, transformer.apply(getPayloadBody()),
-                    trailersSingle, allocator);
+            return new UpgradableStreamingHttpResponseToBlockingStreaming(upgradeResponse,
+                    transformer.apply(getPayloadBody()), trailersSingle, allocator);
         }
 
         @Override
         public UpgradableBlockingStreamingHttpResponse transformRawPayloadBody(
                 final UnaryOperator<BlockingIterable<?>> transformer) {
-            return new UpgradableStreamingHttpResponseToBlockingStreaming(upgradeResponse, transformer.apply(payloadBody),
-                    trailersSingle, allocator);
+            return new UpgradableStreamingHttpResponseToBlockingStreaming(upgradeResponse,
+                    transformer.apply(payloadBody), trailersSingle, allocator);
         }
 
         @Override
@@ -221,7 +249,8 @@ final class StreamingHttpClientToBlockingStreamingHttpClient extends BlockingStr
 
         @Override
         public UpgradableStreamingHttpResponse toStreamingResponse() {
-            return new BlockingToUpgradableStreamingHttpResponse(this, from(payloadBody), trailersSingle, allocator);
+            return new BlockingToUpgradableStreamingHttpResponse(this, Publisher.from(payloadBody), trailersSingle,
+                    allocator);
         }
 
         @Override

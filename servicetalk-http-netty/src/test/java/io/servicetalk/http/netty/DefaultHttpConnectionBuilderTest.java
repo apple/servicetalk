@@ -16,15 +16,12 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactory;
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpConnectionAdapter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Test;
 
@@ -59,29 +56,17 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
         makeRequestValidateResponseAndClose(awaitIndefinitelyNonNull(connectionSingle));
     }
 
-    private static final class DummyFanoutFilter extends StreamingHttpConnection {
-
-        private final StreamingHttpConnection delegate;
+    private static final class DummyFanoutFilter extends StreamingHttpConnectionAdapter {
 
         private DummyFanoutFilter(final StreamingHttpConnection connection) {
-            this.delegate = connection;
+            super(connection);
         }
 
         @Override
-        public Single<StreamingHttpResponse<HttpPayloadChunk>> request(final StreamingHttpRequest<HttpPayloadChunk> request) {
+        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
             // fanout - simulates followup request on response
-            return delegate.request(request).flatMap(resp ->
-                    resp.getPayloadBody().ignoreElements().andThen(delegate.request(request)));
-        }
-
-        @Override
-        public ExecutionContext getExecutionContext() {
-            return delegate.getExecutionContext();
-        }
-
-        @Override
-        public ConnectionContext getConnectionContext() {
-            return delegate.getConnectionContext();
+            return getDelegate().request(request).flatMap(resp ->
+                    resp.getPayloadBody().ignoreElements().andThen(getDelegate().request(request)));
         }
 
         @Override
@@ -89,24 +74,9 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
         public <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
             if (settingKey == MAX_CONCURRENCY) {
                 // Compensate for the extra request
-                return (Publisher<T>) delegate.getSettingStream(MAX_CONCURRENCY).map(i -> i - 1);
+                return (Publisher<T>) getDelegate().getSettingStream(MAX_CONCURRENCY).map(i -> i - 1);
             }
-            return delegate.getSettingStream(settingKey);
-        }
-
-        @Override
-        public Completable onClose() {
-            return delegate.onClose();
-        }
-
-        @Override
-        public Completable closeAsync() {
-            return delegate.closeAsync();
-        }
-
-        @Override
-        public Completable closeAsyncGracefully() {
-            return delegate.closeAsyncGracefully();
+            return getDelegate().getSettingStream(settingKey);
         }
     }
 

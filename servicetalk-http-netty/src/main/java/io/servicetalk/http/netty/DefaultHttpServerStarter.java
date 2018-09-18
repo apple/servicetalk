@@ -21,10 +21,10 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpServerStarter;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestHandler;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.http.api.StreamingRequestHandler;
 import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
@@ -207,13 +207,13 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
     @Override
     public Single<ServerContext> startStreaming(final ExecutionContext executionContext, final SocketAddress address,
                                                 final ContextFilter contextFilter,
-                                                final StreamingRequestHandler handler) {
+                                                final StreamingHttpRequestHandler handler) {
         return bind(executionContext, config.asReadOnly(), address, contextFilter,
                 handler instanceof StreamingHttpService ?
                         (StreamingHttpService) handler :
                         new StreamingHttpService() {
                             @Override
-                            public Single<? extends StreamingHttpResponse> handle(
+                            public Single<StreamingHttpResponse> handle(
                                     final HttpServiceContext ctx, final StreamingHttpRequest request,
                                     final StreamingHttpResponseFactory responseFactory) {
                                 return handler.handle(ctx, request, responseFactory);
@@ -223,7 +223,7 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
 
     @Override
     public Single<ServerContext> startStreaming(final SocketAddress address, final ContextFilter contextFilter,
-                                                final StreamingRequestHandler service) {
+                                                final StreamingHttpRequestHandler service) {
         return startStreaming(globalExecutionContext(), address, contextFilter, service);
     }
 }

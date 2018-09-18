@@ -20,10 +20,10 @@ import io.servicetalk.concurrent.api.Single;
 /**
  * A handler of {@link HttpRequest}.
  * <p>
- * This is a simpler version of {@link BlockingHttpService} without lifecycle constructs and other higher level
- * concerns.
+ * This is a simpler version of {@link HttpService} without lifecycle constructs and other higher level concerns.
  */
-public interface BlockingRequestHandler {
+@FunctionalInterface
+public interface HttpRequestHandler {
 
     /**
      * Handles a single HTTP request.
@@ -32,8 +32,7 @@ public interface BlockingRequestHandler {
      * @param request to handle.
      * @param responseFactory used to create {@link HttpResponse} objects.
      * @return {@link Single} of HTTP response.
-     * @throws Exception If an exception occurs during request processing.
      */
-    HttpResponse handle(HttpServiceContext ctx, HttpRequest request, HttpResponseFactory responseFactory)
-            throws Exception;
+    Single<? extends HttpResponse> handle(HttpServiceContext ctx, HttpRequest request,
+                                          HttpResponseFactory responseFactory);
 }

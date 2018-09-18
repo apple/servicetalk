@@ -25,27 +25,16 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 final class BufferBlockingStreamingHttpRequest extends DefaultBlockingStreamingHttpRequest<Buffer> {
     BufferBlockingStreamingHttpRequest(final HttpRequestMethod method, final String requestTarget,
                                        final HttpProtocolVersion version, final HttpHeaders headers,
-                                       final BufferAllocator allocator, final HttpHeaders initialTrailers) {
-        super(method, requestTarget, version, headers, allocator, initialTrailers);
+                                       final HttpHeaders initialTrailers, final BufferAllocator allocator,
+                                       final BlockingIterable<Buffer> payloadBody) {
+        super(method, requestTarget, version, headers, initialTrailers, allocator, payloadBody);
     }
 
-    /**
-     * Create a new instance.
-     * @param method The {@link HttpRequestMethod}.
-     * @param requestTarget The request-target.
-     * @param version The {@link HttpProtocolVersion}.
-     * @param headers The initial {@link HttpHeaders}.
-     * @param allocator The {@link BufferAllocator} to use for serialization (if required).
-     * @param payloadBody A {@link BlockingIterable} that provide only the payload body. The trailers
-     * <strong>must</strong> not be included, and instead are represented by {@code trailersSingle}.
-     * @param trailersSingle The {@link Single} <strong>must</strong> support multiple subscribes, and it is assumed to
-     * provide the original data if re-used over transformation operations.
-     */
-    BufferBlockingStreamingHttpRequest(final HttpRequestMethod method, final String requestTarget,
-                                       final HttpProtocolVersion version, final HttpHeaders headers,
-                                       final BufferAllocator allocator, final BlockingIterable<Buffer> payloadBody,
-                                       final Single<HttpHeaders> trailersSingle) {
-        super(method, requestTarget, version, headers, allocator, payloadBody, trailersSingle);
+    BufferBlockingStreamingHttpRequest(
+            final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
+            final HttpHeaders headers, final Single<HttpHeaders> trailersSingle, final BufferAllocator allocator,
+            final BlockingIterable<Buffer> payloadBody) {
+        super(method, requestTarget, version, headers, trailersSingle, allocator, payloadBody);
     }
 
     BufferBlockingStreamingHttpRequest(final DefaultHttpRequestMetaData oldRequest,
@@ -63,6 +52,6 @@ final class BufferBlockingStreamingHttpRequest extends DefaultBlockingStreamingH
     @Override
     public StreamingHttpRequest toStreamingRequest() {
         return new BufferStreamingHttpRequest(getMethod(), getRequestTarget(), getVersion(), getHeaders(),
-                allocator, from(payloadBody), trailersSingle);
+                trailersSingle, allocator, from(payloadBody));
     }
 }
