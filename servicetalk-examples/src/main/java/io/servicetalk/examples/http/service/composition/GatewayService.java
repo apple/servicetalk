@@ -53,16 +53,16 @@ final class GatewayService extends HttpService {
     private final HttpClient metadataClient;
     private final HttpClient ratingsClient;
     private final HttpClient userClient;
-    private final HttpSerializationProvider serializer;
+    private final HttpSerializationProvider serializers;
 
     GatewayService(final HttpClient recommendationsClient, final HttpClient metadataClient,
                    final HttpClient ratingsClient, final HttpClient userClient,
-                   HttpSerializationProvider serializer) {
+                   HttpSerializationProvider serializers) {
         this.recommendationsClient = recommendationsClient;
         this.metadataClient = metadataClient;
         this.ratingsClient = ratingsClient;
         this.userClient = userClient;
-        this.serializer = serializer;
+        this.serializers = serializers;
     }
 
     @Override
@@ -76,47 +76,49 @@ final class GatewayService extends HttpService {
 
         return recommendationsClient.request(recommendationsClient.get("/recommendations/aggregated?userId=" + userId))
                 // Since HTTP payload is a buffer, we deserialize into List<Recommendation>>.
-                .map(response -> response.getPayloadBody(serializer.deserializerFor(typeOfRecommendation)))
-                .flatMap(recommendations ->
-                        // Recommendations are a List and we want to query details for each recommendation in parallel.
-                        // Turning the List into a Publisher helps us use relevant operators to do so.
-                        from(recommendations)
-                                .flatMapSingle(recommendation -> {
-                                    Single<Metadata> metadata =
-                                            metadataClient.request(metadataClient.get("/metadata?entityId=" + recommendation.getEntityId()))
-                                                    // Since HTTP payload is a buffer, we deserialize into Metadata.
-                                                    .map(response -> response.getPayloadBody(serializer.deserializerFor(Metadata.class)));
-
-                                    Single<User> user =
-                                            userClient.request(userClient.get("/user?userId=" + recommendation.getEntityId()))
-                                                    // Since HTTP payload is a buffer, we deserialize into User.
-                                                    .map(response -> response.getPayloadBody(serializer.deserializerFor(User.class)));
-
-                                    Single<Rating> rating =
-                                            ratingsClient.request(ratingsClient.get("/rating?entityId=" + recommendation.getEntityId()))
-                                                    // Since HTTP payload is a buffer, we deserialize into Rating.
-                                                    .map(response -> response.getPayloadBody(serializer.deserializerFor(Rating.class)))
-                                                    // We consider ratings to be a non-critical data and hence we substitute the response
-                                                    // with a static "unavailable" rating when the rating service is unavailable or provides
-                                                    // a bad response. This is typically referred to as a "fallback".
-                                                    .onErrorResume(cause -> success(new Rating(recommendation.getEntityId(), -1)));
-
-                                    // The below asynchronously queries metadata, user and rating backends and zips them into a single
-                                    // FullRecommendation instance.
-                                    // This helps us query multiple recommendations in parallel hence achieving better throughput as
-                                    // opposed to querying recommendation sequentially using the blocking API.
-                                    return zip(metadata, user, rating, FullRecommendation::new);
-                                })
-                                // FullRecommendation objects are generated asynchronously and we are responding with a single JSON
-                                // array. Thus, we reduce the asynchronously generated FullRecommendation objects into a single
-                                // List which is be converted to a single JSON array.
-                                .<List<FullRecommendation>>reduce(ArrayList::new,
-                                        (list, fullRecommendation) -> {
-                                            list.add(fullRecommendation);
-                                            return list;
-                                        })
-                )
+                .map(response -> response.getPayloadBody(serializers.deserializerFor(typeOfRecommendation)))
+                .flatMap(this::queryRecommendationDetails)
                 .map(fullRecommendations -> factory.ok()
-                        .setPayloadBody(fullRecommendations, serializer.serializerFor(typeOfFullRecommendation)));
+                        .setPayloadBody(fullRecommendations, serializers.serializerFor(typeOfFullRecommendation)));
+    }
+
+    private Single<List<FullRecommendation>> queryRecommendationDetails(List<Recommendation> recommendations) {
+        // Recommendations are a List and we want to query details for each recommendation in parallel.
+        // Turning the List into a Publisher helps us use relevant operators to do so.
+        return from(recommendations)
+                .flatMapSingle(reco -> {
+                    Single<Metadata> metadata =
+                            metadataClient.request(metadataClient.get("/metadata?entityId=" + reco.getEntityId()))
+                                    // Since HTTP payload is a buffer, we deserialize into Metadata.
+                                    .map(response -> response.getPayloadBody(serializers.deserializerFor(Metadata.class)));
+
+                    Single<User> user =
+                            userClient.request(userClient.get("/user?userId=" + reco.getEntityId()))
+                                    // Since HTTP payload is a buffer, we deserialize into User.
+                                    .map(response -> response.getPayloadBody(serializers.deserializerFor(User.class)));
+
+                    Single<Rating> rating =
+                            ratingsClient.request(ratingsClient.get("/rating?entityId=" + reco.getEntityId()))
+                                    // Since HTTP payload is a buffer, we deserialize into Rating.
+                                    .map(response -> response.getPayloadBody(serializers.deserializerFor(Rating.class)))
+                                    // We consider ratings to be a non-critical data and hence we substitute the
+                                    // response with a static "unavailable" rating when the rating service is
+                                    // unavailable or provides a bad response. This is typically referred to as a
+                                    // "fallback".
+                                    .onErrorResume(cause -> success(new Rating(reco.getEntityId(), -1)));
+
+                    // The below asynchronously queries metadata, user and rating backends and zips them into a single
+                    // FullRecommendation instance.
+                    // This helps us query multiple recommendations in parallel hence achieving better throughput as
+                    // opposed to querying recommendation sequentially using the blocking API.
+                    return zip(metadata, user, rating, FullRecommendation::new);
+                })
+                // FullRecommendation objects are generated asynchronously and we are responding with a single JSON
+                // array. Thus, we reduce the asynchronously generated FullRecommendation objects into a single
+                // List which is be converted to a single JSON array.
+                .reduce(ArrayList::new, (list, fullRecommendation) -> {
+                    list.add(fullRecommendation);
+                    return list;
+                });
     }
 }

@@ -16,10 +16,14 @@
 package io.servicetalk.examples.http.service.composition;
 
 import io.servicetalk.concurrent.api.CompositeCloseable;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpClientAdapter;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.DefaultHttpServerStarter;
 import io.servicetalk.http.netty.HttpClients;
@@ -44,6 +48,7 @@ import static io.servicetalk.examples.http.service.composition.backends.PortRegi
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.USER_BACKEND_ADDRESS;
 import static io.servicetalk.http.api.HttpSerializationProviders.serializeJson;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
+import static java.time.Duration.ofMillis;
 
 /**
  * A server starter for gateway to all backends.
@@ -91,8 +96,8 @@ public final class GatewayServer {
             HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
             final StreamingHttpService gatewayService =
                     routerBuilder.whenPathStartsWith("/recommendations/stream")
-                            .thenRouteTo(new StreamingGatewayService(recommendationsClient, metadataClient, ratingsClient,
-                                    userClient, httpSerializer))
+                            .thenRouteTo(new StreamingGatewayService(recommendationsClient, metadataClient,
+                                    ratingsClient, userClient, httpSerializer))
                             .whenPathStartsWith("/recommendations/aggregated")
                             .thenRouteTo(new GatewayService(recommendationsClient.asClient(),
                                     metadataClient, ratingsClient, userClient, httpSerializer).asStreamingService())
@@ -126,16 +131,17 @@ public final class GatewayServer {
 
         return resources.prepend(
                 HttpClients.forSingleAddress(serviceAddress)
-                        //TODO: Add filter
-                        /*
                         // Set retry and timeout filters for all clients.
                         .appendClientFilter((client, lbEventStream) -> {
                             // Apply a timeout filter for the client to guard against latent clients.
-                            return new StreamingHttpClientFunctionFilter((requester, request) ->
-                                    requester.request(request).timeout(ofMillis(100),
-                                            requester.getExecutionContext().getExecutor()), client);
+                            return new StreamingHttpClientAdapter(client) {
+                                @Override
+                                public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                                    return super.request(request).timeout(ofMillis(100),
+                                            executionContext.getExecutor());
+                                }
+                            };
                         })
-                        */
                         .buildStreaming(executionContext));
     }
 }

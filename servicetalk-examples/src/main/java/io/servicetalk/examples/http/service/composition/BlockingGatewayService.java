@@ -45,11 +45,13 @@ final class BlockingGatewayService extends BlockingHttpService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BlockingGatewayService.class);
 
-    private static final TypeHolder<List<Recommendation>> typeOfRecommendation = new TypeHolder<List<Recommendation>>(){ };
-    private static final TypeHolder<List<FullRecommendation>> typeOfFullRecommendations = new TypeHolder<List<FullRecommendation>>(){ };
+    private static final TypeHolder<List<Recommendation>> typeOfRecommendation =
+            new TypeHolder<List<Recommendation>>(){ };
+    private static final TypeHolder<List<FullRecommendation>> typeOfFullRecommendations =
+            new TypeHolder<List<FullRecommendation>>(){ };
     private static final String USER_ID_QP_NAME = "userId";
 
-    private final HttpSerializationProvider serializer;
+    private final HttpSerializationProvider serializers;
 
     private final BlockingHttpClient recommendationClient;
     private final BlockingHttpClient metadataClient;
@@ -60,12 +62,12 @@ final class BlockingGatewayService extends BlockingHttpService {
                                   final BlockingHttpClient metadataClient,
                                   final BlockingHttpClient ratingClient,
                                   final BlockingHttpClient userClient,
-                                  final HttpSerializationProvider serializer) {
+                                  final HttpSerializationProvider serializers) {
         this.recommendationClient = recommendationClient;
         this.metadataClient = metadataClient;
         this.ratingClient = ratingClient;
         this.userClient = userClient;
-        this.serializer = serializer;
+        this.serializers = serializers;
     }
 
     @Override
@@ -78,23 +80,23 @@ final class BlockingGatewayService extends BlockingHttpService {
 
         List<Recommendation> recommendations =
                 recommendationClient.request(recommendationClient.get("/recommendations/aggregated?userId=" + userId))
-                        .getPayloadBody(serializer.deserializerFor(typeOfRecommendation));
+                        .getPayloadBody(serializers.deserializerFor(typeOfRecommendation));
 
         List<FullRecommendation> fullRecommendations = new ArrayList<>(recommendations.size());
         for (Recommendation recommendation : recommendations) {
             // For each recommendation, fetch the details.
             final Metadata metadata =
                     metadataClient.request(metadataClient.get("/metadata?entityId=" + recommendation.getEntityId()))
-                            .getPayloadBody(serializer.deserializerFor(Metadata.class));
+                            .getPayloadBody(serializers.deserializerFor(Metadata.class));
 
             final User user =
                     userClient.request(userClient.get("/user?userId=" + recommendation.getEntityId()))
-                            .getPayloadBody(serializer.deserializerFor(User.class));
+                            .getPayloadBody(serializers.deserializerFor(User.class));
 
             Rating rating;
             try {
                 rating = ratingClient.request(ratingClient.get("/rating?entityId=" + recommendation.getEntityId()))
-                        .getPayloadBody(serializer.deserializerFor(Rating.class));
+                        .getPayloadBody(serializers.deserializerFor(Rating.class));
             } catch (Exception cause) {
                 // We consider ratings to be a non-critical data and hence we substitute the response
                 // with a static "unavailable" rating when the rating service is unavailable or provides
@@ -106,6 +108,7 @@ final class BlockingGatewayService extends BlockingHttpService {
             fullRecommendations.add(new FullRecommendation(metadata, user, rating));
         }
 
-        return responseFactory.ok().setPayloadBody(fullRecommendations, serializer.serializerFor(typeOfFullRecommendations));
+        return responseFactory.ok()
+                .setPayloadBody(fullRecommendations, serializers.serializerFor(typeOfFullRecommendations));
     }
 }

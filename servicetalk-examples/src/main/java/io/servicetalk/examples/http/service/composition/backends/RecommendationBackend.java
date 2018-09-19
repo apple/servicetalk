@@ -39,7 +39,6 @@ import javax.annotation.Nonnull;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
-import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.valueOf;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -97,7 +96,7 @@ final class RecommendationBackend {
                     // they are available.
                     .repeat(count -> true);
 
-            return success(factory.newResponse(OK)
+            return success(factory.ok()
                     .setPayloadBody(recommendations, serializer.serializerFor(Recommendation.class)));
         }
     }
@@ -129,7 +128,7 @@ final class RecommendationBackend {
             }
 
             // Serialize the Recommendation list to a single Buffer containing JSON and use it as the response payload.
-            return success(responseFactory.newResponse(OK)
+            return success(responseFactory.ok()
                     .setPayloadBody(recommendations, serializer.serializerFor(typeOfRecommendation)));
         }
     }

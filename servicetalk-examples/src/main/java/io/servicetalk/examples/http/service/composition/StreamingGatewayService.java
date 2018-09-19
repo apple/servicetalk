@@ -15,6 +15,7 @@
  */
 package io.servicetalk.examples.http.service.composition;
 
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.examples.http.service.composition.pojo.FullRecommendation;
 import io.servicetalk.examples.http.service.composition.pojo.Metadata;
@@ -51,16 +52,16 @@ final class StreamingGatewayService extends StreamingHttpService {
     private final HttpClient metadataClient;
     private final HttpClient ratingsClient;
     private final HttpClient userClient;
-    private final HttpSerializationProvider serializer;
+    private final HttpSerializationProvider serializers;
 
     StreamingGatewayService(final StreamingHttpClient recommendationsClient, final HttpClient metadataClient,
                             final HttpClient ratingsClient, final HttpClient userClient,
-                            HttpSerializationProvider serializer) {
+                            HttpSerializationProvider serializers) {
         this.recommendationsClient = recommendationsClient;
         this.metadataClient = metadataClient;
         this.ratingsClient = ratingsClient;
         this.userClient = userClient;
-        this.serializer = serializer;
+        this.serializers = serializers;
     }
 
     @Override
@@ -72,38 +73,40 @@ final class StreamingGatewayService extends StreamingHttpService {
         }
 
         return recommendationsClient.request(recommendationsClient.get("/recommendations/stream?userId=" + userId))
-                .map(recommendations ->
-                        recommendations.transformPayloadBody(recos ->
-                            recos.flatMapSingle(recommendation -> {
-                                Single<Metadata> metadata =
-                                        metadataClient.request(metadataClient.get("/metadata?entityId=" + recommendation.getEntityId()))
-                                                // Since HTTP payload is a buffer, we deserialize into Metadata.
-                                                .map(resp -> resp.getPayloadBody(serializer.deserializerFor(Metadata.class)));
+                .map(recommendations -> recommendations.transformPayloadBody(this::queryRecommendationDetails,
+                        serializers.deserializerFor(Recommendation.class),
+                        serializers.serializerFor(FullRecommendation.class)));
+    }
 
-                                Single<User> user =
-                                        userClient.request(userClient.get("/user?userId=" + recommendation.getEntityId()))
-                                                // Since HTTP payload is a buffer, we deserialize into User.
-                                                .map(resp -> resp.getPayloadBody(serializer.deserializerFor(User.class)));
+    private Publisher<FullRecommendation> queryRecommendationDetails(Publisher<Recommendation> recommendations) {
+        return recommendations.flatMapSingle(recommendation -> {
+            Single<Metadata> metadata =
+                    metadataClient.request(metadataClient.get("/metadata?entityId=" + recommendation.getEntityId()))
+                            // Since HTTP payload is a buffer, we deserialize into Metadata.
+                            .map(resp -> resp.getPayloadBody(serializers.deserializerFor(Metadata.class)));
 
-                                Single<Rating> rating =
-                                        ratingsClient.request(ratingsClient.get("/rating?entityId=" + recommendation.getEntityId()))
-                                                // Since HTTP payload is a buffer, we deserialize into Rating.
-                                                .map(resp -> resp.getPayloadBody(serializer.deserializerFor(Rating.class)))
-                                                // We consider ratings to be a non-critical data and hence we substitute the response
-                                                // with a static "unavailable" rating when the rating service is unavailable or provides
-                                                // a bad response. This is typically referred to as a "fallback".
-                                                .onErrorResume(cause -> {
-                                                    LOGGER.error("Error querying ratings service. Ignoring and providing a fallback.", cause);
-                                                    return success(new Rating(recommendation.getEntityId(), -1));
-                                                });
+            Single<User> user =
+                    userClient.request(userClient.get("/user?userId=" + recommendation.getEntityId()))
+                            // Since HTTP payload is a buffer, we deserialize into User.
+                            .map(resp -> resp.getPayloadBody(serializers.deserializerFor(User.class)));
 
-                                // The below asynchronously queries metadata, user and rating backends and zips them into a single
-                                // FullRecommendation instance.
-                                // This helps us query multiple recommendations in parallel hence achieving better throughput as
-                                // opposed to querying recommendation sequentially using the blocking API.
-                                return zip(metadata, user, rating, FullRecommendation::new);
-                            }),
-                            serializer.deserializerFor(Recommendation.class),
-                            serializer.serializerFor(FullRecommendation.class)));
+            Single<Rating> rating =
+                    ratingsClient.request(ratingsClient.get("/rating?entityId=" + recommendation.getEntityId()))
+                            // Since HTTP payload is a buffer, we deserialize into Rating.
+                            .map(resp -> resp.getPayloadBody(serializers.deserializerFor(Rating.class)))
+                            // We consider ratings to be a non-critical data and hence we substitute the response
+                            // with a static "unavailable" rating when the rating service is unavailable or provides
+                            // a bad response. This is typically referred to as a "fallback".
+                            .onErrorResume(cause -> {
+                                LOGGER.error("Error querying ratings service. Ignoring and providing a fallback.", cause);
+                                return success(new Rating(recommendation.getEntityId(), -1));
+                            });
+
+            // The below asynchronously queries metadata, user and rating backends and zips them into a single
+            // FullRecommendation instance.
+            // This helps us query multiple recommendations in parallel hence achieving better throughput as
+            // opposed to querying recommendation sequentially using the blocking API.
+            return zip(metadata, user, rating, FullRecommendation::new);
+        });
     }
 }
