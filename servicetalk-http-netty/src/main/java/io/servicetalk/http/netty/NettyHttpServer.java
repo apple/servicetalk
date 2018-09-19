@@ -35,6 +35,8 @@ import io.servicetalk.transport.netty.internal.Connection.TerminalPredicate;
 import io.servicetalk.transport.netty.internal.ConnectionHolderChannelHandler;
 
 import io.netty.channel.ChannelHandlerContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.util.ArrayDeque;
@@ -49,6 +51,7 @@ import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedR
 
 final class NettyHttpServer {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(NettyHttpServer.class);
     private static final Predicate<Object> LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE =
             p -> p instanceof HttpHeaders;
 
@@ -66,7 +69,10 @@ final class NettyHttpServer {
 
         // The ServerContext returned by TcpServerInitializer takes care of closing the contextFilter.
         return initializer.start(address, contextFilter, channelInitializer, false, true)
-                .map((ServerContext delegate) -> new NettyHttpServerContext(delegate, service));
+                .map((ServerContext delegate) -> {
+                    LOGGER.info("Started HTTP server for address {}.", delegate.getListenAddress());
+                    return new NettyHttpServerContext(delegate, service);
+                });
     }
 
     private static ChannelInitializer getChannelInitializer(final ReadOnlyHttpServerConfig config,
@@ -101,7 +107,8 @@ final class NettyHttpServer {
 
         @Override
         public Completable closeAsync() {
-            return asyncCloseable.closeAsync();
+            return asyncCloseable.closeAsync()
+                    .doFinally(() -> LOGGER.info("Stopped HTTP server for address {}.", getListenAddress()));
         }
 
         @Override
