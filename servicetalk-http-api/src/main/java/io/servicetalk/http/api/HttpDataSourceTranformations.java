@@ -628,8 +628,11 @@ final class HttpDataSourceTranformations {
                     }
                     trailers = (HttpHeaders) o;
                     // Trailers must be the last element on the stream, no need to interact with the Subscription.
+                } else if (trailers != null) {
+                    throwDuplicateTrailersException(trailers, o);
                 } else {
-                    throw new UnsupportedHttpChunkException(o);
+                    trailers = (HttpHeaders) o;
+                    // Trailers must be the last element on the stream, no need to interact with the Subscription.
                 }
             }
         }
@@ -778,8 +781,11 @@ final class HttpDataSourceTranformations {
                         throwDuplicateTrailersException(trailers, obj);
                     }
                     trailers = (HttpHeaders) obj;
+                } else if (trailers != null) {
+                    // Trailers must be the last element on the stream, no need to interact with the Subscription.
+                    throwDuplicateTrailersException(trailers, obj);
                 } else {
-                    throw new UnsupportedHttpChunkException(obj);
+                    trailers = (HttpHeaders) obj;
                 }
             }
 

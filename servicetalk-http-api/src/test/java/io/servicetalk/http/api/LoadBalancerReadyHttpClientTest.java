@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.Single.Subscriber;
@@ -24,6 +25,7 @@ import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient.UpgradableStreamingHttpResponse;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -49,19 +51,38 @@ import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 public class LoadBalancerReadyHttpClientTest {
+    private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
+    private final StreamingHttpRequestResponseFactory reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(
+            allocator, DefaultHttpHeadersFactory.INSTANCE);
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final PublisherRule<Object> loadBalancerPublisher = new PublisherRule<>();
-
     @Mock
-    private StreamingHttpClient mockClient;
+    private ExecutionContext mockExecutionCtx;
+
+    private StreamingHttpClient client = new TestStreamingHttpClient(reqRespFactory, mockExecutionCtx) {
+        @Override
+        public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+            return defer(new DeferredSuccessSupplier<>(newOkResponse()));
+        }
+
+        @Override
+        public Single<? extends ReservedStreamingHttpConnection> reserveConnection(
+                final StreamingHttpRequest request) {
+            return defer(new DeferredSuccessSupplier<>(mockReservedConnection));
+        }
+
+        @Override
+        public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(
+                final StreamingHttpRequest request) {
+            return defer(new DeferredSuccessSupplier<>(mockUpgradeResponse));
+        }
+    };
+
     @Mock
     private ReservedStreamingHttpConnection mockReservedConnection;
     @Mock
@@ -74,39 +95,31 @@ public class LoadBalancerReadyHttpClientTest {
 
     @Test
     public void requestsAreDelayed() throws InterruptedException {
-        when(mockClient.request(any())).then(__ -> defer(new DeferredSuccessSupplier<>(newOkResponse())));
         verifyActionIsDelayedUntilAfterInitialized(filter -> filter.request(filter.get("/noop")));
     }
 
     @Test
     public void reserveIsDelayed() throws InterruptedException {
-        doReturn(defer(new DeferredSuccessSupplier<>(mockReservedConnection)))
-                .when(mockClient).reserveConnection(any());
         verifyActionIsDelayedUntilAfterInitialized(filter -> filter.reserveConnection(filter.get("/noop")));
     }
 
     @Test
     public void upgradeIsDelayed() throws InterruptedException {
-        doReturn(defer(new DeferredSuccessSupplier<>(mockUpgradeResponse))).when(mockClient).upgradeConnection(any());
         verifyActionIsDelayedUntilAfterInitialized(filter -> filter.upgradeConnection(filter.get("/noop")));
     }
 
     @Test
     public void initializedFailedAlsoFailsRequest() throws InterruptedException {
-        when(mockClient.request(any())).then(__ -> defer(new DeferredSuccessSupplier<>(newOkResponse())));
         verifyOnInitializedFailedFailsAction(filter -> filter.request(filter.get("/noop")));
     }
 
     @Test
     public void initializedFailedAlsoFailsReserve() throws InterruptedException {
-        doReturn(defer(new DeferredSuccessSupplier<>(mockReservedConnection)))
-                .when(mockClient).reserveConnection(any());
         verifyOnInitializedFailedFailsAction(filter -> filter.reserveConnection(filter.get("/noop")));
     }
 
     @Test
     public void initializedFailedAlsoFailsUpgrade() throws InterruptedException {
-        doReturn(defer(new DeferredSuccessSupplier<>(mockUpgradeResponse))).when(mockClient).upgradeConnection(any());
         verifyOnInitializedFailedFailsAction(filter -> filter.upgradeConnection(filter.get("/noop")));
     }
 
@@ -114,7 +127,7 @@ public class LoadBalancerReadyHttpClientTest {
             Single<?>> action) throws InterruptedException {
         TestPublisher<Object> loadBalancerPublisher = new TestPublisher<>();
         LoadBalancerReadyStreamingHttpClient filter =
-                new LoadBalancerReadyStreamingHttpClient(1, loadBalancerPublisher, mockClient);
+                new LoadBalancerReadyStreamingHttpClient(1, loadBalancerPublisher, client);
         CountDownLatch latch = new CountDownLatch(2);
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
         action.apply(filter).subscribe(new Subscriber<Object>() {
@@ -147,7 +160,7 @@ public class LoadBalancerReadyHttpClientTest {
     private void verifyActionIsDelayedUntilAfterInitialized(Function<StreamingHttpClient, Single<?>> action)
             throws InterruptedException {
         LoadBalancerReadyStreamingHttpClient filter =
-                new LoadBalancerReadyStreamingHttpClient(1, loadBalancerPublisher.getPublisher(), mockClient);
+                new LoadBalancerReadyStreamingHttpClient(1, loadBalancerPublisher.getPublisher(), client);
         CountDownLatch latch = new CountDownLatch(1);
         action.apply(filter).subscribe(resp -> latch.countDown());
 
