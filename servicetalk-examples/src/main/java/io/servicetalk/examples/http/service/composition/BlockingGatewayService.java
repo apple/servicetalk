@@ -20,14 +20,14 @@ import io.servicetalk.examples.http.service.composition.pojo.Metadata;
 import io.servicetalk.examples.http.service.composition.pojo.Rating;
 import io.servicetalk.examples.http.service.composition.pojo.Recommendation;
 import io.servicetalk.examples.http.service.composition.pojo.User;
-import io.servicetalk.http.api.HttpRequest;
-import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpService;
-import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpSerializer;
+import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.HttpResponseFactory;
+import io.servicetalk.http.api.HttpSerializationProvider;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.serialization.api.TypeHolder;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,11 +35,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.servicetalk.http.api.HttpRequests.newRequest;
-import static io.servicetalk.http.api.HttpResponses.newResponse;
-import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
-import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 
 /**
  * This service provides an API that fetches recommendations serially using blocking APIs. Returned response is a single
@@ -49,13 +45,12 @@ final class BlockingGatewayService extends BlockingHttpService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BlockingGatewayService.class);
 
-    private static final TypeHolder<List<Recommendation>> typeOfRecommendation = new TypeHolder<List<Recommendation>>(){};
+    private static final TypeHolder<List<Recommendation>> typeOfRecommendation = new TypeHolder<List<Recommendation>>(){ };
+    private static final TypeHolder<List<FullRecommendation>> typeOfFullRecommendations = new TypeHolder<List<FullRecommendation>>(){ };
     private static final String USER_ID_QP_NAME = "userId";
 
-    private final HttpSerializer serializer;
+    private final HttpSerializationProvider serializer;
 
-    // Currently we do not have an aggregated Blocking Client variant in ServiceTalk. So, we use the HttpPayloadChunk
-    // variant.
     private final BlockingHttpClient recommendationClient;
     private final BlockingHttpClient metadataClient;
     private final BlockingHttpClient ratingClient;
@@ -65,7 +60,7 @@ final class BlockingGatewayService extends BlockingHttpService {
                                   final BlockingHttpClient metadataClient,
                                   final BlockingHttpClient ratingClient,
                                   final BlockingHttpClient userClient,
-                                  final HttpSerializer serializer) {
+                                  final HttpSerializationProvider serializer) {
         this.recommendationClient = recommendationClient;
         this.metadataClient = metadataClient;
         this.ratingClient = ratingClient;
@@ -74,30 +69,32 @@ final class BlockingGatewayService extends BlockingHttpService {
     }
 
     @Override
-    public HttpResponse<HttpPayloadChunk> handle(final ConnectionContext ctx,
-                                                 final HttpRequest<HttpPayloadChunk> request)
-            throws Exception {
+    public HttpResponse handle(final HttpServiceContext ctx, final HttpRequest request,
+                               final HttpResponseFactory responseFactory) throws Exception {
         final String userId = request.parseQuery().get(USER_ID_QP_NAME);
         if (userId == null) {
-            return newResponse(BAD_REQUEST);
+            return responseFactory.newResponse(BAD_REQUEST);
         }
 
-        List<Recommendation> recommendations = serializer.deserialize(recommendationClient.request(newRequest(GET,
-                "/recommendations/aggregated?userId=" + userId)), typeOfRecommendation).getPayloadBody();
+        List<Recommendation> recommendations =
+                recommendationClient.request(recommendationClient.get("/recommendations/aggregated?userId=" + userId))
+                        .getPayloadBody(serializer.deserializerFor(typeOfRecommendation));
 
         List<FullRecommendation> fullRecommendations = new ArrayList<>(recommendations.size());
         for (Recommendation recommendation : recommendations) {
             // For each recommendation, fetch the details.
-            final Metadata metadata = serializer.deserialize(metadataClient.request(newRequest(GET,
-                    "/metadata?entityId=" + recommendation.getEntityId())), Metadata.class).getPayloadBody();
+            final Metadata metadata =
+                    metadataClient.request(metadataClient.get("/metadata?entityId=" + recommendation.getEntityId()))
+                            .getPayloadBody(serializer.deserializerFor(Metadata.class));
 
-            final User user = serializer.deserialize(userClient.request(newRequest(GET,
-                    "/user?userId=" + recommendation.getEntityId())), User.class).getPayloadBody();
+            final User user =
+                    userClient.request(userClient.get("/user?userId=" + recommendation.getEntityId()))
+                            .getPayloadBody(serializer.deserializerFor(User.class));
 
             Rating rating;
             try {
-                rating = serializer.deserialize(ratingClient.request(newRequest(GET,
-                        "/rating?entityId=" + recommendation.getEntityId())), Rating.class).getPayloadBody();
+                rating = ratingClient.request(ratingClient.get("/rating?entityId=" + recommendation.getEntityId()))
+                        .getPayloadBody(serializer.deserializerFor(Rating.class));
             } catch (Exception cause) {
                 // We consider ratings to be a non-critical data and hence we substitute the response
                 // with a static "unavailable" rating when the rating service is unavailable or provides
@@ -109,7 +106,6 @@ final class BlockingGatewayService extends BlockingHttpService {
             fullRecommendations.add(new FullRecommendation(metadata, user, rating));
         }
 
-        return serializer.serialize(newResponse(OK, fullRecommendations),
-                ctx.getExecutionContext().getBufferAllocator());
+        return responseFactory.ok().setPayloadBody(fullRecommendations, serializer.serializerFor(typeOfFullRecommendations));
     }
 }
