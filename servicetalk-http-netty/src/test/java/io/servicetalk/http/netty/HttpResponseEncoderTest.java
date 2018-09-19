@@ -111,6 +111,7 @@ public class HttpResponseEncoderTest {
         byteBuf = channel.readOutbound();
         assertEquals(buffer.toNioBuffer(), byteBuf.nioBuffer());
         byteBuf.release();
+        consumeEmptyBufferFromTrailers(channel);
 
         assertFalse(channel.finishAndReleaseAll());
     }
@@ -266,6 +267,10 @@ public class HttpResponseEncoderTest {
                     byteBuf = channel.readOutbound();
                     assertEquals("\r\n", byteBuf.toString(US_ASCII));
                     byteBuf.release();
+                } else {
+                    byteBuf = channel.readOutbound();
+                    assertFalse(byteBuf.isReadable());
+                    byteBuf.release();
                 }
 
                 if (trailers) {
@@ -282,15 +287,24 @@ public class HttpResponseEncoderTest {
                 assertTrue("unexpected metadata: " + actualMetaData, actualMetaData.contains(CONTENT_LENGTH + ": " + valueOf(buffer.getReadableBytes()) + "\r\n"));
                 byteBuf = channel.readOutbound();
                 assertEquals(buffer.toNioBuffer(), byteBuf.nioBuffer());
+                consumeEmptyBufferFromTrailers(channel);
                 break;
             case Variable:
                 byteBuf = channel.readOutbound();
                 assertEquals(buffer.toNioBuffer(), byteBuf.nioBuffer());
                 byteBuf.release();
+                consumeEmptyBufferFromTrailers(channel);
                 break;
             default:
                 throw new Error();
         }
+    }
+
+    private static void consumeEmptyBufferFromTrailers(EmbeddedChannel channel) {
+        // Empty buffer is written when trailers are seen to indicate the end of the request
+        ByteBuf byteBuf = channel.readOutbound();
+        assertFalse(byteBuf.isReadable());
+        byteBuf.release();
     }
 
     private static EmbeddedChannel newEmbeddedChannel() {

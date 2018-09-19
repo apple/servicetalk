@@ -66,6 +66,7 @@ import static io.servicetalk.http.netty.TestServiceStreaming.SVC_SINGLE_ERROR;
 import static io.servicetalk.http.netty.TestServiceStreaming.SVC_THROW_ERROR;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -107,14 +108,14 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     public void testGetNoRequestPayloadWithoutResponseLastChunk() throws Exception {
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_COUNTER_NO_LAST_CHUNK);
         final StreamingHttpResponse response = makeRequest(request);
-        assertResponse(response, HTTP_1_1, OK, asList("Testing1\n", ""));
+        assertResponse(response, HTTP_1_1, OK, singletonList("Testing1\n"));
     }
 
     @Test
     public void testGetNoRequestPayload() throws Exception {
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_COUNTER);
         final StreamingHttpResponse response = makeRequest(request);
-        assertResponse(response, HTTP_1_1, OK, asList("Testing1\n", ""));
+        assertResponse(response, HTTP_1_1, OK, singletonList("Testing1\n"));
     }
 
     @Test
@@ -136,7 +137,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
                 getChunkPublisherFromStrings("hello"));
         request.getHeaders().set(TRANSFER_ENCODING, CHUNKED); // TODO: Eventually, this won't be necessary.
         final StreamingHttpResponse response = makeRequest(request);
-        assertResponse(response, HTTP_1_1, OK, asList("hello", ""));
+        assertResponse(response, HTTP_1_1, OK, singletonList("hello"));
     }
 
     @Test
@@ -145,7 +146,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
                 getChunkPublisherFromStrings("hello"));
         request.getHeaders().set(CONTENT_LENGTH, "5");
         final StreamingHttpResponse response = makeRequest(request);
-        assertResponse(response, HTTP_1_1, OK, asList("uryyb", ""));
+        assertResponse(response, HTTP_1_1, OK, singletonList("uryyb"));
     }
 
     @Test
@@ -154,36 +155,36 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
                 getChunkPublisherFromStrings("hello"));
         request.getHeaders().set(TRANSFER_ENCODING, CHUNKED); // TODO: Eventually, this won't be necessary.
         final StreamingHttpResponse response = makeRequest(request);
-        assertResponse(response, HTTP_1_1, OK, asList("Testing1\n", ""));
+        assertResponse(response, HTTP_1_1, OK, singletonList("Testing1\n"));
     }
 
     @Test
     public void testGetNoRequestPayloadNoResponsePayload() throws Exception {
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_NO_CONTENT);
         final StreamingHttpResponse response = makeRequest(request);
-        assertResponse(response, HTTP_1_1, NO_CONTENT, singletonList(""));
+        assertResponse(response, HTTP_1_1, NO_CONTENT, emptyList());
     }
 
     @Test
     public void testMultipleGetsNoRequestPayloadWithoutResponseLastChunk() throws Exception {
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_COUNTER_NO_LAST_CHUNK);
         final StreamingHttpResponse response1 = makeRequest(request1);
-        assertResponse(response1, HTTP_1_1, OK, asList("Testing1\n", ""));
+        assertResponse(response1, HTTP_1_1, OK, singletonList("Testing1\n"));
 
         final StreamingHttpRequest request2 = reqRespFactory.newRequest(GET, SVC_COUNTER_NO_LAST_CHUNK);
         final StreamingHttpResponse response2 = makeRequest(request2);
-        assertResponse(response2, HTTP_1_1, OK, asList("Testing2\n", ""));
+        assertResponse(response2, HTTP_1_1, OK, singletonList("Testing2\n"));
     }
 
     @Test
     public void testMultipleGetsNoRequestPayload() throws Exception {
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_COUNTER);
         final StreamingHttpResponse response1 = makeRequest(request1);
-        assertResponse(response1, HTTP_1_1, OK, asList("Testing1\n", ""));
+        assertResponse(response1, HTTP_1_1, OK, singletonList("Testing1\n"));
 
         final StreamingHttpRequest request2 = reqRespFactory.newRequest(GET, SVC_COUNTER);
         final StreamingHttpResponse response2 = makeRequest(request2);
-        assertResponse(response2, HTTP_1_1, OK, asList("Testing2\n", ""));
+        assertResponse(response2, HTTP_1_1, OK, singletonList("Testing2\n"));
     }
 
     @Test
@@ -207,13 +208,13 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
                 getChunkPublisherFromStrings("hello"));
         request1.getHeaders().set(TRANSFER_ENCODING, CHUNKED); // TODO: Eventually, this won't be necessary.
         final StreamingHttpResponse response1 = makeRequest(request1);
-        assertResponse(response1, HTTP_1_1, OK, asList("hello", ""));
+        assertResponse(response1, HTTP_1_1, OK, singletonList("hello"));
 
         final StreamingHttpRequest request2 = reqRespFactory.newRequest(GET, SVC_ECHO).setPayloadBody(
                 getChunkPublisherFromStrings("hello"));
         request2.getHeaders().set(TRANSFER_ENCODING, CHUNKED); // TODO: Eventually, this won't be necessary.
         final StreamingHttpResponse response2 = makeRequest(request2);
-        assertResponse(response2, HTTP_1_1, OK, asList("hello", ""));
+        assertResponse(response2, HTTP_1_1, OK, singletonList("hello"));
     }
 
     @Test
@@ -222,20 +223,20 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
                 getChunkPublisherFromStrings("hello"));
         request1.getHeaders().set(CONTENT_LENGTH, "5");
         final StreamingHttpResponse response1 = makeRequest(request1);
-        assertResponse(response1, HTTP_1_1, OK, asList("Testing1\n", ""));
+        assertResponse(response1, HTTP_1_1, OK, singletonList("Testing1\n"));
 
         final StreamingHttpRequest request2 = reqRespFactory.newRequest(GET, SVC_COUNTER).setPayloadBody(
                 getChunkPublisherFromStrings("hello"));
         request2.getHeaders().set(CONTENT_LENGTH, "5");
         final StreamingHttpResponse response2 = makeRequest(request2);
-        assertResponse(response2, HTTP_1_1, OK, asList("Testing2\n", ""));
+        assertResponse(response2, HTTP_1_1, OK, singletonList("Testing2\n"));
     }
 
     @Test
     public void testHttp10CloseConnection() throws Exception {
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_COUNTER).setVersion(HTTP_1_0);
         final StreamingHttpResponse response = makeRequest(request);
-        assertResponse(response, HTTP_1_0, OK, asList("Testing1\n", ""));
+        assertResponse(response, HTTP_1_0, OK, singletonList("Testing1\n"));
         assertFalse(response.getHeaders().contains(CONNECTION));
 
         assertConnectionClosed();
@@ -246,13 +247,13 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_COUNTER).setVersion(HTTP_1_0);
         request1.getHeaders().set("connection", "keep-alive");
         final StreamingHttpResponse response1 = makeRequest(request1);
-        assertResponse(response1, HTTP_1_0, OK, asList("Testing1\n", ""));
+        assertResponse(response1, HTTP_1_0, OK, singletonList("Testing1\n"));
         assertTrue(response1.getHeaders().contains(CONNECTION, KEEP_ALIVE));
 
         final StreamingHttpRequest request2 = reqRespFactory.newRequest(GET, SVC_COUNTER).setVersion(HTTP_1_0);
         request2.getHeaders().set("connection", "keep-alive");
         final StreamingHttpResponse response2 = makeRequest(request2);
-        assertResponse(response2, HTTP_1_0, OK, asList("Testing2\n", ""));
+        assertResponse(response2, HTTP_1_0, OK, singletonList("Testing2\n"));
         assertTrue(response1.getHeaders().contains(CONNECTION, KEEP_ALIVE));
     }
 
@@ -261,7 +262,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_COUNTER);
         request.getHeaders().set("connection", "close");
         final StreamingHttpResponse response = makeRequest(request);
-        assertResponse(response, HTTP_1_1, OK, asList("Testing1\n", ""));
+        assertResponse(response, HTTP_1_1, OK, singletonList("Testing1\n"));
         assertTrue(response.getHeaders().contains(CONNECTION, CLOSE));
 
         assertConnectionClosed();
@@ -271,12 +272,12 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     public void testHttp11KeepAliveConnection() throws Exception {
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_COUNTER);
         final StreamingHttpResponse response1 = makeRequest(request1);
-        assertResponse(response1, HTTP_1_1, OK, asList("Testing1\n", ""));
+        assertResponse(response1, HTTP_1_1, OK, singletonList("Testing1\n"));
         assertFalse(response1.getHeaders().contains(CONNECTION));
 
         final StreamingHttpRequest request2 = reqRespFactory.newRequest(GET, SVC_COUNTER);
         final StreamingHttpResponse response2 = makeRequest(request2);
-        assertResponse(response2, HTTP_1_1, OK, asList("Testing2\n", ""));
+        assertResponse(response2, HTTP_1_1, OK, singletonList("Testing2\n"));
         assertFalse(response2.getHeaders().contains(CONNECTION));
     }
 
@@ -284,7 +285,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     public void testGracefulShutdownWhileIdle() throws Exception {
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_COUNTER);
         final StreamingHttpResponse response1 = makeRequest(request1);
-        assertResponse(response1, HTTP_1_1, OK, asList("Testing1\n", ""));
+        assertResponse(response1, HTTP_1_1, OK, singletonList("Testing1\n"));
         assertFalse(response1.getHeaders().contains(CONNECTION));
 
         // Use a very high timeout for the graceful close. It should happen quite quickly because there are no
@@ -306,7 +307,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         publisherRule.sendItems(getChunkFromString("Hello"));
         publisherRule.complete();
 
-        assertResponse(response1, HTTP_1_1, OK, asList("Hello", ""));
+        assertResponse(response1, HTTP_1_1, OK, singletonList("Hello"));
         assertFalse(response1.getHeaders().contains(CONNECTION)); // Eventually this should be assertTrue
 
         assertConnectionClosed();
@@ -412,7 +413,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     public void testSynchronousError() throws Exception {
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_THROW_ERROR);
         final StreamingHttpResponse response = makeRequest(request);
-        assertResponse(response, HTTP_1_1, INTERNAL_SERVER_ERROR, singletonList(""));
+        assertResponse(response, HTTP_1_1, INTERNAL_SERVER_ERROR, emptyList());
         assertTrue(response.getHeaders().contains(CONTENT_LENGTH, ZERO));
     }
 
@@ -420,7 +421,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     public void testSingleError() throws Exception {
         final StreamingHttpRequest request = reqRespFactory.newRequest(GET, SVC_SINGLE_ERROR);
         final StreamingHttpResponse response = makeRequest(request);
-        assertResponse(response, HTTP_1_1, INTERNAL_SERVER_ERROR, singletonList(""));
+        assertResponse(response, HTTP_1_1, INTERNAL_SERVER_ERROR, emptyList());
         assertTrue(response.getHeaders().contains(CONTENT_LENGTH, ZERO));
     }
 
