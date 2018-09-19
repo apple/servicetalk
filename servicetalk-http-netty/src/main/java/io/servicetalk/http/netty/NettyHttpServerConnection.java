@@ -83,7 +83,7 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
 
             return handleRequest(request)
                     .map(response -> processResponse(requestMethod, keepAlive, drainRequestPayloadBody, response))
-                    .flatMapPublisher(resp -> flatten(resp, StreamingHttpResponse::getPayloadBody));
+                    .flatMapPublisher(resp -> flatten(resp, StreamingHttpResponse::getPayloadBodyAndTrailers));
             // We are writing to the connection which may request more data from the EventLoop. So offload control
             // signals which may have blocking code.
         }).subscribeOn(context.getExecutionContext().getExecutor());
