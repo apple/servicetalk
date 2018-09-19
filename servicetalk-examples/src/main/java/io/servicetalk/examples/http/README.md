@@ -61,14 +61,14 @@ aggregated/streaming) are exposed.
 
 A simple "Hello World" example built using JAX-RS.
 
-- [Server](helloworld/jaxrs/HelloWorldJaxRsServer.java) A JAX-RS based hello world server that demonstrates how to write
+- [Server](jaxrs/HelloWorldJaxRsServer.java) A JAX-RS based hello world server that demonstrates how to write
 blocking as well as asynchronous resource methods. 
-- [Resource](helloworld/jaxrs/HelloWorldJaxRsResource.java) A JAX-RS resource having different methods for blocking and
+- [Resource](jaxrs/HelloWorldJaxRsResource.java) A JAX-RS resource having different methods for blocking and
 asynchronous interactions.
 
 This example does not have a client yet but one can use curl to send requests like:
 
 `curl http://localhost:8080/greetings/hello`
 
-More examples of how to use the resource can be found in the [Resource](helloworld/jaxrs/HelloWorldJaxRsResource.java)
+More examples of how to use the resource can be found in the [Resource](jaxrs/HelloWorldJaxRsResource.java)
 javadocs.

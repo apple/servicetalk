@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.helloworld.jaxrs;
+package io.servicetalk.examples.http.jaxrs;
 
 import io.servicetalk.http.netty.DefaultHttpServerStarter;
 import io.servicetalk.http.router.jersey.HttpJerseyRouterBuilder;
