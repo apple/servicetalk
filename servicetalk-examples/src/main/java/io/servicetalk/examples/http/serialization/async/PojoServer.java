@@ -13,21 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.helloworld.async.streaming;
+package io.servicetalk.examples.http.serialization.async;
 
+import io.servicetalk.data.jackson.JacksonSerializationProvider;
+import io.servicetalk.examples.http.serialization.MyPojo;
+import io.servicetalk.examples.http.serialization.PojoRequest;
+import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.netty.DefaultHttpServerStarter;
 
-import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.HttpSerializationProviders.serializeText;
+import static io.servicetalk.http.api.HttpSerializationProviders.serializeJson;
 
-public final class HelloWorldStreamingServer {
+public final class PojoServer {
+
     public static void main(String[] args) throws Exception {
+        HttpSerializationProvider serializer = serializeJson(new JacksonSerializationProvider());
         new DefaultHttpServerStarter()
-                .startStreaming(8080, (ctx, request, responseFactory) ->
-                        success(responseFactory.ok()
-                                .setPayloadBody(from("Hello\n", " World\n", " From\n", " ServiceTalk\n"),
-                                        serializeText())))
+                .start(8080, (ctx, request, responseFactory) -> {
+                    PojoRequest req = request.getPayloadBody(serializer.deserializerFor(PojoRequest.class));
+                    return success(responseFactory.ok()
+                            .setPayloadBody(new MyPojo(req.getId(), "foo"), serializer.serializerFor(MyPojo.class)));
+                })
                 .toFuture().get()
                 .awaitShutdown();
     }
