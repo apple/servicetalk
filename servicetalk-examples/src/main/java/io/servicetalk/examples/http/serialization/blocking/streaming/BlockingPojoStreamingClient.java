@@ -34,8 +34,7 @@ public class BlockingPojoStreamingClient {
         try (BlockingStreamingHttpClient client =
                      HttpClients.forSingleAddress("localhost", 8080).buildBlockingStreaming()) {
             BlockingStreamingHttpResponse response = client.request(client.get("pojo")
-                    //TODO: (Invalid) This would use setPayloadBody(Iterable, HttpSerializer) when available.
-                    .transformPayloadBody(asList(new PojoRequest("1"), new PojoRequest("2"), new PojoRequest("3")),
+                    .setPayloadBody(asList(new PojoRequest("1"), new PojoRequest("2"), new PojoRequest("3")),
                             serializer.serializerFor(PojoRequest.class)));
             System.out.println(response);
             try (BlockingIterator<MyPojo> payload =

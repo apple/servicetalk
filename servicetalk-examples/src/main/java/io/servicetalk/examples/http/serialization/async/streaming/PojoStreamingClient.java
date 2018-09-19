@@ -15,7 +15,6 @@
  */
 package io.servicetalk.examples.http.serialization.async.streaming;
 
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.examples.http.serialization.MyPojo;
 import io.servicetalk.examples.http.serialization.PojoRequest;
@@ -23,6 +22,7 @@ import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.netty.HttpClients;
 
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.HttpSerializationProviders.serializeJson;
 
 public class PojoStreamingClient {
@@ -31,7 +31,7 @@ public class PojoStreamingClient {
         HttpSerializationProvider serializer = serializeJson(new JacksonSerializationProvider());
         try (StreamingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildStreaming()) {
             client.request(client.get("pojo")
-                    .transformPayloadBody(Publisher.from("1", "2", "3").map(PojoRequest::new),
+                    .setPayloadBody(from("1", "2", "3").map(PojoRequest::new),
                             serializer.serializerFor(PojoRequest.class)))
                     .doBeforeSuccess(System.out::println)
                     .flatMapPublisher(resp -> resp.getPayloadBody(serializer.deserializerFor(MyPojo.class)))

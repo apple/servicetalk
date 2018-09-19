@@ -26,7 +26,7 @@ public final class HelloWorldStreamingServer {
         new DefaultHttpServerStarter()
                 .startStreaming(8080, (ctx, request, responseFactory) ->
                         success(responseFactory.ok()
-                                .transformPayloadBody(from("Hello\n", " World\n", " From\n", " ServiceTalk\n"),
+                                .setPayloadBody(from("Hello\n", " World\n", " From\n", " ServiceTalk\n"),
                                         serializeText())))
                 .toFuture().get()
                 .awaitShutdown();

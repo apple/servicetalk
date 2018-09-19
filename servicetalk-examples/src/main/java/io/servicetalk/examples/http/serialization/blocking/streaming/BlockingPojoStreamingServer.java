@@ -45,8 +45,7 @@ public class BlockingPojoStreamingServer {
                         }
                     }
                     return responseFactory.ok()
-                            //TODO: (Invalid) This would use setPayloadBody(Iterable, HttpSerializer) when available.
-                            .transformPayloadBody(pojos, serializer.serializerFor(MyPojo.class));
+                            .setPayloadBody(pojos, serializer.serializerFor(MyPojo.class));
                 })
                 .awaitShutdown();
     }
