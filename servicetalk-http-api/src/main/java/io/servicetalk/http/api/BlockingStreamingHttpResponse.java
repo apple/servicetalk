@@ -122,6 +122,24 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
             Function<BlockingIterable<Buffer>, BlockingIterable<T>> transformer, HttpSerializer<T> serializer);
 
     /**
+     * Transform the underlying payload body with the result of serialization.
+     * @param transformer A {@link Function} which take as a parameter the existing payload body
+     * {@link BlockingIterable} and returns the new payload body {@link BlockingIterable} prior to serialization. It is
+     * assumed the existing payload body {@link BlockingIterable} will be transformed/consumed or else no more requests
+     * may be processed.
+     * @param deserializer Used to deserialize the existing payload body.
+     * @param serializer Used to serialize the payload body.
+     * @param <T> The type of objects to deserialize.
+     * @param <R> The type of objects to serialize.
+     * @return A {@link BlockingStreamingHttpRequest} with the new serialized payload body.
+     */
+    default <T, R> BlockingStreamingHttpResponse transformPayloadBody(
+            Function<BlockingIterable<T>, BlockingIterable<R>> transformer, HttpDeserializer<T> deserializer,
+            HttpSerializer<R> serializer) {
+        return transformPayloadBody(buffers -> transformer.apply(getPayloadBody(deserializer)), serializer);
+    }
+
+    /**
      * Transform the underlying payload body in the form of {@link Buffer}s.
      * @param transformer A {@link Function} which take as a parameter the existing payload body
      * {@link BlockingIterable} and returns the new payload body {@link BlockingIterable}. It is assumed the existing
