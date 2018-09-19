@@ -15,7 +15,6 @@
  */
 package io.servicetalk.examples.http.service.composition;
 
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.examples.http.service.composition.pojo.FullRecommendation;
 import io.servicetalk.examples.http.service.composition.pojo.Metadata;
@@ -26,23 +25,18 @@ import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseFactory;
+import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.HttpService;
-import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpSerializer;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.serialization.api.TypeHolder;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.examples.http.service.composition.AsyncUtil.zip;
-import static io.servicetalk.http.api.HttpRequests.newRequest;
-import static io.servicetalk.http.api.HttpResponses.newResponse;
-import static io.servicetalk.http.api.HttpRequestMethods.GET;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
-import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 
 /**
  * This service provides an API that fetches recommendations in parallel but provides an aggregated JSON array as a
@@ -50,7 +44,8 @@ import static io.servicetalk.http.api.HttpResponseStatuses.OK;
  */
 final class GatewayService extends HttpService {
 
-    private static final TypeHolder<List<Recommendation>> typeOfRecommendation = new TypeHolder<List<Recommendation>>(){};
+    private static final TypeHolder<List<Recommendation>> typeOfRecommendation = new TypeHolder<List<Recommendation>>(){ };
+    private static final TypeHolder<List<FullRecommendation>> typeOfFullRecommendation = new TypeHolder<List<FullRecommendation>>(){ };
 
     private static final String USER_ID_QP_NAME = "userId";
 
@@ -58,16 +53,16 @@ final class GatewayService extends HttpService {
     private final HttpClient metadataClient;
     private final HttpClient ratingsClient;
     private final HttpClient userClient;
-    private final HttpSerializer serializer;
+    private final HttpSerializationProvider serializers;
 
     GatewayService(final HttpClient recommendationsClient, final HttpClient metadataClient,
                    final HttpClient ratingsClient, final HttpClient userClient,
-                   HttpSerializer serializer) {
+                   HttpSerializationProvider serializers) {
         this.recommendationsClient = recommendationsClient;
         this.metadataClient = metadataClient;
         this.ratingsClient = ratingsClient;
         this.userClient = userClient;
-        this.serializer = serializer;
+        this.serializers = serializers;
     }
 
     @Override
@@ -81,26 +76,36 @@ final class GatewayService extends HttpService {
 
         return recommendationsClient.request(recommendationsClient.get("/recommendations/aggregated?userId=" + userId))
                 // Since HTTP payload is a buffer, we deserialize into List<Recommendation>>.
-                .map(response -> serializer.deserialize(response, typeOfRecommendation).getPayloadBody())
-                // Recommendations are a List and we want to query details for each recommendation in parallel.
-                // Turning the List into a Publisher helps us use relevant operators to do so.
-                .flatMapPublisher(Publisher::from)
-                .flatMapSingle(recommendation -> {
-                    Single<Metadata> metadata = metadataClient.request(newRequest(GET, "/metadata?entityId=" + recommendation.getEntityId()))
-                            // Since HTTP payload is a buffer, we deserialize into Metadata.
-                            .map(response -> serializer.deserialize(response, Metadata.class).getPayloadBody());
+                .map(response -> response.getPayloadBody(serializers.deserializerFor(typeOfRecommendation)))
+                .flatMap(this::queryRecommendationDetails)
+                .map(fullRecommendations -> factory.ok()
+                        .setPayloadBody(fullRecommendations, serializers.serializerFor(typeOfFullRecommendation)));
+    }
 
-                    Single<User> user = userClient.request(newRequest(GET, "/user?userId=" + recommendation.getEntityId()))
-                            // Since HTTP payload is a buffer, we deserialize into User.
-                            .map(response -> serializer.deserialize(response, User.class).getPayloadBody());
+    private Single<List<FullRecommendation>> queryRecommendationDetails(List<Recommendation> recommendations) {
+        // Recommendations are a List and we want to query details for each recommendation in parallel.
+        // Turning the List into a Publisher helps us use relevant operators to do so.
+        return from(recommendations)
+                .flatMapSingle(reco -> {
+                    Single<Metadata> metadata =
+                            metadataClient.request(metadataClient.get("/metadata?entityId=" + reco.getEntityId()))
+                                    // Since HTTP payload is a buffer, we deserialize into Metadata.
+                                    .map(response -> response.getPayloadBody(serializers.deserializerFor(Metadata.class)));
 
-                    Single<Rating> rating = ratingsClient.request(newRequest(GET, "/rating?entityId=" + recommendation.getEntityId()))
-                            // Since HTTP payload is a buffer, we deserialize into Rating.
-                            .map(response -> serializer.deserialize(response, Rating.class).getPayloadBody())
-                            // We consider ratings to be a non-critical data and hence we substitute the response
-                            // with a static "unavailable" rating when the rating service is unavailable or provides
-                            // a bad response. This is typically referred to as a "fallback".
-                            .onErrorResume(cause -> success(new Rating(recommendation.getEntityId(), -1)));
+                    Single<User> user =
+                            userClient.request(userClient.get("/user?userId=" + reco.getEntityId()))
+                                    // Since HTTP payload is a buffer, we deserialize into User.
+                                    .map(response -> response.getPayloadBody(serializers.deserializerFor(User.class)));
+
+                    Single<Rating> rating =
+                            ratingsClient.request(ratingsClient.get("/rating?entityId=" + reco.getEntityId()))
+                                    // Since HTTP payload is a buffer, we deserialize into Rating.
+                                    .map(response -> response.getPayloadBody(serializers.deserializerFor(Rating.class)))
+                                    // We consider ratings to be a non-critical data and hence we substitute the
+                                    // response with a static "unavailable" rating when the rating service is
+                                    // unavailable or provides a bad response. This is typically referred to as a
+                                    // "fallback".
+                                    .onErrorResume(cause -> success(new Rating(reco.getEntityId(), -1)));
 
                     // The below asynchronously queries metadata, user and rating backends and zips them into a single
                     // FullRecommendation instance.
@@ -114,9 +119,6 @@ final class GatewayService extends HttpService {
                 .reduce(ArrayList::new, (list, fullRecommendation) -> {
                     list.add(fullRecommendation);
                     return list;
-                })
-                // Convert the payload to a FullHttpResponse.
-                .map(allRecosJson -> serializer.serialize(newResponse(OK, allRecosJson),
-                        ctx.getExecutionContext().getBufferAllocator()));
+                });
     }
 }
