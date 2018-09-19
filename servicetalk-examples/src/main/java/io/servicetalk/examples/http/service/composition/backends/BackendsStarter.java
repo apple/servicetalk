@@ -18,7 +18,8 @@ package io.servicetalk.examples.http.service.composition.backends;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
-import io.servicetalk.http.api.HttpSerializer;
+import io.servicetalk.http.api.HttpSerializationProvider;
+import io.servicetalk.http.api.HttpSerializationProviders;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -53,7 +54,7 @@ public final class BackendsStarter {
             // Use Jackson for serialization and deserialization.
             // HttpSerializer validates HTTP metadata for serialization/deserialization and also provides higher level
             // HTTP focused serialization APIs.
-            HttpSerializer httpSerializer = DefaultHttpSerializer.forJson(new JacksonSerializationProvider());
+            HttpSerializationProvider httpSerializer = HttpSerializationProviders.serializeJson(new JacksonSerializationProvider());
 
             // This is a single Completable used to await closing of all backends started by this class. It is used to
             // provide a way to not let main() exit.
