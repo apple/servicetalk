@@ -70,8 +70,11 @@ import static java.lang.Thread.NORM_PRIORITY;
 import static java.net.InetAddress.getLoopbackAddress;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
 
 public abstract class AbstractNettyHttpServerTest {
@@ -224,8 +227,11 @@ public abstract class AbstractNettyHttpServerTest {
         assertEquals(status, response.getStatus());
         assertEquals(version, response.getVersion());
         final List<String> bodyAsListOfStrings = getBodyAsListOfStrings(response);
-        assertEquals(expectedPayloadChunksAsStrings, bodyAsListOfStrings);
-        assertEquals(expectedPayloadChunksAsStrings.size(), bodyAsListOfStrings.size());
+        if (expectedPayloadChunksAsStrings.isEmpty()) {
+            assertTrue(bodyAsListOfStrings.isEmpty());
+        } else {
+            assertThat(bodyAsListOfStrings, contains(expectedPayloadChunksAsStrings.toArray()));
+        }
     }
 
     Publisher<Buffer> getChunkPublisherFromStrings(final String... texts) {

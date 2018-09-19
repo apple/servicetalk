@@ -56,8 +56,7 @@ import static org.mockito.Mockito.when;
 public class BlockingStreamingHttpServiceTest {
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
-    @Mock
-    private HttpServiceContext mockCtx;
+
     @Rule
     public final PublisherRule<Buffer> publisherRule = new PublisherRule<>();
     @Mock
@@ -71,11 +70,11 @@ public class BlockingStreamingHttpServiceTest {
             allocator, DefaultHttpHeadersFactory.INSTANCE);
     private final BlockingStreamingHttpRequestResponseFactory blkReqRespFactory =
             new StreamingHttpRequestResponseFactoryToBlockingStreamingHttpRequestResponseFactory(reqRespFactory);
+    private final HttpServiceContext mockCtx = new TestHttpServiceContext(reqRespFactory, mockExecutionCtx);
 
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
-        when(mockCtx.getExecutionContext()).thenReturn(mockExecutionCtx);
         when(mockExecutionCtx.getExecutor()).thenReturn(immediate());
         when(mockIterable.iterator()).thenReturn(mockIterator);
     }

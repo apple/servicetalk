@@ -49,6 +49,7 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.http.api.HttpProtocolVersions.HTTP_1_1;
 import static java.util.Arrays.asList;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 public abstract class BaseHttpPredicateRouterBuilderTest {
@@ -94,12 +95,12 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
             }
         });
 
-        when(serviceA.handle(ctx, request, factory)).thenReturn(responseA);
-        when(serviceB.handle(ctx, request, factory)).thenReturn(responseB);
-        when(serviceC.handle(ctx, request, factory)).thenReturn(responseC);
-        when(serviceD.handle(ctx, request, factory)).thenReturn(responseD);
-        when(serviceE.handle(ctx, request, factory)).thenReturn(responseE);
-        when(fallbackService.handle(ctx, request, factory)).thenReturn(fallbackResponse);
+        when(serviceA.handle(eq(ctx), eq(request), any())).thenReturn(responseA);
+        when(serviceB.handle(eq(ctx), eq(request), any())).thenReturn(responseB);
+        when(serviceC.handle(eq(ctx), eq(request), any())).thenReturn(responseC);
+        when(serviceD.handle(eq(ctx), eq(request), any())).thenReturn(responseD);
+        when(serviceE.handle(eq(ctx), eq(request), any())).thenReturn(responseE);
+        when(fallbackService.handle(eq(ctx), eq(request), any())).thenReturn(fallbackResponse);
 
         when(serviceA.closeAsync()).thenReturn(completed());
         when(serviceB.closeAsync()).thenReturn(completed());
