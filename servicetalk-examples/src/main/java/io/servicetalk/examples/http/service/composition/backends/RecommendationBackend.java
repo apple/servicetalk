@@ -20,16 +20,16 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.examples.http.service.composition.pojo.Recommendation;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.HttpResponses;
+import io.servicetalk.http.api.HttpResponseFactory;
+import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.HttpService;
-import io.servicetalk.http.api.HttpPayloadChunk;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpResponses;
-import io.servicetalk.http.api.HttpSerializer;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
-import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.serialization.api.TypeHolder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,9 +38,7 @@ import javax.annotation.Nonnull;
 
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.HttpResponses.newResponse;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
-import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.valueOf;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -50,10 +48,11 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 final class RecommendationBackend {
 
+    private static final TypeHolder<List<Recommendation>> typeOfRecommendation = new TypeHolder<List<Recommendation>>() { };
     private static final String USER_ID_QP_NAME = "userId";
     private static final String EXPECTED_ENTITY_COUNT_QP_NAME = "expectedEntityCount";
 
-    static StreamingHttpService newRecommendationsService(HttpSerializer serializer) {
+    static StreamingHttpService newRecommendationsService(HttpSerializationProvider serializer) {
         HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
         routerBuilder.whenPathStartsWith("/recommendations/stream")
                 .thenRouteTo(new StreamingService(serializer));
@@ -72,17 +71,18 @@ final class RecommendationBackend {
 
     private static final class StreamingService extends StreamingHttpService {
 
-        private final HttpSerializer serializer;
+        private final HttpSerializationProvider serializer;
 
-        public StreamingService(final HttpSerializer serializer) {
+        StreamingService(final HttpSerializationProvider serializer) {
             this.serializer = serializer;
         }
 
         @Override
-        public Single<StreamingHttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx, final StreamingHttpRequest<HttpPayloadChunk> request) {
+        public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
+                                                    StreamingHttpResponseFactory factory) {
             final String userId = request.parseQuery().get(USER_ID_QP_NAME);
             if (userId == null) {
-                return success(StreamingHttpResponses.newResponse(BAD_REQUEST));
+                return success(factory.newResponse(BAD_REQUEST));
             }
 
             // Create a new random recommendation every 1 SECOND.
@@ -96,25 +96,25 @@ final class RecommendationBackend {
                     // they are available.
                     .repeat(count -> true);
 
-            return success(serializer.serialize(StreamingHttpResponses.newResponse(OK, recommendations),
-                    ctx.getExecutionContext().getBufferAllocator(), Recommendation.class));
+            return success(factory.ok()
+                    .setPayloadBody(recommendations, serializer.serializerFor(Recommendation.class)));
         }
     }
 
     private static final class AggregatedService extends HttpService {
 
-        private final HttpSerializer serializer;
+        private final HttpSerializationProvider serializer;
 
-        public AggregatedService(final HttpSerializer serializer) {
+        AggregatedService(final HttpSerializationProvider serializer) {
             this.serializer = serializer;
         }
 
         @Override
-        public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                             final HttpRequest<HttpPayloadChunk> request) {
+        public Single<? extends HttpResponse> handle(HttpServiceContext ctx,
+                                                     HttpRequest request, HttpResponseFactory responseFactory) {
             final String userId = request.parseQuery().get(USER_ID_QP_NAME);
             if (userId == null) {
-                return success(HttpResponses.newResponse(BAD_REQUEST));
+                return success(responseFactory.newResponse(BAD_REQUEST));
             }
             int expectedEntitiesCount = 10;
             final String expectedEntitiesCountStr = request.parseQuery().get(EXPECTED_ENTITY_COUNT_QP_NAME);
@@ -128,8 +128,8 @@ final class RecommendationBackend {
             }
 
             // Serialize the Recommendation list to a single Buffer containing JSON and use it as the response payload.
-            return success(serializer.serialize(newResponse(OK, recommendations),
-                    ctx.getExecutionContext().getBufferAllocator()));
+            return success(responseFactory.ok()
+                    .setPayloadBody(recommendations, serializer.serializerFor(typeOfRecommendation)));
         }
     }
 }

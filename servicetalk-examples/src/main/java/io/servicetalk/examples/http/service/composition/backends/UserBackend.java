@@ -19,18 +19,16 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.examples.http.service.composition.pojo.User;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.HttpResponseFactory;
+import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.HttpService;
-import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpSerializer;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.HttpResponses.newResponse;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
-import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static java.util.concurrent.ThreadLocalRandom.current;
 
 /**
@@ -39,26 +37,26 @@ import static java.util.concurrent.ThreadLocalRandom.current;
 final class UserBackend extends HttpService {
 
     private static final String USER_ID_QP_NAME = "userId";
-    private final HttpSerializer serializer;
+    private final HttpSerializationProvider serializer;
 
-    private UserBackend(HttpSerializer serializer) {
+    private UserBackend(HttpSerializationProvider serializer) {
         this.serializer = serializer;
     }
 
     @Override
-    public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                         final HttpRequest<HttpPayloadChunk> request) {
+    public Single<? extends HttpResponse> handle(HttpServiceContext ctx, HttpRequest request,
+                                                 HttpResponseFactory responseFactory) {
         final String userId = request.parseQuery().get(USER_ID_QP_NAME);
         if (userId == null) {
-            return success(newResponse(BAD_REQUEST));
+            return success(responseFactory.newResponse(BAD_REQUEST));
         }
 
         // Create a random rating
         User user = new User(userId, createRandomString(5), createRandomString(3));
-        return success(serializer.serialize(newResponse(OK, user), ctx.getExecutionContext().getBufferAllocator()));
+        return success(responseFactory.ok().setPayloadBody(user, serializer.serializerFor(User.class)));
     }
 
-    static HttpService newUserService(HttpSerializer serializer) {
+    static HttpService newUserService(HttpSerializationProvider serializer) {
         HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
         return routerBuilder.whenPathStartsWith("/user")
                 .thenRouteTo(new UserBackend(serializer))

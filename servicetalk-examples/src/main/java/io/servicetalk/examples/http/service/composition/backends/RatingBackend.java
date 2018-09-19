@@ -19,18 +19,16 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.examples.http.service.composition.pojo.Rating;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.HttpResponseFactory;
+import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.HttpService;
-import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpSerializer;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.HttpResponses.newResponse;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
-import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 
 /**
  * A service that returns {@link Rating}s for an entity.
@@ -38,26 +36,26 @@ import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 final class RatingBackend extends HttpService {
 
     private static final String ENTITY_ID_QP_NAME = "entityId";
-    private final HttpSerializer serializer;
+    private final HttpSerializationProvider serializer;
 
-    private RatingBackend(HttpSerializer serializer) {
+    private RatingBackend(HttpSerializationProvider serializer) {
         this.serializer = serializer;
     }
 
     @Override
-    public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                         final HttpRequest<HttpPayloadChunk> request) {
+    public Single<? extends HttpResponse> handle(HttpServiceContext ctx, HttpRequest request,
+                                                 HttpResponseFactory responseFactory) {
         final String entityId = request.parseQuery().get(ENTITY_ID_QP_NAME);
         if (entityId == null) {
-            return success(newResponse(BAD_REQUEST));
+            return success(responseFactory.newResponse(BAD_REQUEST));
         }
 
         // Create a random rating
         Rating rating = new Rating(entityId, ThreadLocalRandom.current().nextInt(1, 6));
-        return success(serializer.serialize(newResponse(OK, rating), ctx.getExecutionContext().getBufferAllocator()));
+        return success(responseFactory.ok().setPayloadBody(rating, serializer.serializerFor(Rating.class)));
     }
 
-    static HttpService newRatingService(HttpSerializer serializer) {
+    static HttpService newRatingService(HttpSerializationProvider serializer) {
         HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
         return routerBuilder.whenPathStartsWith("/rating")
                 .thenRouteTo(new RatingBackend(serializer))
