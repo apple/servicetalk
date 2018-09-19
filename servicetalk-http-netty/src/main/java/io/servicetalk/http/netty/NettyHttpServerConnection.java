@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
@@ -22,7 +23,6 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
-import io.servicetalk.http.api.HttpPayloadChunk;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -86,17 +86,17 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
             // to the NettyChannelPublisher before the previous subscriber has terminated. Otherwise we may attempt
             // to do duplicate subscribe on NettyChannelPublisher, which will result in a connection closure.
             CompletableProcessor processor = new CompletableProcessor();
-            StreamingHttpRequest<HttpPayloadChunk> request2 = request.transformPayloadBody(
+            StreamingHttpRequest request2 = request.transformPayloadBody(
                     // Cancellation is assumed to close the connection, or be ignored if this Subscriber has already
                     // terminated. That means we don't need to trigger the processor as completed because we don't care
                     // about processing more requests.
-                    payload -> payload.doAfterSubscriber(() -> new Subscriber<HttpPayloadChunk>() {
+                    payload -> payload.doAfterSubscriber(() -> new Subscriber<Buffer>() {
                         @Override
                         public void onSubscribe(final Subscription s) {
                         }
 
                         @Override
-                        public void onNext(final HttpPayloadChunk httpPayloadChunk) {
+                        public void onNext(final Buffer buffer) {
                         }
 
                         @Override
@@ -121,7 +121,7 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
                     .onErrorResume(t -> completed());
             return handleRequest(request2)
                     .map(response -> processResponse(requestMethod, keepAlive, drainRequestPayloadBody, response))
-                    .flatMapPublisher(resp -> flatten(resp, StreamingHttpResponse::getPayloadBody))
+                    .flatMapPublisher(resp -> flatten(resp, StreamingHttpResponse::getPayloadBodyAndTrailers))
                     .concatWith(processor);
             // We are writing to the connection which may request more data from the EventLoop. So offload control
             // signals which may have blocking code.

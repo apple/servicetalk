@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -83,8 +82,8 @@ abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> ext
 
     protected abstract Publisher<Object> writeAndRead(Publisher<Object> stream);
 
-    private static Publisher<Buffer> unpack(StreamingHttpRequest request) {
-        return request.getPayloadBody();
+    private static Publisher<Object> unpack(StreamingHttpRequest request) {
+        return request.getPayloadBodyAndTrailers();
     }
 
     private StreamingHttpResponse newResponse(HttpResponseMetaData meta, Publisher<Object> pub) {

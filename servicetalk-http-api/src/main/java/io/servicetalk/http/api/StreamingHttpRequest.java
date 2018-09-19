@@ -91,8 +91,26 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
      * @param <T> The type of objects to serialize.
      * @return A {@link StreamingHttpRequest} with the new serialized payload body.
      */
-    <T> StreamingHttpRequest transformPayloadBody(Function<Publisher<Buffer>,Publisher<T>> transformer,
+    <T> StreamingHttpRequest transformPayloadBody(Function<Publisher<Buffer>, Publisher<T>> transformer,
                                                   HttpSerializer<T> serializer);
+
+    /**
+     * Transform the underlying payload body with the result of serialization.
+     * @param transformer A {@link Function} which take as a parameter the existing payload body {@link Publisher} and
+     * returns the new payload body {@link Publisher} prior to serialization. It is assumed the existing payload body
+     * {@link Publisher} will be transformed/consumed or else no more requests may be processed.
+     * @param deserializer Used to deserialize the existing payload body.
+     * @param serializer Used to serialize the payload body.
+     * @param <T> The type of objects to deserialize.
+     * @param <R> The type of objects to serialize.
+     * @return A {@link StreamingHttpRequest} with the new serialized payload body.
+     */
+    default <T, R> StreamingHttpRequest transformPayloadBody(Function<Publisher<T>, Publisher<R>> transformer,
+                                                             HttpDeserializer<T> deserializer,
+                                                             HttpSerializer<R> serializer) {
+        return transformPayloadBody(bufferPublisher ->
+                transformer.apply(deserializer.deserialize(getHeaders(), bufferPublisher)), serializer);
+    }
 
     /**
      * Transform the underlying payload body in the form of {@link Buffer}s.

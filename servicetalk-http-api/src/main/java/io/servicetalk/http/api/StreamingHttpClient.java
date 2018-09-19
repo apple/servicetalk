@@ -235,6 +235,14 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
                                                                  HttpSerializer<T> serializer);
 
         @Override
+        default <T, R> UpgradableStreamingHttpResponse transformPayloadBody(
+                Function<Publisher<T>, Publisher<R>> transformer, HttpDeserializer<T> deserializer,
+                HttpSerializer<R> serializer) {
+            return transformPayloadBody(bufferPublisher ->
+                    transformer.apply(deserializer.deserialize(getHeaders(), bufferPublisher)), serializer);
+        }
+
+        @Override
         UpgradableStreamingHttpResponse transformPayloadBody(UnaryOperator<Publisher<Buffer>> transformer);
 
         @Override

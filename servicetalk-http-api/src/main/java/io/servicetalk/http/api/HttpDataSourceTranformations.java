@@ -622,14 +622,15 @@ final class HttpDataSourceTranformations {
             public void onNext(final Object o) {
                 if (o instanceof Buffer) {
                     subscriber.onNext((Buffer) o);
-                } else if (!(o instanceof HttpHeaders)) {
+                } else if (o instanceof HttpHeaders) {
+                    if (trailers != null) {
+                        throwDuplicateTrailersException(trailers, o);
+                    }
+                    trailers = (HttpHeaders) o;
+                    // Trailers must be the last element on the stream, no need to interact with the Subscription.
+                } else {
                     throw new UnsupportedHttpChunkException(o);
                 }
-                if (trailers != null) {
-                    throwDuplicateTrailersException(trailers, o);
-                }
-                trailers = (HttpHeaders) o;
-                // Trailers must be the last element on the stream, no need to interact with the Subscription.
             }
         }
     }
@@ -655,11 +656,11 @@ final class HttpDataSourceTranformations {
             @Override
             public void onNext(final Object o) {
                 if (o instanceof HttpHeaders) {
+                    // Trailers must be the last element on the stream, no need to interact with the Subscription.
                     if (trailers != null) {
                         throwDuplicateTrailersException(trailers, o);
                     }
                     trailers = (HttpHeaders) o;
-                    // Trailers must be the last element on the stream, no need to interact with the Subscription.
                 }
                 subscriber.onNext(o);
             }
@@ -771,14 +772,15 @@ final class HttpDataSourceTranformations {
             public void onNext(final Object obj) {
                 if (obj instanceof Buffer) {
                     subscriber.onNext(transformer.apply((Buffer) obj, userState));
-                } else if (!(obj instanceof HttpHeaders)) {
+                } else if (obj instanceof HttpHeaders) {
+                    // Trailers must be the last element on the stream, no need to interact with the Subscription.
+                    if (trailers != null) {
+                        throwDuplicateTrailersException(trailers, obj);
+                    }
+                    trailers = (HttpHeaders) obj;
+                } else {
                     throw new UnsupportedHttpChunkException(obj);
                 }
-                // Trailers must be the last element on the stream, no need to interact with the Subscription.
-                if (trailers != null) {
-                    throwDuplicateTrailersException(trailers, obj);
-                }
-                trailers = (HttpHeaders) obj;
             }
 
             @Override
