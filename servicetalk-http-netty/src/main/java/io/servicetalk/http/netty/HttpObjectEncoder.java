@@ -114,7 +114,6 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
-        ByteBuf byteBuf = null;
         if (msg instanceof HttpMetaData) {
             if (state != ST_INIT) {
                 throw new IllegalStateException("unexpected message type: " + simpleClassName(msg));
@@ -125,7 +124,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
             // to a socket. In order to do the write to the socket the memory typically needs to be allocated in direct
             // memory and will be copied to direct memory if not. Using a direct buffer will avoid the copy.
             Buffer stBuffer = PREFER_DIRECT_ALLOCATOR.newBuffer((int) headersEncodedSizeAccumulator);
-            byteBuf = toByteBufNoThrow(stBuffer);
+            ByteBuf byteBuf = toByteBufNoThrow(stBuffer);
             assert byteBuf != null;
 
             // Encode the message.
@@ -143,9 +142,8 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
             }
             headersEncodedSizeAccumulator = HEADERS_WEIGHT_NEW * padSizeForAccumulation(byteBuf.readableBytes()) +
                                             HEADERS_WEIGHT_HISTORICAL * headersEncodedSizeAccumulator;
-        }
-
-        if (msg instanceof Buffer) {
+            ctx.write(byteBuf, promise);
+        } else if (msg instanceof Buffer) {
             final Buffer stBuffer = (Buffer) msg;
             if (stBuffer.getReadableBytes() == 0) {
                 // Bypass the encoder in case of an empty buffer, so that the following idiom works:
@@ -163,42 +161,21 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                     case ST_CONTENT_NON_CHUNK:
                         final long contentLength = contentLength(stBuffer);
                         if (contentLength > 0) {
-                            if (byteBuf != null && byteBuf.writableBytes() >= contentLength) {
-                                // merge into other buffer for performance reasons
-                                writeBufferToByteBuf(stBuffer, byteBuf.writerIndex(), byteBuf);
-                                ctx.write(byteBuf, promise);
-                            } else if (byteBuf != null) {
-                                PromiseCombiner promiseCombiner = new PromiseCombiner();
-                                promiseCombiner.add(ctx.write(byteBuf));
-                                promiseCombiner.add(ctx.write(encodeAndRetain(stBuffer)));
-                                promiseCombiner.finish(promise);
-                            } else {
-                                ctx.write(encodeAndRetain(stBuffer), promise);
-                            }
-
+                            ctx.write(encodeAndRetain(stBuffer), promise);
                             break;
                         }
 
                         // fall-through!
                     case ST_CONTENT_ALWAYS_EMPTY:
-                        if (byteBuf != null) {
-                            // We allocated a buffer so add it now.
-                            ctx.write(byteBuf, promise);
-                        } else {
-                            // Need to produce some output otherwise an IllegalStateException will be thrown as we did
-                            // not write anything Its ok to just write an EMPTY_BUFFER as if there are reference count
-                            // issues these will be propagated as the caller of the encodeAndRetain(...) method will
-                            // release the original buffer. Writing an empty buffer will not actually write anything on
-                            // the wire, so if there is a user error with msg it will not be visible externally
-                            ctx.write(EMPTY_BUFFER, promise);
-                        }
+                        // Need to produce some output otherwise an IllegalStateException will be thrown as we did
+                        // not write anything Its ok to just write an EMPTY_BUFFER as if there are reference count
+                        // issues these will be propagated as the caller of the encodeAndRetain(...) method will
+                        // release the original buffer. Writing an empty buffer will not actually write anything on
+                        // the wire, so if there is a user error with msg it will not be visible externally
+                        ctx.write(EMPTY_BUFFER, promise);
                         break;
                     case ST_CONTENT_CHUNK:
                         PromiseCombiner promiseCombiner = new PromiseCombiner();
-                        if (byteBuf != null) {
-                            // We allocated a buffer so write it now.
-                            promiseCombiner.add(ctx.write(byteBuf));
-                        }
                         encodeChunkedContent(ctx, stBuffer, contentLength(stBuffer), promiseCombiner);
                         promiseCombiner.finish(promise);
                         break;
@@ -207,8 +184,6 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                 }
             }
         } else if (msg instanceof HttpHeaders) {
-            assert byteBuf == null;
-            state = ST_INIT;
             promise.addListener(f -> {
                 if (f.isSuccess()) {
                     // Only writes of the last payload that have been successfully written and flushed should emit
@@ -217,9 +192,13 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                     closeHandler.protocolPayloadEndOutbound(ctx);
                 }
             });
-            encodeAndWriteTrailers(ctx, (HttpHeaders) msg, promise);
-        } else if (byteBuf != null) {
-            ctx.write(byteBuf, promise);
+            final int oldState = state;
+            state = ST_INIT;
+            if (oldState == ST_CONTENT_CHUNK) {
+                encodeAndWriteTrailers(ctx, (HttpHeaders) msg, promise);
+            } else {
+                ctx.write(EMPTY_BUFFER, promise);
+            }
         }
     }
 

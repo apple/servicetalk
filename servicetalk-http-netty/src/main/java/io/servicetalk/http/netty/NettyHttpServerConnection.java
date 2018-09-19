@@ -42,6 +42,8 @@ import java.util.function.BiFunction;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.netty.HeaderUtils.addResponseTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.SpliceFlatStreamToMetaSingle.flatten;
 
@@ -166,7 +168,9 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
     private Single<StreamingHttpResponse> newErrorResponse(final Throwable cause,
                                                            final StreamingHttpRequest request) {
         LOGGER.error("internal server error service={} connection={}", service, context, cause);
-        return success(context.getStreamingFactory().serverError().setVersion(request.getVersion()));
+        StreamingHttpResponse resp = context.getStreamingFactory().serverError().setVersion(request.getVersion());
+        resp.getHeaders().set(CONTENT_LENGTH, ZERO);
+        return success(resp);
     }
 
     private Completable writeResponse(final Publisher<Object> responseObjectPublisher) {

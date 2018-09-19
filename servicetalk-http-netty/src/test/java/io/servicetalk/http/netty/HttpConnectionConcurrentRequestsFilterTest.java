@@ -18,24 +18,31 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.MaxRequestLimitExceededException;
+import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherRule;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.TestStreamingHttpConnection;
+import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
-import org.mockito.Mockito;
+import org.mockito.Mock;
 
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
@@ -45,14 +52,15 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
 
 public class HttpConnectionConcurrentRequestsFilterTest {
     private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
     private static final StreamingHttpRequestResponseFactory reqRespFactory =
             new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE);
+    @Mock
+    private ExecutionContext executionContext;
+    @Mock
+    private ConnectionContext connectionContext;
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
@@ -64,13 +72,29 @@ public class HttpConnectionConcurrentRequestsFilterTest {
 
     @Test
     public void decrementWaitsUntilResponsePayloadIsComplete() throws ExecutionException, InterruptedException {
-        StreamingHttpConnection mockConnection = Mockito.mock(StreamingHttpConnection.class);
-        when(mockConnection.onClose()).thenReturn(never());
-        when(mockConnection.getSettingStream(eq(MAX_CONCURRENCY))).thenReturn(just(2));
-        when(mockConnection.request(any())).thenReturn(
-                success(reqRespFactory.ok().setPayloadBody(response1Publisher.getPublisher())),
-                success(reqRespFactory.ok().setPayloadBody(response2Publisher.getPublisher())),
-                success(reqRespFactory.ok().setPayloadBody(response3Publisher.getPublisher())));
+        StreamingHttpConnection mockConnection = new TestStreamingHttpConnection(reqRespFactory, executionContext,
+                connectionContext) {
+            private final AtomicInteger reqCount = new AtomicInteger(0);
+            @Override
+            public <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
+                return settingKey == MAX_CONCURRENCY ? (Publisher<T>) just(2) : super.getSettingStream(settingKey);
+            }
+
+            @Override
+            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                switch (reqCount.incrementAndGet()) {
+                    case 1: return success(reqRespFactory.ok().setPayloadBody(response1Publisher.getPublisher()));
+                    case 2: return success(reqRespFactory.ok().setPayloadBody(response2Publisher.getPublisher()));
+                    case 3: return success(reqRespFactory.ok().setPayloadBody(response3Publisher.getPublisher()));
+                    default: return super.request(request);
+                }
+            }
+
+            @Override
+            public Completable onClose() {
+                return Completable.never();
+            }
+        };
         StreamingHttpConnection limitedConnection =
                 new StreamingHttpConnectionConcurrentRequestsFilter(mockConnection, 2);
         StreamingHttpResponse resp1 = awaitIndefinitelyNonNull(
