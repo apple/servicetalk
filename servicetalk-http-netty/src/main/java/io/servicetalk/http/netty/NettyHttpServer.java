@@ -70,7 +70,7 @@ final class NettyHttpServer {
         // The ServerContext returned by TcpServerInitializer takes care of closing the contextFilter.
         return initializer.start(address, contextFilter, channelInitializer, false, true)
                 .map((ServerContext delegate) -> {
-                    LOGGER.info("Started HTTP server for address {}.", delegate.getListenAddress());
+                    LOGGER.debug("Started HTTP server for address {}.", delegate.getListenAddress());
                     return new NettyHttpServerContext(delegate, service);
                 });
     }
@@ -108,7 +108,7 @@ final class NettyHttpServer {
         @Override
         public Completable closeAsync() {
             return asyncCloseable.closeAsync()
-                    .doFinally(() -> LOGGER.info("Stopped HTTP server for address {}.", getListenAddress()));
+                    .doFinally(() -> LOGGER.debug("Stopped HTTP server for address {}.", getListenAddress()));
         }
 
         @Override

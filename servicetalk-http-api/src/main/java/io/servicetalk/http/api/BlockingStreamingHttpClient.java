@@ -240,8 +240,14 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
                 Function<BlockingIterable<Buffer>, BlockingIterable<T>> transformer, HttpSerializer<T> serializer);
 
         @Override
-        UpgradableBlockingStreamingHttpResponse transformPayloadBody(
-                UnaryOperator<BlockingIterable<Buffer>> transformer);
+        default <T, R> UpgradableBlockingStreamingHttpResponse transformPayloadBody(
+                Function<BlockingIterable<T>, BlockingIterable<R>> transformer, HttpDeserializer<T> deserializer,
+                HttpSerializer<R> serializer) {
+            return transformPayloadBody(buffers -> transformer.apply(getPayloadBody(deserializer)), serializer);
+        }
+
+        @Override
+        UpgradableBlockingStreamingHttpResponse transformPayloadBody(UnaryOperator<BlockingIterable<Buffer>> transformer);
 
         @Override
         UpgradableBlockingStreamingHttpResponse transformRawPayloadBody(UnaryOperator<BlockingIterable<?>> transformer);
