@@ -50,7 +50,7 @@ final class HeaderUtils {
                            final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> filter) {
         final int size = headers.size();
         if (size == 0) {
-            return "[]";
+            return "";
         } else {
             // original capacity assumes 20 chars per headers
             final StringBuilder sb = new StringBuilder(2 + size * 20);

@@ -627,7 +627,6 @@ public abstract class AbstractHttpHeadersTest {
         headers.add("name1", "value2");
         headers.add("name2", "value3");
         String result = headers.toString((name, value) -> value);
-        assertTrue(result, result.startsWith(headers.getClass().getSimpleName() + "["));
         assertTrue(result, result.toLowerCase().contains("name1: value1"));
         assertTrue(result, result.toLowerCase().contains("name1: value2"));
         assertTrue(result, result.toLowerCase().contains("name2: value3"));
@@ -637,7 +636,6 @@ public abstract class AbstractHttpHeadersTest {
         headers.add("name2", "value2");
         headers.add("name3", "value3");
         result = headers.toString((name, value) -> value);
-        assertTrue(result, result.startsWith(headers.getClass().getSimpleName() + "["));
         assertTrue(result, result.toLowerCase().contains("name1: value1"));
         assertTrue(result, result.toLowerCase().contains("name2: value2"));
         assertTrue(result, result.toLowerCase().contains("name3: value3"));
@@ -645,11 +643,10 @@ public abstract class AbstractHttpHeadersTest {
         headers = newHeaders();
         headers.add("name1", "value1");
         result = headers.toString((name, value) -> value);
-        assertTrue(result, result.startsWith(headers.getClass().getSimpleName() + "["));
         assertTrue(result, result.toLowerCase().contains("name1: value1"));
 
         headers = newHeaders();
-        assertEquals(headers.getClass().getSimpleName() + "[]", headers.toString((name, value) -> value));
+        assertTrue(headers.toString((name, value) -> value).isEmpty());
     }
 
     @Test
