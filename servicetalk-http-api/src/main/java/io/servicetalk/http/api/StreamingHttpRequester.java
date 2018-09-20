@@ -27,7 +27,7 @@ import static java.util.Objects.requireNonNull;
  * {@link StreamingHttpResponse}.
  */
 public abstract class StreamingHttpRequester implements
-                                             StreamingHttpRequestFactory, ListenableAsyncCloseable, AutoCloseable{
+                                             StreamingHttpRequestFactory, ListenableAsyncCloseable, AutoCloseable {
     final StreamingHttpRequestResponseFactory reqRespFactory;
 
     /**

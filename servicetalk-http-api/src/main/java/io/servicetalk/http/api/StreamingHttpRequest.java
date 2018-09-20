@@ -114,7 +114,7 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
 
     /**
      * Transform the underlying payload body in the form of {@link Buffer}s.
-     * @param transformer A {@link UnaryOperator} which take as a parameter the existing payload body {@link Publisher
+     * @param transformer A {@link UnaryOperator} which take as a parameter the existing payload body {@link Publisher}
      * and returns the new payload body {@link Publisher}. It is assumed the existing payload body {@link Publisher}
      * will be transformed/consumed or else no more requests may be processed.
      * @return A {@link StreamingHttpRequest} with the new payload body.

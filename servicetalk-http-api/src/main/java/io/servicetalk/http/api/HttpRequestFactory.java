@@ -25,14 +25,14 @@ public interface HttpRequestFactory {
     /**
      * Create a new {@link HttpRequest}.
      * @param method The {@link HttpRequestMethod}.
-     * @param requestTarget The <a herf="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
      * @return a new {@link HttpRequest}.
      */
     HttpRequest newRequest(HttpRequestMethod method, String requestTarget);
 
     /**
      * Create a new {@link HttpRequestMethods#GET} request.
-     * @param requestTarget The <a herf="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
      * @return a new {@link HttpRequestMethods#GET} request.
      */
     default HttpRequest get(String requestTarget) {
@@ -41,7 +41,7 @@ public interface HttpRequestFactory {
 
     /**
      * Create a new {@link HttpRequestMethods#POST} request.
-     * @param requestTarget The <a herf="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
      * @return a new {@link HttpRequestMethods#POST} request.
      */
     default HttpRequest post(String requestTarget) {

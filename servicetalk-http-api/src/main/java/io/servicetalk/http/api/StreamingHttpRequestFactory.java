@@ -25,7 +25,7 @@ public interface StreamingHttpRequestFactory {
     /**
      * Create a new {@link HttpRequestFactory}.
      * @param method The {@link HttpRequestMethod}.
-     * @param requestTarget The <a herf="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
      * @return a new {@link HttpRequestFactory}.
      */
     StreamingHttpRequest newRequest(HttpRequestMethod method, String requestTarget);
@@ -39,7 +39,7 @@ public interface StreamingHttpRequestFactory {
 
     /**
      * Create a new {@link HttpRequestMethods#GET} request.
-     * @param requestTarget The <a herf="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
      * @return a new {@link HttpRequestMethods#GET} request.
      */
     default StreamingHttpRequest get(String requestTarget) {
@@ -48,7 +48,7 @@ public interface StreamingHttpRequestFactory {
 
     /**
      * Create a new {@link HttpRequestMethods#POST} request.
-     * @param requestTarget The <a herf="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
      * @return a new {@link HttpRequestMethods#POST} request.
      */
     default StreamingHttpRequest post(String requestTarget) {
