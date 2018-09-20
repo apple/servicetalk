@@ -45,6 +45,8 @@ import static java.util.Objects.requireNonNull;
  * @param <T> The partition type.
  */
 public final class PowerSetPartitionMap<T extends AsyncCloseable> implements PartitionMap<T> {
+    private static final byte CLOSED_GRACEFULLY = 1;
+    private static final byte HARD_CLOSE = 2;
     private static final int MAX_PARTITION_ATTRIBUTE_SIZE = 15;
 
     private final Function<PartitionAttributes, T> valueFactory;
@@ -72,11 +74,9 @@ public final class PowerSetPartitionMap<T extends AsyncCloseable> implements Par
      */
     private volatile Map<PartitionAttributes, ValueHolder<T>> wildCardToValueMap;
 
-    private boolean closedGracefully; // visibility provided by closed below.
-    private volatile boolean closed;
+    private volatile byte closed;
     private final ListenableAsyncCloseable asyncCloseable = toAsyncCloseable(graceful -> {
-        closedGracefully = graceful;
-        closed = true;
+        closed = graceful ? CLOSED_GRACEFULLY : HARD_CLOSE;
         return closeAllValues(wildCardToValueMap, graceful);
     });
 
@@ -158,8 +158,8 @@ public final class PowerSetPartitionMap<T extends AsyncCloseable> implements Par
         wildCardToValueMap = newWildCardToAttributes;
 
         // It is likely/possible that we generated new objects above, and so we must ensure that these are closed.
-        if (closed) {
-            closeAllValues(newWildCardToAttributes, closedGracefully).subscribe();
+        if (closed > 0) {
+            closeAllValues(newWildCardToAttributes, closed == CLOSED_GRACEFULLY).subscribe();
         }
 
         return effectedPartitions;
