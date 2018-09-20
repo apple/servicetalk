@@ -139,12 +139,14 @@ public final class AsyncCloseables {
      * Creates a new {@link ListenableAsyncCloseable} which uses the passed {@link Supplier} to get the implementation
      * of close.
      *
-     * @param close {@link Supplier} of {@link Completable} that represents close operation. This will be called when
-     * the returned {@link ListenableAsyncCloseable} is subscribed for the first time.
+     * @param closeableResource {@link CloseableResource} that is to be wrapped into a {@link ListenableAsyncCloseable}.
+     * {@link CloseableResource#doClose(boolean)} will be called when the returned {@link ListenableAsyncCloseable} is
+     * {@link ListenableAsyncCloseable#closeAsync() closed} or
+     * {@link ListenableAsyncCloseable#closeAsyncGracefully() gracefully closed} for the first time.
      * @return A new {@link ListenableAsyncCloseable}.
      */
-    public static ListenableAsyncCloseable toAsyncCloseable(Supplier<Completable> close) {
-        return new DefaultAsyncCloseable(close);
+    public static ListenableAsyncCloseable toAsyncCloseable(CloseableResource closeableResource) {
+        return new DefaultAsyncCloseable(closeableResource);
     }
 
     /**
@@ -156,18 +158,36 @@ public final class AsyncCloseables {
         return new DefaultCompositeCloseable();
     }
 
+    /**
+     * A resource that can be converted to an {@link AsyncCloseable}.
+     */
+    @FunctionalInterface
+    public interface CloseableResource {
+
+        /**
+         * Supplies the {@link Completable} representing the close.
+         *
+         * @param graceful {@code true} if the returned {@link Completable} should attempt to close gracefully.
+         * @return {@link Completable} representing close of the resource.
+         */
+        Completable doClose(boolean graceful);
+    }
+
     private static final class DefaultAsyncCloseable implements ListenableAsyncCloseable {
 
+        private static final int IDLE = 0;
+        private static final int CLOSED_GRACEFULLY = 1;
+        private static final int HARD_CLOSE = 2;
         private static final AtomicIntegerFieldUpdater<DefaultAsyncCloseable> closedUpdater =
                 newUpdater(DefaultAsyncCloseable.class, "closed");
-        private final Supplier<Completable> closeImpl;
+        private final CloseableResource closeableResource;
         private final CompletableProcessor onClose = new CompletableProcessor();
 
         @SuppressWarnings("unused")
         private volatile int closed;
 
-        DefaultAsyncCloseable(final Supplier<Completable> closeImpl) {
-            this.closeImpl = closeImpl;
+        DefaultAsyncCloseable(final CloseableResource closeableResource) {
+            this.closeableResource = closeableResource;
         }
 
         @Override
@@ -176,8 +196,21 @@ public final class AsyncCloseables {
                 @Override
                 protected void handleSubscribe(final Subscriber subscriber) {
                     onClose.subscribe(subscriber);
-                    if (closedUpdater.compareAndSet(DefaultAsyncCloseable.this, 0, 1)) {
-                        closeImpl.get().subscribe(onClose);
+                    if (closedUpdater.getAndSet(DefaultAsyncCloseable.this, HARD_CLOSE) != HARD_CLOSE) {
+                        closeableResource.doClose(false).subscribe(onClose);
+                    }
+                }
+            };
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return new Completable() {
+                @Override
+                protected void handleSubscribe(final Subscriber subscriber) {
+                    onClose.subscribe(subscriber);
+                    if (closedUpdater.compareAndSet(DefaultAsyncCloseable.this, IDLE, CLOSED_GRACEFULLY)) {
+                        closeableResource.doClose(true).subscribe(onClose);
                     }
                 }
             };

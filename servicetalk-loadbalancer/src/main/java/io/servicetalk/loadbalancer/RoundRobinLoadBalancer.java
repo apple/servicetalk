@@ -24,6 +24,7 @@ import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -186,14 +187,15 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                 LOGGER.debug("Service discoverer {} has completed.", eventPublisher);
             }
         });
-        asyncCloseable = toAsyncCloseable(() -> {
+        asyncCloseable = toAsyncCloseable(graceful -> {
             closed = true;
             discoveryCancellable.cancel();
             eventStream.sendOnComplete();
             @SuppressWarnings("unchecked")
             List<Host<ResolvedAddress, C>> currentList = activeHostsUpdater
                     .getAndSet(RoundRobinLoadBalancer.this, Collections.<Host<ResolvedAddress, C>>emptyList());
-            return newCompositeCloseable().appendAll(currentList).appendAll(connectionFactory).closeAsyncGracefully();
+            CompositeCloseable cc = newCompositeCloseable().appendAll(currentList).appendAll(connectionFactory);
+            return graceful ? cc.closeAsyncGracefully() : cc.closeAsync();
         });
     }
 
