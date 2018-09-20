@@ -55,6 +55,7 @@ public final class StreamingHttpResponses {
      * @param initialTrailers the initial state of the
      * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a> for this response.
      * @param allocator the allocator used for serialization purposes if necessary.
+     * @param payloadBody the payload body {@link Publisher}.
      * @return a new {@link StreamingHttpResponse}.
      */
     public static StreamingHttpResponse newResponse(

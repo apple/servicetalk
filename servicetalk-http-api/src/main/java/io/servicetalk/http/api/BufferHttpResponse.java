@@ -97,4 +97,28 @@ final class BufferHttpResponse extends DefaultHttpResponseMetaData implements Ht
         return new BufferBlockingStreamingHttpResponse(getStatus(), getVersion(), getHeaders(), success(trailers),
                 allocator, singletonBlockingIterable(payloadBody));
     }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
+        final BufferHttpResponse that = (BufferHttpResponse) o;
+        return trailers.equals(that.trailers) &&
+                payloadBody.equals(that.payloadBody);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + trailers.hashCode();
+        result = 31 * result + payloadBody.hashCode();
+        return result;
+    }
 }

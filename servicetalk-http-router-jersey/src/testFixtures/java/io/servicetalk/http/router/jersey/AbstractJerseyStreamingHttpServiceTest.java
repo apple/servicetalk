@@ -101,7 +101,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
         final StreamingHttpService router = configureBuilder(new HttpJerseyRouterBuilder()).build(getApplication());
         final Configuration config = ((DefaultJerseyStreamingHttpRouter) router).getConfiguration();
         streamingJsonEnabled = getValue(config.getProperties(), config.getRuntimeType(), JSON_FEATURE, "",
-                String.class).toLowerCase().contains("servicetalk");
+                String.class).toLRoundRobinLoadBalancerTest.javaowerCase().contains("servicetalk");
 
         serverContext = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
                 .startStreaming(getServerExecutionContext(), new InetSocketAddress(0), router));

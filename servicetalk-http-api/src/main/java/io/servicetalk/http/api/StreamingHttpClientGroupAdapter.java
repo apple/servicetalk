@@ -23,6 +23,7 @@ import io.servicetalk.http.api.StreamingHttpClient.UpgradableStreamingHttpRespon
 
 /**
  * A {@link StreamingHttpClientGroup} that delegates all methods to a different {@link StreamingHttpClientGroup}.
+ * @param <UnresolvedAddress> the unresolved address type.
  */
 public abstract class StreamingHttpClientGroupAdapter<UnresolvedAddress> extends
                                                                          StreamingHttpClientGroup<UnresolvedAddress> {

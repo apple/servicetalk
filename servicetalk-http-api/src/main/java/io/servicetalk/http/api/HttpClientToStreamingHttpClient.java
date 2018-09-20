@@ -28,7 +28,6 @@ import io.servicetalk.http.api.HttpDataSourceTranformations.BridgeFlowControlAnd
 import io.servicetalk.http.api.HttpDataSourceTranformations.HttpBufferFilterOperator;
 import io.servicetalk.http.api.HttpDataSourceTranformations.HttpPayloadAndTrailersFromSingleOperator;
 import io.servicetalk.http.api.HttpDataSourceTranformations.SerializeBridgeFlowControlAndDiscardOperator;
-import io.servicetalk.http.api.StreamingHttpClient.UpgradableStreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient.UpgradableStreamingHttpResponseToBlockingStreaming;
 import io.servicetalk.http.api.StreamingHttpClientToHttpClient.UpgradableStreamingHttpResponseToUpgradableHttpResponse;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -151,7 +150,7 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
     }
 
     static final class UpgradableHttpResponseToUpgradableStreamingHttpResponse implements
-                                                                                  UpgradableStreamingHttpResponse {
+                                                                   StreamingHttpClient.UpgradableStreamingHttpResponse {
         private final UpgradableHttpResponse upgradableResponse;
         private final Publisher<?> payloadBody;
         private final Single<HttpHeaders> trailersSingle;

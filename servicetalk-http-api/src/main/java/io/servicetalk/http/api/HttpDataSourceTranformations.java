@@ -215,7 +215,7 @@ final class HttpDataSourceTranformations {
 
             @Override
             public boolean hasNext() {
-                return nextBuffer != null || hasNext() && validateNext(iterator.next());
+                return nextBuffer != null || iterator.hasNext() && validateNext(iterator.next());
             }
 
             @Override
@@ -439,7 +439,7 @@ final class HttpDataSourceTranformations {
             public boolean hasNext() {
                 try {
                     return iterator.hasNext();
-                }  catch (Throwable cause) {
+                } catch (Throwable cause) {
                     outTrailersSingle.onError(cause);
                     throw cause;
                 }
@@ -567,7 +567,7 @@ final class HttpDataSourceTranformations {
             public boolean hasNext() {
                 try {
                     return iterator.hasNext();
-                }  catch (Throwable cause) {
+                } catch (Throwable cause) {
                     outTrailersSingle.onError(cause);
                     throw cause;
                 }
@@ -670,7 +670,7 @@ final class HttpDataSourceTranformations {
         }
     }
 
-    private static abstract class AbstractJustBufferSubscriber<T> implements Subscriber<Object> {
+    private abstract static class AbstractJustBufferSubscriber<T> implements Subscriber<Object> {
         final Subscriber<? super T> subscriber;
         final SingleProcessor<HttpHeaders> outTrailersSingle;
         @Nullable
@@ -1043,7 +1043,6 @@ final class HttpDataSourceTranformations {
             @Override
             public void onSuccess(@Nullable final HttpHeaders inHeaders) {
                 completeOutTrailerSingle(userState, inHeaders, trailersTransformer, outTrailersSingle, subscriber);
-
             }
 
             @Override
@@ -1057,7 +1056,7 @@ final class HttpDataSourceTranformations {
         });
     }
 
-    private static <T> void completeOutTrailerSingle(@Nullable T userState,@Nullable HttpHeaders inHeaders,
+    private static <T> void completeOutTrailerSingle(@Nullable T userState, @Nullable HttpHeaders inHeaders,
                                                      BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer,
                                                      SingleProcessor<HttpHeaders> outTrailersSingle,
                                                      Subscriber<?> subscriber) {

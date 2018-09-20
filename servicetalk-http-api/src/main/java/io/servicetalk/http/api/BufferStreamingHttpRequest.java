@@ -20,8 +20,6 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
-import static java.util.Objects.requireNonNull;
-
 final class BufferStreamingHttpRequest extends DefaultStreamingHttpRequest<Buffer> {
 
     BufferStreamingHttpRequest(final HttpRequestMethod method, final String requestTarget,
