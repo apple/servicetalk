@@ -19,11 +19,14 @@ import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.netty.HttpClients;
 
+import static io.servicetalk.http.api.HttpSerializationProviders.deserializeText;
+
 public final class BlockingHelloWorldClient {
     public static void main(String[] args) throws Exception {
         try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildBlocking()) {
             HttpResponse response = client.request(client.get("/sayHello"));
-            System.out.println(response);
+            System.out.println(response.toString((name, value) -> value));
+            System.out.println(response.getPayloadBody(deserializeText()));
         }
     }
 }
