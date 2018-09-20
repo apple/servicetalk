@@ -20,13 +20,13 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpPayloadChunk;
-import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMethods;
-import io.servicetalk.http.api.HttpRequester;
-import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequester;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
@@ -46,10 +46,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
-import static io.servicetalk.http.api.HttpRequests.newRequest;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.api.HttpResponses.newResponse;
+import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
+import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.net.InetAddress.getLoopbackAddress;
@@ -70,15 +70,15 @@ public class HttpServerMultipleRequestsTest {
 
     @Test
     public void consumeOfRequestBodyDoesNotCloseConnection() throws Exception {
-        HttpService service = new HttpService() {
+        StreamingHttpService service = new StreamingHttpService() {
             @Override
-            public Single<HttpResponse<HttpPayloadChunk>> handle(final ConnectionContext ctx,
-                                                                 final HttpRequest<HttpPayloadChunk> request) {
+            public Single<StreamingHttpResponse<HttpPayloadChunk>> handle(
+                    final ConnectionContext ctx, final StreamingHttpRequest<HttpPayloadChunk> request) {
                 request.getPayloadBody().ignoreElements().subscribe();
 
                 CharSequence requestId = request.getHeaders().get(REQUEST_ID_HEADER);
                 if (requestId != null) {
-                    HttpResponse<HttpPayloadChunk> response = newResponse(OK);
+                    StreamingHttpResponse<HttpPayloadChunk> response = newResponse(OK);
                     response.getHeaders().set(REQUEST_ID_HEADER, requestId);
                     return success(response);
                 } else {
@@ -100,10 +100,10 @@ public class HttpServerMultipleRequestsTest {
                 final int finalI = i;
                 executorService.execute(() -> {
                     try {
-                        HttpConnection connection = compositeCloseable.append(
+                        StreamingHttpConnection connection = compositeCloseable.append(
                                 new DefaultHttpConnectionBuilder<SocketAddress>()
                                         .setMaxPipelinedRequests(numRequests)
-                                        .build(clientExecution, ctx.getListenAddress()).toFuture().get());
+                                        .buildStreaming(clientExecution, ctx.getListenAddress()).toFuture().get());
                         barrier.await();
                         for (int x = 0; x < numRequests; ++x) {
                             makeClientRequestWithId(connection, "thread=" + finalI + " request=" + x);
@@ -123,11 +123,11 @@ public class HttpServerMultipleRequestsTest {
         }
     }
 
-    private static void makeClientRequestWithId(HttpRequester connection, String requestId)
+    private static void makeClientRequestWithId(StreamingHttpRequester connection, String requestId)
             throws ExecutionException, InterruptedException {
-        HttpRequest<HttpPayloadChunk> request = newRequest(HttpRequestMethods.GET, "/");
+        StreamingHttpRequest<HttpPayloadChunk> request = newRequest(HttpRequestMethods.GET, "/");
         request.getHeaders().set(REQUEST_ID_HEADER, requestId);
-        HttpResponse<HttpPayloadChunk> response = connection.request(request).toFuture().get();
+        StreamingHttpResponse<HttpPayloadChunk> response = connection.request(request).toFuture().get();
         assertEquals(OK, response.getStatus());
         assertTrue(request.getHeaders().contains(REQUEST_ID_HEADER, requestId));
         response.getPayloadBody().ignoreElements().subscribe();
