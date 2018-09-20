@@ -72,10 +72,12 @@ public final class PowerSetPartitionMap<T extends AsyncCloseable> implements Par
      */
     private volatile Map<PartitionAttributes, ValueHolder<T>> wildCardToValueMap;
 
+    private boolean closedGracefully; // visibility provided by closed below.
     private volatile boolean closed;
-    private final ListenableAsyncCloseable asyncCloseable = toAsyncCloseable(() -> {
+    private final ListenableAsyncCloseable asyncCloseable = toAsyncCloseable(graceful -> {
+        closedGracefully = graceful;
         closed = true;
-        return closeAllValues(wildCardToValueMap);
+        return closeAllValues(wildCardToValueMap, graceful);
     });
 
     /**
@@ -157,7 +159,7 @@ public final class PowerSetPartitionMap<T extends AsyncCloseable> implements Par
 
         // It is likely/possible that we generated new objects above, and so we must ensure that these are closed.
         if (closed) {
-            closeAllValues(newWildCardToAttributes).subscribe();
+            closeAllValues(newWildCardToAttributes, closedGracefully).subscribe();
         }
 
         return effectedPartitions;
@@ -204,9 +206,10 @@ public final class PowerSetPartitionMap<T extends AsyncCloseable> implements Par
         return asyncCloseable.closeAsyncGracefully();
     }
 
-    private Completable closeAllValues(Map<PartitionAttributes, ValueHolder<T>> wildCardToValueMap) {
+    private Completable closeAllValues(Map<PartitionAttributes, ValueHolder<T>> wildCardToValueMap, boolean graceful) {
         List<Completable> completables = new ArrayList<>(wildCardToValueMap.size());
-        wildCardToValueMap.forEach((attributes, holder) -> completables.add(holder.value.closeAsync()));
+        wildCardToValueMap.forEach((attributes, holder) ->
+                completables.add(graceful ? holder.value.closeAsyncGracefully() : holder.value.closeAsync()));
         return Completable.completed().mergeDelayError(completables);
     }
 
