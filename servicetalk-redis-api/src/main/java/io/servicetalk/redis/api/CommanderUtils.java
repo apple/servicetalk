@@ -18,6 +18,7 @@ package io.servicetalk.redis.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SingleProcessor;
+import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 
 import java.util.List;
 import java.util.concurrent.Future;
@@ -115,7 +116,7 @@ final class CommanderUtils {
         protected void handleSubscribe(final Subscriber<? super String> subscriber) {
             if (!stateUpdater.compareAndSet(commander, STATE_PENDING, STATE_DISCARDED)) {
                 subscriber.onSubscribe(IGNORE_CANCEL);
-                subscriber.onError(new IllegalStateException("Only one subscriber allowed."));
+                subscriber.onError(new DuplicateSubscribeException(stateUpdater.get(commander), subscriber));
                 return;
             }
             abortSingles(queued, singles).subscribe(subscriber);
@@ -142,7 +143,7 @@ final class CommanderUtils {
         protected void handleSubscribe(final Subscriber subscriber) {
             if (!stateUpdater.compareAndSet(commander, STATE_PENDING, STATE_EXECUTED)) {
                 subscriber.onSubscribe(IGNORE_CANCEL);
-                subscriber.onError(new IllegalStateException("Only one subscriber allowed."));
+                subscriber.onError(new DuplicateSubscribeException(stateUpdater.get(commander), subscriber));
                 return;
             }
             completeSingles(results, singles).subscribe(subscriber);
