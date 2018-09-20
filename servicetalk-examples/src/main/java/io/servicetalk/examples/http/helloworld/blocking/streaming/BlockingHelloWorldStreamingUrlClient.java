@@ -15,19 +15,20 @@
  */
 package io.servicetalk.examples.http.helloworld.blocking.streaming;
 
-import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
 import io.servicetalk.http.netty.HttpClients;
+
+import static io.servicetalk.http.api.HttpSerializationProviders.deserializeText;
 
 public final class BlockingHelloWorldStreamingUrlClient {
 
     public static void main(String[] args) throws Exception {
         try (BlockingStreamingHttpClient client = HttpClients.forMultiAddressUrl().buildBlockingStreaming()) {
             BlockingStreamingHttpResponse response = client.request(client.get("http://localhost:8080/sayHello"));
-            System.out.println(response);
-            try (BlockingIterator<Buffer> payload = response.getPayloadBody().iterator()) {
+            System.out.println(response.toString((name, value) -> value));
+            try (BlockingIterator<String> payload = response.getPayloadBody(deserializeText()).iterator()) {
                 while (payload.hasNext()) {
                     System.out.println(payload.next());
                 }

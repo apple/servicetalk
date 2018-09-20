@@ -22,19 +22,28 @@ import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.netty.HttpClients;
 
+import java.util.concurrent.CountDownLatch;
+
 import static io.servicetalk.http.api.HttpSerializationProviders.serializeJson;
 
 public final class PojoUrlClient {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         HttpSerializationProvider serializer = serializeJson(new JacksonSerializationProvider());
         try (HttpClient client = HttpClients.forMultiAddressUrl().build()) {
+            // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
+            // before the response has been processed. This isn't typical usage for a streaming API but is useful for
+            // demonstration purposes.
+            CountDownLatch responseProcessedLatch = new CountDownLatch(1);
+
             client.request(client.get("http://localhost:8080/pojo")
                     .setPayloadBody(new PojoRequest("1"), serializer.serializerFor(PojoRequest.class)))
+                    .doFinally(responseProcessedLatch::countDown)
                     .subscribe(resp -> {
-                        // TODO: We probably need a toString() overload in aggregated req/resp to print payload too.
                         System.out.println(resp.toString((name, value) -> value));
                         System.out.println(resp.getPayloadBody(serializer.deserializerFor(MyPojo.class)));
                     });
+
+            responseProcessedLatch.await();
         }
     }
 }
