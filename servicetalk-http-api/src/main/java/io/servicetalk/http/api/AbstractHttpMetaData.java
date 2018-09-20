@@ -50,6 +50,11 @@ abstract class AbstractHttpMetaData implements HttpMetaData {
     }
 
     @Override
+    public String toString() {
+        return toString((name, value) -> value);
+    }
+
+    @Override
     public boolean equals(final Object o) {
         if (this == o) {
             return true;
