@@ -45,6 +45,8 @@ import static java.util.Objects.requireNonNull;
  * @param <T> The partition type.
  */
 public final class PowerSetPartitionMap<T extends AsyncCloseable> implements PartitionMap<T> {
+    private static final byte CLOSED_GRACEFULLY = 1;
+    private static final byte HARD_CLOSE = 2;
     private static final int MAX_PARTITION_ATTRIBUTE_SIZE = 15;
 
     private final Function<PartitionAttributes, T> valueFactory;
@@ -72,10 +74,10 @@ public final class PowerSetPartitionMap<T extends AsyncCloseable> implements Par
      */
     private volatile Map<PartitionAttributes, ValueHolder<T>> wildCardToValueMap;
 
-    private volatile boolean closed;
-    private final ListenableAsyncCloseable asyncCloseable = toAsyncCloseable(() -> {
-        closed = true;
-        return closeAllValues(wildCardToValueMap);
+    private volatile byte closed;
+    private final ListenableAsyncCloseable asyncCloseable = toAsyncCloseable(graceful -> {
+        closed = graceful ? CLOSED_GRACEFULLY : HARD_CLOSE;
+        return closeAllValues(wildCardToValueMap, graceful);
     });
 
     /**
@@ -156,8 +158,8 @@ public final class PowerSetPartitionMap<T extends AsyncCloseable> implements Par
         wildCardToValueMap = newWildCardToAttributes;
 
         // It is likely/possible that we generated new objects above, and so we must ensure that these are closed.
-        if (closed) {
-            closeAllValues(newWildCardToAttributes).subscribe();
+        if (closed > 0) {
+            closeAllValues(newWildCardToAttributes, closed == CLOSED_GRACEFULLY).subscribe();
         }
 
         return effectedPartitions;
@@ -204,9 +206,10 @@ public final class PowerSetPartitionMap<T extends AsyncCloseable> implements Par
         return asyncCloseable.closeAsyncGracefully();
     }
 
-    private Completable closeAllValues(Map<PartitionAttributes, ValueHolder<T>> wildCardToValueMap) {
+    private Completable closeAllValues(Map<PartitionAttributes, ValueHolder<T>> wildCardToValueMap, boolean graceful) {
         List<Completable> completables = new ArrayList<>(wildCardToValueMap.size());
-        wildCardToValueMap.forEach((attributes, holder) -> completables.add(holder.value.closeAsync()));
+        wildCardToValueMap.forEach((attributes, holder) ->
+                completables.add(graceful ? holder.value.closeAsyncGracefully() : holder.value.closeAsync()));
         return Completable.completed().mergeDelayError(completables);
     }
 

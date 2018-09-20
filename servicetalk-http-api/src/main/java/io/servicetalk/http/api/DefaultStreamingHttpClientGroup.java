@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.GroupKey;
-import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
@@ -95,12 +94,12 @@ final class DefaultStreamingHttpClientGroup<UnresolvedAddress> extends Streaming
     private volatile boolean closed;
     private final ConcurrentMap<GroupKey<UnresolvedAddress>, StreamingHttpClient> clientMap = new ConcurrentHashMap<>();
     private final BiFunction<GroupKey<UnresolvedAddress>, HttpRequestMetaData, StreamingHttpClient> clientFactory;
-    private final ListenableAsyncCloseable asyncCloseable = toAsyncCloseable(() -> {
+    private final ListenableAsyncCloseable asyncCloseable = toAsyncCloseable(graceful -> {
                 closed = true;
                 return completed().mergeDelayError(clientMap.keySet().stream()
                         .map(clientMap::remove)
                         .filter(client -> client != null && client != PLACEHOLDER_CLIENT)
-                        .map(AsyncCloseable::closeAsync)
+                        .map(closeable -> graceful ? closeable.closeAsyncGracefully() : closeable.closeAsync())
                         .collect(toList()));
             }
     );
