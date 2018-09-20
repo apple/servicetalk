@@ -36,7 +36,7 @@ final class HeaderUtils {
      * Constant used to seed the hash code generation. Could be anything but this was borrowed from murmur3.
      */
     static final int HASH_CODE_SEED = 0xc2b2ae35;
-    static final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> DEFAULT_HEADER_FILTER = (k, v) -> "<filtered>";
+    static final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> DEFAULT_HEADER_FILTER = (k, v) -> v;
     private static final ByteProcessor HEADER_NAME_VALIDATOR = value -> {
         validateHeaderNameToken(value);
         return true;
@@ -48,15 +48,12 @@ final class HeaderUtils {
 
     static String toString(final HttpHeaders headers,
                            final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> filter) {
-        final String simpleName = headers.getClass().getSimpleName();
         final int size = headers.size();
         if (size == 0) {
-            return simpleName + "[]";
+            return "[]";
         } else {
             // original capacity assumes 20 chars per headers
-            final StringBuilder sb = new StringBuilder(simpleName.length() + 2 + size * 20)
-                    .append(simpleName)
-                    .append('[');
+            final StringBuilder sb = new StringBuilder(2 + size * 20);
             final Iterator<Map.Entry<CharSequence, CharSequence>> itr = headers.iterator();
             if (itr.hasNext()) {
                 for (;;) {
@@ -69,7 +66,7 @@ final class HeaderUtils {
                     }
                 }
             }
-            return sb.append(']').toString();
+            return sb.toString();
         }
     }
 
