@@ -19,5 +19,5 @@ package io.servicetalk.http.api;
  * A combination of {@link BlockingStreamingHttpRequestFactory} and {@link BlockingStreamingHttpResponseFactory}.
  */
 public interface BlockingStreamingHttpRequestResponseFactory extends BlockingStreamingHttpRequestFactory,
-                                                                     BlockingStreamingHttpResponseFactory{
+                                                                     BlockingStreamingHttpResponseFactory {
 }
