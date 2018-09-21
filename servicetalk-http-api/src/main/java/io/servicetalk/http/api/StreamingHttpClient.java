@@ -228,7 +228,7 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
         UpgradableStreamingHttpResponse payloadBody(Publisher<Buffer> payloadBody);
 
         @Override
-        <T> UpgradableStreamingHttpResponse serializePayloadBody(Publisher<T> payloadBody, HttpSerializer<T> serializer);
+        <T> UpgradableStreamingHttpResponse payloadBody(Publisher<T> payloadBody, HttpSerializer<T> serializer);
 
         @Override
         <T> UpgradableStreamingHttpResponse transformPayloadBody(Function<Publisher<Buffer>, Publisher<T>> transformer,

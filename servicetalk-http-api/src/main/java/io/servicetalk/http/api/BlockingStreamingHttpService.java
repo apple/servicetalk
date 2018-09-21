@@ -25,6 +25,11 @@ public abstract class BlockingStreamingHttpService implements AutoCloseable, Blo
         // noop
     }
 
+    @Override
+    public final BlockingStreamingHttpService asBlockingStreamingHttpService() {
+        return this;
+    }
+
     /**
      * Convert this {@link BlockingStreamingHttpService} to the {@link StreamingHttpService} asynchronous API.
      * <p>
@@ -59,21 +64,6 @@ public abstract class BlockingStreamingHttpService implements AutoCloseable, Blo
      */
     public final BlockingHttpService asBlockingService() {
         return asStreamingService().asBlockingService();
-    }
-
-    static BlockingStreamingHttpService wrap(BlockingStreamingHttpRequestHandler handler) {
-        if (handler instanceof BlockingStreamingHttpService) {
-            return (BlockingStreamingHttpService) handler;
-        }
-        return new BlockingStreamingHttpService() {
-            @Override
-            public BlockingStreamingHttpResponse handle(final HttpServiceContext ctx,
-                                                        final BlockingStreamingHttpRequest request,
-                                                        final BlockingStreamingHttpResponseFactory responseFactory)
-                    throws Exception {
-                return handler.handle(ctx, request, responseFactory);
-            }
-        };
     }
 
     /**

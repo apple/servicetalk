@@ -180,8 +180,8 @@ final class BlockingStreamingHttpClientToStreamingHttpClient extends StreamingHt
         }
 
         @Override
-        public <T> UpgradableStreamingHttpResponse serializePayloadBody(final Publisher<T> payloadBody,
-                                                                        final HttpSerializer<T> serializer) {
+        public <T> UpgradableStreamingHttpResponse payloadBody(final Publisher<T> payloadBody,
+                                                               final HttpSerializer<T> serializer) {
             return transformPayloadBody(old -> payloadBody.liftSynchronous(
                     new SerializeBridgeFlowControlAndDiscardOperator<>(old)), serializer);
         }

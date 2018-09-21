@@ -96,14 +96,14 @@ class DefaultBlockingStreamingHttpResponse<P> extends DefaultHttpResponseMetaDat
     }
 
     @Override
-    public final <T> BlockingStreamingHttpResponse serializePayloadBody(final Iterable<T> payloadBody,
-                                                                        final HttpSerializer<T> serializer) {
+    public final <T> BlockingStreamingHttpResponse payloadBody(final Iterable<T> payloadBody,
+                                                               final HttpSerializer<T> serializer) {
         return transformPayloadBody(consumeOldPayloadBodySerialized(BlockingIterables.from(payloadBody)), serializer);
     }
 
     @Override
-    public final <T> BlockingStreamingHttpResponse serializePayloadBody(final CloseableIterable<T> payloadBody,
-                                                                        final HttpSerializer<T> serializer) {
+    public final <T> BlockingStreamingHttpResponse payloadBody(final CloseableIterable<T> payloadBody,
+                                                               final HttpSerializer<T> serializer) {
         return transformPayloadBody(consumeOldPayloadBodySerialized(from(payloadBody)), serializer);
     }
 

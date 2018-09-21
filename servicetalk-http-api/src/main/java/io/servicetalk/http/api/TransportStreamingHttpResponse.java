@@ -80,8 +80,8 @@ final class TransportStreamingHttpResponse extends DefaultHttpResponseMetaData i
     }
 
     @Override
-    public <T> StreamingHttpResponse serializePayloadBody(final Publisher<T> payloadBody,
-                                                          final HttpSerializer<T> serializer) {
+    public <T> StreamingHttpResponse payloadBody(final Publisher<T> payloadBody,
+                                                 final HttpSerializer<T> serializer) {
         final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
         return new BufferStreamingHttpResponse(this, allocator, serializer.serialize(headers(),
                 payloadBody.liftSynchronous(new SerializeBridgeFlowControlAndDiscardOperator<>(

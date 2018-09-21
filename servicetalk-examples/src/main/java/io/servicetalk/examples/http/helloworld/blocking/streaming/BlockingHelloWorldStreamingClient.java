@@ -29,7 +29,7 @@ public final class BlockingHelloWorldStreamingClient {
                 .buildBlockingStreaming()) {
             BlockingStreamingHttpResponse response = client.request(client.get("/sayHello"));
             System.out.println(response.toString((name, value) -> value));
-            try (BlockingIterator<String> payload = response.deserializePayloadBody(textDeserializer()).iterator()) {
+            try (BlockingIterator<String> payload = response.payloadBody(textDeserializer()).iterator()) {
                 while (payload.hasNext()) {
                     System.out.println(payload.next());
                 }

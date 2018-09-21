@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Single;
 
 /**
  * Same as {@link StreamingHttpService} but that accepts {@link HttpRequest} and returns {@link HttpResponse}.
@@ -32,6 +31,11 @@ public abstract class HttpService implements HttpRequestHandler, AsyncCloseable 
     @Override
     public Completable closeAsync() {
         return Completable.completed();
+    }
+
+    @Override
+    public final HttpService asHttpService() {
+        return this;
     }
 
     /**
@@ -59,19 +63,6 @@ public abstract class HttpService implements HttpRequestHandler, AsyncCloseable 
      */
     public final BlockingHttpService asBlockingService() {
         return asBlockingServiceInternal();
-    }
-
-    static HttpService wrap(HttpRequestHandler handler) {
-        if (handler instanceof HttpService) {
-            return (HttpService) handler;
-        }
-        return new HttpService() {
-            @Override
-            public Single<? extends HttpResponse> handle(final HttpServiceContext ctx, final HttpRequest request,
-                                                         HttpResponseFactory responseFactory) {
-                return handler.handle(ctx, request, responseFactory);
-            }
-        };
     }
 
     StreamingHttpService asStreamingServiceInternal() {

@@ -32,6 +32,11 @@ public abstract class StreamingHttpService implements AsyncCloseable, StreamingH
         return Completable.completed();
     }
 
+    @Override
+    public final StreamingHttpService asStreamingHttpService() {
+        return this;
+    }
+
     /**
      * Convert this {@link StreamingHttpService} to the {@link HttpService} API.
      *
