@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.MockedSingleListenerRule;
 import io.servicetalk.concurrent.api.MockedSubscriberRule;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherRule;
+import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Rule;
@@ -224,7 +225,7 @@ public class SpliceFlatStreamToMetaSingleTest {
         payloadSubscriber.request(3);
         upstream.sendItems(one, two, last);
         dupePayloadSubscriber.subscribe(data.getPayload());
-        dupePayloadSubscriber.verifyFailure(IllegalStateException.class);
+        dupePayloadSubscriber.verifyFailure(DuplicateSubscribeException.class);
         upstream.complete();
         payloadSubscriber.verifySuccess(one, two, last);
     }
@@ -244,7 +245,7 @@ public class SpliceFlatStreamToMetaSingleTest {
         upstream.complete();
         payloadSubscriber.verifySuccess(one, two, last);
         dupePayloadSubscriber.subscribe(data.getPayload());
-        dupePayloadSubscriber.verifyFailure(IllegalStateException.class);
+        dupePayloadSubscriber.verifyFailure(DuplicateSubscribeException.class);
     }
 
     @Test

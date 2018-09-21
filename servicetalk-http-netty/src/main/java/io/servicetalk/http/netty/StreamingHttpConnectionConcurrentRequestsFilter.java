@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.client.api.MaxRequestLimitExceededException;
+import io.servicetalk.client.internal.MaxRequestLimitExceededRejectedSubscribeException;
 import io.servicetalk.client.internal.RequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -64,8 +64,9 @@ final class StreamingHttpConnectionConcurrentRequestsFilter extends StreamingHtt
                     next.request(request).liftSynchronous(new ConcurrencyControlSingleOperator(limiter)).subscribe(subscriber);
                 } else {
                     subscriber.onSubscribe(IGNORE_CANCEL);
-                    subscriber.onError(new MaxRequestLimitExceededException("Max concurrent requests saturated for: " +
-                            StreamingHttpConnectionConcurrentRequestsFilter.this));
+                    subscriber.onError(new MaxRequestLimitExceededRejectedSubscribeException(
+                            "Max concurrent requests saturated for: " +
+                                    StreamingHttpConnectionConcurrentRequestsFilter.this));
                 }
             }
         };

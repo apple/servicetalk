@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
+import io.servicetalk.concurrent.internal.RejectedSubscribeException;
 import io.servicetalk.redis.api.BlockingBufferRedisCommander;
 import io.servicetalk.redis.api.BlockingPubSubBufferRedisConnection;
 import io.servicetalk.redis.api.BlockingTransactedBufferRedisCommander;
@@ -376,7 +377,7 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
         try {
             iterator3.next();
             fail("Should have failed");
-        } catch (IllegalStateException e) {
+        } catch (RejectedSubscribeException e) {
             // Expected
         }
 

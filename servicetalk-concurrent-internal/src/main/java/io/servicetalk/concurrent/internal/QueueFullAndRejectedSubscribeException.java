@@ -13,20 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.client.api;
+package io.servicetalk.concurrent.internal;
 
 /**
- * Exception raised when more concurrent requests have been issued on a connection than is allowed.
+ * Exception indicating a bounded queue is full, which also resulted in a rejected subscribe.
  */
-public class MaxRequestLimitExceededException extends RetryableException {
-    private static final long serialVersionUID = 9114515334374632438L;
-
+public final class QueueFullAndRejectedSubscribeException extends QueueFullException implements RejectedSubscribeError {
     /**
      * New instance.
      *
-     * @param message The exception message.
+     * @param queueIdentifier Identifier for the queue that is full.
+     * @param capacity Capacity for queue.
      */
-    public MaxRequestLimitExceededException(String message) {
-        super(message);
+    public QueueFullAndRejectedSubscribeException(final String queueIdentifier, final int capacity) {
+        super(queueIdentifier, capacity);
     }
 }

@@ -16,6 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -69,7 +70,8 @@ final class FlushOnReadCompleteStrategy implements FlushStrategy {
                         src.doBeforeFinally(() -> ReadAwareFlushStrategyHolderImpl.this.subscriber = null).subscribe(rasub);
                     } else {
                         subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-                        subscriber.onError(new IllegalStateException("Only one subscriber allowed for a write source."));
+                        subscriber.onError(new DuplicateSubscribeException(
+                                ReadAwareFlushStrategyHolderImpl.this.subscriber, subscriber));
                     }
                 }
             };

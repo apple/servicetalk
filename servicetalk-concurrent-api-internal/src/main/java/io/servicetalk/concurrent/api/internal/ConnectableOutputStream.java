@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api.internal;
 
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
 
 import org.reactivestreams.Subscriber;
@@ -432,7 +433,7 @@ public final class ConnectableOutputStream extends OutputStream {
                         currentState == TERMINAL_SENT || currentState instanceof Subscriber ||
                         currentState instanceof Throwable) {
                     subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-                    subscriber.onError(new IllegalStateException("Publisher already subscribed to"));
+                    subscriber.onError(new DuplicateSubscribeException(currentState, subscriber));
                     return;
                 }
             }

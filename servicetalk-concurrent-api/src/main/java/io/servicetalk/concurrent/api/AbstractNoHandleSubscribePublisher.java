@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.internal.RejectedSubscribeException;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import org.reactivestreams.Subscriber;
@@ -39,6 +40,7 @@ abstract class AbstractNoHandleSubscribePublisher<T> extends Publisher<T> {
     @Override
     protected final void handleSubscribe(Subscriber<? super T> subscriber) {
         subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-        subscriber.onError(new UnsupportedOperationException("Subscribe with no executor is not supported for " + getClass()));
+        subscriber.onError(new RejectedSubscribeException("Subscribe with no executor is not supported for "
+                + getClass()));
     }
 }

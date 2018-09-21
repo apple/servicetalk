@@ -18,9 +18,9 @@ package io.servicetalk.redis.netty;
 import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.QueueFullException;
+import io.servicetalk.concurrent.internal.RejectedSubscribeError;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisProtocolSupport;
@@ -137,8 +137,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
                  */
                 final Publisher<PubSubChannelMessage> response;
                 if (deferSubscribeTillConnect) {
-                    response = concatDeferOnSubscribe(write, readStreamSplitter.registerNewCommand(command),
-                            connection.getExecutionContext().getExecutor());
+                    response = concatDeferOnSubscribe(write, readStreamSplitter.registerNewCommand(command));
                 } else {
                     response = write.andThen(readStreamSplitter.registerNewCommand(command));
                 }
@@ -207,12 +206,21 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
         return toReturn;
     }
 
+    private static final class RetryableRejectedSubscribeException extends RetryableException
+            implements RejectedSubscribeError {
+        RetryableRejectedSubscribeException(Throwable cause) {
+            super(cause);
+        }
+    }
+
     private static final class WriteQueue extends SequentialTaskQueue<WriteQueue.WriteTask> {
 
         private static final RetryableException CONNECTION_IS_CLOSED_WRITE =
-                unknownStackTrace(new RetryableException(new ClosedChannelException()), WriteQueue.class, "write(..)");
+                unknownStackTrace(new RetryableRejectedSubscribeException(new ClosedChannelException()),
+                        WriteQueue.class, "write(..)");
         private static final RetryableException CONNECTION_IS_CLOSED_QUIT =
-                unknownStackTrace(new RetryableException(new ClosedChannelException()), WriteQueue.class, "quit(..)");
+                unknownStackTrace(new RetryableRejectedSubscribeException(new ClosedChannelException()),
+                        WriteQueue.class, "quit(..)");
 
         private static final AtomicIntegerFieldUpdater<WriteTask> taskCalledPostTermUpdater = newUpdater(WriteTask.class, "taskCalledPostTerm");
         private static final AtomicIntegerFieldUpdater<WriteQueue> closedUpdater = newUpdater(WriteQueue.class, "closed");
@@ -352,12 +360,10 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
      *                    {@link RedisProtocolSupport.Command#SUBSCRIBE} or
      *                    {@link RedisProtocolSupport.Command#PSUBSCRIBE} commands to Redis
      * @param next        the {@link PubSubChannelMessage} producer to subscribe to after completing the original {@link Completable}
-     * @param executor {@link Executor} used to create the returned {@link Publisher}.
      * @return the composite operator
      */
     private static Publisher<PubSubChannelMessage> concatDeferOnSubscribe(Completable queuedWrite,
-                                                                          Publisher<PubSubChannelMessage> next,
-                                                                          Executor executor) {
+                                                                          Publisher<PubSubChannelMessage> next) {
 
         return new Publisher<PubSubChannelMessage>() {
             @Override
