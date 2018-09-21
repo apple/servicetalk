@@ -224,10 +224,9 @@ public class RequestResponseCloseHandlerTest {
                     {C, e(OB, OE, OB, OE, OB, OS, SR, IB, IE, IB, IE, FC), CCO, "outbound closed while not reading, >2 pending"},
                     {C, e(OB, OE, OB, OE, OB, IB, OS, SR, IE, IB, IE, FC), CCO, "outbound closed while reading, >2 pending"},
                     {S, e(IS, FC), CCI, "idle, inbound closed"},
-                    {S, e(IB, IS, SR, FC), CCI, "req aborted, inbound closed"},
                     {S, e(IB, OB, IE, IS, OE, FC), CCI, "continue resp, req completed, inbound closed"},
                     {S, e(IB, OB, OE, IS, SR, FC), CCI, "req aborted, resp completed, inbound closed"},
-                    {S, e(IB, OB, IE, IB, IS, SR, OE, FC), CCI, "new req abort, complete resp, inbound closed"},
+                    {S, e(IB, OB, IE, IB, IS, SR, OE, OB, OE, FC), CCI, "new req abort, complete responses, inbound closed"},
                     {S, e(OS, FC), CCO, "idle, outbound closed"},
                     {S, e(IB, OS, SR, FC), CCO, "req aborted, outbound closed"},
                     {S, e(IB, OB, OS, SR, FC), CCO, "req aborted, outbound shutdown, reset"},
@@ -253,10 +252,11 @@ public class RequestResponseCloseHandlerTest {
                     {S, e(IB, OB, OE, IE, UC, FC), UCO, "interleaved full dup, idle, user close"},
                     {S, e(IB, OB, UC, OE, IE, FC), UCO, "interleaved full dup, user close"},
                     {S, e(IB, OB, IS, SR, OE, FC), CCI, "inbound closed while reading no pipeline"},
-                    {S, e(IB, IE, IB, IS, SR, OB, OE, FC), CCI, "inbound closed while not writing pipelined, 2 pending"},
-                    {S, e(IB, IE, IB, OB, IS, SR, OE, FC), CCI, "inbound closed while writing pipelined, 1 pending"},
-                    {S, e(IB, IE, IB, IE, IB, IS, SR, OB, OE, OB, OE, FC), CCI, "inbound closed while not writing pipelined, >2 pending"},
-                    {S, e(IB, IE, IB, IE, IB, OB, IS, SR, OE, OB, OE, FC), CCI, "inbound closed while writing pipelined, >2 pending"},
+                    {S, e(IB, IS, SR, OB, OE, FC), CCI, "inbound closed while reading delay close until response"},
+                    {S, e(IB, IE, IB, IS, SR, OB, OE, OB, OE, FC), CCI, "inbound closed while not writing pipelined, 2 pending"},
+                    {S, e(IB, IE, IB, OB, IS, SR, OE, OB, OE, FC), CCI, "inbound closed while writing pipelined, 1 pending"},
+                    {S, e(IB, IE, IB, IE, IB, IS, SR, OB, OE, OB, OE, OB, OE, FC), CCI, "inbound closed while not writing pipelined, >2 pending"},
+                    {S, e(IB, IE, IB, IE, IB, OB, IS, SR, OE, OB, OE, OB, OE, FC), CCI, "inbound closed while writing pipelined, >2 pending"},
             });
             String fileName = se.getFileName();
             int offset = se.getLineNumber() + 3; // Lines between `se` and first parameter

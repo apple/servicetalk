@@ -302,13 +302,11 @@ class RequestResponseCloseHandler extends CloseHandler {
             }
         } else if (evt == CHANNEL_CLOSED_INBOUND) { // Server
             if (has(state, READ)) {
-                // abort if we can't read the current request to completion continue writing pending responses
+                // don't prematurely close to allow server error response, but unset READ flag
+                state = unset(state, READ);
                 setSocketResetOnClose(channel);
-                if (pending <= 1 && !has(state, WRITE)) {
+                if (idle(pending, state)) {
                     closeChannel(channel, evt);
-                } else if (pending != 0) {
-                    // discards current request, ensures an eventual "idle" state
-                    --pending;
                 }
             }
         } else if (pending != 0 || has(state, WRITE)) { // Server && CHANNEL_CLOSED_OUTBOUND
