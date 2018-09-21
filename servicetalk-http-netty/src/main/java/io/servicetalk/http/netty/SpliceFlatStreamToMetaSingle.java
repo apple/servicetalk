@@ -19,9 +19,9 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 
 import org.reactivestreams.Subscription;
 
