@@ -2114,6 +2114,27 @@ public abstract class Publisher<T> implements org.reactivestreams.Publisher<T> {
     }
 
     /**
+     * Create a new {@link Publisher} that on {@link Publisher#subscribe(Subscriber)} will emit all data from the
+     * {@link InputStream} to the {@link Subscriber} and then {@link Subscriber#onComplete()}.
+     * <p>
+     * The Reactive Streams specification provides two criteria (
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#3.4">3.4</a>, and
+     * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#3.5">3.5</a>) stating
+     * the {@link Subscription} should be "responsive". The responsiveness of the associated {@link Subscription}s will
+     * depend upon the behavior of the {@code stream} below. Make sure the {@link Executor} for this execution chain
+     * can tolerate this responsiveness and any blocking behavior.
+     * @param stream provides the data in the form of {@code byte[]} to be emitted to the {@link Subscriber} to the
+     * returned {@link Publisher}. Given the blocking nature of {@link InputStream}, assume {@link
+     * Subscription#request(long)} can block when the underlying {@link InputStream} blocks on {@link
+     * InputStream#read(byte[], int, int)}.
+     * @return a new {@link Publisher} that on {@link Publisher#subscribe(Subscriber)} will emit all data from the
+     * {@link InputStream} to the {@link Subscriber} and then {@link Subscriber#onComplete()}.
+     */
+    public static Publisher<byte[]> from(InputStream stream) {
+        return new FromInputStreamPublisher(stream);
+    }
+
+    /**
      * Creates a new {@link Publisher} that completes when subscribed without emitting any item to its
      * {@link Subscriber}.
      *
