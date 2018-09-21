@@ -32,8 +32,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -57,8 +57,6 @@ public final class DefaultSerializer implements Serializer {
         // re-allocation and copy.
         return max(DEFAULT_SERIALIZATION_SIZE_BYTES_ESTIMATE, (min(MAX_READABLE_BYTES_TO_ADJUST, lastSize) << 2) / 3);
     };
-
-    private static final Object DUMMY = new Object();
 
     private final SerializationProvider serializationProvider;
 
@@ -328,22 +326,28 @@ public final class DefaultSerializer implements Serializer {
     private static <T> T getSingleValueOnly(CloseableIterable<T> iterable) {
         final CloseableIterator<T> iterator = iterable.iterator();
         final T value = iterator.next();
-        if (iterator.hasNext()) {
-            throw new SerializationException("More than one value was deserialized.");
-        }
-
-        try {
-            iterator.close(); // May throw in case of incomplete accumulated data
-            return value;
-        } catch (Throwable t) {
-            throwException(t);
-            return uncheckedCast();
-        }
+        closeIterator(iterator,
+                iterator.hasNext() ? new SerializationException("More than one value was deserialized.") : null);
+        return value;
     }
 
-    @SuppressWarnings("unchecked")
-    private static <T> T uncheckedCast() {
-        return (T) DUMMY;
+    private static void closeIterator(CloseableIterator<?> iterator, @Nullable SerializationException cause) {
+        try {
+            iterator.close(); // May throw in case of incomplete accumulated data
+        } catch (Exception e) {
+            if (cause != null) {
+                cause.addSuppressed(e);
+                throw cause;
+            }
+            if (e instanceof SerializationException) {
+                throw (SerializationException) e;
+            }
+            throw new SerializationException("Failed to close iterator", e);
+        }
+
+        if (cause != null) {
+            throw cause;
+        }
     }
 
     private static class SerializerFunction<T> implements Function<T, Buffer> {

@@ -421,7 +421,8 @@ public interface Serializer {
      *
      * @return The deserialized object.
      *
-     * @throws SerializationException If the passed {@link Buffer} contains an incomplete object.
+     * @throws SerializationException If the passed {@link Buffer} contains an incomplete object or if there is any
+     * left over data in the {@link Buffer} after the deserialization is complete.
      */
     <T> T deserializeAggregatedSingle(Buffer serializedData, Class<T> type);
 
@@ -434,7 +435,8 @@ public interface Serializer {
      *
      * @return The deserialized object.
      *
-     * @throws SerializationException If the passed {@link Buffer} contains an incomplete object.
+     * @throws SerializationException If the passed {@link Buffer} contains an incomplete object or if there is any
+     * left over data in the {@link Buffer} after the deserialization is complete.
      */
     <T> T deserializeAggregatedSingle(Buffer serializedData, TypeHolder<T> typeHolder);
 }
