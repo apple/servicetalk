@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.router.jersey.internal.InputStreamIterator;
 import io.servicetalk.serialization.api.DefaultSerializer;
+import io.servicetalk.serialization.api.SerializationException;
 import io.servicetalk.serialization.api.Serializer;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -51,6 +52,7 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Providers;
 
+import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.router.jersey.BufferPublisherInputStream.handleEntityStream;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseBufferPublisher;
 import static javax.ws.rs.Priorities.ENTITY_CODER;
@@ -97,8 +99,8 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
 
         if (Single.class.isAssignableFrom(type)) {
             return handleEntityStream(entityStream, allocator,
-                    (p, a) -> ser.deserialize(p, getSourceClass(genericType)).first(),
-                    (is, a) -> ser.deserialize(toBufferPublisher(is, a), getSourceClass(genericType)).first());
+                    (p, a) -> success(deserialize(p, ser, getSourceClass(genericType), a)),
+                    (is, a) -> success(deserialize(toBufferPublisher(is, a), ser, getSourceClass(genericType), a)));
         } else if (Publisher.class.isAssignableFrom(type)) {
             return handleEntityStream(entityStream, allocator,
                     (p, a) -> ser.deserialize(p, getSourceClass(genericType)),
@@ -169,6 +171,11 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
             return ser.deserializeAggregatedSingle(cb, type);
         } catch (final NoSuchElementException e) {
             throw new BadRequestException("No deserializable JSON content", e);
+        } catch (final SerializationException e) {
+            // SerializationExceptionMapper can't always tell for sure that the exception was thrown because of
+            // bad user data: here we are deserializing user data so we can assume we fail because of it and
+            // immediately throw the properly mapped JAX-RS exception
+            throw new BadRequestException("Invalid JSON data", e);
         }
     }
 
@@ -179,12 +186,13 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
                         mediaType.getSubtype().toLowerCase().endsWith('+' + APPLICATION_JSON_TYPE.getSubtype()));
     }
 
-    private static Class<?> getSourceClass(final Type sourceType) {
+    @SuppressWarnings("unchecked")
+    private static <T> Class<T> getSourceClass(final Type sourceType) {
         final Type sourceContentType = ((ParameterizedType) sourceType).getActualTypeArguments()[0];
         if (sourceContentType instanceof Class) {
-            return (Class<?>) sourceContentType;
+            return (Class<T>) sourceContentType;
         } else if (sourceContentType instanceof ParameterizedType) {
-            return (Class<?>) ((ParameterizedType) sourceContentType).getRawType();
+            return (Class<T>) ((ParameterizedType) sourceContentType).getRawType();
         }
 
         throw new IllegalArgumentException("Unsupported source type: " + sourceType);

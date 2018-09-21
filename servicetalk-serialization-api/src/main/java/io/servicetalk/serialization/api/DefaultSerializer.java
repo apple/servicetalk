@@ -20,6 +20,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.CloseableIterable;
+import io.servicetalk.concurrent.CloseableIterator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.AbstractCloseableIterable;
 
@@ -32,6 +33,7 @@ import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 import javax.annotation.Nonnull;
 
+import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -55,6 +57,8 @@ public final class DefaultSerializer implements Serializer {
         // re-allocation and copy.
         return max(DEFAULT_SERIALIZATION_SIZE_BYTES_ESTIMATE, (min(MAX_READABLE_BYTES_TO_ADJUST, lastSize) << 2) / 3);
     };
+
+    private static final Object DUMMY = new Object();
 
     private final SerializationProvider serializationProvider;
 
@@ -216,12 +220,12 @@ public final class DefaultSerializer implements Serializer {
 
     @Override
     public <T> T deserializeAggregatedSingle(final Buffer serializedData, final Class<T> type) {
-        return deserializeAggregated(serializedData, type).iterator().next();
+        return getSingleValueOnly(deserializeAggregated(serializedData, type));
     }
 
     @Override
     public <T> T deserializeAggregatedSingle(final Buffer serializedData, final TypeHolder<T> typeHolder) {
-        return deserializeAggregated(serializedData, typeHolder).iterator().next();
+        return getSingleValueOnly(deserializeAggregated(serializedData, typeHolder));
     }
 
     private static <T> void applySerializer0(final Subscriber<? super Buffer> subscriber,
@@ -319,6 +323,27 @@ public final class DefaultSerializer implements Serializer {
                 deSerializer.close();
             }
         };
+    }
+
+    private static <T> T getSingleValueOnly(CloseableIterable<T> iterable) {
+        final CloseableIterator<T> iterator = iterable.iterator();
+        final T value = iterator.next();
+        if (iterator.hasNext()) {
+            throw new SerializationException("More than one value was deserialized.");
+        }
+
+        try {
+            iterator.close(); // May throw in case of incomplete accumulated data
+            return value;
+        } catch (Throwable t) {
+            throwException(t);
+            return uncheckedCast();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T uncheckedCast() {
+        return (T) DUMMY;
     }
 
     private static class SerializerFunction<T> implements Function<T, Buffer> {
