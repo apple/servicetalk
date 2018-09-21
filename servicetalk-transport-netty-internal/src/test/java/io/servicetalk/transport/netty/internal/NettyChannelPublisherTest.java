@@ -45,6 +45,7 @@ import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEP
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -394,6 +395,22 @@ public class NettyChannelPublisherTest {
         testChannelReadThrows(true);
     }
 
+    @Test
+    public void resubscribePostErrorEmitsError() {
+        subscriber.subscribe(publisher);
+        fireChannelReadToBuffer(1, 2, 3);
+        subscriber.request(3).verifyItems(1, 2, 3);
+        channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
+        subscriber.verifyFailure(DELIBERATE_EXCEPTION);
+        assertFalse(channel.isActive());
+        assertFalse(channel.isOpen());
+
+        AtomicReference<Throwable> exRef = new AtomicReference<>();
+        publisher.doBeforeError(exRef::set).forEach(__ -> { });
+        assertThat("Subscriber active post channel error.", exRef.get(),
+                is(instanceOf(ClosedChannelException.class)));
+    }
+
     private void testChannelReadThrows(boolean requestLate) {
         final AtomicBoolean onErrorCalled = new AtomicBoolean();
         final AtomicReference<Subscription> subRef = new AtomicReference<>();
@@ -451,7 +468,8 @@ public class NettyChannelPublisherTest {
         if (requestLate) {
             subscription.request(1);
         }
-        assertTrue(channel.writeInbound(2));
+        assertFalse(channel.isActive());
+        assertFalse(channel.isOpen());
 
         AssertionError err = assertErrorRef.get();
         if (err != null) {

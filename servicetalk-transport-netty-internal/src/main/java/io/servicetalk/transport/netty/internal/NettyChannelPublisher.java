@@ -41,14 +41,15 @@ import static java.util.Objects.requireNonNull;
 
 final class NettyChannelPublisher<T> extends Publisher<T> {
 
-    private static final ClosedChannelException CLOSED_CHANNEL_EXCEPTION = unknownStackTrace(new ClosedChannelException(), NettyChannelPublisher.class, "channelInactive");
+    private static final ClosedChannelException CLOSED_CHANNEL_EXCEPTION =
+            unknownStackTrace(new ClosedChannelException(), NettyChannelPublisher.class, "channelInactive");
 
     // All state is only touched from eventloop.
     private long requestCount;
     private boolean requested;
     private boolean inProcessPending;
     @Nullable
-    private Subscriber<? super T> subscriber;
+    private SubscriptionImpl subscription;
     @Nullable
     private Queue<Object> pending;
     @Nullable
@@ -78,22 +79,23 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
 
         if (data instanceof ReferenceCounted) {
             /*
-             * We do not expect ref-counted objects here as ST does not support them and do not take care to clean them in error conditions.
-             * Hence we fail-fast when we see such objects.
+             * We do not expect ref-counted objects here as ST does not support them and do not take care to clean them
+             * in error conditions. Hence we fail-fast when we see such objects.
              */
             ReferenceCountUtil.release(data);
-            exceptionCaught(new IllegalStateException("Reference counted leaked netty's pipeline. Object: " + data.getClass().getSimpleName()));
+            exceptionCaught(new IllegalStateException("Reference counted leaked netty's pipeline. Object: " +
+                    data.getClass().getSimpleName()));
             channel.close();
             return;
         }
 
-        if (subscriber == null || shouldBuffer()) {
+        if (subscription == null || shouldBuffer()) {
             addPending(data);
-            if (subscriber != null) {
-                processPending(subscriber);
+            if (subscription != null) {
+                processPending(subscription);
             }
         } else {
-            emit(subscriber, data);
+            emit(subscription, data);
         }
     }
 
@@ -107,13 +109,13 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
 
     void exceptionCaught(Throwable throwable) {
         assertInEventloop();
-        if (subscriber == null || shouldBuffer()) {
+        if (subscription == null || shouldBuffer()) {
             addPending(TerminalNotification.error(throwable));
-            if (subscriber != null) {
-                processPending(subscriber);
+            if (subscription != null) {
+                processPending(subscription);
             }
         } else {
-            sendErrorToTarget(subscriber, throwable);
+            sendErrorToTarget(subscription, throwable);
         }
     }
 
@@ -125,27 +127,27 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
 
     // All private methods MUST be invoked from the eventloop.
 
-    private void requestN(long n, Subscriber<? super T> forSubscriber) {
-        if (forSubscriber != subscriber) {
+    private void requestN(long n, SubscriptionImpl forSubscription) {
+        if (forSubscription != subscription) {
             // Subscriptions shares common state hence a requestN after termination/cancellation must be ignored
             return;
         }
         if (isRequestNValid(n)) {
             requestCount = addWithOverflowProtection(requestCount, n);
-            if (!processPending(forSubscriber) && !requested && requestCount > 0) {
+            if (!processPending(forSubscription) && !requested && requestCount > 0) {
                 // If subscriber wasn't terminated from the queue, then request more.
                 requestChannel();
             }
         } else {
-            resetSubscriber();
-            forSubscriber.onError(newExceptionForInvalidRequestN(n));
-            // The specification has been violated. There is no way to know if more demand for data will come, so we force close the connection
-            // to ensure we don't hang indefinitely.
+            resetSubscription();
+            forSubscription.associatedSub.onError(newExceptionForInvalidRequestN(n));
+            // The specification has been violated. There is no way to know if more demand for data will come, so we
+            // force close the connection to ensure we don't hang indefinitely.
             channel.close();
         }
     }
 
-    private boolean processPending(Subscriber<? super T> target) {
+    private boolean processPending(SubscriptionImpl target) {
         // Should always be called from eventloop. (assert done before calling)
         if (inProcessPending || pending == null) {
             // Guard against re-entrance.
@@ -183,7 +185,7 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
         return false;
     }
 
-    private boolean emit(Subscriber<? super T> target, Object next) {
+    private boolean emit(SubscriptionImpl target, Object next) {
         requestCount--;
         @SuppressWarnings("unchecked")
         T t = (T) next;
@@ -191,14 +193,14 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
          * In case when this Publisher is converted to a Single (with isLast always returning true),
          * it should be possible for us to cancel the Subscription inside onNext.
          * Operators like first that pick a single item does exactly that.
-         * If we do not resetSubscriber() before onNext such a cancel will be illegal and close the connection.
+         * If we do not resetSubscription() before onNext such a cancel will be illegal and close the connection.
          */
         boolean isLast = isLastElement.test(t);
         if (isLast) {
-            resetSubscriber();
+            resetSubscription();
         }
         try {
-            target.onNext(t);
+            target.associatedSub.onNext(t);
         } catch (Throwable cause) {
             // Ensure we call subscriber.onError(..)  and cancel the subscription
             sendErrorToTarget(target, cause);
@@ -207,28 +209,33 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
             return true;
         }
         if (isLast) {
-            target.onComplete();
+            target.associatedSub.onComplete();
         }
         return isLast;
     }
 
-    private void sendErrorToTarget(Subscriber<? super T> target, Throwable throwable) {
-        resetSubscriber();
-        target.onError(throwable);
+    private void sendErrorToTarget(SubscriptionImpl target, Throwable throwable) {
+        resetSubscription();
+        try {
+            target.associatedSub.onError(throwable);
+        } finally {
+            channel.close();
+        }
     }
 
-    private void cancel(Subscriber<? super T> forSubscriber) {
-        if (forSubscriber != subscriber) {
+    private void cancel(SubscriptionImpl forSubscription) {
+        if (forSubscription != subscription) {
             // Subscriptions shares common state hence a requestN after termination/cancellation must be ignored
             return;
         }
-        resetSubscriber();
-        // If an incomplete subscriber is cancelled then close channel. A subscriber can cancel after getting complete, which should not close the channel.
+        resetSubscription();
+        // If an incomplete subscriber is cancelled then close channel. A subscriber can cancel after getting complete,
+        // which should not close the channel.
         channel.close();
     }
 
-    private void resetSubscriber() {
-        subscriber = null;
+    private void resetSubscription() {
+        subscription = null;
         requestCount = 0;
     }
 
@@ -249,18 +256,20 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
     }
 
     private void subscribe0(Subscriber<? super T> subscriber) {
-        if (this.subscriber != null) {
+        SubscriptionImpl subscription = this.subscription;
+        if (subscription != null) {
             subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-            subscriber.onError(new DuplicateSubscribeException(this.subscriber, subscriber));
+            subscriber.onError(new DuplicateSubscribeException(subscription.associatedSub, subscriber));
         } else {
-            this.subscriber = subscriber;
             requestCount = 0; /*Don't pollute requested count between subscribers */
-            subscriber.onSubscribe(new SubscriptionImpl(subscriber));
+            final SubscriptionImpl s = new SubscriptionImpl(subscriber);
+            this.subscription = s;
+            subscriber.onSubscribe(s);
             // Fatal error is removed from the queue once it is drained for a Subscriber.
             // In absence of the below, any subsequent Subscriber will not get any fatal error.
-            if (!processPending(subscriber) && fatalError != null && pending != null && pending.isEmpty()) {
+            if (!processPending(s) && fatalError != null && pending != null && pending.isEmpty()) {
                 // We are already on the eventloop, so we are sure that nobody else is emitting to the Subscriber.
-                sendErrorToTarget(subscriber, fatalError);
+                sendErrorToTarget(s, fatalError);
             }
         }
     }
@@ -280,18 +289,18 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
         @Override
         public void request(long n) {
             if (eventLoop.inEventLoop()) {
-                NettyChannelPublisher.this.requestN(n, associatedSub);
+                NettyChannelPublisher.this.requestN(n, this);
             } else {
-                eventLoop.execute(() -> NettyChannelPublisher.this.requestN(n, associatedSub));
+                eventLoop.execute(() -> NettyChannelPublisher.this.requestN(n, SubscriptionImpl.this));
             }
         }
 
         @Override
         public void cancel() {
             if (eventLoop.inEventLoop()) {
-                NettyChannelPublisher.this.cancel(associatedSub);
+                NettyChannelPublisher.this.cancel(this);
             } else {
-                eventLoop.execute(() -> NettyChannelPublisher.this.cancel(associatedSub));
+                eventLoop.execute(() -> NettyChannelPublisher.this.cancel(SubscriptionImpl.this));
             }
         }
     }
