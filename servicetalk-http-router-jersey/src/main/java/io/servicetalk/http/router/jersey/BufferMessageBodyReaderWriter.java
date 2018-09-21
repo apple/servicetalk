@@ -42,6 +42,7 @@ import javax.ws.rs.ext.MessageBodyWriter;
 
 import static io.servicetalk.http.router.jersey.BufferPublisherInputStream.handleEntityStream;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseBufferPublisher;
+import static java.lang.Integer.MAX_VALUE;
 import static javax.ws.rs.Priorities.ENTITY_CODER;
 import static javax.ws.rs.core.HttpHeaders.CONTENT_LENGTH;
 import static javax.ws.rs.core.MediaType.WILDCARD;
@@ -81,7 +82,7 @@ final class BufferMessageBodyReaderWriter implements MessageBodyReader<Buffer>, 
         return handleEntityStream(entityStream, ctxRefProvider.get().get().getExecutionContext().getBufferAllocator(),
                 (p, a) -> {
                     // FIXME use Buffer aggregator helper when ready
-                    final CompositeBuffer cb = a.newCompositeBuffer();
+                    final CompositeBuffer cb = a.newCompositeBuffer(MAX_VALUE);
                     p.toIterable().forEach(cb::addBuffer);
                     return cb;
                 },

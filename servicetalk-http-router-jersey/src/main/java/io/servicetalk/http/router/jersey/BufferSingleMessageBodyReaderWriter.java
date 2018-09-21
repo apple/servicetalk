@@ -30,6 +30,8 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
+import static java.lang.Integer.MAX_VALUE;
+
 /**
  * A combined {@link MessageBodyReader} / {@link MessageBodyWriter} that allows bypassing Java IO streams
  * when request/response entities need to be converted to/from {@code Single<Buffer>}.
@@ -50,7 +52,8 @@ final class BufferSingleMessageBodyReaderWriter
                                    final InputStream entityStream) throws WebApplicationException {
         return readFrom(entityStream, (p, a) ->
                 // FIXME use Buffer aggregator helper when ready
-                p.reduce(a::newCompositeBuffer, (cb, b) -> ((CompositeBuffer) cb).addBuffer(b)), SingleSource::new);
+                p.reduce(() -> a.newCompositeBuffer(MAX_VALUE),
+                        (cb, b) -> ((CompositeBuffer) cb).addBuffer(b)), SingleSource::new);
     }
 
     @Override
