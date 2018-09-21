@@ -15,11 +15,20 @@
  */
 package io.servicetalk.data.jackson.jersey;
 
+import org.junit.Test;
+
 import static io.servicetalk.data.jackson.jersey.resources.SingleJsonResources.PATH;
+import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
+import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
 
 public class SingleJsonResourcesTest extends AbstractStreamingJsonResourcesTest {
     @Override
     protected String testUri(final String path) {
         return PATH + path;
+    }
+
+    @Test
+    public void postTooManyJsonMaps() {
+        sendAndAssertStatusOnly(post("/map", "{\"foo1\":\"bar1\"}{\"foo2\":\"bar2\"}", APPLICATION_JSON), BAD_REQUEST);
     }
 }

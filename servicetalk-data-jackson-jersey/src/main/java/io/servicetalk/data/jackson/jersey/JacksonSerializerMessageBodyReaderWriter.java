@@ -17,12 +17,12 @@ package io.servicetalk.data.jackson.jersey;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.router.jersey.internal.InputStreamIterator;
 import io.servicetalk.serialization.api.DefaultSerializer;
+import io.servicetalk.serialization.api.SerializationException;
 import io.servicetalk.serialization.api.Serializer;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -35,6 +35,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.NoSuchElementException;
+import java.util.concurrent.ExecutionException;
 import javax.annotation.Priority;
 import javax.inject.Provider;
 import javax.ws.rs.BadRequestException;
@@ -53,6 +54,7 @@ import javax.ws.rs.ext.Providers;
 
 import static io.servicetalk.http.router.jersey.BufferPublisherInputStream.handleEntityStream;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseBufferPublisher;
+import static java.lang.Integer.MAX_VALUE;
 import static javax.ws.rs.Priorities.ENTITY_CODER;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 import static javax.ws.rs.core.MediaType.WILDCARD;
@@ -97,8 +99,8 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
 
         if (Single.class.isAssignableFrom(type)) {
             return handleEntityStream(entityStream, allocator,
-                    (p, a) -> ser.deserialize(p, getSourceClass(genericType)).first(),
-                    (is, a) -> ser.deserialize(toBufferPublisher(is, a), getSourceClass(genericType)).first());
+                    (p, a) -> deserialize(p, ser, getSourceClass(genericType), a),
+                    (is, a) -> deserialize(toBufferPublisher(is, a), ser, getSourceClass(genericType), a));
         } else if (Publisher.class.isAssignableFrom(type)) {
             return handleEntityStream(entityStream, allocator,
                     (p, a) -> ser.deserialize(p, getSourceClass(genericType)),
@@ -106,8 +108,8 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
         }
 
         return handleEntityStream(entityStream, allocator,
-                (p, a) -> deserialize(p, ser, type, a),
-                (is, a) -> deserialize(toBufferPublisher(is, a), ser, type, a));
+                (p, a) -> deserializeObject(p, ser, type, a),
+                (is, a) -> deserializeObject(toBufferPublisher(is, a), ser, type, a));
     }
 
     @Override
@@ -159,16 +161,33 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
         return Publisher.from(is).map(a::wrap);
     }
 
-    private static Object deserialize(final Publisher<Buffer> bufferPublisher, final Serializer ser,
-                                      final Class<Object> type, final BufferAllocator allocator) {
-        // FIXME use Buffer aggregator helper when ready
-        final CompositeBuffer cb = allocator.newCompositeBuffer();
-        bufferPublisher.toIterable().forEach(cb::addBuffer);
+    private static <T> Single<T> deserialize(final Publisher<Buffer> bufferPublisher, final Serializer ser,
+                                             final Class<T> type, BufferAllocator allocator) {
+        return bufferPublisher.reduce(() -> allocator.newCompositeBuffer(MAX_VALUE), (cb, next) -> {
+            cb.addBuffer(next);
+            return cb;
+        }).map(cb -> {
+            try {
+                return ser.deserializeAggregatedSingle(cb, type);
+            } catch (final NoSuchElementException e) {
+                throw new BadRequestException("No deserializable JSON content", e);
+            } catch (final SerializationException e) {
+                // SerializationExceptionMapper can't always tell for sure that the exception was thrown because of
+                // bad user data: here we are deserializing user data so we can assume we fail because of it and
+                // immediately throw the properly mapped JAX-RS exception
+                throw new BadRequestException("Invalid JSON data", e);
+            }
+        });
+    }
 
+    private static <T> T deserializeObject(final Publisher<Buffer> bufferPublisher, final Serializer ser,
+                                           final Class<T> type, BufferAllocator allocator) {
         try {
-            return ser.deserializeAggregatedSingle(cb, type);
-        } catch (final NoSuchElementException e) {
-            throw new BadRequestException("No deserializable JSON content", e);
+            return deserialize(bufferPublisher, ser, type, allocator).toFuture().get();
+        } catch (InterruptedException e) {
+            throw new Error(e);
+        } catch (ExecutionException e) {
+            throw new BadRequestException("Invalid JSON data", e);
         }
     }
 
@@ -179,12 +198,13 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
                         mediaType.getSubtype().toLowerCase().endsWith('+' + APPLICATION_JSON_TYPE.getSubtype()));
     }
 
-    private static Class<?> getSourceClass(final Type sourceType) {
+    @SuppressWarnings("unchecked")
+    private static <T> Class<T> getSourceClass(final Type sourceType) {
         final Type sourceContentType = ((ParameterizedType) sourceType).getActualTypeArguments()[0];
         if (sourceContentType instanceof Class) {
-            return (Class<?>) sourceContentType;
+            return (Class<T>) sourceContentType;
         } else if (sourceContentType instanceof ParameterizedType) {
-            return (Class<?>) ((ParameterizedType) sourceContentType).getRawType();
+            return (Class<T>) ((ParameterizedType) sourceContentType).getRawType();
         }
 
         throw new IllegalArgumentException("Unsupported source type: " + sourceType);

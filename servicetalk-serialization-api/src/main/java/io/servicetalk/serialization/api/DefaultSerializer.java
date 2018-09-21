@@ -20,6 +20,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.CloseableIterable;
+import io.servicetalk.concurrent.CloseableIterator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.AbstractCloseableIterable;
 
@@ -31,6 +32,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.Math.max;
@@ -216,12 +218,12 @@ public final class DefaultSerializer implements Serializer {
 
     @Override
     public <T> T deserializeAggregatedSingle(final Buffer serializedData, final Class<T> type) {
-        return deserializeAggregated(serializedData, type).iterator().next();
+        return getSingleValueOnly(deserializeAggregated(serializedData, type));
     }
 
     @Override
     public <T> T deserializeAggregatedSingle(final Buffer serializedData, final TypeHolder<T> typeHolder) {
-        return deserializeAggregated(serializedData, typeHolder).iterator().next();
+        return getSingleValueOnly(deserializeAggregated(serializedData, typeHolder));
     }
 
     private static <T> void applySerializer0(final Subscriber<? super Buffer> subscriber,
@@ -319,6 +321,33 @@ public final class DefaultSerializer implements Serializer {
                 deSerializer.close();
             }
         };
+    }
+
+    private static <T> T getSingleValueOnly(CloseableIterable<T> iterable) {
+        final CloseableIterator<T> iterator = iterable.iterator();
+        final T value = iterator.next();
+        closeIterator(iterator,
+                iterator.hasNext() ? new SerializationException("More than one value was deserialized.") : null);
+        return value;
+    }
+
+    private static void closeIterator(CloseableIterator<?> iterator, @Nullable SerializationException cause) {
+        try {
+            iterator.close(); // May throw in case of incomplete accumulated data
+        } catch (Exception e) {
+            if (cause != null) {
+                cause.addSuppressed(e);
+                throw cause;
+            }
+            if (e instanceof SerializationException) {
+                throw (SerializationException) e;
+            }
+            throw new SerializationException("Failed to close iterator", e);
+        }
+
+        if (cause != null) {
+            throw cause;
+        }
     }
 
     private static class SerializerFunction<T> implements Function<T, Buffer> {
