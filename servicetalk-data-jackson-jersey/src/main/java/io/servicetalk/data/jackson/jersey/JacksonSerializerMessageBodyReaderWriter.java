@@ -20,7 +20,6 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
-import io.servicetalk.http.router.jersey.internal.InputStreamIterator;
 import io.servicetalk.serialization.api.DefaultSerializer;
 import io.servicetalk.serialization.api.SerializationException;
 import io.servicetalk.serialization.api.Serializer;
