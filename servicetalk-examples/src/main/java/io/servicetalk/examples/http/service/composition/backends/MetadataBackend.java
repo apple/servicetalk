@@ -28,7 +28,6 @@ import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
 import static java.util.concurrent.ThreadLocalRandom.current;
 
 /**
@@ -48,7 +47,7 @@ final class MetadataBackend extends HttpService {
                                                  HttpResponseFactory responseFactory) {
         final String entityId = request.parseQuery().get(ENTITY_ID_QP_NAME);
         if (entityId == null) {
-            return success(responseFactory.newResponse(BAD_REQUEST));
+            return success(responseFactory.badRequest());
         }
 
         // Create random names and author for the metadata

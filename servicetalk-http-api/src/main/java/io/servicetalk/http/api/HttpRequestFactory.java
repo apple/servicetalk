@@ -15,8 +15,15 @@
  */
 package io.servicetalk.http.api;
 
+import static io.servicetalk.http.api.HttpRequestMethods.CONNECT;
+import static io.servicetalk.http.api.HttpRequestMethods.DELETE;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
+import static io.servicetalk.http.api.HttpRequestMethods.HEAD;
+import static io.servicetalk.http.api.HttpRequestMethods.OPTIONS;
+import static io.servicetalk.http.api.HttpRequestMethods.PATCH;
 import static io.servicetalk.http.api.HttpRequestMethods.POST;
+import static io.servicetalk.http.api.HttpRequestMethods.PUT;
+import static io.servicetalk.http.api.HttpRequestMethods.TRACE;
 
 /**
  * A factory for creating {@link HttpRequest}s.
@@ -46,5 +53,68 @@ public interface HttpRequestFactory {
      */
     default HttpRequest post(String requestTarget) {
         return newRequest(POST, requestTarget);
+    }
+
+    /**
+     * Create a new {@link HttpRequestMethods#PUT} request.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @return a new {@link HttpRequestMethods#PUT} request.
+     */
+    default HttpRequest put(String requestTarget) {
+        return newRequest(PUT, requestTarget);
+    }
+
+    /**
+     * Create a new {@link HttpRequestMethods#OPTIONS} request.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @return a new {@link HttpRequestMethods#OPTIONS} request.
+     */
+    default HttpRequest options(String requestTarget) {
+        return newRequest(OPTIONS, requestTarget);
+    }
+
+    /**
+     * Create a new {@link HttpRequestMethods#HEAD} request.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @return a new {@link HttpRequestMethods#HEAD} request.
+     */
+    default HttpRequest head(String requestTarget) {
+        return newRequest(HEAD, requestTarget);
+    }
+
+    /**
+     * Create a new {@link HttpRequestMethods#TRACE} request.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @return a new {@link HttpRequestMethods#TRACE} request.
+     */
+    default HttpRequest trace(String requestTarget) {
+        return newRequest(TRACE, requestTarget);
+    }
+
+    /**
+     * Create a new {@link HttpRequestMethods#DELETE} request.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @return a new {@link HttpRequestMethods#DELETE} request.
+     */
+    default HttpRequest delete(String requestTarget) {
+        return newRequest(DELETE, requestTarget);
+    }
+
+    /**
+     * Create a new {@link HttpRequestMethods#PATCH} request.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @return a new {@link HttpRequestMethods#PATCH} request.
+     */
+    default HttpRequest patch(String requestTarget) {
+        return newRequest(PATCH, requestTarget);
+    }
+
+    /**
+     * Create a new {@link HttpRequestMethods#CONNECT} request.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @return a new {@link HttpRequestMethods#CONNECT} request.
+     */
+    default HttpRequest connect(String requestTarget) {
+        return newRequest(CONNECT, requestTarget);
     }
 }

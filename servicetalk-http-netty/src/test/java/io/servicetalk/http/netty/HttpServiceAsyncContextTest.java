@@ -198,7 +198,7 @@ public class HttpServiceAsyncContextTest {
                 request.payloadBody().ignoreElements().subscribe();
 
                 if (!AsyncContext.isEmpty()) {
-                    return success(factory.serverError());
+                    return success(factory.internalServerError());
                 }
                 CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
                 if (requestId != null) {

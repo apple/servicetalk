@@ -35,8 +35,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
-
 /**
  * This service provides an API that fetches recommendations serially using blocking APIs. Returned response is a single
  * JSON array containing all {@link FullRecommendation}s.
@@ -75,7 +73,7 @@ final class BlockingGatewayService extends BlockingHttpService {
                                final HttpResponseFactory responseFactory) throws Exception {
         final String userId = request.parseQuery().get(USER_ID_QP_NAME);
         if (userId == null) {
-            return responseFactory.newResponse(BAD_REQUEST);
+            return responseFactory.badRequest();
         }
 
         List<Recommendation> recommendations =

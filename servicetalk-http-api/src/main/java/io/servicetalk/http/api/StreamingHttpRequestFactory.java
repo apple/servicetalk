@@ -15,8 +15,14 @@
  */
 package io.servicetalk.http.api;
 
+import static io.servicetalk.http.api.HttpRequestMethods.CONNECT;
+import static io.servicetalk.http.api.HttpRequestMethods.DELETE;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
+import static io.servicetalk.http.api.HttpRequestMethods.HEAD;
+import static io.servicetalk.http.api.HttpRequestMethods.OPTIONS;
+import static io.servicetalk.http.api.HttpRequestMethods.PATCH;
 import static io.servicetalk.http.api.HttpRequestMethods.POST;
+import static io.servicetalk.http.api.HttpRequestMethods.TRACE;
 
 /**
  * A factory for creating {@link StreamingHttpRequest}s.
@@ -29,13 +35,6 @@ public interface StreamingHttpRequestFactory {
      * @return a new {@link HttpRequestFactory}.
      */
     StreamingHttpRequest newRequest(HttpRequestMethod method, String requestTarget);
-
-    // TODO(scott): if the new source is provided at creation, then we don't have to pay the costs of set(Publisher<>)
-    // to manage flow control of both streams.
-    // default StreamingHttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
-    //     return newRequest(method, requestTarget, empty());
-    // }
-    // StreamingHttpRequest newRequest(HttpRequestMethod method, String requestTarget, Publisher<Buffer> payloadBody);
 
     /**
      * Create a new {@link HttpRequestMethods#GET} request.
@@ -53,5 +52,59 @@ public interface StreamingHttpRequestFactory {
      */
     default StreamingHttpRequest post(String requestTarget) {
         return newRequest(POST, requestTarget);
+    }
+
+    /**
+     * Create a new {@link HttpRequestMethods#OPTIONS} request.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @return a new {@link HttpRequestMethods#OPTIONS} request.
+     */
+    default StreamingHttpRequest options(String requestTarget) {
+        return newRequest(OPTIONS, requestTarget);
+    }
+
+    /**
+     * Create a new {@link HttpRequestMethods#HEAD} request.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @return a new {@link HttpRequestMethods#HEAD} request.
+     */
+    default StreamingHttpRequest head(String requestTarget) {
+        return newRequest(HEAD, requestTarget);
+    }
+
+    /**
+     * Create a new {@link HttpRequestMethods#TRACE} request.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @return a new {@link HttpRequestMethods#TRACE} request.
+     */
+    default StreamingHttpRequest trace(String requestTarget) {
+        return newRequest(TRACE, requestTarget);
+    }
+
+    /**
+     * Create a new {@link HttpRequestMethods#DELETE} request.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @return a new {@link HttpRequestMethods#DELETE} request.
+     */
+    default StreamingHttpRequest delete(String requestTarget) {
+        return newRequest(DELETE, requestTarget);
+    }
+
+    /**
+     * Create a new {@link HttpRequestMethods#PATCH} request.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @return a new {@link HttpRequestMethods#PATCH} request.
+     */
+    default StreamingHttpRequest patch(String requestTarget) {
+        return newRequest(PATCH, requestTarget);
+    }
+
+    /**
+     * Create a new {@link HttpRequestMethods#CONNECT} request.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @return a new {@link HttpRequestMethods#CONNECT} request.
+     */
+    default StreamingHttpRequest connect(String requestTarget) {
+        return newRequest(CONNECT, requestTarget);
     }
 }
