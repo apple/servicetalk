@@ -83,5 +83,5 @@ public interface SingleAddressHttpClientBuilder<U, R>
      * {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()}
      * throws when {@link InputStream#close()} is called.
      */
-    SingleAddressHttpClientBuilder<U, R> setSslConfig(@Nullable SslConfig sslConfig);
+    SingleAddressHttpClientBuilder<U, R> sslConfig(@Nullable SslConfig sslConfig);
 }

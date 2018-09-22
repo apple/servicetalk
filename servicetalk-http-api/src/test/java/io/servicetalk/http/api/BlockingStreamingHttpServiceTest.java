@@ -92,8 +92,8 @@ public class BlockingStreamingHttpServiceTest {
         BlockingStreamingHttpService syncService = asyncService.asBlockingStreamingService();
         BlockingStreamingHttpResponse syncResponse = syncService.handle(mockCtx,
                 blkReqRespFactory.get("/"), blkReqRespFactory);
-        assertEquals(HTTP_1_1, syncResponse.getVersion());
-        assertEquals(OK, syncResponse.getStatus());
+        assertEquals(HTTP_1_1, syncResponse.version());
+        assertEquals(OK, syncResponse.status());
     }
 
     @Test
@@ -103,15 +103,15 @@ public class BlockingStreamingHttpServiceTest {
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory factory) {
-                return success(factory.ok().setPayloadBody(just(allocator.fromAscii("hello"))));
+                return success(factory.ok().payloadBody(just(allocator.fromAscii("hello"))));
             }
         };
         BlockingStreamingHttpService syncService = asyncService.asBlockingStreamingService();
         BlockingStreamingHttpResponse syncResponse = syncService.handle(mockCtx,
                 blkReqRespFactory.get("/"), blkReqRespFactory);
-        assertEquals(HTTP_1_1, syncResponse.getVersion());
-        assertEquals(OK, syncResponse.getStatus());
-        BlockingIterator<Buffer> iterator = syncResponse.getPayloadBody().iterator();
+        assertEquals(HTTP_1_1, syncResponse.version());
+        assertEquals(OK, syncResponse.status());
+        BlockingIterator<Buffer> iterator = syncResponse.payloadBody().iterator();
         assertTrue(iterator.hasNext());
         assertEquals("hello", iterator.next().toString(US_ASCII));
         assertFalse(iterator.hasNext());
@@ -146,15 +146,15 @@ public class BlockingStreamingHttpServiceTest {
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory factory) {
-                return success(factory.ok().setPayloadBody(publisherRule.getPublisher()));
+                return success(factory.ok().payloadBody(publisherRule.getPublisher()));
             }
         };
         BlockingStreamingHttpService syncService = asyncService.asBlockingStreamingService();
         BlockingStreamingHttpResponse syncResponse = syncService.handle(mockCtx,
                 blkReqRespFactory.get("/"), blkReqRespFactory);
-        assertEquals(HTTP_1_1, syncResponse.getVersion());
-        assertEquals(OK, syncResponse.getStatus());
-        BlockingIterator<Buffer> iterator = syncResponse.getPayloadBody().iterator();
+        assertEquals(HTTP_1_1, syncResponse.version());
+        assertEquals(OK, syncResponse.status());
+        BlockingIterator<Buffer> iterator = syncResponse.payloadBody().iterator();
         publisherRule.sendItems(allocator.fromAscii("hello"));
         assertTrue(iterator.hasNext());
         iterator.close();
@@ -175,8 +175,8 @@ public class BlockingStreamingHttpServiceTest {
         StreamingHttpResponse asyncResponse = awaitIndefinitely(asyncService.handle(mockCtx,
                 reqRespFactory.get("/"), reqRespFactory));
         assertNotNull(asyncResponse);
-        assertEquals(HTTP_1_1, asyncResponse.getVersion());
-        assertEquals(OK, asyncResponse.getStatus());
+        assertEquals(HTTP_1_1, asyncResponse.version());
+        assertEquals(OK, asyncResponse.status());
     }
 
     @Test
@@ -186,16 +186,16 @@ public class BlockingStreamingHttpServiceTest {
             public BlockingStreamingHttpResponse handle(final HttpServiceContext ctx,
                                                         final BlockingStreamingHttpRequest request,
                                                         final BlockingStreamingHttpResponseFactory factory) {
-                return factory.ok().setPayloadBody(singleton(allocator.fromAscii("hello")));
+                return factory.ok().payloadBody(singleton(allocator.fromAscii("hello")));
             }
         };
         StreamingHttpService asyncService = syncService.asStreamingService();
         StreamingHttpResponse asyncResponse = awaitIndefinitely(asyncService.handle(mockCtx,
                 reqRespFactory.get("/"), reqRespFactory));
         assertNotNull(asyncResponse);
-        assertEquals(HTTP_1_1, asyncResponse.getVersion());
-        assertEquals(OK, asyncResponse.getStatus());
-        assertEquals("hello", awaitIndefinitely(asyncResponse.getPayloadBody()
+        assertEquals(HTTP_1_1, asyncResponse.version());
+        assertEquals(OK, asyncResponse.status());
+        assertEquals("hello", awaitIndefinitely(asyncResponse.payloadBody()
                 .reduce(() -> "", (acc, next) -> acc + next.toString(US_ASCII))));
     }
 
@@ -227,7 +227,7 @@ public class BlockingStreamingHttpServiceTest {
             public BlockingStreamingHttpResponse handle(final HttpServiceContext ctx,
                                                         final BlockingStreamingHttpRequest request,
                                                         final BlockingStreamingHttpResponseFactory factory) {
-                return factory.ok().setPayloadBody(mockIterable);
+                return factory.ok().payloadBody(mockIterable);
             }
         };
         StreamingHttpService asyncService = syncService.asStreamingService();
@@ -235,7 +235,7 @@ public class BlockingStreamingHttpServiceTest {
                 reqRespFactory.get("/"), reqRespFactory));
         assertNotNull(asyncResponse);
         CountDownLatch latch = new CountDownLatch(1);
-        asyncResponse.getPayloadBody().subscribe(new Subscriber<Buffer>() {
+        asyncResponse.payloadBody().subscribe(new Subscriber<Buffer>() {
             @Override
             public void onSubscribe(final Subscription s) {
                 s.cancel();

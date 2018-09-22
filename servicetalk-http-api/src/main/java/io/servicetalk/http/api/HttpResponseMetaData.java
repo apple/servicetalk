@@ -26,7 +26,7 @@ public interface HttpResponseMetaData extends HttpMetaData {
      *
      * @return The {@link HttpResponseStatus} of this {@link StreamingHttpResponse}
      */
-    HttpResponseStatus getStatus();
+    HttpResponseStatus status();
 
     /**
      * Set the status of this {@link StreamingHttpResponse}.
@@ -34,8 +34,8 @@ public interface HttpResponseMetaData extends HttpMetaData {
      * @param status The {@link HttpResponseStatus} to set.
      * @return {@code this}.
      */
-    HttpResponseMetaData setStatus(HttpResponseStatus status);
+    HttpResponseMetaData status(HttpResponseStatus status);
 
     @Override
-    HttpResponseMetaData setVersion(HttpProtocolVersion version);
+    HttpResponseMetaData version(HttpProtocolVersion version);
 }

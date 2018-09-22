@@ -36,7 +36,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * Get the underlying payload as a {@link Publisher} of {@link Buffer}s.
      * @return The {@link Publisher} of {@link Buffer} representation of the underlying
      */
-    BlockingIterable<Buffer> getPayloadBody();
+    BlockingIterable<Buffer> payloadBody();
 
     /**
      * Get and deserialize the payload body.
@@ -44,8 +44,8 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * @param <T> The resulting type of the deserialization operation.
      * @return The results of the deserialization operation.
      */
-    default <T> BlockingIterable<T> getPayloadBody(HttpDeserializer<T> deserializer) {
-        return deserializer.deserialize(getHeaders(), getPayloadBody());
+    default <T> BlockingIterable<T> deserializePayloadBody(HttpDeserializer<T> deserializer) {
+        return deserializer.deserialize(headers(), payloadBody());
     }
 
     /**
@@ -60,7 +60,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * @param payloadBody The new payload body.
      * @return A {@link BlockingStreamingHttpRequest} with the new serialized payload body.
      */
-    BlockingStreamingHttpRequest setPayloadBody(Iterable<Buffer> payloadBody);
+    BlockingStreamingHttpRequest payloadBody(Iterable<Buffer> payloadBody);
 
     /**
      * Set the underlying payload body.
@@ -74,7 +74,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * @param payloadBody The new payload body.
      * @return A {@link BlockingStreamingHttpRequest} with the new serialized payload body.
      */
-    BlockingStreamingHttpRequest setPayloadBody(CloseableIterable<Buffer> payloadBody);
+    BlockingStreamingHttpRequest payloadBody(CloseableIterable<Buffer> payloadBody);
 
     /**
      * Set the underlying payload body with the result of serialization.
@@ -90,7 +90,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * @param <T> The type of objects to serialize.
      * @return A {@link BlockingStreamingHttpRequest} with the new serialized payload body.
      */
-    <T> BlockingStreamingHttpRequest setPayloadBody(Iterable<T> payloadBody, HttpSerializer<T> serializer);
+    <T> BlockingStreamingHttpRequest serializePayloadBody(Iterable<T> payloadBody, HttpSerializer<T> serializer);
 
     /**
      * Set the underlying payload body with the result of serialization.
@@ -106,7 +106,8 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * @param <T> The type of objects to serialize.
      * @return A {@link BlockingStreamingHttpRequest} with the new serialized payload body.
      */
-    <T> BlockingStreamingHttpRequest setPayloadBody(CloseableIterable<T> payloadBody, HttpSerializer<T> serializer);
+    <T> BlockingStreamingHttpRequest serializePayloadBody(CloseableIterable<T> payloadBody,
+                                                          HttpSerializer<T> serializer);
 
     /**
      * Transform the underlying payload body with the result of serialization.
@@ -136,7 +137,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     default <T, R> BlockingStreamingHttpRequest transformPayloadBody(
             Function<BlockingIterable<T>, BlockingIterable<R>> transformer, HttpDeserializer<T> deserializer,
             HttpSerializer<R> serializer) {
-        return transformPayloadBody(buffers -> transformer.apply(getPayloadBody(deserializer)), serializer);
+        return transformPayloadBody(buffers -> transformer.apply(deserializePayloadBody(deserializer)), serializer);
     }
 
     /**
@@ -198,20 +199,20 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
     StreamingHttpRequest toStreamingRequest();
 
     @Override
-    BlockingStreamingHttpRequest setRawPath(String path);
+    BlockingStreamingHttpRequest rawPath(String path);
 
     @Override
-    BlockingStreamingHttpRequest setPath(String path);
+    BlockingStreamingHttpRequest path(String path);
 
     @Override
-    BlockingStreamingHttpRequest setRawQuery(String query);
+    BlockingStreamingHttpRequest rawQuery(String query);
 
     @Override
-    BlockingStreamingHttpRequest setVersion(HttpProtocolVersion version);
+    BlockingStreamingHttpRequest version(HttpProtocolVersion version);
 
     @Override
-    BlockingStreamingHttpRequest setMethod(HttpRequestMethod method);
+    BlockingStreamingHttpRequest method(HttpRequestMethod method);
 
     @Override
-    BlockingStreamingHttpRequest setRequestTarget(String requestTarget);
+    BlockingStreamingHttpRequest requestTarget(String requestTarget);
 }

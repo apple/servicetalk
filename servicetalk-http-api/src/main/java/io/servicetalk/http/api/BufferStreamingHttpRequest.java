@@ -44,7 +44,7 @@ final class BufferStreamingHttpRequest extends DefaultStreamingHttpRequest<Buffe
     }
 
     @Override
-    public Publisher<Buffer> getPayloadBody() {
+    public Publisher<Buffer> payloadBody() {
         return payloadBody;
     }
 

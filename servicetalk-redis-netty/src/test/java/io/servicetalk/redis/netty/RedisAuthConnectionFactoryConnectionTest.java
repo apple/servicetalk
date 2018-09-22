@@ -126,7 +126,7 @@ public class RedisAuthConnectionFactoryConnectionTest {
 
         connectionSingle = new RedisAuthConnectionFactory<>(
                 DefaultRedisConnectionBuilder.<InetSocketAddress>forPipeline()
-                        .setMaxPipelinedRequests(10)
+                        .maxPipelinedRequests(10)
                         .asConnectionFactory(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate())),
                 ctx -> ctx.getExecutionContext().getBufferAllocator().fromAscii(password))
                 .newConnection(new InetSocketAddress(redisHost, redisPort));

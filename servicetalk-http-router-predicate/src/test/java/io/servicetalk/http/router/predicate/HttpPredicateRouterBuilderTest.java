@@ -69,7 +69,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
         final Single<StreamingHttpResponse> responseSingle = service.handle(ctx, request, reqRespFactory);
         final StreamingHttpResponse response = awaitIndefinitely(responseSingle);
         assert response != null;
-        assertEquals(404, response.getStatus().getCode());
+        assertEquals(404, response.status().getCode());
     }
 
     @Test
@@ -79,10 +79,10 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 
-        when(request.getMethod()).thenReturn(POST);
+        when(request.method()).thenReturn(POST);
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(request.getMethod()).thenReturn(GET);
+        when(request.method()).thenReturn(GET);
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
@@ -93,13 +93,13 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 
-        when(request.getMethod()).thenReturn(POST);
+        when(request.method()).thenReturn(POST);
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(request.getMethod()).thenReturn(PUT);
+        when(request.method()).thenReturn(PUT);
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(request.getMethod()).thenReturn(GET);
+        when(request.method()).thenReturn(GET);
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
@@ -110,10 +110,10 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 
-        when(request.getPath()).thenReturn("/abc");
+        when(request.path()).thenReturn("/abc");
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(request.getPath()).thenReturn("/abcd");
+        when(request.path()).thenReturn("/abcd");
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
@@ -124,13 +124,13 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 
-        when(request.getPath()).thenReturn("/abc");
+        when(request.path()).thenReturn("/abc");
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(request.getPath()).thenReturn("/def");
+        when(request.path()).thenReturn("/def");
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(request.getPath()).thenReturn("/abcd");
+        when(request.path()).thenReturn("/abcd");
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
@@ -141,13 +141,13 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 
-        when(request.getPath()).thenReturn("/abc");
+        when(request.path()).thenReturn("/abc");
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(request.getPath()).thenReturn("/abcdef");
+        when(request.path()).thenReturn("/abcdef");
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(request.getPath()).thenReturn("/def");
+        when(request.path()).thenReturn("/def");
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
@@ -158,16 +158,16 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 
-        when(request.getPath()).thenReturn("/abc");
+        when(request.path()).thenReturn("/abc");
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(request.getPath()).thenReturn("/defabc");
+        when(request.path()).thenReturn("/defabc");
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(request.getPath()).thenReturn("/ABC");
+        when(request.path()).thenReturn("/ABC");
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
 
-        when(request.getPath()).thenReturn("/abcdef");
+        when(request.path()).thenReturn("/abcdef");
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
@@ -178,13 +178,13 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 
-        when(request.getPath()).thenReturn("/abc");
+        when(request.path()).thenReturn("/abc");
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(request.getPath()).thenReturn("/defabc");
+        when(request.path()).thenReturn("/defabc");
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(request.getPath()).thenReturn("/abcdef");
+        when(request.path()).thenReturn("/abcdef");
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
@@ -219,13 +219,13 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
     @Test
     public void testWhenPredicate() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
-                .when(req -> req.getVersion() == HTTP_1_1).thenRouteTo(serviceA)
+                .when(req -> req.version() == HTTP_1_1).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(request.getVersion()).thenReturn(HTTP_1_0);
+        when(request.version()).thenReturn(HTTP_1_0);
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 

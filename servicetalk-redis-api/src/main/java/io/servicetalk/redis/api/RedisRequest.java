@@ -30,14 +30,14 @@ public interface RedisRequest {
      *
      * @return the {@link Command} associated with this request.
      */
-    Command getCommand();
+    Command command();
 
     /**
      * The content of the request.
      *
      * @return the content.
      */
-    Publisher<RequestRedisData> getContent();
+    Publisher<RequestRedisData> content();
 
     /**
      * Modifies the content {@link Publisher} of this {@link RedisRequest} preserving other properties.

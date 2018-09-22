@@ -248,7 +248,7 @@ public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStream
         final StreamingHttpResponse res =
                 sendAndAssertResponse(withHeader(get(SynchronousResources.PATH + "/text-buffer-response"), "hdr",
                         "bar"), NON_AUTHORITATIVE_INFORMATION, TEXT_PLAIN, "D0NE");
-        assertThat(res.getHeaders().get("X-Test"), is(newAsciiString("bar")));
+        assertThat(res.headers().get("X-Test"), is(newAsciiString("bar")));
 
         sendAndAssertResponse(post(SynchronousResources.PATH + "/text-buffer", "foo", TEXT_PLAIN), OK, TEXT_PLAIN,
                 "G0T: F00");

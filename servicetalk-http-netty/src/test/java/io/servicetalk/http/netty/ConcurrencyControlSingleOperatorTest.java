@@ -130,7 +130,7 @@ public class ConcurrencyControlSingleOperatorTest {
         assert subscriber.response != null;
         expectedException.expect(instanceOf(ExecutionException.class));
         expectedException.expectCause(instanceOf(CancellationException.class));
-        awaitIndefinitely(subscriber.response.getPayloadBody());
+        awaitIndefinitely(subscriber.response.payloadBody());
     }
 
     @Test
@@ -160,7 +160,7 @@ public class ConcurrencyControlSingleOperatorTest {
         responseSingle.liftSynchronous(operator).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
-        final StreamingHttpResponse response = reqRespFactory.ok().setPayloadBody(never());
+        final StreamingHttpResponse response = reqRespFactory.ok().payloadBody(never());
         responseSingle.onSuccess(response);
 
         verifyZeroInteractions(controller);
@@ -204,14 +204,14 @@ public class ConcurrencyControlSingleOperatorTest {
         responseSingle.liftSynchronous(operator).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
-        final StreamingHttpResponse response = reqRespFactory.ok().setPayloadBody(payload);
+        final StreamingHttpResponse response = reqRespFactory.ok().payloadBody(payload);
         responseSingle.onSuccess(response);
 
         verifyZeroInteractions(controller);
         responseSingle.verifyNotCancelled();
         subscriber.verifyResponseReceived();
         assert subscriber.response != null;
-        subscriber.response.getPayloadBody().forEach(chunk -> {
+        subscriber.response.payloadBody().forEach(chunk -> {
             //ignore
         });
 

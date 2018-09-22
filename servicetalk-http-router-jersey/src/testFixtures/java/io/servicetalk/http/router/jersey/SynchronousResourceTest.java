@@ -64,7 +64,7 @@ public class SynchronousResourceTest extends AbstractResourceTest {
 
     @Test
     public void http10Support() {
-        sendAndAssertResponse(get("/text").setVersion(HTTP_1_0), HTTP_1_0, OK, TEXT_PLAIN, is("GOT: null & null"), __ -> 16);
+        sendAndAssertResponse(get("/text").version(HTTP_1_0), HTTP_1_0, OK, TEXT_PLAIN, is("GOT: null & null"), __ -> 16);
     }
 
     @Test

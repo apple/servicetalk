@@ -51,8 +51,8 @@
       <Class name="io.servicetalk.http.api.StreamingHttpClientToHttpClient$UpgradablePayloadResponse"/>
     </Or>
     <Or>
-      <Method name="setStatus"/>
-      <Method name="setVersion"/>
+      <Method name="status"/>
+      <Method name="version"/>
     </Or>
     <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
   </Match>

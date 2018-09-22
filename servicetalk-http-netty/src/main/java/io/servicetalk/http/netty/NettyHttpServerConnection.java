@@ -77,12 +77,12 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
     private static StreamingHttpRequest spliceRequest(final BufferAllocator alloc,
                                                       final HttpRequestMetaData hr,
                                                       final Publisher<Object> pub) {
-        return StreamingHttpRequests.newRequestWithTrailers(hr.getMethod(), hr.getRequestTarget(), hr.getVersion(), hr.getHeaders(), alloc, pub);
+        return StreamingHttpRequests.newRequestWithTrailers(hr.method(), hr.requestTarget(), hr.version(), hr.headers(), alloc, pub);
     }
 
     private Completable handleRequestAndWriteResponse(final Single<StreamingHttpRequest> requestSingle) {
         final Publisher<Object> responseObjectPublisher = requestSingle.flatMapPublisher(request -> {
-            final HttpRequestMethod requestMethod = request.getMethod();
+            final HttpRequestMethod requestMethod = request.method();
             final HttpKeepAlive keepAlive = HttpKeepAlive.getResponseKeepAlive(request);
             // We transform the request and delay the completion of the result flattened stream to avoid resubscribing
             // to the NettyChannelPublisher before the previous subscriber has terminated. Otherwise we may attempt
@@ -117,13 +117,13 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
                             processor.onComplete();
                         }
                     }));
-            final Completable drainRequestPayloadBody = request2.getPayloadBody().ignoreElements()
+            final Completable drainRequestPayloadBody = request2.payloadBody().ignoreElements()
                     // ignore error about duplicate subscriptions, we are forcing a subscription here and the user
                     // may also subscribe, so it is OK if we fail here.
                     .onErrorResume(t -> completed());
             return handleRequest(request2)
                     .map(response -> processResponse(requestMethod, keepAlive, drainRequestPayloadBody, response))
-                    .flatMapPublisher(resp -> flatten(resp, StreamingHttpResponse::getPayloadBodyAndTrailers))
+                    .flatMapPublisher(resp -> flatten(resp, StreamingHttpResponse::payloadBodyAndTrailers))
                     .concatWith(processor);
             // We are writing to the connection which may request more data from the EventLoop. So offload control
             // signals which may have blocking code.
@@ -168,8 +168,8 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
     private Single<StreamingHttpResponse> newErrorResponse(final Throwable cause,
                                                            final StreamingHttpRequest request) {
         LOGGER.error("internal server error service={} connection={}", service, context, cause);
-        StreamingHttpResponse resp = context.getStreamingFactory().serverError().setVersion(request.getVersion());
-        resp.getHeaders().set(CONTENT_LENGTH, ZERO);
+        StreamingHttpResponse resp = context.getStreamingFactory().serverError().version(request.version());
+        resp.headers().set(CONTENT_LENGTH, ZERO);
         return success(resp);
     }
 

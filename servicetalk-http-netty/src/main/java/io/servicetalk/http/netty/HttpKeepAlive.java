@@ -43,11 +43,11 @@ enum HttpKeepAlive {
     // In the interest of performance we are not accommodating for the spec allowing multiple header fields
     // or comma-separated values for the Connection header. See: https://tools.ietf.org/html/rfc7230#section-3.2.2
     static HttpKeepAlive getResponseKeepAlive(final HttpMetaData metaData) {
-        if (isSameVersion(HTTP_1_1, metaData.getVersion())) {
-            return metaData.getHeaders().contains(CONNECTION, CLOSE, true) ?
+        if (isSameVersion(HTTP_1_1, metaData.version())) {
+            return metaData.headers().contains(CONNECTION, CLOSE, true) ?
                     CLOSE_ADD_HEADER : KEEP_ALIVE_NO_HEADER;
-        } else if (isSameVersion(HTTP_1_0, metaData.getVersion())) {
-            return metaData.getHeaders().contains(CONNECTION, KEEP_ALIVE, true) ?
+        } else if (isSameVersion(HTTP_1_0, metaData.version())) {
+            return metaData.headers().contains(CONNECTION, KEEP_ALIVE, true) ?
                     KEEP_ALIVE_ADD_HEADER : CLOSE_NO_HEADER;
         } else {
             return CLOSE_NO_HEADER;
@@ -61,9 +61,9 @@ enum HttpKeepAlive {
     void addConnectionHeaderIfNecessary(final StreamingHttpResponse response) {
         if (shouldAddConnectionHeader) {
             if (shouldCloseConnection) {
-                response.getHeaders().set(CONNECTION, CLOSE);
+                response.headers().set(CONNECTION, CLOSE);
             } else {
-                response.getHeaders().set(CONNECTION, KEEP_ALIVE);
+                response.headers().set(CONNECTION, KEEP_ALIVE);
             }
         }
     }

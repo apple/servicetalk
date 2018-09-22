@@ -246,7 +246,7 @@ public class HttpRequestDecoderTest {
         assertTrue(channel.writeInbound(wrappedBuffer(afterContentBytes)));
 
         HttpRequestMetaData request = channel.readInbound();
-        assertStandardHeaders(request.getHeaders());
+        assertStandardHeaders(request.headers());
         HttpHeaders lastChunk = channel.readInbound();
         assertTrue(lastChunk.isEmpty());
         assertFalse(channel.finishAndReleaseAll());
@@ -261,7 +261,7 @@ public class HttpRequestDecoderTest {
         assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
 
         HttpRequestMetaData request = channel.readInbound();
-        assertStandardHeaders(request.getHeaders());
+        assertStandardHeaders(request.headers());
         HttpHeaders lastChunk = channel.readInbound();
         assertTrue(lastChunk.isEmpty());
         assertFalse(channel.finishAndReleaseAll());
@@ -348,12 +348,12 @@ public class HttpRequestDecoderTest {
     private static void validateHttpRequest(EmbeddedChannel channel, int expectedContentLength,
                                             boolean containsTrailers) {
         HttpRequestMetaData request = channel.readInbound();
-        assertEquals("/some/path?foo=bar&baz=yyy", request.getRequestTarget());
-        assertEquals(GET, request.getMethod());
-        assertEquals(HTTP_1_1, request.getVersion());
-        assertStandardHeaders(request.getHeaders());
+        assertEquals("/some/path?foo=bar&baz=yyy", request.requestTarget());
+        assertEquals(GET, request.method());
+        assertEquals(HTTP_1_1, request.version());
+        assertStandardHeaders(request.headers());
         if (expectedContentLength >= 0) {
-            assertSingleHeaderValue(request.getHeaders(), CONTENT_LENGTH, String.valueOf(expectedContentLength));
+            assertSingleHeaderValue(request.headers(), CONTENT_LENGTH, String.valueOf(expectedContentLength));
             Buffer chunk = channel.readInbound();
             assertEquals(expectedContentLength, chunk.getReadableBytes());
             HttpHeaders trailers = channel.readInbound();

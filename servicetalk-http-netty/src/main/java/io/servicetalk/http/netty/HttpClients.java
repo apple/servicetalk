@@ -41,7 +41,7 @@ public final class HttpClients {
      * with default {@link LoadBalancer} and DNS {@link ServiceDiscoverer}.
      * <p>
      * When a <a href="https://tools.ietf.org/html/rfc3986#section-4.2">relative URL</a> is passed in the {@link
-     * StreamingHttpRequest#setRequestTarget(String)} this client requires a {@link HttpHeaderNames#HOST} present in
+     * StreamingHttpRequest#requestTarget(String)} this client requires a {@link HttpHeaderNames#HOST} present in
      * order to infer the remote address.
      * @return new builder with default configuration
      */

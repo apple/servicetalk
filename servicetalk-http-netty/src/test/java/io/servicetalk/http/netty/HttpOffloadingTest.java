@@ -126,7 +126,7 @@ public class HttpOffloadingTest {
                             }
                         });
         final Single<StreamingHttpResponse> resp = httpConnection.request(
-                httpConnection.get("/").setPayloadBody(reqPayload));
+                httpConnection.get("/").payloadBody(reqPayload));
         resp.subscribe(new Single.Subscriber<StreamingHttpResponse>() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
@@ -146,13 +146,13 @@ public class HttpOffloadingTest {
                     errors.add(new AssertionError("Client response is null."));
                     return;
                 }
-                if (result.getStatus() != OK) {
-                    errors.add(new AssertionError("Invalid response status: " + result.getStatus()));
+                if (result.status() != OK) {
+                    errors.add(new AssertionError("Invalid response status: " + result.status()));
                     return;
                 }
 
                 subscribeTo(inEventLoopOrTestThread(), errors,
-                        result.getPayloadBody().doAfterFinally(terminated::countDown), "Client response payload: ");
+                        result.payloadBody().doAfterFinally(terminated::countDown), "Client response payload: ");
             }
 
             @Override
@@ -350,7 +350,7 @@ public class HttpOffloadingTest {
             }
             CountDownLatch latch = new CountDownLatch(1);
             subscribeTo(inEventLoopOrTestThread(), errors,
-                    request.getPayloadBody().doAfterFinally(latch::countDown), "Server request: ");
+                    request.payloadBody().doAfterFinally(latch::countDown), "Server request: ");
             try {
                 latch.await();
             } catch (InterruptedException e) {
@@ -365,7 +365,7 @@ public class HttpOffloadingTest {
                                             + currentThread().getName()));
                                 }
                             });
-            return success(factory.ok().setPayloadBody(responsePayload));
+            return success(factory.ok().payloadBody(responsePayload));
         }
     }
 }

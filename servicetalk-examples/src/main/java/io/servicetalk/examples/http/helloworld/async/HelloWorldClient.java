@@ -20,7 +20,7 @@ import io.servicetalk.http.netty.HttpClients;
 
 import java.util.concurrent.CountDownLatch;
 
-import static io.servicetalk.http.api.HttpSerializationProviders.deserializeText;
+import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 
 public final class HelloWorldClient {
     public static void main(String[] args) throws Exception {
@@ -33,7 +33,7 @@ public final class HelloWorldClient {
                     .doFinally(responseProcessedLatch::countDown)
                     .subscribe(resp -> {
                         System.out.println(resp.toString((name, value) -> value));
-                        System.out.println(resp.getPayloadBody(deserializeText()));
+                        System.out.println(resp.payloadBody(textDeserializer()));
                     });
 
             responseProcessedLatch.await();

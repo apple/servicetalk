@@ -40,8 +40,8 @@ final class DefaultFallbackServiceStreaming extends StreamingHttpService {
     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                 final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory factory) {
-        final StreamingHttpResponse response = factory.newResponse(NOT_FOUND).setVersion(request.getVersion());
-        response.getHeaders().set(CONTENT_LENGTH, ZERO)
+        final StreamingHttpResponse response = factory.newResponse(NOT_FOUND).version(request.version());
+        response.headers().set(CONTENT_LENGTH, ZERO)
                 .set(CONTENT_TYPE, TEXT_PLAIN);
         // TODO(derek): Set keepalive once we have an isKeepAlive helper method.
         return Single.success(response);

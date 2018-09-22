@@ -136,13 +136,13 @@ public abstract class AbstractNettyHttpServerTest {
         // However, if it is too small, tests that expect certain chunks of data will see those chunks broken up
         // differently.
         final DefaultHttpServerStarter httpServerStarter = new DefaultHttpServerStarter()
-                .setSocketOption(StandardSocketOptions.SO_SNDBUF, 100);
+                .socketOption(StandardSocketOptions.SO_SNDBUF, 100);
         if (sslEnabled) {
             final SslConfig sslConfig = SslConfigBuilder.forServer(
                     DefaultTestCerts::loadServerPem,
                     DefaultTestCerts::loadServerKey)
                     .build();
-            httpServerStarter.setSslConfig(sslConfig);
+            httpServerStarter.sslConfig(sslConfig);
         }
         serverContext = awaitIndefinitelyNonNull(
                 httpServerStarter
@@ -213,19 +213,19 @@ public abstract class AbstractNettyHttpServerTest {
     void assertResponse(final StreamingHttpResponse response, final HttpProtocolVersions version,
                         final HttpResponseStatuses status, final int expectedSize)
             throws ExecutionException, InterruptedException {
-        assertEquals(status, response.getStatus());
-        assertEquals(version, response.getVersion());
+        assertEquals(status, response.status());
+        assertEquals(version, response.version());
 
         final int size = awaitIndefinitelyNonNull(
-                response.getPayloadBody().reduce(() -> 0, (is, c) -> is + c.getReadableBytes()));
+                response.payloadBody().reduce(() -> 0, (is, c) -> is + c.getReadableBytes()));
         assertEquals(expectedSize, size);
     }
 
     void assertResponse(final StreamingHttpResponse response, final HttpProtocolVersions version,
                         final HttpResponseStatuses status, final List<String> expectedPayloadChunksAsStrings)
             throws ExecutionException, InterruptedException {
-        assertEquals(status, response.getStatus());
-        assertEquals(version, response.getVersion());
+        assertEquals(status, response.status());
+        assertEquals(version, response.version());
         final List<String> bodyAsListOfStrings = getBodyAsListOfStrings(response);
         if (expectedPayloadChunksAsStrings.isEmpty()) {
             assertTrue(bodyAsListOfStrings.isEmpty());
@@ -248,7 +248,7 @@ public abstract class AbstractNettyHttpServerTest {
 
     static List<String> getBodyAsListOfStrings(final StreamingHttpResponse response)
             throws ExecutionException, InterruptedException {
-        return awaitIndefinitelyNonNull(response.getPayloadBody().map(c -> c.toString(US_ASCII)));
+        return awaitIndefinitelyNonNull(response.payloadBody().map(c -> c.toString(US_ASCII)));
     }
 
     void assertConnectionClosed() throws Exception {

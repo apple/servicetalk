@@ -17,14 +17,14 @@ package io.servicetalk.examples.http.helloworld.blocking;
 
 import io.servicetalk.http.netty.DefaultHttpServerStarter;
 
-import static io.servicetalk.http.api.HttpSerializationProviders.serializeText;
+import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 
 public class BlockingHelloWorldServer {
     public static void main(String[] args) throws Exception {
         new DefaultHttpServerStarter()
                 .startBlocking(8080, (ctx, request, responseFactory) ->
                         responseFactory.ok()
-                                .setPayloadBody("Hello World!", serializeText()))
+                                .payloadBody("Hello World!", textSerializer()))
                 .awaitShutdown();
     }
 }

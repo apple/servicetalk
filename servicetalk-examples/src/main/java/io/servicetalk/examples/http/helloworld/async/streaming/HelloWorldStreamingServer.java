@@ -19,15 +19,15 @@ import io.servicetalk.http.netty.DefaultHttpServerStarter;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.HttpSerializationProviders.serializeText;
+import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 
 public final class HelloWorldStreamingServer {
     public static void main(String[] args) throws Exception {
         new DefaultHttpServerStarter()
                 .startStreaming(8080, (ctx, request, responseFactory) ->
                         success(responseFactory.ok()
-                                .setPayloadBody(from("Hello\n", "World\n", "From\n", "ServiceTalk\n"),
-                                        serializeText())))
+                                .serializePayloadBody(from("Hello\n", "World\n", "From\n", "ServiceTalk\n"),
+                                        textSerializer())))
                 .toFuture().get()
                 .awaitShutdown();
     }

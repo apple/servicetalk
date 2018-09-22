@@ -29,12 +29,12 @@ public interface SslConfigProvider {
     /**
      * Return a default port number for specified URI scheme and effective host.
      * This method will be invoked in case the {@link HttpRequestMetaData} does not have information about
-     * {@link HttpRequestMetaData#getEffectivePort() effective port number}.
+     * {@link HttpRequestMetaData#effectivePort() effective port number}.
      *
      * @param scheme A {@link HttpScheme} of the request.
      * @param effectiveHost An effective host for the request.
      * @return A port number for specified {@code scheme} and {@code effectiveHost}.
-     * @see HttpRequestMetaData#getEffectivePort()
+     * @see HttpRequestMetaData#effectivePort()
      */
     int defaultPort(HttpScheme scheme, String effectiveHost);
 

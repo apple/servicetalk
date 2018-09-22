@@ -54,47 +54,47 @@ final class BufferHttpResponse extends DefaultHttpResponseMetaData implements Ht
     }
 
     @Override
-    public HttpResponse setVersion(final HttpProtocolVersion version) {
-        super.setVersion(version);
+    public HttpResponse version(final HttpProtocolVersion version) {
+        super.version(version);
         return this;
     }
 
     @Override
-    public HttpResponse setStatus(final HttpResponseStatus status) {
-        super.setStatus(status);
+    public HttpResponse status(final HttpResponseStatus status) {
+        super.status(status);
         return this;
     }
 
     @Override
-    public Buffer getPayloadBody() {
+    public Buffer payloadBody() {
         return payloadBody;
     }
 
     @Override
-    public HttpHeaders getTrailers() {
+    public HttpHeaders trailers() {
         return trailers;
     }
 
     @Override
-    public HttpResponse setPayloadBody(final Buffer payloadBody) {
+    public HttpResponse payloadBody(final Buffer payloadBody) {
         return new BufferHttpResponse(this, allocator, trailers, payloadBody);
     }
 
     @Override
-    public <T> HttpResponse setPayloadBody(final T pojo, final HttpSerializer<T> serializer) {
-        return new BufferHttpResponse(this, allocator, trailers, serializer.serialize(getHeaders(), pojo,
+    public <T> HttpResponse payloadBody(final T pojo, final HttpSerializer<T> serializer) {
+        return new BufferHttpResponse(this, allocator, trailers, serializer.serialize(headers(), pojo,
                 allocator));
     }
 
     @Override
     public StreamingHttpResponse toStreamingResponse() {
-        return new BufferStreamingHttpResponse(getStatus(), getVersion(), getHeaders(), success(trailers), allocator,
+        return new BufferStreamingHttpResponse(status(), version(), headers(), success(trailers), allocator,
                 just(payloadBody));
     }
 
     @Override
     public BlockingStreamingHttpResponse toBlockingStreamingResponse() {
-        return new BufferBlockingStreamingHttpResponse(getStatus(), getVersion(), getHeaders(), success(trailers),
+        return new BufferBlockingStreamingHttpResponse(status(), version(), headers(), success(trailers),
                 allocator, singletonBlockingIterable(payloadBody));
     }
 

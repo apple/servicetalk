@@ -414,7 +414,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
         // Handle the last unfinished message.
         if (message != null) {
-            boolean chunked = isTransferEncodingChunked(message.getHeaders());
+            boolean chunked = isTransferEncodingChunked(message.headers());
             if (currentState == State.READ_VARIABLE_LENGTH_CONTENT && !in.isReadable() && !chunked) {
                 // End of connection.
                 ctx.fireChannelRead(headersFactory.newEmptyTrailers());
@@ -475,10 +475,10 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
      * Returns false if the upgrade happened in a different layer, e.g. upgrade from HTTP/1.1 to HTTP/1.1 over TLS.
      */
     private boolean isSwitchingToNonHttp1Protocol(HttpResponseMetaData msg) {
-        if (msg.getStatus().getCode() != SWITCHING_PROTOCOLS.getCode()) {
+        if (msg.status().getCode() != SWITCHING_PROTOCOLS.getCode()) {
             return false;
         }
-        CharSequence newProtocol = msg.getHeaders().get(UPGRADE);
+        CharSequence newProtocol = msg.headers().get(UPGRADE);
         return newProtocol == null ||
                 !AsciiString.contains(newProtocol, HTTP_1_0.toString()) &&
                         !AsciiString.contains(newProtocol, HTTP_1_1.toString());
@@ -577,14 +577,14 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         }
         final T message = this.message;
         assert message != null;
-        if (!parseAllHeaders(buffer, message.getHeaders(), lfIndex, maxHeaderSize)) {
+        if (!parseAllHeaders(buffer, message.headers(), lfIndex, maxHeaderSize)) {
             return null;
         }
 
         if (isContentAlwaysEmpty(message)) {
-            setTransferEncodingChunked(message.getHeaders(), false);
+            setTransferEncodingChunked(message.headers(), false);
             return State.SKIP_CONTROL_CHARS;
-        } else if (isTransferEncodingChunked(message.getHeaders())) {
+        } else if (isTransferEncodingChunked(message.headers())) {
             return State.READ_CHUNK_SIZE;
         } else if (contentLength() >= 0) {
             return State.READ_FIXED_LENGTH_CONTENT;
@@ -714,18 +714,18 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
     private static int getWebSocketContentLength(HttpMetaData message) {
         // WebSocket messages have constant content-lengths.
-        HttpHeaders h = message.getHeaders();
+        HttpHeaders h = message.headers();
         if (message instanceof HttpRequestMetaData) {
             HttpRequestMetaData req = (HttpRequestMetaData) message;
             // Note that we are using ServiceTalk types here, and assume the decoders will also use ServiceTalk types.
-            if (HttpRequestMethods.GET.equals(req.getMethod()) &&
+            if (HttpRequestMethods.GET.equals(req.method()) &&
                     h.contains(SEC_WEBSOCKET_KEY1) &&
                     h.contains(SEC_WEBSOCKET_KEY2)) {
                 return 8;
             }
         } else if (message instanceof HttpResponseMetaData) {
             HttpResponseMetaData res = (HttpResponseMetaData) message;
-            if (res.getStatus().getCode() == 101 &&
+            if (res.status().getCode() == 101 &&
                     h.contains(SEC_WEBSOCKET_ORIGIN) &&
                     h.contains(SEC_WEBSOCKET_LOCATION)) {
                 return 16;
@@ -737,7 +737,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     }
 
     private static long getContentLength(HttpMetaData message, long defaultValue) {
-        CharSequence value = message.getHeaders().get(CONTENT_LENGTH);
+        CharSequence value = message.headers().get(CONTENT_LENGTH);
         if (value != null) {
             return Long.parseLong(value.toString());
         }

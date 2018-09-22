@@ -83,8 +83,8 @@ public final class HttpRequestUriUtils {
                                                 @Nullable final String fixedScheme,
                                                 @Nullable final String fixedAuthority,
                                                 final boolean includeUserInfo) {
-        return buildEffectiveRequestUri(ctx, metaData, fixedScheme, fixedAuthority, metaData.getRawPath(),
-                metaData.getRawQuery(), includeUserInfo);
+        return buildEffectiveRequestUri(ctx, metaData, fixedScheme, fixedAuthority, metaData.rawPath(),
+                metaData.rawQuery(), includeUserInfo);
     }
 
     /**
@@ -153,13 +153,13 @@ public final class HttpRequestUriUtils {
             throw new IllegalArgumentException("Unsupported scheme: " + fixedScheme);
         }
 
-        if (metaData.getScheme() != null) {
+        if (metaData.scheme() != null) {
             // absolute form
             return buildRequestUri(
-                    metaData.getScheme(),
-                    includeUserInfo ? metaData.getUserInfo() : null,
-                    metaData.getHost(),
-                    metaData.getPort(),
+                    metaData.scheme(),
+                    includeUserInfo ? metaData.userInfo() : null,
+                    metaData.host(),
+                    metaData.port(),
                     path,
                     query);
         }
@@ -173,12 +173,12 @@ public final class HttpRequestUriUtils {
                     fixedAuthority,
                     path,
                     query);
-        } else if (metaData.getEffectiveHost() != null) {
+        } else if (metaData.effectiveHost() != null) {
             return buildRequestUri(
                     scheme,
-                    includeUserInfo ? metaData.getUserInfo() : null,
-                    metaData.getEffectiveHost(),
-                    metaData.getEffectivePort(),
+                    includeUserInfo ? metaData.userInfo() : null,
+                    metaData.effectiveHost(),
+                    metaData.effectivePort(),
                     path,
                     query);
         } else {

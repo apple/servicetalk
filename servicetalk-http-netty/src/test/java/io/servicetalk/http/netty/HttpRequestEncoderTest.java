@@ -128,7 +128,7 @@ public class HttpRequestEncoderTest {
         Buffer buffer = allocator.wrap(content);
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
                 GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
-        request.getHeaders()
+        request.headers()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(USER_AGENT, "unit-test")
                 .add(CONTENT_LENGTH, valueOf(content.length));
@@ -145,7 +145,7 @@ public class HttpRequestEncoderTest {
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
                 GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
         try {
-            request.getHeaders().add(" " + CONNECTION, KEEP_ALIVE);
+            request.headers().add(" " + CONNECTION, KEEP_ALIVE);
         } finally {
             assertFalse(channel.finishAndReleaseAll());
         }
@@ -160,7 +160,7 @@ public class HttpRequestEncoderTest {
 
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1, GET, "/some/path?foo=bar&baz=yyy",
                 new DefaultHttpHeadersFactory(false, false).newHeaders());
-        request.getHeaders()
+        request.headers()
                 .add(" " + CONNECTION + " ", " " + KEEP_ALIVE)
                 .add("  " + USER_AGENT + "   ", "    unit-test   ")
                 .add(CONTENT_LENGTH, valueOf(content.length));
@@ -196,7 +196,7 @@ public class HttpRequestEncoderTest {
         Buffer buffer = allocator.wrap(content);
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
                 GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
-        request.getHeaders()
+        request.headers()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(USER_AGENT, "unit-test")
                 .add(TRANSFER_ENCODING, CHUNKED);
@@ -218,7 +218,7 @@ public class HttpRequestEncoderTest {
 
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
                 GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
-        request.getHeaders()
+        request.headers()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(USER_AGENT, "unit-test")
                 .add(TRANSFER_ENCODING, CHUNKED);
@@ -234,7 +234,7 @@ public class HttpRequestEncoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
                 GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
-        request.getHeaders()
+        request.headers()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(USER_AGENT, "unit-test")
                 .add(TRANSFER_ENCODING, CHUNKED);
@@ -250,7 +250,7 @@ public class HttpRequestEncoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
                 GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
-        request.getHeaders()
+        request.headers()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(USER_AGENT, "unit-test");
         channel.writeOutbound(request);
@@ -268,7 +268,7 @@ public class HttpRequestEncoderTest {
         Buffer buffer = allocator.wrap(content);
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
                 GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
-        request.getHeaders()
+        request.headers()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(USER_AGENT, "unit-test");
         channel.writeOutbound(request);
@@ -288,7 +288,7 @@ public class HttpRequestEncoderTest {
         trailers.add("TrailerStatus", "good");
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
                 GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
-        request.getHeaders()
+        request.headers()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(USER_AGENT, "unit-test");
         channel.writeOutbound(request);
@@ -310,7 +310,7 @@ public class HttpRequestEncoderTest {
         trailers.add("TrailerStatus", "good");
         HttpRequestMetaData request = newRequestMetaData(HTTP_1_1,
                 GET, "/some/path?foo=bar&baz=yyy", INSTANCE.newHeaders());
-        request.getHeaders()
+        request.headers()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(USER_AGENT, "unit-test")
                 .add(CONTENT_LENGTH, valueOf(content.length));

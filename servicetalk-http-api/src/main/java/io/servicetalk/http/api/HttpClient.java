@@ -198,10 +198,10 @@ public abstract class HttpClient extends HttpRequester {
         ReservedHttpConnection getHttpConnection(boolean releaseReturnsToClient);
 
         @Override
-        UpgradableHttpResponse setPayloadBody(Buffer payloadBody);
+        UpgradableHttpResponse payloadBody(Buffer payloadBody);
 
         @Override
-        <T> UpgradableHttpResponse setPayloadBody(T pojo, HttpSerializer<T> serializer);
+        <T> UpgradableHttpResponse payloadBody(T pojo, HttpSerializer<T> serializer);
 
         @Override
         UpgradableStreamingHttpResponse toStreamingResponse();
@@ -210,9 +210,9 @@ public abstract class HttpClient extends HttpRequester {
         UpgradableBlockingStreamingHttpResponse toBlockingStreamingResponse();
 
         @Override
-        UpgradableHttpResponse setVersion(HttpProtocolVersion version);
+        UpgradableHttpResponse version(HttpProtocolVersion version);
 
         @Override
-        UpgradableHttpResponse setStatus(HttpResponseStatus status);
+        UpgradableHttpResponse status(HttpResponseStatus status);
     }
 }

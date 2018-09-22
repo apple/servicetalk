@@ -79,64 +79,64 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
     }
 
     @Override
-    public final StreamingHttpRequest setVersion(final HttpProtocolVersion version) {
-        super.setVersion(version);
+    public final StreamingHttpRequest version(final HttpProtocolVersion version) {
+        super.version(version);
         return this;
     }
 
     @Override
-    public final StreamingHttpRequest setMethod(final HttpRequestMethod method) {
-        super.setMethod(method);
+    public final StreamingHttpRequest method(final HttpRequestMethod method) {
+        super.method(method);
         return this;
     }
 
     @Override
-    public final StreamingHttpRequest setRequestTarget(final String requestTarget) {
-        super.setRequestTarget(requestTarget);
+    public final StreamingHttpRequest requestTarget(final String requestTarget) {
+        super.requestTarget(requestTarget);
         return this;
     }
 
     @Override
-    public final StreamingHttpRequest setPath(final String path) {
-        super.setPath(path);
+    public final StreamingHttpRequest path(final String path) {
+        super.path(path);
         return this;
     }
 
     @Override
-    public final StreamingHttpRequest setRawPath(final String path) {
-        super.setRawPath(path);
+    public final StreamingHttpRequest rawPath(final String path) {
+        super.rawPath(path);
         return this;
     }
 
     @Override
-    public final StreamingHttpRequest setRawQuery(final String query) {
-        super.setRawQuery(query);
+    public final StreamingHttpRequest rawQuery(final String query) {
+        super.rawQuery(query);
         return this;
     }
 
     @Override
-    public Publisher<Buffer> getPayloadBody() {
+    public Publisher<Buffer> payloadBody() {
         return payloadBody.liftSynchronous(HttpBufferFilterOperator.INSTANCE);
     }
 
     @Override
-    public final Publisher<Object> getPayloadBodyAndTrailers() {
+    public final Publisher<Object> payloadBodyAndTrailers() {
         return payloadBody
                 .map(payload -> (Object) payload) // down cast to Object
                 .concatWith(trailersSingle);
     }
 
     @Override
-    public final StreamingHttpRequest setPayloadBody(Publisher<Buffer> payloadBody) {
+    public final StreamingHttpRequest payloadBody(Publisher<Buffer> payloadBody) {
         return new BufferStreamingHttpRequest(this, allocator,
-                payloadBody.liftSynchronous(new BridgeFlowControlAndDiscardOperator(getPayloadBody())), trailersSingle);
+                payloadBody.liftSynchronous(new BridgeFlowControlAndDiscardOperator(payloadBody())), trailersSingle);
     }
 
     @Override
-    public final <T> StreamingHttpRequest setPayloadBody(final Publisher<T> payloadBody,
-                                                         final HttpSerializer<T> serializer) {
-        return new BufferStreamingHttpRequest(this, allocator, serializer.serialize(getHeaders(),
-                    payloadBody.liftSynchronous(new SerializeBridgeFlowControlAndDiscardOperator<>(getPayloadBody())),
+    public final <T> StreamingHttpRequest serializePayloadBody(final Publisher<T> payloadBody,
+                                                               final HttpSerializer<T> serializer) {
+        return new BufferStreamingHttpRequest(this, allocator, serializer.serialize(headers(),
+                    payloadBody.liftSynchronous(new SerializeBridgeFlowControlAndDiscardOperator<>(payloadBody())),
                     allocator),
                 trailersSingle);
     }
@@ -145,13 +145,13 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
     public final <T> StreamingHttpRequest transformPayloadBody(Function<Publisher<Buffer>, Publisher<T>> transformer,
                                                                HttpSerializer<T> serializer) {
         return new BufferStreamingHttpRequest(this, allocator,
-                serializer.serialize(getHeaders(), transformer.apply(getPayloadBody()), allocator),
+                serializer.serialize(headers(), transformer.apply(payloadBody()), allocator),
                 trailersSingle);
     }
 
     @Override
     public final StreamingHttpRequest transformPayloadBody(UnaryOperator<Publisher<Buffer>> transformer) {
-        return new BufferStreamingHttpRequest(this, allocator, transformer.apply(getPayloadBody()), trailersSingle);
+        return new BufferStreamingHttpRequest(this, allocator, transformer.apply(payloadBody()), trailersSingle);
     }
 
     @Override
@@ -164,7 +164,7 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
                                                     BiFunction<Buffer, T, Buffer> transformer,
                                                     BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
         final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
-        return new BufferStreamingHttpRequest(this, allocator, getPayloadBody()
+        return new BufferStreamingHttpRequest(this, allocator, payloadBody()
                 .liftSynchronous(new HttpPayloadAndTrailersFromSingleOperator<>(stateSupplier, transformer,
                         trailersTransformer, trailersSingle, outTrailersSingle)),
                 outTrailersSingle);
@@ -183,9 +183,9 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
 
     @Override
     public final Single<HttpRequest> toRequest() {
-        return aggregatePayloadAndTrailers(getPayloadBodyAndTrailers(), allocator).map(pair -> {
+        return aggregatePayloadAndTrailers(payloadBodyAndTrailers(), allocator).map(pair -> {
              assert pair.trailers != null;
-             return new BufferHttpRequest(getMethod(), getRequestTarget(), getVersion(), getHeaders(), pair.trailers,
+             return new BufferHttpRequest(method(), requestTarget(), version(), headers(), pair.trailers,
                      pair.compositeBuffer, allocator);
         });
     }

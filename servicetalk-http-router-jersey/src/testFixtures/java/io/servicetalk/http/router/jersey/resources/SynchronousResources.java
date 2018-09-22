@@ -135,7 +135,7 @@ public class SynchronousResources {
     @Path("/servicetalk-request")
     @GET
     public String serviceTalkRequest(@Context final StreamingHttpRequest serviceTalkRequest) {
-        return "GOT: " + serviceTalkRequest.getRequestTarget();
+        return "GOT: " + serviceTalkRequest.requestTarget();
     }
 
     @Produces(TEXT_PLAIN)

@@ -49,29 +49,29 @@ final class TransportStreamingHttpResponse extends DefaultHttpResponseMetaData i
     }
 
     @Override
-    public StreamingHttpResponse setVersion(final HttpProtocolVersion version) {
-        super.setVersion(version);
+    public StreamingHttpResponse version(final HttpProtocolVersion version) {
+        super.version(version);
         return this;
     }
 
     @Override
-    public StreamingHttpResponse setStatus(final HttpResponseStatus status) {
-        super.setStatus(status);
+    public StreamingHttpResponse status(final HttpResponseStatus status) {
+        super.status(status);
         return this;
     }
 
     @Override
-    public Publisher<Buffer> getPayloadBody() {
+    public Publisher<Buffer> payloadBody() {
         return payloadAndTrailers.liftSynchronous(HttpTransportBufferFilterOperator.INSTANCE);
     }
 
     @Override
-    public Publisher<Object> getPayloadBodyAndTrailers() {
+    public Publisher<Object> payloadBodyAndTrailers() {
         return payloadAndTrailers;
     }
 
     @Override
-    public StreamingHttpResponse setPayloadBody(final Publisher<Buffer> payloadBody) {
+    public StreamingHttpResponse payloadBody(final Publisher<Buffer> payloadBody) {
         final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
         return new BufferStreamingHttpResponse(this, allocator,
                 payloadBody.liftSynchronous(new BridgeFlowControlAndDiscardOperator(payloadAndTrailers.liftSynchronous(
@@ -80,10 +80,10 @@ final class TransportStreamingHttpResponse extends DefaultHttpResponseMetaData i
     }
 
     @Override
-    public <T> StreamingHttpResponse setPayloadBody(final Publisher<T> payloadBody,
-                                                    final HttpSerializer<T> serializer) {
+    public <T> StreamingHttpResponse serializePayloadBody(final Publisher<T> payloadBody,
+                                                          final HttpSerializer<T> serializer) {
         final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
-        return new BufferStreamingHttpResponse(this, allocator, serializer.serialize(getHeaders(),
+        return new BufferStreamingHttpResponse(this, allocator, serializer.serialize(headers(),
                 payloadBody.liftSynchronous(new SerializeBridgeFlowControlAndDiscardOperator<>(
                         payloadAndTrailers.liftSynchronous(new HttpBufferTrailersSpliceOperator(outTrailersSingle)))),
                 allocator),
@@ -94,7 +94,7 @@ final class TransportStreamingHttpResponse extends DefaultHttpResponseMetaData i
     public <T> StreamingHttpResponse transformPayloadBody(final Function<Publisher<Buffer>, Publisher<T>> transformer,
                                                           final HttpSerializer<T> serializer) {
         final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
-        return new BufferStreamingHttpResponse(this, allocator, serializer.serialize(getHeaders(),
+        return new BufferStreamingHttpResponse(this, allocator, serializer.serialize(headers(),
                 transformer.apply(payloadAndTrailers.liftSynchronous(new HttpBufferTrailersSpliceOperator(
                         outTrailersSingle))), allocator),
                 outTrailersSingle);
@@ -140,7 +140,7 @@ final class TransportStreamingHttpResponse extends DefaultHttpResponseMetaData i
     public Single<HttpResponse> toResponse() {
         return aggregatePayloadAndTrailers(payloadAndTrailers, allocator).map(pair -> {
             assert pair.trailers != null;
-            return new BufferHttpResponse(getStatus(), getVersion(), getHeaders(), pair.trailers, pair.compositeBuffer,
+            return new BufferHttpResponse(status(), version(), headers(), pair.trailers, pair.compositeBuffer,
                     allocator);
         });
     }

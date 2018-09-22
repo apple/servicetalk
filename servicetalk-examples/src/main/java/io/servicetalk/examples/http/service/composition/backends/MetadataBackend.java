@@ -53,7 +53,7 @@ final class MetadataBackend extends HttpService {
 
         // Create random names and author for the metadata
         Metadata metadata = new Metadata(entityId, createRandomString(15), createRandomString(5));
-        return success(responseFactory.ok().setPayloadBody(metadata, serializer.serializerFor(Metadata.class)));
+        return success(responseFactory.ok().payloadBody(metadata, serializer.serializerFor(Metadata.class)));
     }
 
     static HttpService newMetadataService(HttpSerializationProvider serializer) {

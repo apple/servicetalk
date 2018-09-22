@@ -20,7 +20,7 @@ import io.servicetalk.http.netty.HttpClients;
 
 import java.util.concurrent.CountDownLatch;
 
-import static io.servicetalk.http.api.HttpSerializationProviders.deserializeText;
+import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 
 public final class HelloWorldStreamingClient {
 
@@ -33,7 +33,7 @@ public final class HelloWorldStreamingClient {
 
             client.request(client.get("/sayHello"))
                     .doBeforeSuccess(response -> System.out.println(response.toString((name, value) -> value)))
-                    .flatMapPublisher(resp -> resp.getPayloadBody(deserializeText()))
+                    .flatMapPublisher(resp -> resp.deserializePayloadBody(textDeserializer()))
                     .doFinally(responseProcessedLatch::countDown)
                     .forEach(System.out::println);
 

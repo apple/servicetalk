@@ -143,7 +143,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpSe
         final StreamingHttpResponse res = sendAndAssertResponse(options("/text"),
                 OK, newAsciiString("application/vnd.sun.wadl+xml"), not(isEmptyString()), String::length);
 
-        assertThat(res.getHeaders().get(ALLOW).toString().split(","),
+        assertThat(res.headers().get(ALLOW).toString().split(","),
                 is(arrayContainingInAnyOrder("HEAD", "POST", "GET", "OPTIONS")));
     }
 
@@ -182,7 +182,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpSe
     public void getTextResponse() {
         final StreamingHttpResponse res = sendAndAssertResponse(withHeader(get("/text-response"), "hdr",
                 "bar"), NO_CONTENT, null, isEmptyString(), __ -> null);
-        assertThat(res.getHeaders().get("X-Test"), is(newAsciiString("bar")));
+        assertThat(res.headers().get("X-Test"), is(newAsciiString("bar")));
     }
 
     @Test
@@ -195,11 +195,11 @@ public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpSe
     public void filtered() {
         StreamingHttpResponse res = sendAndAssertResponse(post("/filtered", "foo1", TEXT_PLAIN),
                 OK, TEXT_PLAIN, "GOT: foo1");
-        assertThat(res.getHeaders().get("X-Foo-Prop"), is(newAsciiString("barProp")));
+        assertThat(res.headers().get("X-Foo-Prop"), is(newAsciiString("barProp")));
 
         res = sendAndAssertNoResponse(withHeader(post("/filtered", "foo2", TEXT_PLAIN), "X-Abort-With-Status", "451"),
                 getResponseStatus(451, EMPTY_BUFFER));
-        assertThat(res.getHeaders().get("X-Foo-Prop"), is(newAsciiString("barProp")));
+        assertThat(res.headers().get("X-Foo-Prop"), is(newAsciiString("barProp")));
     }
 
     @Test
@@ -220,7 +220,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpSe
                 sendAndAssertResponse(put("/json-response", "{\"key\":\"val1\"}", APPLICATION_JSON), ACCEPTED,
                         APPLICATION_JSON, jsonStringEquals("{\"key\":\"val1\",\"foo\":\"bar2\"}"),
                         getJsonResponseContentLengthExtractor());
-        assertThat(res.getHeaders().get("X-Test"), is(newAsciiString("test-header")));
+        assertThat(res.headers().get("X-Test"), is(newAsciiString("test-header")));
     }
 
     @Test
@@ -232,7 +232,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpSe
     public void getTextBufferResponse() {
         final StreamingHttpResponse res = sendAndAssertResponse(withHeader(get("/text-buffer-response"), "hdr",
                 "bar"), NON_AUTHORITATIVE_INFORMATION, TEXT_PLAIN, "DONE");
-        assertThat(res.getHeaders().get("X-Test"), is(newAsciiString("bar")));
+        assertThat(res.headers().get("X-Test"), is(newAsciiString("bar")));
     }
 
     @Test

@@ -95,7 +95,7 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
         // unit test should catch it.
         // - this is the rough equivalent of what is done in Netty in terms of sequencing. Instead of trying to
         // iterate a decoded list it makes some assumptions about the base class ordering of events.
-        methodQueue.add(msg.getMethod());
+        methodQueue.add(msg.method());
         return false;
     }
 

@@ -66,7 +66,7 @@ abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> ext
     @Override
     public Single<StreamingHttpResponse> request(StreamingHttpRequest request) {
         addRequestTransferEncodingIfNecessary(request); // See https://tools.ietf.org/html/rfc7230#section-3.3.3
-        final Publisher<Object> requestAsPublisher = flatten(request, StreamingHttpRequest::getPayloadBodyAndTrailers)
+        final Publisher<Object> requestAsPublisher = flatten(request, StreamingHttpRequest::payloadBodyAndTrailers)
                 // We will write this stream to the connection, which will request more data from the EventLoop.
                 // Offload control path to avoid blocking the EventLoop
                 .subscribeOn(executionContext.getExecutor());
@@ -83,7 +83,7 @@ abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> ext
     protected abstract Publisher<Object> writeAndRead(Publisher<Object> stream);
 
     private StreamingHttpResponse newResponse(HttpResponseMetaData meta, Publisher<Object> pub) {
-        return StreamingHttpResponses.newResponseWithTrailers(meta.getStatus(), meta.getVersion(), meta.getHeaders(),
+        return StreamingHttpResponses.newResponseWithTrailers(meta.status(), meta.version(), meta.headers(),
                 executionContext.getBufferAllocator(),
                 // Payload will be emitted from the EventLoop, so offload those signals to avoid blocking the EventLoop.
                 pub.publishOn(executionContext.getExecutor()));

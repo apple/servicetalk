@@ -166,7 +166,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
 
     protected StreamingHttpRequest noPayloadRequest(final HttpRequestMethod method, final String path) {
         final StreamingHttpRequest req = httpClient.newRequest(method, testUri(path));
-        req.getHeaders().set(HOST, host());
+        req.headers().set(HOST, host());
         return req;
     }
 
@@ -175,17 +175,17 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
                                                   final CharSequence payload,
                                                   final CharSequence contentType) {
         final Buffer content = DEFAULT_ALLOCATOR.fromUtf8(payload);
-        final StreamingHttpRequest req = httpClient.newRequest(method, testUri(path)).setPayloadBody(just(content));
-        req.getHeaders().set(HOST, host());
-        req.getHeaders().set(CONTENT_TYPE, contentType);
-        req.getHeaders().set(CONTENT_LENGTH, Integer.toString(content.getReadableBytes()));
+        final StreamingHttpRequest req = httpClient.newRequest(method, testUri(path)).payloadBody(just(content));
+        req.headers().set(HOST, host());
+        req.headers().set(CONTENT_TYPE, contentType);
+        req.headers().set(CONTENT_LENGTH, Integer.toString(content.getReadableBytes()));
         return req;
     }
 
     protected StreamingHttpRequest withHeader(final StreamingHttpRequest req,
                                               final String name,
                                               final String value) {
-        req.getHeaders().set(name, value);
+        req.headers().set(name, value);
         return req;
     }
 
@@ -267,9 +267,9 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
                 sendAndAssertStatus(req, expectedHttpVersion, expectedStatus, timeout, unit);
 
         if (expectedContentType != null) {
-            assertThat(res.getHeaders().get(CONTENT_TYPE), is(expectedContentType));
+            assertThat(res.headers().get(CONTENT_TYPE), is(expectedContentType));
         } else {
-            assertThat(res.getHeaders().contains(CONTENT_TYPE), is(false));
+            assertThat(res.headers().contains(CONTENT_TYPE), is(false));
         }
 
         final String contentAsString = getContentAsString(res);
@@ -277,16 +277,16 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
         @Nullable
         final Integer expectedContentLength = expectedContentLengthExtractor.apply(contentAsString);
         if (expectedContentLength != null) {
-            assertThat(res.getHeaders().get(CONTENT_LENGTH),
+            assertThat(res.headers().get(CONTENT_LENGTH),
                     is(newAsciiString(Integer.toString(expectedContentLength))));
-            res.getHeaders().getAll(TRANSFER_ENCODING)
+            res.headers().getAll(TRANSFER_ENCODING)
                     .forEachRemaining(h -> assertThat(h.toString(), equalToIgnoringCase("chunked")));
         } else {
-            assertThat(res.getHeaders().contains(CONTENT_LENGTH), is(false));
-            if (res.getStatus().getCode() >= 200 && res.getStatus().getCode() != 204 &&
+            assertThat(res.headers().contains(CONTENT_LENGTH), is(false));
+            if (res.status().getCode() >= 200 && res.status().getCode() != 204 &&
                     // It is OK to omit payload header fields in HEAD responses
-                    !req.getMethod().equals(HEAD)) {
-                assertThat(res.getHeaders().get(TRANSFER_ENCODING), is(CHUNKED));
+                    !req.method().equals(HEAD)) {
+                assertThat(res.headers().get(TRANSFER_ENCODING), is(CHUNKED));
             }
         }
 
@@ -302,8 +302,8 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
         try {
             final StreamingHttpResponse res = awaitNonNull(httpClient.request(req), timeout, unit);
 
-            assertThat(res.getVersion(), is(expectedHttpVersion));
-            final HttpResponseStatus status = res.getStatus();
+            assertThat(res.version(), is(expectedHttpVersion));
+            final HttpResponseStatus status = res.status();
             assertThat(status.getCode(), is(expectedStatus.getCode()));
             final Buffer reasonPhrase = DEFAULT_ALLOCATOR.newBuffer();
             status.writeReasonPhraseTo(reasonPhrase);

@@ -46,7 +46,7 @@ import static io.servicetalk.examples.http.service.composition.backends.PortRegi
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.RATINGS_BACKEND_ADDRESS;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.RECOMMENDATIONS_BACKEND_ADDRESS;
 import static io.servicetalk.examples.http.service.composition.backends.PortRegistry.USER_BACKEND_ADDRESS;
-import static io.servicetalk.http.api.HttpSerializationProviders.serializeJson;
+import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.time.Duration.ofMillis;
 
@@ -89,7 +89,7 @@ public final class GatewayServer {
             // Use Jackson for serialization and deserialization.
             // HttpSerializer validates HTTP metadata for serialization/deserialization and also provides higher level
             // HTTP focused serialization APIs.
-            HttpSerializationProvider httpSerializer = serializeJson(new JacksonSerializationProvider());
+            HttpSerializationProvider httpSerializer = jsonSerializer(new JacksonSerializationProvider());
 
             // Gateway supports different endpoints for blocking, streaming or aggregated implementations.
             // We create a router to express these endpoints.

@@ -33,12 +33,12 @@ final class DefaultRedisRequest implements RedisRequest {
     }
 
     @Override
-    public Command getCommand() {
+    public Command command() {
         return command;
     }
 
     @Override
-    public Publisher<RequestRedisData> getContent() {
+    public Publisher<RequestRedisData> content() {
         return content;
     }
 

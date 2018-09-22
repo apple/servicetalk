@@ -59,7 +59,7 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
      * @param headersFactory the {@link HttpHeadersFactory} to use.
      * @return this
      */
-    public DefaultHttpServerStarter setHeadersFactory(final HttpHeadersFactory headersFactory) {
+    public DefaultHttpServerStarter headersFactory(final HttpHeadersFactory headersFactory) {
         config.setHeadersFactory(headersFactory);
         return this;
     }
@@ -72,7 +72,7 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
      * {@code > 0} if a wait time should be used.
      * @return this
      */
-    public DefaultHttpServerStarter setClientCloseTimeout(final long clientCloseTimeoutMs) {
+    public DefaultHttpServerStarter clientCloseTimeout(final long clientCloseTimeoutMs) {
         config.setClientCloseTimeout(clientCloseTimeoutMs);
         return this;
     }
@@ -84,7 +84,7 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
      * length.
      * @return this.
      */
-    public DefaultHttpServerStarter setMaxInitialLineLength(final int maxInitialLineLength) {
+    public DefaultHttpServerStarter maxInitialLineLength(final int maxInitialLineLength) {
         config.setMaxInitialLineLength(maxInitialLineLength);
         return this;
     }
@@ -96,7 +96,7 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
      * this length.
      * @return this.
      */
-    public DefaultHttpServerStarter setMaxHeaderSize(final int maxHeaderSize) {
+    public DefaultHttpServerStarter maxHeaderSize(final int maxHeaderSize) {
         config.setMaxHeaderSize(maxHeaderSize);
         return this;
     }
@@ -108,7 +108,7 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
      * @param headersEncodedSizeEstimate estimated initial value.
      * @return this
      */
-    public DefaultHttpServerStarter setHeadersEncodedSizeEstimate(final int headersEncodedSizeEstimate) {
+    public DefaultHttpServerStarter headersEncodedSizeEstimate(final int headersEncodedSizeEstimate) {
         config.setHeadersEncodedSizeEstimate(headersEncodedSizeEstimate);
         return this;
     }
@@ -120,7 +120,7 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
      * @param trailersEncodedSizeEstimate estimated initial value.
      * @return this;
      */
-    public DefaultHttpServerStarter setTrailersEncodedSizeEstimate(final int trailersEncodedSizeEstimate) {
+    public DefaultHttpServerStarter trailersEncodedSizeEstimate(final int trailersEncodedSizeEstimate) {
         config.setTrailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
         return this;
     }
@@ -132,14 +132,14 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
      * @param backlog the backlog to use when accepting connections.
      * @return this.
      */
-    public DefaultHttpServerStarter setBacklog(final int backlog) {
+    public DefaultHttpServerStarter backlog(final int backlog) {
         config.getTcpConfig().setBacklog(backlog);
         return this;
     }
 
     /**
      * Allows to setup SNI.
-     * You can either use {@link #setSslConfig(SslConfig)} or this method.
+     * You can either use {@link #sslConfig(SslConfig)} or this method.
      *
      * @param mappings mapping hostnames to the ssl configuration that should be used.
      * @param defaultConfig the configuration to use if no hostnames matched from {@code mappings}.
@@ -148,8 +148,8 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
      * {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()} throws when
      * {@link InputStream#close()} is called.
      */
-    public DefaultHttpServerStarter setSniConfig(@Nullable final Map<String, SslConfig> mappings,
-                                                 final SslConfig defaultConfig) {
+    public DefaultHttpServerStarter sniConfig(@Nullable final Map<String, SslConfig> mappings,
+                                              final SslConfig defaultConfig) {
         config.getTcpConfig().setSniConfig(mappings, defaultConfig);
         return this;
     }
@@ -163,7 +163,7 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
      * {@link SslConfig#getKeySupplier()}, or {@link SslConfig#getTrustCertChainSupplier()} throws when
      * {@link InputStream#close()} is called.
      */
-    public DefaultHttpServerStarter setSslConfig(@Nullable final SslConfig sslConfig) {
+    public DefaultHttpServerStarter sslConfig(@Nullable final SslConfig sslConfig) {
         config.getTcpConfig().setSslConfig(sslConfig);
         return this;
     }
@@ -176,7 +176,7 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
      * @param value the value.
      * @return this.
      */
-    public <T> DefaultHttpServerStarter setSocketOption(final SocketOption<T> option, final T value) {
+    public <T> DefaultHttpServerStarter socketOption(final SocketOption<T> option, final T value) {
         config.getTcpConfig().setSocketOption(option, value);
         return this;
     }

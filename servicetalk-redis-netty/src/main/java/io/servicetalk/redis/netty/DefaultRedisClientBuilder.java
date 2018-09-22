@@ -89,7 +89,7 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
      * @return {@code this}.
      * @throws IllegalStateException if accessing the cert/key throws when {@link InputStream#close()} is called.
      */
-    public DefaultRedisClientBuilder<ResolvedAddress> setSsl(@Nullable SslConfig config) {
+    public DefaultRedisClientBuilder<ResolvedAddress> ssl(@Nullable SslConfig config) {
         this.config.getTcpClientConfig().setSslConfig(config);
         return this;
     }
@@ -102,7 +102,7 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
      * @param value the value.
      * @return {@code this}.
      */
-    public <T> DefaultRedisClientBuilder<ResolvedAddress> setSocketOption(SocketOption<T> option, T value) {
+    public <T> DefaultRedisClientBuilder<ResolvedAddress> socketOption(SocketOption<T> option, T value) {
         config.getTcpClientConfig().setSocketOption(option, value);
         return this;
     }
@@ -136,7 +136,7 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
      * @param maxPipelinedRequests Maximum number of pipelined requests per {@link RedisConnection}.
      * @return {@code this}.
      */
-    public DefaultRedisClientBuilder<ResolvedAddress> setMaxPipelinedRequests(int maxPipelinedRequests) {
+    public DefaultRedisClientBuilder<ResolvedAddress> maxPipelinedRequests(int maxPipelinedRequests) {
         config.setMaxPipelinedRequests(maxPipelinedRequests);
         return this;
     }
@@ -147,7 +147,7 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
      * @param idleConnectionTimeout the timeout {@link Duration} or {@code null} if no timeout configured.
      * @return {@code this}.
      */
-    public DefaultRedisClientBuilder<ResolvedAddress> setIdleConnectionTimeout(@Nullable Duration idleConnectionTimeout) {
+    public DefaultRedisClientBuilder<ResolvedAddress> idleConnectionTimeout(@Nullable Duration idleConnectionTimeout) {
         config.setIdleConnectionTimeout(idleConnectionTimeout);
         return this;
     }
@@ -158,7 +158,7 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
      * @param pingPeriod the {@link Duration} between keep-alive pings or {@code null} to disable pings.
      * @return {@code this}.
      */
-    public DefaultRedisClientBuilder<ResolvedAddress> setPingPeriod(@Nullable final Duration pingPeriod) {
+    public DefaultRedisClientBuilder<ResolvedAddress> pingPeriod(@Nullable final Duration pingPeriod) {
         config.setPingPeriod(pingPeriod);
         return this;
     }
@@ -173,7 +173,7 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
      * filtering.
      * @return {@code this}.
      */
-    public DefaultRedisClientBuilder<ResolvedAddress> setConnectionFilterFactory(
+    public DefaultRedisClientBuilder<ResolvedAddress> connectionFilterFactory(
             UnaryOperator<RedisConnection> connectionFilterFunction) {
         this.connectionFilterFactory = requireNonNull(connectionFilterFunction);
         return this;
@@ -187,7 +187,7 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
      * @param clientFilterFactory factory to decorate a {@link RedisClient} for the purpose of filtering.
      * @return {@code this}
      */
-    public DefaultRedisClientBuilder<ResolvedAddress> setClientFilterFactory(
+    public DefaultRedisClientBuilder<ResolvedAddress> clientFilterFactory(
             RedisClientFilterFactory clientFilterFactory) {
         this.clientFilterFactory = requireNonNull(clientFilterFactory);
         return this;
@@ -236,7 +236,7 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
 
         @Override
         public Single<? extends ReservedRedisConnection> reserveConnection(RedisRequest request) {
-            return getLbForCommand(request.getCommand()).selectConnection(SELECTOR_FOR_RESERVE);
+            return getLbForCommand(request.command()).selectConnection(SELECTOR_FOR_RESERVE);
         }
 
         @Override
@@ -245,7 +245,7 @@ public final class DefaultRedisClientBuilder<ResolvedAddress>
             // it is possible that someone can use the ConnectionFactory exported by this Client before the LoadBalancer
             // takes ownership of it (e.g. connection initialization) and in that case they will not be following the
             // LoadBalancer API which this Client depends upon to ensure the concurrent request count state is correct.
-            return getLbForCommand(request.getCommand()).selectConnection(SELECTOR_FOR_REQUEST)
+            return getLbForCommand(request.command()).selectConnection(SELECTOR_FOR_REQUEST)
                     .flatMapPublisher(selectedConnection -> selectedConnection.request(request)
                             .doBeforeFinally(selectedConnection::requestFinished));
         }

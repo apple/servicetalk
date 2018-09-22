@@ -160,7 +160,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     @Override
-    public <T> SingleAddressHttpClientBuilder<U, R> setSocketOption(SocketOption<T> option, T value) {
+    public <T> SingleAddressHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value) {
         config.getTcpClientConfig().setSocketOption(option, value);
         return this;
     }
@@ -178,7 +178,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> setHeadersFactory(final HttpHeadersFactory headersFactory) {
+    public SingleAddressHttpClientBuilder<U, R> headersFactory(final HttpHeadersFactory headersFactory) {
         config.setHeadersFactory(headersFactory);
         return this;
     }
@@ -188,31 +188,31 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> setMaxInitialLineLength(final int maxInitialLineLength) {
+    public SingleAddressHttpClientBuilder<U, R> maxInitialLineLength(final int maxInitialLineLength) {
         config.setMaxInitialLineLength(maxInitialLineLength);
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> setMaxHeaderSize(final int maxHeaderSize) {
+    public SingleAddressHttpClientBuilder<U, R> maxHeaderSize(final int maxHeaderSize) {
         config.setMaxHeaderSize(maxHeaderSize);
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> setHeadersEncodedSizeEstimate(final int headersEncodedSizeEstimate) {
+    public SingleAddressHttpClientBuilder<U, R> headersEncodedSizeEstimate(final int headersEncodedSizeEstimate) {
         config.setHeadersEncodedSizeEstimate(headersEncodedSizeEstimate);
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> setTrailersEncodedSizeEstimate(final int trailersEncodedSizeEstimate) {
+    public SingleAddressHttpClientBuilder<U, R> trailersEncodedSizeEstimate(final int trailersEncodedSizeEstimate) {
         config.setTrailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> setMaxPipelinedRequests(final int maxPipelinedRequests) {
+    public SingleAddressHttpClientBuilder<U, R> maxPipelinedRequests(final int maxPipelinedRequests) {
         config.setMaxPipelinedRequests(maxPipelinedRequests);
         return this;
     }
@@ -249,20 +249,20 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> setServiceDiscoverer(final ServiceDiscoverer<U, R> serviceDiscoverer) {
+    public SingleAddressHttpClientBuilder<U, R> serviceDiscoverer(final ServiceDiscoverer<U, R> serviceDiscoverer) {
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> setLoadBalancerFactory(
+    public SingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
             final LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory) {
         this.loadBalancerFactory = requireNonNull(loadBalancerFactory);
         return this;
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> setSslConfig(@Nullable final SslConfig sslConfig) {
+    public SingleAddressHttpClientBuilder<U, R> sslConfig(@Nullable final SslConfig sslConfig) {
         config.getTcpClientConfig().setSslConfig(sslConfig);
         return this;
     }

@@ -141,7 +141,7 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
         when(headers.getAll("host")).then(answerIteratorOf("d.com"));
         assertSame(responseD, service.handle(ctx, request, reqRespFactory));
 
-        verify(request, times(4)).getHeaders();
+        verify(request, times(4)).headers();
         verify(headers, times(4)).getAll("host");
     }
 }

@@ -72,29 +72,29 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     }
 
     @Override
-    public HttpRequestMetaData setVersion(final HttpProtocolVersion version) {
-        super.setVersion(version);
+    public HttpRequestMetaData version(final HttpProtocolVersion version) {
+        super.version(version);
         return this;
     }
 
     @Override
-    public final HttpRequestMethod getMethod() {
+    public final HttpRequestMethod method() {
         return method;
     }
 
     @Override
-    public HttpRequestMetaData setMethod(final HttpRequestMethod method) {
+    public HttpRequestMetaData method(final HttpRequestMethod method) {
         this.method = requireNonNull(method);
         return this;
     }
 
     @Override
-    public final String getRequestTarget() {
+    public final String requestTarget() {
         return requestTarget;
     }
 
     @Override
-    public HttpRequestMetaData setRequestTarget(final String requestTarget) {
+    public HttpRequestMetaData requestTarget(final String requestTarget) {
         this.requestTarget = requireNonNull(requestTarget);
         invalidateParsedUri();
         return this;
@@ -102,39 +102,39 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
     @Nullable
     @Override
-    public final String getScheme() {
+    public final String scheme() {
         return lazyParseRequestTarget().getScheme();
     }
 
     @Nullable
     @Override
-    public final String getUserInfo() {
+    public final String userInfo() {
         return lazyParseRequestTarget().getUserInfo();
     }
 
     @Nullable
     @Override
-    public final String getHost() {
+    public final String host() {
         return lazyParseRequestTarget().getHost();
     }
 
     @Override
-    public final int getPort() {
+    public final int port() {
         return lazyParseRequestTarget().getExplicitPort();
     }
 
     @Override
-    public final String getRawPath() {
+    public final String rawPath() {
         return lazyParseRequestTarget().getRawPath();
     }
 
     @Override
-    public final String getPath() {
+    public final String path() {
         return lazyParseRequestTarget().getPath();
     }
 
     @Override
-    public HttpRequestMetaData setPath(String path) {
+    public HttpRequestMetaData path(String path) {
         if (!path.isEmpty() && path.charAt(0) != '/') {
             path = "/" + path;
         }
@@ -145,16 +145,16 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
         } catch (final UnsupportedEncodingException e) {
             throw new UnsupportedCharsetException(REQUEST_TARGET_CHARSET.name());
         }
-        setRequestTarget(encodeRequestTarget(encodedPath, getRawQuery(), null));
+        requestTarget(encodeRequestTarget(encodedPath, rawQuery(), null));
         return this;
     }
 
     @Override
-    public HttpRequestMetaData setRawPath(final String path) {
+    public HttpRequestMetaData rawPath(final String path) {
         if (!path.isEmpty() && path.charAt(0) != '/') {
             throw new IllegalArgumentException("Path must be empty or start with '/'");
         }
-        setRequestTarget(encodeRequestTarget(path, getRawQuery(), null));
+        requestTarget(encodeRequestTarget(path, rawQuery(), null));
         return this;
     }
 
@@ -164,25 +164,25 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     }
 
     @Override
-    public final String getRawQuery() {
+    public final String rawQuery() {
         return lazyParseRequestTarget().getRawQuery();
     }
 
     @Override
-    public HttpRequestMetaData setRawQuery(final String query) {
-        setRequestTarget(encodeRequestTarget(getRawPath(), requireNonNull(query), null));
+    public HttpRequestMetaData rawQuery(final String query) {
+        requestTarget(encodeRequestTarget(rawPath(), requireNonNull(query), null));
         return this;
     }
 
     @Nullable
     @Override
-    public final String getEffectiveHost() {
+    public final String effectiveHost() {
         lazyParseEffectiveRequest();
         return effectiveRequestHost;
     }
 
     @Override
-    public final int getEffectivePort() {
+    public final int effectivePort() {
         lazyParseEffectiveRequest();
         return effectiveRequestPort;
     }
@@ -196,16 +196,16 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
     private HttpUri lazyParseRequestTarget() {
         if (requestTargetUri == null) {
-            requestTargetUri = new HttpUri(getRequestTarget());
+            requestTargetUri = new HttpUri(requestTarget());
         }
         return requestTargetUri;
     }
 
     private void lazyParseEffectiveRequest() {
-        final CharSequence hostHeader = getHeaders().get(HOST);
+        final CharSequence hostHeader = headers().get(HOST);
 
         if (effectiveRequestPort == PORT_NOT_ASSIGNED || !Objects.equals(hostHeader, effectiveRequestHostHeader)) {
-            final HttpUri effectiveRequestUri = new HttpUri(getRequestTarget(), () -> StringUtil.toString(hostHeader));
+            final HttpUri effectiveRequestUri = new HttpUri(requestTarget(), () -> StringUtil.toString(hostHeader));
             effectiveRequestHost = effectiveRequestUri.getHost();
             effectiveRequestPort = effectiveRequestUri.getExplicitPort();
             effectiveRequestHostHeader = hostHeader;
@@ -214,7 +214,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
 
     // package-private for testing.
     void setQueryParams(final Map<String, List<String>> params) {
-        final QueryStringEncoder encoder = new QueryStringEncoder(getRawPath());
+        final QueryStringEncoder encoder = new QueryStringEncoder(rawPath());
 
         for (final Map.Entry<String, List<String>> entry : params.entrySet()) {
             for (final String value : entry.getValue()) {
@@ -222,7 +222,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
             }
         }
 
-        setRequestTarget(encodeRequestTarget(null, null, encoder.toString()));
+        requestTarget(encodeRequestTarget(null, null, encoder.toString()));
     }
 
     private String encodeRequestTarget(@Nullable final String path,
@@ -250,8 +250,8 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     @Override
     public final String toString(
             final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> headerFilter) {
-        return getMethod().toString() + " " + getRequestTarget() + " " + getVersion() + lineSeparator()
-                + getHeaders().toString(headerFilter);
+        return method().toString() + " " + requestTarget() + " " + version() + lineSeparator()
+                + headers().toString(headerFilter);
     }
 
     @Override

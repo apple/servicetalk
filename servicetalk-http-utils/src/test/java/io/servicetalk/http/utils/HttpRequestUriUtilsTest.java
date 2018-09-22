@@ -95,7 +95,7 @@ public class HttpRequestUriUtilsTest {
     @Test
     public void originFormWithHostHeader() {
         final StreamingHttpRequest req = reqRespFactory.get("/some/path.html?query");
-        req.getHeaders().set(HOST, "my.site.com:8080");
+        req.headers().set(HOST, "my.site.com:8080");
 
         assertThat(getEffectiveRequestUri(ctx, req, null, null, false),
                 is("http://my.site.com:8080/some/path.html?query"));
@@ -268,7 +268,7 @@ public class HttpRequestUriUtilsTest {
     @Test
     public void asteriskFormWithHostHeader() {
         final StreamingHttpRequest req = reqRespFactory.newRequest(OPTIONS, "*");
-        req.getHeaders().set(HOST, "my.site.com:8080");
+        req.headers().set(HOST, "my.site.com:8080");
 
         assertThat(getEffectiveRequestUri(ctx, req, null, null, false),
                 is("http://my.site.com:8080"));

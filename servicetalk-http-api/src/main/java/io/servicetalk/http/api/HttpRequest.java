@@ -25,7 +25,7 @@ public interface HttpRequest extends HttpRequestMetaData {
      * Get the underlying payload as a {@link Buffer}.
      * @return The {@link Buffer} representation of the underlying payload.
      */
-    Buffer getPayloadBody();
+    Buffer payloadBody();
 
     /**
      * Get and deserialize the payload body.
@@ -33,22 +33,22 @@ public interface HttpRequest extends HttpRequestMetaData {
      * @param <T> The resulting type of the deserialization operation.
      * @return The results of the deserialization operation.
      */
-    default <T> T getPayloadBody(HttpDeserializer<T> deserializer) {
-        return deserializer.deserialize(getHeaders(), getPayloadBody());
+    default <T> T deserializePayloadBody(HttpDeserializer<T> deserializer) {
+        return deserializer.deserialize(headers(), payloadBody());
     }
 
     /**
      * Get the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
      * @return the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
      */
-    HttpHeaders getTrailers();
+    HttpHeaders trailers();
 
     /**
      * Set the underlying payload.
      * @param payloadBody the underlying payload.
      * @return A {@link HttpRequest} with the new serialized payload body.
      */
-    HttpRequest setPayloadBody(Buffer payloadBody);
+    HttpRequest payloadBody(Buffer payloadBody);
 
     /**
      * Set the underlying payload to be the results of serialization of {@code pojo}.
@@ -57,7 +57,7 @@ public interface HttpRequest extends HttpRequestMetaData {
      * @param <T> The type of object to serialize.
      * @return A {@link HttpRequest} with the new serialized payload body.
      */
-    <T> HttpRequest setPayloadBody(T pojo, HttpSerializer<T> serializer);
+    <T> HttpRequest serializePayloadBody(T pojo, HttpSerializer<T> serializer);
 
     /**
      * Translate this {@link HttpRequest} to a {@link StreamingHttpRequest}.
@@ -72,20 +72,20 @@ public interface HttpRequest extends HttpRequestMetaData {
     BlockingStreamingHttpRequest toBlockingStreamingRequest();
 
     @Override
-    HttpRequest setRawPath(String path);
+    HttpRequest rawPath(String path);
 
     @Override
-    HttpRequest setPath(String path);
+    HttpRequest path(String path);
 
     @Override
-    HttpRequest setRawQuery(String query);
+    HttpRequest rawQuery(String query);
 
     @Override
-    HttpRequest setVersion(HttpProtocolVersion version);
+    HttpRequest version(HttpProtocolVersion version);
 
     @Override
-    HttpRequest setMethod(HttpRequestMethod method);
+    HttpRequest method(HttpRequestMethod method);
 
     @Override
-    HttpRequest setRequestTarget(String requestTarget);
+    HttpRequest requestTarget(String requestTarget);
 }

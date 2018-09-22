@@ -68,7 +68,7 @@ final class TestServiceStreaming extends StreamingHttpService {
                                                 final StreamingHttpResponseFactory factory) {
         LOGGER.debug("({}) Handling {}", counter, req.toString((a, b) -> b));
         final StreamingHttpResponse response;
-        switch (req.getPath()) {
+        switch (req.path()) {
             case SVC_ECHO:
                 response = newEchoResponse(req, factory);
                 break;
@@ -109,11 +109,11 @@ final class TestServiceStreaming extends StreamingHttpService {
 
     private StreamingHttpResponse newEchoResponse(final StreamingHttpRequest req,
                                                   final StreamingHttpResponseFactory factory) {
-        final StreamingHttpResponse response = factory.ok().setVersion(req.getVersion())
-                .setPayloadBody(req.getPayloadBody());
-        final CharSequence contentLength = req.getHeaders().get(CONTENT_LENGTH);
+        final StreamingHttpResponse response = factory.ok().version(req.version())
+                .payloadBody(req.payloadBody());
+        final CharSequence contentLength = req.headers().get(CONTENT_LENGTH);
         if (contentLength != null) {
-            response.getHeaders().set(CONTENT_LENGTH, contentLength);
+            response.headers().set(CONTENT_LENGTH, contentLength);
         }
         return response;
     }
@@ -123,7 +123,7 @@ final class TestServiceStreaming extends StreamingHttpService {
                                                          final StreamingHttpResponseFactory factory) {
         final Buffer responseContent = context.getExecutionContext().getBufferAllocator().fromUtf8(
                 "Testing" + ++counter + "\n");
-        return factory.ok().setVersion(req.getVersion()).setPayloadBody(just(responseContent));
+        return factory.ok().version(req.version()).payloadBody(just(responseContent));
     }
 
     private StreamingHttpResponse newTestCounterResponseWithLastPayloadChunk(
@@ -131,7 +131,7 @@ final class TestServiceStreaming extends StreamingHttpService {
             final StreamingHttpResponseFactory factory) {
         final Buffer responseContent = context.getExecutionContext().getBufferAllocator().fromUtf8(
                 "Testing" + ++counter + "\n");
-        return factory.ok().setVersion(req.getVersion()).setPayloadBody(just(responseContent));
+        return factory.ok().version(req.version()).payloadBody(just(responseContent));
     }
 
     private StreamingHttpResponse newLargeLastChunkResponse(
@@ -145,22 +145,22 @@ final class TestServiceStreaming extends StreamingHttpService {
         ThreadLocalRandom.current().nextBytes(lastContent);
         final Buffer lastChunk = context.getExecutionContext().getBufferAllocator().wrap(lastContent);
 
-        return factory.ok().setVersion(req.getVersion()).setPayloadBody(from(chunk, lastChunk));
+        return factory.ok().version(req.version()).payloadBody(from(chunk, lastChunk));
     }
 
     private StreamingHttpResponse newPublisherRuleResponse(
             final StreamingHttpRequest req, final StreamingHttpResponseFactory factory) {
-        return factory.ok().setVersion(req.getVersion()).setPayloadBody(publisherSupplier.apply(req));
+        return factory.ok().version(req.version()).payloadBody(publisherSupplier.apply(req));
     }
 
     private StreamingHttpResponse newNoContentResponse(final StreamingHttpRequest req,
                                                        final StreamingHttpResponseFactory factory) {
-        return factory.newResponse(NO_CONTENT).setVersion(req.getVersion());
+        return factory.newResponse(NO_CONTENT).version(req.version());
     }
 
     private StreamingHttpResponse newRot13Response(final StreamingHttpRequest req,
                                                    final StreamingHttpResponseFactory factory) {
-        final Publisher<Buffer> responseBody = req.getPayloadBody().map(buffer -> {
+        final Publisher<Buffer> responseBody = req.payloadBody().map(buffer -> {
             // Do an ASCII-only ROT13
             for (int i = buffer.getReaderIndex(); i < buffer.getWriterIndex(); i++) {
                 final byte c = buffer.getByte(i);
@@ -172,12 +172,12 @@ final class TestServiceStreaming extends StreamingHttpService {
             }
             return buffer;
         });
-        return factory.ok().setVersion(req.getVersion()).setPayloadBody(responseBody);
+        return factory.ok().version(req.version()).payloadBody(responseBody);
     }
 
     private StreamingHttpResponse newNotFoundResponse(final StreamingHttpRequest req,
                                                       final StreamingHttpResponseFactory factory) {
-        return factory.newResponse(NOT_FOUND).setVersion(req.getVersion());
+        return factory.newResponse(NOT_FOUND).version(req.version());
     }
 
     private StreamingHttpResponse throwErrorSynchronously() {
@@ -186,13 +186,13 @@ final class TestServiceStreaming extends StreamingHttpService {
 
     private StreamingHttpResponse throwErrorBeforeRead(final StreamingHttpRequest req,
                                                        final StreamingHttpResponseFactory factory) {
-        return factory.ok().setVersion(req.getVersion()).setPayloadBody(Publisher.error(
+        return factory.ok().version(req.version()).payloadBody(Publisher.error(
                 DELIBERATE_EXCEPTION));
     }
 
     private StreamingHttpResponse throwErrorDuringRead(final StreamingHttpRequest req,
                                                        final StreamingHttpResponseFactory factory) {
-        return factory.ok().setVersion(req.getVersion()).setPayloadBody(
-                req.getPayloadBody().concatWith(Completable.error(DELIBERATE_EXCEPTION)));
+        return factory.ok().version(req.version()).payloadBody(
+                req.payloadBody().concatWith(Completable.error(DELIBERATE_EXCEPTION)));
     }
 }

@@ -133,8 +133,8 @@ public abstract class AbstractPartitionedRedisClientTest {
         client = new DefaultPartitionedRedisClientBuilder<InetSocketAddress>((eventPublisher, connectionFactory) ->
                 new RoundRobinLoadBalancer<>(eventPublisher, connectionFactory, comparingInt(Object::hashCode)),
                 partitionAttributesBuilderFactory)
-                .setMaxPipelinedRequests(10)
-                .setPingPeriod(ofSeconds(1))
+                .maxPipelinedRequests(10)
+                .pingPeriod(ofSeconds(1))
                 .build(new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, immediate()),
                         serviceDiscoveryPublisher.getPublisher());
 

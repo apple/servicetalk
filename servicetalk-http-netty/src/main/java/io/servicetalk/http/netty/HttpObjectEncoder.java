@@ -130,11 +130,11 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
             // Encode the message.
             encodeInitialLine(stBuffer, metaData);
             state = isContentAlwaysEmpty(metaData) ? ST_CONTENT_ALWAYS_EMPTY :
-                    isTransferEncodingChunked(metaData.getHeaders()) ? ST_CONTENT_CHUNK : ST_CONTENT_NON_CHUNK;
+                    isTransferEncodingChunked(metaData.headers()) ? ST_CONTENT_CHUNK : ST_CONTENT_NON_CHUNK;
 
             sanitizeHeadersBeforeEncode(metaData, state == ST_CONTENT_ALWAYS_EMPTY);
 
-            encodeHeaders(metaData.getHeaders(), byteBuf);
+            encodeHeaders(metaData.headers(), byteBuf);
             writeShortBE(byteBuf, CRLF_SHORT);
             closeHandler.protocolPayloadBeginOutbound(ctx);
             if (shouldClose(metaData)) {

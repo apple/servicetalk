@@ -52,7 +52,7 @@ final class RatingBackend extends HttpService {
 
         // Create a random rating
         Rating rating = new Rating(entityId, ThreadLocalRandom.current().nextInt(1, 6));
-        return success(responseFactory.ok().setPayloadBody(rating, serializer.serializerFor(Rating.class)));
+        return success(responseFactory.ok().payloadBody(rating, serializer.serializerFor(Rating.class)));
     }
 
     static HttpService newRatingService(HttpSerializationProvider serializer) {

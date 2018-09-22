@@ -102,13 +102,13 @@ public class PipelinedHttpConnectionTest {
     @Test
     public void http09RequestShouldReturnOnError() {
         Single<StreamingHttpResponse> request = pipe.request(
-                reqRespFactory.get("/Foo").setVersion(newProtocolVersion(0, 9)));
+                reqRespFactory.get("/Foo").version(newProtocolVersion(0, 9)));
         dataSubscriber1.subscribe(request).request(1).verifyFailure(IllegalArgumentException.class);
     }
 
     @Test
     public void http10RequestShouldReturnOnError() {
-        Single<StreamingHttpResponse> request = pipe.request(reqRespFactory.get("/Foo").setVersion(HTTP_1_0));
+        Single<StreamingHttpResponse> request = pipe.request(reqRespFactory.get("/Foo").version(HTTP_1_0));
         dataSubscriber1.subscribe(request).request(1).verifyFailure(IllegalArgumentException.class);
     }
 
@@ -126,8 +126,8 @@ public class PipelinedHttpConnectionTest {
 
     @Test
     public void ensureRequestsArePipelined() {
-        dataSubscriber1.subscribe(pipe.request(reqRespFactory.get("/foo").setPayloadBody(writePublisher1))).request(1);
-        dataSubscriber2.subscribe(pipe.request(reqRespFactory.get("/bar").setPayloadBody(writePublisher2))).request(1);
+        dataSubscriber1.subscribe(pipe.request(reqRespFactory.get("/foo").payloadBody(writePublisher1))).request(1);
+        dataSubscriber2.subscribe(pipe.request(reqRespFactory.get("/bar").payloadBody(writePublisher2))).request(1);
 
         readPublisher1.verifyNotSubscribed();
         readPublisher2.verifyNotSubscribed();

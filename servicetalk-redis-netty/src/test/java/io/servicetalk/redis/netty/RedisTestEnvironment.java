@@ -85,9 +85,9 @@ final class RedisTestEnvironment implements AutoCloseable {
         client = new RetryingRedisClient(new DefaultRedisClientBuilder<InetSocketAddress>(
                 (eventPublisher, connectionFactory) -> new RoundRobinLoadBalancer<>(eventPublisher, connectionFactory,
                         comparingInt(Object::hashCode)), config)
-                .setMaxPipelinedRequests(10)
-                .setIdleConnectionTimeout(ofSeconds(2))
-                .setPingPeriod(ofSeconds(PING_PERIOD_SECONDS))
+                .maxPipelinedRequests(10)
+                .idleConnectionTimeout(ofSeconds(2))
+                .pingPeriod(ofSeconds(PING_PERIOD_SECONDS))
                 .build(executionContext,
                         serviceDiscoverer.discover(HostAndPort.of(redisHost, redisPort))),
                 retryWithExponentialBackoff(10, cause -> cause instanceof RetryableException, ofMillis(10),

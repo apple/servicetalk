@@ -169,7 +169,7 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
         static UpgradableHttpResponseToUpgradableStreamingHttpResponse newUpgradeResponse(
                 UpgradableHttpResponse upgradableResponse, BufferAllocator allocator) {
             return new UpgradableHttpResponseToUpgradableStreamingHttpResponse(upgradableResponse,
-                    just(upgradableResponse.getPayloadBody()), success(upgradableResponse.getTrailers()), allocator);
+                    just(upgradableResponse.payloadBody()), success(upgradableResponse.trailers()), allocator);
         }
 
         @Override
@@ -179,25 +179,25 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
         }
 
         @Override
-        public UpgradableStreamingHttpResponse setPayloadBody(final Publisher<Buffer> payloadBody) {
+        public UpgradableStreamingHttpResponse payloadBody(final Publisher<Buffer> payloadBody) {
             return transformPayloadBody(old -> payloadBody.liftSynchronous(
                     new BridgeFlowControlAndDiscardOperator(old)));
         }
 
         @Override
-        public <T> UpgradableStreamingHttpResponse setPayloadBody(final Publisher<T> payloadBody,
-                                                                  final HttpSerializer<T> serializer) {
+        public <T> UpgradableStreamingHttpResponse serializePayloadBody(final Publisher<T> payloadBody,
+                                                                        final HttpSerializer<T> serializer) {
             return transformPayloadBody(old -> payloadBody.liftSynchronous(
                     new SerializeBridgeFlowControlAndDiscardOperator<>(old)), serializer);
         }
 
         @Override
-        public Publisher<Buffer> getPayloadBody() {
+        public Publisher<Buffer> payloadBody() {
             return payloadBody.liftSynchronous(HttpBufferFilterOperator.INSTANCE);
         }
 
         @Override
-        public Publisher<Object> getPayloadBodyAndTrailers() {
+        public Publisher<Object> payloadBodyAndTrailers() {
             return payloadBody.map(obj -> (Object) obj) // down cast to Object
                     .concatWith(trailersSingle);
         }
@@ -206,7 +206,7 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
         public <T> UpgradableStreamingHttpResponse transformPayloadBody(
                 final Function<Publisher<Buffer>, Publisher<T>> transformer, final HttpSerializer<T> serializer) {
             return new UpgradableHttpResponseToUpgradableStreamingHttpResponse(upgradableResponse,
-                    serializer.serialize(getHeaders(), transformer.apply(getPayloadBody()), allocator),
+                    serializer.serialize(headers(), transformer.apply(payloadBody()), allocator),
                     trailersSingle, allocator);
         }
 
@@ -214,7 +214,7 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
         public UpgradableStreamingHttpResponse transformPayloadBody(
                 final UnaryOperator<Publisher<Buffer>> transformer) {
             return new UpgradableHttpResponseToUpgradableStreamingHttpResponse(upgradableResponse,
-                    transformer.apply(getPayloadBody()), trailersSingle, allocator);
+                    transformer.apply(payloadBody()), trailersSingle, allocator);
         }
 
         @Override
@@ -228,7 +228,7 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
                 final Supplier<T> stateSupplier, final BiFunction<Buffer, T, Buffer> transformer,
                 final BiFunction<T, HttpHeaders, HttpHeaders> trailersTrans) {
             final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
-            return new UpgradableHttpResponseToUpgradableStreamingHttpResponse(upgradableResponse, getPayloadBody()
+            return new UpgradableHttpResponseToUpgradableStreamingHttpResponse(upgradableResponse, payloadBody()
                     .liftSynchronous(new HttpPayloadAndTrailersFromSingleOperator<>(stateSupplier, transformer,
                             trailersTrans, trailersSingle, outTrailersSingle)),
                     outTrailersSingle, allocator);
@@ -247,7 +247,7 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
 
         @Override
         public Single<UpgradableHttpResponse> toResponse() {
-            return aggregatePayloadAndTrailers(getPayloadBodyAndTrailers(), allocator).map(pair -> {
+            return aggregatePayloadAndTrailers(payloadBodyAndTrailers(), allocator).map(pair -> {
                 assert pair.trailers != null;
                 return new UpgradableStreamingHttpResponseToUpgradableHttpResponse(
                         UpgradableHttpResponseToUpgradableStreamingHttpResponse.this, pair.compositeBuffer,
@@ -262,19 +262,19 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
         }
 
         @Override
-        public HttpProtocolVersion getVersion() {
-            return upgradableResponse.getVersion();
+        public HttpProtocolVersion version() {
+            return upgradableResponse.version();
         }
 
         @Override
-        public UpgradableStreamingHttpResponse setVersion(final HttpProtocolVersion version) {
-            upgradableResponse.setVersion(version);
+        public UpgradableStreamingHttpResponse version(final HttpProtocolVersion version) {
+            upgradableResponse.version(version);
             return this;
         }
 
         @Override
-        public HttpHeaders getHeaders() {
-            return upgradableResponse.getHeaders();
+        public HttpHeaders headers() {
+            return upgradableResponse.headers();
         }
 
         @Override
@@ -284,13 +284,13 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
         }
 
         @Override
-        public HttpResponseStatus getStatus() {
-            return upgradableResponse.getStatus();
+        public HttpResponseStatus status() {
+            return upgradableResponse.status();
         }
 
         @Override
-        public UpgradableStreamingHttpResponse setStatus(final HttpResponseStatus status) {
-            upgradableResponse.setStatus(status);
+        public UpgradableStreamingHttpResponse status(final HttpResponseStatus status) {
+            upgradableResponse.status(status);
             return this;
         }
     }

@@ -87,7 +87,7 @@ public class HttpAuthConnectionFactoryClientTest {
                 .buildStreaming(CTX);
 
         StreamingHttpResponse response = awaitIndefinitely(client.request(newTestRequest(client, "/foo")));
-        assertEquals(OK, response.getStatus());
+        assertEquals(OK, response.status());
     }
 
     private static final class TestHttpAuthConnectionFactory<ResolvedAddress> implements
@@ -110,10 +110,10 @@ public class HttpAuthConnectionFactoryClientTest {
                                 return error(new IllegalStateException("failed auth"));
                             })
                             .flatMap(response -> {
-                                if (response.getStatus().equals(OK)) {
+                                if (response.status().equals(OK)) {
                                     // In this test we have not enabled pipelining so we drain this response before
                                     // indicating the connection is usable.
-                                    return response.getPayloadBody().ignoreElements().andThen(success(cnx));
+                                    return response.payloadBody().ignoreElements().andThen(success(cnx));
                                 }
                                 cnx.closeAsync().subscribe();
                                 return error(new IllegalStateException("failed auth"));
@@ -139,13 +139,13 @@ public class HttpAuthConnectionFactoryClientTest {
 
     private static StreamingHttpRequest newTestRequest(StreamingHttpRequestFactory factory, String requestTarget) {
         StreamingHttpRequest req = factory.get(requestTarget);
-        req.getHeaders().set(CONTENT_LENGTH, ZERO);
+        req.headers().set(CONTENT_LENGTH, ZERO);
         return req;
     }
 
     private static StreamingHttpResponse newTestResponse(StreamingHttpResponseFactory factory) {
         StreamingHttpResponse resp = factory.ok();
-        resp.getHeaders().set(CONTENT_LENGTH, ZERO);
+        resp.headers().set(CONTENT_LENGTH, ZERO);
         return resp;
     }
 }

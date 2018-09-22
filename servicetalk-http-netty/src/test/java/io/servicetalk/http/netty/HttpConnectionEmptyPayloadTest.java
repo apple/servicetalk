@@ -69,11 +69,11 @@ public class HttpConnectionEmptyPayloadTest {
                                 public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                                             final StreamingHttpRequest req,
                                                                             final StreamingHttpResponseFactory factory) {
-                                    StreamingHttpResponse resp = factory.ok().setPayloadBody(just(
-                                            req.getMethod() == HEAD ? EMPTY_BUFFER :
+                                    StreamingHttpResponse resp = factory.ok().payloadBody(just(
+                                            req.method() == HEAD ? EMPTY_BUFFER :
                                                     ctx.getExecutionContext().getBufferAllocator()
                                                     .newBuffer(expectedContentLength).writeBytes(expectedPayload)));
-                                    resp.getHeaders().add(CONTENT_LENGTH, String.valueOf(expectedContentLength));
+                                    resp.headers().add(CONTENT_LENGTH, String.valueOf(expectedContentLength));
                                     return success(resp);
                                 }
                             })));
@@ -89,19 +89,19 @@ public class HttpConnectionEmptyPayloadTest {
             Single<StreamingHttpResponse> response3Single = connection.request(connection.newRequest(HEAD, "/"));
 
             StreamingHttpResponse response = awaitIndefinitelyNonNull(response1Single);
-            assertEquals(OK, response.getStatus());
-            CharSequence contentLength = response.getHeaders().get(CONTENT_LENGTH);
+            assertEquals(OK, response.status());
+            CharSequence contentLength = response.headers().get(CONTENT_LENGTH);
             assertNotNull(contentLength);
             assertEquals(expectedContentLength, parseInt(contentLength.toString()));
             // Drain the current response content so we will be able to read the next response.
-            awaitIndefinitely(response.getPayloadBody().ignoreElements());
+            awaitIndefinitely(response.payloadBody().ignoreElements());
 
             response = awaitIndefinitelyNonNull(response2Single);
-            assertEquals(OK, response.getStatus());
-            contentLength = response.getHeaders().get(CONTENT_LENGTH);
+            assertEquals(OK, response.status());
+            contentLength = response.headers().get(CONTENT_LENGTH);
             assertNotNull(contentLength);
             assertEquals(expectedContentLength, parseInt(contentLength.toString()));
-            Buffer buffer = awaitIndefinitelyNonNull(response.getPayloadBody().reduce(
+            Buffer buffer = awaitIndefinitelyNonNull(response.payloadBody().reduce(
                     () -> connection.getConnectionContext().getExecutionContext().getBufferAllocator().newBuffer(),
                     Buffer::writeBytes));
             byte[] actualBytes = new byte[buffer.getReadableBytes()];
@@ -109,11 +109,11 @@ public class HttpConnectionEmptyPayloadTest {
             assertArrayEquals(expectedPayload, actualBytes);
 
             response = awaitIndefinitelyNonNull(response3Single);
-            assertEquals(OK, response.getStatus());
-            contentLength = response.getHeaders().get(CONTENT_LENGTH);
+            assertEquals(OK, response.status());
+            contentLength = response.headers().get(CONTENT_LENGTH);
             assertNotNull(contentLength);
             assertEquals(expectedContentLength, parseInt(contentLength.toString()));
-            awaitIndefinitely(response.getPayloadBody().ignoreElements());
+            awaitIndefinitely(response.payloadBody().ignoreElements());
         }
     }
 }

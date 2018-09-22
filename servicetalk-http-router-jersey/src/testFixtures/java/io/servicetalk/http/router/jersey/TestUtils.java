@@ -36,7 +36,7 @@ public final class TestUtils {
     }
 
     public static String getContentAsString(final StreamingHttpResponse res) {
-        return getContentAsString(res.getPayloadBody());
+        return getContentAsString(res.payloadBody());
     }
 
     public static String getContentAsString(final Publisher<Buffer> content) {

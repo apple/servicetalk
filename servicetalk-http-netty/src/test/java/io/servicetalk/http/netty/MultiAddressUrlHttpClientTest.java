@@ -106,29 +106,29 @@ public class MultiAddressUrlHttpClientTest {
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory factory) {
-                if (request.getVersion() == HTTP_1_1 && !request.getHeaders().contains(HOST)) {
+                if (request.version() == HTTP_1_1 && !request.headers().contains(HOST)) {
                     StreamingHttpResponse resp = factory.newResponse(BAD_REQUEST);
-                    resp.getHeaders().set(httpHeaders);
+                    resp.headers().set(httpHeaders);
                     return success(resp);
                 }
 
-                if (request.getMethod() == OPTIONS || request.getMethod() == CONNECT) {
+                if (request.method() == OPTIONS || request.method() == CONNECT) {
                     StreamingHttpResponse resp = factory.ok();
-                    resp.getHeaders().set(httpHeaders);
+                    resp.headers().set(httpHeaders);
                     return success(resp);
                 }
                 try {
-                    HttpResponseStatuses status = HttpResponseStatuses.valueOf(request.getPath().substring(1));
+                    HttpResponseStatuses status = HttpResponseStatuses.valueOf(request.path().substring(1));
                     StreamingHttpResponse response = factory.newResponse(status);
-                    response.getHeaders().set(httpHeaders);
-                    final CharSequence locationHeader = request.getHeaders().get(X_REQUESTED_LOCATION);
+                    response.headers().set(httpHeaders);
+                    final CharSequence locationHeader = request.headers().get(X_REQUESTED_LOCATION);
                     if (locationHeader != null) {
-                        response.getHeaders().set(LOCATION, locationHeader);
+                        response.headers().set(LOCATION, locationHeader);
                     }
                     return success(response);
                 } catch (Exception e) {
                     StreamingHttpResponse resp = factory.newResponse(BAD_REQUEST);
-                    resp.getHeaders().set(httpHeaders);
+                    resp.headers().set(httpHeaders);
                     return success(resp);
                 }
             }
@@ -146,7 +146,7 @@ public class MultiAddressUrlHttpClientTest {
     @Test
     public void requestWithRelativeFormRequestTargetWithHostHeader() throws Exception {
         StreamingHttpRequest request = requester.get("/OK?param=value");
-        request.getHeaders().set(HOST, hostHeader);
+        request.headers().set(HOST, hostHeader);
         requestAndValidate(request, OK);
     }
 
@@ -162,14 +162,14 @@ public class MultiAddressUrlHttpClientTest {
     @Ignore("LoadBalancerReadySubscriber will never complete for a wrong host") // FIXME: remove @Ignore annotation
     public void requestWithRelativeFormRequestTargetWithInvalidHostInHeader() throws Exception {
         StreamingHttpRequest request = requester.get("/OK?param=value");
-        request.getHeaders().set(HOST, "invalid.:" + serverPort);
+        request.headers().set(HOST, "invalid.:" + serverPort);
         awaitIndefinitely(requester.request(request));
     }
 
     @Test(expected = ExecutionException.class)
     public void requestWithRelativeFormRequestTargetWithWrongPortInHeader() throws Exception {
         StreamingHttpRequest request = requester.get("/OK?param=value");
-        request.getHeaders().set(HOST, format("%s:%d", HOSTNAME, serverPort + 1));
+        request.headers().set(HOST, format("%s:%d", HOSTNAME, serverPort + 1));
         awaitIndefinitely(requester.request(request));
     }
 
@@ -177,7 +177,7 @@ public class MultiAddressUrlHttpClientTest {
     public void requestWithAbsoluteFormRequestTargetWithHostHeader() throws Exception {
         StreamingHttpRequest request =
                 requester.get(format("http://%s/OK?param=value#tag", hostHeader));
-        request.getHeaders().set(HOST, "invalid.:8080");    // value in the HOST header should be ignored
+        request.headers().set(HOST, "invalid.:8080");    // value in the HOST header should be ignored
         requestAndValidate(request, OK);
     }
 
@@ -214,14 +214,14 @@ public class MultiAddressUrlHttpClientTest {
     @Test
     public void requestWithAuthorityFormRequestTargetWithHostHeader() throws Exception {
         StreamingHttpRequest request = requester.newRequest(CONNECT, hostHeader);
-        request.getHeaders().set(HOST, hostHeader);
+        request.headers().set(HOST, hostHeader);
         requestAndValidate(request, OK);
     }
 
     @Test
     public void requestWithAsteriskFormRequestTargetWithHostHeader() throws Exception {
         StreamingHttpRequest request = requester.newRequest(OPTIONS, "*");
-        request.getHeaders().set(HOST, hostHeader);
+        request.headers().set(HOST, hostHeader);
         requestAndValidate(request, OK);
     }
 
@@ -236,8 +236,8 @@ public class MultiAddressUrlHttpClientTest {
     @Test
     public void requestWithRedirect() throws Exception {
         StreamingHttpRequest request = requester.get("/MOVED_PERMANENTLY");
-        request.getHeaders().set(HOST, hostHeader);
-        request.getHeaders().set(X_REQUESTED_LOCATION, "/OK");  // Location for redirect
+        request.headers().set(HOST, hostHeader);
+        request.headers().set(X_REQUESTED_LOCATION, "/OK");  // Location for redirect
         requestAndValidate(request, OK);
     }
 
@@ -268,7 +268,7 @@ public class MultiAddressUrlHttpClientTest {
     private static void requestAndValidate(StreamingHttpRequest request,
                                            HttpResponseStatus expectedStatus) throws Exception {
         StreamingHttpResponse response = awaitIndefinitelyNonNull(requester.request(request));
-        assertThat(response.getStatus(), is(expectedStatus));
+        assertThat(response.status(), is(expectedStatus));
     }
 
     private static ServerContext startNewLocalServer(final StreamingHttpService httpService,

@@ -83,17 +83,17 @@ final class StreamingGatewayService extends StreamingHttpService {
             Single<Metadata> metadata =
                     metadataClient.request(metadataClient.get("/metadata?entityId=" + recommendation.getEntityId()))
                             // Since HTTP payload is a buffer, we deserialize into Metadata.
-                            .map(resp -> resp.getPayloadBody(serializers.deserializerFor(Metadata.class)));
+                            .map(resp -> resp.payloadBody(serializers.deserializerFor(Metadata.class)));
 
             Single<User> user =
                     userClient.request(userClient.get("/user?userId=" + recommendation.getEntityId()))
                             // Since HTTP payload is a buffer, we deserialize into User.
-                            .map(resp -> resp.getPayloadBody(serializers.deserializerFor(User.class)));
+                            .map(resp -> resp.payloadBody(serializers.deserializerFor(User.class)));
 
             Single<Rating> rating =
                     ratingsClient.request(ratingsClient.get("/rating?entityId=" + recommendation.getEntityId()))
                             // Since HTTP payload is a buffer, we deserialize into Rating.
-                            .map(resp -> resp.getPayloadBody(serializers.deserializerFor(Rating.class)))
+                            .map(resp -> resp.payloadBody(serializers.deserializerFor(Rating.class)))
                             // We consider ratings to be a non-critical data and hence we substitute the response
                             // with a static "unavailable" rating when the rating service is unavailable or provides
                             // a bad response. This is typically referred to as a "fallback".
