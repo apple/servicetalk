@@ -54,7 +54,7 @@ public final class BackendsStarter {
             // Use Jackson for serialization and deserialization.
             // HttpSerializer validates HTTP metadata for serialization/deserialization and also provides higher level
             // HTTP focused serialization APIs.
-            HttpSerializationProvider httpSerializer = HttpSerializationProviders.serializeJson(new JacksonSerializationProvider());
+            HttpSerializationProvider httpSerializer = HttpSerializationProviders.jsonSerializer(new JacksonSerializationProvider());
 
             // This is a single Completable used to await closing of all backends started by this class. It is used to
             // provide a way to not let main() exit.

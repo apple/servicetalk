@@ -15,12 +15,11 @@
  */
 package io.servicetalk.examples.http.helloworld.async.streaming;
 
+import io.servicetalk.http.api.HttpSerializationProviders;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.netty.HttpClients;
 
 import java.util.concurrent.CountDownLatch;
-
-import static io.servicetalk.http.api.HttpSerializationProviders.deserializeText;
 
 public final class HelloWorldStreamingUrlClient {
 
@@ -33,7 +32,7 @@ public final class HelloWorldStreamingUrlClient {
 
             client.request(client.get("http://localhost:8080/sayHello"))
                     .doBeforeSuccess(response -> System.out.println(response.toString((name, value) -> value)))
-                    .flatMapPublisher(resp -> resp.deserializePayloadBody(deserializeText()))
+                    .flatMapPublisher(resp -> resp.deserializePayloadBody(HttpSerializationProviders.textDeserializer()))
                     .doFinally(responseProcessedLatch::countDown)
                     .forEach(System.out::println);
 

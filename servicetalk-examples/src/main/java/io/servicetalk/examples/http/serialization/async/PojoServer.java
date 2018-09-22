@@ -22,12 +22,12 @@ import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.netty.DefaultHttpServerStarter;
 
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.HttpSerializationProviders.serializeJson;
+import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 
 public final class PojoServer {
 
     public static void main(String[] args) throws Exception {
-        HttpSerializationProvider serializer = serializeJson(new JacksonSerializationProvider());
+        HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
         new DefaultHttpServerStarter()
                 .start(8080, (ctx, request, responseFactory) -> {
                     PojoRequest req = request.deserializePayloadBody(serializer.deserializerFor(PojoRequest.class));

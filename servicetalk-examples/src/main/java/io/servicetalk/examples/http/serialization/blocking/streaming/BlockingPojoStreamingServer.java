@@ -26,12 +26,12 @@ import io.servicetalk.http.netty.DefaultHttpServerStarter;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.servicetalk.http.api.HttpSerializationProviders.serializeJson;
+import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 
 public class BlockingPojoStreamingServer {
 
     public static void main(String[] args) throws Exception {
-        HttpSerializationProvider serializer = serializeJson(new JacksonSerializationProvider());
+        HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
         new DefaultHttpServerStarter()
                 .startBlockingStreaming(8080, (ctx, request, responseFactory) -> {
                     BlockingIterable<PojoRequest> ids = request.deserializePayloadBody(serializer.deserializerFor(PojoRequest.class));

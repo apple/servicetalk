@@ -18,9 +18,8 @@ package io.servicetalk.examples.http.helloworld.blocking.streaming;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
+import io.servicetalk.http.api.HttpSerializationProviders;
 import io.servicetalk.http.netty.HttpClients;
-
-import static io.servicetalk.http.api.HttpSerializationProviders.deserializeText;
 
 public final class BlockingHelloWorldStreamingClient {
 
@@ -29,7 +28,7 @@ public final class BlockingHelloWorldStreamingClient {
                 .buildBlockingStreaming()) {
             BlockingStreamingHttpResponse response = client.request(client.get("/sayHello"));
             System.out.println(response.toString((name, value) -> value));
-            try (BlockingIterator<String> payload = response.deserializePayloadBody(deserializeText()).iterator()) {
+            try (BlockingIterator<String> payload = response.deserializePayloadBody(HttpSerializationProviders.textDeserializer()).iterator()) {
                 while (payload.hasNext()) {
                     System.out.println(payload.next());
                 }

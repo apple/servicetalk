@@ -24,13 +24,13 @@ import io.servicetalk.http.api.BlockingStreamingHttpResponse;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.netty.HttpClients;
 
-import static io.servicetalk.http.api.HttpSerializationProviders.serializeJson;
+import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 import static java.util.Arrays.asList;
 
 public class BlockingPojoStreamingUrlClient {
 
     public static void main(String[] args) throws Exception {
-        HttpSerializationProvider serializer = serializeJson(new JacksonSerializationProvider());
+        HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
         try (BlockingStreamingHttpClient client = HttpClients.forMultiAddressUrl().buildBlockingStreaming()) {
             BlockingStreamingHttpResponse response = client.request(client.get("http://localhost:8080/pojo")
                     .serializePayloadBody(asList(new PojoRequest("1"), new PojoRequest("2"), new PojoRequest("3")),

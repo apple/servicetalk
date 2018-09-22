@@ -24,11 +24,11 @@ import io.servicetalk.http.netty.HttpClients;
 
 import java.util.concurrent.CountDownLatch;
 
-import static io.servicetalk.http.api.HttpSerializationProviders.serializeJson;
+import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 
 public final class PojoUrlClient {
     public static void main(String[] args) throws Exception {
-        HttpSerializationProvider serializer = serializeJson(new JacksonSerializationProvider());
+        HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
         try (HttpClient client = HttpClients.forMultiAddressUrl().build()) {
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
             // before the response has been processed. This isn't typical usage for a streaming API but is useful for

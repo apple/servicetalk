@@ -15,9 +15,9 @@
  */
 package io.servicetalk.examples.http.helloworld.blocking.streaming;
 
+import io.servicetalk.http.api.HttpSerializationProviders;
 import io.servicetalk.http.netty.DefaultHttpServerStarter;
 
-import static io.servicetalk.http.api.HttpSerializationProviders.serializeText;
 import static java.util.Arrays.asList;
 
 public final class BlockingHelloWorldStreamingServer {
@@ -26,7 +26,7 @@ public final class BlockingHelloWorldStreamingServer {
                 .startBlockingStreaming(8080, (ctx, request, responseFactory) ->
                         responseFactory.ok()
                                 .serializePayloadBody(asList("Hello\n", "World\n", "From\n", "ServiceTalk\n"),
-                                        serializeText()))
+                                        HttpSerializationProviders.textSerializer()))
                 .awaitShutdown();
     }
 }
