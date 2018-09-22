@@ -15,9 +15,9 @@
  */
 package io.servicetalk.log4j2.mdc.internal;
 
-import io.servicetalk.concurrent.context.AsyncContext;
-import io.servicetalk.concurrent.context.AsyncContextMap;
-import io.servicetalk.concurrent.context.AsyncContextMap.Key;
+import io.servicetalk.concurrent.api.AsyncContext;
+import io.servicetalk.concurrent.api.AsyncContextMap;
+import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 
 import org.apache.logging.log4j.ThreadContext;
 import org.apache.logging.log4j.spi.CleanableThreadContextMap;

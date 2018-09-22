@@ -16,9 +16,7 @@
 package io.servicetalk.log4j2.mdc.internal;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.context.ConcurrentPlugins;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +28,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.log4j2.mdc.internal.ServiceTalkThreadContextMap.getStorage;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -40,11 +37,6 @@ import static org.junit.Assert.fail;
 
 public class ServiceTalkThreadContextMapTest {
     private static final Logger logger = LoggerFactory.getLogger(ServiceTalkThreadContextMapTest.class);
-
-    @BeforeClass
-    public static void beforeClass() {
-        ConcurrentPlugins.install();
-    }
 
     @Test
     public void testSimpleExecution() {
@@ -65,12 +57,12 @@ public class ServiceTalkThreadContextMapTest {
         logger.info("expected aa=1 bb=2"); // human inspection as sanity check
 
         MDC.remove("aa");
-        assertEquals(null, MDC.get("aa"));
+        assertNull(MDC.get("aa"));
         assertEquals(1, MDC.getCopyOfContextMap().size());
         assertEquals(1, getStorage().size());
 
         MDC.setContextMap(Collections.singletonMap("cc", "3"));
-        assertEquals(null, MDC.get("bb"));
+        assertNull(MDC.get("bb"));
         assertEquals("3", MDC.get("cc"));
         assertEquals(1, MDC.getCopyOfContextMap().size());
         assertEquals(1, getStorage().size());
@@ -110,7 +102,7 @@ public class ServiceTalkThreadContextMapTest {
                 assertEquals("22", MDC.get("b"));
             });
 
-            awaitIndefinitely(single); // this will re-throw errors from operators
+            single.toFuture().get();
         } finally {
             executor.shutdown();
         }

@@ -24,7 +24,7 @@ servicetalk-client-api \
 servicetalk-client-internal \
 servicetalk-concurrent \
 servicetalk-concurrent-api \
-servicetalk-concurrent-context \
+servicetalk-concurrent-api-internal \
 servicetalk-concurrent-internal \
 servicetalk-data-jackson \
 servicetalk-dns-discovery-netty \

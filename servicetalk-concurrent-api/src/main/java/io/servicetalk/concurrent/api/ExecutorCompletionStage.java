@@ -36,6 +36,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
@@ -45,7 +46,7 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
 
 /**
  * An implementation of {@link CompletionStage} that executes user code via the
- * {@link io.servicetalk.concurrent.api.Executor} associated with the original {@link Single}. If a {@link Executor} is
+ * {@link io.servicetalk.concurrent.Executor} associated with the original {@link Single}. If a {@link Executor} is
  * explicitly provided in one of the {@link CompletionStage} methods, then the {@link Executor} will be used to execute
  * user code for the returned {@link CompletionStage}.
  * <p>
@@ -80,7 +81,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
     private static final AtomicReferenceFieldUpdater<ExecutorCompletionStage, Object> resultUpdater =
             newUpdater(ExecutorCompletionStage.class, Object.class, "result");
     private static final Object NULL = new Object();
-    private final io.servicetalk.concurrent.api.Executor executor;
+    private final io.servicetalk.concurrent.Executor executor;
     @SuppressWarnings("unused")
     @Nullable
     private volatile ListenerNode listeners;
@@ -88,14 +89,12 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
     @Nullable
     private volatile Object result;
 
-    ExecutorCompletionStage(io.servicetalk.concurrent.api.Executor executor) {
+    ExecutorCompletionStage(io.servicetalk.concurrent.Executor executor) {
         this.executor = executor;
     }
 
     @Override
     public final <U> CompletionStage<U> thenApply(final Function<? super T, ? extends U> fn) {
-        // TODO(scott): preserve AsyncContext everywhere!
-
         requireNonNull(fn);
         ExecutorCompletionStage<U> stage = newDependentStage(executor);
         Object result = this.result;
@@ -488,7 +487,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
 
     abstract void doCancel();
 
-    abstract <U> ExecutorCompletionStage<U> newDependentStage(io.servicetalk.concurrent.api.Executor executor);
+    abstract <U> ExecutorCompletionStage<U> newDependentStage(io.servicetalk.concurrent.Executor executor);
 
     private <U> ExecutorCompletionStage<U> newDependentStage(Executor executor) {
         return newDependentStage(new JdkExecutorWrapper(executor));
@@ -885,10 +884,10 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
     }
 
     private static final class RunAfterBothOnListener extends BothFutureOnListener<Object, Object, Void> {
-        private final io.servicetalk.concurrent.api.Executor executor;
+        private final io.servicetalk.concurrent.Executor executor;
         private final Runnable runnable;
 
-        private RunAfterBothOnListener(final io.servicetalk.concurrent.api.Executor executor,
+        private RunAfterBothOnListener(final io.servicetalk.concurrent.Executor executor,
                                        final ExecutorCompletionStage<Void> stage,
                                        final Runnable runnable) {
             super(stage);
@@ -896,7 +895,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
             this.runnable = runnable;
         }
 
-        static RunAfterBothOnListener newInstance(final io.servicetalk.concurrent.api.Executor executor,
+        static RunAfterBothOnListener newInstance(final io.servicetalk.concurrent.Executor executor,
                                                   final ExecutorCompletionStage<Void> stage,
                                                   final CompletionStage<?> other,
                                                   final Runnable runnable) {
@@ -959,10 +958,10 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
     }
 
     private static final class AcceptBothOnListener<T, U> extends BothFutureOnListener<T, U, Void> {
-        private final io.servicetalk.concurrent.api.Executor executor;
+        private final io.servicetalk.concurrent.Executor executor;
         private final BiConsumer<? super T, ? super U> fn;
 
-        private AcceptBothOnListener(final io.servicetalk.concurrent.api.Executor executor,
+        private AcceptBothOnListener(final io.servicetalk.concurrent.Executor executor,
                                      final ExecutorCompletionStage<Void> stage,
                                      final BiConsumer<? super T, ? super U> fn) {
             super(stage);
@@ -970,7 +969,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
             this.fn = fn;
         }
 
-        static <T, U> AcceptBothOnListener<T, U> newInstance(final io.servicetalk.concurrent.api.Executor executor,
+        static <T, U> AcceptBothOnListener<T, U> newInstance(final io.servicetalk.concurrent.Executor executor,
                                                              final ExecutorCompletionStage<Void> stage,
                                                              final CompletionStage<? extends U> other,
                                                              final BiConsumer<? super T, ? super U> fn) {
@@ -1042,10 +1041,10 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
     }
 
     private static final class CombineOnListener<T, U, V> extends BothFutureOnListener<T, U, V> {
-        private final io.servicetalk.concurrent.api.Executor executor;
+        private final io.servicetalk.concurrent.Executor executor;
         private final BiFunction<? super T, ? super U, ? extends V> fn;
 
-        private CombineOnListener(io.servicetalk.concurrent.api.Executor executor,
+        private CombineOnListener(io.servicetalk.concurrent.Executor executor,
                                   final ExecutorCompletionStage<V> stage,
                                   final BiFunction<? super T, ? super U, ? extends V> fn) {
             super(stage);
@@ -1053,7 +1052,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
             this.fn = fn;
         }
 
-        static <T, U, V> CombineOnListener<T, U, V> newInstance(io.servicetalk.concurrent.api.Executor executor,
+        static <T, U, V> CombineOnListener<T, U, V> newInstance(io.servicetalk.concurrent.Executor executor,
                                                                 ExecutorCompletionStage<V> stage,
                                                                 CompletionStage<? extends U> other,
                                                                 BiFunction<? super T, ? super U, ? extends V> fn) {
@@ -1175,7 +1174,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
 
         static <T, U> void completeFuture(ExecutorCompletionStage<U> stage, Object result,
                                           BiFunction<? super T, ? super Throwable, ? extends U> fn,
-                                          io.servicetalk.concurrent.api.Executor executor) {
+                                          io.servicetalk.concurrent.Executor executor) {
             if (executor == immediate()) {
                 if (result instanceof ErrorResult) {
                     handleError(stage, ((ErrorResult) result).cause, fn);
@@ -1271,7 +1270,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
 
         static <T> void completeFuture(ExecutorCompletionStage<T> stage, Object result,
                                        BiConsumer<? super T, ? super Throwable> fn,
-                                       io.servicetalk.concurrent.api.Executor executor) {
+                                       io.servicetalk.concurrent.Executor executor) {
             if (executor == immediate()) {
                 if (result instanceof ErrorResult) {
                     handleError(stage, ((ErrorResult) result).cause, fn);
@@ -1316,7 +1315,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
 
         static <T> void completeFuture(ExecutorCompletionStage<T> stage, Object result,
                                        Function<Throwable, ? extends T> fn,
-                                       io.servicetalk.concurrent.api.Executor executor) {
+                                       io.servicetalk.concurrent.Executor executor) {
             if (executor == immediate()) {
                 if (result instanceof ErrorResult) {
                     handleError(stage, ((ErrorResult) result).cause, fn);
@@ -1398,7 +1397,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
 
         static <T, U> void completeFuture(ExecutorCompletionStage<U> stage, Object result,
                                           Function<? super T, ? extends CompletionStage<U>> fn,
-                                          io.servicetalk.concurrent.api.Executor executor) {
+                                          io.servicetalk.concurrent.Executor executor) {
             if (executor == immediate()) {
                 if (result instanceof ErrorResult) {
                     stage.completeExceptionallyNoExec(((ErrorResult) result).cause);
@@ -1448,17 +1447,17 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
     }
 
     private static final class RunEitherListener extends EitherFutureOnListener<Object, Void> {
-        private final io.servicetalk.concurrent.api.Executor executor;
+        private final io.servicetalk.concurrent.Executor executor;
         private final Runnable action;
 
-        private RunEitherListener(io.servicetalk.concurrent.api.Executor executor,
+        private RunEitherListener(io.servicetalk.concurrent.Executor executor,
                                   final ExecutorCompletionStage<Void> stage, final Runnable action) {
             super(stage);
             this.executor = executor;
             this.action = action;
         }
 
-        static <T> RunEitherListener newInstance(io.servicetalk.concurrent.api.Executor executor,
+        static <T> RunEitherListener newInstance(io.servicetalk.concurrent.Executor executor,
                                                  final ExecutorCompletionStage<Void> stage,
                                                  final CompletionStage<? extends T> other,
                                                  final Runnable fn) {
@@ -1528,17 +1527,17 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
     }
 
     private static final class AcceptEitherListener<T> extends EitherFutureOnListener<T, Void> {
-        private final io.servicetalk.concurrent.api.Executor executor;
+        private final io.servicetalk.concurrent.Executor executor;
         private final Consumer<? super T> action;
 
-        private AcceptEitherListener(io.servicetalk.concurrent.api.Executor executor,
+        private AcceptEitherListener(io.servicetalk.concurrent.Executor executor,
                                      final ExecutorCompletionStage<Void> stage, final Consumer<? super T> action) {
             super(stage);
             this.executor = executor;
             this.action = action;
         }
 
-        static <T> AcceptEitherListener<T> newInstance(io.servicetalk.concurrent.api.Executor executor,
+        static <T> AcceptEitherListener<T> newInstance(io.servicetalk.concurrent.Executor executor,
                                                        final ExecutorCompletionStage<Void> stage,
                                                        final CompletionStage<? extends T> other,
                                                        final Consumer<? super T> fn) {
@@ -1609,17 +1608,17 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
     }
 
     private static final class ApplyEitherListener<T, U> extends EitherFutureOnListener<T, U> {
-        private final io.servicetalk.concurrent.api.Executor executor;
+        private final io.servicetalk.concurrent.Executor executor;
         private final Function<? super T, U> fn;
 
-        private ApplyEitherListener(io.servicetalk.concurrent.api.Executor executor,
+        private ApplyEitherListener(io.servicetalk.concurrent.Executor executor,
                                     final ExecutorCompletionStage<U> stage, final Function<? super T, U> fn) {
             super(stage);
             this.executor = executor;
             this.fn = fn;
         }
 
-        static <T, U> ApplyEitherListener<T, U> newInstance(io.servicetalk.concurrent.api.Executor executor,
+        static <T, U> ApplyEitherListener<T, U> newInstance(io.servicetalk.concurrent.Executor executor,
                                                             final ExecutorCompletionStage<U> stage,
                                                             final CompletionStage<? extends T> other,
                                                             final Function<? super T, U> fn) {
@@ -1818,7 +1817,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         static void completeFuture(ExecutorCompletionStage<Void> stage,
                                    Object result,
                                    Runnable runnable,
-                                   io.servicetalk.concurrent.api.Executor executor) {
+                                   io.servicetalk.concurrent.Executor executor) {
             if (executor == immediate()) {
                 if (result instanceof ErrorResult) {
                     stage.completeExceptionallyNoExec(((ErrorResult) result).cause);
@@ -1894,7 +1893,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         static <T> void completeFuture(ExecutorCompletionStage<Void> stage,
                                        Object result,
                                        final Consumer<? super T> action,
-                                       io.servicetalk.concurrent.api.Executor executor) {
+                                       io.servicetalk.concurrent.Executor executor) {
             if (executor == immediate()) {
                 if (result instanceof ErrorResult) {
                     stage.completeExceptionallyNoExec(((ErrorResult) result).cause);
@@ -1970,7 +1969,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         static <U, T> void completeFuture(ExecutorCompletionStage<U> stage,
                                           Object result,
                                           Function<? super T, ? extends U> fn,
-                                          io.servicetalk.concurrent.api.Executor executor) {
+                                          io.servicetalk.concurrent.Executor executor) {
             if (executor == immediate()) {
                 if (result instanceof ErrorResult) {
                     stage.completeExceptionallyNoExec(((ErrorResult) result).cause);
@@ -2006,7 +2005,7 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
     }
 
-    private static final class JdkExecutorWrapper implements io.servicetalk.concurrent.api.Executor {
+    private static final class JdkExecutorWrapper implements io.servicetalk.concurrent.Executor {
         private final Executor executor;
 
         JdkExecutorWrapper(Executor executor) {
@@ -2025,13 +2024,8 @@ abstract class ExecutorCompletionStage<T> implements CompletionStage<T>, Future<
         }
 
         @Override
-        public Completable onClose() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Completable closeAsync() {
-            throw new UnsupportedOperationException();
+        public io.servicetalk.concurrent.Completable closeAsync() {
+            return error(new UnsupportedOperationException());
         }
     }
 }

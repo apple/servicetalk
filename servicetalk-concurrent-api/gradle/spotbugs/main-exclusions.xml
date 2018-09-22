@@ -21,6 +21,8 @@
       <Class name="io.servicetalk.concurrent.api.Publisher"/>
       <Class name="io.servicetalk.concurrent.api.Single"/>
       <Class name="io.servicetalk.concurrent.api.Completable"/>
+      <Class name="io.servicetalk.concurrent.api.Executor"/>
+      <Class name="io.servicetalk.concurrent.api.AsyncCloseable"/>
     </Or>
     <Bug pattern="NM_SAME_SIMPLE_NAME_AS_INTERFACE"/>
   </Match>
@@ -40,5 +42,14 @@
   <Match>
     <Class name="io.servicetalk.concurrent.api.ExecutorCompletionStage$GetListener"/>
     <Bug pattern="IS2_INCONSISTENT_SYNC"/>
+  </Match>
+
+  <Match>
+    <Class name="io.servicetalk.concurrent.api.ContextPreservingCompletableFuture"/>
+    <Or>
+      <Method name="getNow"/>
+      <Method name="obtrudeValue"/>
+    </Or>
+    <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE"/>
   </Match>
 </FindBugsFilter>

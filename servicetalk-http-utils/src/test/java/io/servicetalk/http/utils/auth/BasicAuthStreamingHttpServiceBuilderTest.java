@@ -16,10 +16,10 @@
 package io.servicetalk.http.utils.auth;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.AsyncContext;
+import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.context.AsyncContext;
-import io.servicetalk.concurrent.context.AsyncContextMap.Key;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
@@ -41,14 +41,15 @@ import org.junit.rules.Timeout;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKeyWithDebugToString;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.concurrent.context.AsyncContextMap.Key.newKeyWithDebugToString;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
+import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.PROXY_AUTHENTICATE;
@@ -64,14 +65,14 @@ import static java.util.Base64.getEncoder;
 import static java.util.Objects.requireNonNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class BasicAuthStreamingHttpServiceBuilderTest {
 
+    private static final CharSequence USER_ID_HEADER_NAME = newAsciiString("test-userid");
+    private static final Key<BasicUserInfo> USER_INFO_KEY = newKeyWithDebugToString("basicUserInfo");
     private static final class BasicUserInfo {
 
         private final String userId;
@@ -90,11 +91,18 @@ public class BasicAuthStreamingHttpServiceBuilderTest {
         public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                     final StreamingHttpRequest request,
                                                     final StreamingHttpResponseFactory factory) {
-            return success(factory.ok().setPayloadBody(
-                    just(ctx.getExecutionContext().getBufferAllocator().fromAscii("Hello World!"))));
+            StreamingHttpResponse response = factory.ok().setPayloadBody(
+                    just(ctx.getExecutionContext().getBufferAllocator().fromAscii("Hello World!")));
+            BasicUserInfo userInfo = AsyncContext.get(USER_INFO_KEY);
+            if (userInfo != null) {
+                response.getHeaders().set(USER_ID_HEADER_NAME, userInfo.getUserId());
+            }
+            return success(response);
         }
     };
-    private static final CredentialsVerifier<BasicUserInfo> CREDENTIALS_VERIFIER = new CredentialsVerifier<BasicUserInfo>() {
+
+    private static final CredentialsVerifier<BasicUserInfo> CREDENTIALS_VERIFIER =
+            new CredentialsVerifier<BasicUserInfo>() {
         @Override
         public Single<BasicUserInfo> apply(final String userId, final String password) {
             if ("password".equals(password)) {
@@ -109,7 +117,6 @@ public class BasicAuthStreamingHttpServiceBuilderTest {
         }
     };
 
-    private static final Key<BasicUserInfo> USER_INFO_KEY = newKeyWithDebugToString("basicUserInfo");
     private static final String REALM_VALUE = "hw_realm";
     private static final HttpServiceContext CONN_CTX = mock(HttpServiceContext.class);
     private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
@@ -219,8 +226,7 @@ public class BasicAuthStreamingHttpServiceBuilderTest {
         StreamingHttpResponse response = awaitIndefinitelyNonNull(service.handle(CONN_CTX, request, reqRespFactory));
         assertEquals(OK, response.getStatus());
 
-        BasicUserInfo userInfo = AsyncContext.get(USER_INFO_KEY);
-        assertNull(userInfo);
+        assertFalse(response.getHeaders().contains(USER_ID_HEADER_NAME));
     }
 
     @Test
@@ -310,7 +316,7 @@ public class BasicAuthStreamingHttpServiceBuilderTest {
         assertEquals(UNAUTHORIZED, response.getStatus());
         assertEquals("Basic realm=\"" + REALM_VALUE + "\", charset=\"UTF-8\"",
                 response.getHeaders().get(WWW_AUTHENTICATE));
-        assertNull(AsyncContext.get(USER_INFO_KEY));
+        assertFalse(response.getHeaders().contains(USER_ID_HEADER_NAME));
 
         StreamingHttpRequest request = reqRespFactory.get("/path");
         request.getHeaders().set(AUTHORIZATION, "Basic " + base64("userId:пароль"));
@@ -361,7 +367,7 @@ public class BasicAuthStreamingHttpServiceBuilderTest {
         assertEquals(UNAUTHORIZED, response.getStatus());
         assertEquals("Basic realm=\"" + REALM_VALUE + '"', response.getHeaders().get(WWW_AUTHENTICATE));
         assertEquals(ZERO, response.getHeaders().get(CONTENT_LENGTH));
-        assertNull(AsyncContext.get(USER_INFO_KEY));
+        assertFalse(response.getHeaders().contains(USER_ID_HEADER_NAME));
     }
 
     private static void testProxyAuthenticationRequired(StreamingHttpRequest request) throws Exception {
@@ -372,7 +378,7 @@ public class BasicAuthStreamingHttpServiceBuilderTest {
         assertEquals(PROXY_AUTHENTICATION_REQUIRED, response.getStatus());
         assertEquals("Basic realm=\"" + REALM_VALUE + '"', response.getHeaders().get(PROXY_AUTHENTICATE));
         assertEquals(ZERO, response.getHeaders().get(CONTENT_LENGTH));
-        assertNull(AsyncContext.get(USER_INFO_KEY));
+        assertFalse(response.getHeaders().contains(USER_ID_HEADER_NAME));
     }
 
     private static void testAuthenticated(StreamingHttpRequest request) throws Exception {
@@ -386,9 +392,7 @@ public class BasicAuthStreamingHttpServiceBuilderTest {
         StreamingHttpResponse response = awaitIndefinitelyNonNull(service.handle(CONN_CTX, request, reqRespFactory));
         assertEquals(OK, response.getStatus());
 
-        BasicUserInfo userInfo = AsyncContext.get(USER_INFO_KEY);
-        assertNotNull(userInfo);
-        assertEquals("userId", userInfo.getUserId());
+        assertTrue(response.getHeaders().contains(USER_ID_HEADER_NAME, "userId"));
     }
 
     private static void testAuthenticatedForProxy(StreamingHttpRequest request) throws Exception {
@@ -399,9 +403,7 @@ public class BasicAuthStreamingHttpServiceBuilderTest {
         StreamingHttpResponse response = awaitIndefinitelyNonNull(service.handle(CONN_CTX, request, reqRespFactory));
         assertEquals(OK, response.getStatus());
 
-        BasicUserInfo userInfo = AsyncContext.get(USER_INFO_KEY);
-        assertNotNull(userInfo);
-        assertEquals("userId", userInfo.getUserId());
+        assertTrue(response.getHeaders().contains(USER_ID_HEADER_NAME, "userId"));
     }
 
     private static String base64(String str) {

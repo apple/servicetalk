@@ -15,8 +15,8 @@
  */
 package io.servicetalk.benchmark.concurrent;
 
-import io.servicetalk.concurrent.context.AsyncContext;
-import io.servicetalk.concurrent.context.AsyncContextMap.Key;
+import io.servicetalk.concurrent.api.AsyncContext;
+import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Fork;
@@ -36,7 +36,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import static io.servicetalk.concurrent.context.AsyncContextMap.Key.newKeyWithDebugToString;
+import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKeyWithDebugToString;
 import static java.util.Collections.unmodifiableSet;
 
 @Fork(2)

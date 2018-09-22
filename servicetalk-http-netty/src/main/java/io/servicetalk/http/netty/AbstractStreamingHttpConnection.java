@@ -103,4 +103,9 @@ abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> ext
     public Completable closeAsyncGracefully() {
         return connection.closeAsyncGracefully();
     }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" + connection + ")";
+    }
 }

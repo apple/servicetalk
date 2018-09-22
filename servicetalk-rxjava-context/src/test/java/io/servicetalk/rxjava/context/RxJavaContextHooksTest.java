@@ -15,9 +15,9 @@
  */
 package io.servicetalk.rxjava.context;
 
-import io.servicetalk.concurrent.context.AsyncContext;
-import io.servicetalk.concurrent.context.AsyncContextMap;
-import io.servicetalk.concurrent.context.AsyncContextMap.Key;
+import io.servicetalk.concurrent.api.AsyncContext;
+import io.servicetalk.concurrent.api.AsyncContextMap;
+import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 
 import io.reactivex.Completable;
 import io.reactivex.CompletableObserver;
