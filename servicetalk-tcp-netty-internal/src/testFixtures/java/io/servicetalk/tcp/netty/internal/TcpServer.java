@@ -40,6 +40,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.transport.api.ContextFilter.ACCEPT_ALL;
+import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
 
 /**
  * A utility to create a TCP server for tests.
@@ -137,7 +138,7 @@ public class TcpServer {
 
         TcpServerChannelReadHandler(final ConnectionContext context,
                                     final Function<Connection<Buffer, Buffer>, Completable> service) {
-            super(buffer -> false);
+            super(buffer -> false, NOOP_CLOSE_HANDLER);
             this.context = context;
             this.service = service;
         }

@@ -43,6 +43,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
+import static io.servicetalk.transport.netty.internal.CloseHandler.NOOP_CLOSE_HANDLER;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -72,7 +73,7 @@ public class NettyChannelPublisherTest {
 
     @Before
     public void setUp() throws Exception {
-        handler = new AbstractChannelReadHandler<Integer>(integer -> nextItemTerminal) {
+        handler = new AbstractChannelReadHandler<Integer>(integer -> nextItemTerminal, NOOP_CLOSE_HANDLER) {
             @Override
             protected void onPublisherCreation(ChannelHandlerContext ctx, Publisher<Integer> newPublisher) {
                 publisher = newPublisher;

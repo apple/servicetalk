@@ -42,7 +42,7 @@ import static java.util.Objects.requireNonNull;
 final class NettyChannelPublisher<T> extends Publisher<T> {
 
     private static final ClosedChannelException CLOSED_CHANNEL_EXCEPTION =
-            unknownStackTrace(new ClosedChannelException(), NettyChannelPublisher.class, "channelInactive");
+            unknownStackTrace(new ClosedChannelException(), NettyChannelPublisher.class, "dispose");
 
     // All state is only touched from eventloop.
     private long requestCount;
@@ -56,13 +56,15 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
     private Throwable fatalError;
 
     private final Channel channel;
+    private final CloseHandler closeHandler;
     private final EventLoop eventLoop;
     private final Predicate<T> isLastElement;
 
-    NettyChannelPublisher(Channel channel, Predicate<T> isLastElement) {
+    NettyChannelPublisher(Channel channel, Predicate<T> isLastElement, final CloseHandler closeHandler) {
         this.eventLoop = channel.eventLoop();
         this.isLastElement = requireNonNull(isLastElement);
         this.channel = channel;
+        this.closeHandler = closeHandler;
     }
 
     @Override
@@ -119,7 +121,7 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
         }
     }
 
-    void channelInactive() {
+    void dispose() {
         assertInEventloop();
         fatalError = CLOSED_CHANNEL_EXCEPTION;
         exceptionCaught(CLOSED_CHANNEL_EXCEPTION);
@@ -219,7 +221,11 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
         try {
             target.associatedSub.onError(throwable);
         } finally {
-            channel.close();
+            // We do not support resumption once we observe an error since we are not sure whether the channel is in a
+            // state to be resumed. We may send data to the next Subscriber which is malformed.
+            // Users are responsible to catch-ignore resumable exceptions in the pipeline or from the processing of a
+            // message in onNext()
+            closeChannelInbound();
         }
     }
 
@@ -231,7 +237,11 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
         resetSubscription();
         // If an incomplete subscriber is cancelled then close channel. A subscriber can cancel after getting complete,
         // which should not close the channel.
-        channel.close();
+        closeChannelInbound();
+    }
+
+    private void closeChannelInbound() {
+        closeHandler.closeChannelInbound(channel);
     }
 
     private void resetSubscription() {

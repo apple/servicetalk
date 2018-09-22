@@ -21,6 +21,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.socket.ChannelInputShutdownReadComplete;
 import io.netty.util.ReferenceCounted;
 import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
@@ -43,6 +44,7 @@ public abstract class AbstractChannelReadHandler<T> extends ChannelInboundHandle
     @Nullable
     private NettyChannelPublisher<T> publisher;
     private final Predicate<T> isTerminal;
+    private final CloseHandler closeHandler;
 
     /**
      * New instance.
@@ -50,9 +52,11 @@ public abstract class AbstractChannelReadHandler<T> extends ChannelInboundHandle
      *
      * @param isTerminal {@link Predicate} for detecting terminal events per {@link Subscriber} of the emitted
      * {@link Publisher}.
+     * @param closeHandler {@link CloseHandler} used for this channel.
      */
-    protected AbstractChannelReadHandler(Predicate<T> isTerminal) {
+    protected AbstractChannelReadHandler(Predicate<T> isTerminal, final CloseHandler closeHandler) {
         this.isTerminal = requireNonNull(isTerminal);
+        this.closeHandler = closeHandler;
     }
 
     @Override
@@ -73,17 +77,24 @@ public abstract class AbstractChannelReadHandler<T> extends ChannelInboundHandle
     }
 
     void createPublisher(ChannelHandlerContext ctx) {
-        publisher = new NettyChannelPublisher<>(ctx.channel(), isTerminal);
+        publisher = new NettyChannelPublisher<>(ctx.channel(), isTerminal, closeHandler);
         onPublisherCreation(ctx, publisher);
     }
 
     @Override
     public final void channelInactive(ChannelHandlerContext ctx) {
-        if (publisher != null) {
-            publisher.channelInactive();
-            publisher = null;
-        }
+        disposePublisher();
         ctx.fireChannelInactive();
+    }
+
+    @Override
+    public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) throws Exception {
+        if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
+            // Since we are only reading data, if the inbound is shutdown, it is equivalent to channel closure, so we
+            // dispose the publisher.
+            disposePublisher();
+        }
+        ctx.fireUserEventTriggered(evt);
     }
 
     @Override
@@ -120,4 +131,11 @@ public abstract class AbstractChannelReadHandler<T> extends ChannelInboundHandle
      * @param newPublisher A newly created {@link Publisher} for current {@link Channel}.
      */
     protected abstract void onPublisherCreation(ChannelHandlerContext ctx, Publisher<T> newPublisher);
+
+    private void disposePublisher() {
+        if (publisher != null) {
+            publisher.dispose();
+            publisher = null;
+        }
+    }
 }
