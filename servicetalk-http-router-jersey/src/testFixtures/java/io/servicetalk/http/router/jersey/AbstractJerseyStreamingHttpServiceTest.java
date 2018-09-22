@@ -283,7 +283,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
                     .forEachRemaining(h -> assertThat(h.toString(), equalToIgnoringCase("chunked")));
         } else {
             assertThat(res.headers().contains(CONTENT_LENGTH), is(false));
-            if (res.status().getCode() >= 200 && res.status().getCode() != 204 &&
+            if (res.status().code() >= 200 && res.status().code() != 204 &&
                     // It is OK to omit payload header fields in HEAD responses
                     !req.method().equals(HEAD)) {
                 assertThat(res.headers().get(TRANSFER_ENCODING), is(CHUNKED));
@@ -304,7 +304,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
 
             assertThat(res.version(), is(expectedHttpVersion));
             final HttpResponseStatus status = res.status();
-            assertThat(status.getCode(), is(expectedStatus.getCode()));
+            assertThat(status.code(), is(expectedStatus.code()));
             final Buffer reasonPhrase = DEFAULT_ALLOCATOR.newBuffer();
             status.writeReasonPhraseTo(reasonPhrase);
             final Buffer expectedReasonPhrase = DEFAULT_ALLOCATOR.newBuffer();

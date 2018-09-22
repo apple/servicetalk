@@ -475,7 +475,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
      * Returns false if the upgrade happened in a different layer, e.g. upgrade from HTTP/1.1 to HTTP/1.1 over TLS.
      */
     private boolean isSwitchingToNonHttp1Protocol(HttpResponseMetaData msg) {
-        if (msg.status().getCode() != SWITCHING_PROTOCOLS.getCode()) {
+        if (msg.status().code() != SWITCHING_PROTOCOLS.code()) {
             return false;
         }
         CharSequence newProtocol = msg.headers().get(UPGRADE);
@@ -725,7 +725,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             }
         } else if (message instanceof HttpResponseMetaData) {
             HttpResponseMetaData res = (HttpResponseMetaData) message;
-            if (res.status().getCode() == 101 &&
+            if (res.status().code() == 101 &&
                     h.contains(SEC_WEBSOCKET_ORIGIN) &&
                     h.contains(SEC_WEBSOCKET_LOCATION)) {
                 return 16;

@@ -100,7 +100,7 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
                     retryWithExponentialBackoff(10, t -> true, Duration.ofMillis(100),
                             CTX.getExecutor())));
 
-            assertThat(resp.status().getCode(), equalTo(200));
+            assertThat(resp.status().code(), equalTo(200));
 
             Single<String> respBody = resp.payloadBody().reduce(StringBuilder::new, (sb, buf) -> {
                 sb.append(buf.toString(UTF_8));

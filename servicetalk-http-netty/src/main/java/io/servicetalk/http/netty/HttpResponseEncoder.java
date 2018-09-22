@@ -112,8 +112,8 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
         HttpRequestMethod method = methodQueue.poll();
         if (isAlwaysEmpty) {
             HttpResponseStatus status = msg.status();
-            if (status.getStatusClass() == INFORMATIONAL_1XX ||
-                    status.getCode() == NO_CONTENT.getCode()) {
+            if (status.statusClass() == INFORMATIONAL_1XX ||
+                    status.code() == NO_CONTENT.code()) {
 
                 HttpHeaders headers = msg.headers();
                 // Stripping Content-Length:
@@ -124,7 +124,7 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
                 // See https://tools.ietf.org/html/rfc7230#section-3.3.1
                 headers.remove(TRANSFER_ENCODING);
             }
-        } else if (method == CONNECT && msg.status().getStatusClass() == SUCCESS_2XX) {
+        } else if (method == CONNECT && msg.status().statusClass() == SUCCESS_2XX) {
             // Stripping Transfer-Encoding:
             // See https://tools.ietf.org/html/rfc7230#section-3.3.1
             msg.headers().remove(TRANSFER_ENCODING);
@@ -137,8 +137,8 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
         // https://tools.ietf.org/html/rfc7230#section-3.3.3
         HttpResponseStatus status = msg.status();
 
-        if (status.getStatusClass() == INFORMATIONAL_1XX) {
-            if (status.getCode() == SWITCHING_PROTOCOLS.getCode()) {
+        if (status.statusClass() == INFORMATIONAL_1XX) {
+            if (status.code() == SWITCHING_PROTOCOLS.code()) {
                 // We need special handling for WebSockets version 00 as it will include an body.
                 // Fortunally this version should not really be used in the wild very often.
                 // See https://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-00#section-1.2
@@ -146,6 +146,6 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
             }
             return true;
         }
-        return status.getCode() == NO_CONTENT.getCode() || status.getCode() == NOT_MODIFIED.getCode();
+        return status.code() == NO_CONTENT.code() || status.code() == NOT_MODIFIED.code();
     }
 }

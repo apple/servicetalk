@@ -327,12 +327,12 @@ public enum HttpResponseStatuses implements HttpResponseStatus {
     }
 
     @Override
-    public StatusClass getStatusClass() {
+    public StatusClass statusClass() {
         return statusClass;
     }
 
     @Override
-    public int getCode() {
+    public int code() {
         return code;
     }
 
