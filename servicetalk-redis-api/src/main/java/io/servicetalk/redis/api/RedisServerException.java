@@ -27,6 +27,6 @@ public class RedisServerException extends RuntimeException {
      * @param data the {@link RedisData.Error} instance containing the details of the error.
      */
     public RedisServerException(final RedisData.Error data) {
-        super(data.charSequenceValue().toString());
+        super(data.getCharSequenceValue().toString());
     }
 }

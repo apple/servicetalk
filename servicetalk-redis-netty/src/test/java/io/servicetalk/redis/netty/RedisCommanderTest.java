@@ -361,7 +361,7 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         publishTestMessage(key("channel-1"));
 
         // Check ping request get proper response
-        assertThat(awaitIndefinitely(pubSubClient1.ping()).charSequenceValue(), is(""));
+        assertThat(awaitIndefinitely(pubSubClient1.ping()).getCharSequenceValue(), is(""));
 
         // Subscribe to a pattern on the same connection
         final PubSubRedisConnection pubSubClient2 = awaitIndefinitely(pubSubClient1.psubscribe(key("channel-2*")));
@@ -381,7 +381,7 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         publishTestMessage(key("channel-202"));
 
         // Check ping request get proper response
-        assertThat(awaitIndefinitely(pubSubClient1.ping("my-pong")).charSequenceValue(), is("my-pong"));
+        assertThat(awaitIndefinitely(pubSubClient1.ping("my-pong")).getCharSequenceValue(), is("my-pong"));
 
         // Cancel the subscriber, which issues an UNSUBSCRIBE behind the scenes
         subscriber1.cancel();

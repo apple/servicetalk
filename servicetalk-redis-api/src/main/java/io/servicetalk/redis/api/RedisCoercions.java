@@ -50,9 +50,9 @@ final class RedisCoercions {
         return original.map(msg -> {
             V v;
             if (Buffer.class.equals(valueType)) {
-                v = (V) msg.bufferValue();
+                v = (V) msg.getBufferValue();
             } else if (String.class.equals(valueType)) {
-                v = (V) msg.charSequenceValue().toString();
+                v = (V) msg.getCharSequenceValue().toString();
             } else {
                 throw new CoercionException(msg, valueType);
             }
@@ -66,10 +66,10 @@ final class RedisCoercions {
             return null;
         }
         if (data instanceof RedisData.SimpleString) {
-            return data.charSequenceValue().toString();
+            return data.getCharSequenceValue().toString();
         }
         if (data instanceof CompleteBulkString) {
-            return data.bufferValue().toString(UTF_8);
+            return data.getBufferValue().toString(UTF_8);
         }
 
         throw new CoercionException(data, String.class);
@@ -85,7 +85,7 @@ final class RedisCoercions {
             return null;
         }
         if (data instanceof CompleteBulkString) {
-            return data.bufferValue();
+            return data.getBufferValue();
         }
 
         throw new CoercionException(data, Buffer.class);

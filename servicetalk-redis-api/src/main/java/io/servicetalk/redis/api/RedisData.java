@@ -43,7 +43,7 @@ public interface RedisData {
      * @return the {@code int} value of the data.
      * @throws UnsupportedOperationException if the data is not an {@code int}
      */
-    default int intValue() {
+    default int getIntValue() {
         throw new UnsupportedOperationException("Data is not of type int");
     }
 
@@ -53,7 +53,7 @@ public interface RedisData {
      * @return the {@code long} value of the data.
      * @throws UnsupportedOperationException if the data is not an {@code long}
      */
-    default long longValue() {
+    default long getLongValue() {
         throw new UnsupportedOperationException("Data is not of type long");
     }
 
@@ -63,7 +63,7 @@ public interface RedisData {
      * @return the {@link Buffer} value of the data.
      * @throws UnsupportedOperationException if the data is not an {@link Buffer}
      */
-    default Buffer bufferValue() {
+    default Buffer getBufferValue() {
         throw new UnsupportedOperationException("Data is not of type Buffer");
     }
 
@@ -73,7 +73,7 @@ public interface RedisData {
      * @return the {@link CharSequence} value of the data.
      * @throws UnsupportedOperationException if the data is not an {@link CharSequence}
      */
-    default CharSequence charSequenceValue() {
+    default CharSequence getCharSequenceValue() {
         throw new UnsupportedOperationException("Data is not of type CharSequence");
     }
 
@@ -84,7 +84,7 @@ public interface RedisData {
      * @throws UnsupportedOperationException if the data is not a {@link List} of {@link RedisData}
      */
     @SuppressWarnings("unchecked")
-    default List<? extends RedisData> listValue() {
+    default List<? extends RedisData> getListValue() {
         throw new UnsupportedOperationException("Data is not of type List<RedisData>");
     }
 
@@ -124,7 +124,7 @@ public interface RedisData {
         }
 
         @Override
-        public CharSequence charSequenceValue() {
+        public CharSequence getCharSequenceValue() {
             return getValue();
         }
 
@@ -158,7 +158,7 @@ public interface RedisData {
         }
 
         @Override
-        public long longValue() {
+        public long getLongValue() {
             return getValue();
         }
 
@@ -178,7 +178,7 @@ public interface RedisData {
         }
 
         @Override
-        public int intValue() {
+        public int getIntValue() {
             return getValue();
         }
 
@@ -202,7 +202,7 @@ public interface RedisData {
         }
 
         @Override
-        public Buffer bufferValue() {
+        public Buffer getBufferValue() {
             return getValue();
         }
 
@@ -222,7 +222,7 @@ public interface RedisData {
         }
 
         @Override
-        public Buffer bufferValue() {
+        public Buffer getBufferValue() {
             return getValue();
         }
 
@@ -244,7 +244,7 @@ public interface RedisData {
         }
 
         @Override
-        public Buffer bufferValue() {
+        public Buffer getBufferValue() {
             return getValue();
         }
 
@@ -264,7 +264,7 @@ public interface RedisData {
         }
 
         @Override
-        public long longValue() {
+        public long getLongValue() {
             return getValue();
         }
 
@@ -290,7 +290,7 @@ public interface RedisData {
         }
 
         @Override
-        public List<? extends RedisData> listValue() {
+        public List<? extends RedisData> getListValue() {
             return getValue();
         }
     }
@@ -312,7 +312,7 @@ public interface RedisData {
         }
 
         @Override
-        public CharSequence charSequenceValue() {
+        public CharSequence getCharSequenceValue() {
             return getValue();
         }
     }

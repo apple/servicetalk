@@ -358,7 +358,7 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         publishTestMessage(key("channel-1"));
 
         // Check ping request get proper response
-        assertThat(awaitIndefinitely(pubSubClient1.ping()).bufferValue(), is(EMPTY_BUFFER));
+        assertThat(awaitIndefinitely(pubSubClient1.ping()).getBufferValue(), is(EMPTY_BUFFER));
 
         // Subscribe to a pattern on the same connection
         final PubSubBufferRedisConnection pubSubClient2 = awaitIndefinitely(pubSubClient1.psubscribe(key("channel-2*")));
@@ -376,7 +376,7 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         publishTestMessage(key("channel-202"));
 
         // Check ping request get proper response
-        assertThat(awaitIndefinitely(pubSubClient1.ping(buf("my-pong"))).bufferValue(), is(buf("my-pong")));
+        assertThat(awaitIndefinitely(pubSubClient1.ping(buf("my-pong"))).getBufferValue(), is(buf("my-pong")));
 
         assertThat(subscriber1.request(1).awaitUntilAtLeastNReceived(1, DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
         assertThat(subscriber1.getReceived().poll(), allOf(

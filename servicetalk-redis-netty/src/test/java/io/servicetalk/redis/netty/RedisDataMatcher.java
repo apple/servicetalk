@@ -48,7 +48,7 @@ final class RedisDataMatcher extends BaseMatcher<RedisData> {
     }
 
     static RedisDataMatcher redisSimpleString(final Matcher<String> valueMatcher) {
-        return new RedisDataMatcher(RedisData.SimpleString.class, data -> data.charSequenceValue().toString(), valueMatcher);
+        return new RedisDataMatcher(RedisData.SimpleString.class, data -> data.getCharSequenceValue().toString(), valueMatcher);
     }
 
     static RedisDataMatcher redisInteger(final long value) {
@@ -56,7 +56,7 @@ final class RedisDataMatcher extends BaseMatcher<RedisData> {
     }
 
     static RedisDataMatcher redisInteger(final Matcher<Long> valueMatcher) {
-        return new RedisDataMatcher(RedisData.Integer.class, RedisData::longValue, valueMatcher);
+        return new RedisDataMatcher(RedisData.Integer.class, RedisData::getLongValue, valueMatcher);
     }
 
     static RedisDataMatcher redisBulkStringSize(final int size) {
@@ -64,7 +64,7 @@ final class RedisDataMatcher extends BaseMatcher<RedisData> {
     }
 
     static RedisDataMatcher redisBulkStringSize(final Matcher<Integer> sizeMatcher) {
-        return new RedisDataMatcher(RedisData.BulkStringSize.class, RedisData::intValue, sizeMatcher);
+        return new RedisDataMatcher(RedisData.BulkStringSize.class, RedisData::getIntValue, sizeMatcher);
     }
 
     static RedisDataMatcher redisBulkStringChunk(final Buffer buf) {
@@ -72,7 +72,7 @@ final class RedisDataMatcher extends BaseMatcher<RedisData> {
     }
 
     static RedisDataMatcher redisBulkStringChunk(final Matcher<Buffer> bufMatcher) {
-        return new RedisDataMatcher(RedisData.BulkStringChunk.class, RedisData::bufferValue, bufMatcher);
+        return new RedisDataMatcher(RedisData.BulkStringChunk.class, RedisData::getBufferValue, bufMatcher);
     }
 
     static RedisDataMatcher redisLastBulkStringChunk(final Buffer buf) {
@@ -80,7 +80,7 @@ final class RedisDataMatcher extends BaseMatcher<RedisData> {
     }
 
     static RedisDataMatcher redisLastBulkStringChunk(final Matcher<Buffer> bufMatcher) {
-        return new RedisDataMatcher(RedisData.LastBulkStringChunk.class, RedisData::bufferValue, bufMatcher);
+        return new RedisDataMatcher(RedisData.LastBulkStringChunk.class, RedisData::getBufferValue, bufMatcher);
     }
 
     static RedisDataMatcher redisCompleteBulkString(final Buffer buf) {
@@ -88,7 +88,7 @@ final class RedisDataMatcher extends BaseMatcher<RedisData> {
     }
 
     static RedisDataMatcher redisCompleteBulkString(final Matcher<Buffer> bufMatcher) {
-        return new RedisDataMatcher(RedisData.CompleteBulkString.class, RedisData::bufferValue, bufMatcher);
+        return new RedisDataMatcher(RedisData.CompleteBulkString.class, RedisData::getBufferValue, bufMatcher);
     }
 
     static RedisDataMatcher redisArraySize(final long size) {
@@ -96,7 +96,7 @@ final class RedisDataMatcher extends BaseMatcher<RedisData> {
     }
 
     static RedisDataMatcher redisArraySize(final Matcher<Long> sizeMatcher) {
-        return new RedisDataMatcher(RedisData.ArraySize.class, RedisData::longValue, sizeMatcher);
+        return new RedisDataMatcher(RedisData.ArraySize.class, RedisData::getLongValue, sizeMatcher);
     }
 
     static RedisDataMatcher redisArray(final RedisData... content) {
@@ -104,7 +104,7 @@ final class RedisDataMatcher extends BaseMatcher<RedisData> {
     }
 
     static RedisDataMatcher redisArray(final Matcher<Iterable<? extends RedisData>> contentMatcher) {
-        return new RedisDataMatcher(RedisData.Array.class, RedisData::listValue, contentMatcher);
+        return new RedisDataMatcher(RedisData.Array.class, RedisData::getListValue, contentMatcher);
     }
 
     static RedisDataMatcher redisError(final String msg) {
@@ -112,7 +112,7 @@ final class RedisDataMatcher extends BaseMatcher<RedisData> {
     }
 
     static RedisDataMatcher redisError(final Matcher<String> msgMatcher) {
-        return new RedisDataMatcher(RedisData.Error.class, data -> data.charSequenceValue().toString(), msgMatcher);
+        return new RedisDataMatcher(RedisData.Error.class, data -> data.getCharSequenceValue().toString(), msgMatcher);
     }
 
     @Override

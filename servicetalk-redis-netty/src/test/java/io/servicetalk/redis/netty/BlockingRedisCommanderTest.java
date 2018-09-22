@@ -351,7 +351,7 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
         publishTestMessage(key("channel-1"));
 
         // Check ping request get proper response
-        assertThat(pubSubClient1.ping().charSequenceValue(), is(""));
+        assertThat(pubSubClient1.ping().getCharSequenceValue(), is(""));
 
         // Subscribe to a pattern on the same connection
         final BlockingPubSubRedisConnection pubSubClient2 = pubSubClient1.psubscribe(key("channel-2*"));
@@ -373,7 +373,7 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
         publishTestMessage(key("channel-202"));
 
         // Check ping request get proper response
-        assertThat(pubSubClient1.ping("my-pong").charSequenceValue(), is("my-pong"));
+        assertThat(pubSubClient1.ping("my-pong").getCharSequenceValue(), is("my-pong"));
 
         // Cancel the subscriber, which issues an UNSUBSCRIBE behind the scenes
         pubSubClient1.close();

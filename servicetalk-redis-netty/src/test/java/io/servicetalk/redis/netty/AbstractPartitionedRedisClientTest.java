@@ -145,7 +145,7 @@ public abstract class AbstractPartitionedRedisClientTest {
         final String serverInfo = awaitIndefinitely(
                 client.request(partitionAttributesBuilder.build(), newRequest(INFO, new RedisData.CompleteBulkString(buf("SERVER"))))
                         .filter(d -> d instanceof RedisData.BulkStringChunk)
-                        .reduce(StringBuilder::new, (sb, d) -> sb.append(d.bufferValue().toString(US_ASCII))))
+                        .reduce(StringBuilder::new, (sb, d) -> sb.append(d.getBufferValue().toString(US_ASCII))))
                 .toString();
 
         final java.util.regex.Matcher versionMatcher = Pattern.compile("(?s).*redis_version:([\\d]+)\\.([\\d]+)\\.([\\d]+).*").matcher(serverInfo);

@@ -55,7 +55,7 @@ final class TerminalMessagePredicates {
             if (data instanceof RedisData.ArraySize) {
                 final RedisData.ArraySize arraySize = (RedisData.ArraySize) data;
                 // -1 because the header is a message itself that counts towards the expected number of messages
-                return arraySize.longValue() - 1;
+                return arraySize.getLongValue() - 1;
             }
             if (data instanceof CompleteRedisData || data instanceof LastBulkStringChunk) {
                 return -1;

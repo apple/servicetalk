@@ -59,10 +59,10 @@ final class RedisUtils {
             return null;
         }
         if (data instanceof RedisData.SimpleString) {
-            return data.charSequenceValue().toString();
+            return data.getCharSequenceValue().toString();
         }
         if (data instanceof RedisData.CompleteBulkString) {
-            return data.bufferValue().toString(UTF_8);
+            return data.getBufferValue().toString(UTF_8);
         }
 
         throw new CoercionException(data, String.class);
