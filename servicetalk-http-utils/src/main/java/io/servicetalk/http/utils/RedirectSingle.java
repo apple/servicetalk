@@ -115,7 +115,7 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
 
         @Override
         public void onSuccess(@Nullable final StreamingHttpResponse result) {
-            if (result == null || !shouldRedirect(redirectCount + 1, result, request.getMethod())) {
+            if (result == null || !shouldRedirect(redirectCount + 1, result, request.method())) {
                 target.onSuccess(result);
                 return;
             }
@@ -129,10 +129,10 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
             }
             if (LOGGER.isTraceEnabled()) {
                 LOGGER.trace("Execute redirect to '{}' for original request '{}'",
-                        result.getHeaders().get(LOCATION), redirectSingle.originalRequest);
+                        result.headers().get(LOCATION), redirectSingle.originalRequest);
             }
             // Consume any payload of the redirect response
-            result.getPayloadBody().ignoreElements().subscribe();
+            result.payloadBody().ignoreElements().subscribe();
             redirectSingle.requester.request(newRequest).subscribe(new RedirectSubscriber(
                     target, redirectSingle, newRequest, redirectCount + 1, sequentialCancellable));
         }
@@ -144,7 +144,7 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
 
         private boolean shouldRedirect(final int redirectCount, final StreamingHttpResponse response,
                                        final HttpRequestMethod originalMethod) {
-            final int statusCode = response.getStatus().getCode();
+            final int statusCode = response.status().getCode();
 
             if (statusCode < 300 || statusCode > 308) {
                 // We start without support for status codes outside of this range
@@ -178,7 +178,7 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
                         return false;
                     }
 
-                    final CharSequence locationHeader = response.getHeaders().get(LOCATION);
+                    final CharSequence locationHeader = response.headers().get(LOCATION);
                     if (locationHeader == null || locationHeader.length() == 0) {
                         LOGGER.debug("No location header for redirect response");
                         return false;
@@ -196,26 +196,26 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
         private static StreamingHttpRequest prepareRedirectRequest(
                 final StreamingHttpRequest request, final StreamingHttpResponse response,
                 final StreamingHttpRequestFactory requestFactory) {
-            final HttpRequestMethod method = defineRedirectMethod(request.getMethod());
-            final CharSequence locationHeader = response.getHeaders().get(LOCATION);
+            final HttpRequestMethod method = defineRedirectMethod(request.method());
+            final CharSequence locationHeader = response.headers().get(LOCATION);
             assert locationHeader != null;
 
             final StreamingHttpRequest redirectRequest =
-                    requestFactory.newRequest(method, locationHeader.toString()).setVersion(request.getVersion());
+                    requestFactory.newRequest(method, locationHeader.toString()).version(request.version());
 
-            final HttpHeaders headers = redirectRequest.getHeaders();
+            final HttpHeaders headers = redirectRequest.headers();
             // TODO CONTENT_LENGTH could be non ZERO, when we will support repeatable payloadBody
             headers.set(CONTENT_LENGTH, ZERO);
 
-            String redirectHost = redirectRequest.getEffectiveHost();
+            String redirectHost = redirectRequest.effectiveHost();
             if (redirectHost == null) {
                 // origin-form request-target in Location header, extract host & port info from original request
-                redirectHost = request.getEffectiveHost();
+                redirectHost = request.effectiveHost();
                 if (redirectHost == null) {
                     // Should never happen, otherwise the original request had to fail
                     throw new InvalidRedirectException("No host information for redirect");
                 }
-                final int redirectPort = request.getEffectivePort();
+                final int redirectPort = request.effectivePort();
                 headers.set(HOST, redirectPort < 0 ? redirectHost : redirectHost + ':' + redirectPort);
             }
 

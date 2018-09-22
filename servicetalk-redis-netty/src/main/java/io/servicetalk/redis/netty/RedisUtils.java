@@ -50,7 +50,7 @@ final class RedisUtils {
     }
 
     static Publisher<ByteBuf> encodeRequestContent(final RedisRequest request, final BufferAllocator allocator) {
-        return request.getContent().map(data -> toByteBuf(data.toRESPArgument(allocator)));
+        return request.content().map(data -> toByteBuf(data.toRESPArgument(allocator)));
     }
 
     @Nullable
@@ -59,10 +59,10 @@ final class RedisUtils {
             return null;
         }
         if (data instanceof RedisData.SimpleString) {
-            return data.getCharSequenceValue().toString();
+            return data.charSequenceValue().toString();
         }
         if (data instanceof RedisData.CompleteBulkString) {
-            return data.getBufferValue().toString(UTF_8);
+            return data.bufferValue().toString(UTF_8);
         }
 
         throw new CoercionException(data, String.class);

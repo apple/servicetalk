@@ -248,7 +248,7 @@ public class HttpResponseDecoderTest {
         assertTrue(channel.writeInbound(wrappedBuffer(afterContentBytes)));
 
         HttpResponseMetaData response = channel.readInbound();
-        assertStandardHeaders(response.getHeaders());
+        assertStandardHeaders(response.headers());
         HttpHeaders lastChunk = channel.readInbound();
         assertTrue(lastChunk.isEmpty());
         assertFalse(channel.finishAndReleaseAll());
@@ -266,7 +266,7 @@ public class HttpResponseDecoderTest {
         channel.close();
 
         HttpResponseMetaData response = channel.readInbound();
-        assertStandardHeaders(response.getHeaders());
+        assertStandardHeaders(response.headers());
         HttpHeaders lastChunk = channel.readInbound();
         assertTrue(lastChunk.isEmpty());
         assertFalse(channel.finishAndReleaseAll());
@@ -336,11 +336,11 @@ public class HttpResponseDecoderTest {
     private static void validateHttpResponse(EmbeddedChannel channel, int expectedContentLength,
                                              boolean containsTrailers) {
         HttpResponseMetaData response = channel.readInbound();
-        assertEquals(OK, response.getStatus());
-        assertEquals(HTTP_1_1, response.getVersion());
-        assertStandardHeaders(response.getHeaders());
+        assertEquals(OK, response.status());
+        assertEquals(HTTP_1_1, response.version());
+        assertStandardHeaders(response.headers());
         if (expectedContentLength >= 0) {
-            assertSingleHeaderValue(response.getHeaders(), CONTENT_LENGTH, String.valueOf(expectedContentLength));
+            assertSingleHeaderValue(response.headers(), CONTENT_LENGTH, String.valueOf(expectedContentLength));
             Buffer chunk = channel.readInbound();
             assertEquals(expectedContentLength, chunk.getReadableBytes());
             HttpHeaders trailers = channel.readInbound();

@@ -26,7 +26,7 @@ public final class BlockingHelloWorldUrlClient {
         try (BlockingHttpClient client = HttpClients.forMultiAddressUrl().buildBlocking()) {
             HttpResponse response = client.request(client.get("http://localhost:8080/sayHello"));
             System.out.println(response.toString((name, value) -> value));
-            System.out.println(response.getPayloadBody(deserializeText()));
+            System.out.println(response.payloadBody(deserializeText()));
         }
     }
 }

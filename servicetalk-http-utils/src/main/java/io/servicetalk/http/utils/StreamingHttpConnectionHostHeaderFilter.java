@@ -87,8 +87,8 @@ public final class StreamingHttpConnectionHostHeaderFilter extends StreamingHttp
 
     @Override
     public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        if (request.getVersion() == HTTP_1_1 && !request.getHeaders().contains(HOST)) {
-            request.getHeaders().set(HOST, fallbackHost);
+        if (request.version() == HTTP_1_1 && !request.headers().contains(HOST)) {
+            request.headers().set(HOST, fallbackHost);
         }
         return getDelegate().request(request);
     }

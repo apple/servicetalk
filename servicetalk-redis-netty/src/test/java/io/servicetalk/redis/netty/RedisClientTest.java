@@ -135,9 +135,9 @@ public class RedisClientTest extends BaseRedisClientTest {
 
         final String responseData = awaitIndefinitely(getEnv().client.request(request).reduce(StringBuilder::new, (r, d) -> {
             if (d instanceof BulkStringSize) {
-                assertThat(d.getIntValue(), is(1000));
+                assertThat(d.intValue(), is(1000));
             } else {
-                r.append(d.getBufferValue().toString(UTF_8));
+                r.append(d.bufferValue().toString(UTF_8));
             }
             return r;
         })).toString();

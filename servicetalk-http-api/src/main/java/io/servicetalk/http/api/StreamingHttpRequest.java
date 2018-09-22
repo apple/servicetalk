@@ -34,7 +34,7 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
      * Get the underlying payload as a {@link Publisher} of {@link Buffer}s.
      * @return The {@link Publisher} of {@link Buffer} representation of the underlying
      */
-    Publisher<Buffer> getPayloadBody();
+    Publisher<Buffer> payloadBody();
 
     /**
      * Get and deserialize the payload body.
@@ -42,8 +42,8 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
      * @param <T> The resulting type of the deserialization operation.
      * @return The results of the deserialization operation.
      */
-    default <T> Publisher<T> getPayloadBody(HttpDeserializer<T> deserializer) {
-        return deserializer.deserialize(getHeaders(), getPayloadBody());
+    default <T> Publisher<T> deserializePayloadBody(HttpDeserializer<T> deserializer) {
+        return deserializer.deserialize(headers(), payloadBody());
     }
 
     /**
@@ -51,7 +51,7 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
      * @return a {@link Publisher} that combines the raw payload body concatenated with the
      * {@link HttpHeaders trailers}.
      */
-    Publisher<Object> getPayloadBodyAndTrailers();
+    Publisher<Object> payloadBodyAndTrailers();
 
     /**
      * Set the underlying payload body.
@@ -64,7 +64,7 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
      * @param payloadBody The new payload body.
      * @return A {@link StreamingHttpRequest} with the new serialized payload body.
      */
-    StreamingHttpRequest setPayloadBody(Publisher<Buffer> payloadBody);
+    StreamingHttpRequest payloadBody(Publisher<Buffer> payloadBody);
 
     /**
      * Set the underlying payload body with the result of serialization.
@@ -80,7 +80,7 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
      * @param <T> The type of objects to serialize.
      * @return A {@link StreamingHttpRequest} with the new serialized payload body.
      */
-    <T> StreamingHttpRequest setPayloadBody(Publisher<T> payloadBody, HttpSerializer<T> serializer);
+    <T> StreamingHttpRequest serializePayloadBody(Publisher<T> payloadBody, HttpSerializer<T> serializer);
 
     /**
      * Transform the underlying payload body with the result of serialization.
@@ -109,7 +109,7 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
                                                              HttpDeserializer<T> deserializer,
                                                              HttpSerializer<R> serializer) {
         return transformPayloadBody(bufferPublisher ->
-                transformer.apply(deserializer.deserialize(getHeaders(), bufferPublisher)), serializer);
+                transformer.apply(deserializer.deserialize(headers(), bufferPublisher)), serializer);
     }
 
     /**
@@ -171,20 +171,20 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
     BlockingStreamingHttpRequest toBlockingStreamingRequest();
 
     @Override
-    StreamingHttpRequest setRawPath(String path);
+    StreamingHttpRequest rawPath(String path);
 
     @Override
-    StreamingHttpRequest setPath(String path);
+    StreamingHttpRequest path(String path);
 
     @Override
-    StreamingHttpRequest setRawQuery(String query);
+    StreamingHttpRequest rawQuery(String query);
 
     @Override
-    StreamingHttpRequest setVersion(HttpProtocolVersion version);
+    StreamingHttpRequest version(HttpProtocolVersion version);
 
     @Override
-    StreamingHttpRequest setMethod(HttpRequestMethod method);
+    StreamingHttpRequest method(HttpRequestMethod method);
 
     @Override
-    StreamingHttpRequest setRequestTarget(String requestTarget);
+    StreamingHttpRequest requestTarget(String requestTarget);
 }

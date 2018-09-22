@@ -54,7 +54,7 @@ interface BaseHttpClientBuilder<U, R, BuilderType extends BaseHttpClientBuilder>
      * @param <T> the type of the value.
      * @return {@code this}.
      */
-    <T> BuilderType setSocketOption(SocketOption<T> option, T value);
+    <T> BuilderType socketOption(SocketOption<T> option, T value);
 
     /**
      * Enable wire-logging for connections created by this builder. All wire events will be logged at trace level.
@@ -79,7 +79,7 @@ interface BaseHttpClientBuilder<U, R, BuilderType extends BaseHttpClientBuilder>
      * @param headersFactory the {@link HttpHeadersFactory} to use.
      * @return {@code this}.
      */
-    BuilderType setHeadersFactory(HttpHeadersFactory headersFactory);
+    BuilderType headersFactory(HttpHeadersFactory headersFactory);
 
     /**
      * Set the maximum size of the initial HTTP line for created {@link StreamingHttpClient}.
@@ -88,7 +88,7 @@ interface BaseHttpClientBuilder<U, R, BuilderType extends BaseHttpClientBuilder>
      * line exceeds this length.
      * @return {@code this}.
      */
-    BuilderType setMaxInitialLineLength(int maxInitialLineLength);
+    BuilderType maxInitialLineLength(int maxInitialLineLength);
 
     /**
      * Set the maximum total size of HTTP headers, which could be send be created {@link StreamingHttpClient}.
@@ -97,7 +97,7 @@ interface BaseHttpClientBuilder<U, R, BuilderType extends BaseHttpClientBuilder>
      * headers exceeds this length.
      * @return {@code this}.
      */
-    BuilderType setMaxHeaderSize(int maxHeaderSize);
+    BuilderType maxHeaderSize(int maxHeaderSize);
 
     /**
      * Set the value used to calculate an exponential moving average of the encoded size of the initial line and the
@@ -106,7 +106,7 @@ interface BaseHttpClientBuilder<U, R, BuilderType extends BaseHttpClientBuilder>
      * @param headersEncodedSizeEstimate An estimated size of encoded initial line and headers.
      * @return {@code this}.
      */
-    BuilderType setHeadersEncodedSizeEstimate(int headersEncodedSizeEstimate);
+    BuilderType headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
 
     /**
      * Set the value used to calculate an exponential moving average of the encoded size of the trailers for a guess for
@@ -115,7 +115,7 @@ interface BaseHttpClientBuilder<U, R, BuilderType extends BaseHttpClientBuilder>
      * @param trailersEncodedSizeEstimate An estimated size of encoded trailers.
      * @return {@code this}.
      */
-    BuilderType setTrailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
+    BuilderType trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
 
     /**
      * Set the maximum number of pipelined HTTP requests to queue up, anything above this will be rejected,
@@ -126,7 +126,7 @@ interface BaseHttpClientBuilder<U, R, BuilderType extends BaseHttpClientBuilder>
      * @param maxPipelinedRequests number of pipelined requests to queue up
      * @return {@code this}.
      */
-    BuilderType setMaxPipelinedRequests(int maxPipelinedRequests);
+    BuilderType maxPipelinedRequests(int maxPipelinedRequests);
 
     /**
      * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this builder.
@@ -172,7 +172,7 @@ interface BaseHttpClientBuilder<U, R, BuilderType extends BaseHttpClientBuilder>
      * {@link ServiceDiscoverer} is no longer needed.
      * @return {@code this}.
      */
-    BuilderType setServiceDiscoverer(ServiceDiscoverer<U, R> serviceDiscoverer);
+    BuilderType serviceDiscoverer(ServiceDiscoverer<U, R> serviceDiscoverer);
 
     /**
      * Set a {@link LoadBalancerFactory} to generate {@link LoadBalancer} objects.
@@ -180,5 +180,5 @@ interface BaseHttpClientBuilder<U, R, BuilderType extends BaseHttpClientBuilder>
      * @param loadBalancerFactory The {@link LoadBalancerFactory} which generates {@link LoadBalancer} objects.
      * @return {@code this}.
      */
-    BuilderType setLoadBalancerFactory(LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
+    BuilderType loadBalancerFactory(LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
 }

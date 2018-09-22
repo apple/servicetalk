@@ -139,11 +139,11 @@ public final class AbstractHttpConnectionTest {
 
         assertThat(awaitIndefinitely(reqFlatCaptor.getValue()), contains(req, chunk1, chunk2, chunk3, trailers));
 
-        assertThat(resp.getStatus(), equalTo(OK));
-        assertThat(resp.getVersion(), equalTo(HTTP_1_1));
-        assertThat(resp.getHeaders().get(CONTENT_TYPE), equalTo(TEXT_PLAIN));
+        assertThat(resp.status(), equalTo(OK));
+        assertThat(resp.version(), equalTo(HTTP_1_1));
+        assertThat(resp.headers().get(CONTENT_TYPE), equalTo(TEXT_PLAIN));
 
-        assertThat(awaitIndefinitely(resp.getPayloadBody()), contains(chunk1, chunk2, chunk3));
+        assertThat(awaitIndefinitely(resp.payloadBody()), contains(chunk1, chunk2, chunk3));
     }
 
     @SuppressWarnings("unchecked")
@@ -175,10 +175,10 @@ public final class AbstractHttpConnectionTest {
         assertThat(objects.subList(0, 3), contains(req, chunk1, chunk2)); // User provided chunks
         assertThat(objects.get(3), instanceOf(HttpHeaders.class)); // Ensure new Last chunk inserted
 
-        assertThat(resp.getStatus(), equalTo(OK));
-        assertThat(resp.getVersion(), equalTo(HTTP_1_1));
-        assertThat(resp.getHeaders().get(CONTENT_TYPE), equalTo(TEXT_PLAIN));
+        assertThat(resp.status(), equalTo(OK));
+        assertThat(resp.version(), equalTo(HTTP_1_1));
+        assertThat(resp.headers().get(CONTENT_TYPE), equalTo(TEXT_PLAIN));
 
-        assertThat(awaitIndefinitely(resp.getPayloadBody()), contains(chunk1, chunk2, chunk3));
+        assertThat(awaitIndefinitely(resp.payloadBody()), contains(chunk1, chunk2, chunk3));
     }
 }

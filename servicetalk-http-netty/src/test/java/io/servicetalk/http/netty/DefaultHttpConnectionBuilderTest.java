@@ -66,7 +66,7 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
         public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
             // fanout - simulates followup request on response
             return getDelegate().request(request).flatMap(resp ->
-                    resp.getPayloadBody().ignoreElements().andThen(getDelegate().request(request)));
+                    resp.payloadBody().ignoreElements().andThen(getDelegate().request(request)));
         }
 
         @Override

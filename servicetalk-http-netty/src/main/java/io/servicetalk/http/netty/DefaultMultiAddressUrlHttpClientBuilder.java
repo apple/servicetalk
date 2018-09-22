@@ -142,16 +142,16 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
         @Override
         public GroupKey<HostAndPort> apply(final StreamingHttpRequest request) {
-            final String host = request.getEffectiveHost();
+            final String host = request.effectiveHost();
             if (host == null) {
                 throw new IllegalArgumentException(
                         "StreamingHttpRequest does not contain information about target server address." +
-                                " Request-target: " + request.getRequestTarget() +
-                                ", HOST header: " + request.getHeaders().get(HOST));
+                                " Request-target: " + request.requestTarget() +
+                                ", HOST header: " + request.headers().get(HOST));
             }
-            final int effectivePort = request.getEffectivePort();
+            final int effectivePort = request.effectivePort();
             final int port = effectivePort >= 0 ? effectivePort :
-                    sslConfigProvider.defaultPort(HttpScheme.from(request.getScheme()), host);
+                    sslConfigProvider.defaultPort(HttpScheme.from(request.scheme()), host);
             final String authority = host + ':' + port;
 
             final GroupKey<HostAndPort> groupKey = groupKeyCache.get(authority);
@@ -205,7 +205,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         @Override
         public SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> apply(
                 final GroupKey<HostAndPort> groupKey, final HttpRequestMetaData requestMetaData) {
-            final HttpScheme scheme = HttpScheme.from(requestMetaData.getScheme());
+            final HttpScheme scheme = HttpScheme.from(requestMetaData.scheme());
             final HostAndPort hostAndPort = groupKey.getAddress();
             SslConfig sslConfig;
             switch (scheme) {
@@ -235,7 +235,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                 }
             }
             return builder
-                    .setSslConfig(sslConfig)
+                    .sslConfig(sslConfig)
                     .appendClientFilter(clientFilterFunction.asClientFilter(groupKey.getAddress()));
         }
 
@@ -295,9 +295,9 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     }
 
     @Override
-    public <T> MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> setSocketOption(
+    public <T> MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> socketOption(
             final SocketOption<T> option, final T value) {
-        builderTemplate.setSocketOption(option, value);
+        builderTemplate.socketOption(option, value);
         return this;
     }
 
@@ -314,43 +314,43 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> setHeadersFactory(
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> headersFactory(
             final HttpHeadersFactory headersFactory) {
-        builderTemplate.setHeadersFactory(headersFactory);
+        builderTemplate.headersFactory(headersFactory);
         return this;
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> setMaxInitialLineLength(
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> maxInitialLineLength(
             final int maxInitialLineLength) {
-        builderTemplate.setMaxInitialLineLength(maxInitialLineLength);
+        builderTemplate.maxInitialLineLength(maxInitialLineLength);
         return this;
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> setMaxHeaderSize(final int maxHeaderSize) {
-        builderTemplate.setMaxHeaderSize(maxHeaderSize);
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> maxHeaderSize(final int maxHeaderSize) {
+        builderTemplate.maxHeaderSize(maxHeaderSize);
         return this;
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> setHeadersEncodedSizeEstimate(
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> headersEncodedSizeEstimate(
             final int headersEncodedSizeEstimate) {
-        builderTemplate.setHeadersEncodedSizeEstimate(headersEncodedSizeEstimate);
+        builderTemplate.headersEncodedSizeEstimate(headersEncodedSizeEstimate);
         return this;
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> setTrailersEncodedSizeEstimate(
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> trailersEncodedSizeEstimate(
             final int trailersEncodedSizeEstimate) {
-        builderTemplate.setTrailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
+        builderTemplate.trailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
         return this;
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> setMaxPipelinedRequests(
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> maxPipelinedRequests(
             final int maxPipelinedRequests) {
-        builderTemplate.setMaxPipelinedRequests(maxPipelinedRequests);
+        builderTemplate.maxPipelinedRequests(maxPipelinedRequests);
         return this;
     }
 
@@ -374,13 +374,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> setMaxRedirects(final int maxRedirects) {
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> maxRedirects(final int maxRedirects) {
         this.maxRedirects = maxRedirects;
         return this;
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> setSslConfigProvider(
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> sslConfigProvider(
             final SslConfigProvider sslConfigProvider) {
         this.sslConfigProvider = requireNonNull(sslConfigProvider);
         return this;
@@ -408,16 +408,16 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> setServiceDiscoverer(
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> serviceDiscoverer(
             final ServiceDiscoverer<HostAndPort, InetSocketAddress> serviceDiscoverer) {
-        builderTemplate.setServiceDiscoverer(serviceDiscoverer);
+        builderTemplate.serviceDiscoverer(serviceDiscoverer);
         return this;
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> setLoadBalancerFactory(
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> loadBalancerFactory(
             final LoadBalancerFactory<InetSocketAddress, StreamingHttpConnection> loadBalancerFactory) {
-        builderTemplate.setLoadBalancerFactory(loadBalancerFactory);
+        builderTemplate.loadBalancerFactory(loadBalancerFactory);
         return this;
     }
 }

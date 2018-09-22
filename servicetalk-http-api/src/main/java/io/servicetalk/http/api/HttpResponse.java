@@ -25,7 +25,7 @@ public interface HttpResponse extends HttpResponseMetaData {
      * Get the underlying payload as a {@link Buffer}.
      * @return The {@link Buffer} representation of the underlying payload.
      */
-    Buffer getPayloadBody();
+    Buffer payloadBody();
 
     /**
      * Get and deserialize the payload body.
@@ -33,22 +33,22 @@ public interface HttpResponse extends HttpResponseMetaData {
      * @param <T> The resulting type of the deserialization operation.
      * @return The results of the deserialization operation.
      */
-    default <T> T getPayloadBody(HttpDeserializer<T> deserializer) {
-        return deserializer.deserialize(getHeaders(), getPayloadBody());
+    default <T> T payloadBody(HttpDeserializer<T> deserializer) {
+        return deserializer.deserialize(headers(), payloadBody());
     }
 
     /**
      * Get the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
      * @return the <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
      */
-    HttpHeaders getTrailers();
+    HttpHeaders trailers();
 
     /**
      * Set the underlying payload.
      * @param payloadBody the underlying payload.
      * @return {@code this}.
      */
-    HttpResponse setPayloadBody(Buffer payloadBody);
+    HttpResponse payloadBody(Buffer payloadBody);
 
     /**
      * Set the underlying payload to be the results of serialization of {@code pojo}.
@@ -57,7 +57,7 @@ public interface HttpResponse extends HttpResponseMetaData {
      * @param <T> The of object to serialize.
      * @return {@code this}.
      */
-    <T> HttpResponse setPayloadBody(T pojo, HttpSerializer<T> serializer);
+    <T> HttpResponse payloadBody(T pojo, HttpSerializer<T> serializer);
 
     /**
      * Translate this {@link HttpResponse} to a {@link StreamingHttpResponse}.
@@ -72,8 +72,8 @@ public interface HttpResponse extends HttpResponseMetaData {
     BlockingStreamingHttpResponse toBlockingStreamingResponse();
 
     @Override
-    HttpResponse setVersion(HttpProtocolVersion version);
+    HttpResponse version(HttpProtocolVersion version);
 
     @Override
-    HttpResponse setStatus(HttpResponseStatus status);
+    HttpResponse status(HttpResponseStatus status);
 }

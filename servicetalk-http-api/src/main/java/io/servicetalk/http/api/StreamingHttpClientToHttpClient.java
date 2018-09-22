@@ -168,15 +168,15 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
         }
 
         @Override
-        public UpgradableHttpResponse setPayloadBody(final Buffer payloadBody) {
+        public UpgradableHttpResponse payloadBody(final Buffer payloadBody) {
             return new UpgradableStreamingHttpResponseToUpgradableHttpResponse(upgradableResponse, payloadBody,
                     trailers, allocator);
         }
 
         @Override
-        public <T> UpgradableHttpResponse setPayloadBody(final T pojo, final HttpSerializer<T> serializer) {
+        public <T> UpgradableHttpResponse payloadBody(final T pojo, final HttpSerializer<T> serializer) {
             return new UpgradableStreamingHttpResponseToUpgradableHttpResponse(upgradableResponse,
-                    serializer.serialize(getHeaders(), pojo, allocator), trailers, allocator);
+                    serializer.serialize(headers(), pojo, allocator), trailers, allocator);
         }
 
         @Override
@@ -192,19 +192,19 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
         }
 
         @Override
-        public HttpProtocolVersion getVersion() {
-            return upgradableResponse.getVersion();
+        public HttpProtocolVersion version() {
+            return upgradableResponse.version();
         }
 
         @Override
-        public UpgradableHttpResponse setVersion(final HttpProtocolVersion version) {
-            upgradableResponse.setVersion(version);
+        public UpgradableHttpResponse version(final HttpProtocolVersion version) {
+            upgradableResponse.version(version);
             return this;
         }
 
         @Override
-        public HttpHeaders getHeaders() {
-            return upgradableResponse.getHeaders();
+        public HttpHeaders headers() {
+            return upgradableResponse.headers();
         }
 
         @Override
@@ -219,23 +219,23 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
         }
 
         @Override
-        public HttpResponseStatus getStatus() {
-            return upgradableResponse.getStatus();
+        public HttpResponseStatus status() {
+            return upgradableResponse.status();
         }
 
         @Override
-        public UpgradableHttpResponse setStatus(final HttpResponseStatus status) {
-            upgradableResponse.setStatus(status);
+        public UpgradableHttpResponse status(final HttpResponseStatus status) {
+            upgradableResponse.status(status);
             return this;
         }
 
         @Override
-        public Buffer getPayloadBody() {
+        public Buffer payloadBody() {
             return payloadBody;
         }
 
         @Override
-        public HttpHeaders getTrailers() {
+        public HttpHeaders trailers() {
             return trailers;
         }
     }

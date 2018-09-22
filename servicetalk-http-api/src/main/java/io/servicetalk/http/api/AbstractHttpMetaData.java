@@ -34,18 +34,18 @@ abstract class AbstractHttpMetaData implements HttpMetaData {
     }
 
     @Override
-    public final HttpProtocolVersion getVersion() {
+    public final HttpProtocolVersion version() {
         return version;
     }
 
     @Override
-    public HttpMetaData setVersion(final HttpProtocolVersion version) {
+    public HttpMetaData version(final HttpProtocolVersion version) {
         this.version = requireNonNull(version);
         return this;
     }
 
     @Override
-    public final HttpHeaders getHeaders() {
+    public final HttpHeaders headers() {
         return headers;
     }
 

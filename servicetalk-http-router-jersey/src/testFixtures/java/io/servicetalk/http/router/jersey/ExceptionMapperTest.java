@@ -211,7 +211,7 @@ public class ExceptionMapperTest extends AbstractJerseyStreamingHttpServiceTest 
                                        final CharSequence expectedContentType,
                                        final Class<? extends Throwable> expectedExceptionClass) {
 
-        req.getHeaders().set(EXCEPTION_RESPONSE_TYPE_HEADER, ert.toString());
+        req.headers().set(EXCEPTION_RESPONSE_TYPE_HEADER, ert.toString());
 
         if (HttpHeaderValues.APPLICATION_JSON.equals(expectedContentType)) {
             sendAndAssertResponse(req, STATUS_555, expectedContentType,

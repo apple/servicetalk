@@ -30,9 +30,9 @@ public final class PojoServer {
         HttpSerializationProvider serializer = serializeJson(new JacksonSerializationProvider());
         new DefaultHttpServerStarter()
                 .start(8080, (ctx, request, responseFactory) -> {
-                    PojoRequest req = request.getPayloadBody(serializer.deserializerFor(PojoRequest.class));
+                    PojoRequest req = request.deserializePayloadBody(serializer.deserializerFor(PojoRequest.class));
                     return success(responseFactory.ok()
-                            .setPayloadBody(new MyPojo(req.getId(), "foo"), serializer.serializerFor(MyPojo.class)));
+                            .payloadBody(new MyPojo(req.getId(), "foo"), serializer.serializerFor(MyPojo.class)));
                 })
                 .toFuture().get()
                 .awaitShutdown();

@@ -175,11 +175,11 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
                          final DelayedCancellable delayedCancellable) {
 
         final CharSequence baseUri = baseUriFunction.apply(serviceCtx, req);
-        final CharSequence path = ensureNoLeadingSlash(req.getRawPath());
+        final CharSequence path = ensureNoLeadingSlash(req.rawPath());
 
         // Jersey needs URI-unsafe query chars to be encoded
         @Nullable
-        final String encodedQuery = req.getRawQuery().isEmpty() ? null : encodeUnsafeCharacters(req.getRawQuery());
+        final String encodedQuery = req.rawQuery().isEmpty() ? null : encodeUnsafeCharacters(req.rawQuery());
 
         final StringBuilder requestUriBuilder =
                 new StringBuilder(baseUri.length() + path.length() +
@@ -194,20 +194,20 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
         final ContainerRequest containerRequest = new ContainerRequest(
                 URI.create(baseUri.toString()),
                 URI.create(requestUriBuilder.toString()),
-                req.getMethod().getName(),
+                req.method().getName(),
                 UNAUTHENTICATED_SECURITY_CONTEXT,
                 new MapPropertiesDelegate());
 
-        req.getHeaders().forEach(h ->
+        req.headers().forEach(h ->
                 containerRequest.getHeaders().add(h.getKey().toString(), h.getValue().toString()));
 
-        final BufferPublisherInputStream entityStream = new BufferPublisherInputStream(req.getPayloadBody(),
+        final BufferPublisherInputStream entityStream = new BufferPublisherInputStream(req.payloadBody(),
                 publisherInputStreamQueueCapacity);
         containerRequest.setEntityStream(entityStream);
         initRequestProperties(entityStream, containerRequest);
 
         final DefaultContainerResponseWriter responseWriter = new DefaultContainerResponseWriter(containerRequest,
-                req.getVersion(), serviceCtx, factory, subscriber);
+                req.version(), serviceCtx, factory, subscriber);
 
         containerRequest.setWriter(responseWriter);
 

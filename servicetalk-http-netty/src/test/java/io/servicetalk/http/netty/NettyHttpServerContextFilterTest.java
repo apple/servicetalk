@@ -134,9 +134,9 @@ public class NettyHttpServerContextFilterTest extends AbstractNettyHttpServerTes
             // Send a request, and wait for the response.
             // We do this to ensure that the server has had a chance to execute code if the connection was accepted.
             // This is necessary for the delayed tests to see the correct state of the acceptedConnection flag.
-            final StreamingHttpRequest request = getStreamingRequestFactory().get(SVC_ECHO).setPayloadBody(
+            final StreamingHttpRequest request = getStreamingRequestFactory().get(SVC_ECHO).payloadBody(
                     getChunkPublisherFromStrings("hello"));
-            request.getHeaders().set(CONTENT_LENGTH, "5");
+            request.headers().set(CONTENT_LENGTH, "5");
             final StreamingHttpResponse response = makeRequest(request);
             assertResponse(response, HTTP_1_1, OK, singletonList("hello"));
             if (!filterMode.expectAccept) {

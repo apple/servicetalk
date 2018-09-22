@@ -319,7 +319,7 @@ public final class ExecutionStrategyResources {
         private static Map<String, String> getThreadingInfo(final ConnectionContext ctx, final StreamingHttpRequest req,
                                                             final UriInfo uriInfo) {
             // Use the opportunity to assert that other context objects are valid
-            if (!req.getPath().equals('/' + uriInfo.getPath())) {
+            if (!req.path().equals('/' + uriInfo.getPath())) {
                 throw new IllegalStateException("Invalid @Context state for: " + req);
             }
 

@@ -96,20 +96,20 @@ public class BlockingStreamingHttpClientGroupTest {
         BlockingStreamingHttpClientGroup<String> syncGroup = asyncGroup.asBlockingStreamingClientGroup();
         BlockingStreamingHttpResponse syncResponse = syncGroup.request(mockKey,
                 syncGroup.get("/"));
-        assertEquals(HTTP_1_1, syncResponse.getVersion());
-        assertEquals(OK, syncResponse.getStatus());
+        assertEquals(HTTP_1_1, syncResponse.version());
+        assertEquals(OK, syncResponse.status());
     }
 
     @Test
     public void asyncToSyncWithPayload() throws Exception {
         StreamingHttpClientGroup<String> asyncGroup = newAsyncGroup(
-                (key, req) -> success(reqRespFactory.ok().setPayloadBody(just(allocator.fromAscii("hello")))));
+                (key, req) -> success(reqRespFactory.ok().payloadBody(just(allocator.fromAscii("hello")))));
         BlockingStreamingHttpClientGroup<String> syncGroup = asyncGroup.asBlockingStreamingClientGroup();
         BlockingStreamingHttpResponse syncResponse = syncGroup.request(mockKey,
                 syncGroup.get("/"));
-        assertEquals(HTTP_1_1, syncResponse.getVersion());
-        assertEquals(OK, syncResponse.getStatus());
-        BlockingIterator<Buffer> iterator = syncResponse.getPayloadBody().iterator();
+        assertEquals(HTTP_1_1, syncResponse.version());
+        assertEquals(OK, syncResponse.status());
+        BlockingIterator<Buffer> iterator = syncResponse.payloadBody().iterator();
         assertTrue(iterator.hasNext());
         assertEquals(allocator.fromAscii("hello"), iterator.next());
         assertFalse(iterator.hasNext());
@@ -127,13 +127,13 @@ public class BlockingStreamingHttpClientGroupTest {
     @Test
     public void asyncToSyncCancelPropagated() throws Exception {
         TestStreamingHttpClientGroup<String> asyncGroup = newAsyncGroup(
-                (key, req) -> success(reqRespFactory.ok().setPayloadBody(publisherRule.getPublisher())));
+                (key, req) -> success(reqRespFactory.ok().payloadBody(publisherRule.getPublisher())));
         BlockingStreamingHttpClientGroup<String> syncGroup = asyncGroup.asBlockingStreamingClientGroup();
         BlockingStreamingHttpResponse syncResponse = syncGroup.request(mockKey,
                 syncGroup.get("/"));
-        assertEquals(HTTP_1_1, syncResponse.getVersion());
-        assertEquals(OK, syncResponse.getStatus());
-        BlockingIterator<Buffer> iterator = syncResponse.getPayloadBody().iterator();
+        assertEquals(HTTP_1_1, syncResponse.version());
+        assertEquals(OK, syncResponse.status());
+        BlockingIterator<Buffer> iterator = syncResponse.payloadBody().iterator();
         publisherRule.sendItems(allocator.fromAscii("hello"));
         assertTrue(iterator.hasNext());
         iterator.close();
@@ -148,21 +148,21 @@ public class BlockingStreamingHttpClientGroupTest {
         StreamingHttpResponse asyncResponse = awaitIndefinitely(asyncRequester.request(mockKey,
                 asyncRequester.get("/")));
         assertNotNull(asyncResponse);
-        assertEquals(HTTP_1_1, asyncResponse.getVersion());
-        assertEquals(OK, asyncResponse.getStatus());
+        assertEquals(HTTP_1_1, asyncResponse.version());
+        assertEquals(OK, asyncResponse.status());
     }
 
     @Test
     public void syncToAsyncWithPayload() throws Exception {
         BlockingStreamingHttpClientGroup<String> syncGroup = newBlockingGroup(
-                (key, req) -> blkReqRespFactory.ok().setPayloadBody(singleton(allocator.fromAscii("hello"))));
+                (key, req) -> blkReqRespFactory.ok().payloadBody(singleton(allocator.fromAscii("hello"))));
         StreamingHttpClientGroup<String> asyncRequester = syncGroup.asStreamingClientGroup();
         StreamingHttpResponse asyncResponse = awaitIndefinitely(asyncRequester.request(mockKey,
                 asyncRequester.get("/")));
         assertNotNull(asyncResponse);
-        assertEquals(HTTP_1_1, asyncResponse.getVersion());
-        assertEquals(OK, asyncResponse.getStatus());
-        assertEquals("hello", awaitIndefinitely(asyncResponse.getPayloadBody()
+        assertEquals(HTTP_1_1, asyncResponse.version());
+        assertEquals(OK, asyncResponse.status());
+        assertEquals("hello", awaitIndefinitely(asyncResponse.payloadBody()
                 .reduce(() -> "", (acc, next) -> acc + next.toString(US_ASCII))));
     }
 
@@ -179,13 +179,13 @@ public class BlockingStreamingHttpClientGroupTest {
     @Test
     public void syncToAsyncCancelPropagated() throws Exception {
         TestBlockingStreamingHttpClientGroup<String> syncGroup = newBlockingGroup((key, req) ->
-                blkReqRespFactory.ok().setPayloadBody(mockIterable));
+                blkReqRespFactory.ok().payloadBody(mockIterable));
         StreamingHttpClientGroup<String> asyncRequester = syncGroup.asStreamingClientGroup();
         StreamingHttpResponse asyncResponse = awaitIndefinitely(asyncRequester.request(mockKey,
                 asyncRequester.get("/")));
         assertNotNull(asyncResponse);
         CountDownLatch latch = new CountDownLatch(1);
-        asyncResponse.getPayloadBody().subscribe(new Subscriber<Buffer>() {
+        asyncResponse.payloadBody().subscribe(new Subscriber<Buffer>() {
             @Override
             public void onSubscribe(final Subscription s) {
                 s.cancel();

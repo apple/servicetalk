@@ -56,15 +56,15 @@ public interface PubSubRedisMessage extends CompleteRedisData {
         }
 
         @Override
-        public Buffer getBufferValue() {
+        public Buffer bufferValue() {
             T value = getValue();
-            return value instanceof Buffer ? (Buffer) value : super.getBufferValue();
+            return value instanceof Buffer ? (Buffer) value : super.bufferValue();
         }
 
         @Override
-        public CharSequence getCharSequenceValue() {
+        public CharSequence charSequenceValue() {
             T value = getValue();
-            return value instanceof CharSequence ? (CharSequence) value : super.getCharSequenceValue();
+            return value instanceof CharSequence ? (CharSequence) value : super.charSequenceValue();
         }
     }
 

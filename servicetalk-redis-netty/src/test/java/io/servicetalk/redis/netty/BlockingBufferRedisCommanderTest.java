@@ -363,7 +363,7 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
         publishTestMessage(key("channel-1"));
 
         // Check ping request get proper response
-        assertThat(pubSubClient1.ping().getBufferValue(), is(EMPTY_BUFFER));
+        assertThat(pubSubClient1.ping().bufferValue(), is(EMPTY_BUFFER));
 
         // Subscribe to a pattern on the same connection
         final BlockingPubSubBufferRedisConnection pubSubClient2 = pubSubClient1.psubscribe(key("channel-2*"));
@@ -385,7 +385,7 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
         publishTestMessage(key("channel-202"));
 
         // Check ping request get proper response
-        assertThat(pubSubClient1.ping(buf("my-pong")).getBufferValue(), is(buf("my-pong")));
+        assertThat(pubSubClient1.ping(buf("my-pong")).bufferValue(), is(buf("my-pong")));
 
         assertThat(iterator1.next(), allOf(
                 hasProperty("channel", equalTo(keyStr("channel-1"))),

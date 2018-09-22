@@ -26,7 +26,7 @@ public final class BlockingHelloWorldClient {
         try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildBlocking()) {
             HttpResponse response = client.request(client.get("/sayHello"));
             System.out.println(response.toString((name, value) -> value));
-            System.out.println(response.getPayloadBody(deserializeText()));
+            System.out.println(response.payloadBody(deserializeText()));
         }
     }
 }

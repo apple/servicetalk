@@ -100,7 +100,7 @@ public interface MultiAddressHttpClientBuilder<U, R>
      * @param sslConfigProvider A {@link SslConfigProvider} to use.
      * @return {@code this}.
      */
-    MultiAddressHttpClientBuilder<U, R> setSslConfigProvider(SslConfigProvider sslConfigProvider);
+    MultiAddressHttpClientBuilder<U, R> sslConfigProvider(SslConfigProvider sslConfigProvider);
 
     /**
      * Set a maximum number of redirects to follow.
@@ -108,5 +108,5 @@ public interface MultiAddressHttpClientBuilder<U, R>
      * @param maxRedirects A maximum number of redirects to follow. Use a nonpositive number to disable redirects.
      * @return {@code this}.
      */
-    MultiAddressHttpClientBuilder<U, R> setMaxRedirects(int maxRedirects);
+    MultiAddressHttpClientBuilder<U, R> maxRedirects(int maxRedirects);
 }

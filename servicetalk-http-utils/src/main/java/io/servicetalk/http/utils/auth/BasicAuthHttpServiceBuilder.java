@@ -61,7 +61,7 @@ import static java.util.Objects.requireNonNull;
  * It accepts credentials as {@code user-id:password} pairs, encoded using {@link Base64} for
  * {@link HttpHeaderNames#AUTHORIZATION Authorization} or
  * {@link HttpHeaderNames#PROXY_AUTHORIZATION Proxy-Authorization} header values. Use of the format
- * {@code user:password} in the {@link HttpRequestMetaData#getUserInfo() userinfo} field is deprecated by
+ * {@code user:password} in the {@link HttpRequestMetaData#userInfo() userinfo} field is deprecated by
  * <a href="https://tools.ietf.org/html/rfc3986#section-3.2.1">RFC3986</a>.
  * <p>
  * User info object of authenticated user could be stored in {@link AsyncContextMap}, if {@link Key} was configured via
@@ -257,7 +257,7 @@ public final class BasicAuthHttpServiceBuilder<UserInfo> {
             // Check only "Authorization/Proxy-Authorization" headers, according to the format described in:
             //  - https://tools.ietf.org/html/rfc7617#section-2
             //  - https://tools.ietf.org/html/rfc2617#section-2
-            final Iterator<? extends CharSequence> authorizations = request.getHeaders()
+            final Iterator<? extends CharSequence> authorizations = request.headers()
                     .getAll(proxy ? PROXY_AUTHORIZATION : AUTHORIZATION);
             String token = "";
             while (authorizations.hasNext()) {
@@ -323,8 +323,8 @@ public final class BasicAuthHttpServiceBuilder<UserInfo> {
         private Single<StreamingHttpResponse> onAccessDenied(final HttpMetaData requestMetaData,
                                                              final StreamingHttpResponseFactory factory) {
             final StreamingHttpResponse response = factory.newResponse(
-                    proxy ? PROXY_AUTHENTICATION_REQUIRED : UNAUTHORIZED).setVersion(requestMetaData.getVersion());
-            HttpHeaders headers = response.getHeaders();
+                    proxy ? PROXY_AUTHENTICATION_REQUIRED : UNAUTHORIZED).version(requestMetaData.version());
+            HttpHeaders headers = response.headers();
             headers.set(proxy ? PROXY_AUTHENTICATE : WWW_AUTHENTICATE, authenticateHeader);
             headers.set(CONTENT_LENGTH, ZERO);
             return success(response);

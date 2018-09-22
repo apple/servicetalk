@@ -186,15 +186,15 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         final StreamingHttpResponse response;
         if (content != null && !isHeadRequest()) {
             final Executor executor = getResponseExecutorOffloader(request);
-            // TODO(scott): use request factory methods that accept a payload body to avoid overhead of setPayloadBody.
+            // TODO(scott): use request factory methods that accept a payload body to avoid overhead of payloadBody.
             response = responseFactory.newResponse(status)
-                    .setVersion(protocolVersion)
-                    .setPayloadBody(executor != null ? content.subscribeOn(executor) : content);
+                    .version(protocolVersion)
+                    .payloadBody(executor != null ? content.subscribeOn(executor) : content);
         } else {
-            response = responseFactory.newResponse(status).setVersion(protocolVersion);
+            response = responseFactory.newResponse(status).version(protocolVersion);
         }
 
-        final HttpHeaders headers = response.getHeaders();
+        final HttpHeaders headers = response.headers();
         containerResponse.getHeaders().forEach((k, vs) -> vs.forEach(v -> {
             headers.add(k, v == null ? emptyAsciiString() : asCharSequence(v));
         }));

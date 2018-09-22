@@ -39,7 +39,7 @@ import java.util.function.Function;
  *     choice's URI reference is not returned in the {@link HttpHeaderNames#LOCATION Location} header.</li>
  *     <li>This implementation creates a redirect request internally with a request target in the
  *     <a href="https://tools.ietf.org/html/rfc7230#section-5.3.1">origin-form</a> and assumes that
- *     {@link StreamingHttpRequest#getRequestTarget() request target} and {@link HttpHeaderNames#HOST host header} are
+ *     {@link StreamingHttpRequest#requestTarget() request target} and {@link HttpHeaderNames#HOST host header} are
  *     sufficient for a provided request-to-group-key function.</li>
  * </ul>
  *

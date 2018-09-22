@@ -97,7 +97,7 @@ final class RecommendationBackend {
                     .repeat(count -> true);
 
             return success(factory.ok()
-                    .setPayloadBody(recommendations, serializer.serializerFor(Recommendation.class)));
+                    .serializePayloadBody(recommendations, serializer.serializerFor(Recommendation.class)));
         }
     }
 
@@ -129,7 +129,7 @@ final class RecommendationBackend {
 
             // Serialize the Recommendation list to a single Buffer containing JSON and use it as the response payload.
             return success(responseFactory.ok()
-                    .setPayloadBody(recommendations, serializer.serializerFor(typeOfRecommendation)));
+                    .payloadBody(recommendations, serializer.serializerFor(typeOfRecommendation)));
         }
     }
 }

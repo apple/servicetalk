@@ -21,12 +21,13 @@ import java.util.function.BiFunction;
  * Meta data shared between requests and responses.
  */
 public interface HttpMetaData {
+
     /**
      * Returns the protocol version of this {@link HttpMetaData}.
      *
      * @return the version.
      */
-    HttpProtocolVersion getVersion();
+    HttpProtocolVersion version();
 
     /**
      * Set the protocol version of this {@link HttpMetaData}.
@@ -34,14 +35,14 @@ public interface HttpMetaData {
      * @param version the protocol version to set.
      * @return {@code this}.
      */
-    HttpMetaData setVersion(HttpProtocolVersion version);
+    HttpMetaData version(HttpProtocolVersion version);
 
     /**
      * Returns the headers of this message.
      *
      * @return the headers.
      */
-    HttpHeaders getHeaders();
+    HttpHeaders headers();
 
     /**
      * Returns a string representation of the message. To avoid accidentally logging sensitive information,

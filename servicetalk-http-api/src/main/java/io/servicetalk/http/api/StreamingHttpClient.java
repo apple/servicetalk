@@ -225,10 +225,10 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
         ReservedStreamingHttpConnection getHttpConnection(boolean releaseReturnsToClient);
 
         @Override
-        UpgradableStreamingHttpResponse setPayloadBody(Publisher<Buffer> payloadBody);
+        UpgradableStreamingHttpResponse payloadBody(Publisher<Buffer> payloadBody);
 
         @Override
-        <T> UpgradableStreamingHttpResponse setPayloadBody(Publisher<T> payloadBody, HttpSerializer<T> serializer);
+        <T> UpgradableStreamingHttpResponse serializePayloadBody(Publisher<T> payloadBody, HttpSerializer<T> serializer);
 
         @Override
         <T> UpgradableStreamingHttpResponse transformPayloadBody(Function<Publisher<Buffer>, Publisher<T>> transformer,
@@ -239,7 +239,7 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
                 Function<Publisher<T>, Publisher<R>> transformer, HttpDeserializer<T> deserializer,
                 HttpSerializer<R> serializer) {
             return transformPayloadBody(bufferPublisher ->
-                    transformer.apply(deserializer.deserialize(getHeaders(), bufferPublisher)), serializer);
+                    transformer.apply(deserializer.deserialize(headers(), bufferPublisher)), serializer);
         }
 
         @Override
@@ -265,9 +265,9 @@ public abstract class StreamingHttpClient extends StreamingHttpRequester {
         UpgradableBlockingStreamingHttpResponse toBlockingStreamingResponse();
 
         @Override
-        UpgradableStreamingHttpResponse setVersion(HttpProtocolVersion version);
+        UpgradableStreamingHttpResponse version(HttpProtocolVersion version);
 
         @Override
-        UpgradableStreamingHttpResponse setStatus(HttpResponseStatus status);
+        UpgradableStreamingHttpResponse status(HttpResponseStatus status);
     }
 }

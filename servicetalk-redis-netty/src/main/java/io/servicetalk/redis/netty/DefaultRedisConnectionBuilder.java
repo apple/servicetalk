@@ -68,7 +68,7 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
      * @return {@code this}.
      * @throws IllegalStateException if accessing the cert/key throws when {@link InputStream#close()} is called.
      */
-    public DefaultRedisConnectionBuilder<ResolvedAddress> setSsl(@Nullable SslConfig config) {
+    public DefaultRedisConnectionBuilder<ResolvedAddress> ssl(@Nullable SslConfig config) {
         this.config.getTcpClientConfig().setSslConfig(config);
         return this;
     }
@@ -81,7 +81,7 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
      * @param value  the value.
      * @return {@code this}.
      */
-    public <T> DefaultRedisConnectionBuilder<ResolvedAddress> setSocketOption(SocketOption<T> option, T value) {
+    public <T> DefaultRedisConnectionBuilder<ResolvedAddress> socketOption(SocketOption<T> option, T value) {
         config.getTcpClientConfig().setSocketOption(option, value);
         return this;
     }
@@ -115,7 +115,7 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
      * @param maxPipelinedRequests Maximum number of pipelined requests per {@link RedisConnection}.
      * @return {@code this}.
      */
-    public DefaultRedisConnectionBuilder<ResolvedAddress> setMaxPipelinedRequests(int maxPipelinedRequests) {
+    public DefaultRedisConnectionBuilder<ResolvedAddress> maxPipelinedRequests(int maxPipelinedRequests) {
         config.setMaxPipelinedRequests(maxPipelinedRequests);
         return this;
     }
@@ -126,7 +126,7 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
      * @param idleConnectionTimeout the timeout {@link Duration} or {@code null} if no timeout configured.
      * @return {@code this}.
      */
-    public DefaultRedisConnectionBuilder<ResolvedAddress> setIdleConnectionTimeout(@Nullable Duration idleConnectionTimeout) {
+    public DefaultRedisConnectionBuilder<ResolvedAddress> idleConnectionTimeout(@Nullable Duration idleConnectionTimeout) {
         config.setIdleConnectionTimeout(idleConnectionTimeout);
         return this;
     }
@@ -137,7 +137,7 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
      * @param pingPeriod the {@link Duration} between keep-alive pings or {@code null} to disable pings.
      * @return {@code this}.
      */
-    public DefaultRedisConnectionBuilder<ResolvedAddress> setPingPeriod(@Nullable final Duration pingPeriod) {
+    public DefaultRedisConnectionBuilder<ResolvedAddress> pingPeriod(@Nullable final Duration pingPeriod) {
         config.setPingPeriod(pingPeriod);
         return this;
     }
@@ -151,7 +151,7 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
      * filtering.
      * @return {@code this}
      */
-    public DefaultRedisConnectionBuilder<ResolvedAddress> setConnectionFilterFactory(
+    public DefaultRedisConnectionBuilder<ResolvedAddress> connectionFilterFactory(
             UnaryOperator<RedisConnection> connectionFilterFactory) {
         this.connectionFilterFactory = requireNonNull(connectionFilterFactory);
         return this;

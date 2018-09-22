@@ -83,9 +83,9 @@ public class HttpConnectionConcurrentRequestsFilterTest {
             @Override
             public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
                 switch (reqCount.incrementAndGet()) {
-                    case 1: return success(reqRespFactory.ok().setPayloadBody(response1Publisher.getPublisher()));
-                    case 2: return success(reqRespFactory.ok().setPayloadBody(response2Publisher.getPublisher()));
-                    case 3: return success(reqRespFactory.ok().setPayloadBody(response3Publisher.getPublisher()));
+                    case 1: return success(reqRespFactory.ok().payloadBody(response1Publisher.getPublisher()));
+                    case 2: return success(reqRespFactory.ok().payloadBody(response2Publisher.getPublisher()));
+                    case 3: return success(reqRespFactory.ok().payloadBody(response3Publisher.getPublisher()));
                     default: return super.request(request);
                 }
             }
@@ -108,7 +108,7 @@ public class HttpConnectionConcurrentRequestsFilterTest {
         }
 
         // Consume the first response payload and ignore the content.
-        resp1.getPayloadBody().forEach(chunk -> { });
+        resp1.payloadBody().forEach(chunk -> { });
         response1Publisher.sendItems(EMPTY_BUFFER);
         response1Publisher.complete();
 

@@ -86,8 +86,8 @@ public class InternalSubscribedRedisConnectionTest {
         builder = DefaultRedisConnectionBuilder.<InetSocketAddress>forSubscribe(
                 new RedisClientConfig(new TcpClientConfig(true))
                 .setDeferSubscribeTillConnect(true))
-                .setPingPeriod(Duration.ofSeconds(1))
-                .setIdleConnectionTimeout(Duration.ofSeconds(2));
+                .pingPeriod(Duration.ofSeconds(1))
+                .idleConnectionTimeout(Duration.ofSeconds(2));
     }
 
     @AfterClass

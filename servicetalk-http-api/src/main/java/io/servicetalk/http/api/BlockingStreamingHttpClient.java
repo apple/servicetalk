@@ -222,18 +222,18 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
         ReservedBlockingStreamingHttpConnection getHttpConnection(boolean releaseReturnsToClient);
 
         @Override
-        UpgradableBlockingStreamingHttpResponse setPayloadBody(Iterable<Buffer> payloadBody);
+        UpgradableBlockingStreamingHttpResponse payloadBody(Iterable<Buffer> payloadBody);
 
         @Override
-        UpgradableBlockingStreamingHttpResponse setPayloadBody(CloseableIterable<Buffer> payloadBody);
+        UpgradableBlockingStreamingHttpResponse payloadBody(CloseableIterable<Buffer> payloadBody);
 
         @Override
-        <T> UpgradableBlockingStreamingHttpResponse setPayloadBody(Iterable<T> payloadBody,
-                                                                   HttpSerializer<T> serializer);
+        <T> UpgradableBlockingStreamingHttpResponse serializePayloadBody(Iterable<T> payloadBody,
+                                                                         HttpSerializer<T> serializer);
 
         @Override
-        <T> UpgradableBlockingStreamingHttpResponse setPayloadBody(CloseableIterable<T> payloadBody,
-                                                                   HttpSerializer<T> serializer);
+        <T> UpgradableBlockingStreamingHttpResponse serializePayloadBody(CloseableIterable<T> payloadBody,
+                                                                         HttpSerializer<T> serializer);
 
         @Override
         <T> UpgradableBlockingStreamingHttpResponse transformPayloadBody(
@@ -243,7 +243,7 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
         default <T, R> UpgradableBlockingStreamingHttpResponse transformPayloadBody(
                 Function<BlockingIterable<T>, BlockingIterable<R>> transformer, HttpDeserializer<T> deserializer,
                 HttpSerializer<R> serializer) {
-            return transformPayloadBody(buffers -> transformer.apply(getPayloadBody(deserializer)), serializer);
+            return transformPayloadBody(buffers -> transformer.apply(deserializePayloadBody(deserializer)), serializer);
         }
 
         @Override
@@ -269,9 +269,9 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
         UpgradableStreamingHttpResponse toStreamingResponse();
 
         @Override
-        UpgradableBlockingStreamingHttpResponse setVersion(HttpProtocolVersion version);
+        UpgradableBlockingStreamingHttpResponse version(HttpProtocolVersion version);
 
         @Override
-        UpgradableBlockingStreamingHttpResponse setStatus(HttpResponseStatus status);
+        UpgradableBlockingStreamingHttpResponse status(HttpResponseStatus status);
     }
 }

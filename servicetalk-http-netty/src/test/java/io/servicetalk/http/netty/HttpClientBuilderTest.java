@@ -67,7 +67,7 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
         when(disco.discover(any())).thenReturn(sdPub);
         int port = ((InetSocketAddress) serverContext.getListenAddress()).getPort();
         StreamingHttpClient requester = HttpClients.forSingleAddress("localhost", port)
-                .setServiceDiscoverer(disco)
+                .serviceDiscoverer(disco)
                 .buildStreaming(CTX);
         makeRequestValidateResponseAndClose(requester);
     }

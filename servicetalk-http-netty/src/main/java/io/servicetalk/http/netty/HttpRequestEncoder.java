@@ -89,7 +89,7 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
         // unit test should catch it.
         // - this is the rough equivalent of what is done in Netty in terms of sequencing. Instead of trying to
         // iterate a decoded list it makes some assumptions about the base class ordering of events.
-        methodQueue.add(msg.getMethod());
+        methodQueue.add(msg.method());
     }
 
     @Override
@@ -99,9 +99,9 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
 
     @Override
     protected void encodeInitialLine(Buffer stBuffer, HttpRequestMetaData message) {
-        message.getMethod().writeNameTo(stBuffer);
+        message.method().writeNameTo(stBuffer);
 
-        String uri = message.getRequestTarget();
+        String uri = message.requestTarget();
 
         if (uri.isEmpty()) {
             // Add " / " as absolute path if uri is not present.
@@ -138,7 +138,7 @@ final class HttpRequestEncoder extends HttpObjectEncoder<HttpRequestMetaData> {
             }
         }
 
-        message.getVersion().writeHttpVersionTo(stBuffer);
+        message.version().writeHttpVersionTo(stBuffer);
         stBuffer.writeShort(CRLF_SHORT);
     }
 }

@@ -81,29 +81,29 @@ class DefaultBlockingStreamingHttpResponse<P> extends DefaultHttpResponseMetaDat
     }
 
     @Override
-    public BlockingIterable<Buffer> getPayloadBody() {
+    public BlockingIterable<Buffer> payloadBody() {
         return new HttpBufferFilterIterable(payloadBody);
     }
 
     @Override
-    public final BlockingStreamingHttpResponse setPayloadBody(final Iterable<Buffer> payloadBody) {
+    public final BlockingStreamingHttpResponse payloadBody(final Iterable<Buffer> payloadBody) {
         return transformPayloadBody(consumeOldPayloadBody(BlockingIterables.from(payloadBody)));
     }
 
     @Override
-    public final BlockingStreamingHttpResponse setPayloadBody(final CloseableIterable<Buffer> payloadBody) {
+    public final BlockingStreamingHttpResponse payloadBody(final CloseableIterable<Buffer> payloadBody) {
         return transformPayloadBody(consumeOldPayloadBody(from(payloadBody)));
     }
 
     @Override
-    public final <T> BlockingStreamingHttpResponse setPayloadBody(final Iterable<T> payloadBody,
-                                                                  final HttpSerializer<T> serializer) {
+    public final <T> BlockingStreamingHttpResponse serializePayloadBody(final Iterable<T> payloadBody,
+                                                                        final HttpSerializer<T> serializer) {
         return transformPayloadBody(consumeOldPayloadBodySerialized(BlockingIterables.from(payloadBody)), serializer);
     }
 
     @Override
-    public final <T> BlockingStreamingHttpResponse setPayloadBody(final CloseableIterable<T> payloadBody,
-                                                                  final HttpSerializer<T> serializer) {
+    public final <T> BlockingStreamingHttpResponse serializePayloadBody(final CloseableIterable<T> payloadBody,
+                                                                        final HttpSerializer<T> serializer) {
         return transformPayloadBody(consumeOldPayloadBodySerialized(from(payloadBody)), serializer);
     }
 
@@ -112,14 +112,14 @@ class DefaultBlockingStreamingHttpResponse<P> extends DefaultHttpResponseMetaDat
             final Function<BlockingIterable<Buffer>, BlockingIterable<T>> transformer,
             final HttpSerializer<T> serializer) {
         return new BufferBlockingStreamingHttpResponse(this, allocator,
-                serializer.serialize(getHeaders(), transformer.apply(getPayloadBody()), allocator),
+                serializer.serialize(headers(), transformer.apply(payloadBody()), allocator),
                 trailersSingle);
     }
 
     @Override
     public final BlockingStreamingHttpResponse transformPayloadBody(
             final UnaryOperator<BlockingIterable<Buffer>> transformer) {
-        return new BufferBlockingStreamingHttpResponse(this, allocator, transformer.apply(getPayloadBody()),
+        return new BufferBlockingStreamingHttpResponse(this, allocator, transformer.apply(payloadBody()),
                 trailersSingle);
     }
 
@@ -136,7 +136,7 @@ class DefaultBlockingStreamingHttpResponse<P> extends DefaultHttpResponseMetaDat
                                                        final BiFunction<T, HttpHeaders, HttpHeaders> trailersTrans) {
         final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
         return new BufferBlockingStreamingHttpResponse(this, allocator,
-                new HttpBuffersAndTrailersIterable<>(getPayloadBody(), stateSupplier,
+                new HttpBuffersAndTrailersIterable<>(payloadBody(), stateSupplier,
                         transformer, trailersTrans, trailersSingle, outTrailersSingle),
                 outTrailersSingle);
     }
@@ -159,19 +159,19 @@ class DefaultBlockingStreamingHttpResponse<P> extends DefaultHttpResponseMetaDat
 
     @Override
     public StreamingHttpResponse toStreamingResponse() {
-        return new DefaultStreamingHttpResponse<>(getStatus(), getVersion(), getHeaders(), trailersSingle, allocator,
+        return new DefaultStreamingHttpResponse<>(status(), version(), headers(), trailersSingle, allocator,
                 Publisher.from(payloadBody));
     }
 
     @Override
-    public final BlockingStreamingHttpResponse setVersion(final HttpProtocolVersion version) {
-        super.setVersion(version);
+    public final BlockingStreamingHttpResponse version(final HttpProtocolVersion version) {
+        super.version(version);
         return this;
     }
 
     @Override
-    public final BlockingStreamingHttpResponse setStatus(final HttpResponseStatus status) {
-        super.setStatus(status);
+    public final BlockingStreamingHttpResponse status(final HttpResponseStatus status) {
+        super.status(status);
         return this;
     }
 

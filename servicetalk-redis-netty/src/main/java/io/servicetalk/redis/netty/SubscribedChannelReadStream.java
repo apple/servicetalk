@@ -179,17 +179,17 @@ final class SubscribedChannelReadStream extends Publisher<SubscribedChannelReadS
         }
 
         @Override
-        public Buffer getBufferValue() {
+        public Buffer bufferValue() {
             if ((data instanceof Null) || (data instanceof CompleteBulkString)) {
-                return data.getBufferValue();
+                return data.bufferValue();
             }
             throw new CoercionException(data, Buffer.class);
         }
 
         @Override
-        public CharSequence getCharSequenceValue() {
+        public CharSequence charSequenceValue() {
             String string = RedisUtils.convertToString(data);
-            return string == null ? data.getCharSequenceValue() : string;
+            return string == null ? data.charSequenceValue() : string;
         }
 
         @Override
@@ -276,7 +276,7 @@ final class SubscribedChannelReadStream extends Publisher<SubscribedChannelReadS
                             + ". Current State: " + aggregationState);
                 }
                 aggregationState = STATE_AGGR_TYPE;
-                msgArraySize = (int) data.getLongValue();
+                msgArraySize = (int) data.longValue();
                 // We request `size` because at least `size` CompleteRedisData are expected
                 subscription.request(msgArraySize);
                 return;
@@ -288,7 +288,7 @@ final class SubscribedChannelReadStream extends Publisher<SubscribedChannelReadS
             }
 
             if (data instanceof RedisData.BulkStringSize) {
-                final int bufferSize = data.getIntValue();
+                final int bufferSize = data.intValue();
                 currentDataBuffer = allocator.newBuffer(bufferSize);
                 // Request 1 because there's at least one extra BulkStringChunk needed to complete this BulkString
                 subscription.request(1);
@@ -306,7 +306,7 @@ final class SubscribedChannelReadStream extends Publisher<SubscribedChannelReadS
                     throw new IllegalStateException("Received a bulk string chunk without size.");
                 }
 
-                currentDataBuffer.writeBytes(data.getBufferValue());
+                currentDataBuffer.writeBytes(data.bufferValue());
                 if (data instanceof RedisData.LastBulkStringChunk) {
                     CompleteBulkString val = new CompleteBulkString(currentDataBuffer);
                     currentDataBuffer = null;

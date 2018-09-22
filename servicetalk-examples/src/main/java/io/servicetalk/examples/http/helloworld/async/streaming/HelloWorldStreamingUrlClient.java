@@ -33,7 +33,7 @@ public final class HelloWorldStreamingUrlClient {
 
             client.request(client.get("http://localhost:8080/sayHello"))
                     .doBeforeSuccess(response -> System.out.println(response.toString((name, value) -> value)))
-                    .flatMapPublisher(resp -> resp.getPayloadBody(deserializeText()))
+                    .flatMapPublisher(resp -> resp.deserializePayloadBody(deserializeText()))
                     .doFinally(responseProcessedLatch::countDown)
                     .forEach(System.out::println);
 

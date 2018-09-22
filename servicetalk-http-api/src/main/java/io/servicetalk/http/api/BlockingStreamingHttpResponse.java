@@ -36,7 +36,7 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
      * Get the underlying payload as a {@link Publisher} of {@link Buffer}s.
      * @return The {@link Publisher} of {@link Buffer} representation of the underlying
      */
-    BlockingIterable<Buffer> getPayloadBody();
+    BlockingIterable<Buffer> payloadBody();
 
     /**
      * Get and deserialize the payload body.
@@ -44,8 +44,8 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
      * @param <T> The resulting type of the deserialization operation.
      * @return The results of the deserialization operation.
      */
-    default <T> BlockingIterable<T> getPayloadBody(HttpDeserializer<T> deserializer) {
-        return deserializer.deserialize(getHeaders(), getPayloadBody());
+    default <T> BlockingIterable<T> deserializePayloadBody(HttpDeserializer<T> deserializer) {
+        return deserializer.deserialize(headers(), payloadBody());
     }
 
     /**
@@ -60,7 +60,7 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
      * @param payloadBody The new payload body.
      * @return A {@link BlockingStreamingHttpResponse} with the new serialized payload body.
      */
-    BlockingStreamingHttpResponse setPayloadBody(Iterable<Buffer> payloadBody);
+    BlockingStreamingHttpResponse payloadBody(Iterable<Buffer> payloadBody);
 
     /**
      * Set the underlying payload body.
@@ -74,7 +74,7 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
      * @param payloadBody The new payload body.
      * @return A {@link BlockingStreamingHttpResponse} with the new serialized payload body.
      */
-    BlockingStreamingHttpResponse setPayloadBody(CloseableIterable<Buffer> payloadBody);
+    BlockingStreamingHttpResponse payloadBody(CloseableIterable<Buffer> payloadBody);
 
     /**
      * Set the underlying payload body with the result of serialization.
@@ -90,7 +90,7 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
      * @param <T> The type of objects to serialize.
      * @return A {@link BlockingStreamingHttpResponse} with the new serialized payload body.
      */
-    <T> BlockingStreamingHttpResponse setPayloadBody(Iterable<T> payloadBody, HttpSerializer<T> serializer);
+    <T> BlockingStreamingHttpResponse serializePayloadBody(Iterable<T> payloadBody, HttpSerializer<T> serializer);
 
     /**
      * Set the underlying payload body with the result of serialization.
@@ -106,7 +106,8 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
      * @param <T> The type of objects to serialize.
      * @return A {@link BlockingStreamingHttpResponse} with the new serialized payload body.
      */
-    <T> BlockingStreamingHttpResponse setPayloadBody(CloseableIterable<T> payloadBody, HttpSerializer<T> serializer);
+    <T> BlockingStreamingHttpResponse serializePayloadBody(CloseableIterable<T> payloadBody,
+                                                           HttpSerializer<T> serializer);
 
     /**
      * Transform the underlying payload body with the result of serialization.
@@ -136,7 +137,7 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
     default <T, R> BlockingStreamingHttpResponse transformPayloadBody(
             Function<BlockingIterable<T>, BlockingIterable<R>> transformer, HttpDeserializer<T> deserializer,
             HttpSerializer<R> serializer) {
-        return transformPayloadBody(buffers -> transformer.apply(getPayloadBody(deserializer)), serializer);
+        return transformPayloadBody(buffers -> transformer.apply(deserializePayloadBody(deserializer)), serializer);
     }
 
     /**
@@ -199,8 +200,8 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
     StreamingHttpResponse toStreamingResponse();
 
     @Override
-    BlockingStreamingHttpResponse setVersion(HttpProtocolVersion version);
+    BlockingStreamingHttpResponse version(HttpProtocolVersion version);
 
     @Override
-    BlockingStreamingHttpResponse setStatus(HttpResponseStatus status);
+    BlockingStreamingHttpResponse status(HttpResponseStatus status);
 }

@@ -76,10 +76,10 @@ final class GatewayService extends HttpService {
 
         return recommendationsClient.request(recommendationsClient.get("/recommendations/aggregated?userId=" + userId))
                 // Since HTTP payload is a buffer, we deserialize into List<Recommendation>>.
-                .map(response -> response.getPayloadBody(serializers.deserializerFor(typeOfRecommendation)))
+                .map(response -> response.payloadBody(serializers.deserializerFor(typeOfRecommendation)))
                 .flatMap(this::queryRecommendationDetails)
                 .map(fullRecommendations -> factory.ok()
-                        .setPayloadBody(fullRecommendations, serializers.serializerFor(typeOfFullRecommendation)));
+                        .payloadBody(fullRecommendations, serializers.serializerFor(typeOfFullRecommendation)));
     }
 
     private Single<List<FullRecommendation>> queryRecommendationDetails(List<Recommendation> recommendations) {
@@ -90,17 +90,17 @@ final class GatewayService extends HttpService {
                     Single<Metadata> metadata =
                             metadataClient.request(metadataClient.get("/metadata?entityId=" + reco.getEntityId()))
                                     // Since HTTP payload is a buffer, we deserialize into Metadata.
-                                    .map(response -> response.getPayloadBody(serializers.deserializerFor(Metadata.class)));
+                                    .map(response -> response.payloadBody(serializers.deserializerFor(Metadata.class)));
 
                     Single<User> user =
                             userClient.request(userClient.get("/user?userId=" + reco.getEntityId()))
                                     // Since HTTP payload is a buffer, we deserialize into User.
-                                    .map(response -> response.getPayloadBody(serializers.deserializerFor(User.class)));
+                                    .map(response -> response.payloadBody(serializers.deserializerFor(User.class)));
 
                     Single<Rating> rating =
                             ratingsClient.request(ratingsClient.get("/rating?entityId=" + reco.getEntityId()))
                                     // Since HTTP payload is a buffer, we deserialize into Rating.
-                                    .map(response -> response.getPayloadBody(serializers.deserializerFor(Rating.class)))
+                                    .map(response -> response.payloadBody(serializers.deserializerFor(Rating.class)))
                                     // We consider ratings to be a non-critical data and hence we substitute the
                                     // response with a static "unavailable" rating when the rating service is
                                     // unavailable or provides a bad response. This is typically referred to as a

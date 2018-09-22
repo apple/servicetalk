@@ -30,9 +30,9 @@ public final class BlockingPojoUrlClient {
         HttpSerializationProvider serializer = serializeJson(new JacksonSerializationProvider());
         try (BlockingHttpClient client = HttpClients.forMultiAddressUrl().buildBlocking()) {
             HttpResponse resp = client.request(client.get("http://localhost:8080/pojo")
-                    .setPayloadBody(new PojoRequest("1"), serializer.serializerFor(PojoRequest.class)));
+                    .serializePayloadBody(new PojoRequest("1"), serializer.serializerFor(PojoRequest.class)));
             System.out.println(resp.toString((name, value) -> value));
-            System.out.println(resp.getPayloadBody(serializer.deserializerFor(MyPojo.class)));
+            System.out.println(resp.payloadBody(serializer.deserializerFor(MyPojo.class)));
         }
     }
 }

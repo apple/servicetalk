@@ -125,7 +125,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
      * @return {@code this}.
      * @throws IllegalStateException if accessing the cert/key throws when {@link InputStream#close()} is called.
      */
-    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> setSsl(@Nullable SslConfig config) {
+    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> ssl(@Nullable SslConfig config) {
         this.config.getTcpClientConfig().setSslConfig(config);
         return this;
     }
@@ -138,7 +138,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
      * @param value the value.
      * @return {@code this}.
      */
-    public <T> DefaultPartitionedRedisClientBuilder<ResolvedAddress> setSocketOption(SocketOption<T> option, T value) {
+    public <T> DefaultPartitionedRedisClientBuilder<ResolvedAddress> socketOption(SocketOption<T> option, T value) {
         config.getTcpClientConfig().setSocketOption(option, value);
         return this;
     }
@@ -172,7 +172,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
      * @param maxPipelinedRequests Maximum number of pipelined requests per {@link RedisConnection}.
      * @return {@code this}.
      */
-    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> setMaxPipelinedRequests(int maxPipelinedRequests) {
+    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> maxPipelinedRequests(int maxPipelinedRequests) {
         config.setMaxPipelinedRequests(maxPipelinedRequests);
         return this;
     }
@@ -183,7 +183,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
      * @param idleConnectionTimeout the timeout {@link Duration} or {@code null} if no timeout configured.
      * @return {@code this}.
      */
-    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> setIdleConnectionTimeout(
+    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> idleConnectionTimeout(
             @Nullable Duration idleConnectionTimeout) {
         config.setIdleConnectionTimeout(idleConnectionTimeout);
         return this;
@@ -195,7 +195,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
      * @param pingPeriod the {@link Duration} between keep-alive pings or {@code null} to disable pings.
      * @return {@code this}.
      */
-    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> setPingPeriod(@Nullable final Duration pingPeriod) {
+    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> pingPeriod(@Nullable final Duration pingPeriod) {
         config.setPingPeriod(pingPeriod);
         return this;
     }
@@ -209,7 +209,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
      * partition.
      * @return {@code this}.
      */
-    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> setServiceDiscoveryMaxQueueSize(
+    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> serviceDiscoveryMaxQueueSize(
             int serviceDiscoveryMaxQueueSize) {
         if (serviceDiscoveryMaxQueueSize <= 0) {
             throw new IllegalArgumentException("serviceDiscoveryMaxQueueSize: " + serviceDiscoveryMaxQueueSize
@@ -228,7 +228,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
      * @param clientFilterFactory {@link Function} to filter the used {@link RedisClient}.
      * @return {@code this}.
      */
-    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> setClientFilterFactory(
+    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> clientFilterFactory(
             RedisClientFilterFactory clientFilterFactory) {
         this.clientFilterFactory = requireNonNull(clientFilterFactory);
         return this;
@@ -243,7 +243,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
      * @param connectionFilterFactory {@link UnaryOperator} to filter the used {@link RedisConnection}.
      * @return {@code this}.
      */
-    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> setConnectionFilterFactory(
+    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> connectionFilterFactory(
             UnaryOperator<RedisConnection> connectionFilterFactory) {
         this.connectionFilterFactory = requireNonNull(connectionFilterFactory);
         return this;
@@ -258,7 +258,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
      * @param partitionedClientFilterFactory {@link UnaryOperator} to filter the used {@link PartitionedRedisClient}.
      * @return {@code this}.
      */
-    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> setPartitionedClientFilterFactory(
+    public DefaultPartitionedRedisClientBuilder<ResolvedAddress> partitionedClientFilterFactory(
             UnaryOperator<PartitionedRedisClient> partitionedClientFilterFactory) {
         this.partitionedClientFilterFactory = requireNonNull(partitionedClientFilterFactory);
         return this;

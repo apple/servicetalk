@@ -53,7 +53,7 @@ final class UserBackend extends HttpService {
 
         // Create a random rating
         User user = new User(userId, createRandomString(5), createRandomString(3));
-        return success(responseFactory.ok().setPayloadBody(user, serializer.serializerFor(User.class)));
+        return success(responseFactory.ok().payloadBody(user, serializer.serializerFor(User.class)));
     }
 
     static HttpService newUserService(HttpSerializationProvider serializer) {

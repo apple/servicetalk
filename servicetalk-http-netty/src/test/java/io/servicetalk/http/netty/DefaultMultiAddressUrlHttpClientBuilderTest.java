@@ -82,7 +82,7 @@ public class DefaultMultiAddressUrlHttpClientBuilderTest {
     @SuppressWarnings("unchecked")
     public void buildWithProvidedServiceDiscoverer() throws Exception {
         ServiceDiscoverer<HostAndPort, InetSocketAddress> mockedServiceDiscoverer = mock(ServiceDiscoverer.class);
-        StreamingHttpRequester newRequester = HttpClients.forMultiAddressUrl().setServiceDiscoverer(mockedServiceDiscoverer).buildStreaming(CTX);
+        StreamingHttpRequester newRequester = HttpClients.forMultiAddressUrl().serviceDiscoverer(mockedServiceDiscoverer).buildStreaming(CTX);
         awaitIndefinitely(newRequester.closeAsync());
         verify(mockedServiceDiscoverer, never()).closeAsync();
     }

@@ -54,70 +54,70 @@ final class BufferHttpRequest extends DefaultHttpRequestMetaData implements Http
     }
 
     @Override
-    public Buffer getPayloadBody() {
+    public Buffer payloadBody() {
         return payloadBody;
     }
 
     @Override
-    public HttpHeaders getTrailers() {
+    public HttpHeaders trailers() {
         return trailers;
     }
 
     @Override
-    public HttpRequest setPayloadBody(final Buffer payloadBody) {
+    public HttpRequest payloadBody(final Buffer payloadBody) {
         return new BufferHttpRequest(this, allocator, trailers, payloadBody);
     }
 
     @Override
-    public <T> HttpRequest setPayloadBody(final T pojo, final HttpSerializer<T> serializer) {
-        return new BufferHttpRequest(this, allocator, trailers, serializer.serialize(getHeaders(), pojo, allocator));
+    public <T> HttpRequest serializePayloadBody(final T pojo, final HttpSerializer<T> serializer) {
+        return new BufferHttpRequest(this, allocator, trailers, serializer.serialize(headers(), pojo, allocator));
     }
 
     @Override
-    public HttpRequest setRawPath(final String path) {
-        super.setRawPath(path);
+    public HttpRequest rawPath(final String path) {
+        super.rawPath(path);
         return this;
     }
 
     @Override
-    public HttpRequest setPath(final String path) {
-        super.setPath(path);
+    public HttpRequest path(final String path) {
+        super.path(path);
         return this;
     }
 
     @Override
-    public HttpRequest setRawQuery(final String query) {
-        super.setRawQuery(query);
+    public HttpRequest rawQuery(final String query) {
+        super.rawQuery(query);
         return this;
     }
 
     @Override
-    public HttpRequest setVersion(final HttpProtocolVersion version) {
-        super.setVersion(version);
+    public HttpRequest version(final HttpProtocolVersion version) {
+        super.version(version);
         return this;
     }
 
     @Override
-    public HttpRequest setMethod(final HttpRequestMethod method) {
-        super.setMethod(method);
+    public HttpRequest method(final HttpRequestMethod method) {
+        super.method(method);
         return this;
     }
 
     @Override
-    public HttpRequest setRequestTarget(final String requestTarget) {
-        super.setRequestTarget(requestTarget);
+    public HttpRequest requestTarget(final String requestTarget) {
+        super.requestTarget(requestTarget);
         return this;
     }
 
     @Override
     public StreamingHttpRequest toStreamingRequest() {
-        return new BufferStreamingHttpRequest(getMethod(), getRequestTarget(), getVersion(),
-                getHeaders(), success(trailers), allocator, just(payloadBody));
+        return new BufferStreamingHttpRequest(method(), requestTarget(), version(),
+                headers(), success(trailers), allocator, just(payloadBody));
     }
 
     @Override
     public BlockingStreamingHttpRequest toBlockingStreamingRequest() {
-        return new BufferBlockingStreamingHttpRequest(getMethod(), getRequestTarget(), getVersion(), getHeaders(),
+        return new BufferBlockingStreamingHttpRequest(method(), requestTarget(), version(), headers(),
                 success(trailers), allocator, singletonBlockingIterable(payloadBody));
     }
 

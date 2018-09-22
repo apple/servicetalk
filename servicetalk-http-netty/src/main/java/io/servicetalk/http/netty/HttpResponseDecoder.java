@@ -71,11 +71,11 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     @Override
     protected boolean isContentAlwaysEmpty(final HttpResponseMetaData msg) {
         // Don't poll from the queue for informational responses, because the real response is expected next.
-        if (msg.getStatus().getStatusClass() == INFORMATIONAL_1XX) {
+        if (msg.status().getStatusClass() == INFORMATIONAL_1XX) {
             // One exception: Hixie 76 websocket handshake response
-            return !(msg.getStatus() == SWITCHING_PROTOCOLS &&
-                    !msg.getHeaders().contains(SEC_WEBSOCKET_ACCEPT) &&
-                     msg.getHeaders().contains(UPGRADE, WEBSOCKET, true));
+            return !(msg.status() == SWITCHING_PROTOCOLS &&
+                    !msg.headers().contains(SEC_WEBSOCKET_ACCEPT) &&
+                     msg.headers().contains(UPGRADE, WEBSOCKET, true));
         }
 
         // This method has side effects on the methodQueue for the following reasons:
@@ -92,7 +92,7 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
         // We are either switching protocols, and we will no longer process any more HTTP/1.x responses, or the protocol
         // rules prevent a content body. Also 204 and 304 are always empty.
         // https://tools.ietf.org/html/rfc7230#section-3.3.3
-        return method == HEAD || method == CONNECT || msg.getStatus() == NO_CONTENT || msg.getStatus() == NOT_MODIFIED;
+        return method == HEAD || method == CONNECT || msg.status() == NO_CONTENT || msg.status() == NOT_MODIFIED;
     }
 
     private static HttpResponseStatus nettyBufferToHttpStatus(ByteBuf statusCode, ByteBuf reasonPhrase) {

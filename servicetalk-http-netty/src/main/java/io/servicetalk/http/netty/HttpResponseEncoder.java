@@ -90,11 +90,11 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
 
     @Override
     protected void encodeInitialLine(Buffer stBuffer, HttpResponseMetaData message) {
-        message.getVersion().writeHttpVersionTo(stBuffer);
+        message.version().writeHttpVersionTo(stBuffer);
         stBuffer.writeByte(SP);
-        message.getStatus().writeCodeTo(stBuffer);
+        message.status().writeCodeTo(stBuffer);
         stBuffer.writeByte(SP);
-        message.getStatus().writeReasonPhraseTo(stBuffer);
+        message.status().writeReasonPhraseTo(stBuffer);
         stBuffer.writeShort(CRLF_SHORT);
     }
 
@@ -111,11 +111,11 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
         // iterate a decoded list it makes some assumptions about the base class ordering of events.
         HttpRequestMethod method = methodQueue.poll();
         if (isAlwaysEmpty) {
-            HttpResponseStatus status = msg.getStatus();
+            HttpResponseStatus status = msg.status();
             if (status.getStatusClass() == INFORMATIONAL_1XX ||
                     status.getCode() == NO_CONTENT.getCode()) {
 
-                HttpHeaders headers = msg.getHeaders();
+                HttpHeaders headers = msg.headers();
                 // Stripping Content-Length:
                 // See https://tools.ietf.org/html/rfc7230#section-3.3.2
                 headers.remove(CONTENT_LENGTH);
@@ -124,10 +124,10 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
                 // See https://tools.ietf.org/html/rfc7230#section-3.3.1
                 headers.remove(TRANSFER_ENCODING);
             }
-        } else if (method == CONNECT && msg.getStatus().getStatusClass() == SUCCESS_2XX) {
+        } else if (method == CONNECT && msg.status().getStatusClass() == SUCCESS_2XX) {
             // Stripping Transfer-Encoding:
             // See https://tools.ietf.org/html/rfc7230#section-3.3.1
-            msg.getHeaders().remove(TRANSFER_ENCODING);
+            msg.headers().remove(TRANSFER_ENCODING);
         }
     }
 
@@ -135,14 +135,14 @@ final class HttpResponseEncoder extends HttpObjectEncoder<HttpResponseMetaData> 
     protected boolean isContentAlwaysEmpty(HttpResponseMetaData msg) {
         // Correctly handle special cases as stated in:
         // https://tools.ietf.org/html/rfc7230#section-3.3.3
-        HttpResponseStatus status = msg.getStatus();
+        HttpResponseStatus status = msg.status();
 
         if (status.getStatusClass() == INFORMATIONAL_1XX) {
             if (status.getCode() == SWITCHING_PROTOCOLS.getCode()) {
                 // We need special handling for WebSockets version 00 as it will include an body.
                 // Fortunally this version should not really be used in the wild very often.
                 // See https://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-00#section-1.2
-                return msg.getHeaders().contains(SEC_WEBSOCKET_VERSION);
+                return msg.headers().contains(SEC_WEBSOCKET_VERSION);
             }
             return true;
         }

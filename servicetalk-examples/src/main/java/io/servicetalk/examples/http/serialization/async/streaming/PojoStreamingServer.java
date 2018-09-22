@@ -31,7 +31,7 @@ public class PojoStreamingServer {
         new DefaultHttpServerStarter()
                 .startStreaming(8080, (ctx, request, responseFactory) ->
                         success(responseFactory.ok()
-                                .setPayloadBody(request.getPayloadBody(serializer.deserializerFor(PojoRequest.class))
+                                .serializePayloadBody(request.deserializePayloadBody(serializer.deserializerFor(PojoRequest.class))
                                                 .map(req -> new MyPojo(req.getId(), "foo")),
                                         serializer.serializerFor(MyPojo.class))))
                 .toFuture().get()

@@ -45,13 +45,13 @@ final class BufferBlockingStreamingHttpRequest extends DefaultBlockingStreamingH
     }
 
     @Override
-    public BlockingIterable<Buffer> getPayloadBody() {
+    public BlockingIterable<Buffer> payloadBody() {
         return payloadBody;
     }
 
     @Override
     public StreamingHttpRequest toStreamingRequest() {
-        return new BufferStreamingHttpRequest(getMethod(), getRequestTarget(), getVersion(), getHeaders(),
+        return new BufferStreamingHttpRequest(method(), requestTarget(), version(), headers(),
                 trailersSingle, allocator, from(payloadBody));
     }
 }

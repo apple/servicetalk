@@ -140,7 +140,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
         return new Publisher<RedisData>() {
             @Override
             protected void handleSubscribe(Subscriber<? super RedisData> subscriber) {
-                final RedisProtocolSupport.Command cmd = request.getCommand();
+                final RedisProtocolSupport.Command cmd = request.command();
                 boolean flaggedSkipQuit = cmd == MONITOR || cmd == SUBSCRIBE || cmd == PSUBSCRIBE;
                 if (flaggedSkipQuit) {
                     skipQuitWhenClosedUpdater.incrementAndGet(PipelinedRedisConnection.this);

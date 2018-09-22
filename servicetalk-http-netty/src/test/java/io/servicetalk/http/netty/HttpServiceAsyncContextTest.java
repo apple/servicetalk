@@ -124,11 +124,11 @@ public class HttpServiceAsyncContextTest {
             public Single<StreamingHttpResponse> handle(
                     final HttpServiceContext ctx, final StreamingHttpRequest request,
                     final StreamingHttpResponseFactory factory) {
-                request.getPayloadBody().ignoreElements().subscribe();
+                request.payloadBody().ignoreElements().subscribe();
                 CharSequence requestId = AsyncContext.get(K1);
                 if (requestId != null) {
                     StreamingHttpResponse response = factory.ok();
-                    response.getHeaders().set(REQUEST_ID_HEADER, requestId);
+                    response.headers().set(REQUEST_ID_HEADER, requestId);
                     return success(response);
                 } else {
                     return success(factory.newResponse(INTERNAL_SERVER_ERROR));
@@ -140,7 +140,7 @@ public class HttpServiceAsyncContextTest {
             public Single<StreamingHttpResponse> handle(
                     final HttpServiceContext ctx, final StreamingHttpRequest request,
                     final StreamingHttpResponseFactory factory) {
-                CharSequence requestId = request.getHeaders().getAndRemove(REQUEST_ID_HEADER);
+                CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
                 if (requestId != null) {
                     AsyncContext.put(K1, requestId);
                 }
@@ -182,11 +182,11 @@ public class HttpServiceAsyncContextTest {
     private static void makeClientRequestWithId(StreamingHttpRequester connection, String requestId)
             throws ExecutionException, InterruptedException {
         StreamingHttpRequest request = connection.get("/");
-        request.getHeaders().set(REQUEST_ID_HEADER, requestId);
+        request.headers().set(REQUEST_ID_HEADER, requestId);
         StreamingHttpResponse response = connection.request(request).toFuture().get();
-        assertEquals(OK, response.getStatus());
-        assertTrue(request.getHeaders().contains(REQUEST_ID_HEADER, requestId));
-        response.getPayloadBody().ignoreElements().subscribe();
+        assertEquals(OK, response.status());
+        assertTrue(request.headers().contains(REQUEST_ID_HEADER, requestId));
+        response.payloadBody().ignoreElements().subscribe();
     }
 
     private static StreamingHttpService newEmptyAsyncContextService() {
@@ -195,16 +195,16 @@ public class HttpServiceAsyncContextTest {
             public Single<StreamingHttpResponse> handle(
                     final HttpServiceContext ctx, final StreamingHttpRequest request,
                     final StreamingHttpResponseFactory factory) {
-                request.getPayloadBody().ignoreElements().subscribe();
+                request.payloadBody().ignoreElements().subscribe();
 
                 if (!AsyncContext.isEmpty()) {
                     return success(factory.serverError());
                 }
-                CharSequence requestId = request.getHeaders().getAndRemove(REQUEST_ID_HEADER);
+                CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
                 if (requestId != null) {
                     AsyncContext.put(K1, requestId);
                     StreamingHttpResponse response = factory.ok();
-                    response.getHeaders().set(REQUEST_ID_HEADER, requestId);
+                    response.headers().set(REQUEST_ID_HEADER, requestId);
                     return success(response);
                 } else {
                     return success(factory.newResponse(BAD_REQUEST));

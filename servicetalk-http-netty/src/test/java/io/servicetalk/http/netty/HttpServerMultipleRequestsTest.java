@@ -72,12 +72,12 @@ public class HttpServerMultipleRequestsTest {
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
-                request.getPayloadBody().ignoreElements().subscribe();
+                request.payloadBody().ignoreElements().subscribe();
 
-                CharSequence requestId = request.getHeaders().get(REQUEST_ID_HEADER);
+                CharSequence requestId = request.headers().get(REQUEST_ID_HEADER);
                 if (requestId != null) {
                     StreamingHttpResponse response = responseFactory.ok();
-                    response.getHeaders().set(REQUEST_ID_HEADER, requestId);
+                    response.headers().set(REQUEST_ID_HEADER, requestId);
                     return success(response);
                 } else {
                     return success(responseFactory.newResponse(BAD_REQUEST));
@@ -125,10 +125,10 @@ public class HttpServerMultipleRequestsTest {
     private static void makeClientRequestWithId(StreamingHttpRequester connection, String requestId)
             throws ExecutionException, InterruptedException {
         StreamingHttpRequest request = connection.get("/");
-        request.getHeaders().set(REQUEST_ID_HEADER, requestId);
+        request.headers().set(REQUEST_ID_HEADER, requestId);
         StreamingHttpResponse response = connection.request(request).toFuture().get();
-        assertEquals(OK, response.getStatus());
-        assertTrue(request.getHeaders().contains(REQUEST_ID_HEADER, requestId));
-        response.getPayloadBody().ignoreElements().subscribe();
+        assertEquals(OK, response.status());
+        assertTrue(request.headers().contains(REQUEST_ID_HEADER, requestId));
+        response.payloadBody().ignoreElements().subscribe();
     }
 }

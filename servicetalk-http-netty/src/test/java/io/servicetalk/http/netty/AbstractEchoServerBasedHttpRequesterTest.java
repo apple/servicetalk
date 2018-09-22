@@ -77,14 +77,14 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
                                                     final StreamingHttpRequest request,
                                                     final StreamingHttpResponseFactory factory) {
 
-            StreamingHttpResponse resp = factory.ok().setPayloadBody(request.getPayloadBody());
+            StreamingHttpResponse resp = factory.ok().payloadBody(request.payloadBody());
 
-            resp.getHeaders()
-                    .set("test-req-target", request.getRequestTarget())
-                    .set("test-req-method", request.getMethod().toString());
+            resp.headers()
+                    .set("test-req-target", request.requestTarget())
+                    .set("test-req-method", request.method().toString());
 
-            HttpHeaders headers = resp.getHeaders();
-            request.getHeaders().forEach(entry -> headers.set("test-req-header-" + entry.getKey(), entry.getValue()));
+            HttpHeaders headers = resp.headers();
+            request.headers().forEach(entry -> headers.set("test-req-header-" + entry.getKey(), entry.getValue()));
             return Single.success(resp);
         }
     }
@@ -92,22 +92,22 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
     public static void makeRequestValidateResponseAndClose(StreamingHttpRequester requester)
             throws ExecutionException, InterruptedException {
         try {
-            StreamingHttpRequest request = requester.get("/request?foo=bar&foo=baz").setPayloadBody(
+            StreamingHttpRequest request = requester.get("/request?foo=bar&foo=baz").payloadBody(
                     just(DEFAULT_ALLOCATOR.fromAscii("Testing123")));
-            request.getHeaders().set(HttpHeaderNames.HOST, "mock.servicetalk.io");
+            request.headers().set(HttpHeaderNames.HOST, "mock.servicetalk.io");
 
             StreamingHttpResponse resp = awaitIndefinitelyNonNull(requester.request(request).retryWhen(
                     retryWithExponentialBackoff(10, t -> true, Duration.ofMillis(100),
                             CTX.getExecutor())));
 
-            assertThat(resp.getStatus().getCode(), equalTo(200));
+            assertThat(resp.status().getCode(), equalTo(200));
 
-            Single<String> respBody = resp.getPayloadBody().reduce(StringBuilder::new, (sb, buf) -> {
+            Single<String> respBody = resp.payloadBody().reduce(StringBuilder::new, (sb, buf) -> {
                 sb.append(buf.toString(UTF_8));
                 return sb;
             }).map(StringBuilder::toString);
 
-            HttpHeaders headers = resp.getHeaders();
+            HttpHeaders headers = resp.headers();
             assertThat(headers.get("test-req-method"), hasToString(GET.toString()));
             assertThat(headers.get("test-req-target"), hasToString("/request?foo=bar&foo=baz"));
             assertThat(headers.get("test-req-header-host"), hasToString("mock.servicetalk.io"));

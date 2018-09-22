@@ -24,7 +24,7 @@ public class BlockingHelloWorldServer {
         new DefaultHttpServerStarter()
                 .startBlocking(8080, (ctx, request, responseFactory) ->
                         responseFactory.ok()
-                                .setPayloadBody("Hello World!", serializeText()))
+                                .payloadBody("Hello World!", serializeText()))
                 .awaitShutdown();
     }
 }

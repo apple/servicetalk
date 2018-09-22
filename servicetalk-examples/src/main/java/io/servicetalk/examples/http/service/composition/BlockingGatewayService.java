@@ -80,23 +80,23 @@ final class BlockingGatewayService extends BlockingHttpService {
 
         List<Recommendation> recommendations =
                 recommendationClient.request(recommendationClient.get("/recommendations/aggregated?userId=" + userId))
-                        .getPayloadBody(serializers.deserializerFor(typeOfRecommendation));
+                        .payloadBody(serializers.deserializerFor(typeOfRecommendation));
 
         List<FullRecommendation> fullRecommendations = new ArrayList<>(recommendations.size());
         for (Recommendation recommendation : recommendations) {
             // For each recommendation, fetch the details.
             final Metadata metadata =
                     metadataClient.request(metadataClient.get("/metadata?entityId=" + recommendation.getEntityId()))
-                            .getPayloadBody(serializers.deserializerFor(Metadata.class));
+                            .payloadBody(serializers.deserializerFor(Metadata.class));
 
             final User user =
                     userClient.request(userClient.get("/user?userId=" + recommendation.getEntityId()))
-                            .getPayloadBody(serializers.deserializerFor(User.class));
+                            .payloadBody(serializers.deserializerFor(User.class));
 
             Rating rating;
             try {
                 rating = ratingClient.request(ratingClient.get("/rating?entityId=" + recommendation.getEntityId()))
-                        .getPayloadBody(serializers.deserializerFor(Rating.class));
+                        .payloadBody(serializers.deserializerFor(Rating.class));
             } catch (Exception cause) {
                 // We consider ratings to be a non-critical data and hence we substitute the response
                 // with a static "unavailable" rating when the rating service is unavailable or provides
@@ -109,6 +109,6 @@ final class BlockingGatewayService extends BlockingHttpService {
         }
 
         return responseFactory.ok()
-                .setPayloadBody(fullRecommendations, serializers.serializerFor(typeOfFullRecommendations));
+                .payloadBody(fullRecommendations, serializers.serializerFor(typeOfFullRecommendations));
     }
 }

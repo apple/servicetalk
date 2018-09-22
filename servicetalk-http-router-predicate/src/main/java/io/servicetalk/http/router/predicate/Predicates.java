@@ -37,7 +37,7 @@ final class Predicates {
 
     static BiPredicate<ConnectionContext, StreamingHttpRequest> method(final HttpRequestMethod method) {
         requireNonNull(method);
-        return (ctx, req) -> req.getMethod().equals(method);
+        return (ctx, req) -> req.method().equals(method);
     }
 
     static BiPredicate<ConnectionContext, StreamingHttpRequest> methodIsOneOf(final HttpRequestMethod... methods) {
@@ -46,7 +46,7 @@ final class Predicates {
 
     static BiPredicate<ConnectionContext, StreamingHttpRequest> pathEquals(final String path) {
         requireNonNull(path);
-        return (ctx, req) -> req.getPath().equals(path);
+        return (ctx, req) -> req.path().equals(path);
     }
 
     static BiPredicate<ConnectionContext, StreamingHttpRequest> pathIsOneOf(final String... paths) {
@@ -55,17 +55,17 @@ final class Predicates {
 
     static BiPredicate<ConnectionContext, StreamingHttpRequest> pathStartsWith(final String pathPrefix) {
         requireNonNull(pathPrefix);
-        return (ctx, req) -> req.getPath().startsWith(pathPrefix);
+        return (ctx, req) -> req.path().startsWith(pathPrefix);
     }
 
     static BiPredicate<ConnectionContext, StreamingHttpRequest> pathRegex(final String regex) {
         final Predicate<CharSequence> regexPredicate = regex(regex);
-        return (ctx, req) -> regexPredicate.test(req.getPath());
+        return (ctx, req) -> regexPredicate.test(req.path());
     }
 
     static BiPredicate<ConnectionContext, StreamingHttpRequest> pathRegex(final Pattern regex) {
         final Predicate<CharSequence> regexPredicate = regex(regex);
-        return (ctx, req) -> regexPredicate.test(req.getPath());
+        return (ctx, req) -> regexPredicate.test(req.path());
     }
 
     static Predicate<CharSequence> regex(final String regex) {

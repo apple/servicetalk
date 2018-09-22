@@ -33,7 +33,7 @@ public final class HelloWorldClient {
                     .doFinally(responseProcessedLatch::countDown)
                     .subscribe(resp -> {
                         System.out.println(resp.toString((name, value) -> value));
-                        System.out.println(resp.getPayloadBody(deserializeText()));
+                        System.out.println(resp.payloadBody(deserializeText()));
                     });
 
             responseProcessedLatch.await();

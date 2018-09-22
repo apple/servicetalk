@@ -26,7 +26,7 @@ public final class HelloWorldServer {
         new DefaultHttpServerStarter()
                 .start(8080, (ctx, request, responseFactory) ->
                         success(responseFactory.ok()
-                                .setPayloadBody("Hello World!", serializeText())))
+                                .payloadBody("Hello World!", serializeText())))
                 .toFuture().get()
                 .awaitShutdown();
     }

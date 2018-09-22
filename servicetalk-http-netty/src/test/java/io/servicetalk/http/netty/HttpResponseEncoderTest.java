@@ -61,7 +61,7 @@ public class HttpResponseEncoderTest {
         ThreadLocalRandom.current().nextBytes(content);
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
-        response.getHeaders()
+        response.headers()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test")
                 .add(CONTENT_LENGTH, valueOf(content.length));
@@ -77,7 +77,7 @@ public class HttpResponseEncoderTest {
         EmbeddedChannel channel = newEmbeddedChannel();
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
         try {
-            response.getHeaders().add(" " + CONNECTION, KEEP_ALIVE);
+            response.headers().add(" " + CONNECTION, KEEP_ALIVE);
         } finally {
             assertFalse(channel.finishAndReleaseAll());
         }
@@ -92,7 +92,7 @@ public class HttpResponseEncoderTest {
 
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK,
                 new DefaultHttpHeadersFactory(false, false).newHeaders());
-        response.getHeaders()
+        response.headers()
                 .add(" " + CONNECTION + " ", " " + KEEP_ALIVE)
                 .add("  " + SERVER + "   ", "    unit-test   ")
                 .add(CONTENT_LENGTH, valueOf(content.length));
@@ -123,7 +123,7 @@ public class HttpResponseEncoderTest {
         ThreadLocalRandom.current().nextBytes(content);
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
-        response.getHeaders()
+        response.headers()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test")
                 .add(TRANSFER_ENCODING, CHUNKED);
@@ -143,7 +143,7 @@ public class HttpResponseEncoderTest {
         HttpHeaders trailers = DefaultHttpHeadersFactory.INSTANCE.newTrailers();
         trailers.add("TrailerStatus", "good");
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
-        response.getHeaders()
+        response.headers()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test")
                 .add(TRANSFER_ENCODING, CHUNKED);
@@ -158,7 +158,7 @@ public class HttpResponseEncoderTest {
     public void chunkedNoTrailersNoContent() {
         EmbeddedChannel channel = newEmbeddedChannel();
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
-        response.getHeaders()
+        response.headers()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test")
                 .add(TRANSFER_ENCODING, CHUNKED);
@@ -173,7 +173,7 @@ public class HttpResponseEncoderTest {
     public void variableNoTrailersNoContent() {
         EmbeddedChannel channel = newEmbeddedChannel();
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
-        response.getHeaders()
+        response.headers()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test");
         channel.writeOutbound(response);
@@ -190,7 +190,7 @@ public class HttpResponseEncoderTest {
         ThreadLocalRandom.current().nextBytes(content);
         Buffer buffer = DEFAULT_ALLOCATOR.wrap(content);
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
-        response.getHeaders()
+        response.headers()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test");
         channel.writeOutbound(response);
@@ -209,7 +209,7 @@ public class HttpResponseEncoderTest {
         HttpHeaders trailers = DefaultHttpHeadersFactory.INSTANCE.newTrailers();
         trailers.add("TrailerStatus", "good");
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
-        response.getHeaders()
+        response.headers()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test");
         channel.writeOutbound(response);
@@ -230,7 +230,7 @@ public class HttpResponseEncoderTest {
         HttpHeaders trailers = DefaultHttpHeadersFactory.INSTANCE.newTrailers();
         trailers.add("TrailerStatus", "good");
         HttpResponseMetaData response = newResponseMetaData(HTTP_1_1, OK, INSTANCE.newHeaders());
-        response.getHeaders()
+        response.headers()
                 .add(CONNECTION, KEEP_ALIVE)
                 .add(SERVER, "unit-test")
                 .add(CONTENT_LENGTH, valueOf(content.length));

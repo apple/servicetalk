@@ -106,7 +106,7 @@ public class MultiAddressUrlHttpClientSslTest {
             public Single<StreamingHttpResponse> answer(final InvocationOnMock invocation) throws Throwable {
                 StreamingHttpResponseFactory factory = invocation.getArgument(2);
                 StreamingHttpResponse resp = factory.ok();
-                resp.getHeaders().set(httpHeaders);
+                resp.headers().set(httpHeaders);
                 return success(resp);
             }
         });
@@ -124,14 +124,14 @@ public class MultiAddressUrlHttpClientSslTest {
             public Single<StreamingHttpResponse> answer(final InvocationOnMock invocation) throws Throwable {
                 StreamingHttpResponseFactory factory = invocation.getArgument(2);
                 StreamingHttpResponse resp = factory.ok();
-                resp.getHeaders().set(httpHeaders);
+                resp.headers().set(httpHeaders);
                 return success(resp);
             }
         });
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
         secureServerCtx = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
-                .setSslConfig(SslConfigBuilder.forServer(() -> loadServerPem(), () -> loadServerKey()).build())
+                .sslConfig(SslConfigBuilder.forServer(() -> loadServerPem(), () -> loadServerKey()).build())
                 .startStreaming(CTX, new InetSocketAddress(HOSTNAME, 0), SECURE_STREAMING_HTTP_SERVICE));
         secureServerHostHeader = HostAndPort.of(HOSTNAME,
                 ((InetSocketAddress) secureServerCtx.getListenAddress()).getPort()).toString();
@@ -158,19 +158,19 @@ public class MultiAddressUrlHttpClientSslTest {
                 .build(CTX);
 
         HttpRequest request = requester.get("/");
-        request.getHeaders().add(HOST, secureServerHostHeader);
-        request.getHeaders().add(CONTENT_LENGTH, ZERO);
+        request.headers().add(HOST, secureServerHostHeader);
+        request.headers().add(CONTENT_LENGTH, ZERO);
         await(requester.request(request), 2, SECONDS);
     }
 
     @Test(expected = TimeoutException.class)
     public void secureClientToNonSecureServer() throws Exception {
-        HttpRequester requester = HttpClients.forMultiAddressUrl().setSslConfigProvider(secureByDefault())
+        HttpRequester requester = HttpClients.forMultiAddressUrl().sslConfigProvider(secureByDefault())
                 .build(CTX);
 
         HttpRequest request = requester.get("/");
-        request.getHeaders().add(HOST, serverHostHeader);
-        request.getHeaders().add(CONTENT_LENGTH, ZERO);
+        request.headers().add(HOST, serverHostHeader);
+        request.headers().add(CONTENT_LENGTH, ZERO);
         await(requester.request(request), 2, SECONDS);
     }
 
@@ -184,7 +184,7 @@ public class MultiAddressUrlHttpClientSslTest {
 
     @Test
     public void requesterWithPlainSslConfigProvider() throws Exception {
-        try (BlockingHttpRequester requester = HttpClients.forMultiAddressUrl().setSslConfigProvider(plainByDefault())
+        try (BlockingHttpRequester requester = HttpClients.forMultiAddressUrl().sslConfigProvider(plainByDefault())
                 .buildBlocking(CTX)) {
             testOnlyNonSecureRequestTargets(requester);
         }
@@ -206,7 +206,7 @@ public class MultiAddressUrlHttpClientSslTest {
                         .build();
             }
         };
-        try (BlockingHttpRequester requester = HttpClients.forMultiAddressUrl().setSslConfigProvider(sslConfigProvider)
+        try (BlockingHttpRequester requester = HttpClients.forMultiAddressUrl().sslConfigProvider(sslConfigProvider)
                 .buildBlocking(CTX)) {
             testAllFormsOfRequestTargetWithSecureByDefault(requester);
         }
@@ -237,8 +237,8 @@ public class MultiAddressUrlHttpClientSslTest {
         private static void requestAndValidate(final BlockingHttpRequester requester,
                                            final String requestTarget, final String hostHeader) throws Exception {
         HttpRequest request = requester.get(requestTarget);
-        request.getHeaders().add(HOST, hostHeader);
-        request.getHeaders().add(CONTENT_LENGTH, ZERO);
-        assertEquals(OK, requester.request(request).getStatus());
+        request.headers().add(HOST, hostHeader);
+        request.headers().add(CONTENT_LENGTH, ZERO);
+        assertEquals(OK, requester.request(request).status());
     }
 }

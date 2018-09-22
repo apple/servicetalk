@@ -61,7 +61,7 @@ public class DefaultFallbackServiceTest {
 
     @Before
     public void setUp() {
-        when(request.getVersion()).thenReturn(HTTP_1_1);
+        when(request.version()).thenReturn(HTTP_1_1);
         when(ctx.getExecutionContext()).thenReturn(executionCtx);
         when(executionCtx.getExecutor()).thenReturn(immediate());
     }
@@ -74,9 +74,9 @@ public class DefaultFallbackServiceTest {
 
         final StreamingHttpResponse response = awaitIndefinitely(responseSingle);
         assert response != null;
-        assertEquals(HTTP_1_1, response.getVersion());
-        assertEquals(NOT_FOUND, response.getStatus());
-        assertEquals(ZERO, response.getHeaders().get(CONTENT_LENGTH));
-        assertEquals(TEXT_PLAIN, response.getHeaders().get(CONTENT_TYPE));
+        assertEquals(HTTP_1_1, response.version());
+        assertEquals(NOT_FOUND, response.status());
+        assertEquals(ZERO, response.headers().get(CONTENT_LENGTH));
+        assertEquals(TEXT_PLAIN, response.headers().get(CONTENT_TYPE));
     }
 }

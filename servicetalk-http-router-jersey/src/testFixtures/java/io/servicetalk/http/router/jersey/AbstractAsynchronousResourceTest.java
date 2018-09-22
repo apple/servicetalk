@@ -43,12 +43,12 @@ public abstract class AbstractAsynchronousResourceTest extends AbstractResourceT
     public void getCompletable() {
         StreamingHttpResponse res =
                 sendAndAssertResponse(get("/completable"), NO_CONTENT, null, isEmptyString(), __ -> null);
-        assertThat(res.getHeaders().get("X-Foo-Prop"), is(newAsciiString("barProp")));
+        assertThat(res.headers().get("X-Foo-Prop"), is(newAsciiString("barProp")));
 
         res = sendAndAssertResponse(get("/completable?fail=true"), INTERNAL_SERVER_ERROR, null, "");
         // There is no mapper for DeliberateException hence it is propagated to the container and response filters
         // are thus bypassed.
-        assertThat(res.getHeaders().contains("X-Foo-Prop"), is(false));
+        assertThat(res.headers().contains("X-Foo-Prop"), is(false));
     }
 
     @Test
@@ -69,12 +69,12 @@ public abstract class AbstractAsynchronousResourceTest extends AbstractResourceT
     public void headCompletable() {
         StreamingHttpResponse res =
                 sendAndAssertResponse(head("/completable"), NO_CONTENT, null, isEmptyString(), __ -> null);
-        assertThat(res.getHeaders().get("X-Foo-Prop"), is(newAsciiString("barProp")));
+        assertThat(res.headers().get("X-Foo-Prop"), is(newAsciiString("barProp")));
 
         res = sendAndAssertResponse(head("/completable?fail=true"), INTERNAL_SERVER_ERROR, null, "");
         // There is no mapper for DeliberateException hence it is propagated to the container and response filters
         // are thus bypassed.
-        assertThat(res.getHeaders().contains("X-Foo-Prop"), is(false));
+        assertThat(res.headers().contains("X-Foo-Prop"), is(false));
     }
 
     @Test

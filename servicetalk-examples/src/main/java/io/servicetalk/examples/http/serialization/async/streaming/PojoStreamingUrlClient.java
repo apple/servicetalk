@@ -38,10 +38,10 @@ public class PojoStreamingUrlClient {
             CountDownLatch responseProcessedLatch = new CountDownLatch(1);
 
             client.request(client.get("http://localhost:8080/pojo")
-                    .setPayloadBody(from("1", "2", "3").map(PojoRequest::new),
+                    .serializePayloadBody(from("1", "2", "3").map(PojoRequest::new),
                             serializer.serializerFor(PojoRequest.class)))
                     .doBeforeSuccess(response -> System.out.println(response.toString((name, value) -> value)))
-                    .flatMapPublisher(resp -> resp.getPayloadBody(serializer.deserializerFor(MyPojo.class)))
+                    .flatMapPublisher(resp -> resp.deserializePayloadBody(serializer.deserializerFor(MyPojo.class)))
                     .doFinally(responseProcessedLatch::countDown)
                     .forEach(System.out::println);
 

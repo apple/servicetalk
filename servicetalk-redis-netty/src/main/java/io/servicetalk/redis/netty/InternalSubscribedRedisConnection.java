@@ -90,7 +90,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
 
     @Override
     Publisher<RedisData> handleRequest(RedisRequest request) {
-        final RedisProtocolSupport.Command command = request.getCommand();
+        final RedisProtocolSupport.Command command = request.command();
         if (!isSubscribeModeCommand(command) && command != PING && command != QUIT && command != AUTH) {
             return Publisher.error(new IllegalArgumentException("Invalid command: " + command
                     + ". This command is not allowed in subscribe mode."));
@@ -100,7 +100,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
     }
 
     private Publisher<RedisData> request0(RedisRequest request) {
-        final RedisProtocolSupport.Command command = request.getCommand();
+        final RedisProtocolSupport.Command command = request.command();
         final Publisher<ByteBuf> reqContent = RedisUtils.encodeRequestContent(request,
                 connection.getExecutionContext().getBufferAllocator());
         return new Publisher<RedisData>() {
