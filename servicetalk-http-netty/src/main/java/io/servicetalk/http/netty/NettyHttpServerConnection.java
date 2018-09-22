@@ -168,7 +168,7 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
     private Single<StreamingHttpResponse> newErrorResponse(final Throwable cause,
                                                            final StreamingHttpRequest request) {
         LOGGER.error("internal server error service={} connection={}", service, context, cause);
-        StreamingHttpResponse resp = context.getStreamingFactory().serverError().version(request.version());
+        StreamingHttpResponse resp = context.getStreamingFactory().internalServerError().version(request.version());
         resp.headers().set(CONTENT_LENGTH, ZERO);
         return success(resp);
     }

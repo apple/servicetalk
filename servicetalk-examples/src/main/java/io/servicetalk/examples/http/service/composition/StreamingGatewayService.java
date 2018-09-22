@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.examples.http.service.composition.AsyncUtil.zip;
-import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
 
 /**
  * This service provides an API that fetches recommendations in parallel and responds with a stream of
@@ -69,7 +68,7 @@ final class StreamingGatewayService extends StreamingHttpService {
                                                 final StreamingHttpResponseFactory factory) {
         final String userId = request.parseQuery().get(USER_ID_QP_NAME);
         if (userId == null) {
-            return success(factory.newResponse(BAD_REQUEST));
+            return success(factory.badRequest());
         }
 
         return recommendationsClient.request(recommendationsClient.get("/recommendations/stream?userId=" + userId))

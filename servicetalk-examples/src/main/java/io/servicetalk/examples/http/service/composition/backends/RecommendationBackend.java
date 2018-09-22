@@ -38,7 +38,6 @@ import javax.annotation.Nonnull;
 
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.valueOf;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -82,7 +81,7 @@ final class RecommendationBackend {
                                                     StreamingHttpResponseFactory factory) {
             final String userId = request.parseQuery().get(USER_ID_QP_NAME);
             if (userId == null) {
-                return success(factory.newResponse(BAD_REQUEST));
+                return success(factory.badRequest());
             }
 
             // Create a new random recommendation every 1 SECOND.
@@ -114,7 +113,7 @@ final class RecommendationBackend {
                                                      HttpRequest request, HttpResponseFactory responseFactory) {
             final String userId = request.parseQuery().get(USER_ID_QP_NAME);
             if (userId == null) {
-                return success(responseFactory.newResponse(BAD_REQUEST));
+                return success(responseFactory.badRequest());
             }
             int expectedEntitiesCount = 10;
             final String expectedEntitiesCountStr = request.parseQuery().get(EXPECTED_ENTITY_COUNT_QP_NAME);

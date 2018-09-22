@@ -28,7 +28,6 @@ import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
 import static java.util.concurrent.ThreadLocalRandom.current;
 
 /**
@@ -48,7 +47,7 @@ final class UserBackend extends HttpService {
                                                  HttpResponseFactory responseFactory) {
         final String userId = request.parseQuery().get(USER_ID_QP_NAME);
         if (userId == null) {
-            return success(responseFactory.newResponse(BAD_REQUEST));
+            return success(responseFactory.badRequest());
         }
 
         // Create a random rating

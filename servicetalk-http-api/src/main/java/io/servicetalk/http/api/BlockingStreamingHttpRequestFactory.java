@@ -15,8 +15,14 @@
  */
 package io.servicetalk.http.api;
 
+import static io.servicetalk.http.api.HttpRequestMethods.CONNECT;
+import static io.servicetalk.http.api.HttpRequestMethods.DELETE;
 import static io.servicetalk.http.api.HttpRequestMethods.GET;
+import static io.servicetalk.http.api.HttpRequestMethods.HEAD;
+import static io.servicetalk.http.api.HttpRequestMethods.OPTIONS;
+import static io.servicetalk.http.api.HttpRequestMethods.PATCH;
 import static io.servicetalk.http.api.HttpRequestMethods.POST;
+import static io.servicetalk.http.api.HttpRequestMethods.TRACE;
 
 /**
  * A factory for creating {@link BlockingStreamingHttpRequest}s.
@@ -46,5 +52,59 @@ public interface BlockingStreamingHttpRequestFactory {
      */
     default BlockingStreamingHttpRequest post(String requestTarget) {
         return newRequest(POST, requestTarget);
+    }
+
+    /**
+     * Create a new {@link HttpRequestMethods#OPTIONS} request.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @return a new {@link HttpRequestMethods#OPTIONS} request.
+     */
+    default BlockingStreamingHttpRequest options(String requestTarget) {
+        return newRequest(OPTIONS, requestTarget);
+    }
+
+    /**
+     * Create a new {@link HttpRequestMethods#HEAD} request.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @return a new {@link HttpRequestMethods#HEAD} request.
+     */
+    default BlockingStreamingHttpRequest head(String requestTarget) {
+        return newRequest(HEAD, requestTarget);
+    }
+
+    /**
+     * Create a new {@link HttpRequestMethods#TRACE} request.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @return a new {@link HttpRequestMethods#TRACE} request.
+     */
+    default BlockingStreamingHttpRequest trace(String requestTarget) {
+        return newRequest(TRACE, requestTarget);
+    }
+
+    /**
+     * Create a new {@link HttpRequestMethods#DELETE} request.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @return a new {@link HttpRequestMethods#DELETE} request.
+     */
+    default BlockingStreamingHttpRequest delete(String requestTarget) {
+        return newRequest(DELETE, requestTarget);
+    }
+
+    /**
+     * Create a new {@link HttpRequestMethods#PATCH} request.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @return a new {@link HttpRequestMethods#PATCH} request.
+     */
+    default BlockingStreamingHttpRequest patch(String requestTarget) {
+        return newRequest(PATCH, requestTarget);
+    }
+
+    /**
+     * Create a new {@link HttpRequestMethods#CONNECT} request.
+     * @param requestTarget The <a href="https://tools.ietf.org/html/rfc7230#section-5.3">request target</a>.
+     * @return a new {@link HttpRequestMethods#CONNECT} request.
+     */
+    default BlockingStreamingHttpRequest connect(String requestTarget) {
+        return newRequest(CONNECT, requestTarget);
     }
 }
