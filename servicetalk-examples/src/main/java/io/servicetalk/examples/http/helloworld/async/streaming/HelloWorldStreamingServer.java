@@ -15,11 +15,11 @@
  */
 package io.servicetalk.examples.http.helloworld.async.streaming;
 
-import io.servicetalk.http.api.HttpSerializationProviders;
 import io.servicetalk.http.netty.DefaultHttpServerStarter;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 
 public final class HelloWorldStreamingServer {
     public static void main(String[] args) throws Exception {
@@ -27,7 +27,7 @@ public final class HelloWorldStreamingServer {
                 .startStreaming(8080, (ctx, request, responseFactory) ->
                         success(responseFactory.ok()
                                 .serializePayloadBody(from("Hello\n", "World\n", "From\n", "ServiceTalk\n"),
-                                        HttpSerializationProviders.textSerializer())))
+                                        textSerializer())))
                 .toFuture().get()
                 .awaitShutdown();
     }

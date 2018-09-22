@@ -15,10 +15,10 @@
  */
 package io.servicetalk.examples.http.helloworld.async;
 
-import io.servicetalk.http.api.HttpSerializationProviders;
 import io.servicetalk.http.netty.DefaultHttpServerStarter;
 
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 
 public final class HelloWorldServer {
 
@@ -26,7 +26,7 @@ public final class HelloWorldServer {
         new DefaultHttpServerStarter()
                 .start(8080, (ctx, request, responseFactory) ->
                         success(responseFactory.ok()
-                                .payloadBody("Hello World!", HttpSerializationProviders.textSerializer())))
+                                .payloadBody("Hello World!", textSerializer())))
                 .toFuture().get()
                 .awaitShutdown();
     }
