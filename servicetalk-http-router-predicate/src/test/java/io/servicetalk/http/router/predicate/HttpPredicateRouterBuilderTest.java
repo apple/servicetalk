@@ -69,7 +69,7 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
         final Single<StreamingHttpResponse> responseSingle = service.handle(ctx, request, reqRespFactory);
         final StreamingHttpResponse response = awaitIndefinitely(responseSingle);
         assert response != null;
-        assertEquals(404, response.status().getCode());
+        assertEquals(404, response.status().code());
     }
 
     @Test

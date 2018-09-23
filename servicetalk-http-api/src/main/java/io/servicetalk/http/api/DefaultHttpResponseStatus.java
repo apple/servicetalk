@@ -40,7 +40,7 @@ final class DefaultHttpResponseStatus implements HttpResponseStatus {
     }
 
     @Override
-    public int getCode() {
+    public int code() {
         return statusCode;
     }
 
@@ -55,7 +55,7 @@ final class DefaultHttpResponseStatus implements HttpResponseStatus {
     }
 
     @Override
-    public StatusClass getStatusClass() {
+    public StatusClass statusClass() {
         return statusClass;
     }
 

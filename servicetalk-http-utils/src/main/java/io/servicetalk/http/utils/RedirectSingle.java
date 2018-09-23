@@ -144,7 +144,7 @@ final class RedirectSingle extends Single<StreamingHttpResponse> {
 
         private boolean shouldRedirect(final int redirectCount, final StreamingHttpResponse response,
                                        final HttpRequestMethod originalMethod) {
-            final int statusCode = response.status().getCode();
+            final int statusCode = response.status().code();
 
             if (statusCode < 300 || statusCode > 308) {
                 // We start without support for status codes outside of this range

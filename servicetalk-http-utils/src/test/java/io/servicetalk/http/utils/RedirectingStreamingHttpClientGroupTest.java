@@ -219,12 +219,12 @@ public class RedirectingStreamingHttpClientGroupTest {
 
         StreamingHttpRequest request = redirectingRequester.newRequest(method, "/path");
         request.headers().set(HOST, "servicetalk.io");
-        request.headers().set(REQUESTED_STATUS, String.valueOf(requestedStatus.getCode()));
+        request.headers().set(REQUESTED_STATUS, String.valueOf(requestedStatus.code()));
         request.headers().set(REQUESTED_LOCATION, requestedLocation);
 
         StreamingHttpResponse response = awaitIndefinitely(redirectingRequester.request(request));
         assertNotNull(response);
-        assertEquals(requestedStatus.getCode(), response.status().getCode());
+        assertEquals(requestedStatus.code(), response.status().code());
         assertEquals(requestedLocation, response.headers().get(LOCATION));
         verify(httpClient).request(any());
         clearInvocations(httpClient);
@@ -260,7 +260,7 @@ public class RedirectingStreamingHttpClientGroupTest {
 
         StreamingHttpRequest request = redirectingRequester.get("/path");
         request.headers().set(HOST, "servicetalk.io");
-        request.headers().set(REQUESTED_STATUS, String.valueOf(MOVED_PERMANENTLY.getCode()));
+        request.headers().set(REQUESTED_STATUS, String.valueOf(MOVED_PERMANENTLY.code()));
         request.headers().set(REQUESTED_LOCATION, "/new-location");
 
         StreamingHttpResponse response = awaitIndefinitely(redirectingRequester.request(request));
@@ -312,7 +312,7 @@ public class RedirectingStreamingHttpClientGroupTest {
 
         StreamingHttpRequest request = redirectingRequester.newRequest(method, "/path");
         request.headers().set(HOST, "servicetalk.io");
-        request.headers().set(REQUESTED_STATUS, String.valueOf(requestedStatus.getCode()));
+        request.headers().set(REQUESTED_STATUS, String.valueOf(requestedStatus.code()));
         request.headers().set(REQUESTED_LOCATION, "/new-location");
 
         StreamingHttpResponse response = awaitIndefinitely(redirectingRequester.request(request));
@@ -358,7 +358,7 @@ public class RedirectingStreamingHttpClientGroupTest {
                 .asClient(RedirectingStreamingHttpClientGroupTest::createGroupKey, executionContext);
 
         StreamingHttpRequest request = redirectingRequester.get("http://servicetalk.io/path");
-        request.headers().set(REQUESTED_STATUS, String.valueOf(SEE_OTHER.getCode()));
+        request.headers().set(REQUESTED_STATUS, String.valueOf(SEE_OTHER.code()));
         request.headers().set(REQUESTED_LOCATION, "/new-location");
 
         StreamingHttpResponse response = awaitIndefinitely(redirectingRequester.request(request));

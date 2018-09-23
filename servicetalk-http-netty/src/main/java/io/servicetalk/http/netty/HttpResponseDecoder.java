@@ -71,7 +71,7 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     @Override
     protected boolean isContentAlwaysEmpty(final HttpResponseMetaData msg) {
         // Don't poll from the queue for informational responses, because the real response is expected next.
-        if (msg.status().getStatusClass() == INFORMATIONAL_1XX) {
+        if (msg.status().statusClass() == INFORMATIONAL_1XX) {
             // One exception: Hixie 76 websocket handshake response
             return !(msg.status() == SWITCHING_PROTOCOLS &&
                     !msg.headers().contains(SEC_WEBSOCKET_ACCEPT) &&

@@ -25,10 +25,10 @@ public interface HttpResponseStatus {
      * Get the three digit <a href="https://tools.ietf.org/html/rfc7231#section-6">status-code</a> indicating status of the response.
      * @return the three digit <a href="https://tools.ietf.org/html/rfc7231#section-6">status-code</a> indicating status of the response.
      */
-    int getCode();
+    int code();
 
     /**
-     * Write the equivalent of {@link #getCode()} to a {@link Buffer}.
+     * Write the equivalent of {@link #code()} to a {@link Buffer}.
      * @param buffer The {@link Buffer} to write to.
      */
     void writeCodeTo(Buffer buffer);
@@ -51,7 +51,7 @@ public interface HttpResponseStatus {
      * Get the {@link StatusClass} for this {@link HttpResponseStatus}.
      * @return the {@link StatusClass} for this {@link HttpResponseStatus}.
      */
-    StatusClass getStatusClass();
+    StatusClass statusClass();
 
     /**
      * The <a href="https://tools.ietf.org/html/rfc7231#section-6">class of response</a>.
@@ -116,7 +116,7 @@ public interface HttpResponseStatus {
          * @return {@code true} if and only if the specified HTTP status code falls into this class.
          */
         public boolean contains(final HttpResponseStatus status) {
-            return contains(status.getCode());
+            return contains(status.code());
         }
 
         /**
