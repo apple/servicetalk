@@ -33,12 +33,20 @@ public abstract class HttpServiceContext implements ConnectionContext {
      * @param streamingFactory The {@link StreamingHttpResponseFactory} used for API conversions.
      * @param blockingFactory The {@link BlockingStreamingHttpResponseFactory} used for API conversions.
      */
-    protected HttpServiceContext(HttpResponseFactory factory,
-                                 StreamingHttpResponseFactory streamingFactory,
+    protected HttpServiceContext(HttpResponseFactory factory, StreamingHttpResponseFactory streamingFactory,
                                  BlockingStreamingHttpResponseFactory blockingFactory) {
         this.factory = requireNonNull(factory);
         this.streamingFactory = requireNonNull(streamingFactory);
         this.blockingFactory = requireNonNull(blockingFactory);
+    }
+
+    /**
+     * Copy constructor.
+     *
+     * @param other {@link HttpServiceContext} to copy from.
+     */
+    protected HttpServiceContext(HttpServiceContext other) {
+        this(other.factory, other.streamingFactory, other.blockingFactory);
     }
 
     final HttpResponseFactory getResponseFactory() {
