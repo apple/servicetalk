@@ -29,7 +29,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.EventLoop;
-import io.netty.channel.socket.ChannelInputShutdownReadComplete;
 import io.netty.channel.socket.ChannelOutputShutdownEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -195,12 +194,7 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
 
             @Override
             public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
-                if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
-                    // ChannelInputShutdownEvent is not always triggered and can get triggered before we tried to read
-                    // all the available data. ChannelInputShutdownReadComplete is the one that seems to (at least in
-                    // the current netty version) gets triggered reliably at the appropriate time.
-                    closeHandler.channelClosedInbound(ctx);
-                } else if (evt == ChannelOutputShutdownEvent.INSTANCE) {
+                if (evt == ChannelOutputShutdownEvent.INSTANCE) {
                     closeHandler.channelClosedOutbound(ctx);
                     writableListener.channelClosedOutbound();
                 }

@@ -272,14 +272,14 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
             subscriber.onError(new DuplicateSubscribeException(subscription.associatedSub, subscriber));
         } else {
             requestCount = 0; /*Don't pollute requested count between subscribers */
-            final SubscriptionImpl s = new SubscriptionImpl(subscriber);
-            this.subscription = s;
-            subscriber.onSubscribe(s);
+            subscription = new SubscriptionImpl(subscriber);
+            this.subscription = subscription;
+            subscriber.onSubscribe(subscription);
             // Fatal error is removed from the queue once it is drained for a Subscriber.
             // In absence of the below, any subsequent Subscriber will not get any fatal error.
-            if (!processPending(s) && fatalError != null && pending != null && pending.isEmpty()) {
+            if (!processPending(subscription) && fatalError != null && pending != null && pending.isEmpty()) {
                 // We are already on the eventloop, so we are sure that nobody else is emitting to the Subscriber.
-                sendErrorToTarget(s, fatalError);
+                sendErrorToTarget(subscription, fatalError);
             }
         }
     }
@@ -290,7 +290,7 @@ final class NettyChannelPublisher<T> extends Publisher<T> {
 
     private final class SubscriptionImpl implements Subscription {
 
-        private final Subscriber<? super T> associatedSub;
+        final Subscriber<? super T> associatedSub;
 
         private SubscriptionImpl(Subscriber<? super T> associatedSub) {
             this.associatedSub = associatedSub;

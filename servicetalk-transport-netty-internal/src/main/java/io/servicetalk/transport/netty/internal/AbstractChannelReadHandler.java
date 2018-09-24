@@ -89,10 +89,14 @@ public abstract class AbstractChannelReadHandler<T> extends ChannelInboundHandle
 
     @Override
     public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) throws Exception {
+        // ChannelInputShutdownEvent is not always triggered and can get triggered before we tried to read
+        // all the available data. ChannelInputShutdownReadComplete is the one that seems to (at least in
+        // the current netty version) gets triggered reliably at the appropriate time.
         if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
             // Since we are only reading data, if the inbound is shutdown, it is equivalent to channel closure, so we
             // dispose the publisher.
             disposePublisher();
+            closeHandler.channelClosedInbound(ctx);
         }
         ctx.fireUserEventTriggered(evt);
     }
