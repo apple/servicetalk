@@ -79,32 +79,38 @@ public class OpenTracingStreamingHttpConnectionFilter extends StreamingHttpConne
 
     @Override
     public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        SpanBuilder spanBuilder = tracer.buildSpan(componentName)
-                .withTag(SPAN_KIND.getKey(), SPAN_KIND_CLIENT)
-                .withTag(HTTP_METHOD.getKey(), request.method().getName())
-                .withTag(HTTP_URL.getKey(), request.path());
-        Scope currentScope = tracer.scopeManager().active();
-        if (currentScope != null) {
-            spanBuilder = spanBuilder.asChildOf(currentScope.span());
-        }
+        return new Single<StreamingHttpResponse>() {
+            @Override
+            protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
+                SpanBuilder spanBuilder = tracer.buildSpan(componentName)
+                        .withTag(SPAN_KIND.getKey(), SPAN_KIND_CLIENT)
+                        .withTag(HTTP_METHOD.getKey(), request.method().getName())
+                        .withTag(HTTP_URL.getKey(), request.path());
+                Scope currentScope = tracer.scopeManager().active();
+                if (currentScope != null) {
+                    spanBuilder = spanBuilder.asChildOf(currentScope.span());
+                }
 
-        Scope childScope = spanBuilder.startActive(true);
-        tracer.inject(childScope.span().context(), formatter, request.headers());
-        return getDelegate().request(request).map(resp -> resp.transformRawPayloadBody(pub ->
-                pub.doOnError(cause -> tagErrorAndClose(childScope))
-                   .doOnCancel(() -> tagErrorAndClose(childScope))
-                   .doOnComplete(() -> {
-                       HTTP_STATUS.set(childScope.span(), resp.status().code());
-                       try {
-                           if (isError(resp)) {
-                               ERROR.set(childScope.span(), true);
-                           }
-                       } finally {
-                           childScope.close();
-                       }
-                   }))
+                Scope childScope = spanBuilder.startActive(true);
+                tracer.inject(childScope.span().context(), formatter, request.headers());
+                getDelegate().request(request).map(resp -> resp.transformRawPayloadBody(pub ->
+                        pub.doOnError(cause -> tagErrorAndClose(childScope))
+                           .doOnCancel(() -> tagErrorAndClose(childScope))
+                           .doOnComplete(() -> {
+                               HTTP_STATUS.set(childScope.span(), resp.status().code());
+                               try {
+                                   if (isError(resp)) {
+                                       ERROR.set(childScope.span(), true);
+                                   }
+                               } finally {
+                                   childScope.close();
+                               }
+                           }))
                 ).doOnError(cause -> tagErrorAndClose(childScope))
-                 .doOnCancel(() -> tagErrorAndClose(childScope));
+                .doOnCancel(() -> tagErrorAndClose(childScope))
+                .subscribe(subscriber);
+            }
+        };
     }
 
     /**

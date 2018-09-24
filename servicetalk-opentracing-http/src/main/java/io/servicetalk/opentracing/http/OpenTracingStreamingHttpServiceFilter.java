@@ -85,34 +85,35 @@ public class OpenTracingStreamingHttpServiceFilter extends StreamingHttpService 
     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                 final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory responseFactory) {
-        SpanContext parentSpanContext = tracer.extract(formatter, request.headers());
-        SpanBuilder spanBuilder = tracer.buildSpan(getOperationName(componentName, request))
-                .withTag(SPAN_KIND.getKey(), SPAN_KIND_SERVER)
-                .withTag(HTTP_METHOD.getKey(), request.method().getName())
-                .withTag(HTTP_URL.getKey(), request.path());
-        if (parentSpanContext != null) {
-            spanBuilder = spanBuilder.asChildOf(parentSpanContext);
-        }
-
-        Scope currentScope = spanBuilder.startActive(true);
-        try {
-            return next.handle(ctx, request, responseFactory).map(resp -> {
-                if (injectSpanContextIntoResponse(parentSpanContext)) {
-                    tracer.inject(currentScope.span().context(), formatter, resp.headers());
+        return new Single<StreamingHttpResponse>() {
+            @Override
+            protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
+                SpanContext parentSpanContext = tracer.extract(formatter, request.headers());
+                SpanBuilder spanBuilder = tracer.buildSpan(getOperationName(componentName, request))
+                        .withTag(SPAN_KIND.getKey(), SPAN_KIND_SERVER)
+                        .withTag(HTTP_METHOD.getKey(), request.method().getName())
+                        .withTag(HTTP_URL.getKey(), request.path());
+                if (parentSpanContext != null) {
+                    spanBuilder = spanBuilder.asChildOf(parentSpanContext);
                 }
-                return resp.transformRawPayloadBody(pub ->
-                        pub.doOnError(cause -> tagErrorAndClose(currentScope))
-                           .doOnCancel(() -> tagErrorAndClose(currentScope))
-                           .doOnComplete(() -> {
-                    HTTP_STATUS.set(currentScope.span(), resp.status().code());
-                    currentScope.close();
-                }));
-            }).doOnError(cause -> tagErrorAndClose(currentScope))
-              .doOnCancel(() -> tagErrorAndClose(currentScope));
-        } catch (Throwable cause) {
-            tagErrorAndClose(currentScope);
-            throw cause;
-        }
+
+                Scope currentScope = spanBuilder.startActive(true);
+                next.handle(ctx, request, responseFactory).map(resp -> {
+                    if (injectSpanContextIntoResponse(parentSpanContext)) {
+                        tracer.inject(currentScope.span().context(), formatter, resp.headers());
+                    }
+                    return resp.transformRawPayloadBody(pub ->
+                            pub.doOnError(cause -> tagErrorAndClose(currentScope))
+                               .doOnCancel(() -> tagErrorAndClose(currentScope))
+                               .doOnComplete(() -> {
+                                   HTTP_STATUS.set(currentScope.span(), resp.status().code());
+                                   currentScope.close();
+                               }));
+                }).doOnError(cause -> tagErrorAndClose(currentScope))
+                .doOnCancel(() -> tagErrorAndClose(currentScope))
+                .subscribe(subscriber);
+            }
+        };
     }
 
     @Override
