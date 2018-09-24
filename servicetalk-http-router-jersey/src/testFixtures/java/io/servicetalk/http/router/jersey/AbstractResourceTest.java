@@ -49,6 +49,7 @@ import static io.servicetalk.http.api.HttpResponseStatuses.NOT_FOUND;
 import static io.servicetalk.http.api.HttpResponseStatuses.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
+import static io.servicetalk.http.router.jersey.TestUtils.newLargePayload;
 import static java.util.Arrays.asList;
 import static javax.ws.rs.core.HttpHeaders.ALLOW;
 import static javax.ws.rs.core.Response.status;
@@ -167,7 +168,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpSe
         sendAndAssertResponse(post("/text", "foo", TEXT_PLAIN), OK, TEXT_PLAIN, "GOT: foo");
 
         // Large payload that goes above Jersey's default buffer size
-        final CharSequence payload = TestUtils.newLargePayload();
+        final CharSequence payload = newLargePayload();
         sendAndAssertResponse(post("/text", payload, TEXT_PLAIN), OK, TEXT_PLAIN, is("GOT: " + payload), __ -> null);
     }
 
@@ -239,7 +240,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpSe
         sendAndAssertResponse(post("/text-buffer", "foo", TEXT_PLAIN), OK, TEXT_PLAIN, "GOT: foo");
 
         // Large payload that goes above Jersey's default buffer size
-        final CharSequence payload = TestUtils.newLargePayload();
+        final CharSequence payload = newLargePayload();
         sendAndAssertResponse(post("/text-buffer", payload, TEXT_PLAIN), OK, TEXT_PLAIN, "GOT: " + payload);
     }
 

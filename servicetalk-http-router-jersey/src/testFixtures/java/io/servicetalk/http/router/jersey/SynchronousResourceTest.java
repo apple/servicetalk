@@ -25,6 +25,7 @@ import static io.servicetalk.http.api.HttpResponseStatuses.ACCEPTED;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
 import static io.servicetalk.http.api.HttpResponseStatuses.PARTIAL_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
+import static io.servicetalk.http.router.jersey.TestUtils.newLargePayload;
 import static io.servicetalk.http.router.jersey.resources.SynchronousResources.PATH;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.is;
@@ -93,7 +94,7 @@ public class SynchronousResourceTest extends AbstractResourceTest {
         sendAndAssertResponse(post("/text-oio-streams", "bar4", TEXT_PLAIN), OK, TEXT_PLAIN, "GOT: bar4");
 
         // Large payload that goes above Jersey's default buffer size
-        final CharSequence payload = TestUtils.newLargePayload();
+        final CharSequence payload = newLargePayload();
         sendAndAssertResponse(post("/text-oio-streams", payload, TEXT_PLAIN), OK, TEXT_PLAIN,
                 is("GOT: " + payload), __ -> null);
     }

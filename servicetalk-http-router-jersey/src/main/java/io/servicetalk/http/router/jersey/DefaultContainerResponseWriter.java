@@ -148,7 +148,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
             throw new IllegalStateException("Request is not suspended");
         }
 
-        cancelSuspendedTimer(false);
+        cancelSuspendedTimer();
         scheduleSuspendedTimer(timeOut, timeUnit, r);
     }
 
@@ -163,18 +163,25 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     @Override
     public void commit() {
         suspendedTimeoutRunnable = null;
-        cancelSuspendedTimer(false);
+        cancelSuspendedTimer();
     }
 
     @Override
     public void failure(final Throwable error) {
         suspendedTimeoutRunnable = null;
-        cancelSuspendedTimer(false);
+        cancelSuspendedTimer();
         responseSubscriber.onError(error);
     }
 
     void cancel() {
-        cancelSuspendedTimer(true);
+        // We executeSuspendedTimeoutRunnable in the case the cancellation is not part of a proactive resource cleanup
+        // done in the background but instead when cancellation comes from the server.
+        final Runnable r = suspendedTimeoutRunnable;
+        if (r != null) {
+            r.run();
+        }
+
+        cancelSuspendedTimer();
         final ConnectableOutputStream os = connectableOutputStream;
         if (os != null) {
             try {
@@ -185,16 +192,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         }
     }
 
-    private void cancelSuspendedTimer(final boolean executeSuspendedTimeoutRunnable) {
-        // We executeSuspendedTimeoutRunnable in the case the cancellation is not part of a proactive resource cleanup
-        // done in the background but instead when cancellation comes from the server.
-        if (executeSuspendedTimeoutRunnable) {
-            final Runnable r = suspendedTimeoutRunnable;
-            if (r != null) {
-                r.run();
-            }
-        }
-
+    private void cancelSuspendedTimer() {
         final Cancellable c = suspendedTimerCancellable;
         if (c != null) {
             c.cancel();
