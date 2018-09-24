@@ -36,4 +36,19 @@ public interface StreamingHttpRequestHandler {
      */
     Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
                                          StreamingHttpResponseFactory responseFactory);
+
+    /**
+     * Convert this {@link StreamingHttpRequestHandler} to a {@link StreamingHttpService}.
+     * @return a {@link StreamingHttpService}.
+     */
+    default StreamingHttpService asStreamingHttpService() {
+        return new StreamingHttpService() {
+            @Override
+            public Single<StreamingHttpResponse> handle(
+                    final HttpServiceContext ctx, final StreamingHttpRequest request,
+                    final StreamingHttpResponseFactory responseFactory) {
+                return StreamingHttpRequestHandler.this.handle(ctx, request, responseFactory);
+            }
+        };
+    }
 }

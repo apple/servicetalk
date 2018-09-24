@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module relativePaths="true" type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output/>
+    <orderEntry type="inheritedJdk"/>
+    <content url="file://$MODULE_DIR$/">
+      <sourceFolder url="file://$MODULE_DIR$/src/main/java" isTestSource="false"/>
+      <sourceFolder url="file://$MODULE_DIR$/src/test/java" isTestSource="true"/>
+      <excludeFolder url="file://$MODULE_DIR$/.gradle"/>
+      <excludeFolder url="file://$MODULE_DIR$/build"/>
+    </content>
+    <orderEntry type="sourceFolder" forTests="false"/>
+    <orderEntry type="module" module-name="servicetalk-opentracing-core-internal"/>
+    <orderEntry type="module" module-name="servicetalk-bom-internal"/>
+    <orderEntry type="module" module-name="servicetalk-transport-netty-internal"/>
+    <orderEntry type="module" module-name="servicetalk-annotations"/>
+    <orderEntry type="module" module-name="servicetalk-buffer-netty"/>
+    <orderEntry type="module" module-name="servicetalk-transport-api"/>
+    <orderEntry type="module" module-name="servicetalk-concurrent-api"/>
+    <orderEntry type="module" module-name="servicetalk-buffer-api"/>
+    <orderEntry type="module" module-name="servicetalk-concurrent"/>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.m2/repository/com/google/code/findbugs/jsr305/3.0.2/jsr305-3.0.2.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES/>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/io.zipkin.zipkin2/zipkin/2.11.1/5e20ac9504a97a1a0d1c602f2c431b96f6fcbaca/zipkin-2.11.1.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/io.zipkin.zipkin2/zipkin/2.11.1/ed1825d5900a2502eb42ab32d11630365a35e591/zipkin-2.11.1-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/io.netty/netty-transport-native-epoll/4.1.29.Final/6a6f8c47911c4f5af0ae210c4c0db17d971f553f/netty-transport-native-epoll-4.1.29.Final-linux-x86_64.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/io.netty/netty-transport-native-epoll/4.1.29.Final/20a585c510a34f5dbf8ff340a89eeff0e6b364c7/netty-transport-native-epoll-4.1.29.Final-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/io.netty/netty-handler/4.1.29.Final/1acf1d94799296a2517533ec75ce7e155e9c4ea7/netty-handler-4.1.29.Final.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/io.netty/netty-handler/4.1.29.Final/8e32bdaf65071b4f27b6132419f01116047bc011/netty-handler-4.1.29.Final-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/io.netty/netty-codec/4.1.29.Final/1651bc2e279216773c234cafe402d68d2a5adc90/netty-codec-4.1.29.Final.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/io.netty/netty-codec/4.1.29.Final/a422f98ea0ca278de502e43ed80e56dee65bb4ad/netty-codec-4.1.29.Final-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/io.netty/netty-transport-native-kqueue/4.1.29.Final/395d23948a58388f79ab60c09f395e8f5e5c9c66/netty-transport-native-kqueue-4.1.29.Final-osx-x86_64.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/io.netty/netty-transport-native-kqueue/4.1.29.Final/7c29c056c074b16dd31938a0b24d4dbec4eb753c/netty-transport-native-kqueue-4.1.29.Final-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/io.netty/netty-transport-native-unix-common/4.1.29.Final/9c9f88ca57873b3c00489ae74fb80bb0cd02d986/netty-transport-native-unix-common-4.1.29.Final.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/io.netty/netty-transport-native-unix-common/4.1.29.Final/d41b2b59ea01ab4a0f702ce057afc3f31c0ba57/netty-transport-native-unix-common-4.1.29.Final-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/io.netty/netty-transport/4.1.29.Final/c190b90f70e2ae8a48c068afad709e8728fcaa39/netty-transport-4.1.29.Final.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/io.netty/netty-transport/4.1.29.Final/e3bc3e4551ed442348e1ce430cd32d01c0b31bcb/netty-transport-4.1.29.Final-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/io.netty/netty-buffer/4.1.29.Final/c3809f72e4b535b343b7dfa3c0c8210dad2fa5ea/netty-buffer-4.1.29.Final.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/io.netty/netty-buffer/4.1.29.Final/c47b88a34c25e064a9edf1289037f2ad6ae0034d/netty-buffer-4.1.29.Final-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/io.netty/netty-resolver/4.1.29.Final/bbec1dc913732e4773893c14d795b15d6c1e878e/netty-resolver-4.1.29.Final.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/io.netty/netty-resolver/4.1.29.Final/689f61915b957ad2633ac91212e288b522710889/netty-resolver-4.1.29.Final-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/io.netty/netty-common/4.1.29.Final/a5d6a735ed07d8f197daa48db7f097cfc971ee5e/netty-common-4.1.29.Final.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/io.netty/netty-common/4.1.29.Final/510fd5cf26024b39da89fb614e13f85a078a32e2/netty-common-4.1.29.Final-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.m2/repository/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.m2/repository/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/io.opentracing/opentracing-api/0.31.0/1d3b149394dc4d612c037df32df5971f414be022/opentracing-api-0.31.0.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/io.opentracing/opentracing-api/0.31.0/ac5c0c4e7f1b331778990eaa39a78f4a0d524cf0/opentracing-api-0.31.0-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.m2/repository/org/reactivestreams/reactive-streams/1.0.2/reactive-streams-1.0.2.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.m2/repository/org/reactivestreams/reactive-streams/1.0.2/reactive-streams-1.0.2-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module" module-name="servicetalk-concurrent-internal" scope="RUNTIME"/>
+    <orderEntry type="module-library" scope="RUNTIME">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.m2/repository/org/jctools/jctools-core/2.1.2/jctools-core-2.1.2.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.m2/repository/org/jctools/jctools-core/2.1.2/jctools-core-2.1.2-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module" module-name="servicetalk-opentracing-core" scope="TEST"/>
+    <orderEntry type="module" module-name="servicetalk-test-resources" scope="TEST"/>
+    <orderEntry type="module" module-name="servicetalk-concurrent-internal" scope="TEST"/>
+    <orderEntry type="module-library" scope="TEST">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/org.apache.logging.log4j/log4j-slf4j-impl/2.11.0/9ba207b78e470fe7765ebee14f1f0336c9cbcc18/log4j-slf4j-impl-2.11.0.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/org.apache.logging.log4j/log4j-slf4j-impl/2.11.0/eaf7016f6df9069dbc295a9c7a5d6424a1f237c2/log4j-slf4j-impl-2.11.0-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" scope="TEST">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.m2/repository/org/slf4j/slf4j-api/1.8.0-alpha2/slf4j-api-1.8.0-alpha2.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.m2/repository/org/slf4j/slf4j-api/1.8.0-alpha2/slf4j-api-1.8.0-alpha2-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" scope="TEST">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.m2/repository/junit/junit/4.12/junit-4.12.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.m2/repository/junit/junit/4.12/junit-4.12-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" scope="TEST">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.m2/repository/org/hamcrest/hamcrest-library/1.3/hamcrest-library-1.3.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.m2/repository/org/hamcrest/hamcrest-library/1.3/hamcrest-library-1.3-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" scope="TEST">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.m2/repository/org/mockito/mockito-core/2.19.0/mockito-core-2.19.0.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.m2/repository/org/mockito/mockito-core/2.19.0/mockito-core-2.19.0-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" scope="TEST">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/org.apache.logging.log4j/log4j-core/2.11.0/e6b751e02120c08702d98750f6a80bc25343b7f5/log4j-core-2.11.0.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/org.apache.logging.log4j/log4j-core/2.11.0/932392dc515dae4e750ac4a96c39ba69d5e81db3/log4j-core-2.11.0-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" scope="TEST">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.m2/repository/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.m2/repository/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" scope="TEST">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.m2/repository/net/bytebuddy/byte-buddy/1.8.10/byte-buddy-1.8.10.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.m2/repository/net/bytebuddy/byte-buddy/1.8.10/byte-buddy-1.8.10-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" scope="TEST">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.m2/repository/net/bytebuddy/byte-buddy-agent/1.8.10/byte-buddy-agent-1.8.10.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.m2/repository/net/bytebuddy/byte-buddy-agent/1.8.10/byte-buddy-agent-1.8.10-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" scope="TEST">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.m2/repository/org/objenesis/objenesis/2.6/objenesis-2.6.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.m2/repository/org/objenesis/objenesis/2.6/objenesis-2.6-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" scope="TEST">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/org.apache.logging.log4j/log4j-api/2.11.0/bede79a3f150711634a3047985517431bf6499f2/log4j-api-2.11.0.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.gradle/caches/modules-2/files-2.1/org.apache.logging.log4j/log4j-api/2.11.0/97f6fb29d69b48fe4bdb47cc21c834b4536cf752/log4j-api-2.11.0-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library" scope="TEST">
+      <library>
+        <CLASSES>
+          <root url="jar:///Users/scott/.m2/repository/org/jctools/jctools-core/2.1.2/jctools-core-2.1.2.jar!/"/>
+        </CLASSES>
+        <JAVADOC/>
+        <SOURCES>
+          <root url="jar:///Users/scott/.m2/repository/org/jctools/jctools-core/2.1.2/jctools-core-2.1.2-sources.jar!/"/>
+        </SOURCES>
+      </library>
+    </orderEntry>
+  </component>
+  <component name="ModuleRootManager"/>
+</module>

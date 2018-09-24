@@ -133,8 +133,8 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
     }
 
     @Override
-    public final <T> StreamingHttpRequest serializePayloadBody(final Publisher<T> payloadBody,
-                                                               final HttpSerializer<T> serializer) {
+    public final <T> StreamingHttpRequest payloadBody(final Publisher<T> payloadBody,
+                                                      final HttpSerializer<T> serializer) {
         return new BufferStreamingHttpRequest(this, allocator, serializer.serialize(headers(),
                     payloadBody.liftSynchronous(new SerializeBridgeFlowControlAndDiscardOperator<>(payloadBody())),
                     allocator),

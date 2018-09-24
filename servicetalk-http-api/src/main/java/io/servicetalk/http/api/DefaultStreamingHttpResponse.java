@@ -106,8 +106,8 @@ class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implem
     }
 
     @Override
-    public final <T> StreamingHttpResponse serializePayloadBody(final Publisher<T> payloadBody,
-                                                                final HttpSerializer<T> serializer) {
+    public final <T> StreamingHttpResponse payloadBody(final Publisher<T> payloadBody,
+                                                       final HttpSerializer<T> serializer) {
         return new BufferStreamingHttpResponse(this, allocator, serializer.serialize(headers(),
                     payloadBody.liftSynchronous(new SerializeBridgeFlowControlAndDiscardOperator<>(payloadBody())),
                     allocator),

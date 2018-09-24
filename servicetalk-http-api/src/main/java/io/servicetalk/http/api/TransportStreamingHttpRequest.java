@@ -102,7 +102,7 @@ final class TransportStreamingHttpRequest extends DefaultHttpRequestMetaData imp
     }
 
     @Override
-    public <T> StreamingHttpRequest serializePayloadBody(final Publisher<T> payloadBody, final HttpSerializer<T> serializer) {
+    public <T> StreamingHttpRequest payloadBody(final Publisher<T> payloadBody, final HttpSerializer<T> serializer) {
         final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
         return new BufferStreamingHttpRequest(this, allocator, serializer.serialize(headers(),
                 payloadBody.liftSynchronous(new SerializeBridgeFlowControlAndDiscardOperator<>(

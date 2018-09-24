@@ -35,4 +35,18 @@ public interface HttpRequestHandler {
      */
     Single<? extends HttpResponse> handle(HttpServiceContext ctx, HttpRequest request,
                                           HttpResponseFactory responseFactory);
+
+    /**
+     * Convert this {@link HttpRequestHandler} to a {@link HttpService}.
+     * @return a {@link HttpService}.
+     */
+    default HttpService asHttpService() {
+        return new HttpService() {
+            @Override
+            public Single<? extends HttpResponse> handle(final HttpServiceContext ctx, final HttpRequest request,
+                                                         HttpResponseFactory responseFactory) {
+                return HttpRequestHandler.this.handle(ctx, request, responseFactory);
+            }
+        };
+    }
 }

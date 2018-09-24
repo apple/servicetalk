@@ -33,7 +33,7 @@ public interface HttpRequest extends HttpRequestMetaData {
      * @param <T> The resulting type of the deserialization operation.
      * @return The results of the deserialization operation.
      */
-    default <T> T deserializePayloadBody(HttpDeserializer<T> deserializer) {
+    default <T> T payloadBody(HttpDeserializer<T> deserializer) {
         return deserializer.deserialize(headers(), payloadBody());
     }
 
@@ -57,7 +57,7 @@ public interface HttpRequest extends HttpRequestMetaData {
      * @param <T> The type of object to serialize.
      * @return A {@link HttpRequest} with the new serialized payload body.
      */
-    <T> HttpRequest serializePayloadBody(T pojo, HttpSerializer<T> serializer);
+    <T> HttpRequest payloadBody(T pojo, HttpSerializer<T> serializer);
 
     /**
      * Translate this {@link HttpRequest} to a {@link StreamingHttpRequest}.

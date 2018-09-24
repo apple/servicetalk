@@ -180,15 +180,15 @@ final class StreamingHttpClientToBlockingStreamingHttpClient extends BlockingStr
         }
 
         @Override
-        public <T> UpgradableBlockingStreamingHttpResponse serializePayloadBody(final Iterable<T> payloadBody,
-                                                                                final HttpSerializer<T> serializer) {
+        public <T> UpgradableBlockingStreamingHttpResponse payloadBody(final Iterable<T> payloadBody,
+                                                                       final HttpSerializer<T> serializer) {
             return transformPayloadBody(consumeOldPayloadBodySerialized(BlockingIterables.from(payloadBody)),
                     serializer);
         }
 
         @Override
-        public <T> UpgradableBlockingStreamingHttpResponse serializePayloadBody(final CloseableIterable<T> payloadBody,
-                                                                                final HttpSerializer<T> serializer) {
+        public <T> UpgradableBlockingStreamingHttpResponse payloadBody(final CloseableIterable<T> payloadBody,
+                                                                       final HttpSerializer<T> serializer) {
             return transformPayloadBody(consumeOldPayloadBodySerialized(from(payloadBody)), serializer);
         }
 

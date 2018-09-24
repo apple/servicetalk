@@ -114,7 +114,7 @@ public final class AsyncContext {
      * @param <T>   The type of object associated with {@code key}.
      * @see AsyncContextMap#put(AsyncContextMap.Key, Object)
      */
-    public static <T> void put(AsyncContextMap.Key<T> key, T value) {
+    public static <T> void put(AsyncContextMap.Key<T> key, @Nullable T value) {
         replace(current().put(key, value));
     }
 
@@ -334,6 +334,19 @@ public final class AsyncContext {
      */
     public static <T, U, V> BiFunction<T, U, V> wrap(BiFunction<T, U, V> func) {
         return INSTANCE.wrap(func);
+    }
+
+    /**
+     * Wrap a {@link Single.Subscriber} to manually ensure it is able to track {@link AsyncContext} correctly.
+     * <p>
+     * Note this typically isn't necessary when using composition. If it is necessary to manually terminate the
+     * {@link Single.Subscriber} then this method is useful.
+     * @param subscriber The {@link Single.Subscriber} to wrap.
+     * @param <T> The type of data for the {@link Single.Subscriber}.
+     * @return The wrapped {@link Single.Subscriber}.
+     */
+    public static <T> Single.Subscriber<T> wrap(Single.Subscriber<T> subscriber) {
+        return INSTANCE.wrap(subscriber, current());
     }
 
     static void autoEnable() {

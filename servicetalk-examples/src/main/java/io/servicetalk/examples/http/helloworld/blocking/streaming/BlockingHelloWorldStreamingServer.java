@@ -25,7 +25,7 @@ public final class BlockingHelloWorldStreamingServer {
         new DefaultHttpServerStarter()
                 .startBlockingStreaming(8080, (ctx, request, responseFactory) ->
                         responseFactory.ok()
-                                .serializePayloadBody(asList("Hello\n", "World\n", "From\n", "ServiceTalk\n"),
+                                .payloadBody(asList("Hello\n", "World\n", "From\n", "ServiceTalk\n"),
                                         textSerializer()))
                 .awaitShutdown();
     }

@@ -34,4 +34,20 @@ public interface BlockingStreamingHttpRequestHandler {
      */
     BlockingStreamingHttpResponse handle(HttpServiceContext ctx, BlockingStreamingHttpRequest request,
                                          BlockingStreamingHttpResponseFactory responseFactory) throws Exception;
+
+    /**
+     * Convert this {@link BlockingStreamingHttpRequestHandler} to a {@link BlockingStreamingHttpService}.
+     * @return a {@link BlockingStreamingHttpService}.
+     */
+    default BlockingStreamingHttpService asBlockingStreamingHttpService() {
+        return new BlockingStreamingHttpService() {
+            @Override
+            public BlockingStreamingHttpResponse handle(final HttpServiceContext ctx,
+                                                        final BlockingStreamingHttpRequest request,
+                                                        final BlockingStreamingHttpResponseFactory responseFactory)
+                    throws Exception {
+                return BlockingStreamingHttpRequestHandler.this.handle(ctx, request, responseFactory);
+            }
+        };
+    }
 }

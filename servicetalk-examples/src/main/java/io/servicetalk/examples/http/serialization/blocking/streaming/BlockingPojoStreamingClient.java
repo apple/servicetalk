@@ -34,11 +34,11 @@ public class BlockingPojoStreamingClient {
         try (BlockingStreamingHttpClient client =
                      HttpClients.forSingleAddress("localhost", 8080).buildBlockingStreaming()) {
             BlockingStreamingHttpResponse response = client.request(client.get("pojo")
-                    .serializePayloadBody(asList(new PojoRequest("1"), new PojoRequest("2"), new PojoRequest("3")),
+                    .payloadBody(asList(new PojoRequest("1"), new PojoRequest("2"), new PojoRequest("3")),
                             serializer.serializerFor(PojoRequest.class)));
             System.out.println(response);
             try (BlockingIterator<MyPojo> payload =
-                         response.deserializePayloadBody(serializer.deserializerFor(MyPojo.class)).iterator()) {
+                         response.payloadBody(serializer.deserializerFor(MyPojo.class)).iterator()) {
                 while (payload.hasNext()) {
                     System.out.println(payload.next());
                 }

@@ -96,7 +96,7 @@ final class RecommendationBackend {
                     .repeat(count -> true);
 
             return success(factory.ok()
-                    .serializePayloadBody(recommendations, serializer.serializerFor(Recommendation.class)));
+                    .payloadBody(recommendations, serializer.serializerFor(Recommendation.class)));
         }
     }
 

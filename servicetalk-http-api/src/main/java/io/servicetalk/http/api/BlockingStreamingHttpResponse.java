@@ -44,7 +44,7 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
      * @param <T> The resulting type of the deserialization operation.
      * @return The results of the deserialization operation.
      */
-    default <T> BlockingIterable<T> deserializePayloadBody(HttpDeserializer<T> deserializer) {
+    default <T> BlockingIterable<T> payloadBody(HttpDeserializer<T> deserializer) {
         return deserializer.deserialize(headers(), payloadBody());
     }
 
@@ -90,7 +90,7 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
      * @param <T> The type of objects to serialize.
      * @return A {@link BlockingStreamingHttpResponse} with the new serialized payload body.
      */
-    <T> BlockingStreamingHttpResponse serializePayloadBody(Iterable<T> payloadBody, HttpSerializer<T> serializer);
+    <T> BlockingStreamingHttpResponse payloadBody(Iterable<T> payloadBody, HttpSerializer<T> serializer);
 
     /**
      * Set the underlying payload body with the result of serialization.
@@ -106,8 +106,7 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
      * @param <T> The type of objects to serialize.
      * @return A {@link BlockingStreamingHttpResponse} with the new serialized payload body.
      */
-    <T> BlockingStreamingHttpResponse serializePayloadBody(CloseableIterable<T> payloadBody,
-                                                           HttpSerializer<T> serializer);
+    <T> BlockingStreamingHttpResponse payloadBody(CloseableIterable<T> payloadBody, HttpSerializer<T> serializer);
 
     /**
      * Transform the underlying payload body with the result of serialization.
@@ -137,7 +136,7 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
     default <T, R> BlockingStreamingHttpResponse transformPayloadBody(
             Function<BlockingIterable<T>, BlockingIterable<R>> transformer, HttpDeserializer<T> deserializer,
             HttpSerializer<R> serializer) {
-        return transformPayloadBody(buffers -> transformer.apply(deserializePayloadBody(deserializer)), serializer);
+        return transformPayloadBody(buffers -> transformer.apply(payloadBody(deserializer)), serializer);
     }
 
     /**

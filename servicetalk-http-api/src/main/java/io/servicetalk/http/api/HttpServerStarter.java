@@ -235,7 +235,7 @@ public interface HttpServerStarter {
     default Single<ServerContext> start(ExecutionContext executionContext, SocketAddress address,
                                         ContextFilter contextFilter, HttpRequestHandler service) {
         return startStreaming(executionContext, address, contextFilter,
-                HttpService.wrap(service).asStreamingService());
+                service.asHttpService().asStreamingService());
     }
 
     /**
@@ -256,7 +256,7 @@ public interface HttpServerStarter {
      */
     default Single<ServerContext> start(SocketAddress address,
                                         ContextFilter contextFilter, HttpRequestHandler service) {
-        return startStreaming(address, contextFilter, HttpService.wrap(service).asStreamingService());
+        return startStreaming(address, contextFilter, service.asHttpService().asStreamingService());
     }
 
     /**
@@ -388,7 +388,7 @@ public interface HttpServerStarter {
                                                  ContextFilter contextFilter,
                                                  BlockingStreamingHttpRequestHandler service) throws Exception {
         return blockingInvocation(startStreaming(executionContext, address, contextFilter,
-                BlockingStreamingHttpService.wrap(service).asStreamingService()));
+                service.asBlockingStreamingHttpService().asStreamingService()));
     }
 
     /**
@@ -410,7 +410,7 @@ public interface HttpServerStarter {
     default ServerContext startBlockingStreaming(SocketAddress address, ContextFilter contextFilter,
                                                  BlockingStreamingHttpRequestHandler service) throws Exception {
         return blockingInvocation(startStreaming(address, contextFilter,
-                BlockingStreamingHttpService.wrap(service).asStreamingService()));
+                service.asBlockingStreamingHttpService().asStreamingService()));
     }
 
     /**

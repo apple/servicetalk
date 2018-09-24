@@ -43,7 +43,7 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
      * @param <T> The resulting type of the deserialization operation.
      * @return The results of the deserialization operation.
      */
-    default <T> Publisher<T> deserializePayloadBody(HttpDeserializer<T> deserializer) {
+    default <T> Publisher<T> payloadBody(HttpDeserializer<T> deserializer) {
         return deserializer.deserialize(headers(), payloadBody());
     }
 
@@ -81,7 +81,7 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
      * @param <T> The type of objects to serialize.
      * @return A {@link StreamingHttpResponse} with the new serialized payload body.
      */
-    <T> StreamingHttpResponse serializePayloadBody(Publisher<T> payloadBody, HttpSerializer<T> serializer);
+    <T> StreamingHttpResponse payloadBody(Publisher<T> payloadBody, HttpSerializer<T> serializer);
 
     /**
      * Transform the underlying payload body with the result of serialization.

@@ -19,12 +19,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpServerStarter;
-import io.servicetalk.http.api.HttpServiceContext;
-import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestHandler;
-import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
@@ -208,17 +203,7 @@ public final class DefaultHttpServerStarter implements HttpServerStarter {
     public Single<ServerContext> startStreaming(final ExecutionContext executionContext, final SocketAddress address,
                                                 final ContextFilter contextFilter,
                                                 final StreamingHttpRequestHandler handler) {
-        return bind(executionContext, config.asReadOnly(), address, contextFilter,
-                handler instanceof StreamingHttpService ?
-                        (StreamingHttpService) handler :
-                        new StreamingHttpService() {
-                            @Override
-                            public Single<StreamingHttpResponse> handle(
-                                    final HttpServiceContext ctx, final StreamingHttpRequest request,
-                                    final StreamingHttpResponseFactory responseFactory) {
-                                return handler.handle(ctx, request, responseFactory);
-                            }
-                        });
+        return bind(executionContext, config.asReadOnly(), address, contextFilter, handler.asStreamingHttpService());
     }
 
     @Override

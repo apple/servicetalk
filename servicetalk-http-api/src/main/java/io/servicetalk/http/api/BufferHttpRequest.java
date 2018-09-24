@@ -69,7 +69,7 @@ final class BufferHttpRequest extends DefaultHttpRequestMetaData implements Http
     }
 
     @Override
-    public <T> HttpRequest serializePayloadBody(final T pojo, final HttpSerializer<T> serializer) {
+    public <T> HttpRequest payloadBody(final T pojo, final HttpSerializer<T> serializer) {
         return new BufferHttpRequest(this, allocator, trailers, serializer.serialize(headers(), pojo, allocator));
     }
 

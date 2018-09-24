@@ -323,8 +323,9 @@ final class HttpDataSourceTranformations {
             public void onNext(final Object o) {
                 if (o instanceof Buffer) {
                     subscriber.onNext((Buffer) o);
+                } else {
+                    throw new UnsupportedHttpChunkException(o);
                 }
-                throw new UnsupportedHttpChunkException(o);
             }
 
             @Override
@@ -659,13 +660,14 @@ final class HttpDataSourceTranformations {
             @Override
             public void onNext(final Object o) {
                 if (o instanceof HttpHeaders) {
-                    // Trailers must be the last element on the stream, no need to interact with the Subscription.
                     if (trailers != null) {
                         throwDuplicateTrailersException(trailers, o);
                     }
                     trailers = (HttpHeaders) o;
+                    // Trailers must be the last element on the stream, no need to interact with the Subscription.
+                } else {
+                    subscriber.onNext(o);
                 }
-                subscriber.onNext(o);
             }
         }
     }
@@ -862,8 +864,9 @@ final class HttpDataSourceTranformations {
                     }
                     this.trailers = (HttpHeaders) obj;
                     // Trailers must be the last element on the stream, no need to interact with the Subscription.
+                } else {
+                    subscriber.onNext(transformer.apply(obj, userState));
                 }
-                subscriber.onNext(transformer.apply(obj, userState));
             }
 
             @Override

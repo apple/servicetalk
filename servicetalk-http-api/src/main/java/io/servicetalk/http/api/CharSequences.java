@@ -88,7 +88,7 @@ public final class CharSequences {
      * @param b second {@link CharSequence} to compare.
      * @return {@code true} if both {@link CharSequence}'s are equals when ignoring the case.
      */
-    static boolean contentEqualsIgnoreCase(@Nullable final CharSequence a, @Nullable final CharSequence b) {
+    public static boolean contentEqualsIgnoreCase(@Nullable final CharSequence a, @Nullable final CharSequence b) {
         if (a == null || b == null) {
             return a == b;
         }
