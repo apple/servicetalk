@@ -15,6 +15,7 @@
  */
 package io.servicetalk.gradle.plugin.internal
 
+import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.publish.maven.MavenPublication
@@ -109,8 +110,12 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
         }
       }
 
+      def releaseBuild = project.hasProperty("releaseBuild")
+      def endsWithSnapshot = project.version.toString().toUpperCase().endsWith("-SNAPSHOT")
+
       // bintray publishing information
-      if (System.getenv("BINTRAY_USER") && System.getenv("BINTRAY_KEY")) {
+      if (releaseBuild && System.getenv("BINTRAY_USER") && System.getenv("BINTRAY_KEY")) {
+
         bintray {
           user = System.getenv("BINTRAY_USER")
           key = System.getenv("BINTRAY_KEY")
@@ -133,8 +138,12 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
         }
       }
 
-      if (!project.hasProperty("releaseBuild") && !project.version.toString().endsWith("-SNAPSHOT")) {
+      if (!releaseBuild && !endsWithSnapshot) {
         project.version += "-SNAPSHOT"
+      }
+
+      if (releaseBuild && endsWithSnapshot) {
+        throw new GradleException("Project version for a release build must not contain a '-SNAPSHOT' suffix")
       }
 
       task("package", dependsOn: assemble)
