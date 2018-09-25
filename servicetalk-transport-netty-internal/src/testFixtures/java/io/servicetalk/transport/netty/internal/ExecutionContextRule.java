@@ -100,26 +100,26 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
     @Override
     protected void after() {
         try {
-            awaitIndefinitely(ctx.getIoExecutor().closeAsync()
-                    .mergeDelayError(ctx.getExecutor().closeAsync()));
+            awaitIndefinitely(ctx.ioExecutor().closeAsync()
+                    .mergeDelayError(ctx.executor().closeAsync()));
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }
     }
 
     @Override
-    public BufferAllocator getBufferAllocator() {
-        return ctx.getBufferAllocator();
+    public BufferAllocator bufferAllocator() {
+        return ctx.bufferAllocator();
     }
 
     @Override
-    public IoExecutor getIoExecutor() {
-        return ctx.getIoExecutor();
+    public IoExecutor ioExecutor() {
+        return ctx.ioExecutor();
     }
 
     @Override
-    public Executor getExecutor() {
-        return ctx.getExecutor();
+    public Executor executor() {
+        return ctx.executor();
     }
 
     private static Supplier<IoExecutor> newIoExecutor(ThreadFactory threadFactory) {

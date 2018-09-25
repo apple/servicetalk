@@ -186,7 +186,7 @@ public class SynchronousResources {
     @Path("/text-buffer")
     @GET
     public Buffer getTextBuffer() {
-        return ctx.getExecutionContext().getBufferAllocator().fromAscii("DONE");
+        return ctx.executionContext().bufferAllocator().fromAscii("DONE");
     }
 
     @Consumes(TEXT_PLAIN)
@@ -194,7 +194,7 @@ public class SynchronousResources {
     @Path("/text-buffer")
     @POST
     public Buffer postTextBuffer(final Buffer requestContent) {
-        final BufferAllocator allocator = ctx.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
         final CompositeBuffer cb = allocator.newCompositeBuffer(2);
         return cb.addBuffer(allocator.fromAscii("GOT: ")).addBuffer(requestContent);
     }
@@ -204,7 +204,7 @@ public class SynchronousResources {
     @Path("/json-buffer")
     @POST
     public Buffer postJsonBuffer(final Buffer requestContent) {
-        final BufferAllocator allocator = ctx.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
         final CompositeBuffer cb = allocator.newCompositeBuffer(3);
         return cb.addBuffer(allocator.fromAscii("{\"got\":")).addBuffer(requestContent)
                 .addBuffer(allocator.fromAscii("}"));
@@ -237,7 +237,7 @@ public class SynchronousResources {
     @Path("/text-buffer-response")
     @GET
     public Response getTextBufferResponse(@Context final HttpHeaders headers) {
-        return status(203).entity(ctx.getExecutionContext().getBufferAllocator().fromAscii("DONE"))
+        return status(203).entity(ctx.executionContext().bufferAllocator().fromAscii("DONE"))
                 .header("X-Test", headers.getHeaderString("hdr"))
                 .build();
     }
@@ -254,7 +254,7 @@ public class SynchronousResources {
     @Path("/text-strin-pubout")
     @POST
     public Publisher<Buffer> postTextStrInPubOut(final String requestContent) {
-        return just(ctx.getExecutionContext().getBufferAllocator().fromUtf8("GOT: " + requestContent));
+        return just(ctx.executionContext().bufferAllocator().fromUtf8("GOT: " + requestContent));
     }
 
     @Consumes(TEXT_PLAIN)
@@ -270,7 +270,7 @@ public class SynchronousResources {
     @Path("/text-pubin-pubout")
     @POST
     public Publisher<Buffer> postTextPubInPubOut(final Publisher<Buffer> requestContent) {
-        return just(ctx.getExecutionContext().getBufferAllocator().fromAscii("GOT: ")).concatWith(requestContent);
+        return just(ctx.executionContext().bufferAllocator().fromAscii("GOT: ")).concatWith(requestContent);
     }
 
     @Produces(TEXT_PLAIN)
@@ -279,7 +279,7 @@ public class SynchronousResources {
     public Response getTextPubResponse(@QueryParam("i") final int i) {
         final String contentString = "GOT: " + i;
         final Publisher<Buffer> responseContent =
-                just(ctx.getExecutionContext().getBufferAllocator().fromAscii(contentString));
+                just(ctx.executionContext().bufferAllocator().fromAscii(contentString));
 
         return status(i)
                 // We know the content length so we set it, otherwise the response is chunked
@@ -366,7 +366,7 @@ public class SynchronousResources {
         // and ServiceTalk streaming serialization is used for the response
         final Map<String, Object> responseContent = new HashMap<>(requestContent);
         responseContent.put("foo", "bar3");
-        return SERIALIZER.serialize(just(responseContent), ctx.getExecutionContext().getBufferAllocator(),
+        return SERIALIZER.serialize(just(responseContent), ctx.executionContext().bufferAllocator(),
                 STRING_OBJECT_MAP_TYPE);
     }
 
@@ -398,7 +398,7 @@ public class SynchronousResources {
                             return responseContent;
                         });
 
-        return SERIALIZER.serialize(response, ctx.getExecutionContext().getBufferAllocator(), STRING_OBJECT_MAP_TYPE);
+        return SERIALIZER.serialize(response, ctx.executionContext().bufferAllocator(), STRING_OBJECT_MAP_TYPE);
     }
 
     @Consumes(APPLICATION_JSON)
@@ -406,7 +406,7 @@ public class SynchronousResources {
     @Path("/json-buf-sglin-sglout-response")
     @POST
     public Response postJsonBufSingleInSingleOutResponse(final Single<Buffer> requestContent) {
-        final BufferAllocator allocator = ctx.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
         final Single<Buffer> response = requestContent.map(buf -> {
             final Map<String, Object> responseContent =
                     new HashMap<>(SERIALIZER.deserializeAggregatedSingle(buf, STRING_OBJECT_MAP_TYPE));
@@ -422,7 +422,7 @@ public class SynchronousResources {
     @Path("/json-buf-pubin-pubout")
     @POST
     public Publisher<Buffer> postJsonBufPubInPubOut(final Publisher<Buffer> requestContent) {
-        final BufferAllocator allocator = ctx.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
         return requestContent.map(buf -> allocator.fromUtf8(buf.toString(UTF_8).toUpperCase()));
     }
 

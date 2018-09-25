@@ -80,7 +80,7 @@ public class PipelinedHttpConnectionTest {
     public void setup() {
         mockResp = reqRespFactory.ok();
         when(connection.onClosing()).thenReturn(never());
-        when(connection.getExecutionContext()).thenReturn(ctx);
+        when(connection.executionContext()).thenReturn(ctx);
         HttpClientConfig config = new HttpClientConfig(new TcpClientConfig(true));
         config.setMaxPipelinedRequests(2);
         readPublisher1 = new TestPublisher<>();
@@ -116,7 +116,7 @@ public class PipelinedHttpConnectionTest {
     @Test
     public void http11RequestShouldCompleteSuccessfully() {
         reset(connection); // Simplified mocking
-        when(connection.getExecutionContext()).thenReturn(ctx);
+        when(connection.executionContext()).thenReturn(ctx);
         when(connection.write(any(), any())).thenReturn(completed());
         when(connection.read()).thenReturn(Publisher.from(reqRespFactory.ok(), emptyLastChunk));
         Single<StreamingHttpResponse> request = pipe.request(

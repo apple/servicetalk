@@ -82,7 +82,7 @@ abstract class AbstractMessageBodyReaderWriter<Source, T, SourceOfT, WrappedSour
 
         // The original BufferPublisherInputStream has been replaced via a filter/interceptor so we need to build
         // a new RS source from the actual input stream
-        final BufferAllocator allocator = ctxRefProvider.get().get().getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = ctxRefProvider.get().get().executionContext().bufferAllocator();
         return handleEntityStream(entityStream, allocator, bodyFunction,
                 (is, a) -> bodyFunction
                         .andThen(sourceFunction)

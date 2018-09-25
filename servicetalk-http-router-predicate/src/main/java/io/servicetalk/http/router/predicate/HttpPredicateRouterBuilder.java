@@ -127,13 +127,13 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
 
     @Override
     public RouteContinuation whenIsSsl() {
-        andPredicate((ctx, req) -> ctx.getSslSession() != null);
+        andPredicate((ctx, req) -> ctx.sslSession() != null);
         return continuation;
     }
 
     @Override
     public RouteContinuation whenIsNotSsl() {
-        andPredicate((ctx, req) -> ctx.getSslSession() == null);
+        andPredicate((ctx, req) -> ctx.sslSession() == null);
         return continuation;
     }
 

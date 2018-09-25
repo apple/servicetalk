@@ -112,7 +112,7 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
         }
 
         final Ref<ConnectionContext> ctxRef = ctxRefProvider.get();
-        final Executor currentExecutor = ctxRef.get().getExecutionContext().getExecutor();
+        final Executor currentExecutor = ctxRef.get().executionContext().executor();
         final Executor resourceExecutor =
                 getResourceExecutor(resourceClass, resourceMethod, currentExecutor, executorConfig);
 
@@ -169,7 +169,7 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
                     .doAfterCancel(asyncContext::cancel);
 
             if (execOverrideCnxCtx != null) {
-                objectSingle.subscribeOn(execOverrideCnxCtx.getExecutionContext().getExecutor())
+                objectSingle.subscribeOn(execOverrideCnxCtx.executionContext().executor())
                         .subscribe(asyncContext::resume);
             } else {
                 objectSingle.subscribe(asyncContext::resume);
@@ -183,7 +183,7 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
             if (execOverrideCnxCtx != null) {
                 final RequestContext requestContext = requestScope.referenceCurrent();
                 final ContainerRequest request = requestProcessingCtx.request();
-                final Executor executor = execOverrideCnxCtx.getExecutionContext().getExecutor();
+                final Executor executor = execOverrideCnxCtx.executionContext().executor();
 
                 return executor.submit(() -> {
                     execOverrideCnxCtx.activate();
@@ -336,8 +336,8 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
         private ExecutorOverrideConnectionContext(final Ref<ConnectionContext> ctxRef, final Executor executor) {
             this.ctxRef = ctxRef;
             this.original = ctxRef.get();
-            this.execCtx = new DefaultExecutionContext(original.getExecutionContext().getBufferAllocator(),
-                    original.getExecutionContext().getIoExecutor(), executor);
+            this.execCtx = new DefaultExecutionContext(original.executionContext().bufferAllocator(),
+                    original.executionContext().ioExecutor(), executor);
         }
 
         private void activate() {
@@ -345,23 +345,23 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
         }
 
         @Override
-        public SocketAddress getLocalAddress() {
-            return original.getLocalAddress();
+        public SocketAddress localAddress() {
+            return original.localAddress();
         }
 
         @Override
-        public SocketAddress getRemoteAddress() {
-            return original.getRemoteAddress();
+        public SocketAddress remoteAddress() {
+            return original.remoteAddress();
         }
 
         @Nullable
         @Override
-        public SSLSession getSslSession() {
-            return original.getSslSession();
+        public SSLSession sslSession() {
+            return original.sslSession();
         }
 
         @Override
-        public ExecutionContext getExecutionContext() {
+        public ExecutionContext executionContext() {
             return execCtx;
         }
 

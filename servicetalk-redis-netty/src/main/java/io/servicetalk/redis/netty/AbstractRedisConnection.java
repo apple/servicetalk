@@ -95,9 +95,9 @@ abstract class AbstractRedisConnection extends RedisConnection {
     public final Publisher<RedisData> request(final RedisRequest request) {
         // We are writing request content on the connection. control path will be on the EventLoop, so offload to the
         // provided Executor.
-        return handleRequest(request.transformContent(c -> c.subscribeOn(getExecutionContext().getExecutor())))
+        return handleRequest(request.transformContent(c -> c.subscribeOn(getExecutionContext().executor())))
                 // Since data will be emitted on the EventLoop, offload the data path to avoid blocking EventLoop
-                .publishOn(executionContext.getExecutor());
+                .publishOn(executionContext.executor());
     }
 
     abstract Publisher<RedisData> handleRequest(RedisRequest request);

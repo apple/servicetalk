@@ -344,23 +344,23 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
     }
 
     @Override
-    public SocketAddress getLocalAddress() {
-        return context.getLocalAddress();
+    public SocketAddress localAddress() {
+        return context.localAddress();
     }
 
     @Override
-    public SocketAddress getRemoteAddress() {
-        return context.getRemoteAddress();
+    public SocketAddress remoteAddress() {
+        return context.remoteAddress();
     }
 
     @Override
-    public SSLSession getSslSession() {
-        return context.getSslSession();
+    public SSLSession sslSession() {
+        return context.sslSession();
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
-        return context.getExecutionContext();
+    public ExecutionContext executionContext() {
+        return context.executionContext();
     }
 
     private void invokeUserCloseHandler() {
@@ -369,7 +369,7 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
 
     @Override
     public Completable onClosing() {
-        return onClosing == null ? onClose() : onClosing.publishOn(getExecutionContext().getExecutor());
+        return onClosing == null ? onClose() : onClosing.publishOn(executionContext().executor());
     }
 
     @Override

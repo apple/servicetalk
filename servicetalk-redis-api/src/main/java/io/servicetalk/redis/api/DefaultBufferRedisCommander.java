@@ -61,7 +61,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> append(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.APPEND, allocator);
@@ -75,7 +75,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<String> auth(final Buffer password) {
         requireNonNull(password);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.AUTH, allocator);
@@ -87,7 +87,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> bgrewriteaof() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BGREWRITEAOF, allocator);
@@ -98,7 +98,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> bgsave() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BGSAVE, allocator);
@@ -110,7 +110,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> bitcount(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BITCOUNT, allocator);
@@ -124,7 +124,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> bitcount(@RedisProtocolSupport.Key final Buffer key, @Nullable final Long start,
                                  @Nullable final Long end) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (start != null) {
@@ -151,7 +151,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                        final Collection<RedisProtocolSupport.BitfieldOperation> operations) {
         requireNonNull(key);
         requireNonNull(operations);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         final CompositeBuffer cbOps = allocator.newCompositeBuffer();
         final int len = 2 + operations.stream().mapToInt(op -> op.writeTo(cbOps, allocator)).sum();
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BITFIELD, allocator);
@@ -168,7 +168,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(operation);
         requireNonNull(destkey);
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BITOP, allocator);
@@ -188,7 +188,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(destkey);
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BITOP, allocator);
@@ -210,7 +210,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 6;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BITOP, allocator);
@@ -230,7 +230,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(operation);
         requireNonNull(destkey);
         requireNonNull(keys);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += keys.size();
@@ -246,7 +246,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> bitpos(@RedisProtocolSupport.Key final Buffer key, final long bit) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BITPOS, allocator);
@@ -261,7 +261,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> bitpos(@RedisProtocolSupport.Key final Buffer key, final long bit, @Nullable final Long start,
                                @Nullable final Long end) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         if (start != null) {
@@ -287,7 +287,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> blpop(@RedisProtocolSupport.Key final Collection<Buffer> keys, final long timeout) {
         requireNonNull(keys);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += keys.size();
@@ -302,7 +302,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> brpop(@RedisProtocolSupport.Key final Collection<Buffer> keys, final long timeout) {
         requireNonNull(keys);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += keys.size();
@@ -319,7 +319,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                      @RedisProtocolSupport.Key final Buffer destination, final long timeout) {
         requireNonNull(source);
         requireNonNull(destination);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.BRPOPLPUSH, allocator);
@@ -334,7 +334,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> bzpopmax(@RedisProtocolSupport.Key final Collection<Buffer> keys, final long timeout) {
         requireNonNull(keys);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += keys.size();
@@ -349,7 +349,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> bzpopmin(@RedisProtocolSupport.Key final Collection<Buffer> keys, final long timeout) {
         requireNonNull(keys);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += keys.size();
@@ -364,7 +364,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> clientKill(@Nullable final Long id, @Nullable final RedisProtocolSupport.ClientKillType type,
                                    @Nullable final Buffer addrIpPort, @Nullable final Buffer skipmeYesNo) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (id != null) {
@@ -403,7 +403,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<Buffer> clientList() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLIENT,
@@ -415,7 +415,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<Buffer> clientGetname() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLIENT,
@@ -427,7 +427,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> clientPause(final long timeout) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLIENT,
@@ -441,7 +441,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<String> clientReply(final RedisProtocolSupport.ClientReplyReplyMode replyMode) {
         requireNonNull(replyMode);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLIENT,
@@ -455,7 +455,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<String> clientSetname(final Buffer connectionName) {
         requireNonNull(connectionName);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLIENT,
@@ -468,7 +468,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> clusterAddslots(final long slot) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -481,7 +481,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> clusterAddslots(final long slot1, final long slot2) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -495,7 +495,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> clusterAddslots(final long slot1, final long slot2, final long slot3) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -511,7 +511,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<String> clusterAddslots(final Collection<Long> slots) {
         requireNonNull(slots);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += slots.size();
@@ -526,7 +526,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> clusterCountFailureReports(final Buffer nodeId) {
         requireNonNull(nodeId);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -539,7 +539,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<Long> clusterCountkeysinslot(final long slot) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -552,7 +552,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> clusterDelslots(final long slot) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -565,7 +565,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> clusterDelslots(final long slot1, final long slot2) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -579,7 +579,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> clusterDelslots(final long slot1, final long slot2, final long slot3) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -595,7 +595,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<String> clusterDelslots(final Collection<Long> slots) {
         requireNonNull(slots);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += slots.size();
@@ -609,7 +609,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> clusterFailover() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -621,7 +621,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> clusterFailover(@Nullable final RedisProtocolSupport.ClusterFailoverOptions options) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (options != null) {
@@ -640,7 +640,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<String> clusterForget(final Buffer nodeId) {
         requireNonNull(nodeId);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -653,7 +653,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public <T> Single<List<T>> clusterGetkeysinslot(final long slot, final long count) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -667,7 +667,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<Buffer> clusterInfo() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -680,7 +680,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> clusterKeyslot(final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -694,7 +694,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<String> clusterMeet(final Buffer ip, final long port) {
         requireNonNull(ip);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -708,7 +708,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<Buffer> clusterNodes() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -721,7 +721,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<String> clusterReplicate(final Buffer nodeId) {
         requireNonNull(nodeId);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -734,7 +734,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> clusterReset() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -746,7 +746,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> clusterReset(@Nullable final RedisProtocolSupport.ClusterResetResetType resetType) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (resetType != null) {
@@ -764,7 +764,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> clusterSaveconfig() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -776,7 +776,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> clusterSetConfigEpoch(final long configEpoch) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -791,7 +791,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<String> clusterSetslot(final long slot,
                                          final RedisProtocolSupport.ClusterSetslotSubcommand subcommand) {
         requireNonNull(subcommand);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -808,7 +808,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                          final RedisProtocolSupport.ClusterSetslotSubcommand subcommand,
                                          @Nullable final Buffer nodeId) {
         requireNonNull(subcommand);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         if (nodeId != null) {
@@ -829,7 +829,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Buffer> clusterSlaves(final Buffer nodeId) {
         requireNonNull(nodeId);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -842,7 +842,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public <T> Single<List<T>> clusterSlots() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CLUSTER,
@@ -854,7 +854,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public <T> Single<List<T>> command() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.COMMAND, allocator);
@@ -865,7 +865,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<Long> commandCount() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.COMMAND,
@@ -877,7 +877,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public <T> Single<List<T>> commandGetkeys() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.COMMAND,
@@ -890,7 +890,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> commandInfo(final Buffer commandName) {
         requireNonNull(commandName);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.COMMAND,
@@ -905,7 +905,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public <T> Single<List<T>> commandInfo(final Buffer commandName1, final Buffer commandName2) {
         requireNonNull(commandName1);
         requireNonNull(commandName2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.COMMAND,
@@ -923,7 +923,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(commandName1);
         requireNonNull(commandName2);
         requireNonNull(commandName3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.COMMAND,
@@ -939,7 +939,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> commandInfo(final Collection<Buffer> commandNames) {
         requireNonNull(commandNames);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += commandNames.size();
@@ -954,7 +954,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> configGet(final Buffer parameter) {
         requireNonNull(parameter);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CONFIG,
@@ -967,7 +967,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> configRewrite() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CONFIG,
@@ -981,7 +981,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<String> configSet(final Buffer parameter, final Buffer value) {
         requireNonNull(parameter);
         requireNonNull(value);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CONFIG,
@@ -995,7 +995,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> configResetstat() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.CONFIG,
@@ -1007,7 +1007,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<Long> dbsize() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DBSIZE, allocator);
@@ -1019,7 +1019,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<String> debugObject(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DEBUG,
@@ -1032,7 +1032,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> debugSegfault() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DEBUG,
@@ -1045,7 +1045,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> decr(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DECR, allocator);
@@ -1058,7 +1058,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> decrby(@RedisProtocolSupport.Key final Buffer key, final long decrement) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DECRBY, allocator);
@@ -1072,7 +1072,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> del(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DEL, allocator);
@@ -1086,7 +1086,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> del(@RedisProtocolSupport.Key final Buffer key1, @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DEL, allocator);
@@ -1103,7 +1103,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DEL, allocator);
@@ -1118,7 +1118,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> del(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         len += keys.size();
@@ -1132,7 +1132,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Buffer> dump(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.DUMP, allocator);
@@ -1145,7 +1145,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Buffer> echo(final Buffer message) {
         requireNonNull(message);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ECHO, allocator);
@@ -1161,7 +1161,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(script);
         requireNonNull(keys);
         requireNonNull(args);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += keys.size();
@@ -1183,7 +1183,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(script);
         requireNonNull(keys);
         requireNonNull(args);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += keys.size();
@@ -1205,7 +1205,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(script);
         requireNonNull(keys);
         requireNonNull(args);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += keys.size();
@@ -1227,7 +1227,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(sha1);
         requireNonNull(keys);
         requireNonNull(args);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += keys.size();
@@ -1249,7 +1249,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(sha1);
         requireNonNull(keys);
         requireNonNull(args);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += keys.size();
@@ -1271,7 +1271,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(sha1);
         requireNonNull(keys);
         requireNonNull(args);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += keys.size();
@@ -1289,7 +1289,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> exists(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EXISTS, allocator);
@@ -1304,7 +1304,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EXISTS, allocator);
@@ -1321,7 +1321,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EXISTS, allocator);
@@ -1336,7 +1336,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> exists(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         len += keys.size();
@@ -1350,7 +1350,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> expire(@RedisProtocolSupport.Key final Buffer key, final long seconds) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EXPIRE, allocator);
@@ -1364,7 +1364,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> expireat(@RedisProtocolSupport.Key final Buffer key, final long timestamp) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.EXPIREAT, allocator);
@@ -1377,7 +1377,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> flushall() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.FLUSHALL, allocator);
@@ -1388,7 +1388,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> flushall(@Nullable final RedisProtocolSupport.FlushallAsync async) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         if (async != null) {
@@ -1405,7 +1405,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> flushdb() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.FLUSHDB, allocator);
@@ -1416,7 +1416,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> flushdb(@Nullable final RedisProtocolSupport.FlushdbAsync async) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         if (async != null) {
@@ -1436,7 +1436,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                final double latitude, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOADD, allocator);
@@ -1456,7 +1456,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 8;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOADD, allocator);
@@ -1481,7 +1481,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         requireNonNull(member3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 11;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOADD, allocator);
@@ -1505,7 +1505,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                final Collection<RedisProtocolSupport.BufferLongitudeLatitudeMember> longitudeLatitudeMembers) {
         requireNonNull(key);
         requireNonNull(longitudeLatitudeMembers);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += RedisProtocolSupport.BufferLongitudeLatitudeMember.SIZE * longitudeLatitudeMembers.size();
@@ -1523,7 +1523,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEODIST, allocator);
@@ -1542,7 +1542,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         if (unit != null) {
@@ -1565,7 +1565,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public <T> Single<List<T>> geohash(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOHASH, allocator);
@@ -1582,7 +1582,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOHASH, allocator);
@@ -1601,7 +1601,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         requireNonNull(member3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOHASH, allocator);
@@ -1618,7 +1618,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public <T> Single<List<T>> geohash(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> members) {
         requireNonNull(key);
         requireNonNull(members);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += members.size();
@@ -1634,7 +1634,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public <T> Single<List<T>> geopos(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOPOS, allocator);
@@ -1651,7 +1651,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOPOS, allocator);
@@ -1670,7 +1670,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         requireNonNull(member3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEOPOS, allocator);
@@ -1687,7 +1687,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public <T> Single<List<T>> geopos(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> members) {
         requireNonNull(key);
         requireNonNull(members);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += members.size();
@@ -1705,7 +1705,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                          final RedisProtocolSupport.GeoradiusUnit unit) {
         requireNonNull(key);
         requireNonNull(unit);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 6;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEORADIUS, allocator);
@@ -1732,7 +1732,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                          @Nullable @RedisProtocolSupport.Key final Buffer storedistKey) {
         requireNonNull(key);
         requireNonNull(unit);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 6;
         if (withcoord != null) {
@@ -1798,7 +1798,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(member);
         requireNonNull(unit);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GEORADIUSBYMEMBER,
@@ -1826,7 +1826,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(member);
         requireNonNull(unit);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         if (withcoord != null) {
@@ -1888,7 +1888,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Buffer> get(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GET, allocator);
@@ -1901,7 +1901,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> getbit(@RedisProtocolSupport.Key final Buffer key, final long offset) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GETBIT, allocator);
@@ -1915,7 +1915,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Buffer> getrange(@RedisProtocolSupport.Key final Buffer key, final long start, final long end) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GETRANGE, allocator);
@@ -1931,7 +1931,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Buffer> getset(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.GETSET, allocator);
@@ -1946,7 +1946,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> hdel(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
         requireNonNull(key);
         requireNonNull(field);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HDEL, allocator);
@@ -1962,7 +1962,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(field1);
         requireNonNull(field2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HDEL, allocator);
@@ -1981,7 +1981,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(field1);
         requireNonNull(field2);
         requireNonNull(field3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HDEL, allocator);
@@ -1998,7 +1998,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> hdel(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> fields) {
         requireNonNull(key);
         requireNonNull(fields);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += fields.size();
@@ -2014,7 +2014,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> hexists(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
         requireNonNull(key);
         requireNonNull(field);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HEXISTS, allocator);
@@ -2029,7 +2029,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Buffer> hget(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
         requireNonNull(key);
         requireNonNull(field);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HGET, allocator);
@@ -2043,7 +2043,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> hgetall(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HGETALL, allocator);
@@ -2057,7 +2057,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> hincrby(@RedisProtocolSupport.Key final Buffer key, final Buffer field, final long increment) {
         requireNonNull(key);
         requireNonNull(field);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HINCRBY, allocator);
@@ -2074,7 +2074,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                        final double increment) {
         requireNonNull(key);
         requireNonNull(field);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HINCRBYFLOAT, allocator);
@@ -2090,7 +2090,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> hkeys(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HKEYS, allocator);
@@ -2103,7 +2103,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> hlen(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HLEN, allocator);
@@ -2117,7 +2117,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
         requireNonNull(key);
         requireNonNull(field);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HMGET, allocator);
@@ -2134,7 +2134,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(field1);
         requireNonNull(field2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HMGET, allocator);
@@ -2153,7 +2153,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(field1);
         requireNonNull(field2);
         requireNonNull(field3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HMGET, allocator);
@@ -2170,7 +2170,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public <T> Single<List<T>> hmget(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> fields) {
         requireNonNull(key);
         requireNonNull(fields);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += fields.size();
@@ -2187,7 +2187,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(field);
         requireNonNull(value);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HMSET, allocator);
@@ -2207,7 +2207,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(value1);
         requireNonNull(field2);
         requireNonNull(value2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 6;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HMSET, allocator);
@@ -2231,7 +2231,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(value2);
         requireNonNull(field3);
         requireNonNull(value3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 8;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HMSET, allocator);
@@ -2252,7 +2252,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                 final Collection<RedisProtocolSupport.BufferFieldValue> fieldValues) {
         requireNonNull(key);
         requireNonNull(fieldValues);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += RedisProtocolSupport.BufferFieldValue.SIZE * fieldValues.size();
@@ -2267,7 +2267,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> hscan(@RedisProtocolSupport.Key final Buffer key, final long cursor) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HSCAN, allocator);
@@ -2282,7 +2282,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public <T> Single<List<T>> hscan(@RedisProtocolSupport.Key final Buffer key, final long cursor,
                                      @Nullable final Buffer matchPattern, @Nullable final Long count) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         if (matchPattern != null) {
@@ -2312,7 +2312,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(field);
         requireNonNull(value);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HSET, allocator);
@@ -2329,7 +2329,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(field);
         requireNonNull(value);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HSETNX, allocator);
@@ -2345,7 +2345,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> hstrlen(@RedisProtocolSupport.Key final Buffer key, final Buffer field) {
         requireNonNull(key);
         requireNonNull(field);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HSTRLEN, allocator);
@@ -2359,7 +2359,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> hvals(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.HVALS, allocator);
@@ -2372,7 +2372,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> incr(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.INCR, allocator);
@@ -2385,7 +2385,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> incrby(@RedisProtocolSupport.Key final Buffer key, final long increment) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.INCRBY, allocator);
@@ -2399,7 +2399,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Double> incrbyfloat(@RedisProtocolSupport.Key final Buffer key, final double increment) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.INCRBYFLOAT, allocator);
@@ -2413,7 +2413,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<Buffer> info() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.INFO, allocator);
@@ -2424,7 +2424,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<Buffer> info(@Nullable final Buffer section) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         if (section != null) {
@@ -2442,7 +2442,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> keys(final Buffer pattern) {
         requireNonNull(pattern);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.KEYS, allocator);
@@ -2454,7 +2454,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<Long> lastsave() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LASTSAVE, allocator);
@@ -2466,7 +2466,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Buffer> lindex(@RedisProtocolSupport.Key final Buffer key, final long index) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LINDEX, allocator);
@@ -2484,7 +2484,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(where);
         requireNonNull(pivot);
         requireNonNull(value);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LINSERT, allocator);
@@ -2500,7 +2500,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> llen(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LLEN, allocator);
@@ -2513,7 +2513,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Buffer> lpop(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LPOP, allocator);
@@ -2527,7 +2527,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> lpush(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LPUSH, allocator);
@@ -2543,7 +2543,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(value1);
         requireNonNull(value2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LPUSH, allocator);
@@ -2562,7 +2562,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(value1);
         requireNonNull(value2);
         requireNonNull(value3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LPUSH, allocator);
@@ -2579,7 +2579,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> lpush(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> values) {
         requireNonNull(key);
         requireNonNull(values);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += values.size();
@@ -2595,7 +2595,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> lpushx(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LPUSHX, allocator);
@@ -2609,7 +2609,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> lrange(@RedisProtocolSupport.Key final Buffer key, final long start, final long stop) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LRANGE, allocator);
@@ -2625,7 +2625,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> lrem(@RedisProtocolSupport.Key final Buffer key, final long count, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LREM, allocator);
@@ -2641,7 +2641,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<String> lset(@RedisProtocolSupport.Key final Buffer key, final long index, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LSET, allocator);
@@ -2656,7 +2656,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<String> ltrim(@RedisProtocolSupport.Key final Buffer key, final long start, final long stop) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.LTRIM, allocator);
@@ -2670,7 +2670,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<Buffer> memoryDoctor() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
@@ -2682,7 +2682,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public <T> Single<List<T>> memoryHelp() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
@@ -2694,7 +2694,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<Buffer> memoryMallocStats() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
@@ -2706,7 +2706,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> memoryPurge() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
@@ -2718,7 +2718,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public <T> Single<List<T>> memoryStats() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
@@ -2731,7 +2731,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> memoryUsage(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MEMORY,
@@ -2745,7 +2745,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> memoryUsage(@RedisProtocolSupport.Key final Buffer key, @Nullable final Long samplesCount) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         if (samplesCount != null) {
@@ -2766,7 +2766,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MGET, allocator);
@@ -2781,7 +2781,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                     @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MGET, allocator);
@@ -2799,7 +2799,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MGET, allocator);
@@ -2814,7 +2814,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> mget(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         len += keys.size();
@@ -2827,7 +2827,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Publisher<String> monitor() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MONITOR, allocator);
@@ -2839,7 +2839,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> move(@RedisProtocolSupport.Key final Buffer key, final long db) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MOVE, allocator);
@@ -2854,7 +2854,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<String> mset(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MSET, allocator);
@@ -2872,7 +2872,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(value1);
         requireNonNull(key2);
         requireNonNull(value2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MSET, allocator);
@@ -2895,7 +2895,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(value2);
         requireNonNull(key3);
         requireNonNull(value3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 7;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MSET, allocator);
@@ -2913,7 +2913,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<String> mset(final Collection<RedisProtocolSupport.BufferKeyValue> keyValues) {
         requireNonNull(keyValues);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         len += RedisProtocolSupport.BufferKeyValue.SIZE * keyValues.size();
@@ -2928,7 +2928,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> msetnx(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MSETNX, allocator);
@@ -2946,7 +2946,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(value1);
         requireNonNull(key2);
         requireNonNull(value2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MSETNX, allocator);
@@ -2969,7 +2969,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(value2);
         requireNonNull(key3);
         requireNonNull(value3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 7;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MSETNX, allocator);
@@ -2987,7 +2987,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> msetnx(final Collection<RedisProtocolSupport.BufferKeyValue> keyValues) {
         requireNonNull(keyValues);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         len += RedisProtocolSupport.BufferKeyValue.SIZE * keyValues.size();
@@ -3000,7 +3000,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<TransactedBufferRedisCommander> multi() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.MULTI, allocator);
@@ -3011,7 +3011,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Buffer> objectEncoding(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.OBJECT,
@@ -3025,7 +3025,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> objectFreq(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.OBJECT,
@@ -3038,7 +3038,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<List<String>> objectHelp() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.OBJECT,
@@ -3051,7 +3051,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> objectIdletime(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.OBJECT,
@@ -3065,7 +3065,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> objectRefcount(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.OBJECT,
@@ -3079,7 +3079,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> persist(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PERSIST, allocator);
@@ -3092,7 +3092,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> pexpire(@RedisProtocolSupport.Key final Buffer key, final long milliseconds) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PEXPIRE, allocator);
@@ -3106,7 +3106,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> pexpireat(@RedisProtocolSupport.Key final Buffer key, final long millisecondsTimestamp) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PEXPIREAT, allocator);
@@ -3121,7 +3121,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> pfadd(@RedisProtocolSupport.Key final Buffer key, final Buffer element) {
         requireNonNull(key);
         requireNonNull(element);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFADD, allocator);
@@ -3138,7 +3138,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(element1);
         requireNonNull(element2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFADD, allocator);
@@ -3157,7 +3157,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(element1);
         requireNonNull(element2);
         requireNonNull(element3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFADD, allocator);
@@ -3174,7 +3174,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> pfadd(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> elements) {
         requireNonNull(key);
         requireNonNull(elements);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += elements.size();
@@ -3189,7 +3189,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> pfcount(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFCOUNT, allocator);
@@ -3204,7 +3204,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                 @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFCOUNT, allocator);
@@ -3222,7 +3222,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFCOUNT, allocator);
@@ -3237,7 +3237,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> pfcount(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         len += keys.size();
@@ -3253,7 +3253,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                   @RedisProtocolSupport.Key final Buffer sourcekey) {
         requireNonNull(destkey);
         requireNonNull(sourcekey);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFMERGE, allocator);
@@ -3271,7 +3271,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(destkey);
         requireNonNull(sourcekey1);
         requireNonNull(sourcekey2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFMERGE, allocator);
@@ -3292,7 +3292,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(sourcekey1);
         requireNonNull(sourcekey2);
         requireNonNull(sourcekey3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PFMERGE, allocator);
@@ -3310,7 +3310,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                   @RedisProtocolSupport.Key final Collection<Buffer> sourcekeys) {
         requireNonNull(destkey);
         requireNonNull(sourcekeys);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += sourcekeys.size();
@@ -3324,7 +3324,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> ping() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PING, allocator);
@@ -3336,7 +3336,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Buffer> ping(final Buffer message) {
         requireNonNull(message);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PING, allocator);
@@ -3351,7 +3351,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                  final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PSETEX, allocator);
@@ -3366,7 +3366,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<PubSubBufferRedisConnection> psubscribe(final Buffer pattern) {
         requireNonNull(pattern);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PSUBSCRIBE, allocator);
@@ -3379,7 +3379,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> pttl(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PTTL, allocator);
@@ -3393,7 +3393,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> publish(final Buffer channel, final Buffer message) {
         requireNonNull(channel);
         requireNonNull(message);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PUBLISH, allocator);
@@ -3406,7 +3406,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<List<String>> pubsubChannels() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PUBSUB,
@@ -3418,7 +3418,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<List<String>> pubsubChannels(@Nullable final Buffer pattern) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (pattern != null) {
@@ -3436,7 +3436,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<List<String>> pubsubChannels(@Nullable final Buffer pattern1, @Nullable final Buffer pattern2) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (pattern1 != null) {
@@ -3461,7 +3461,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<List<String>> pubsubChannels(@Nullable final Buffer pattern1, @Nullable final Buffer pattern2,
                                                @Nullable final Buffer pattern3) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (pattern1 != null) {
@@ -3492,7 +3492,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<List<String>> pubsubChannels(final Collection<Buffer> patterns) {
         requireNonNull(patterns);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += patterns.size();
@@ -3506,7 +3506,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public <T> Single<List<T>> pubsubNumsub() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PUBSUB,
@@ -3518,7 +3518,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public <T> Single<List<T>> pubsubNumsub(@Nullable final Buffer channel) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (channel != null) {
@@ -3536,7 +3536,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public <T> Single<List<T>> pubsubNumsub(@Nullable final Buffer channel1, @Nullable final Buffer channel2) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (channel1 != null) {
@@ -3561,7 +3561,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> pubsubNumsub(@Nullable final Buffer channel1, @Nullable final Buffer channel2,
                                             @Nullable final Buffer channel3) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (channel1 != null) {
@@ -3592,7 +3592,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> pubsubNumsub(final Collection<Buffer> channels) {
         requireNonNull(channels);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += channels.size();
@@ -3606,7 +3606,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<Long> pubsubNumpat() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.PUBSUB,
@@ -3618,7 +3618,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<Buffer> randomkey() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RANDOMKEY, allocator);
@@ -3629,7 +3629,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> readonly() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.READONLY, allocator);
@@ -3640,7 +3640,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> readwrite() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.READWRITE, allocator);
@@ -3654,7 +3654,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                  @RedisProtocolSupport.Key final Buffer newkey) {
         requireNonNull(key);
         requireNonNull(newkey);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RENAME, allocator);
@@ -3670,7 +3670,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                  @RedisProtocolSupport.Key final Buffer newkey) {
         requireNonNull(key);
         requireNonNull(newkey);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RENAMENX, allocator);
@@ -3686,7 +3686,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                   final Buffer serializedValue) {
         requireNonNull(key);
         requireNonNull(serializedValue);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RESTORE, allocator);
@@ -3704,7 +3704,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                   @Nullable final RedisProtocolSupport.RestoreReplace replace) {
         requireNonNull(key);
         requireNonNull(serializedValue);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         if (replace != null) {
@@ -3724,7 +3724,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public <T> Single<List<T>> role() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ROLE, allocator);
@@ -3736,7 +3736,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Buffer> rpop(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RPOP, allocator);
@@ -3751,7 +3751,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                     @RedisProtocolSupport.Key final Buffer destination) {
         requireNonNull(source);
         requireNonNull(destination);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RPOPLPUSH, allocator);
@@ -3766,7 +3766,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> rpush(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RPUSH, allocator);
@@ -3782,7 +3782,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(value1);
         requireNonNull(value2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RPUSH, allocator);
@@ -3801,7 +3801,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(value1);
         requireNonNull(value2);
         requireNonNull(value3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RPUSH, allocator);
@@ -3818,7 +3818,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> rpush(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> values) {
         requireNonNull(key);
         requireNonNull(values);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += values.size();
@@ -3834,7 +3834,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> rpushx(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.RPUSHX, allocator);
@@ -3849,7 +3849,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> sadd(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SADD, allocator);
@@ -3865,7 +3865,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SADD, allocator);
@@ -3884,7 +3884,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         requireNonNull(member3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SADD, allocator);
@@ -3901,7 +3901,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> sadd(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> members) {
         requireNonNull(key);
         requireNonNull(members);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += members.size();
@@ -3915,7 +3915,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> save() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SAVE, allocator);
@@ -3926,7 +3926,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public <T> Single<List<T>> scan(final long cursor) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCAN, allocator);
@@ -3939,7 +3939,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> scan(final long cursor, @Nullable final Buffer matchPattern,
                                     @Nullable final Long count) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (matchPattern != null) {
@@ -3966,7 +3966,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> scard(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCARD, allocator);
@@ -3979,7 +3979,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<String> scriptDebug(final RedisProtocolSupport.ScriptDebugMode mode) {
         requireNonNull(mode);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCRIPT,
@@ -3993,7 +3993,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> scriptExists(final Buffer sha1) {
         requireNonNull(sha1);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCRIPT,
@@ -4008,7 +4008,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public <T> Single<List<T>> scriptExists(final Buffer sha11, final Buffer sha12) {
         requireNonNull(sha11);
         requireNonNull(sha12);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCRIPT,
@@ -4025,7 +4025,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(sha11);
         requireNonNull(sha12);
         requireNonNull(sha13);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCRIPT,
@@ -4041,7 +4041,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> scriptExists(final Collection<Buffer> sha1s) {
         requireNonNull(sha1s);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += sha1s.size();
@@ -4055,7 +4055,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> scriptFlush() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCRIPT,
@@ -4067,7 +4067,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> scriptKill() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCRIPT,
@@ -4080,7 +4080,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Buffer> scriptLoad(final Buffer script) {
         requireNonNull(script);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SCRIPT,
@@ -4094,7 +4094,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> sdiff(@RedisProtocolSupport.Key final Buffer firstkey) {
         requireNonNull(firstkey);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFF, allocator);
@@ -4108,7 +4108,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public <T> Single<List<T>> sdiff(@RedisProtocolSupport.Key final Buffer firstkey,
                                      @Nullable @RedisProtocolSupport.Key final Buffer otherkey) {
         requireNonNull(firstkey);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (otherkey != null) {
@@ -4129,7 +4129,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                      @Nullable @RedisProtocolSupport.Key final Buffer otherkey1,
                                      @Nullable @RedisProtocolSupport.Key final Buffer otherkey2) {
         requireNonNull(firstkey);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (otherkey1 != null) {
@@ -4157,7 +4157,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                      @Nullable @RedisProtocolSupport.Key final Buffer otherkey2,
                                      @Nullable @RedisProtocolSupport.Key final Buffer otherkey3) {
         requireNonNull(firstkey);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (otherkey1 != null) {
@@ -4190,7 +4190,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                      @RedisProtocolSupport.Key final Collection<Buffer> otherkeys) {
         requireNonNull(firstkey);
         requireNonNull(otherkeys);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += otherkeys.size();
@@ -4207,7 +4207,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                    @RedisProtocolSupport.Key final Buffer firstkey) {
         requireNonNull(destination);
         requireNonNull(firstkey);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SDIFFSTORE, allocator);
@@ -4224,7 +4224,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                    @Nullable @RedisProtocolSupport.Key final Buffer otherkey) {
         requireNonNull(destination);
         requireNonNull(firstkey);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         if (otherkey != null) {
@@ -4248,7 +4248,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                    @Nullable @RedisProtocolSupport.Key final Buffer otherkey2) {
         requireNonNull(destination);
         requireNonNull(firstkey);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         if (otherkey1 != null) {
@@ -4279,7 +4279,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                    @Nullable @RedisProtocolSupport.Key final Buffer otherkey3) {
         requireNonNull(destination);
         requireNonNull(firstkey);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         if (otherkey1 != null) {
@@ -4315,7 +4315,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(destination);
         requireNonNull(firstkey);
         requireNonNull(otherkeys);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += otherkeys.size();
@@ -4330,7 +4330,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> select(final long index) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SELECT, allocator);
@@ -4344,7 +4344,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<String> set(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SET, allocator);
@@ -4361,7 +4361,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                               @Nullable final RedisProtocolSupport.SetCondition condition) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         if (expireDuration != null) {
@@ -4388,7 +4388,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> setbit(@RedisProtocolSupport.Key final Buffer key, final long offset, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SETBIT, allocator);
@@ -4404,7 +4404,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<String> setex(@RedisProtocolSupport.Key final Buffer key, final long seconds, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SETEX, allocator);
@@ -4420,7 +4420,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> setnx(@RedisProtocolSupport.Key final Buffer key, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SETNX, allocator);
@@ -4435,7 +4435,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> setrange(@RedisProtocolSupport.Key final Buffer key, final long offset, final Buffer value) {
         requireNonNull(key);
         requireNonNull(value);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SETRANGE, allocator);
@@ -4449,7 +4449,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> shutdown() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SHUTDOWN, allocator);
@@ -4460,7 +4460,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> shutdown(@Nullable final RedisProtocolSupport.ShutdownSaveMode saveMode) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         if (saveMode != null) {
@@ -4478,7 +4478,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> sinter(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SINTER, allocator);
@@ -4493,7 +4493,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                       @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SINTER, allocator);
@@ -4511,7 +4511,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SINTER, allocator);
@@ -4526,7 +4526,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> sinter(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         len += keys.size();
@@ -4542,7 +4542,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                     @RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(destination);
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SINTERSTORE, allocator);
@@ -4560,7 +4560,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(destination);
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SINTERSTORE, allocator);
@@ -4581,7 +4581,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SINTERSTORE, allocator);
@@ -4599,7 +4599,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                     @RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(destination);
         requireNonNull(keys);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += keys.size();
@@ -4615,7 +4615,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> sismember(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SISMEMBER, allocator);
@@ -4630,7 +4630,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<String> slaveof(final Buffer host, final Buffer port) {
         requireNonNull(host);
         requireNonNull(port);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SLAVEOF, allocator);
@@ -4644,7 +4644,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> slowlog(final Buffer subcommand) {
         requireNonNull(subcommand);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SLOWLOG, allocator);
@@ -4657,7 +4657,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> slowlog(final Buffer subcommand, @Nullable final Buffer argument) {
         requireNonNull(subcommand);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (argument != null) {
@@ -4676,7 +4676,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> smembers(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SMEMBERS, allocator);
@@ -4692,7 +4692,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(source);
         requireNonNull(destination);
         requireNonNull(member);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SMOVE, allocator);
@@ -4707,7 +4707,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> sort(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SORT, allocator);
@@ -4725,7 +4725,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                     @Nullable final RedisProtocolSupport.SortSorting sorting) {
         requireNonNull(key);
         requireNonNull(getPatterns);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (byPattern != null) {
@@ -4767,7 +4767,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                              @RedisProtocolSupport.Key final Buffer storeDestination) {
         requireNonNull(key);
         requireNonNull(storeDestination);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SORT, allocator);
@@ -4788,7 +4788,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(storeDestination);
         requireNonNull(getPatterns);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         if (byPattern != null) {
@@ -4830,7 +4830,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Buffer> spop(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SPOP, allocator);
@@ -4843,7 +4843,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Buffer> spop(@RedisProtocolSupport.Key final Buffer key, @Nullable final Long count) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (count != null) {
@@ -4862,7 +4862,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Buffer> srandmember(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SRANDMEMBER, allocator);
@@ -4875,7 +4875,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<List<String>> srandmember(@RedisProtocolSupport.Key final Buffer key, final long count) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SRANDMEMBER, allocator);
@@ -4890,7 +4890,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> srem(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SREM, allocator);
@@ -4906,7 +4906,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SREM, allocator);
@@ -4925,7 +4925,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         requireNonNull(member3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SREM, allocator);
@@ -4942,7 +4942,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> srem(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> members) {
         requireNonNull(key);
         requireNonNull(members);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += members.size();
@@ -4957,7 +4957,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> sscan(@RedisProtocolSupport.Key final Buffer key, final long cursor) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SSCAN, allocator);
@@ -4972,7 +4972,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public <T> Single<List<T>> sscan(@RedisProtocolSupport.Key final Buffer key, final long cursor,
                                      @Nullable final Buffer matchPattern, @Nullable final Long count) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         if (matchPattern != null) {
@@ -5000,7 +5000,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> strlen(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.STRLEN, allocator);
@@ -5013,7 +5013,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<PubSubBufferRedisConnection> subscribe(final Buffer channel) {
         requireNonNull(channel);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUBSCRIBE, allocator);
@@ -5026,7 +5026,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> sunion(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUNION, allocator);
@@ -5041,7 +5041,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                       @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUNION, allocator);
@@ -5059,7 +5059,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUNION, allocator);
@@ -5074,7 +5074,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> sunion(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         len += keys.size();
@@ -5090,7 +5090,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                     @RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(destination);
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUNIONSTORE, allocator);
@@ -5108,7 +5108,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(destination);
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUNIONSTORE, allocator);
@@ -5129,7 +5129,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SUNIONSTORE, allocator);
@@ -5147,7 +5147,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                     @RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(destination);
         requireNonNull(keys);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += keys.size();
@@ -5161,7 +5161,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> swapdb(final long index, final long index1) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.SWAPDB, allocator);
@@ -5174,7 +5174,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public <T> Single<List<T>> time() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TIME, allocator);
@@ -5186,7 +5186,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> touch(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TOUCH, allocator);
@@ -5201,7 +5201,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                               @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TOUCH, allocator);
@@ -5218,7 +5218,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TOUCH, allocator);
@@ -5233,7 +5233,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> touch(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         len += keys.size();
@@ -5247,7 +5247,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> ttl(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TTL, allocator);
@@ -5260,7 +5260,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<String> type(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.TYPE, allocator);
@@ -5273,7 +5273,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> unlink(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.UNLINK, allocator);
@@ -5288,7 +5288,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.UNLINK, allocator);
@@ -5305,7 +5305,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.UNLINK, allocator);
@@ -5320,7 +5320,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> unlink(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         len += keys.size();
@@ -5333,7 +5333,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<String> unwatch() {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.UNWATCH, allocator);
@@ -5344,7 +5344,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
 
     @Override
     public Single<Long> wait(final long numslaves, final long timeout) {
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.WAIT, allocator);
@@ -5358,7 +5358,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<String> watch(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.WATCH, allocator);
@@ -5373,7 +5373,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                 @RedisProtocolSupport.Key final Buffer key2) {
         requireNonNull(key1);
         requireNonNull(key2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.WATCH, allocator);
@@ -5391,7 +5391,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key1);
         requireNonNull(key2);
         requireNonNull(key3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.WATCH, allocator);
@@ -5406,7 +5406,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<String> watch(@RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(keys);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 1;
         len += keys.size();
@@ -5424,7 +5424,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(id);
         requireNonNull(field);
         requireNonNull(value);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XADD, allocator);
@@ -5446,7 +5446,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(value1);
         requireNonNull(field2);
         requireNonNull(value2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 7;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XADD, allocator);
@@ -5473,7 +5473,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(value2);
         requireNonNull(field3);
         requireNonNull(value3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 9;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XADD, allocator);
@@ -5496,7 +5496,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(id);
         requireNonNull(fieldValues);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += RedisProtocolSupport.BufferFieldValue.SIZE * fieldValues.size();
@@ -5512,7 +5512,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> xlen(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XLEN, allocator);
@@ -5526,7 +5526,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public <T> Single<List<T>> xpending(@RedisProtocolSupport.Key final Buffer key, final Buffer group) {
         requireNonNull(key);
         requireNonNull(group);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XPENDING, allocator);
@@ -5543,7 +5543,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                         @Nullable final Long count, @Nullable final Buffer consumer) {
         requireNonNull(key);
         requireNonNull(group);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         if (start != null) {
@@ -5584,7 +5584,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(start);
         requireNonNull(end);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XRANGE, allocator);
@@ -5602,7 +5602,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(start);
         requireNonNull(end);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         if (count != null) {
@@ -5626,7 +5626,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                      final Collection<Buffer> ids) {
         requireNonNull(keys);
         requireNonNull(ids);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += keys.size();
@@ -5646,7 +5646,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                      final Collection<Buffer> ids) {
         requireNonNull(keys);
         requireNonNull(ids);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (count != null) {
@@ -5681,7 +5681,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(groupConsumer);
         requireNonNull(keys);
         requireNonNull(ids);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2 + RedisProtocolSupport.BufferGroupConsumer.SIZE;
         len += keys.size();
@@ -5704,7 +5704,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(groupConsumer);
         requireNonNull(keys);
         requireNonNull(ids);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2 + RedisProtocolSupport.BufferGroupConsumer.SIZE;
         if (count != null) {
@@ -5739,7 +5739,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(end);
         requireNonNull(start);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.XREVRANGE, allocator);
@@ -5757,7 +5757,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(end);
         requireNonNull(start);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         if (count != null) {
@@ -5781,7 +5781,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                              final Collection<RedisProtocolSupport.BufferScoreMember> scoreMembers) {
         requireNonNull(key);
         requireNonNull(scoreMembers);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += RedisProtocolSupport.BufferScoreMember.SIZE * scoreMembers.size();
@@ -5800,7 +5800,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                              final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         if (condition != null) {
@@ -5832,7 +5832,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 6;
         if (condition != null) {
@@ -5868,7 +5868,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         requireNonNull(member3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 8;
         if (condition != null) {
@@ -5903,7 +5903,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                              final Collection<RedisProtocolSupport.BufferScoreMember> scoreMembers) {
         requireNonNull(key);
         requireNonNull(scoreMembers);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (condition != null) {
@@ -5932,7 +5932,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                    final Collection<RedisProtocolSupport.BufferScoreMember> scoreMembers) {
         requireNonNull(key);
         requireNonNull(scoreMembers);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += RedisProtocolSupport.BufferScoreMember.SIZE * scoreMembers.size();
@@ -5953,7 +5953,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                    final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         if (condition != null) {
@@ -5987,7 +5987,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 7;
         if (condition != null) {
@@ -6025,7 +6025,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         requireNonNull(member3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 9;
         if (condition != null) {
@@ -6062,7 +6062,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                    final Collection<RedisProtocolSupport.BufferScoreMember> scoreMembers) {
         requireNonNull(key);
         requireNonNull(scoreMembers);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         if (condition != null) {
@@ -6091,7 +6091,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> zcard(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZCARD, allocator);
@@ -6104,7 +6104,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> zcount(@RedisProtocolSupport.Key final Buffer key, final double min, final double max) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZCOUNT, allocator);
@@ -6121,7 +6121,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                   final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZINCRBY, allocator);
@@ -6139,7 +6139,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                     @RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(destination);
         requireNonNull(keys);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += keys.size();
@@ -6160,7 +6160,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(destination);
         requireNonNull(keys);
         requireNonNull(weightses);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += keys.size();
@@ -6186,7 +6186,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(min);
         requireNonNull(max);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZLEXCOUNT, allocator);
@@ -6201,7 +6201,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> zpopmax(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZPOPMAX, allocator);
@@ -6214,7 +6214,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> zpopmax(@RedisProtocolSupport.Key final Buffer key, @Nullable final Long count) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (count != null) {
@@ -6233,7 +6233,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> zpopmin(@RedisProtocolSupport.Key final Buffer key) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZPOPMIN, allocator);
@@ -6246,7 +6246,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> zpopmin(@RedisProtocolSupport.Key final Buffer key, @Nullable final Long count) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         if (count != null) {
@@ -6265,7 +6265,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> zrange(@RedisProtocolSupport.Key final Buffer key, final long start, final long stop) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZRANGE, allocator);
@@ -6281,7 +6281,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public <T> Single<List<T>> zrange(@RedisProtocolSupport.Key final Buffer key, final long start, final long stop,
                                       @Nullable final RedisProtocolSupport.ZrangeWithscores withscores) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         if (withscores != null) {
@@ -6305,7 +6305,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(min);
         requireNonNull(max);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZRANGEBYLEX, allocator);
@@ -6324,7 +6324,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(min);
         requireNonNull(max);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         if (offsetCount != null) {
@@ -6346,7 +6346,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public <T> Single<List<T>> zrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double min,
                                              final double max) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZRANGEBYSCORE,
@@ -6365,7 +6365,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                              @Nullable final RedisProtocolSupport.ZrangebyscoreWithscores withscores,
                                              @Nullable final RedisProtocolSupport.OffsetCount offsetCount) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         if (withscores != null) {
@@ -6394,7 +6394,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> zrank(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZRANK, allocator);
@@ -6409,7 +6409,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> zrem(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREM, allocator);
@@ -6425,7 +6425,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(member1);
         requireNonNull(member2);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREM, allocator);
@@ -6444,7 +6444,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(member1);
         requireNonNull(member2);
         requireNonNull(member3);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 5;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREM, allocator);
@@ -6461,7 +6461,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> zrem(@RedisProtocolSupport.Key final Buffer key, final Collection<Buffer> members) {
         requireNonNull(key);
         requireNonNull(members);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 2;
         len += members.size();
@@ -6478,7 +6478,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(min);
         requireNonNull(max);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREMRANGEBYLEX,
@@ -6494,7 +6494,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public Single<Long> zremrangebyrank(@RedisProtocolSupport.Key final Buffer key, final long start, final long stop) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREMRANGEBYRANK,
@@ -6511,7 +6511,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> zremrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double min,
                                          final double max) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREMRANGEBYSCORE,
@@ -6528,7 +6528,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public <T> Single<List<T>> zrevrange(@RedisProtocolSupport.Key final Buffer key, final long start,
                                          final long stop) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGE, allocator);
@@ -6544,7 +6544,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public <T> Single<List<T>> zrevrange(@RedisProtocolSupport.Key final Buffer key, final long start, final long stop,
                                          @Nullable final RedisProtocolSupport.ZrevrangeWithscores withscores) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         if (withscores != null) {
@@ -6568,7 +6568,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(max);
         requireNonNull(min);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGEBYLEX,
@@ -6588,7 +6588,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(key);
         requireNonNull(max);
         requireNonNull(min);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         if (offsetCount != null) {
@@ -6611,7 +6611,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public <T> Single<List<T>> zrevrangebyscore(@RedisProtocolSupport.Key final Buffer key, final double max,
                                                 final double min) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANGEBYSCORE,
@@ -6630,7 +6630,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                                 @Nullable final RedisProtocolSupport.ZrevrangebyscoreWithscores withscores,
                                                 @Nullable final RedisProtocolSupport.OffsetCount offsetCount) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 4;
         if (withscores != null) {
@@ -6659,7 +6659,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Long> zrevrank(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZREVRANK, allocator);
@@ -6673,7 +6673,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     @Override
     public <T> Single<List<T>> zscan(@RedisProtocolSupport.Key final Buffer key, final long cursor) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZSCAN, allocator);
@@ -6688,7 +6688,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public <T> Single<List<T>> zscan(@RedisProtocolSupport.Key final Buffer key, final long cursor,
                                      @Nullable final Buffer matchPattern, @Nullable final Long count) {
         requireNonNull(key);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         if (matchPattern != null) {
@@ -6717,7 +6717,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
     public Single<Double> zscore(@RedisProtocolSupport.Key final Buffer key, final Buffer member) {
         requireNonNull(key);
         requireNonNull(member);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         final CompositeBuffer cb = newRequestCompositeBuffer(len, RedisProtocolSupport.Command.ZSCORE, allocator);
@@ -6734,7 +6734,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
                                     @RedisProtocolSupport.Key final Collection<Buffer> keys) {
         requireNonNull(destination);
         requireNonNull(keys);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += keys.size();
@@ -6755,7 +6755,7 @@ final class DefaultBufferRedisCommander extends BufferRedisCommander {
         requireNonNull(destination);
         requireNonNull(keys);
         requireNonNull(weightses);
-        final BufferAllocator allocator = requester.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = requester.getExecutionContext().bufferAllocator();
         // Compute the number of request arguments, accounting for nullable ones
         int len = 3;
         len += keys.size();

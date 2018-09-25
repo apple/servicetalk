@@ -92,7 +92,7 @@ public class BasicAuthStreamingHttpServiceBuilderTest {
                                                     final StreamingHttpRequest request,
                                                     final StreamingHttpResponseFactory factory) {
             StreamingHttpResponse response = factory.ok().payloadBody(
-                    just(ctx.getExecutionContext().getBufferAllocator().fromAscii("Hello World!")));
+                    just(ctx.executionContext().bufferAllocator().fromAscii("Hello World!")));
             BasicUserInfo userInfo = AsyncContext.get(USER_INFO_KEY);
             if (userInfo != null) {
                 response.headers().set(USER_ID_HEADER_NAME, userInfo.getUserId());
@@ -129,8 +129,8 @@ public class BasicAuthStreamingHttpServiceBuilderTest {
     @BeforeClass
     public static void beforeClass() {
         ExecutionContext ec = mock(ExecutionContext.class);
-        when(ec.getBufferAllocator()).thenReturn(DEFAULT_ALLOCATOR);
-        when(CONN_CTX.getExecutionContext()).thenReturn(ec);
+        when(ec.bufferAllocator()).thenReturn(DEFAULT_ALLOCATOR);
+        when(CONN_CTX.executionContext()).thenReturn(ec);
     }
 
     @After

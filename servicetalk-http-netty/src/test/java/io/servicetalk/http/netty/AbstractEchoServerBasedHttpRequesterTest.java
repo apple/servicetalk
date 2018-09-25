@@ -98,7 +98,7 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
 
             StreamingHttpResponse resp = awaitIndefinitelyNonNull(requester.request(request).retryWhen(
                     retryWithExponentialBackoff(10, t -> true, Duration.ofMillis(100),
-                            CTX.getExecutor())));
+                            CTX.executor())));
 
             assertThat(resp.status().code(), equalTo(200));
 

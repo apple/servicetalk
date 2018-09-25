@@ -114,7 +114,7 @@ public class PingerTest {
 
         BlockingQueue<Object> commandsWritten = new LinkedBlockingQueue<>();
         RedisConnection connection = awaitIndefinitely(connect(commandsWritten)
-                .map(conn -> newPipelinedConnection(conn, conn.getExecutionContext(), config)));
+                .map(conn -> newPipelinedConnection(conn, conn.executionContext(), config)));
         assert connection != null;
 
         Object command = commandsWritten.take();
@@ -150,7 +150,7 @@ public class PingerTest {
 
         BlockingQueue<Object> commandsWritten = new LinkedBlockingQueue<>();
         RedisConnection connection = awaitIndefinitely(connect(commandsWritten)
-                .map(conn -> newSubscribedConnection(conn, conn.getExecutionContext(), config)));
+                .map(conn -> newSubscribedConnection(conn, conn.executionContext(), config)));
         assert connection != null;
 
         awaitPingDurations(2); // Await for a few ping durations to verify no pings were sent before subscribe.

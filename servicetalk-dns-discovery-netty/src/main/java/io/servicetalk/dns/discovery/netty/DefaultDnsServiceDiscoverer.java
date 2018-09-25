@@ -102,7 +102,7 @@ final class DefaultDnsServiceDiscoverer implements ServiceDiscoverer<String, Ine
                                 @Nullable DnsResolverAddressTypes dnsResolverAddressTypes,
                                 @Nullable DnsServerAddressStreamProvider dnsServerAddressStreamProvider) {
         // Implementation of this class expects to use only single EventLoop from IoExecutor
-        this.nettyIoExecutor = toEventLoopAwareNettyIoExecutor(executionContext.getIoExecutor()).next();
+        this.nettyIoExecutor = toEventLoopAwareNettyIoExecutor(executionContext.ioExecutor()).next();
         this.retryStrategy = retryStrategy;
         EventLoop eventLoop = this.nettyIoExecutor.getEventLoopGroup().next();
         DnsNameResolverBuilder builder = new DnsNameResolverBuilder(eventLoop)

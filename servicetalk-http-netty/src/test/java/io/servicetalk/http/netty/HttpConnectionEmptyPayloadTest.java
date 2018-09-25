@@ -71,7 +71,7 @@ public class HttpConnectionEmptyPayloadTest {
                                                                             final StreamingHttpResponseFactory factory) {
                                     StreamingHttpResponse resp = factory.ok().payloadBody(just(
                                             req.method() == HEAD ? EMPTY_BUFFER :
-                                                    ctx.getExecutionContext().getBufferAllocator()
+                                                    ctx.executionContext().bufferAllocator()
                                                     .newBuffer(expectedContentLength).writeBytes(expectedPayload)));
                                     resp.headers().add(CONTENT_LENGTH, String.valueOf(expectedContentLength));
                                     return success(resp);
@@ -102,7 +102,7 @@ public class HttpConnectionEmptyPayloadTest {
             assertNotNull(contentLength);
             assertEquals(expectedContentLength, parseInt(contentLength.toString()));
             Buffer buffer = awaitIndefinitelyNonNull(response.payloadBody().reduce(
-                    () -> connection.getConnectionContext().getExecutionContext().getBufferAllocator().newBuffer(),
+                    () -> connection.getConnectionContext().executionContext().bufferAllocator().newBuffer(),
                     Buffer::writeBytes));
             byte[] actualBytes = new byte[buffer.getReadableBytes()];
             buffer.readBytes(actualBytes);

@@ -61,9 +61,9 @@ public class DefaultPipelinedConnectionTest {
         ExecutionContext executionContext = mock(ExecutionContext.class);
         ConnectionContext context = mock(ConnectionContext.class);
         when(context.closeAsync()).thenReturn(new NettyFutureCompletable(channel::close));
-        when(context.getExecutionContext()).thenReturn(executionContext);
-        when(context.getExecutionContext().getExecutor()).thenReturn(immediate());
-        when(executionContext.getExecutor()).thenReturn(immediate());
+        when(context.executionContext()).thenReturn(executionContext);
+        when(context.executionContext().executor()).thenReturn(immediate());
+        when(executionContext.executor()).thenReturn(immediate());
         Connection.RequestNSupplier requestNSupplier = mock(Connection.RequestNSupplier.class);
         readPublisher = new TestPublisher<>(false, false);
         readPublisher.sendOnSubscribe();

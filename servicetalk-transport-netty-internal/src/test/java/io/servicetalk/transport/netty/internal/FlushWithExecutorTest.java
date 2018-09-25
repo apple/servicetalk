@@ -63,7 +63,7 @@ public class FlushWithExecutorTest extends AbstractFlushTest {
 
     @Test
     public void testFlushBeforeEnd() throws ExecutionException, InterruptedException {
-        Publisher<String> source = from(contextRule.getExecutor(), data).map(String::valueOf);
+        Publisher<String> source = from(contextRule.executor(), data).map(String::valueOf);
         Publisher<String> flushSource = setup(flushStrategyAndVerifier.getFlushStrategy().apply(source));
         awaitIndefinitely(flushSource);
         int index = 0;

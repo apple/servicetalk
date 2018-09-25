@@ -138,7 +138,7 @@ public final class GatewayServer {
                                 @Override
                                 public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
                                     return super.request(request).timeout(ofMillis(100),
-                                            executionContext.getExecutor());
+                                            executionContext.executor());
                                 }
                             };
                         })

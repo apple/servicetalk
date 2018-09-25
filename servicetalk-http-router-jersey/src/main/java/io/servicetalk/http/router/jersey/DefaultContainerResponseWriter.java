@@ -106,7 +106,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         } else {
             final ConnectableOutputStream os = new ConnectableOutputStream();
             sendResponse(contentLength, os.connect().map(bytes ->
-                            serviceCtx.getExecutionContext().getBufferAllocator().wrap(bytes)),
+                            serviceCtx.executionContext().bufferAllocator().wrap(bytes)),
                     responseContext);
             return os;
         }
@@ -142,7 +142,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     private void scheduleSuspendedTimer(final long timeOut, final TimeUnit timeUnit, final Runnable r) {
         // timeOut<=0 means processing is suspended indefinitely: no need to actually schedule a task
         if (timeOut > 0) {
-            suspendedTimerCancellable = serviceCtx.getExecutionContext().getExecutor()
+            suspendedTimerCancellable = serviceCtx.executionContext().executor()
                     .schedule(r, timeOut, timeUnit);
         }
     }
@@ -217,8 +217,8 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     private HttpResponseStatus getStatus(final ContainerResponse containerResponse) {
         final StatusType statusInfo = containerResponse.getStatusInfo();
         return statusInfo instanceof Status ? RESPONSE_STATUSES.get(statusInfo) :
-                getResponseStatus(statusInfo.getStatusCode(), serviceCtx.getExecutionContext()
-                        .getBufferAllocator().fromAscii(statusInfo.getReasonPhrase()));
+                getResponseStatus(statusInfo.getStatusCode(), serviceCtx.executionContext()
+                        .bufferAllocator().fromAscii(statusInfo.getReasonPhrase()));
     }
 
     private boolean isHeadRequest() {

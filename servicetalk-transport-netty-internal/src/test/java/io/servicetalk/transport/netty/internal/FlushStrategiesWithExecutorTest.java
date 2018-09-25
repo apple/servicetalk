@@ -64,7 +64,7 @@ public class FlushStrategiesWithExecutorTest {
 
     @Test
     public void flushIsOrdered() throws InterruptedException {
-        Publisher<String> source = from(contextRule.getExecutor(), 1, 2, 3, 4).map(String::valueOf);
+        Publisher<String> source = from(contextRule.executor(), 1, 2, 3, 4).map(String::valueOf);
         FlushStrategyHolder<String> holder = flushStrategyAndVerifier.getFlushStrategy().apply(source);
         CountDownLatch awaitTerminal = new CountDownLatch(1);
         ConcurrentLinkedQueue<String> items = new ConcurrentLinkedQueue<>();

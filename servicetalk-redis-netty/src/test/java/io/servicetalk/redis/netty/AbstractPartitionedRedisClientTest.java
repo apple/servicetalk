@@ -203,6 +203,6 @@ public abstract class AbstractPartitionedRedisClientTest {
     }
 
     protected Buffer buf(final CharSequence cs) {
-        return client.getExecutionContext().getBufferAllocator().fromUtf8(cs);
+        return client.getExecutionContext().bufferAllocator().fromUtf8(cs);
     }
 }

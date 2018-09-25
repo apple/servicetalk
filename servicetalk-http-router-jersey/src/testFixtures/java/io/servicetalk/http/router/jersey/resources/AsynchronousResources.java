@@ -168,7 +168,7 @@ public class AsynchronousResources extends AbstractAsynchronousResources {
     @Path("/text-buffer")
     @GET
     public CompletionStage<Buffer> getTextBuffer() {
-        final BufferAllocator allocator = ctx.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
         return newCompletionStage(() -> allocator.fromAscii("DONE"));
     }
 
@@ -177,7 +177,7 @@ public class AsynchronousResources extends AbstractAsynchronousResources {
     @Path("/text-buffer")
     @POST
     public CompletionStage<Buffer> postTextBuffer(final Buffer requestContent) {
-        final BufferAllocator allocator = ctx.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
 
         return newCompletionStage(() -> allocator.newCompositeBuffer(2)
                 .addBuffer(allocator.fromAscii("GOT: "))
@@ -189,7 +189,7 @@ public class AsynchronousResources extends AbstractAsynchronousResources {
     @Path("/json-buffer")
     @POST
     public CompletionStage<Buffer> postJsonBuffer(final Buffer requestContent) {
-        final BufferAllocator allocator = ctx.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
 
         return newCompletionStage(() -> allocator.newCompositeBuffer(3)
                 .addBuffer(allocator.fromAscii("{\"got\":"))
@@ -228,7 +228,7 @@ public class AsynchronousResources extends AbstractAsynchronousResources {
     @Path("/text-buffer-response")
     @GET
     public CompletionStage<Response> getTextBufferResponse(@Context final HttpHeaders headers) {
-        return completedFuture(status(203).entity(ctx.getExecutionContext().getBufferAllocator().fromAscii("DONE"))
+        return completedFuture(status(203).entity(ctx.executionContext().bufferAllocator().fromAscii("DONE"))
                 .header("X-Test", headers.getHeaderString("hdr"))
                 .build());
     }
@@ -246,7 +246,7 @@ public class AsynchronousResources extends AbstractAsynchronousResources {
     public CompletionStage<Response> getTextPubResponse(@QueryParam("i") final int i) {
         final String contentString = "GOT: " + i;
         final Publisher<Buffer> responseContent =
-                just(ctx.getExecutionContext().getBufferAllocator().fromAscii(contentString));
+                just(ctx.executionContext().bufferAllocator().fromAscii(contentString));
 
         return completedFuture(status(i)
                 // We know the content length so we set it, otherwise the response is chunked
@@ -270,7 +270,7 @@ public class AsynchronousResources extends AbstractAsynchronousResources {
                                                       @Nonnull @QueryParam("unit") final TimeUnit unit) {
         final CompletableFuture<String> cf = new CompletableFuture<>();
         final Cancellable cancellable =
-                ctx.getExecutionContext().getExecutor().schedule(() -> cf.complete("DONE"), delay, unit);
+                ctx.executionContext().executor().schedule(() -> cf.complete("DONE"), delay, unit);
 
         return ok(cf.whenComplete((r, t) -> {
             if (t instanceof CancellationException) {
@@ -343,7 +343,7 @@ public class AsynchronousResources extends AbstractAsynchronousResources {
     @GET
     public void getAsyncResponseTimeoutResume(@Suspended final AsyncResponse ar) {
         ar.setTimeout(1, MINUTES);
-        ctx.getExecutionContext().getExecutor().timer(10, MILLISECONDS)
+        ctx.executionContext().executor().timer(10, MILLISECONDS)
                 .doAfterComplete(() -> ar.resume("DONE"))
                 .subscribe();
     }
@@ -384,7 +384,7 @@ public class AsynchronousResources extends AbstractAsynchronousResources {
     @Path("/suspended/json")
     @GET
     public void getJsonAsyncResponse(@Suspended final AsyncResponse ar) {
-        ctx.getExecutionContext().getExecutor().schedule(() ->
+        ctx.executionContext().executor().schedule(() ->
                 ar.resume(singletonMap("foo", "bar3")), 10, MILLISECONDS);
     }
 
@@ -403,7 +403,7 @@ public class AsynchronousResources extends AbstractAsynchronousResources {
             public void close() {
                 eventSink.close();
             }
-        }, sse, Refs.of(0), ctx.getExecutionContext().getExecutor());
+        }, sse, Refs.of(0), ctx.executionContext().executor());
     }
 
     @Produces(SERVER_SENT_EVENTS)
@@ -427,7 +427,7 @@ public class AsynchronousResources extends AbstractAsynchronousResources {
             public void close() {
                 sseBroadcaster.close();
             }
-        }, sse, Refs.of(0), ctx.getExecutionContext().getExecutor());
+        }, sse, Refs.of(0), ctx.executionContext().executor());
     }
 
     private interface SseEmitter {
@@ -474,7 +474,7 @@ public class AsynchronousResources extends AbstractAsynchronousResources {
             return cf;
         }
 
-        final Cancellable cancellable = ctx.getExecutionContext().getExecutor().schedule(failSafeTask, delay, unit);
+        final Cancellable cancellable = ctx.executionContext().executor().schedule(failSafeTask, delay, unit);
         return cf.whenComplete((r, t) -> {
             if (t instanceof CancellationException) {
                 cancellable.cancel();

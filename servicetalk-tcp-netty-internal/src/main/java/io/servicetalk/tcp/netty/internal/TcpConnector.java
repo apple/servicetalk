@@ -121,7 +121,7 @@ public final class TcpConnector<Read, Write> {
             protected void handleSubscribe(Subscriber<? super Connection<Read, Write>> subscriber) {
                 connectFutureToListener(connect0(remote, executionContext, subscriber, true), subscriber, remote);
             }
-        }.publishOn(executionContext.getExecutor());
+        }.publishOn(executionContext.executor());
     }
 
     /**
@@ -144,7 +144,7 @@ public final class TcpConnector<Read, Write> {
                 connectFutureToListener(connect0(remote, executionContext, subscriber,
                         checkForRefCountedTrapper), subscriber, remote);
             }
-        }.publishOn(executionContext.getExecutor());
+        }.publishOn(executionContext.executor());
     }
 
     private Future<?> connect0(Object resolvedAddress, ExecutionContext executionContext,
@@ -159,7 +159,7 @@ public final class TcpConnector<Read, Write> {
             // The ConnectionContext should be given an IoExecutor which correlates to the specific thread used for IO,
             // so we select it here up front.
             EventLoopAwareNettyIoExecutor ioExecutorThread =
-                    toEventLoopAwareNettyIoExecutor(executionContext.getIoExecutor()).next();
+                    toEventLoopAwareNettyIoExecutor(executionContext.ioExecutor()).next();
 
             // next() of an EventLoop will just return itself, which is expected because we did the selection above.
             EventLoop loop = ioExecutorThread.getEventLoopGroup().next();
@@ -173,8 +173,8 @@ public final class TcpConnector<Read, Write> {
                     final AbstractChannelReadHandler readHandler;
                     try {
                         // Create ExecutionContext with selected IO thread
-                        context = newContext(new DefaultExecutionContext(executionContext.getBufferAllocator(),
-                                        ioExecutorThread, executionContext.getExecutor()),
+                        context = newContext(new DefaultExecutionContext(executionContext.bufferAllocator(),
+                                        ioExecutorThread, executionContext.executor()),
                                 channel, channelInitializer, checkForRefCountedTrapper);
                         readHandler = channel.pipeline().get(AbstractChannelReadHandler.class);
                     } catch (Throwable cause) {
@@ -216,7 +216,7 @@ public final class TcpConnector<Read, Write> {
 
             if (!(resolvedAddress instanceof FileDescriptorSocketAddress)) {
                 return attachCancelSubscriber(connectWithBootstrap(resolvedAddress, loop,
-                        executionContext.getBufferAllocator(), handler), cancellable);
+                        executionContext.bufferAllocator(), handler), cancellable);
             }
             if (local != null) {
                 throw new IllegalArgumentException("local cannot be specified when " +
@@ -227,7 +227,7 @@ public final class TcpConnector<Read, Write> {
                 throw new IllegalArgumentException(FileDescriptorSocketAddress.class.getSimpleName() + " not supported");
             }
             return attachCancelSubscriber(initFileDescriptorBasedChannel(loop, channel,
-                    executionContext.getBufferAllocator(), handler), cancellable);
+                    executionContext.bufferAllocator(), handler), cancellable);
         } catch (Throwable cause) {
             cancellable.setDelayedCancellable(IGNORE_CANCEL);
             return ImmediateEventExecutor.INSTANCE.newFailedFuture(cause);

@@ -69,7 +69,7 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
             super(factory);
             this.executionContext = executionContext;
             this.connectionContext = mock(ConnectionContext.class);
-            when(connectionContext.getExecutionContext()).thenReturn(executionContext);
+            when(connectionContext.executionContext()).thenReturn(executionContext);
         }
 
         @Override
@@ -122,7 +122,7 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
             super(factory);
             this.executionContext = executionContext;
             this.connectionContext = mock(ConnectionContext.class);
-            when(connectionContext.getExecutionContext()).thenReturn(executionContext);
+            when(connectionContext.executionContext()).thenReturn(executionContext);
         }
 
         @Override

@@ -91,7 +91,7 @@ final class RedisTestEnvironment implements AutoCloseable {
                 .build(executionContext,
                         serviceDiscoverer.discover(HostAndPort.of(redisHost, redisPort))),
                 retryWithExponentialBackoff(10, cause -> cause instanceof RetryableException, ofMillis(10),
-                        executionContext.getExecutor()));
+                        executionContext.executor()));
 
         final String serverInfo = awaitIndefinitelyNonNull(
                 client.request(newRequest(INFO, new RedisData.CompleteBulkString(DEFAULT_ALLOCATOR.fromUtf8("SERVER"))))
@@ -108,7 +108,7 @@ final class RedisTestEnvironment implements AutoCloseable {
     @Override
     public void close() throws Exception {
         awaitIndefinitely(newCompositeCloseable().appendAll(client, serviceDiscoverer,
-                executionContext.getIoExecutor(), executionContext.getExecutor()).closeAsync());
+                executionContext.ioExecutor(), executionContext.executor()).closeAsync());
     }
 
     boolean isInClientEventLoop(Thread thread) {

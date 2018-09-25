@@ -75,7 +75,7 @@ public class BlockingStreamingHttpServiceTest {
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
-        when(mockExecutionCtx.getExecutor()).thenReturn(immediate());
+        when(mockExecutionCtx.executor()).thenReturn(immediate());
         when(mockIterable.iterator()).thenReturn(mockIterator);
     }
 

@@ -40,23 +40,23 @@ public class TestHttpServiceContext extends HttpServiceContext {
     }
 
     @Override
-    public SocketAddress getLocalAddress() {
+    public SocketAddress localAddress() {
         return localAddress;
     }
 
     @Override
-    public SocketAddress getRemoteAddress() {
+    public SocketAddress remoteAddress() {
         return remoteAddress;
     }
 
     @Nullable
     @Override
-    public SSLSession getSslSession() {
+    public SSLSession sslSession() {
         return null;
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
+    public ExecutionContext executionContext() {
         return executionContext;
     }
 

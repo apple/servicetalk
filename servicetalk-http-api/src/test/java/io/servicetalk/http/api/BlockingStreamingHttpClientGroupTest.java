@@ -83,9 +83,9 @@ public class BlockingStreamingHttpClientGroupTest {
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
-        when(mockCtx.getExecutionContext()).thenReturn(mockExecutionContext);
+        when(mockCtx.executionContext()).thenReturn(mockExecutionContext);
         when(mockIterable.iterator()).thenReturn(mockIterator);
-        when(mockExecutionContext.getExecutor()).thenReturn(immediate());
+        when(mockExecutionContext.executor()).thenReturn(immediate());
         when(mockKey.getExecutionContext()).thenReturn(mockExecutionContext);
     }
 

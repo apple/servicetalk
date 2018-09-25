@@ -62,7 +62,7 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
         super(channel, context, requestObjectPublisher, terminalPredicate, closeHandler);
         this.context = context;
         this.service = service;
-        final BufferAllocator alloc = context.getExecutionContext().getBufferAllocator();
+        final BufferAllocator alloc = context.executionContext().bufferAllocator();
         packer = (HttpRequestMetaData hdr, Publisher<Object> pandt) -> spliceRequest(alloc, hdr, pandt);
     }
 
@@ -127,7 +127,7 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
                     .concatWith(processor);
             // We are writing to the connection which may request more data from the EventLoop. So offload control
             // signals which may have blocking code.
-        }).subscribeOn(context.getExecutionContext().getExecutor());
+        }).subscribeOn(context.executionContext().executor());
         return writeResponse(responseObjectPublisher.repeat(val -> true));
     }
 
@@ -137,7 +137,7 @@ final class NettyHttpServerConnection extends NettyConnection<Object, Object> {
             protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
                 // Since we do not offload data path for the request single, this method will be invoked from the
                 // EventLoop. So, we offload the call to StreamingHttpService.
-                Executor exec = context.getExecutionContext().getExecutor();
+                Executor exec = context.executionContext().executor();
                 exec.execute(() -> {
                     Single<StreamingHttpResponse> source;
                     try {

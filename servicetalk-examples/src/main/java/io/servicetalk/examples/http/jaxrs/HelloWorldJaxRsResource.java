@@ -109,7 +109,7 @@ public class HelloWorldJaxRsResource {
     public CompletionStage<String> slowHello(@DefaultValue("world") @QueryParam("who") final String who,
                                              @Context final ConnectionContext ctx) {
         final CompletableFuture<String> delayedResponse = new CompletableFuture<>();
-        ctx.getExecutionContext().getExecutor().timer(1, SECONDS)
+        ctx.executionContext().executor().timer(1, SECONDS)
                 .doAfterComplete(() -> delayedResponse.complete("well, hello " + who))
                 .subscribe();
         return delayedResponse;
@@ -138,7 +138,7 @@ public class HelloWorldJaxRsResource {
     @Produces(TEXT_PLAIN)
     public Single<Buffer> hello(final Single<Buffer> who,
                                 @Context final ConnectionContext ctx) {
-        final BufferAllocator allocator = ctx.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
         return who.map(b -> allocator.newCompositeBuffer()
                 .addBuffer(allocator.fromAscii("hello, "))
                 .addBuffer(b)
@@ -173,7 +173,7 @@ public class HelloWorldJaxRsResource {
             return accepted("greetings accepted, call again for a response").build();
         }
 
-        final BufferAllocator allocator = ctx.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
         final Publisher<Buffer> payload = just(allocator.fromAscii("hello ")).concatWith(who);
 
         // Wrap content Publisher to capture its generic type (i.e. Buffer) so it is handled correctly

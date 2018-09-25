@@ -29,13 +29,13 @@ public interface ConnectionContext extends ListenableAsyncCloseable {
      * The {@link SocketAddress} to which the associated connection is bound.
      * @return The {@link SocketAddress} to which the associated connection is bound.
      */
-    SocketAddress getLocalAddress();
+    SocketAddress localAddress();
 
     /**
      * The {@link SocketAddress} to which the associated connection is connected.
      * @return The {@link SocketAddress} to which the associated connection is connected.
      */
-    SocketAddress getRemoteAddress();
+    SocketAddress remoteAddress();
 
     /**
      * Get the {@link SSLSession} for this connection.
@@ -43,15 +43,15 @@ public interface ConnectionContext extends ListenableAsyncCloseable {
      * @return The {@link SSLSession} if SSL/TLS is enabled, or {@code null} otherwise.
      */
     @Nullable
-    SSLSession getSslSession();
+    SSLSession sslSession();
 
     /**
      * Get the {@link ExecutionContext} for this {@link ConnectionContext}.
      * <p>
-     * The {@link ExecutionContext#getIoExecutor()} will represent the thread responsible for IO for this
+     * The {@link ExecutionContext#ioExecutor()} will represent the thread responsible for IO for this
      * {@link ConnectionContext}. Note that this maybe different that what was used to create this object because
      * at this time a specific {@link IoExecutor} has been selected.
      * @return the {@link ExecutionContext} for this {@link ConnectionContext}.
      */
-    ExecutionContext getExecutionContext();
+    ExecutionContext executionContext();
 }

@@ -104,7 +104,7 @@ public final class TcpClient {
      */
     public Connection<Buffer, Buffer> connectBlocking(ExecutionContext executionContext, SocketAddress address)
             throws ExecutionException, InterruptedException {
-        TcpConnector<Buffer, Buffer> connector = createConnector(executionContext.getBufferAllocator());
+        TcpConnector<Buffer, Buffer> connector = createConnector(executionContext.bufferAllocator());
         return awaitIndefinitelyNonNull(connector.connect(executionContext, address));
     }
 
@@ -119,7 +119,7 @@ public final class TcpClient {
      */
     public Connection<Buffer, Buffer> connectWithFdBlocking(ExecutionContext executionContext, SocketAddress address)
             throws ExecutionException, InterruptedException {
-        assumeTrue(executionContext.getIoExecutor().isFileDescriptorSocketAddressSupported());
+        assumeTrue(executionContext.ioExecutor().isFileDescriptorSocketAddressSupported());
         assumeTrue(Epoll.isAvailable() || KQueue.isAvailable());
 
         final Class<? extends Channel> channelClass;

@@ -74,7 +74,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
                                               ExecutionContext executionContext,
                                               ReadOnlyRedisClientConfig roConfig, int initialQueueCapacity,
                                               int maxBufferPerGroup) {
-        super(toNettyIoExecutor(connection.getExecutionContext().getIoExecutor()).asExecutor(), connection.onClosing(),
+        super(toNettyIoExecutor(connection.executionContext().ioExecutor()).asExecutor(), connection.onClosing(),
                 executionContext, roConfig);
         this.connection = connection;
         this.deferSubscribeTillConnect = roConfig.isDeferSubscribeTillConnect();
@@ -102,7 +102,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
     private Publisher<RedisData> request0(RedisRequest request) {
         final RedisProtocolSupport.Command command = request.command();
         final Publisher<ByteBuf> reqContent = RedisUtils.encodeRequestContent(request,
-                connection.getExecutionContext().getBufferAllocator());
+                connection.executionContext().bufferAllocator());
         return new Publisher<RedisData>() {
             @SuppressWarnings("unchecked")
             @Override
@@ -155,8 +155,8 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
     @Override
     Completable doClose() {
         return writeQueue.quit(request(newRequest(QUIT, newRequestCompositeBuffer(1, QUIT.toRESPArgument(
-                connection.getExecutionContext().getBufferAllocator()),
-                connection.getExecutionContext().getBufferAllocator()))).ignoreElements())
+                connection.executionContext().bufferAllocator()),
+                connection.executionContext().bufferAllocator()))).ignoreElements())
                 .onErrorResume(th -> matches(th, ClosedChannelException.class) ? completed() :
                         connection.closeAsync().andThen(error(th)))
                 .andThen(connection.closeAsync());

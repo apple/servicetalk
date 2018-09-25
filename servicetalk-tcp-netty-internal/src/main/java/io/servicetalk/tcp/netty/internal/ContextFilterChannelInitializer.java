@@ -41,10 +41,10 @@ class ContextFilterChannelInitializer implements ChannelInitializer {
         } else {
             if (sslEnabled) {
                 channel.pipeline().addLast(new SslContextFilterChannelHandler(context, contextFilter,
-                        context.getExecutionContext().getExecutor()));
+                        context.executionContext().executor()));
             } else {
                 channel.pipeline().addLast(new NonSslContextFilterChannelHandler(context, contextFilter,
-                        context.getExecutionContext().getExecutor()));
+                        context.executionContext().executor()));
             }
         }
         return context;

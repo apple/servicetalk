@@ -62,8 +62,8 @@ public class DefaultFallbackServiceTest {
     @Before
     public void setUp() {
         when(request.version()).thenReturn(HTTP_1_1);
-        when(ctx.getExecutionContext()).thenReturn(executionCtx);
-        when(executionCtx.getExecutor()).thenReturn(immediate());
+        when(ctx.executionContext()).thenReturn(executionCtx);
+        when(executionCtx.executor()).thenReturn(immediate());
     }
 
     @Test

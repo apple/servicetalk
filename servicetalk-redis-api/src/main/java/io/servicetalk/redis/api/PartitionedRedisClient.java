@@ -77,7 +77,7 @@ public abstract class PartitionedRedisClient implements ListenableAsyncCloseable
     /**
      * Get the {@link ExecutionContext} used during construction of this object.
      * <p>
-     * Note that the {@link ExecutionContext#getIoExecutor()} will not necessarily be associated with a specific thread
+     * Note that the {@link ExecutionContext#ioExecutor()} will not necessarily be associated with a specific thread
      * unless that was how this object was built.
      * @return the {@link ExecutionContext} used during construction of this object.
      */

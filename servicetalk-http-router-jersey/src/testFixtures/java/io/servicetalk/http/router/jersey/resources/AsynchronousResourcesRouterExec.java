@@ -99,14 +99,14 @@ public class AsynchronousResourcesRouterExec extends AbstractAsynchronousResourc
     @Path("/text-response")
     @POST
     public Single<Response> postTextResponse(final String requestContent) {
-        return ctx.getExecutionContext().getExecutor().submit(() -> accepted("GOT: " + requestContent).build());
+        return ctx.executionContext().executor().submit(() -> accepted("GOT: " + requestContent).build());
     }
 
     @Produces(TEXT_PLAIN)
     @Path("/text-buffer")
     @GET
     public Single<Buffer> getTextBuffer() {
-        return success(ctx.getExecutionContext().getBufferAllocator().fromAscii("DONE"));
+        return success(ctx.executionContext().bufferAllocator().fromAscii("DONE"));
     }
 
     @Consumes(TEXT_PLAIN)
@@ -114,8 +114,8 @@ public class AsynchronousResourcesRouterExec extends AbstractAsynchronousResourc
     @Path("/text-buffer")
     @POST
     public Single<Buffer> postTextBuffer(final Buffer requestContent) {
-        final BufferAllocator allocator = ctx.getExecutionContext().getBufferAllocator();
-        return ctx.getExecutionContext().getExecutor().submit(() -> allocator.newCompositeBuffer(2)
+        final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
+        return ctx.executionContext().executor().submit(() -> allocator.newCompositeBuffer(2)
                 .addBuffer(allocator.fromAscii("GOT: "))
                 .addBuffer(requestContent));
     }
@@ -125,8 +125,8 @@ public class AsynchronousResourcesRouterExec extends AbstractAsynchronousResourc
     @Path("/json-buffer")
     @POST
     public Single<Buffer> postJsonBuffer(final Buffer requestContent) {
-        final BufferAllocator allocator = ctx.getExecutionContext().getBufferAllocator();
-        return ctx.getExecutionContext().getExecutor().submit(() -> allocator.newCompositeBuffer(3)
+        final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
+        return ctx.executionContext().executor().submit(() -> allocator.newCompositeBuffer(3)
                 .addBuffer(allocator.fromAscii("{\"got\":"))
                 .addBuffer(requestContent)
                 .addBuffer(allocator.fromAscii("}")));
@@ -137,7 +137,7 @@ public class AsynchronousResourcesRouterExec extends AbstractAsynchronousResourc
     @Path("/text-bytes")
     @POST
     public Single<byte[]> postTextBytes(final byte[] requestContent) {
-        return ctx.getExecutionContext().getExecutor().submit(() -> {
+        return ctx.executionContext().executor().submit(() -> {
             final byte[] responseContent = new byte[requestContent.length + 5];
             arraycopy("GOT: ".getBytes(US_ASCII), 0, responseContent, 0, 5);
             arraycopy(requestContent, 0, responseContent, 5, requestContent.length);
@@ -150,7 +150,7 @@ public class AsynchronousResourcesRouterExec extends AbstractAsynchronousResourc
     @Path("/json-bytes")
     @POST
     public Single<byte[]> postJsonBytes(final byte[] requestContent) {
-        return ctx.getExecutionContext().getExecutor().submit(() -> {
+        return ctx.executionContext().executor().submit(() -> {
             final byte[] responseContent = new byte[requestContent.length + 8];
             arraycopy("{\"got\":".getBytes(US_ASCII), 0, responseContent, 0, 7);
             arraycopy(requestContent, 0, responseContent, 7, requestContent.length);
@@ -163,7 +163,7 @@ public class AsynchronousResourcesRouterExec extends AbstractAsynchronousResourc
     @Path("/text-buffer-response")
     @GET
     public Single<Response> getTextBufferResponse(@Context final HttpHeaders headers) {
-        return success(status(203).entity(ctx.getExecutionContext().getBufferAllocator().fromAscii("DONE"))
+        return success(status(203).entity(ctx.executionContext().bufferAllocator().fromAscii("DONE"))
                 .header("X-Test", headers.getHeaderString("hdr"))
                 .build());
     }
@@ -189,7 +189,7 @@ public class AsynchronousResourcesRouterExec extends AbstractAsynchronousResourc
     public Single<Map<String, Object>> postJson(final Map<String, Object> requestContent) {
         final Map<String, Object> responseContent = new HashMap<>(requestContent);
         responseContent.put("foo", "bar1");
-        return ctx.getExecutionContext().getExecutor().submit(() -> responseContent);
+        return ctx.executionContext().executor().submit(() -> responseContent);
     }
 
     @Consumes(APPLICATION_JSON)
@@ -209,7 +209,7 @@ public class AsynchronousResourcesRouterExec extends AbstractAsynchronousResourc
     public Single<TestPojo> postJsonPojo(final TestPojo testPojo) {
         testPojo.setAnInt(testPojo.getAnInt() + 1);
         testPojo.setaString(testPojo.getaString() + "x");
-        return ctx.getExecutionContext().getExecutor().submit(() -> testPojo);
+        return ctx.executionContext().executor().submit(() -> testPojo);
     }
 
     @TestFiltered

@@ -69,10 +69,10 @@ abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> ext
         final Publisher<Object> requestAsPublisher = flatten(request, StreamingHttpRequest::payloadBodyAndTrailers)
                 // We will write this stream to the connection, which will request more data from the EventLoop.
                 // Offload control path to avoid blocking the EventLoop
-                .subscribeOn(executionContext.getExecutor());
+                .subscribeOn(executionContext.executor());
         return new SpliceFlatStreamToMetaSingle<>(writeAndRead(requestAsPublisher), this::newResponse)
                 // Headers will be emitted from the EventLoop, so offload those signals to avoid blocking the EventLoop.
-                .publishOn(executionContext.getExecutor());
+                .publishOn(executionContext.executor());
     }
 
     @Override
@@ -84,9 +84,9 @@ abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> ext
 
     private StreamingHttpResponse newResponse(HttpResponseMetaData meta, Publisher<Object> pub) {
         return StreamingHttpResponses.newResponseWithTrailers(meta.status(), meta.version(), meta.headers(),
-                executionContext.getBufferAllocator(),
+                executionContext.bufferAllocator(),
                 // Payload will be emitted from the EventLoop, so offload those signals to avoid blocking the EventLoop.
-                pub.publishOn(executionContext.getExecutor()));
+                pub.publishOn(executionContext.executor()));
     }
 
     @Override
