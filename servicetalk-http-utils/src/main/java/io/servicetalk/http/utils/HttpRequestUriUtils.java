@@ -165,7 +165,7 @@ public final class HttpRequestUriUtils {
         }
 
         final String scheme = fixedScheme != null ? fixedScheme.toLowerCase() :
-                (ctx.getSslSession() != null ? "https" : "http");
+                (ctx.sslSession() != null ? "https" : "http");
 
         if (fixedAuthority != null) {
             return buildRequestUri(
@@ -182,11 +182,11 @@ public final class HttpRequestUriUtils {
                     path,
                     query);
         } else {
-            if (!(ctx.getLocalAddress() instanceof InetSocketAddress)) {
+            if (!(ctx.localAddress() instanceof InetSocketAddress)) {
                 throw new IllegalArgumentException("ConnectionContext#getLocalAddress is not an InetSocketAddress: "
-                        + ctx.getLocalAddress());
+                        + ctx.localAddress());
             }
-            final InetSocketAddress localAddress = (InetSocketAddress) ctx.getLocalAddress();
+            final InetSocketAddress localAddress = (InetSocketAddress) ctx.localAddress();
             final boolean defaultPort = ("http".equals(scheme) && localAddress.getPort() == 80)
                     || ("https".equals(scheme) && localAddress.getPort() == 443);
 

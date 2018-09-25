@@ -79,7 +79,7 @@ public abstract class AbstractAsynchronousResources {
     @Path("/single-string")
     @GET
     public Single<String> getStringSingle(final @QueryParam("fail") boolean fail) {
-        return ctx.getExecutionContext().getExecutor().timer(10, MILLISECONDS)
+        return ctx.executionContext().executor().timer(10, MILLISECONDS)
                 .andThen(fail ? error(DELIBERATE_EXCEPTION) : success("DONE"));
     }
 
@@ -89,7 +89,7 @@ public abstract class AbstractAsynchronousResources {
     @POST
     public Single<Buffer> postJsonBufSingleInSingleOut(@QueryParam("fail") final boolean fail,
                                                        final Single<Buffer> requestContent) {
-        final BufferAllocator allocator = ctx.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
 
         return fail ? defer(() -> error(DELIBERATE_EXCEPTION)) :
                 requestContent.map(buf -> {
@@ -104,7 +104,7 @@ public abstract class AbstractAsynchronousResources {
     @Path("/single-response")
     @GET
     public Single<Response> getResponseSingle(final @QueryParam("fail") boolean fail) {
-        return ctx.getExecutionContext().getExecutor().timer(10, MILLISECONDS)
+        return ctx.executionContext().executor().timer(10, MILLISECONDS)
                 .andThen(fail ? error(DELIBERATE_EXCEPTION) : success(accepted("DONE").build()));
     }
 
@@ -112,8 +112,8 @@ public abstract class AbstractAsynchronousResources {
     @Path("/single-response-pub-entity")
     @GET
     public Single<Response> getResponseSinglePublisherEntity(@QueryParam("i") final int i) {
-        final BufferAllocator allocator = ctx.getExecutionContext().getBufferAllocator();
-        return ctx.getExecutionContext().getExecutor().timer(10, MILLISECONDS)
+        final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
+        return ctx.executionContext().executor().timer(10, MILLISECONDS)
                 .andThen(defer(() -> {
                     final String contentString = "GOT: " + i;
                     final Publisher<Buffer> responseContent = just(allocator.fromAscii(contentString));
@@ -131,7 +131,7 @@ public abstract class AbstractAsynchronousResources {
     @Path("/single-map")
     @GET
     public Single<Map<String, Object>> getMapSingle(final @QueryParam("fail") boolean fail) {
-        return ctx.getExecutionContext().getExecutor().timer(10, MILLISECONDS)
+        return ctx.executionContext().executor().timer(10, MILLISECONDS)
                 .andThen(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> success(singletonMap("foo", "bar4"))));
     }
 
@@ -139,7 +139,7 @@ public abstract class AbstractAsynchronousResources {
     @Path("/single-pojo")
     @GET
     public Single<TestPojo> getPojoSingle(final @QueryParam("fail") boolean fail) {
-        return ctx.getExecutionContext().getExecutor().timer(10, MILLISECONDS)
+        return ctx.executionContext().executor().timer(10, MILLISECONDS)
                 .andThen(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> {
                     final TestPojo testPojo = new TestPojo();
                     testPojo.setaString("boo");
@@ -154,7 +154,7 @@ public abstract class AbstractAsynchronousResources {
     @POST
     public Single<TestPojo> postJsonPojoInPojoOutSingle(@QueryParam("fail") final boolean fail,
                                                         final TestPojo testPojo) {
-        return ctx.getExecutionContext().getExecutor().timer(10, MILLISECONDS)
+        return ctx.executionContext().executor().timer(10, MILLISECONDS)
                 .andThen(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> {
                     testPojo.setAnInt(testPojo.getAnInt() + 1);
                     testPojo.setaString(testPojo.getaString() + "x");
@@ -168,7 +168,7 @@ public abstract class AbstractAsynchronousResources {
     @POST
     public Single<Response> postJsonPojoInPojoOutResponseSingle(@QueryParam("fail") final boolean fail,
                                                                 final TestPojo testPojo) {
-        return ctx.getExecutionContext().getExecutor().timer(10, MILLISECONDS)
+        return ctx.executionContext().executor().timer(10, MILLISECONDS)
                 .andThen(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> {
                     testPojo.setAnInt(testPojo.getAnInt() + 1);
                     testPojo.setaString(testPojo.getaString() + "x");

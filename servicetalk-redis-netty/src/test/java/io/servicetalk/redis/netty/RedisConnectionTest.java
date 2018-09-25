@@ -83,7 +83,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
 
     @Test
     public void unrecoverableError() throws Exception {
-        final Buffer reqBuf = getEnv().client.getExecutionContext().getBufferAllocator().fromAscii("*1\r\n+PING\r\n");
+        final Buffer reqBuf = getEnv().client.getExecutionContext().bufferAllocator().fromAscii("*1\r\n+PING\r\n");
 
         thrown.expect(ExecutionException.class);
         thrown.expectCause(is(instanceOf(RedisServerException.class)));

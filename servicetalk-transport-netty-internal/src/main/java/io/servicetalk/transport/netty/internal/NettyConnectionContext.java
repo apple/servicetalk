@@ -51,27 +51,27 @@ public final class NettyConnectionContext implements ConnectionContext {
     private NettyConnectionContext(ExecutionContext executionContext, Channel channel) {
         this.executionContext = requireNonNull(executionContext);
         this.channel = requireNonNull(channel);
-        close = new NettyChannelListenableAsyncCloseable(channel, executionContext.getExecutor());
+        close = new NettyChannelListenableAsyncCloseable(channel, executionContext.executor());
     }
 
     @Override
-    public SocketAddress getLocalAddress() {
+    public SocketAddress localAddress() {
         return channel.localAddress();
     }
 
     @Override
-    public SocketAddress getRemoteAddress() {
+    public SocketAddress remoteAddress() {
         return channel.remoteAddress();
     }
 
     @Override
     @Nullable
-    public SSLSession getSslSession() {
+    public SSLSession sslSession() {
         return sslSession;
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
+    public ExecutionContext executionContext() {
         return executionContext;
     }
 

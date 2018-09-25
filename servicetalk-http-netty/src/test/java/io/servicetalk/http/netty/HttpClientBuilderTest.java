@@ -53,7 +53,7 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
                 (InetSocketAddress) serverContext.getListenAddress(), true);
 
         // Simulate delayed discovery
-        CTX.getExecutor().schedule(() -> {
+        CTX.executor().schedule(() -> {
             sdPub.sendItems(sdEvent);
             sdPub.onComplete();
         }, 300, MILLISECONDS);

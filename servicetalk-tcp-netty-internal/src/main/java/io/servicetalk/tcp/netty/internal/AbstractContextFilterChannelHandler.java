@@ -90,7 +90,7 @@ abstract class AbstractContextFilterChannelHandler extends ChannelDuplexHandler 
                     } else {
                         // Getting the remote-address may involve volatile reads and potentially a syscall, so guard it.
                         if (LOGGER.isDebugEnabled()) {
-                            LOGGER.debug("Rejected connection from {}", context.getRemoteAddress());
+                            LOGGER.debug("Rejected connection from {}", context.remoteAddress());
                         }
                         ctx.close();
                     }
@@ -126,7 +126,7 @@ abstract class AbstractContextFilterChannelHandler extends ChannelDuplexHandler 
 
         // Getting the remote-address may involve volatile reads and potentially a syscall, so guard it.
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Accepted connection from {}", context.getRemoteAddress());
+            LOGGER.debug("Accepted connection from {}", context.remoteAddress());
         }
 
         state = READ_ALLOWED;

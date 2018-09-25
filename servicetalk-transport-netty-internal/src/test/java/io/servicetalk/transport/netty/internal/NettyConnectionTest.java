@@ -92,13 +92,13 @@ public class NettyConnectionTest {
 
     private void setupWithCloseHandler(final CloseHandler closeHandler) {
         ExecutionContext executionContext = mock(ExecutionContext.class);
-        when(executionContext.getExecutor()).thenReturn(immediate());
+        when(executionContext.executor()).thenReturn(immediate());
         allocator = DEFAULT_ALLOCATOR;
         channel = new EmbeddedChannel();
         context = mock(ConnectionContext.class);
         when(context.onClose()).thenReturn(new NettyFutureCompletable(channel::closeFuture));
         when(context.closeAsync()).thenReturn(new NettyFutureCompletable(channel::close));
-        when(context.getExecutionContext()).thenReturn(executionContext);
+        when(context.executionContext()).thenReturn(executionContext);
         requestNSupplier = mock(Connection.RequestNSupplier.class);
         when(requestNSupplier.getRequestNFor(anyLong())).then(invocation1 -> (long) requestNext);
         terminalPredicate = new Connection.TerminalPredicate<>(o -> false);
@@ -354,17 +354,17 @@ public class NettyConnectionTest {
 
     @Test
     public void testContextDelegation() {
-        conn.getExecutionContext();
-        verify(context).getExecutionContext();
+        conn.executionContext();
+        verify(context).executionContext();
         verifyNoMoreInteractions(context);
-        conn.getLocalAddress();
-        verify(context).getLocalAddress();
+        conn.localAddress();
+        verify(context).localAddress();
         verifyNoMoreInteractions(context);
-        conn.getRemoteAddress();
-        verify(context).getRemoteAddress();
+        conn.remoteAddress();
+        verify(context).remoteAddress();
         verifyNoMoreInteractions(context);
-        conn.getSslSession();
-        verify(context).getSslSession();
+        conn.sslSession();
+        verify(context).sslSession();
         verifyNoMoreInteractions(context);
         conn.closeAsync().subscribe();
         verify(context).closeAsync();

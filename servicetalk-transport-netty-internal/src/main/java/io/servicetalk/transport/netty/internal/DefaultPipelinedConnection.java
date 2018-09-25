@@ -161,24 +161,24 @@ public final class DefaultPipelinedConnection<Req, Resp> implements PipelinedCon
     }
 
     @Override
-    public SocketAddress getLocalAddress() {
-        return connection.getLocalAddress();
+    public SocketAddress localAddress() {
+        return connection.localAddress();
     }
 
     @Override
-    public SocketAddress getRemoteAddress() {
-        return connection.getRemoteAddress();
+    public SocketAddress remoteAddress() {
+        return connection.remoteAddress();
     }
 
     @Override
     @Nullable
-    public SSLSession getSslSession() {
-        return connection.getSslSession();
+    public SSLSession sslSession() {
+        return connection.sslSession();
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
-        return connection.getExecutionContext();
+    public ExecutionContext executionContext() {
+        return connection.executionContext();
     }
 
     @Override

@@ -83,7 +83,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
     private PipelinedRedisConnection(Connection<RedisData, ByteBuf> connection,
                                      ExecutionContext executionContext,
                                      ReadOnlyRedisClientConfig roConfig) {
-        super(toNettyIoExecutor(connection.getExecutionContext().getIoExecutor()).asExecutor(), connection.onClosing(),
+        super(toNettyIoExecutor(connection.executionContext().ioExecutor()).asExecutor(), connection.onClosing(),
                 executionContext, roConfig);
         this.connection = new DefaultPipelinedConnection<>(connection, maxPendingRequests);
         rawConnection = connection;
@@ -92,8 +92,8 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
     @SuppressWarnings("unchecked")
     public Completable doClose() {
         return request0(newRequest(QUIT, newRequestCompositeBuffer(1, QUIT.toRESPArgument(
-                connection.getExecutionContext().getBufferAllocator()),
-                connection.getExecutionContext().getBufferAllocator())), true, false)
+                connection.executionContext().bufferAllocator()),
+                connection.executionContext().bufferAllocator())), true, false)
                 .ignoreElements()
                 .onErrorResume(th -> matches(th, ClosedChannelException.class) ? completed() :
                         connection.closeAsync().andThen(error(th)))
@@ -164,7 +164,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
                         return Completable.error(new PingRejectedException(potentiallyConflictingCommand));
                     }
                     return rawConnection.write(encodeRequestContent(request,
-                            connection.getExecutionContext().getBufferAllocator()));
+                            connection.executionContext().bufferAllocator()));
                 }, () -> predicate)
                         .doBeforeNext(predicate::trackMessage)
                         .doBeforeFinally(() -> {

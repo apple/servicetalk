@@ -104,7 +104,7 @@ public class NettyHttpServerContextFilterTest extends AbstractNettyHttpServerTes
             setContextFilter(ctx -> {
                 // Asserting that the SSL Session has been set by the time the filter is called must be done from the
                 // test thread, in order to fail the test with a useful message.
-                sslSession = ctx.getSslSession();
+                sslSession = ctx.sslSession();
                 return filterMode.getContextFilter(serverExecutorSupplier.executorSupplier.get()).filter(ctx);
             });
         } else {

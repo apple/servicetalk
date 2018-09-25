@@ -87,8 +87,8 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
-        when(mockExecutionCtx.getExecutor()).thenReturn(immediate());
-        when(mockCtx.getExecutionContext()).thenReturn(mockExecutionCtx);
+        when(mockExecutionCtx.executor()).thenReturn(immediate());
+        when(mockCtx.executionContext()).thenReturn(mockExecutionCtx);
         when(mockIterable.iterator()).thenReturn(mockIterator);
     }
 

@@ -79,7 +79,7 @@ final class BufferMessageBodyReaderWriter implements MessageBodyReader<Buffer>, 
                            final MultivaluedMap<String, String> httpHeaders,
                            final InputStream entityStream) throws WebApplicationException {
 
-        return handleEntityStream(entityStream, ctxRefProvider.get().get().getExecutionContext().getBufferAllocator(),
+        return handleEntityStream(entityStream, ctxRefProvider.get().get().executionContext().bufferAllocator(),
                 (p, a) -> {
                     // FIXME use Buffer aggregator helper when ready
                     final CompositeBuffer cb = a.newCompositeBuffer(MAX_VALUE);

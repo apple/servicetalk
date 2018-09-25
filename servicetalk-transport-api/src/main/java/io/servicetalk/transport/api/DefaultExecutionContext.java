@@ -32,9 +32,9 @@ public final class DefaultExecutionContext implements ExecutionContext {
     /**
      * Create a new instance.
      *
-     * @param bufferAllocator The {@link BufferAllocator} to use for {@link #getBufferAllocator()}.
-     * @param ioExecutor The {@link IoExecutor} to use for {@link #getIoExecutor()}.
-     * @param executor The {@link Executor} to use for {@link #getExecutor()}.
+     * @param bufferAllocator The {@link BufferAllocator} to use for {@link #bufferAllocator()}.
+     * @param ioExecutor The {@link IoExecutor} to use for {@link #ioExecutor()}.
+     * @param executor The {@link Executor} to use for {@link #executor()}.
      */
     public DefaultExecutionContext(final BufferAllocator bufferAllocator,
                                    final IoExecutor ioExecutor,
@@ -45,17 +45,17 @@ public final class DefaultExecutionContext implements ExecutionContext {
     }
 
     @Override
-    public BufferAllocator getBufferAllocator() {
+    public BufferAllocator bufferAllocator() {
         return bufferAllocator;
     }
 
     @Override
-    public IoExecutor getIoExecutor() {
+    public IoExecutor ioExecutor() {
         return ioExecutor;
     }
 
     @Override
-    public Executor getExecutor() {
+    public Executor executor() {
         return executor;
     }
 

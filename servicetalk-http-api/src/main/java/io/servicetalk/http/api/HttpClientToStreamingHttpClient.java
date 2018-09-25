@@ -61,7 +61,7 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
     @Override
     public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(final StreamingHttpRequest request) {
         return request.toRequest().flatMap(client::upgradeConnection).map(resp ->
-                        newUpgradeResponse(resp, getExecutionContext().getBufferAllocator()));
+                        newUpgradeResponse(resp, getExecutionContext().bufferAllocator()));
     }
 
     @Override

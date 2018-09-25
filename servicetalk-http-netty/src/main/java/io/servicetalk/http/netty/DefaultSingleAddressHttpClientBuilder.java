@@ -125,7 +125,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> implements SingleAddress
             Publisher<Event<R>> sdEvents = serviceDiscoverer.discover(address);
 
             final StreamingHttpRequestResponseFactory reqRespFactory =
-                    new DefaultStreamingHttpRequestResponseFactory(exec.getBufferAllocator(),
+                    new DefaultStreamingHttpRequestResponseFactory(exec.bufferAllocator(),
                             roConfig.getHeadersFactory());
             final ConnectionFilterFunction connectionFilters = connectionFilterFunction.append(
                     hostHeaderFilterFunction.apply(address));

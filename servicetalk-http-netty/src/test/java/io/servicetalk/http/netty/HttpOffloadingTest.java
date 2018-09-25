@@ -117,7 +117,7 @@ public class HttpOffloadingTest {
     @Test
     public void requestResponseIsOffloaded() throws Exception {
         final Publisher<Buffer> reqPayload =
-                just(httpConnection.getConnectionContext().getExecutionContext().getBufferAllocator()
+                just(httpConnection.getConnectionContext().executionContext().bufferAllocator()
                         .fromAscii("Hello"))
                         .doBeforeRequest(n -> {
                             if (inEventLoopOrTestThread().test(currentThread())) {
@@ -357,7 +357,7 @@ public class HttpOffloadingTest {
                 errors.add(e);
             }
             Publisher responsePayload =
-                    just(ctx.getExecutionContext().getBufferAllocator().fromAscii("Hello"))
+                    just(ctx.executionContext().bufferAllocator().fromAscii("Hello"))
                             .doBeforeRequest(n -> {
                                 if (inEventLoopOrTestThread().test(currentThread())) {
                                     errors.add(

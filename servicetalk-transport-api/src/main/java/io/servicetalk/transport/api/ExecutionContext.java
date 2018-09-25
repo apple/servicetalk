@@ -27,17 +27,17 @@ public interface ExecutionContext {
      * Return the {@link BufferAllocator} that can be used to allocate {@link Buffer}s if needed.
      * @return the {@link BufferAllocator} to use
      */
-    BufferAllocator getBufferAllocator();
+    BufferAllocator bufferAllocator();
 
     /**
      * Get the {@link IoExecutor} that is used to handle the IO.
      * @return The {@link IoExecutor} that is used to handle the.
      */
-    IoExecutor getIoExecutor();
+    IoExecutor ioExecutor();
 
     /**
      * Get the {@link Executor} that is used to create any asynchronous sources.
      * @return The {@link Executor} that is used to create any asynchronous sources.
      */
-    Executor getExecutor();
+    Executor executor();
 }

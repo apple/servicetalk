@@ -93,8 +93,8 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
                            final InputStream entityStream) throws WebApplicationException {
 
         final Serializer ser = getSerializer(mediaType);
-        final ExecutionContext executionContext = ctxRefProvider.get().get().getExecutionContext();
-        final BufferAllocator allocator = executionContext.getBufferAllocator();
+        final ExecutionContext executionContext = ctxRefProvider.get().get().executionContext();
+        final BufferAllocator allocator = executionContext.bufferAllocator();
 
         if (Single.class.isAssignableFrom(type)) {
             return handleEntityStream(entityStream, allocator,
@@ -139,7 +139,7 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
     @SuppressWarnings("unchecked")
     private Publisher<Buffer> getResponseBufferPublisher(final Publisher publisher, final Type type,
                                                          final MediaType mediaType) {
-        final BufferAllocator allocator = ctxRefProvider.get().get().getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = ctxRefProvider.get().get().executionContext().bufferAllocator();
         return getSerializer(mediaType).serialize(publisher, allocator,
                 type instanceof Class ? (Class) type : getSourceClass(type));
     }

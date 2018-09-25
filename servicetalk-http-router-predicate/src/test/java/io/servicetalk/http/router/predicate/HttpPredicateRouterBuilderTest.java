@@ -195,10 +195,10 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 
-        when(ctx.getSslSession()).thenReturn(mock(SSLSession.class));
+        when(ctx.sslSession()).thenReturn(mock(SSLSession.class));
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(ctx.getSslSession()).thenReturn(null);
+        when(ctx.sslSession()).thenReturn(null);
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
@@ -209,10 +209,10 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 
-        when(ctx.getSslSession()).thenReturn(null);
+        when(ctx.sslSession()).thenReturn(null);
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(ctx.getSslSession()).thenReturn(mock(SSLSession.class));
+        when(ctx.sslSession()).thenReturn(mock(SSLSession.class));
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
@@ -234,14 +234,14 @@ public class HttpPredicateRouterBuilderTest extends BaseHttpPredicateRouterBuild
         final SocketAddress addr1 = mock(SocketAddress.class);
         final SocketAddress addr2 = mock(SocketAddress.class);
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
-                .when((ctx, req) -> ctx.getRemoteAddress() == addr1).thenRouteTo(serviceA)
+                .when((ctx, req) -> ctx.remoteAddress() == addr1).thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 
-        when(ctx.getRemoteAddress()).thenReturn(addr1);
+        when(ctx.remoteAddress()).thenReturn(addr1);
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(ctx.getRemoteAddress()).thenReturn(addr2);
+        when(ctx.remoteAddress()).thenReturn(addr2);
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 

@@ -105,11 +105,11 @@ public class TcpServerInitializerContextFilterTest extends AbstractTcpServerTest
             setContextFilter(ctx -> {
                 // Asserting that the SSL Session has been set by the time the filter is called must be done from the
                 // test thread, in order to fail the test with a useful message.
-                sslSession = ctx.getSslSession();
-                return filterMode.getContextFilter(SERVER_CTX.getExecutor()).filter(ctx);
+                sslSession = ctx.sslSession();
+                return filterMode.getContextFilter(SERVER_CTX.executor()).filter(ctx);
             });
         } else {
-            setContextFilter(filterMode.getContextFilter(SERVER_CTX.getExecutor()));
+            setContextFilter(filterMode.getContextFilter(SERVER_CTX.executor()));
         }
     }
 
@@ -143,7 +143,7 @@ public class TcpServerInitializerContextFilterTest extends AbstractTcpServerTest
     @Test
     public void testAcceptConnection() throws Exception {
         Connection<Buffer, Buffer> connection = client.connectBlocking(CLIENT_CTX, serverPort);
-        final Buffer buffer = connection.getExecutionContext().getBufferAllocator().fromAscii("Hello");
+        final Buffer buffer = connection.executionContext().bufferAllocator().fromAscii("Hello");
 
         // Write something, then try to read something and wait for a result.
         // We do this to ensure that the server has had a chance to execute code if the connection was accepted.

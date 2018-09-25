@@ -164,13 +164,13 @@ public class RedisAuthConnectionFactoryClientTest {
         client = new RetryingRedisClient(
                 new DefaultRedisClientBuilder<InetSocketAddress>((eventPublisher, connectionFactory) ->
                         new RoundRobinLoadBalancer<>(eventPublisher, new RedisAuthConnectionFactory<>(connectionFactory,
-                                ctx -> ctx.getExecutionContext().getBufferAllocator().fromAscii(password)),
+                                ctx -> ctx.executionContext().bufferAllocator().fromAscii(password)),
                                 comparingInt(Object::hashCode)))
                         .maxPipelinedRequests(10)
                         .idleConnectionTimeout(ofSeconds(2))
                         .build(executionContext, serviceDiscoverer.discover(HostAndPort.of(redisHost, redisPort))),
                 retryWithExponentialBackoff(10, cause -> cause instanceof RetryableException, ofMillis(10),
-                        executionContext.getExecutor()));
+                        executionContext.executor()));
         clientConsumer.accept(client);
     }
 }

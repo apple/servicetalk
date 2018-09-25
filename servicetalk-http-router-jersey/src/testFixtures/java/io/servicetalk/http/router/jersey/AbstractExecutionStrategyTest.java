@@ -123,7 +123,7 @@ public abstract class AbstractExecutionStrategyTest extends AbstractJerseyStream
 
     static {
         EXEC_SUPPLIERS = new HashMap<>();
-        EXEC_SUPPLIERS.put("server", SERVER_CTX::getExecutor);
+        EXEC_SUPPLIERS.put("server", SERVER_CTX::executor);
         EXEC_SUPPLIERS.put("immediate", Executors::immediate);
         EXEC_SUPPLIERS.put("exec1", EXEC1::getExecutor);
         EXEC_SUPPLIERS.put("exec2", EXEC2::getExecutor);
@@ -150,7 +150,7 @@ public abstract class AbstractExecutionStrategyTest extends AbstractJerseyStream
         this.testMode = testMode;
 
         // Create thread name matchers for the different executors at play in this test
-        serverThreadNameMatcher = createExecutorMatcher(getServerExecutionContext().getExecutor());
+        serverThreadNameMatcher = createExecutorMatcher(getServerExecutionContext().executor());
         routerThreadNameMatcher = createExecutorMatcher(routerExecutor);
         methodThreadNameMatcher = createExecutorMatcher(methodExecutor);
     }

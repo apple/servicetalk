@@ -285,7 +285,7 @@ public final class ExecutionStrategyResources {
         }
 
         private Single<Buffer> getThreadingInfoSingleBuffer() {
-            final BufferAllocator allocator = ctx.getExecutionContext().getBufferAllocator();
+            final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
             final Map<String, String> threadingInfo = getThreadingInfo(ctx, req, uriInfo);
             final Thread resourceMethodThread = currentThread();
 
@@ -325,7 +325,7 @@ public final class ExecutionStrategyResources {
 
             final Map<String, String> info = new HashMap<>(2);
             info.put(THREAD_NAME, currentThread().getName());
-            info.put(EXEC_NAME, ctx.getExecutionContext().getExecutor().toString());
+            info.put(EXEC_NAME, ctx.executionContext().executor().toString());
             return info;
         }
 

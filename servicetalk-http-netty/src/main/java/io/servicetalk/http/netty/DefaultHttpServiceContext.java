@@ -44,7 +44,7 @@ final class DefaultHttpServiceContext extends HttpServiceContext {
 
     static DefaultHttpServiceContext newInstance(ConnectionContext ctx,
                                                  HttpHeadersFactory headersFactory) {
-        final BufferAllocator allocator = ctx.getExecutionContext().getBufferAllocator();
+        final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
         return new DefaultHttpServiceContext(new DefaultHttpResponseFactory(headersFactory, allocator),
                 new DefaultStreamingHttpResponseFactory(headersFactory, allocator),
                 new DefaultBlockingStreamingHttpResponseFactory(headersFactory, allocator),
@@ -52,24 +52,24 @@ final class DefaultHttpServiceContext extends HttpServiceContext {
     }
 
     @Override
-    public SocketAddress getLocalAddress() {
-        return connectionContext.getLocalAddress();
+    public SocketAddress localAddress() {
+        return connectionContext.localAddress();
     }
 
     @Override
-    public SocketAddress getRemoteAddress() {
-        return connectionContext.getRemoteAddress();
+    public SocketAddress remoteAddress() {
+        return connectionContext.remoteAddress();
     }
 
     @Nullable
     @Override
-    public SSLSession getSslSession() {
-        return connectionContext.getSslSession();
+    public SSLSession sslSession() {
+        return connectionContext.sslSession();
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
-        return connectionContext.getExecutionContext();
+    public ExecutionContext executionContext() {
+        return connectionContext.executionContext();
     }
 
     @Override

@@ -103,7 +103,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
                     sslConfigProvider, clientFilterFunction, hostHeaderTransformer);
 
             final DefaultStreamingHttpRequestResponseFactory reqRespFactory =
-                    new DefaultStreamingHttpRequestResponseFactory(executionContext.getBufferAllocator(),
+                    new DefaultStreamingHttpRequestResponseFactory(executionContext.bufferAllocator(),
                             clientBuilderFactory.headersFactory());
 
             StreamingHttpClientGroup<HostAndPort> clientGroup = closeOnException.prepend(

@@ -57,7 +57,7 @@ public final class AbstractRedisConnectionTest {
     @Before
     public void setUp() {
         ExecutionContext executionContext = mock(ExecutionContext.class);
-        when(executionContext.getBufferAllocator()).thenReturn(DEFAULT_ALLOCATOR);
+        when(executionContext.bufferAllocator()).thenReturn(DEFAULT_ALLOCATOR);
         timers = new ConcurrentLinkedQueue<>();
         RedisClientConfig config = new RedisClientConfig(new TcpClientConfig(true));
         config.setMaxPipelinedRequests(10);

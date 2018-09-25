@@ -510,7 +510,7 @@ public class RequestResponseCloseHandlerTest {
         // Based on TcpServerInitializer
         private ServerSocketChannel startServer() {
             EventLoopAwareNettyIoExecutor eventLoopAwareNettyIoExecutor =
-                    toEventLoopAwareNettyIoExecutor(S_CTX.getIoExecutor());
+                    toEventLoopAwareNettyIoExecutor(S_CTX.ioExecutor());
             EventLoop loop = eventLoopAwareNettyIoExecutor.getEventLoopGroup().next();
 
             ServerBootstrap bs = new ServerBootstrap();
@@ -548,7 +548,7 @@ public class RequestResponseCloseHandlerTest {
         // Based on TcpConnector
         private SocketChannel connectClient(InetSocketAddress address) {
             EventLoopAwareNettyIoExecutor eventLoopAwareNettyIoExecutor =
-                    toEventLoopAwareNettyIoExecutor(C_CTX.getIoExecutor());
+                    toEventLoopAwareNettyIoExecutor(C_CTX.ioExecutor());
             EventLoop loop = eventLoopAwareNettyIoExecutor.getEventLoopGroup().next();
 
             Bootstrap bs = new Bootstrap();

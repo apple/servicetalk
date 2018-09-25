@@ -71,7 +71,7 @@ public final class TcpServerInitializer {
      */
     public TcpServerInitializer(ExecutionContext executionContext, ReadOnlyTcpServerConfig config) {
         this.executionContext = executionContext;
-        nettyIoExecutor = toEventLoopAwareNettyIoExecutor(executionContext.getIoExecutor());
+        nettyIoExecutor = toEventLoopAwareNettyIoExecutor(executionContext.ioExecutor());
         this.config = config;
     }
 
@@ -130,7 +130,7 @@ public final class TcpServerInitializer {
         ServerBootstrap bs = new ServerBootstrap();
         configure(bs, nettyIoExecutor.getEventLoopGroup(), listenAddress.getClass(), enableHalfClosure);
 
-        ChannelSet channelSet = new ChannelSet(executionContext.getExecutor());
+        ChannelSet channelSet = new ChannelSet(executionContext.executor());
         bs.handler(new ChannelInboundHandlerAdapter() {
             @Override
             public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
@@ -145,8 +145,8 @@ public final class TcpServerInitializer {
             protected void initChannel(Channel channel) {
                 // The ConnectionContext should be given an IoExecutor which correlates to the specific thread
                 // used for IO.
-                newContext(new DefaultExecutionContext(executionContext.getBufferAllocator(),
-                                fromNettyEventLoop(channel.eventLoop()), executionContext.getExecutor()),
+                newContext(new DefaultExecutionContext(executionContext.bufferAllocator(),
+                                fromNettyEventLoop(channel.eventLoop()), executionContext.executor()),
                         channel,
                         channelInitializer,
                         checkForRefCountedTrapper);
@@ -163,7 +163,7 @@ public final class TcpServerInitializer {
                     Throwable cause = f.cause();
                     if (cause == null) {
                         subscriber.onSuccess(NettyServerContext.wrap(channel, channelSet, contextFilter,
-                                executionContext.getExecutor()));
+                                executionContext.executor()));
                     } else {
                         channel.close();
                         subscriber.onError(f.cause());
@@ -203,7 +203,7 @@ public final class TcpServerInitializer {
         bs.option(ChannelOption.SO_BACKLOG, config.getBacklog());
 
         // Set the correct ByteBufAllocator based on our BufferAllocator to minimize memory copies.
-        bs.option(ChannelOption.ALLOCATOR, BufferUtil.getByteBufAllocator(executionContext.getBufferAllocator()));
-        bs.childOption(ChannelOption.ALLOCATOR, BufferUtil.getByteBufAllocator(executionContext.getBufferAllocator()));
+        bs.option(ChannelOption.ALLOCATOR, BufferUtil.getByteBufAllocator(executionContext.bufferAllocator()));
+        bs.childOption(ChannelOption.ALLOCATOR, BufferUtil.getByteBufAllocator(executionContext.bufferAllocator()));
     }
 }

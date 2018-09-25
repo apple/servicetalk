@@ -110,7 +110,7 @@ public class TcpServer {
     ChannelInitializer getChannelInitializer(final Function<Connection<Buffer, Buffer>, Completable> service,
                                              final ExecutionContext executionContext) {
         return (channel, context) -> {
-            channel.pipeline().addLast(new BufferHandler(executionContext.getBufferAllocator()));
+            channel.pipeline().addLast(new BufferHandler(executionContext.bufferAllocator()));
             channel.pipeline().addLast(new TcpServerChannelReadHandler(context, service));
             return context;
         };

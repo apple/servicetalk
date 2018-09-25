@@ -72,7 +72,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> implements Http
         ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
 
         final StreamingHttpRequestResponseFactory reqRespFactory =
-                new DefaultStreamingHttpRequestResponseFactory(executionContext.getBufferAllocator(),
+                new DefaultStreamingHttpRequestResponseFactory(executionContext.bufferAllocator(),
                         roConfig.getHeadersFactory());
 
         return (roConfig.getMaxPipelinedRequests() == 1 ?

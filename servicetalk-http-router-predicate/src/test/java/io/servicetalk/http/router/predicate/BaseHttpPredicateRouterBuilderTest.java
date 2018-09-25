@@ -82,8 +82,8 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
 
     @Before
     public void setUp() {
-        when(ctx.getExecutionContext()).thenReturn(executionCtx);
-        when(executionCtx.getExecutor()).thenReturn(immediate());
+        when(ctx.executionContext()).thenReturn(executionCtx);
+        when(executionCtx.executor()).thenReturn(immediate());
         when(request.version()).thenReturn(HTTP_1_1);
         when(request.headers()).thenReturn(headers);
         when(request.parseQuery()).thenReturn(query);

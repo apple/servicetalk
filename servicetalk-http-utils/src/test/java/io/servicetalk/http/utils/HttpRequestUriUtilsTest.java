@@ -53,7 +53,7 @@ public class HttpRequestUriUtilsTest {
 
     @Test
     public void originForm() {
-        when(ctx.getLocalAddress()).thenReturn(createUnresolved("my.site.com", 80));
+        when(ctx.localAddress()).thenReturn(createUnresolved("my.site.com", 80));
 
         final StreamingHttpRequest req = reqRespFactory.get("/some/path.html?query");
 
@@ -200,7 +200,7 @@ public class HttpRequestUriUtilsTest {
 
     @Test
     public void authorityForm() {
-        when(ctx.getSslSession()).thenReturn(mock(SSLSession.class));
+        when(ctx.sslSession()).thenReturn(mock(SSLSession.class));
 
         final StreamingHttpRequest req = reqRespFactory.newRequest(CONNECT, "my.site.com:9876");
 
@@ -241,8 +241,8 @@ public class HttpRequestUriUtilsTest {
 
     @Test
     public void asteriskForm() {
-        when(ctx.getLocalAddress()).thenReturn(createUnresolved("my.site.com", 443));
-        when(ctx.getSslSession()).thenReturn(mock(SSLSession.class));
+        when(ctx.localAddress()).thenReturn(createUnresolved("my.site.com", 443));
+        when(ctx.sslSession()).thenReturn(mock(SSLSession.class));
 
         final StreamingHttpRequest req = reqRespFactory.newRequest(OPTIONS, "*");
 

@@ -121,7 +121,7 @@ final class TestServiceStreaming extends StreamingHttpService {
     private StreamingHttpResponse newTestCounterResponse(final ConnectionContext context,
                                                          final StreamingHttpRequest req,
                                                          final StreamingHttpResponseFactory factory) {
-        final Buffer responseContent = context.getExecutionContext().getBufferAllocator().fromUtf8(
+        final Buffer responseContent = context.executionContext().bufferAllocator().fromUtf8(
                 "Testing" + ++counter + "\n");
         return factory.ok().version(req.version()).payloadBody(just(responseContent));
     }
@@ -129,7 +129,7 @@ final class TestServiceStreaming extends StreamingHttpService {
     private StreamingHttpResponse newTestCounterResponseWithLastPayloadChunk(
             final ConnectionContext context, final StreamingHttpRequest req,
             final StreamingHttpResponseFactory factory) {
-        final Buffer responseContent = context.getExecutionContext().getBufferAllocator().fromUtf8(
+        final Buffer responseContent = context.executionContext().bufferAllocator().fromUtf8(
                 "Testing" + ++counter + "\n");
         return factory.ok().version(req.version()).payloadBody(just(responseContent));
     }
@@ -139,11 +139,11 @@ final class TestServiceStreaming extends StreamingHttpService {
             final StreamingHttpResponseFactory factory) {
         final byte[] content = new byte[1024];
         ThreadLocalRandom.current().nextBytes(content);
-        final Buffer chunk = context.getExecutionContext().getBufferAllocator().wrap(content);
+        final Buffer chunk = context.executionContext().bufferAllocator().wrap(content);
 
         final byte[] lastContent = new byte[6144];
         ThreadLocalRandom.current().nextBytes(lastContent);
-        final Buffer lastChunk = context.getExecutionContext().getBufferAllocator().wrap(lastContent);
+        final Buffer lastChunk = context.executionContext().bufferAllocator().wrap(lastContent);
 
         return factory.ok().version(req.version()).payloadBody(from(chunk, lastChunk));
     }
