@@ -42,18 +42,18 @@ public abstract class ReservedFromStreamingHttpConnectionAdapter extends Reserve
      * Get the {@link ReservedStreamingHttpConnection} that this class delegates to.
      * @return the {@link ReservedStreamingHttpConnection} that this class delegates to.
      */
-    protected final StreamingHttpConnection getDelegate() {
+    protected final StreamingHttpConnection delegate() {
         return delegate;
     }
 
     @Override
-    public ConnectionContext getConnectionContext() {
-        return delegate.getConnectionContext();
+    public ConnectionContext connectionContext() {
+        return delegate.connectionContext();
     }
 
     @Override
-    public <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
-        return delegate.getSettingStream(settingKey);
+    public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
+        return delegate.settingStream(settingKey);
     }
 
     @Override
@@ -62,8 +62,8 @@ public abstract class ReservedFromStreamingHttpConnectionAdapter extends Reserve
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
-        return delegate.getExecutionContext();
+    public ExecutionContext executionContext() {
+        return delegate.executionContext();
     }
 
     @Override

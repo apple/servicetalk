@@ -38,7 +38,7 @@ final class BlockingStreamingHttpRequesterToStreamingHttpRequester extends Strea
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
+    public ExecutionContext executionContext() {
         return requester.getExecutionContext();
     }
 

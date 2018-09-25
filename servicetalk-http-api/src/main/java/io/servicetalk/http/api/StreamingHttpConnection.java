@@ -31,7 +31,7 @@ public abstract class StreamingHttpConnection extends StreamingHttpRequester {
      * Create a new instance.
      *
      * @param reqRespFactory The {@link StreamingHttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
+     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
      */
     protected StreamingHttpConnection(final StreamingHttpRequestResponseFactory reqRespFactory) {
         super(reqRespFactory);
@@ -41,7 +41,7 @@ public abstract class StreamingHttpConnection extends StreamingHttpRequester {
      * Get the {@link ConnectionContext}.
      * @return the {@link ConnectionContext}.
      */
-    public abstract ConnectionContext getConnectionContext();
+    public abstract ConnectionContext connectionContext();
 
     /**
      * Returns a {@link Publisher} that gives the current value of the setting as well as subsequent changes to the
@@ -51,7 +51,7 @@ public abstract class StreamingHttpConnection extends StreamingHttpRequester {
      * @param <T> Type of the setting value.
      * @return {@link Publisher} for the setting values.
      */
-    public abstract <T> Publisher<T> getSettingStream(SettingKey<T> settingKey);
+    public abstract <T> Publisher<T> settingStream(SettingKey<T> settingKey);
 
     /**
      * Convert this {@link StreamingHttpConnection} to the {@link HttpConnection} API.

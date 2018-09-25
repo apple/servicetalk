@@ -47,8 +47,8 @@ public abstract class DelegatingRedisClient extends RedisClient {
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
-        return wrapped.getExecutionContext();
+    public ExecutionContext executionContext() {
+        return wrapped.executionContext();
     }
 
     @Override

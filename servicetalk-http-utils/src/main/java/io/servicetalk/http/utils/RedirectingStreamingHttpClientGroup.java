@@ -95,7 +95,7 @@ public final class RedirectingStreamingHttpClientGroup<UnresolvedAddress> extend
     @Override
     public Single<StreamingHttpResponse> request(final GroupKey<UnresolvedAddress> key,
                                                  final StreamingHttpRequest request) {
-        final Single<StreamingHttpResponse> response = getDelegate().request(key, request);
+        final Single<StreamingHttpResponse> response = delegate().request(key, request);
         if (maxRedirects <= 0) {
             return response;
         }

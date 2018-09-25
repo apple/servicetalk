@@ -51,17 +51,17 @@ public class TestStreamingHttpConnection extends StreamingHttpConnection {
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
+    public ExecutionContext executionContext() {
         return executionContext;
     }
 
     @Override
-    public ConnectionContext getConnectionContext() {
+    public ConnectionContext connectionContext() {
         return connectionContext;
     }
 
     @Override
-    public <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
+    public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
         return Publisher.error(new UnsupportedOperationException());
     }
 }

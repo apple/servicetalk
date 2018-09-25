@@ -71,7 +71,7 @@ final class DefaultStreamingHttpClient extends StreamingHttpClient {
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
+    public ExecutionContext executionContext() {
         return executionContext;
     }
 

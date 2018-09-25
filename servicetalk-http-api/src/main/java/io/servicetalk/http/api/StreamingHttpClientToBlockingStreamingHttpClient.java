@@ -61,7 +61,7 @@ final class StreamingHttpClientToBlockingStreamingHttpClient extends BlockingStr
 
     @Override
     public ExecutionContext getExecutionContext() {
-        return client.getExecutionContext();
+        return client.executionContext();
     }
 
     @Override
@@ -112,13 +112,13 @@ final class StreamingHttpClientToBlockingStreamingHttpClient extends BlockingStr
         }
 
         @Override
-        public ConnectionContext getConnectionContext() {
-            return connection.getConnectionContext();
+        public ConnectionContext connectionContext() {
+            return connection.connectionContext();
         }
 
         @Override
-        public <T> BlockingIterable<T> getSettingIterable(final StreamingHttpConnection.SettingKey<T> settingKey) {
-            return connection.getSettingStream(settingKey).toIterable();
+        public <T> BlockingIterable<T> settingIterable(final StreamingHttpConnection.SettingKey<T> settingKey) {
+            return connection.settingStream(settingKey).toIterable();
         }
 
         @Override
@@ -128,7 +128,7 @@ final class StreamingHttpClientToBlockingStreamingHttpClient extends BlockingStr
 
         @Override
         public ExecutionContext getExecutionContext() {
-            return connection.getExecutionContext();
+            return connection.executionContext();
         }
 
         @Override
@@ -164,9 +164,9 @@ final class StreamingHttpClientToBlockingStreamingHttpClient extends BlockingStr
         }
 
         @Override
-        public ReservedBlockingStreamingHttpConnection getHttpConnection(final boolean releaseReturnsToClient) {
+        public ReservedBlockingStreamingHttpConnection httpConnection(final boolean releaseReturnsToClient) {
             return new ReservedStreamingHttpConnectionToBlockingStreaming(
-                    upgradeResponse.getHttpConnection(releaseReturnsToClient));
+                    upgradeResponse.httpConnection(releaseReturnsToClient));
         }
 
         @Override

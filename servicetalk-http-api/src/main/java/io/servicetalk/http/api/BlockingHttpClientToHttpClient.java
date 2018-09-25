@@ -54,8 +54,8 @@ final class BlockingHttpClientToHttpClient extends HttpClient {
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
-        return client.getExecutionContext();
+    public ExecutionContext executionContext() {
+        return client.executionContext();
     }
 
     @Override
@@ -91,13 +91,13 @@ final class BlockingHttpClientToHttpClient extends HttpClient {
         }
 
         @Override
-        public ConnectionContext getConnectionContext() {
-            return connection.getConnectionContext();
+        public ConnectionContext connectionContext() {
+            return connection.connectionContext();
         }
 
         @Override
-        public <T> Publisher<T> getSettingStream(final StreamingHttpConnection.SettingKey<T> settingKey) {
-            return from(connection.getSettingIterable(settingKey));
+        public <T> Publisher<T> settingStream(final StreamingHttpConnection.SettingKey<T> settingKey) {
+            return from(connection.settingIterable(settingKey));
         }
 
         @Override
@@ -106,8 +106,8 @@ final class BlockingHttpClientToHttpClient extends HttpClient {
         }
 
         @Override
-        public ExecutionContext getExecutionContext() {
-            return connection.getExecutionContext();
+        public ExecutionContext executionContext() {
+            return connection.executionContext();
         }
 
         @Override

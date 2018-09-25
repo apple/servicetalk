@@ -413,12 +413,12 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
         }
 
         @Override
-        public ExecutionContext getExecutionContext() {
+        public ExecutionContext executionContext() {
             return executionContext;
         }
 
         @Override
-        protected Function<Command, RedisPartitionAttributesBuilder> getRedisPartitionAttributesBuilderFactory() {
+        protected Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFunction() {
             return redisPartitionAttributesBuilderFactory;
         }
 
@@ -515,7 +515,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
                 @Override
                 protected void handleSubscribe(Subscriber subscriber) {
                     RedisClient oldClient = clientUpdater.getAndSet(Partition.this,
-                            new NoopRedisClient(client.getExecutionContext()));
+                            new NoopRedisClient(client.executionContext()));
                     if (oldClient != null) {
                         oldClient.closeAsync().subscribe(subscriber);
                     } else {
@@ -550,7 +550,7 @@ public class DefaultPartitionedRedisClientBuilder<ResolvedAddress>
         }
 
         @Override
-        public ExecutionContext getExecutionContext() {
+        public ExecutionContext executionContext() {
             return executionContext;
         }
 

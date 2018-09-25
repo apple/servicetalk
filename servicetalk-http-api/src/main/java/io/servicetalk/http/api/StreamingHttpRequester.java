@@ -33,7 +33,7 @@ public abstract class StreamingHttpRequester implements
     /**
      * Create a new instance.
      * @param reqRespFactory The {@link StreamingHttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
+     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
      */
     protected StreamingHttpRequester(final StreamingHttpRequestResponseFactory reqRespFactory) {
         this.reqRespFactory = requireNonNull(reqRespFactory);
@@ -53,7 +53,7 @@ public abstract class StreamingHttpRequester implements
      * unless that was how this object was built.
      * @return the {@link ExecutionContext} used during construction of this object.
      */
-    public abstract ExecutionContext getExecutionContext();
+    public abstract ExecutionContext executionContext();
 
     @Override
     public final StreamingHttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
@@ -64,7 +64,7 @@ public abstract class StreamingHttpRequester implements
      * Get a {@link StreamingHttpResponseFactory}.
      * @return a {@link StreamingHttpResponseFactory}.
      */
-    public final StreamingHttpResponseFactory getHttpResponseFactory() {
+    public final StreamingHttpResponseFactory httpResponseFactory() {
         return reqRespFactory;
     }
 

@@ -46,7 +46,7 @@ public class TestStreamingHttpClient extends StreamingHttpClient {
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
+    public ExecutionContext executionContext() {
         return executionContext;
     }
 

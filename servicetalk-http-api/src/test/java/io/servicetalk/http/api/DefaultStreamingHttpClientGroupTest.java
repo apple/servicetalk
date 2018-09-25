@@ -263,7 +263,7 @@ public class DefaultStreamingHttpClientGroupTest {
         final StreamingHttpRequester requester = clientGroup.asClient(r ->
                 new DefaultGroupKey<>("address", executionContext), executionContext);
         assertNotNull(requester);
-        assertEquals(executionContext, requester.getExecutionContext());
+        assertEquals(executionContext, requester.executionContext());
     }
 
     @Test

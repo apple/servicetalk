@@ -57,7 +57,7 @@ public abstract class BaseRedisClientTest {
     }
 
     protected static Buffer buf(final CharSequence cs) {
-        return getEnv().client.getExecutionContext().bufferAllocator().fromUtf8(cs);
+        return getEnv().client.executionContext().bufferAllocator().fromUtf8(cs);
     }
 
     protected static RedisTestEnvironment getEnv() {

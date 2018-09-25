@@ -35,8 +35,8 @@ final class HttpRequesterToStreamingHttpRequester extends StreamingHttpRequester
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
-        return requester.getExecutionContext();
+    public ExecutionContext executionContext() {
+        return requester.executionContext();
     }
 
     @Override

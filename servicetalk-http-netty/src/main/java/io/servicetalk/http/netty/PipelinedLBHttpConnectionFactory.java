@@ -45,7 +45,7 @@ final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLB
                                                               final ConnectionFilterFunction connectionFilterFunction) {
         return buildForPipelined(executionContext, resolvedAddress, config, connectionFilterFunction, reqRespFactory)
                 .map(filteredConnection -> new LoadBalancedStreamingHttpConnection(filteredConnection,
-                        newController(filteredConnection.getSettingStream(MAX_CONCURRENCY),
+                        newController(filteredConnection.settingStream(MAX_CONCURRENCY),
                                    filteredConnection.onClose(),
                                    config.getMaxPipelinedRequests())));
     }

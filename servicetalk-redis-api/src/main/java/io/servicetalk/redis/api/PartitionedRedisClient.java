@@ -81,13 +81,13 @@ public abstract class PartitionedRedisClient implements ListenableAsyncCloseable
      * unless that was how this object was built.
      * @return the {@link ExecutionContext} used during construction of this object.
      */
-    public abstract ExecutionContext getExecutionContext();
+    public abstract ExecutionContext executionContext();
 
     /**
      * Get the {@link Function} that is responsible for generating a {@link RedisPartitionAttributesBuilder} for each {@link Command}.
      * @return the {@link Function} that is responsible for generating a {@link RedisPartitionAttributesBuilder} for each {@link Command}.
      */
-    protected abstract Function<Command, RedisPartitionAttributesBuilder> getRedisPartitionAttributesBuilderFactory();
+    protected abstract Function<Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFunction();
 
     /**
      * Provides an alternative java API to this {@link PartitionedRedisClient}. The {@link RedisCommander} return value has
@@ -100,7 +100,7 @@ public abstract class PartitionedRedisClient implements ListenableAsyncCloseable
     public final RedisCommander asCommander() {
         RedisCommander redisCommander = this.redisCommander;
         if (redisCommander == null) {
-            redisCommander = new DefaultPartitionedRedisCommander(this, getRedisPartitionAttributesBuilderFactory());
+            redisCommander = new DefaultPartitionedRedisCommander(this, redisPartitionAttributesBuilderFunction());
             if (!redisCommanderUpdater.compareAndSet(this, null, redisCommander)) {
                 redisCommander = this.redisCommander;
                 assert redisCommander != null : "RedisCommander can not be null.";
@@ -121,7 +121,7 @@ public abstract class PartitionedRedisClient implements ListenableAsyncCloseable
     public final BufferRedisCommander asBufferCommander() {
         BufferRedisCommander redisBufferCommander = this.redisBufferCommander;
         if (redisBufferCommander == null) {
-            redisBufferCommander = new DefaultPartitionedBufferRedisCommander(this, getRedisPartitionAttributesBuilderFactory());
+            redisBufferCommander = new DefaultPartitionedBufferRedisCommander(this, redisPartitionAttributesBuilderFunction());
             if (!redisBufferCommanderUpdater.compareAndSet(this, null, redisBufferCommander)) {
                 redisBufferCommander = this.redisBufferCommander;
                 assert redisBufferCommander != null : "BufferRedisCommander can not be null.";

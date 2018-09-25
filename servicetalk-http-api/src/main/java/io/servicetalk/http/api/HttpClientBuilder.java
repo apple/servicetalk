@@ -25,7 +25,7 @@ public interface HttpClientBuilder {
     /**
      * Build a new {@link StreamingHttpClient}.
      *
-     * @param executionContext {@link ExecutionContext} used for {@link StreamingHttpClient#getExecutionContext()} and to buildStreaming
+     * @param executionContext {@link ExecutionContext} used for {@link StreamingHttpClient#executionContext()} and to buildStreaming
      * new {@link StreamingHttpConnection}s.
      * @return A new {@link StreamingHttpClient}
      */
@@ -42,7 +42,7 @@ public interface HttpClientBuilder {
     /**
      * Build a new {@link HttpClient}.
      *
-     * @param executionContext {@link ExecutionContext} used for {@link HttpClient#getExecutionContext()} and
+     * @param executionContext {@link ExecutionContext} used for {@link HttpClient#executionContext()} and
      * to buildStreaming new {@link StreamingHttpConnection}s.
      * @return A new {@link HttpClient}
      */

@@ -65,18 +65,18 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
         @Override
         public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
             // fanout - simulates followup request on response
-            return getDelegate().request(request).flatMap(resp ->
-                    resp.payloadBody().ignoreElements().andThen(getDelegate().request(request)));
+            return delegate().request(request).flatMap(resp ->
+                    resp.payloadBody().ignoreElements().andThen(delegate().request(request)));
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        public <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
+        public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
             if (settingKey == MAX_CONCURRENCY) {
                 // Compensate for the extra request
-                return (Publisher<T>) getDelegate().getSettingStream(MAX_CONCURRENCY).map(i -> i - 1);
+                return (Publisher<T>) delegate().settingStream(MAX_CONCURRENCY).map(i -> i - 1);
             }
-            return getDelegate().getSettingStream(settingKey);
+            return delegate().settingStream(settingKey);
         }
     }
 
@@ -90,7 +90,7 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
 
         DummyFanoutFilter connection = awaitIndefinitelyNonNull(connectionSingle);
 
-        Integer maxConcurrent = awaitIndefinitely(connection.getSettingStream(MAX_CONCURRENCY).first());
+        Integer maxConcurrent = awaitIndefinitely(connection.settingStream(MAX_CONCURRENCY).first());
         assertThat(maxConcurrent, equalTo(9));
 
         makeRequestValidateResponseAndClose(connection);

@@ -39,7 +39,7 @@ public abstract class HttpRequesterAdapter extends HttpRequester {
      * Get the {@link HttpRequester} that this class delegates to.
      * @return the {@link HttpRequester} that this class delegates to.
      */
-    protected final HttpRequester getDelegate() {
+    protected final HttpRequester delegate() {
         return delegate;
     }
 
@@ -49,8 +49,8 @@ public abstract class HttpRequesterAdapter extends HttpRequester {
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
-        return delegate.getExecutionContext();
+    public ExecutionContext executionContext() {
+        return delegate.executionContext();
     }
 
     @Override

@@ -43,7 +43,7 @@ public abstract class StreamingHttpClientGroupAdapter<UnresolvedAddress> extends
      * Get the {@link StreamingHttpClientGroup} that this class delegates to.
      * @return the {@link StreamingHttpClientGroup} that this class delegates to.
      */
-    protected final StreamingHttpClientGroup<UnresolvedAddress> getDelegate() {
+    protected final StreamingHttpClientGroup<UnresolvedAddress> delegate() {
         return delegate;
     }
 

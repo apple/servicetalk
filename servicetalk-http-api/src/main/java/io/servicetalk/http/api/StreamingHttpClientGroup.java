@@ -39,7 +39,7 @@ public abstract class StreamingHttpClientGroup<UnresolvedAddress> implements
     /**
      * Create a new instance.
      * @param reqRespFactory The {@link StreamingHttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
+     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
      */
     protected StreamingHttpClientGroup(final StreamingHttpRequestResponseFactory reqRespFactory) {
         this.reqRespFactory = requireNonNull(reqRespFactory);
@@ -93,7 +93,7 @@ public abstract class StreamingHttpClientGroup<UnresolvedAddress> implements
      * Get a {@link StreamingHttpResponseFactory}.
      * @return a {@link StreamingHttpResponseFactory}.
      */
-    public final StreamingHttpResponseFactory getHttpResponseFactory() {
+    public final StreamingHttpResponseFactory httpResponseFactory() {
         return reqRespFactory;
     }
 
@@ -108,7 +108,7 @@ public abstract class StreamingHttpClientGroup<UnresolvedAddress> implements
      * @param requestToGroupKeyFunc A {@link Function} which returns the {@link GroupKey} given a
      * {@link StreamingHttpRequest}.
      * @param executionContext the {@link ExecutionContext} to use for
-     * {@link StreamingHttpClient#getExecutionContext()}.
+     * {@link StreamingHttpClient#executionContext()}.
      * @return A {@link StreamingHttpClient}, which is backed by this {@link StreamingHttpClientGroup}.
      */
     public final StreamingHttpClient asClient(final Function<StreamingHttpRequest,

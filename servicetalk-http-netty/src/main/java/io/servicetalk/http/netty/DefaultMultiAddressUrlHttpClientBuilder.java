@@ -274,8 +274,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
         }
 
         @Override
-        public ExecutionContext getExecutionContext() {
-            return httpClient.getExecutionContext();
+        public ExecutionContext executionContext() {
+            return httpClient.executionContext();
         }
 
         @Override

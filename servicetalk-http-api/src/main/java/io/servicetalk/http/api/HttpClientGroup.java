@@ -38,7 +38,7 @@ public abstract class HttpClientGroup<UnresolvedAddress> implements HttpRequestF
     /**
      * Create a new instance.
      * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
+     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
      */
     protected HttpClientGroup(final HttpRequestResponseFactory reqRespFactory) {
         this.reqRespFactory = requireNonNull(reqRespFactory);
@@ -91,7 +91,7 @@ public abstract class HttpClientGroup<UnresolvedAddress> implements HttpRequestF
      * Get a {@link HttpResponseFactory}.
      * @return a {@link HttpResponseFactory}.
      */
-    public final HttpResponseFactory getHttpResponseFactory() {
+    public final HttpResponseFactory httpResponseFactory() {
         return reqRespFactory;
     }
 
@@ -106,7 +106,7 @@ public abstract class HttpClientGroup<UnresolvedAddress> implements HttpRequestF
      * @param requestToGroupKeyFunc A {@link Function} which returns the {@link GroupKey} given a
      * {@link HttpRequest}.
      * @param executionContext the {@link ExecutionContext} to use for
-     * {@link HttpRequester#getExecutionContext()}.
+     * {@link HttpRequester#executionContext()}.
      * @return A {@link HttpRequester}, which is backed by this {@link HttpClientGroup}.
      */
     public final HttpRequester asRequester(final Function<HttpRequest,

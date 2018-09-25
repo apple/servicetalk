@@ -37,7 +37,7 @@ final class StreamingHttpRequesterToBlockingStreamingHttpRequester extends Block
 
     @Override
     public ExecutionContext getExecutionContext() {
-        return requester.getExecutionContext();
+        return requester.executionContext();
     }
 
     @Override

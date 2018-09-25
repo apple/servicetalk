@@ -29,7 +29,7 @@ public abstract class BlockingHttpConnection extends BlockingHttpRequester {
      * Create a new instance.
      *
      * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
+     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
      */
     protected BlockingHttpConnection(final HttpRequestResponseFactory reqRespFactory) {
         super(reqRespFactory);
@@ -40,7 +40,7 @@ public abstract class BlockingHttpConnection extends BlockingHttpRequester {
      *
      * @return the {@link ConnectionContext}.
      */
-    public abstract ConnectionContext getConnectionContext();
+    public abstract ConnectionContext connectionContext();
 
     /**
      * Returns a {@link BlockingIterable} that gives the current value of the setting as well as subsequent changes to
@@ -50,7 +50,7 @@ public abstract class BlockingHttpConnection extends BlockingHttpRequester {
      * @param <T> Type of the setting value.
      * @return {@link BlockingIterable} for the setting values.
      */
-    public abstract <T> BlockingIterable<T> getSettingIterable(SettingKey<T> settingKey);
+    public abstract <T> BlockingIterable<T> settingIterable(SettingKey<T> settingKey);
 
     /**
      * Convert this {@link BlockingHttpConnection} to the {@link StreamingHttpConnection} API.

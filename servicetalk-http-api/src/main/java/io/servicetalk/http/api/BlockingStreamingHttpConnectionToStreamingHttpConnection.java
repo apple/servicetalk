@@ -36,13 +36,13 @@ final class BlockingStreamingHttpConnectionToStreamingHttpConnection extends Str
     }
 
     @Override
-    public ConnectionContext getConnectionContext() {
-        return blockingConnection.getConnectionContext();
+    public ConnectionContext connectionContext() {
+        return blockingConnection.connectionContext();
     }
 
     @Override
-    public <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
-        return from(blockingConnection.getSettingIterable(settingKey));
+    public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
+        return from(blockingConnection.settingIterable(settingKey));
     }
 
     @Override
@@ -51,7 +51,7 @@ final class BlockingStreamingHttpConnectionToStreamingHttpConnection extends Str
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
+    public ExecutionContext executionContext() {
         return blockingConnection.getExecutionContext();
     }
 

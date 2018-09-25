@@ -126,12 +126,12 @@ public class PartitionedRedisClientTest extends AbstractPartitionedRedisClientTe
             }
 
             @Override
-            public ExecutionContext getExecutionContext() {
-                return delegate.getExecutionContext();
+            public ExecutionContext executionContext() {
+                return delegate.executionContext();
             }
 
             @Override
-            protected Function<RedisProtocolSupport.Command, RedisPartitionAttributesBuilder> getRedisPartitionAttributesBuilderFactory() {
+            protected Function<RedisProtocolSupport.Command, RedisPartitionAttributesBuilder> redisPartitionAttributesBuilderFunction() {
                 return getPartitionAttributesBuilderFactory();
             }
 

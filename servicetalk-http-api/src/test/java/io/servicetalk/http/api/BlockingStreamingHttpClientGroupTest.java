@@ -266,7 +266,7 @@ public class BlockingStreamingHttpClientGroupTest {
          * Create a new instance.
          *
          * @param reqRespFactory The {@link StreamingHttpRequestResponseFactory} used to
-         * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
+         * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
          */
         protected TestStreamingHttpClientGroup(final StreamingHttpRequestResponseFactory reqRespFactory) {
             super(reqRespFactory);
@@ -303,7 +303,7 @@ public class BlockingStreamingHttpClientGroupTest {
          * Create a new instance.
          *
          * @param reqRespFactory The {@link BlockingStreamingHttpRequestResponseFactory} used to
-         * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
+         * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
          */
         protected TestBlockingStreamingHttpClientGroup(final BlockingStreamingHttpRequestResponseFactory reqRespFactory) {
             super(reqRespFactory);

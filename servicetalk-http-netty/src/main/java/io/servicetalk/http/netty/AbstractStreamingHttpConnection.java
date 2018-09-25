@@ -50,13 +50,13 @@ abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> ext
     }
 
     @Override
-    public ConnectionContext getConnectionContext() {
+    public ConnectionContext connectionContext() {
         return connection;
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public final <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
+    public final <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
         if (settingKey == SettingKey.MAX_CONCURRENCY) {
             return (Publisher<T>) maxConcurrencySetting;
         }
@@ -76,7 +76,7 @@ abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> ext
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
+    public ExecutionContext executionContext() {
         return executionContext;
     }
 

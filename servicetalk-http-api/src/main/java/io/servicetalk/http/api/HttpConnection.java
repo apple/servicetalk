@@ -29,7 +29,7 @@ public abstract class HttpConnection extends HttpRequester {
      * Create a new instance.
      *
      * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
+     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
      */
     protected HttpConnection(final HttpRequestResponseFactory reqRespFactory) {
         super(reqRespFactory);
@@ -40,7 +40,7 @@ public abstract class HttpConnection extends HttpRequester {
      *
      * @return the {@link ConnectionContext}.
      */
-    public abstract ConnectionContext getConnectionContext();
+    public abstract ConnectionContext connectionContext();
 
     /**
      * Returns a {@link Publisher} that gives the current value of the setting as well as subsequent changes to
@@ -50,7 +50,7 @@ public abstract class HttpConnection extends HttpRequester {
      * @param <T> Type of the setting value.
      * @return {@link Publisher} for the setting values.
      */
-    public abstract <T> Publisher<T> getSettingStream(SettingKey<T> settingKey);
+    public abstract <T> Publisher<T> settingStream(SettingKey<T> settingKey);
 
     /**
      * Convert this {@link HttpConnection} to the {@link StreamingHttpConnection} API.

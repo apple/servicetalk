@@ -61,7 +61,7 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
     @Override
     public Single<? extends UpgradableStreamingHttpResponse> upgradeConnection(final StreamingHttpRequest request) {
         return request.toRequest().flatMap(client::upgradeConnection).map(resp ->
-                        newUpgradeResponse(resp, getExecutionContext().bufferAllocator()));
+                        newUpgradeResponse(resp, executionContext().bufferAllocator()));
     }
 
     @Override
@@ -70,8 +70,8 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
-        return client.getExecutionContext();
+    public ExecutionContext executionContext() {
+        return client.executionContext();
     }
 
     @Override
@@ -109,13 +109,13 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
         }
 
         @Override
-        public ConnectionContext getConnectionContext() {
-            return reservedConnection.getConnectionContext();
+        public ConnectionContext connectionContext() {
+            return reservedConnection.connectionContext();
         }
 
         @Override
-        public <T> Publisher<T> getSettingStream(final SettingKey<T> settingKey) {
-            return reservedConnection.getSettingStream(settingKey);
+        public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
+            return reservedConnection.settingStream(settingKey);
         }
 
         @Override
@@ -124,8 +124,8 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
         }
 
         @Override
-        public ExecutionContext getExecutionContext() {
-            return reservedConnection.getExecutionContext();
+        public ExecutionContext executionContext() {
+            return reservedConnection.executionContext();
         }
 
         @Override
@@ -173,9 +173,9 @@ final class HttpClientToStreamingHttpClient extends StreamingHttpClient {
         }
 
         @Override
-        public ReservedStreamingHttpConnection getHttpConnection(final boolean releaseReturnsToClient) {
+        public ReservedStreamingHttpConnection httpConnection(final boolean releaseReturnsToClient) {
             return new ReservedHttpConnectionToReservedStreamingHttpConnection(
-                    upgradableResponse.getHttpConnection(releaseReturnsToClient));
+                    upgradableResponse.httpConnection(releaseReturnsToClient));
         }
 
         @Override

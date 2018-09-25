@@ -30,7 +30,7 @@ public abstract class BlockingHttpClient extends BlockingHttpRequester {
      * Create a new instance.
      *
      * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
+     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
      */
     protected BlockingHttpClient(final HttpRequestResponseFactory reqRespFactory) {
         super(reqRespFactory);
@@ -54,7 +54,7 @@ public abstract class BlockingHttpClient extends BlockingHttpRequester {
      * cannot be any pipelined requests pending or any pipeline requests issued during the upgrade process. That means
      * the {@link BlockingHttpConnection} associated with the {@link UpgradableHttpResponse} will be
      * reserved for exclusive use. The code responsible for determining the result of the upgrade attempt is responsible
-     * for calling {@link UpgradableHttpResponse#getHttpConnection(boolean)}.
+     * for calling {@link UpgradableHttpResponse#httpConnection(boolean)}.
      *
      * @param request the request which initiates the upgrade.
      * @return An {@link UpgradableHttpResponse} for the upgrade attempt and also contains the
@@ -109,7 +109,7 @@ public abstract class BlockingHttpClient extends BlockingHttpRequester {
          * Create a new instance.
          *
          * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
-         * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #getHttpResponseFactory()}.
+         * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
          */
         protected ReservedBlockingHttpConnection(final HttpRequestResponseFactory reqRespFactory) {
             super(reqRespFactory);

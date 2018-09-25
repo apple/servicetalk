@@ -107,7 +107,7 @@ public class InternalSubscribedRedisConnectionTest {
         assert connection != null;
 
         final RedisRequest subReq = newRequest(SUBSCRIBE,
-                new CompleteBulkString(connection.getExecutionContext().bufferAllocator().fromUtf8("FOO")));
+                new CompleteBulkString(connection.executionContext().bufferAllocator().fromUtf8("FOO")));
 
         Publisher<RedisData> subscriptionRequest = connection.request(subReq)
                 .doAfterCancel(requestStreamCancelled::countDown);
@@ -131,7 +131,7 @@ public class InternalSubscribedRedisConnectionTest {
 
         CharSequence channelToSubscribe = randomStringOfLength(32);
         final RedisRequest subReq = newRequest(SUBSCRIBE,
-                new CompleteBulkString(connection.getExecutionContext().bufferAllocator()
+                new CompleteBulkString(connection.executionContext().bufferAllocator()
                         .fromUtf8(channelToSubscribe)));
 
         Publisher<RedisData> subscriptionRequest = connection.request(subReq)
