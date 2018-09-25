@@ -77,20 +77,24 @@ public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStream
             if (isSourceOfType(responseCtx.getEntityType(), Publisher.class, Buffer.class)) {
                 final Publisher<Buffer> contentWith0 =
                         ((Publisher<Buffer>) responseCtx.getEntity()).map(AbstractFilterInterceptorTest::oTo0);
-                responseCtx.setEntity(new GenericEntity<Publisher<Buffer>>(contentWith0) { });
+                responseCtx.setEntity(new GenericEntity<Publisher<Buffer>>(contentWith0) {
+                });
             } else if (isSourceOfType(responseCtx.getEntityType(), Single.class, Buffer.class)) {
                 final Single<Buffer> contentWith0 =
                         ((Single<Buffer>) responseCtx.getEntity()).map(AbstractFilterInterceptorTest::oTo0);
-                responseCtx.setEntity(new GenericEntity<Single<Buffer>>(contentWith0) { });
+                responseCtx.setEntity(new GenericEntity<Single<Buffer>>(contentWith0) {
+                });
             } else if (isSourceOfType(responseCtx.getEntityType(), Single.class, Map.class)) {
                 final Single<Map> contentWith0 =
                         ((Single<Map>) responseCtx.getEntity()).map(AbstractFilterInterceptorTest::oTo0);
-                responseCtx.setEntity(new GenericEntity<Single<Map>>(contentWith0) { });
+                responseCtx.setEntity(new GenericEntity<Single<Map>>(contentWith0) {
+                });
             } else if (responseCtx.getEntity() instanceof Buffer) {
                 responseCtx.setEntity(oTo0(((Buffer) responseCtx.getEntity())));
             } else if (responseCtx.getEntity() instanceof Map) {
                 final Map<String, Object> contentWith0 = oTo0(((Map<String, Object>) responseCtx.getEntity()));
-                responseCtx.setEntity(new GenericEntity<Map<String, Object>>(contentWith0) { });
+                responseCtx.setEntity(new GenericEntity<Map<String, Object>>(contentWith0) {
+                });
             } else if (responseCtx.getEntity() instanceof TestPojo) {
                 final TestPojo contentWith0 = (TestPojo) responseCtx.getEntity();
                 contentWith0.setaString(oTo0(contentWith0.getaString()));
@@ -264,32 +268,62 @@ public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStream
     }
 
     public static class UpperCaseInputStream extends FilterInputStream {
+        private boolean closed;
+
         public UpperCaseInputStream(final InputStream in) {
             super(in);
         }
 
         @Override
+        public void close() throws IOException {
+            closed = true;
+            super.close();
+        }
+
+        @Override
         public int read() throws IOException {
+            ensureNotClosed();
+
             return toUpperCase(super.read());
         }
 
         @Override
         public int read(final byte[] b, final int off, final int len) throws IOException {
+            ensureNotClosed();
+
             final int read = super.read(b, off, len);
             for (int i = 0; i < read; i++) {
                 b[off + i] = (byte) toUpperCase((int) b[off + i]);
             }
             return read;
         }
+
+        private void ensureNotClosed() throws IOException {
+            if (closed) {
+                throw new IOException("Stream is closed");
+            }
+        }
     }
 
     private static class Oto0OutputStream extends FilterOutputStream {
+        private boolean closed;
+
         protected Oto0OutputStream(final OutputStream out) {
             super(out);
         }
 
         @Override
+        public void close() throws IOException {
+            closed = true;
+            super.close();
+        }
+
+        @Override
         public void write(final int b) throws IOException {
+            if (closed) {
+                throw new IOException("Stream is closed");
+            }
+
             super.write(b == 'o' || b == 'O' ? '0' : b);
         }
     }

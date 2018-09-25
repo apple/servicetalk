@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.router.jersey;
+package io.servicetalk.http.router.jersey.internal;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.router.jersey.BufferPublisherInputStream;
 
 import org.glassfish.jersey.internal.PropertiesDelegate;
 import org.glassfish.jersey.message.internal.InboundMessageContext;
@@ -32,6 +33,8 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.xml.transform.Source;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * When request's contents are not buffered, Jersey's determines if the entity body input stream that backs a request
  * can be closed by introspecting the return type of the {@link MessageBodyReader}. If the return type is
@@ -46,18 +49,30 @@ import javax.xml.transform.Source;
  * <p>
  * Note that this is only necessary when a user-provided entity input stream is used, which can only happen when
  * a filter or interceptor has replaced the one we've put in place at request creation time.
+ * Indeed, the {@code close()} method of the entity stream we initially provide ({@link BufferPublisherInputStream})
+ * is a no-op so it doesn't matter if it gets called.
  *
  * @see InboundMessageContext#readEntity(Class, Type, Annotation[], PropertiesDelegate)
  */
-final class SourceWrappers {
-    static final class PublisherSource<T> extends Publisher<T> implements Source {
+public final class SourceWrappers {
+    /**
+     * A {@link Publisher} that is also a {@link Source}.
+     *
+     * @param <T> Type of items emitted.
+     */
+    public static final class PublisherSource<T> extends Publisher<T> implements Source {
         private final Publisher<T> original;
 
         @Nullable
         private String systemId;
 
-        PublisherSource(final Publisher<T> original) {
-            this.original = original;
+        /**
+         * Creates a new {@link PublisherSource} instance.
+         *
+         * @param original the original {@link Publisher} to wrap.
+         */
+        public PublisherSource(final Publisher<T> original) {
+            this.original = requireNonNull(original);
         }
 
         @Override
@@ -77,14 +92,24 @@ final class SourceWrappers {
         }
     }
 
-    static final class SingleSource<T> extends Single<T> implements Source {
+    /**
+     * A {@link Single} that is also a {@link Source}.
+     *
+     * @param <T> Type of items emitted.
+     */
+    public static final class SingleSource<T> extends Single<T> implements Source {
         private final Single<T> original;
 
         @Nullable
         private String systemId;
 
-        SingleSource(final Single<T> original) {
-            this.original = original;
+        /**
+         * Creates a new {@link SingleSource} instance.
+         *
+         * @param original the original {@link Single} to wrap.
+         */
+        public SingleSource(final Single<T> original) {
+            this.original = requireNonNull(original);
         }
 
         @Override

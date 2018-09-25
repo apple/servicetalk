@@ -20,6 +20,8 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
+import io.servicetalk.http.router.jersey.internal.SourceWrappers.PublisherSource;
+import io.servicetalk.http.router.jersey.internal.SourceWrappers.SingleSource;
 import io.servicetalk.serialization.api.DefaultSerializer;
 import io.servicetalk.serialization.api.SerializationException;
 import io.servicetalk.serialization.api.Serializer;
@@ -92,23 +94,25 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
                            final MediaType mediaType, final MultivaluedMap<String, String> httpHeaders,
                            final InputStream entityStream) throws WebApplicationException {
 
-        final Serializer ser = getSerializer(mediaType);
+        final Serializer serializer = getSerializer(mediaType);
         final ExecutionContext executionContext = ctxRefProvider.get().get().executionContext();
         final BufferAllocator allocator = executionContext.bufferAllocator();
 
         if (Single.class.isAssignableFrom(type)) {
             return handleEntityStream(entityStream, allocator,
-                    (p, a) -> deserialize(p, ser, getSourceClass(genericType), a),
-                    (is, a) -> deserialize(toBufferPublisher(is, a), ser, getSourceClass(genericType), a));
+                    (p, a) -> deserialize(p, serializer, getSourceClass(genericType), a),
+                    (is, a) -> new SingleSource<>(deserialize(toBufferPublisher(is, a), serializer,
+                            getSourceClass(genericType), a)));
         } else if (Publisher.class.isAssignableFrom(type)) {
             return handleEntityStream(entityStream, allocator,
-                    (p, a) -> ser.deserialize(p, getSourceClass(genericType)),
-                    (is, a) -> ser.deserialize(toBufferPublisher(is, a), getSourceClass(genericType)));
+                    (p, a) -> serializer.deserialize(p, getSourceClass(genericType)),
+                    (is, a) -> new PublisherSource<>(serializer.deserialize(toBufferPublisher(is, a),
+                            getSourceClass(genericType))));
         }
 
         return handleEntityStream(entityStream, allocator,
-                (p, a) -> deserializeObject(p, ser, type, a),
-                (is, a) -> deserializeObject(toBufferPublisher(is, a), ser, type, a));
+                (p, a) -> deserializeObject(p, serializer, type, a),
+                (is, a) -> deserializeObject(toBufferPublisher(is, a), serializer, type, a));
     }
 
     @Override

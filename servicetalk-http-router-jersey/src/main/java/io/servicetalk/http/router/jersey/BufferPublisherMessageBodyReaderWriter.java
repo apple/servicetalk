@@ -17,7 +17,7 @@ package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.http.router.jersey.SourceWrappers.PublisherSource;
+import io.servicetalk.http.router.jersey.internal.SourceWrappers.PublisherSource;
 
 import java.io.InputStream;
 import java.io.OutputStream;

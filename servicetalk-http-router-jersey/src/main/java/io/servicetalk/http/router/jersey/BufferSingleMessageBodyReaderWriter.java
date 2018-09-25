@@ -18,7 +18,7 @@ package io.servicetalk.http.router.jersey;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.router.jersey.SourceWrappers.SingleSource;
+import io.servicetalk.http.router.jersey.internal.SourceWrappers.SingleSource;
 
 import java.io.InputStream;
 import java.io.OutputStream;
