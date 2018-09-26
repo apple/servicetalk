@@ -540,8 +540,7 @@ public interface HttpServerStarter {
     default ServerContext startBlocking(ExecutionContext executionContext, SocketAddress address,
                                         ContextFilter contextFilter,
                                         BlockingHttpRequestHandler service) throws Exception {
-        return blockingInvocation(startStreaming(executionContext, address, contextFilter,
-                BlockingHttpService.wrap(service).asStreamingService()));
+        return startBlocking(executionContext, address, contextFilter, service.asBlockingService());
     }
 
     /**
@@ -561,8 +560,7 @@ public interface HttpServerStarter {
      */
     default ServerContext startBlocking(SocketAddress address, ContextFilter contextFilter,
                                         BlockingHttpRequestHandler service) throws Exception {
-        return blockingInvocation(startStreaming(address, contextFilter,
-                BlockingHttpService.wrap(service).asStreamingService()));
+        return startBlocking(address, contextFilter, service.asBlockingService());
     }
 
     /**
