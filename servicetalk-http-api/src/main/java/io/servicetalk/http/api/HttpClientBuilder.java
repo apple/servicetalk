@@ -18,7 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.transport.api.ExecutionContext;
 
 /**
- * A builder of {@link StreamingHttpClient} objects.
+ * A builder of {@link HttpClient} objects.
  */
 public interface HttpClientBuilder {
 

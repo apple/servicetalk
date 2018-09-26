@@ -34,7 +34,7 @@ public abstract class HttpService implements HttpRequestHandler, AsyncCloseable 
     }
 
     @Override
-    public final HttpService asHttpService() {
+    public final HttpService asService() {
         return this;
     }
 

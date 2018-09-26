@@ -26,7 +26,6 @@ import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.http.netty.DefaultHttpServerStarter;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
@@ -53,7 +52,6 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.internal.Await.awaitNonNull;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
@@ -68,6 +66,7 @@ import static io.servicetalk.http.api.HttpRequestMethods.HEAD;
 import static io.servicetalk.http.api.HttpRequestMethods.OPTIONS;
 import static io.servicetalk.http.api.HttpRequestMethods.POST;
 import static io.servicetalk.http.api.HttpRequestMethods.PUT;
+import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
 import static io.servicetalk.http.router.jersey.TestUtils.getContentAsString;
 import static io.servicetalk.transport.api.HostAndPort.of;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
@@ -103,8 +102,9 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
         streamingJsonEnabled = getValue(config.getProperties(), config.getRuntimeType(), JSON_FEATURE, "",
                 String.class).toLowerCase().contains("servicetalk");
 
-        serverContext = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
-                .startStreaming(getServerExecutionContext(), new InetSocketAddress(0), router));
+        serverContext = newHttpServerBuilder(0)
+                .executionContext(getServerExecutionContext())
+                .listenStreamingAndAwait(router);
 
         final InetSocketAddress serverAddress = (InetSocketAddress) serverContext.getListenAddress();
         httpClient = HttpClients.forSingleAddress(of(serverAddress)).buildStreaming();

@@ -39,7 +39,7 @@ public interface BlockingStreamingHttpRequestHandler {
      * Convert this {@link BlockingStreamingHttpRequestHandler} to a {@link BlockingStreamingHttpService}.
      * @return a {@link BlockingStreamingHttpService}.
      */
-    default BlockingStreamingHttpService asBlockingStreamingHttpService() {
+    default BlockingStreamingHttpService asBlockingStreamingService() {
         return new BlockingStreamingHttpService() {
             @Override
             public BlockingStreamingHttpResponse handle(final HttpServiceContext ctx,

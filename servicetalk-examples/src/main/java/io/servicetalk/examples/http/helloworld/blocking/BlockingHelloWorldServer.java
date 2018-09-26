@@ -15,16 +15,15 @@
  */
 package io.servicetalk.examples.http.helloworld.blocking;
 
-import io.servicetalk.http.netty.DefaultHttpServerStarter;
+import io.servicetalk.http.netty.HttpServers;
 
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 
 public class BlockingHelloWorldServer {
     public static void main(String[] args) throws Exception {
-        new DefaultHttpServerStarter()
-                .startBlocking(8080, (ctx, request, responseFactory) ->
-                        responseFactory.ok()
-                                .payloadBody("Hello World!", textSerializer()))
+        HttpServers.newHttpServerBuilder(8080)
+                .listenBlockingAndAwait((ctx, request, responseFactory) ->
+                        responseFactory.ok().payloadBody("Hello World!", textSerializer()))
                 .awaitShutdown();
     }
 }

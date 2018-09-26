@@ -17,8 +17,8 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpHeaderNames;
-import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.HostAndPort;
 
@@ -27,7 +27,7 @@ import java.net.InetSocketAddress;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.forUnknownHostAndPort;
 
 /**
- * Factory methods for building {@link StreamingHttpClient} instances.
+ * Factory methods for building {@link HttpClient} (and other API variations) instances.
  */
 public final class HttpClients {
 

@@ -40,7 +40,7 @@ public interface HttpRequestHandler {
      * Convert this {@link HttpRequestHandler} to a {@link HttpService}.
      * @return a {@link HttpService}.
      */
-    default HttpService asHttpService() {
+    default HttpService asService() {
         return new HttpService() {
             @Override
             public Single<? extends HttpResponse> handle(final HttpServiceContext ctx, final HttpRequest request,

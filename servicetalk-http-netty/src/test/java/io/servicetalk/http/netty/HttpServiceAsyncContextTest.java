@@ -22,7 +22,7 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpConnectionBuilder;
-import io.servicetalk.http.api.HttpServerStarter;
+import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -51,6 +51,7 @@ import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpResponseStatuses.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatuses.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
 import static java.net.InetAddress.getLoopbackAddress;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -59,6 +60,7 @@ import static org.junit.Assert.assertTrue;
 public class HttpServiceAsyncContextTest {
     private static final Key<CharSequence> K1 = Key.newKeyWithDebugToString("k1");
     private static final CharSequence REQUEST_ID_HEADER = newAsciiString("request-id");
+    private static final InetSocketAddress LOCAL_0 = new InetSocketAddress(getLoopbackAddress(), 0);
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
@@ -77,10 +79,10 @@ public class HttpServiceAsyncContextTest {
     private void newRequestsGetFreshContext(boolean useImmediate) throws Exception {
         StreamingHttpService service = newEmptyAsyncContextService();
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
-        HttpServerStarter serverStarter = new DefaultHttpServerStarter();
-        ServerContext ctx = (useImmediate ? serverStarter.startStreaming(immediateExecutor,
-                new InetSocketAddress(getLoopbackAddress(), 0), service) :
-                serverStarter.startStreaming(new InetSocketAddress(getLoopbackAddress(), 0), service)).toFuture().get();
+        HttpServerBuilder serverBuilder = newHttpServerBuilder(LOCAL_0);
+        ServerContext ctx = (useImmediate ? serverBuilder.executionContext(immediateExecutor) : serverBuilder)
+                .listenStreamingAndAwait(service);
+
         ExecutorService executorService = Executors.newCachedThreadPool();
         final int concurrency = 10;
         final int numRequests = 10;
@@ -148,8 +150,8 @@ public class HttpServiceAsyncContextTest {
             }
         };
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
-        ServerContext ctx = compositeCloseable.append(new DefaultHttpServerStarter().startStreaming(
-                new InetSocketAddress(getLoopbackAddress(), 0), filter).toFuture().get());
+        ServerContext ctx = compositeCloseable.append(newHttpServerBuilder(LOCAL_0)
+                .listenStreamingAndAwait(filter));
         try {
             StreamingHttpConnection connection = compositeCloseable.append(new DefaultHttpConnectionBuilder<SocketAddress>()
                     .buildStreaming(ctx.getListenAddress()).toFuture().get());
@@ -163,12 +165,12 @@ public class HttpServiceAsyncContextTest {
     public void connectionContextFilterContextDoesNotLeak() throws Exception {
         StreamingHttpService service = newEmptyAsyncContextService();
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
-        ServerContext ctx = compositeCloseable.append(new DefaultHttpServerStarter()
-                .startStreaming(new InetSocketAddress(getLoopbackAddress(), 0),
-                        context -> {
-                            AsyncContext.put(K1, "v1");
-                            return success(true);
-                        }, service).toFuture().get());
+        ServerContext ctx = compositeCloseable.append(HttpServers.newHttpServerBuilder(LOCAL_0)
+                .contextFilter(context -> {
+                    AsyncContext.put(K1, "v1");
+                    return success(true);
+                })
+                .listenStreamingAndAwait(service));
         try {
             StreamingHttpConnection connection = compositeCloseable.append(
                     new DefaultHttpConnectionBuilder<SocketAddress>().buildStreaming(ctx.getListenAddress())

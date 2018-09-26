@@ -18,8 +18,9 @@ package io.servicetalk.examples.http.serialization.async;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.examples.http.serialization.MyPojo;
 import io.servicetalk.examples.http.serialization.PojoRequest;
+import io.servicetalk.http.api.HttpRequestHandler;
 import io.servicetalk.http.api.HttpSerializationProvider;
-import io.servicetalk.http.netty.DefaultHttpServerStarter;
+import io.servicetalk.http.netty.HttpServers;
 
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
@@ -28,13 +29,12 @@ public final class PojoServer {
 
     public static void main(String[] args) throws Exception {
         HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
-        new DefaultHttpServerStarter()
-                .start(8080, (ctx, request, responseFactory) -> {
+        HttpServers.newHttpServerBuilder(8080)
+                .listenAndAwait((ctx, request, responseFactory) -> {
                     PojoRequest req = request.payloadBody(serializer.deserializerFor(PojoRequest.class));
                     return success(responseFactory.ok()
                             .payloadBody(new MyPojo(req.getId(), "foo"), serializer.serializerFor(MyPojo.class)));
                 })
-                .toFuture().get()
                 .awaitShutdown();
     }
 }

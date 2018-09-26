@@ -27,7 +27,6 @@ import io.servicetalk.http.api.StreamingHttpRequestFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.transport.api.ContextFilter;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
@@ -43,10 +42,10 @@ import java.util.concurrent.ExecutionException;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
-import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
+import static io.servicetalk.http.netty.HttpServers.newHttpServerBuilder;
 import static java.util.Objects.requireNonNull;
 import static org.junit.Assert.assertEquals;
 
@@ -72,8 +71,9 @@ public class HttpAuthConnectionFactoryClientTest {
 
     @Test
     public void simulateAuth() throws Exception {
-        serverContext = awaitIndefinitelyNonNull(new DefaultHttpServerStarter()
-                .startStreaming(CTX, new InetSocketAddress(0), ContextFilter.ACCEPT_ALL,
+        serverContext = newHttpServerBuilder(0)
+                .executionContext(CTX)
+                .listenStreamingAndAwait(
                         new StreamingHttpService() {
                             @Override
                             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
@@ -81,7 +81,7 @@ public class HttpAuthConnectionFactoryClientTest {
                                                                         final StreamingHttpResponseFactory factory) {
                                 return success(newTestResponse(factory));
                             }
-                        }));
+                        });
         client = HttpClients.forSingleAddress("localhost",
                 ((InetSocketAddress) serverContext.getListenAddress()).getPort())
                 .buildStreaming(CTX);

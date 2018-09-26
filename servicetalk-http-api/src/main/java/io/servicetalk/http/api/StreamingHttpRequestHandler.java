@@ -41,7 +41,7 @@ public interface StreamingHttpRequestHandler {
      * Convert this {@link StreamingHttpRequestHandler} to a {@link StreamingHttpService}.
      * @return a {@link StreamingHttpService}.
      */
-    default StreamingHttpService asStreamingHttpService() {
+    default StreamingHttpService asStreamingService() {
         return new StreamingHttpService() {
             @Override
             public Single<StreamingHttpResponse> handle(

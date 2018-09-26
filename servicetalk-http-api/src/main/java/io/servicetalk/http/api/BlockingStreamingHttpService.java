@@ -26,7 +26,7 @@ public abstract class BlockingStreamingHttpService implements AutoCloseable, Blo
     }
 
     @Override
-    public final BlockingStreamingHttpService asBlockingStreamingHttpService() {
+    public final BlockingStreamingHttpService asBlockingStreamingService() {
         return this;
     }
 

@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.internal.DefaultThreadFactory;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpProtocolVersions;
 import io.servicetalk.http.api.HttpResponseStatuses;
+import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestFactory;
@@ -135,21 +136,21 @@ public abstract class AbstractNettyHttpServerTest {
         // A small SNDBUF is needed to test that the server defers closing the connection until writes are complete.
         // However, if it is too small, tests that expect certain chunks of data will see those chunks broken up
         // differently.
-        final DefaultHttpServerStarter httpServerStarter = new DefaultHttpServerStarter()
+        final HttpServerBuilder serverBuilder = HttpServers.newHttpServerBuilder(bindAddress)
                 .socketOption(StandardSocketOptions.SO_SNDBUF, 100);
         if (sslEnabled) {
             final SslConfig sslConfig = SslConfigBuilder.forServer(
                     DefaultTestCerts::loadServerPem,
                     DefaultTestCerts::loadServerKey)
                     .build();
-            httpServerStarter.sslConfig(sslConfig);
+            serverBuilder.sslConfig(sslConfig);
         }
-        serverContext = awaitIndefinitelyNonNull(
-                httpServerStarter
-                        .startStreaming(new DefaultExecutionContext(DEFAULT_ALLOCATOR, serverIoExecutor, serverExecutor),
-                                bindAddress, contextFilter, service)
-                        .doBeforeSuccess(ctx -> LOGGER.debug("Server started on {}.", ctx.getListenAddress()))
-                        .doBeforeError(throwable -> LOGGER.debug("Failed starting server on {}.", bindAddress)));
+        serverContext = awaitIndefinitelyNonNull(serverBuilder.executionContext(new DefaultExecutionContext(
+                DEFAULT_ALLOCATOR, serverIoExecutor, serverExecutor))
+                .contextFilter(contextFilter)
+                .listenStreaming(service)
+                .doBeforeSuccess(ctx -> LOGGER.debug("Server started on {}.", ctx.getListenAddress()))
+                .doBeforeError(throwable -> LOGGER.debug("Failed starting server on {}.", bindAddress)));
 
         final InetSocketAddress socketAddress = new InetSocketAddress(LOOPBACK_ADDRESS,
                 ((InetSocketAddress) serverContext.getListenAddress()).getPort());
