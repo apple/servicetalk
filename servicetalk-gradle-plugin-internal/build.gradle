@@ -15,7 +15,7 @@
  */
 plugins {
   id "com.github.hierynomus.license" version "0.14.0"
-  id "com.jfrog.bintray" version "1.8.3"
+  id "com.jfrog.bintray" version "1.8.4"
 }
 
 apply plugin: "groovy"
@@ -34,7 +34,7 @@ dependencies {
   compile "org.asciidoctor:asciidoctor-gradle-plugin:1.5.8.1"
   compile "gradle.plugin.nl.javadude.gradle.plugins:license-gradle-plugin:0.14.0"
   compile "gradle.plugin.com.github.spotbugs:spotbugs-gradle-plugin:1.6.3"
-  compile "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.3"
+  compile "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4"
 }
 
 license {
