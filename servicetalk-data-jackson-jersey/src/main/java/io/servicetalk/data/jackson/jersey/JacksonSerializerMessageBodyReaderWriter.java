@@ -55,7 +55,6 @@ import javax.ws.rs.ext.Providers;
 
 import static io.servicetalk.http.router.jersey.BufferPublisherInputStream.handleEntityStream;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseBufferPublisher;
-import static java.lang.Integer.MAX_VALUE;
 import static javax.ws.rs.Priorities.ENTITY_CODER;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 import static javax.ws.rs.core.MediaType.WILDCARD;
@@ -97,12 +96,13 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
         final Serializer serializer = getSerializer(mediaType);
         final ExecutionContext executionContext = ctxRefProvider.get().get().executionContext();
         final BufferAllocator allocator = executionContext.bufferAllocator();
+        final int contentLength = requestCtxProvider.get().getLength();
 
         if (Single.class.isAssignableFrom(type)) {
             return handleEntityStream(entityStream, allocator,
-                    (p, a) -> deserialize(p, serializer, getSourceClass(genericType), a),
+                    (p, a) -> deserialize(p, serializer, getSourceClass(genericType), contentLength, a),
                     (is, a) -> new SingleSource<>(deserialize(toBufferPublisher(is, a), serializer,
-                            getSourceClass(genericType), a)));
+                            getSourceClass(genericType), contentLength, a)));
         } else if (Publisher.class.isAssignableFrom(type)) {
             return handleEntityStream(entityStream, allocator,
                     (p, a) -> serializer.deserialize(p, getSourceClass(genericType)),
@@ -111,8 +111,8 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
         }
 
         return handleEntityStream(entityStream, allocator,
-                (p, a) -> deserializeObject(p, serializer, type, a),
-                (is, a) -> deserializeObject(toBufferPublisher(is, a), serializer, type, a));
+                (p, a) -> deserializeObject(p, serializer, type, contentLength, a),
+                (is, a) -> deserializeObject(toBufferPublisher(is, a), serializer, type, contentLength, a));
     }
 
     @Override
@@ -165,28 +165,35 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
     }
 
     private static <T> Single<T> deserialize(final Publisher<Buffer> bufferPublisher, final Serializer ser,
-                                             final Class<T> type, BufferAllocator allocator) {
-        return bufferPublisher.reduce(() -> allocator.newCompositeBuffer(MAX_VALUE), (cb, next) -> {
-            cb.addBuffer(next);
-            return cb;
-        }).map(cb -> {
-            try {
-                return ser.deserializeAggregatedSingle(cb, type);
-            } catch (final NoSuchElementException e) {
-                throw new BadRequestException("No deserializable JSON content", e);
-            } catch (final SerializationException e) {
-                // SerializationExceptionMapper can't always tell for sure that the exception was thrown because of
-                // bad user data: here we are deserializing user data so we can assume we fail because of it and
-                // immediately throw the properly mapped JAX-RS exception
-                throw new BadRequestException("Invalid JSON data", e);
-            }
-        });
+                                             final Class<T> type, final int contentLength,
+                                             final BufferAllocator allocator) {
+
+        return bufferPublisher
+                .reduce(() -> newBufferForRequestContent(contentLength, allocator), Buffer::writeBytes)
+                .map(buf -> {
+                    try {
+                        return ser.deserializeAggregatedSingle(buf, type);
+                    } catch (final NoSuchElementException e) {
+                        throw new BadRequestException("No deserializable JSON content", e);
+                    } catch (final SerializationException e) {
+                        // SerializationExceptionMapper can't always tell for sure that the exception was thrown because
+                        // of bad user data: here we are deserializing user data so we can assume we fail because of it
+                        // and immediately throw the properly mapped JAX-RS exception
+                        throw new BadRequestException("Invalid JSON data", e);
+                    }
+                });
+    }
+
+    static Buffer newBufferForRequestContent(final int contentLength,
+                                             final BufferAllocator allocator) {
+        return contentLength == -1 ? allocator.newBuffer() : allocator.newBuffer(contentLength);
     }
 
     private static <T> T deserializeObject(final Publisher<Buffer> bufferPublisher, final Serializer ser,
-                                           final Class<T> type, BufferAllocator allocator) {
+                                           final Class<T> type, final int contentLength,
+                                           final BufferAllocator allocator) {
         try {
-            return deserialize(bufferPublisher, ser, type, allocator).toFuture().get();
+            return deserialize(bufferPublisher, ser, type, contentLength, allocator).toFuture().get();
         } catch (InterruptedException e) {
             throw new Error(e);
         } catch (ExecutionException e) {

@@ -16,7 +16,6 @@
 package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.router.jersey.internal.SourceWrappers.SingleSource;
 
@@ -29,8 +28,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
-
-import static java.lang.Integer.MAX_VALUE;
 
 /**
  * A combined {@link MessageBodyReader} / {@link MessageBodyWriter} that allows bypassing Java IO streams
@@ -50,10 +47,10 @@ final class BufferSingleMessageBodyReaderWriter
                                    final MediaType mediaType,
                                    final MultivaluedMap<String, String> httpHeaders,
                                    final InputStream entityStream) throws WebApplicationException {
-        return readFrom(entityStream, (p, a) ->
-                // FIXME use Buffer aggregator helper when ready
-                p.reduce(() -> a.newCompositeBuffer(MAX_VALUE),
-                        (cb, b) -> ((CompositeBuffer) cb).addBuffer(b)), SingleSource::new);
+        // Get the value here because requestCtxProvider is out of scope when the reduction happens
+        final int contentLength = getRequestContentLength(requestCtxProvider);
+        return readFrom(entityStream, (p, a) -> p.reduce(() -> newBufferForRequestContent(contentLength, a),
+                Buffer::writeBytes), SingleSource::new);
     }
 
     @Override
