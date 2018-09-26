@@ -15,7 +15,6 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.internal.DefaultThreadFactory;
@@ -23,7 +22,6 @@ import io.servicetalk.dns.discovery.netty.DefaultDnsServiceDiscovererBuilder;
 import io.servicetalk.loadbalancer.RoundRobinLoadBalancer;
 import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisData;
-import io.servicetalk.redis.utils.RetryingRedisClient;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -36,11 +34,11 @@ import java.util.regex.Pattern;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
-import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoff;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitely;
 import static io.servicetalk.concurrent.internal.Await.awaitIndefinitelyNonNull;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.INFO;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
+import static io.servicetalk.redis.utils.RetryingRedisClient.newBuilder;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.net.InetAddress.getLoopbackAddress;
@@ -82,16 +80,14 @@ final class RedisTestEnvironment implements AutoCloseable {
         serviceDiscoverer = new DefaultDnsServiceDiscovererBuilder(executionContext).build();
         RedisClientConfig config = new RedisClientConfig(new TcpClientConfig(false))
                 .setDeferSubscribeTillConnect(true);
-        client = new RetryingRedisClient(new DefaultRedisClientBuilder<InetSocketAddress>(
+        RedisClient rawClient = new DefaultRedisClientBuilder<InetSocketAddress>(
                 (eventPublisher, connectionFactory) -> new RoundRobinLoadBalancer<>(eventPublisher, connectionFactory,
                         comparingInt(Object::hashCode)), config)
                 .maxPipelinedRequests(10)
                 .idleConnectionTimeout(ofSeconds(2))
                 .pingPeriod(ofSeconds(PING_PERIOD_SECONDS))
-                .build(executionContext,
-                        serviceDiscoverer.discover(HostAndPort.of(redisHost, redisPort))),
-                retryWithExponentialBackoff(10, cause -> cause instanceof RetryableException, ofMillis(10),
-                        executionContext.executor()));
+                .build(executionContext, serviceDiscoverer.discover(HostAndPort.of(redisHost, redisPort)));
+        client = newBuilder(rawClient).exponentialBackoff(ofMillis(10)).build(10);
 
         final String serverInfo = awaitIndefinitelyNonNull(
                 client.request(newRequest(INFO, new RedisData.CompleteBulkString(DEFAULT_ALLOCATOR.fromUtf8("SERVER"))))
