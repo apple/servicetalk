@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.internal;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -137,6 +138,7 @@ public class SubscriberUtilsTest {
         calculateSourceRequestedConcurrentLoop(1000, 1, 5635, 483, 800026);
     }
 
+    @Ignore("Test is flaky on CI")
     @Test
     public void calculateSourceRequestedConcurrentE() throws InterruptedException, ExecutionException, BrokenBarrierException {
         calculateSourceRequestedConcurrentLoop(1000, 7, 512, Integer.MAX_VALUE, 1000001);
