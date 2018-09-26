@@ -194,6 +194,7 @@ public class NettyConnection<Read, Write> implements Connection<Read, Write> {
 
             @Override
             public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+                // Inbound shutdown event is handled in AbstractChannelReadHandler
                 if (evt == ChannelOutputShutdownEvent.INSTANCE) {
                     closeHandler.channelClosedOutbound(ctx);
                     writableListener.channelClosedOutbound();
