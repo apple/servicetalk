@@ -286,10 +286,11 @@ class RequestResponseCloseHandler extends CloseHandler {
                     } else {
                         closeChannel(channel, evt);
                     }
-                } // else pending == 0 => current request still ongoing, defer close, but unset READ flag
-                state = unset(state, READ);
-                if (idle(pending, state)) {
-                    closeChannel(channel, evt);
+                } else { // current request still ongoing, defer close, but unset READ flag
+                    state = unset(state, READ);
+                    if (idle(pending, state)) {
+                        closeChannel(channel, evt);
+                    }
                 }
             } else if (has(state, WRITE)) { // evt == CHANNEL_CLOSED_OUTBOUND
                 // ensure we finish reading pending responses, abort others
