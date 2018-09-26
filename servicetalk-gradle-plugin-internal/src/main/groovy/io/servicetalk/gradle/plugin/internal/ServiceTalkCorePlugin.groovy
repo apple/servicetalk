@@ -112,13 +112,23 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
 
       def releaseBuild = project.hasProperty("releaseBuild")
       def endsWithSnapshot = project.version.toString().toUpperCase().endsWith("-SNAPSHOT")
+      if (releaseBuild) {
+        if (endsWithSnapshot) {
+          throw new GradleException("Project version for a release build must not contain a '-SNAPSHOT' suffix")
+        }
+      } else {
+        if (!endsWithSnapshot) {
+          project.version += "-SNAPSHOT"
+        }
+      }
 
       // bintray publishing information
-      if (releaseBuild && System.getenv("BINTRAY_USER") && System.getenv("BINTRAY_KEY")) {
-
+      def bintrayUser = System.getenv("BINTRAY_USER")
+      def bintrayKey = System.getenv("BINTRAY_KEY")
+      if (bintrayUser && bintrayKey) {
         bintray {
-          user = System.getenv("BINTRAY_USER")
-          key = System.getenv("BINTRAY_KEY")
+          user = bintrayUser
+          key = bintrayKey
           publications = ["mavenJava"]
           pkg {
             userOrg = "servicetalk"
@@ -136,14 +146,6 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
         repositories {
           jcenter()
         }
-      }
-
-      if (!releaseBuild && !endsWithSnapshot) {
-        project.version += "-SNAPSHOT"
-      }
-
-      if (releaseBuild && endsWithSnapshot) {
-        throw new GradleException("Project version for a release build must not contain a '-SNAPSHOT' suffix")
       }
 
       task("package", dependsOn: assemble)
