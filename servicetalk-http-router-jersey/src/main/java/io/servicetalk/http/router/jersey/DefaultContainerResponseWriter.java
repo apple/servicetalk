@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.Response.StatusType;
@@ -51,11 +52,13 @@ import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatuses.getResponseStatus;
 import static io.servicetalk.http.router.jersey.CharSequenceUtils.asCharSequence;
+import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRequestCancellable;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getResponseBufferPublisher;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getResponseExecutorOffloader;
 import static java.util.Arrays.stream;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 import static javax.ws.rs.HttpMethod.HEAD;
@@ -83,8 +86,15 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     @Nullable
     private volatile Runnable suspendedTimeoutRunnable;
 
-    @Nullable
-    private volatile ConnectableOutputStream connectableOutputStream;
+    private static final AtomicIntegerFieldUpdater<DefaultContainerResponseWriter> stateUpdater =
+            newUpdater(DefaultContainerResponseWriter.class, "state");
+
+    private volatile int state;
+
+    private static final int STATE_REQUEST_HANDLONG = 0;
+    private static final int STATE_RESPONSE_WRITING = 1;
+    private static final int STATE_RESPONSE_WRITTEN = 2;
+    private static final int STATE_REQUEST_CANCELLED = 3;
 
     DefaultContainerResponseWriter(final ContainerRequest request,
                                    final HttpProtocolVersion protocolVersion,
@@ -103,6 +113,11 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     public OutputStream writeResponseStatusAndHeaders(final long contentLength, final ContainerResponse responseContext)
             throws ContainerException {
 
+        if (!stateUpdater.compareAndSet(this, STATE_REQUEST_HANDLONG, STATE_RESPONSE_WRITING)) {
+            // Request has been cancelled so we do not send a response and return no OutputStream for Jersey to write to
+            return null;
+        }
+
         final Publisher<Buffer> content = getResponseBufferPublisher(request);
         // contentLength is >= 0 if the entity content length in bytes is known to Jersey, otherwise -1
         if (content != null) {
@@ -112,11 +127,11 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
             sendResponse(contentLength, null, responseContext);
             return null;
         } else {
-            final ConnectableOutputStream os = new ConnectableOutputStream();
+            // Explicitly ask this ConnectableOutputStream to be closed if its associated byte[] publisher is cancelled
+            final ConnectableOutputStream os = new ConnectableOutputStream(true);
             sendResponse(contentLength, os.connect().map(bytes ->
                             serviceCtx.executionContext().bufferAllocator().wrap(bytes)),
                     responseContext);
-            connectableOutputStream = os;
             return os;
         }
     }
@@ -173,22 +188,32 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         responseSubscriber.onError(error);
     }
 
-    void cancel() {
-        // We executeSuspendedTimeoutRunnable in the case the cancellation is not part of a proactive resource cleanup
-        // done in the background but instead when cancellation comes from the server.
-        final Runnable r = suspendedTimeoutRunnable;
-        if (r != null) {
-            r.run();
-        }
+    void cancelRequest() {
+        if (stateUpdater.compareAndSet(this, STATE_REQUEST_HANDLONG, STATE_REQUEST_CANCELLED)) {
+            // Cancel any internally created request-handling subscription
+            getRequestCancellable(request).cancel();
 
-        cancelSuspendedTimer();
-        final ConnectableOutputStream os = connectableOutputStream;
-        if (os != null) {
-            try {
-                os.close();
-            } catch (final IOException e) {
-                LOGGER.debug("Failed to close output stream during cancel", e);
-            }
+            // Close inbound entity stream
+            closeEntityStream();
+
+            cancelSuspendedTimer();
+        }
+    }
+
+    private void cancelResponse() {
+        if (stateUpdater.compareAndSet(this, STATE_RESPONSE_WRITING, STATE_REQUEST_CANCELLED)) {
+            // Close inbound entity stream which might still be read as part of a streaming response
+            closeEntityStream();
+
+            cancelSuspendedTimer();
+        }
+    }
+
+    private void closeEntityStream() {
+        try {
+            request.getEntityStream().close();
+        } catch (final IOException e) {
+            LOGGER.debug("Failed to close input stream during cancel", e);
         }
     }
 
@@ -219,9 +244,13 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         if (content != null && !isHeadRequest()) {
             final Executor executor = getResponseExecutorOffloader(request);
             // TODO(scott): use request factory methods that accept a payload body to avoid overhead of payloadBody.
+            Publisher<Buffer> payloadBody = (executor != null ? content.subscribeOn(executor) : content)
+                    .doBeforeComplete(() -> state = STATE_RESPONSE_WRITTEN)
+                    .doAfterCancel(this::cancelResponse);  // Cleanup internal state here after ST is done cancelling
+
             response = responseFactory.newResponse(status)
                     .version(protocolVersion)
-                    .payloadBody(executor != null ? content.subscribeOn(executor) : content);
+                    .payloadBody(payloadBody);
         } else {
             response = responseFactory.newResponse(status).version(protocolVersion);
         }

@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
-import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -41,7 +40,9 @@ import org.mockito.junit.MockitoRule;
 
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.ws.rs.core.Application;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
@@ -50,8 +51,6 @@ import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpResponseStatuses.OK;
-import static io.servicetalk.http.api.HttpResponseStatuses.SERVICE_UNAVAILABLE;
-import static io.servicetalk.http.router.jersey.TestUtils.getContentAsString;
 import static io.servicetalk.http.router.jersey.TestUtils.newLargePayload;
 import static io.servicetalk.http.router.jersey.resources.CancellableResources.PATH;
 import static java.net.InetSocketAddress.createUnresolved;
@@ -59,6 +58,7 @@ import static java.util.Collections.singleton;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -130,32 +130,32 @@ public class CancellationTest {
         final TestCancellable cancellable = new TestCancellable();
         when(exec.schedule(any(Runnable.class), eq(7L), eq(DAYS))).thenReturn(cancellable);
 
-        testCancelInternalSubscribe(get("/suspended"));
+        testCancelResponseSingle(get("/suspended"));
         assertThat(cancellable.cancelled, is(true));
     }
 
     @Test
     public void cancelSingle() throws Exception {
-        testCancelInternalSubscribe(get("/single"));
+        testCancelResponseSingle(get("/single"));
     }
 
     @Test
     public void cancelOffload() throws Exception {
-        testCancelInternalSubscribe(get("/offload"));
+        testCancelResponseSingle(get("/offload"));
     }
 
     @Test
     public void cancelOioStreams() throws Exception {
-        testCancelAfterExternalSubscribe(post("/oio-streams"));
-        testCancelInternalSubscribe(post("/offload-oio-streams"));
+        testCancelResponsePayload(post("/oio-streams"));
+        testCancelResponseSingle(post("/offload-oio-streams"));
     }
 
     @Test
     public void cancelRsStreams() throws Exception {
-        testCancelAfterExternalSubscribe(post("/rs-streams"));
-        testCancelAfterExternalSubscribe(post("/rs-streams?subscribe=true"));
-        testCancelInternalSubscribe(post("/offload-rs-streams"));
-        testCancelInternalSubscribe(post("/offload-rs-streams?subscribe=true"));
+        testCancelResponsePayload(post("/rs-streams"));
+        testCancelResponsePayload(post("/rs-streams?subscribe=true"));
+        testCancelResponseSingle(post("/offload-rs-streams"));
+        testCancelResponseSingle(post("/offload-rs-streams?subscribe=true"));
     }
 
     @Test
@@ -166,37 +166,40 @@ public class CancellationTest {
         }).when(exec).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
 
         // Initial SSE request succeeds
-        testCancel(get("/sse"), OK);
+        testCancelResponsePayload(get("/sse"));
 
-        // Cancellation closes the SSE sink
+        // Payload cancellation closes the SSE sink
         assertThat(cancellableResources.sseSinkClosedLatch.await(DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
     }
 
-    private void testCancelInternalSubscribe(final StreamingHttpRequest req) throws Exception {
-        testCancel(req, SERVICE_UNAVAILABLE);
-    }
-
-    private void testCancel(final StreamingHttpRequest req,
-                            final HttpResponseStatus expectedStatus) throws Exception {
+    private void testCancelResponsePayload(final StreamingHttpRequest req) throws Exception {
         final CompletableFuture<StreamingHttpResponse> futureResponse = new CompletableFuture<>();
 
         jerseyRouter.handle(ctx, req, HTTP_REQ_RES_FACTORY)
                 .subscribe(futureResponse::complete)
-                .cancel();
+                .cancel(); // This is a no-op because when subscribe returns the response single has been realized
 
-        assertThat(futureResponse.get().status(), is(expectedStatus));
-    }
-
-    private void testCancelAfterExternalSubscribe(final StreamingHttpRequest req) throws Exception {
-        final CompletableFuture<StreamingHttpResponse> futureResponse = new CompletableFuture<>();
-
-        jerseyRouter.handle(ctx, req, HTTP_REQ_RES_FACTORY)
-                .subscribe(futureResponse::complete)
-                .cancel();
-
-        final StreamingHttpResponse res = futureResponse.get();
+        StreamingHttpResponse res = futureResponse.get();
         assertThat(res.status(), is(OK));
-        assertThat(getContentAsString(res), is("GOT: " + TEST_DATA));
+
+        res.payloadBody().ignoreElements().subscribe().cancel();
+    }
+
+    private void testCancelResponseSingle(final StreamingHttpRequest req) throws Exception {
+        AtomicReference<StreamingHttpResponse> responseRef = new AtomicReference<>();
+        AtomicReference<Throwable> errorRef = new AtomicReference<>();
+        final CountDownLatch cancelledLatch = new CountDownLatch(1);
+
+        jerseyRouter.handle(ctx, req, HTTP_REQ_RES_FACTORY)
+                .doBeforeError(errorRef::set)
+                .doAfterCancel(cancelledLatch::countDown)
+                .subscribe(responseRef::set)
+                .cancel();
+
+        cancelledLatch.await();
+
+        assertThat(responseRef.get(), is(nullValue()));
+        assertThat(errorRef.get(), is(nullValue()));
     }
 
     private static StreamingHttpRequest get(final String resourcePath) {
